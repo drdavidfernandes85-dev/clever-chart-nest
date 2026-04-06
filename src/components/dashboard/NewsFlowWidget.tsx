@@ -247,11 +247,8 @@ const NewsFlowWidget = () => {
                 <button className="text-muted-foreground hover:text-foreground">
                   <SlidersHorizontal className="h-4 w-4" />
                 </button>
-                <button className="text-muted-foreground hover:text-foreground">
-                  <Filter className="h-4 w-4" />
-                </button>
-                <button className="text-muted-foreground hover:text-foreground">
-                  <RefreshCw className="h-4 w-4" />
+                <button onClick={fetchNews} className="text-muted-foreground hover:text-foreground">
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </button>
               </div>
             </div>
