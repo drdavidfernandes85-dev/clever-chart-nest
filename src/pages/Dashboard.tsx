@@ -60,7 +60,6 @@ const StrengthBar = ({ value }: { value: number }) => (
 
 const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!containerRef.current) return;
     containerRef.current.innerHTML = "";
@@ -89,7 +88,7 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
   }, [symbol, interval]);
 
   return (
-    <div className="tradingview-widget-container h-[400px]" ref={containerRef} />
+    <div className="tradingview-widget-container h-[600px]" ref={containerRef} />
   );
 };
 
@@ -127,18 +126,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Scrolling ticker bar */}
-        <div className="flex h-8 items-center gap-6 overflow-x-auto border-t border-border bg-card/50 px-4 text-xs scrollbar-hide">
-          {tickersData.map((t) => (
-            <div key={t.pair} className="flex shrink-0 items-center gap-2">
-              <span className="font-medium text-foreground">{t.pair}</span>
-              <span className="text-muted-foreground">{t.price}</span>
-              <span className={t.change.startsWith("+") ? "text-emerald-400" : "text-red-400"}>
-                {t.change}
-              </span>
-            </div>
-          ))}
-        </div>
       </header>
 
       {/* Main Content */}
@@ -205,28 +192,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Alerts Panel */}
-          <div className="rounded-lg border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Bell className="h-4 w-4 text-primary" />
-                Alerts
-              </h3>
-              <Badge variant="destructive" className="text-xs">{alertsData.filter(a => a.priority === "high").length}</Badge>
-            </div>
-            <div className="divide-y divide-border/30">
-              {alertsData.map((alert, i) => (
-                <div key={i} className="px-4 py-3 transition-colors hover:bg-muted/20">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${alert.priority === "high" ? "bg-red-500" : alert.priority === "medium" ? "bg-yellow-500" : "bg-muted-foreground"}`} />
-                    <span className="text-xs font-medium text-foreground">{alert.pair}</span>
-                    <Badge variant="outline" className="text-[10px]">{alert.type}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{alert.message}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* F.A. Comments */}
           <div className="rounded-lg border border-border bg-card">
