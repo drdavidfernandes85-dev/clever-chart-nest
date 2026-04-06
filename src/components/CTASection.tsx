@@ -32,7 +32,7 @@ const CTASection = () => (
               <Button
                 size="lg"
                 variant="outline"
-                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
+                className="border-primary-foreground bg-transparent text-primary-foreground hover:bg-primary-foreground/10 font-semibold"
                 asChild
               >
                 <Link to="/login">Log In</Link>
