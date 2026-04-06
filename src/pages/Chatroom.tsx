@@ -60,7 +60,7 @@ const Chatroom = () => {
     const loadMessages = async () => {
       const { data } = await supabase
         .from("messages")
-        .select("*, profiles!messages_user_id_fkey(display_name, avatar_url)")
+        .select("*, profiles!messages_user_id_profiles_fkey(display_name, avatar_url)")
         .eq("channel_id", activeChannelId)
         .order("created_at", { ascending: true })
         .limit(100);
