@@ -1,4 +1,6 @@
-import { Star } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import ScrollReveal from "@/components/ScrollReveal";
 
 const reviews = [
   { name: "Arnaldo Tsukamoto", date: "23 Março", title: "Ótima experiência com a corretora e…", text: "Ótima experiência e atendimento TOP pelo Gabriel Chiqueti." },
@@ -12,32 +14,84 @@ const Stars = () => (
   <div className="flex gap-0.5">
     {[...Array(5)].map((_, i) => (
       <div key={i} className="flex h-5 w-5 items-center justify-center bg-emerald-500">
-        <Star className="h-3 w-3 fill-white text-white" />
+        <Star className="h-3 w-3 fill-foreground text-foreground" />
       </div>
     ))}
   </div>
 );
 
 const TrustpilotSection = () => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 5);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 5);
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const el = scrollRef.current;
+    el?.addEventListener("scroll", checkScroll, { passive: true });
+    return () => el?.removeEventListener("scroll", checkScroll);
+  }, []);
+
+  const scroll = (dir: "left" | "right") => {
+    scrollRef.current?.scrollBy({ left: dir === "left" ? -280 : 280, behavior: "smooth" });
+  };
+
   return (
     <section className="bg-background py-16">
       <div className="container">
-        <h2 className="mb-10 text-center font-heading text-3xl font-bold text-foreground">
-          O que dizem nossos clientes
-        </h2>
+        <ScrollReveal>
+          <h2 className="mb-10 text-center font-heading text-3xl font-bold text-foreground">
+            O que dizem nossos clientes
+          </h2>
+        </ScrollReveal>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {reviews.map((r, i) => (
-            <div key={i} className="rounded-lg border border-border/50 bg-card p-4 shadow-lg shadow-black/20 transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
-              <Stars />
-              <h3 className="mt-3 text-sm font-semibold text-foreground line-clamp-1">{r.title}</h3>
-              <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.text}</p>
-              <p className="mt-3 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">{r.name}</span>, {r.date}
-              </p>
+        <ScrollReveal delay={150}>
+          <div className="relative">
+            {/* Scroll buttons for mobile */}
+            {canScrollLeft && (
+              <button
+                onClick={() => scroll("left")}
+                className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-border shadow-lg text-foreground lg:hidden"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            )}
+            {canScrollRight && (
+              <button
+                onClick={() => scroll("right")}
+                className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-border shadow-lg text-foreground lg:hidden"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+
+            <div
+              ref={scrollRef}
+              className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory lg:grid lg:grid-cols-5 lg:overflow-visible"
+            >
+              {reviews.map((r, i) => (
+                <div
+                  key={i}
+                  className="min-w-[260px] snap-start rounded-lg border border-border/50 bg-card p-4 shadow-lg shadow-black/20 transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl lg:min-w-0"
+                >
+                  <Stars />
+                  <h3 className="mt-3 text-sm font-semibold text-foreground line-clamp-1">{r.title}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.text}</p>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">{r.name}</span>, {r.date}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        </ScrollReveal>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
