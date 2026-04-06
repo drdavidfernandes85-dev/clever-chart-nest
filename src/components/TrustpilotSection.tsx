@@ -28,7 +28,7 @@ const TrustpilotSection = () => {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {reviews.map((r, i) => (
-            <div key={i} className="rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-md">
+            <div key={i} className="rounded-lg border border-border/50 bg-card p-4 shadow-lg shadow-black/20 transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl">
               <Stars />
               <h3 className="mt-3 text-sm font-semibold text-foreground line-clamp-1">{r.title}</h3>
               <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.text}</p>
