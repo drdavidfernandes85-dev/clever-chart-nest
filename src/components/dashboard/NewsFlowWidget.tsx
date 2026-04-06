@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, Filter, RefreshCw, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, Filter, RefreshCw, ChevronDown, Volume2, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
