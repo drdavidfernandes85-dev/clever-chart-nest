@@ -143,85 +143,8 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
-        {/* Left: Tickers Table */}
+        {/* Left: Chart + News */}
         <div className="space-y-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between">
-              <TabsList className="bg-card">
-                <TabsTrigger value="active">Active Tickers</TabsTrigger>
-                <TabsTrigger value="inactive">Inactive</TabsTrigger>
-                <TabsTrigger value="forex">Forex</TabsTrigger>
-                <TabsTrigger value="tab_bias">Tab Bias</TabsTrigger>
-              </TabsList>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-1 text-xs">
-                  <Star className="h-3 w-3" /> Watchlist
-                </Button>
-              </div>
-            </div>
-
-            <TabsContent value="active" className="mt-3">
-              <div className="rounded-lg border border-border bg-card overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                      <th className="px-4 py-3 font-medium">Pair</th>
-                      <th className="px-4 py-3 font-medium">Price</th>
-                      <th className="px-4 py-3 font-medium">Change</th>
-                      <th className="px-4 py-3 font-medium hidden md:table-cell">Bias</th>
-                      <th className="px-4 py-3 font-medium hidden lg:table-cell">Signal</th>
-                      <th className="px-4 py-3 font-medium hidden md:table-cell">Strength</th>
-                      <th className="px-4 py-3 font-medium hidden sm:table-cell">TF</th>
-                      <th className="px-4 py-3 font-medium hidden lg:table-cell">Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tickersData.map((ticker) => (
-                      <tr key={ticker.pair} className="border-b border-border/50 transition-colors hover:bg-muted/30">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-primary" />
-                            <span className="font-medium text-foreground">{ticker.pair}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-foreground">{ticker.price}</td>
-                        <td className="px-4 py-3">
-                          <span className={`flex items-center gap-1 font-medium ${ticker.change.startsWith("+") ? "text-emerald-400" : "text-red-400"}`}>
-                            {ticker.change.startsWith("+") ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                            {ticker.change}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell"><BiasIndicator bias={ticker.bias} /></td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          <Badge variant="outline" className="text-xs">{ticker.signal}</Badge>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell"><StrengthBar value={ticker.strength} /></td>
-                        <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">{ticker.timeframe}</td>
-                        <td className="px-4 py-3 hidden lg:table-cell text-xs text-muted-foreground">{ticker.lastUpdate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="inactive" className="mt-3">
-              <div className="flex h-40 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                No inactive tickers
-              </div>
-            </TabsContent>
-            <TabsContent value="forex" className="mt-3">
-              <div className="flex h-40 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                Forex pairs view
-              </div>
-            </TabsContent>
-            <TabsContent value="tab_bias" className="mt-3">
-              <div className="flex h-40 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                Bias analysis view
-              </div>
-            </TabsContent>
-          </Tabs>
-
           {/* Chart Area */}
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
