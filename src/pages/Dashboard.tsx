@@ -102,9 +102,9 @@ const Dashboard = () => {
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-primary" />
+              <TrendingUp className="h-6 w-6 text-[hsl(45,100%,50%)]" />
               <span className="font-heading text-lg font-bold text-foreground">
-                Forex<span className="text-primary">Analytix</span>
+                Elite <span className="text-[hsl(45,100%,50%)]">Live Trading Room</span>
               </span>
             </Link>
             <Badge variant="secondary" className="text-xs">Dashboard</Badge>
