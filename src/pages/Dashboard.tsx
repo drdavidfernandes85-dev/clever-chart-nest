@@ -127,18 +127,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Scrolling ticker bar */}
-        <div className="flex h-8 items-center gap-6 overflow-x-auto border-t border-border bg-card/50 px-4 text-xs scrollbar-hide">
-          {tickersData.map((t) => (
-            <div key={t.pair} className="flex shrink-0 items-center gap-2">
-              <span className="font-medium text-foreground">{t.pair}</span>
-              <span className="text-muted-foreground">{t.price}</span>
-              <span className={t.change.startsWith("+") ? "text-emerald-400" : "text-red-400"}>
-                {t.change}
-              </span>
-            </div>
-          ))}
-        </div>
       </header>
 
       {/* Main Content */}
