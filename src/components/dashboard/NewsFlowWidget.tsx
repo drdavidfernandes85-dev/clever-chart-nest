@@ -81,14 +81,14 @@ const priorityBadge = {
 };
 
 const categoryColors: Record<string, string> = {
-  "CENTRAL BANKS": "text-blue-400",
-  GEOPOLITICS: "text-red-400",
-  DATA: "text-emerald-400",
-  ENERGY: "text-orange-400",
-  "FIXED INCOME": "text-purple-400",
-  EQUITIES: "text-cyan-400",
-  FX: "text-indigo-400",
-  COMMODITIES: "text-yellow-400",
+  "CENTRAL BANKS": "text-blue-600",
+  GEOPOLITICS: "text-red-600",
+  DATA: "text-emerald-600",
+  ENERGY: "text-orange-600",
+  "FIXED INCOME": "text-purple-600",
+  EQUITIES: "text-cyan-600",
+  FX: "text-indigo-600",
+  COMMODITIES: "text-yellow-600",
 };
 
 const impactColor = {
@@ -119,7 +119,7 @@ const LiveSquawkFeed = () => {
       <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-muted/20">
         <div className="flex items-center gap-2">
           <span className={`h-2.5 w-2.5 rounded-full bg-red-500 ${pulse ? "opacity-100" : "opacity-40"} transition-opacity`} />
-          <span className="text-xs font-semibold text-red-400 uppercase tracking-wider">Live</span>
+          <span className="text-xs font-semibold text-red-600 uppercase tracking-wider">Live</span>
           <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
         <div className="flex items-center gap-3">
@@ -163,15 +163,15 @@ const LiveSquawkFeed = () => {
                     {item.impact}
                   </Badge>
                   {item.direction === "bullish" ? (
-                    <TrendingUp className="h-3 w-3 text-emerald-400" />
+                    <TrendingUp className="h-3 w-3 text-emerald-600" />
                   ) : item.direction === "bearish" ? (
-                    <TrendingDown className="h-3 w-3 text-red-400" />
+                    <TrendingDown className="h-3 w-3 text-red-600" />
                   ) : (
                     <Minus className="h-3 w-3 text-muted-foreground" />
                   )}
                 </div>
               </div>
-              <p className={`text-xs font-medium leading-snug ${item.priority === "breaking" ? "text-red-300" : "text-foreground"}`}>
+              <p className={`text-xs font-medium leading-snug ${item.priority === "breaking" ? "text-red-700" : "text-foreground"}`}>
                 {item.headline}
               </p>
             </div>
@@ -332,7 +332,7 @@ const MarketTradingHours = () => {
                 {/* Current time indicator */}
                 <div className="absolute top-0 h-full w-px bg-primary" style={{ left: `${nowPct}%` }} />
               </div>
-              <span className={`w-5 text-[9px] font-bold ${open ? "text-emerald-400" : "text-muted-foreground"}`}>
+              <span className={`w-5 text-[9px] font-bold ${open ? "text-emerald-600" : "text-muted-foreground"}`}>
                 {open ? "ON" : "OFF"}
               </span>
             </div>
