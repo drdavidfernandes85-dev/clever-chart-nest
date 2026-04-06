@@ -153,6 +153,35 @@ const LiveSquawkFeed = () => {
 
 const NewsFlowWidget = () => {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [newsItems, setNewsItems] = useState<RssNewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const fetchNews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
+      if (!error && data?.data) {
+        setNewsItems(data.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch news:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNews();
+    const interval = setInterval(fetchNews, 60000);
+    return () => clearInterval(interval);
+  }, [fetchNews]);
+
+  const filteredNews = newsItems.filter((item) => {
+    const matchesFilter = activeFilter === "all" || item.category.toLowerCase().includes(activeFilter);
+    const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
   return (
     <div className="rounded-lg border border-border bg-card">
