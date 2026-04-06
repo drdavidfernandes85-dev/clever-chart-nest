@@ -88,7 +88,7 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
   }, [symbol, interval]);
 
   return (
-    <div className="tradingview-widget-container h-[600px]" ref={containerRef} />
+    <div className="tradingview-widget-container h-[800px]" ref={containerRef} />
   );
 };
 
@@ -146,13 +146,6 @@ const Dashboard = () => {
           {/* News Flow Widget */}
           <NewsFlowWidget />
 
-          {/* Bottom commentary */}
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-sm italic text-muted-foreground">
-              "The FED/ECB policy divergence could be in doubt following the hiking cycle. Watch for key levels on EUR/USD as we approach the FOMC meeting next week."
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">— Stelios, Head Analyst</p>
-          </div>
         </div>
 
         {/* Right Sidebar */}
@@ -193,19 +186,6 @@ const Dashboard = () => {
           </div>
 
 
-          {/* F.A. Comments */}
-          <div className="rounded-lg border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Eye className="h-4 w-4 text-primary" />
-                F.A. Comments
-              </h3>
-            </div>
-            <div className="p-4 text-xs text-muted-foreground">
-              <p className="mb-2">European news headlines point to softening inflation which may change ECB trajectory.</p>
-              <p>Keep an eye on upcoming NFP data for USD direction next week.</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
