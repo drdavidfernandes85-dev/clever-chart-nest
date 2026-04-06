@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, Filter, RefreshCw, ChevronDown, Volume2, AlertTriangle, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, RefreshCw, Volume2, TrendingUp, TrendingDown, Minus, Loader2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,6 +79,25 @@ const categoryColors: Record<string, string> = {
   COMMODITIES: "text-yellow-400",
 };
 
+// Economic calendar data
+const calendarEvents = [
+  { time: "08:30", currency: "USD", impact: "high", event: "Non-Farm Payrolls", forecast: "180K", previous: "175K", actual: "—" },
+  { time: "08:30", currency: "USD", impact: "high", event: "Unemployment Rate", forecast: "3.8%", previous: "3.9%", actual: "—" },
+  { time: "10:00", currency: "USD", impact: "medium", event: "ISM Services PMI", forecast: "52.0", previous: "51.4", actual: "52.7" },
+  { time: "10:00", currency: "USD", impact: "low", event: "Factory Orders m/m", forecast: "0.8%", previous: "-1.6%", actual: "—" },
+  { time: "12:00", currency: "EUR", impact: "high", event: "ECB President Lagarde Speaks", forecast: "—", previous: "—", actual: "—" },
+  { time: "14:00", currency: "GBP", impact: "medium", event: "BOE Gov Bailey Speaks", forecast: "—", previous: "—", actual: "—" },
+  { time: "19:00", currency: "NZD", impact: "high", event: "RBNZ Rate Statement", forecast: "5.50%", previous: "5.50%", actual: "—" },
+  { time: "21:30", currency: "AUD", impact: "medium", event: "Trade Balance", forecast: "7.5B", previous: "7.3B", actual: "—" },
+  { time: "23:00", currency: "JPY", impact: "low", event: "Leading Indicators", forecast: "111.8", previous: "111.4", actual: "—" },
+];
+
+const impactColor = {
+  high: "bg-red-500",
+  medium: "bg-orange-400",
+  low: "bg-yellow-400",
+};
+
 const LiveSquawkFeed = () => {
   const [pulse, setPulse] = useState(true);
 
@@ -89,7 +108,6 @@ const LiveSquawkFeed = () => {
 
   return (
     <div>
-      {/* Live indicator bar */}
       <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-muted/20">
         <div className="flex items-center gap-2">
           <span className={`h-2.5 w-2.5 rounded-full bg-red-500 ${pulse ? "opacity-100" : "opacity-40"} transition-opacity`} />
@@ -102,7 +120,6 @@ const LiveSquawkFeed = () => {
         </div>
       </div>
 
-      {/* Filter chips */}
       <div className="flex items-center gap-1.5 border-b border-border px-4 py-2 overflow-x-auto scrollbar-hide">
         {["ALL", "BREAKING", "CENTRAL BANKS", "DATA", "FX", "GEOPOLITICS", "ENERGY"].map((f, i) => (
           <button
@@ -114,10 +131,9 @@ const LiveSquawkFeed = () => {
         ))}
       </div>
 
-      {/* Squawk items */}
-      <div className="max-h-[500px] overflow-y-auto divide-y divide-border/20">
+      <div className="max-h-[400px] overflow-y-auto divide-y divide-border/20">
         {squawkItems.map((item, i) => (
-          <div key={i} className={`border-l-2 px-4 py-3 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}>
+          <div key={i} className={`border-l-2 px-4 py-2.5 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}>
             <div className="flex items-center justify-between mb-1">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-muted-foreground">{item.time}</span>
@@ -144,6 +160,62 @@ const LiveSquawkFeed = () => {
             <p className={`text-xs font-medium leading-snug ${item.priority === "breaking" ? "text-red-300" : "text-foreground"}`}>
               {item.headline}
             </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const EconomicCalendar = () => {
+  const today = new Date();
+  const dateStr = today.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+  return (
+    <div>
+      <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-muted/20">
+        <span className="text-xs font-semibold text-foreground">{dateStr}</span>
+        <span className="text-[10px] text-muted-foreground">Times in EST</span>
+      </div>
+
+      {/* Impact legend */}
+      <div className="flex items-center gap-4 border-b border-border px-4 py-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-red-500" />
+          <span className="text-[10px] text-muted-foreground">High</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-orange-400" />
+          <span className="text-[10px] text-muted-foreground">Medium</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-yellow-400" />
+          <span className="text-[10px] text-muted-foreground">Low</span>
+        </div>
+      </div>
+
+      {/* Table header */}
+      <div className="grid grid-cols-[50px_40px_20px_1fr_55px_55px_55px] gap-1 border-b border-border px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase">
+        <span>Time</span>
+        <span>Cur.</span>
+        <span></span>
+        <span>Event</span>
+        <span className="text-right">Forecast</span>
+        <span className="text-right">Previous</span>
+        <span className="text-right">Actual</span>
+      </div>
+
+      {/* Events */}
+      <div className="max-h-[400px] overflow-y-auto divide-y divide-border/20">
+        {calendarEvents.map((evt, i) => (
+          <div key={i} className="grid grid-cols-[50px_40px_20px_1fr_55px_55px_55px] gap-1 items-center px-4 py-2 hover:bg-muted/20 transition-colors">
+            <span className="text-[11px] font-mono text-muted-foreground">{evt.time}</span>
+            <span className="text-[11px] font-semibold text-foreground">{evt.currency}</span>
+            <span className={`h-2.5 w-2.5 rounded-full ${impactColor[evt.impact as keyof typeof impactColor]}`} />
+            <span className="text-xs text-foreground truncate">{evt.event}</span>
+            <span className="text-[11px] text-right font-mono text-muted-foreground">{evt.forecast}</span>
+            <span className="text-[11px] text-right font-mono text-muted-foreground">{evt.previous}</span>
+            <span className={`text-[11px] text-right font-mono ${evt.actual !== "—" ? "text-foreground font-semibold" : "text-muted-foreground/50"}`}>{evt.actual}</span>
           </div>
         ))}
       </div>
@@ -183,131 +255,118 @@ const NewsFlowWidget = () => {
     return matchesFilter && matchesSearch;
   });
 
+  const tabTriggerClass = "gap-1 rounded px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md";
+
   return (
     <div className="rounded-lg border border-border bg-card">
-      {/* Top Tabs */}
-      <div className="border-b border-border">
-        <Tabs defaultValue="newsflow" className="w-full">
-          <div className="flex items-center justify-between bg-[hsl(200,30%,20%)] px-2 py-1.5">
-            <TabsList className="h-auto w-auto gap-1 rounded-none border-none bg-transparent p-0">
-              <TabsTrigger value="newsflow" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
-                <Newspaper className="h-3.5 w-3.5" />
-                NEWS FLOW
-              </TabsTrigger>
-              <TabsTrigger value="livesquawk" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
-                <Radio className="h-3.5 w-3.5" />
-                LIVESQUAWK FEED
-              </TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
-                <Calendar className="h-3.5 w-3.5" />
-                CALENDAR
-              </TabsTrigger>
-              <TabsTrigger value="updates" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
-                <Clock className="h-3.5 w-3.5" />
-                UPDATES TIMELINE
-              </TabsTrigger>
-              <TabsTrigger value="tools" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
-                <Wrench className="h-3.5 w-3.5" />
-                EXTRA TOOLS
-              </TabsTrigger>
-            </TabsList>
-            <span className="text-[10px] text-white/50 hidden sm:inline">Powered by <span className="font-bold text-[hsl(30,100%,55%)]">LIVESQUAWK</span></span>
+      <Tabs defaultValue="newsflow" className="w-full">
+        {/* Tab bar */}
+        <div className="flex flex-wrap items-center justify-between gap-1 bg-[hsl(200,30%,20%)] px-2 py-1.5 rounded-t-lg">
+          <TabsList className="h-auto w-auto flex-wrap gap-1 rounded-none border-none bg-transparent p-0">
+            <TabsTrigger value="newsflow" className={tabTriggerClass}>
+              <Newspaper className="h-3 w-3" />
+              NEWS FLOW
+            </TabsTrigger>
+            <TabsTrigger value="livesquawk" className={tabTriggerClass}>
+              <Radio className="h-3 w-3" />
+              LIVESQUAWK
+            </TabsTrigger>
+            <TabsTrigger value="calendar" className={tabTriggerClass}>
+              <Calendar className="h-3 w-3" />
+              CALENDAR
+            </TabsTrigger>
+            <TabsTrigger value="updates" className={tabTriggerClass}>
+              <Clock className="h-3 w-3" />
+              UPDATES
+            </TabsTrigger>
+            <TabsTrigger value="tools" className={tabTriggerClass}>
+              <Wrench className="h-3 w-3" />
+              TOOLS
+            </TabsTrigger>
+          </TabsList>
+          <span className="text-[9px] text-white/40 hidden lg:inline">Powered by <span className="font-bold text-[hsl(30,100%,55%)]">LIVESQUAWK</span></span>
+        </div>
+
+        <TabsContent value="newsflow" className="mt-0">
+          <div className="border-b border-border px-3 py-2">
+            <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1">
+              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Quick filter..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+              />
+            </div>
           </div>
 
-          <TabsContent value="newsflow" className="mt-0">
-            {/* Search Bar */}
-            <div className="border-b border-border px-4 py-2">
-              <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Type word(s) for quick filter..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Sub-tabs */}
-            <div className="flex items-center justify-between border-b border-border px-4 py-2">
-              <div className="flex items-center gap-1">
-                {["all", "markets", "top news", "forex", "commodities"].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setActiveFilter(f)}
-                    className={`rounded px-3 py-1 text-xs font-medium transition-colors ${activeFilter === f ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-                  >
-                    {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="text-muted-foreground hover:text-foreground">
-                  <SlidersHorizontal className="h-4 w-4" />
+          <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
+            <div className="flex items-center gap-1">
+              {["all", "markets", "top news", "forex", "commodities"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setActiveFilter(f)}
+                  className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${activeFilter === f ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
-                <button onClick={fetchNews} className="text-muted-foreground hover:text-foreground">
-                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                </button>
+              ))}
+            </div>
+            <button onClick={fetchNews} className="text-muted-foreground hover:text-foreground">
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+
+          <div className="max-h-[400px] overflow-y-auto divide-y divide-border/30">
+            {loading && newsItems.length === 0 ? (
+              <div className="flex h-32 items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
-            </div>
+            ) : filteredNews.length === 0 ? (
+              <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
+                No news found
+              </div>
+            ) : (
+              filteredNews.map((item, i) => (
+                <a
+                  key={i}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block px-3 py-2.5 transition-colors hover:bg-muted/20"
+                >
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">{formatTime(item.pubDate)}</span>
+                    <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-semibold ${tagColors[item.category] || "bg-muted text-muted-foreground"}`}>
+                      {item.category}
+                    </span>
+                  </div>
+                  <p className="text-xs font-medium text-foreground leading-snug">{item.title}</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">{item.source}</p>
+                </a>
+              ))
+            )}
+          </div>
+        </TabsContent>
 
-            {/* News Items */}
-            <div className="max-h-[500px] overflow-y-auto divide-y divide-border/30">
-              {loading && newsItems.length === 0 ? (
-                <div className="flex h-40 items-center justify-center">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : filteredNews.length === 0 ? (
-                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-                  No news found
-                </div>
-              ) : (
-                filteredNews.map((item, i) => (
-                  <a
-                    key={i}
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block px-4 py-3 transition-colors hover:bg-muted/20"
-                  >
-                    <div className="mb-1.5 flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground">{formatTime(item.pubDate)}</span>
-                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${tagColors[item.category] || "bg-muted text-muted-foreground"}`}>
-                        {item.category}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
-                    {item.description && (
-                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.description}</p>
-                    )}
-                    <p className="mt-1.5 text-[11px] text-muted-foreground">{item.source}</p>
-                  </a>
-                ))
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="livesquawk" className="mt-0">
-            <LiveSquawkFeed />
-          </TabsContent>
-          <TabsContent value="calendar" className="mt-0">
-            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-              Economic calendar coming soon
-            </div>
-          </TabsContent>
-          <TabsContent value="updates" className="mt-0">
-            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-              Updates timeline coming soon
-            </div>
-          </TabsContent>
-          <TabsContent value="tools" className="mt-0">
-            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-              Extra tools coming soon
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+        <TabsContent value="livesquawk" className="mt-0">
+          <LiveSquawkFeed />
+        </TabsContent>
+        <TabsContent value="calendar" className="mt-0">
+          <EconomicCalendar />
+        </TabsContent>
+        <TabsContent value="updates" className="mt-0">
+          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
+            Updates timeline coming soon
+          </div>
+        </TabsContent>
+        <TabsContent value="tools" className="mt-0">
+          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
+            Extra tools coming soon
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -88,7 +88,7 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
   }, [symbol, interval]);
 
   return (
-    <div className="tradingview-widget-container h-[800px]" ref={containerRef} />
+    <div className="tradingview-widget-container h-full min-h-[700px]" ref={containerRef} />
   );
 };
 
@@ -130,16 +130,18 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="grid gap-4 p-4 lg:grid-cols-[1fr_380px]">
-        {/* Left: Chart */}
-        <div>
-          <div className="rounded-lg border border-border bg-card p-4">
+        {/* Left: Chart — stretches to match sidebar */}
+        <div className="flex flex-col">
+          <div className="flex-1 rounded-lg border border-border bg-card p-4 flex flex-col min-h-[700px]">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-primary" />
                 <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — Live Chart</h3>
               </div>
             </div>
-            <TradingViewChart />
+            <div className="flex-1">
+              <TradingViewChart />
+            </div>
           </div>
         </div>
 
