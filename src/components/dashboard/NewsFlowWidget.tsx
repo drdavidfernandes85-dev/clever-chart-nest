@@ -273,6 +273,183 @@ const EconomicCalendar = () => {
   );
 };
 
+// Market sessions with UTC offsets
+const MARKET_SESSIONS = [
+  { name: "Sydney", flag: "🇦🇺", openUTC: 22, closeUTC: 7, color: "bg-emerald-500" },
+  { name: "Tokyo", flag: "🇯🇵", openUTC: 0, closeUTC: 9, color: "bg-red-500" },
+  { name: "Shanghai", flag: "🇨🇳", openUTC: 1.5, closeUTC: 7, color: "bg-yellow-500" },
+  { name: "London", flag: "🇬🇧", openUTC: 8, closeUTC: 16.5, color: "bg-blue-500" },
+  { name: "New York", flag: "🇺🇸", openUTC: 13.5, closeUTC: 21, color: "bg-indigo-500" },
+];
+
+function isSessionOpen(openUTC: number, closeUTC: number, currentHour: number): boolean {
+  if (openUTC < closeUTC) return currentHour >= openUTC && currentHour < closeUTC;
+  return currentHour >= openUTC || currentHour < closeUTC;
+}
+
+const MarketTradingHours = () => {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const currentHourUTC = now.getUTCHours() + now.getUTCMinutes() / 60;
+  const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });
+
+  return (
+    <div className="px-4 py-3">
+      <h4 className="text-xs font-semibold text-foreground mb-2">Market Trading Hours</h4>
+      <div className="text-center mb-2">
+        <span className="text-[10px] text-muted-foreground">UTC </span>
+        <span className="text-sm font-mono font-semibold text-primary">{timeStr}</span>
+      </div>
+      <div className="space-y-1.5">
+        {MARKET_SESSIONS.map((s) => {
+          const open = isSessionOpen(s.openUTC, s.closeUTC, currentHourUTC);
+          // Calculate bar position (24h = 100%)
+          const startPct = (s.openUTC / 24) * 100;
+          const duration = s.closeUTC > s.openUTC ? s.closeUTC - s.openUTC : 24 - s.openUTC + s.closeUTC;
+          const widthPct = (duration / 24) * 100;
+          const nowPct = (currentHourUTC / 24) * 100;
+
+          return (
+            <div key={s.name} className="flex items-center gap-2">
+              <span className="w-5 text-center text-sm">{s.flag}</span>
+              <span className={`w-16 text-[10px] font-medium ${open ? "text-foreground" : "text-muted-foreground"}`}>{s.name}</span>
+              <div className="relative flex-1 h-3 bg-muted/30 rounded-sm overflow-hidden">
+                <div
+                  className={`absolute top-0 h-full rounded-sm ${s.color} ${open ? "opacity-80" : "opacity-30"}`}
+                  style={{ left: `${startPct}%`, width: `${Math.min(widthPct, 100 - startPct)}%` }}
+                />
+                {/* Wrap-around part if session crosses midnight */}
+                {s.openUTC > s.closeUTC && (
+                  <div
+                    className={`absolute top-0 left-0 h-full rounded-sm ${s.color} ${open ? "opacity-80" : "opacity-30"}`}
+                    style={{ width: `${(s.closeUTC / 24) * 100}%` }}
+                  />
+                )}
+                {/* Current time indicator */}
+                <div className="absolute top-0 h-full w-px bg-primary" style={{ left: `${nowPct}%` }} />
+              </div>
+              <span className={`w-5 text-[9px] font-bold ${open ? "text-emerald-400" : "text-muted-foreground"}`}>
+                {open ? "ON" : "OFF"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const RiskManagementCalc = () => {
+  const [stopLoss, setStopLoss] = useState("");
+  const [entry, setEntry] = useState("");
+  const [target, setTarget] = useState("");
+  const [positionSize, setPositionSize] = useState("");
+  const [capitalAtRisk, setCapitalAtRisk] = useState("");
+
+  const results = useMemo(() => {
+    const sl = parseFloat(stopLoss);
+    const en = parseFloat(entry);
+    const tg = parseFloat(target);
+    const ps = parseFloat(positionSize);
+    const car = parseFloat(capitalAtRisk);
+
+    if (isNaN(sl) || isNaN(en) || sl === en) return null;
+
+    const lossPips = Math.abs(en - sl);
+    const profitPips = isNaN(tg) ? 0 : Math.abs(tg - en);
+    const rr = lossPips > 0 && profitPips > 0 ? (profitPips / lossPips) : 0;
+
+    const effectiveSize = !isNaN(ps) && ps > 0 ? ps : (!isNaN(car) && car > 0 && lossPips > 0 ? car / lossPips : 0);
+    const loss = effectiveSize * lossPips;
+    const profit = effectiveSize * profitPips;
+
+    return { loss: loss.toFixed(2), profit: profit.toFixed(2), rr: rr.toFixed(2) };
+  }, [stopLoss, entry, target, positionSize, capitalAtRisk]);
+
+  const clearAll = () => {
+    setStopLoss(""); setEntry(""); setTarget("");
+    setPositionSize(""); setCapitalAtRisk("");
+  };
+
+  const inputClass = "h-7 text-xs bg-background border-border w-20 text-center";
+
+  return (
+    <div className="px-4 py-3">
+      <h4 className="text-xs font-semibold text-foreground mb-3">Risk Management Calculator</h4>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        <div>
+          <span className="text-[10px] text-muted-foreground block mb-0.5">Input Levels</span>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-foreground">Stop-loss</span>
+              <Input value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} className={inputClass} placeholder="0.00" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-foreground">Entry</span>
+              <Input value={entry} onChange={(e) => setEntry(e.target.value)} className={inputClass} placeholder="0.00" />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-foreground">Target</span>
+              <Input value={target} onChange={(e) => setTarget(e.target.value)} className={inputClass} placeholder="0.00" />
+            </div>
+          </div>
+        </div>
+        <div>
+          <span className="text-[10px] text-muted-foreground block mb-0.5">Results</span>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">Loss:</span>
+              <span className="text-[11px] font-mono text-red-400">{results ? results.loss : "—"}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">R:R Ratio:</span>
+              <span className="text-[11px] font-mono text-foreground">{results ? results.rr : "—"}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-muted-foreground">Profit:</span>
+              <span className="text-[11px] font-mono text-emerald-400">{results ? results.profit : "—"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-foreground">Position Size</span>
+          <Input value={positionSize} onChange={(e) => setPositionSize(e.target.value)} className={inputClass} placeholder="Lots" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground">OR</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-foreground">Capital at Risk</span>
+          <Input value={capitalAtRisk} onChange={(e) => setCapitalAtRisk(e.target.value)} className={inputClass} placeholder="$" />
+        </div>
+      </div>
+
+      <div className="mt-3 flex justify-center">
+        <Button variant="outline" size="sm" onClick={clearAll} className="text-[10px] h-7 gap-1">
+          <RotateCcw className="h-3 w-3" />
+          Clear Input Values
+        </Button>
+      </div>
+
+      <p className="mt-2 text-[9px] text-muted-foreground">* Amounts are displayed in terms of the base currency (e.g. for GBP/USD, amounts are in GBP)</p>
+    </div>
+  );
+};
+
+const ToolsPanel = () => (
+  <div className="max-h-[500px] overflow-y-auto divide-y divide-border/30">
+    <RiskManagementCalc />
+    <MarketTradingHours />
+  </div>
+);
+
 const NewsFlowWidget = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [newsItems, setNewsItems] = useState<RssNewsItem[]>([]);
