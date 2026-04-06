@@ -227,23 +227,10 @@ const Dashboard = () => {
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-primary" />
-                <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — 1H Chart</h3>
-              </div>
-              <div className="flex gap-1">
-                {["1M", "5M", "15M", "1H", "4H", "1D"].map((tf) => (
-                  <Button key={tf} variant={tf === "1H" ? "default" : "ghost"} size="sm" className="h-7 px-2 text-xs">
-                    {tf}
-                  </Button>
-                ))}
+                <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — Live Chart</h3>
               </div>
             </div>
-            <div className="flex h-64 items-center justify-center rounded border border-border/50 bg-muted/20 text-muted-foreground">
-              <div className="text-center">
-                <Activity className="mx-auto mb-2 h-8 w-8 text-primary/50" />
-                <p className="text-sm">Interactive chart area</p>
-                <p className="text-xs text-muted-foreground">TradingView widget integration</p>
-              </div>
-            </div>
+            <TradingViewChart />
           </div>
 
           {/* Bottom commentary */}
