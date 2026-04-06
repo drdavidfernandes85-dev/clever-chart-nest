@@ -170,7 +170,7 @@ const Dashboard = () => {
                     <span className="text-xs font-mono text-foreground">{ticker.price}</span>
                   </div>
                   <div className="mt-1.5 flex items-center justify-between">
-                    <span className={`flex items-center gap-1 text-xs font-medium ${ticker.change.startsWith("+") ? "text-emerald-400" : "text-red-400"}`}>
+                    <span className={`flex items-center gap-1 text-xs font-medium ${ticker.change.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
                       {ticker.change.startsWith("+") ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                       {ticker.change}
                     </span>
