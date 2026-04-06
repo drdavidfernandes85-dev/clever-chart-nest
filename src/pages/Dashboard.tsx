@@ -234,6 +234,9 @@ const Dashboard = () => {
             <TradingViewChart />
           </div>
 
+          {/* News Flow Widget */}
+          <NewsFlowWidget />
+
           {/* Bottom commentary */}
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="text-sm italic text-muted-foreground">
