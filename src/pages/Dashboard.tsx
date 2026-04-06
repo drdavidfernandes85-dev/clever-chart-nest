@@ -192,28 +192,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Alerts Panel */}
-          <div className="rounded-lg border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Bell className="h-4 w-4 text-primary" />
-                Alerts
-              </h3>
-              <Badge variant="destructive" className="text-xs">{alertsData.filter(a => a.priority === "high").length}</Badge>
-            </div>
-            <div className="divide-y divide-border/30">
-              {alertsData.map((alert, i) => (
-                <div key={i} className="px-4 py-3 transition-colors hover:bg-muted/20">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${alert.priority === "high" ? "bg-red-500" : alert.priority === "medium" ? "bg-yellow-500" : "bg-muted-foreground"}`} />
-                    <span className="text-xs font-medium text-foreground">{alert.pair}</span>
-                    <Badge variant="outline" className="text-[10px]">{alert.type}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{alert.message}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* F.A. Comments */}
           <div className="rounded-lg border border-border bg-card">
