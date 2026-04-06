@@ -219,6 +219,8 @@ const NewsFlowWidget = () => {
                 <input
                   type="text"
                   placeholder="Type word(s) for quick filter..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
                 />
               </div>
