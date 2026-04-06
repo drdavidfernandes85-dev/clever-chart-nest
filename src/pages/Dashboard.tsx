@@ -94,7 +94,6 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
 };
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("active");
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,85 +143,8 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
-        {/* Left: Tickers Table */}
+        {/* Left: Chart + News */}
         <div className="space-y-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between">
-              <TabsList className="bg-card">
-                <TabsTrigger value="active">Active Tickers</TabsTrigger>
-                <TabsTrigger value="inactive">Inactive</TabsTrigger>
-                <TabsTrigger value="forex">Forex</TabsTrigger>
-                <TabsTrigger value="tab_bias">Tab Bias</TabsTrigger>
-              </TabsList>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-1 text-xs">
-                  <Star className="h-3 w-3" /> Watchlist
-                </Button>
-              </div>
-            </div>
-
-            <TabsContent value="active" className="mt-3">
-              <div className="rounded-lg border border-border bg-card overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                      <th className="px-4 py-3 font-medium">Pair</th>
-                      <th className="px-4 py-3 font-medium">Price</th>
-                      <th className="px-4 py-3 font-medium">Change</th>
-                      <th className="px-4 py-3 font-medium hidden md:table-cell">Bias</th>
-                      <th className="px-4 py-3 font-medium hidden lg:table-cell">Signal</th>
-                      <th className="px-4 py-3 font-medium hidden md:table-cell">Strength</th>
-                      <th className="px-4 py-3 font-medium hidden sm:table-cell">TF</th>
-                      <th className="px-4 py-3 font-medium hidden lg:table-cell">Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tickersData.map((ticker) => (
-                      <tr key={ticker.pair} className="border-b border-border/50 transition-colors hover:bg-muted/30">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-primary" />
-                            <span className="font-medium text-foreground">{ticker.pair}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-foreground">{ticker.price}</td>
-                        <td className="px-4 py-3">
-                          <span className={`flex items-center gap-1 font-medium ${ticker.change.startsWith("+") ? "text-emerald-400" : "text-red-400"}`}>
-                            {ticker.change.startsWith("+") ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                            {ticker.change}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell"><BiasIndicator bias={ticker.bias} /></td>
-                        <td className="px-4 py-3 hidden lg:table-cell">
-                          <Badge variant="outline" className="text-xs">{ticker.signal}</Badge>
-                        </td>
-                        <td className="px-4 py-3 hidden md:table-cell"><StrengthBar value={ticker.strength} /></td>
-                        <td className="px-4 py-3 hidden sm:table-cell text-xs text-muted-foreground">{ticker.timeframe}</td>
-                        <td className="px-4 py-3 hidden lg:table-cell text-xs text-muted-foreground">{ticker.lastUpdate}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="inactive" className="mt-3">
-              <div className="flex h-40 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                No inactive tickers
-              </div>
-            </TabsContent>
-            <TabsContent value="forex" className="mt-3">
-              <div className="flex h-40 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                Forex pairs view
-              </div>
-            </TabsContent>
-            <TabsContent value="tab_bias" className="mt-3">
-              <div className="flex h-40 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-                Bias analysis view
-              </div>
-            </TabsContent>
-          </Tabs>
-
           {/* Chart Area */}
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
@@ -248,25 +170,36 @@ const Dashboard = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-4">
-          {/* Updates Panel */}
+          {/* Tickers Panel */}
           <div className="rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Zap className="h-4 w-4 text-primary" />
-                Updates
+                <Activity className="h-4 w-4 text-primary" />
+                Tickers
               </h3>
-              <Badge variant="secondary" className="text-xs">{updatesData.length}</Badge>
+              <Badge variant="secondary" className="text-xs">{tickersData.length}</Badge>
             </div>
-            <div className="max-h-[400px] overflow-y-auto">
-              {updatesData.map((update, i) => (
-                <div key={i} className="border-b border-border/30 px-4 py-3 transition-colors hover:bg-muted/20">
-                  <div className="mb-1 flex items-center justify-between">
-                    <Badge variant="outline" className="text-[10px]">{update.type}</Badge>
-                    <span className="text-[10px] text-muted-foreground">{update.time}</span>
+            <div className="max-h-[400px] overflow-y-auto divide-y divide-border/30">
+              {tickersData.map((ticker) => (
+                <div key={ticker.pair} className="px-4 py-2.5 transition-colors hover:bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-foreground">{ticker.pair}</span>
+                    </div>
+                    <span className="text-xs font-mono text-foreground">{ticker.price}</span>
                   </div>
-                  <p className="text-xs text-foreground">
-                    <span className="font-medium text-primary">{update.pair}</span> — {update.message}
-                  </p>
+                  <div className="mt-1.5 flex items-center justify-between">
+                    <span className={`flex items-center gap-1 text-xs font-medium ${ticker.change.startsWith("+") ? "text-emerald-400" : "text-red-400"}`}>
+                      {ticker.change.startsWith("+") ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                      {ticker.change}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">Strength</span>
+                      <StrengthBar value={ticker.strength} />
+                      <span className="text-[10px] text-muted-foreground">{ticker.strength}%</span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
