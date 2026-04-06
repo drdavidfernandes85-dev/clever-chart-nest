@@ -11,7 +11,7 @@ const SponsorsSection = () => {
           <img
             src={sponsorsStrip}
             alt="Infinox sponsors and partners including Tottenham Hotspur, Porsche Carrera Cup Brasil, and Chestertons Polo"
-            className="w-full max-w-5xl object-contain mix-blend-lighten"
+            className="w-full max-w-5xl object-contain invert brightness-0 invert-0 mix-blend-screen"
           />
         </div>
       </div>
