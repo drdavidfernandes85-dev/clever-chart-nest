@@ -111,9 +111,9 @@ const Dashboard = () => {
         {/* Sidebar Header */}
         <div className="flex h-14 items-center gap-2 border-b border-border px-4">
           <Link to="/" className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
+            <TrendingUp className="h-5 w-5 text-[hsl(45,100%,50%)]" />
             <span className="font-heading text-sm font-bold text-foreground">
-              Forex<span className="text-primary">Analytix</span>
+              Elite <span className="text-[hsl(45,100%,50%)]">Live Trading Room</span>
             </span>
           </Link>
         </div>
@@ -136,14 +136,14 @@ const Dashboard = () => {
                   onClick={() => setActiveChannel(ch.name)}
                   className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
                     activeChannel === ch.name
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-[hsl(45,100%,50%)]/10 text-[hsl(45,100%,50%)]"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   }`}
                 >
                   <Hash className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{ch.name}</span>
                   {ch.unread > 0 && (
-                    <Badge className="ml-auto h-5 w-5 shrink-0 justify-center rounded-full bg-destructive p-0 text-[10px] text-destructive-foreground">
+                    <Badge className="ml-auto h-5 w-5 shrink-0 justify-center rounded-full bg-[hsl(45,100%,50%)] p-0 text-[10px] text-[hsl(220,20%,10%)]">
                       {ch.unread}
                     </Badge>
                   )}
@@ -180,10 +180,10 @@ const Dashboard = () => {
         </header>
 
         {/* Unread Banner */}
-        <div className="flex items-center justify-between bg-primary/10 px-4 py-1.5 text-xs">
-          <span className="text-primary">JUMP TO FIRST UNREAD</span>
-          <span className="font-medium text-primary">7667 NEW MESSAGES SINCE 03/07/2026</span>
-          <span className="cursor-pointer text-primary hover:underline">MARK AS READ</span>
+        <div className="flex items-center justify-between bg-[hsl(45,100%,50%)]/10 px-4 py-1.5 text-xs">
+          <span className="text-[hsl(45,100%,50%)]">JUMP TO FIRST UNREAD</span>
+          <span className="font-medium text-[hsl(45,100%,50%)]">7667 NEW MESSAGES SINCE 03/07/2026</span>
+          <span className="cursor-pointer text-[hsl(45,100%,50%)] hover:underline">MARK AS READ</span>
         </div>
 
         {/* Messages */}
@@ -192,8 +192,8 @@ const Dashboard = () => {
             {messagesData.map((msg) => {
               if (msg.isQuote) {
                 return (
-                  <div key={msg.id} className="ml-12 rounded border-l-2 border-primary/50 bg-muted/30 px-3 py-2">
-                    <p className="text-xs font-medium text-primary">{msg.quoteText}</p>
+                  <div key={msg.id} className="ml-12 rounded border-l-2 border-[hsl(45,100%,50%)]/50 bg-muted/30 px-3 py-2">
+                    <p className="text-xs font-medium text-[hsl(45,100%,50%)]">{msg.quoteText}</p>
                   </div>
                 );
               }
@@ -207,7 +207,7 @@ const Dashboard = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-foreground">{msg.user}</span>
                       {msg.role && (
-                        <Badge className="bg-primary/20 text-[10px] text-primary">{msg.role}</Badge>
+                        <Badge className="bg-[hsl(45,100%,50%)]/20 text-[10px] text-[hsl(45,100%,50%)]">{msg.role}</Badge>
                       )}
                       <span className="text-xs text-muted-foreground">{msg.time}</span>
                     </div>
