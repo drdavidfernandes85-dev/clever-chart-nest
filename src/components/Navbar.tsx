@@ -22,7 +22,7 @@ const Navbar = () => {
         <a href="#home" className="flex items-center gap-2">
           <TrendingUp className="h-8 w-8 text-primary" />
           <span className="font-heading text-xl font-bold text-foreground">
-            Forex<span className="text-primary">Analytix</span>
+            Elite <span className="text-primary">Live Trading Room</span>
           </span>
         </a>
 
@@ -45,11 +45,11 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
             <Link to="/chatroom">Chatroom</Link>
           </Button>
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-            Login
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Link to="/login">Login</Link>
           </Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Sign Up
+          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+            <Link to="/register">Sign Up</Link>
           </Button>
         </div>
 
@@ -74,8 +74,12 @@ const Navbar = () => {
             </a>
           ))}
           <div className="mt-3 flex gap-2">
-            <Button variant="ghost" size="sm" className="text-muted-foreground">Login</Button>
-            <Button size="sm">Sign Up</Button>
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+              <Link to="/login">Login</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link to="/register">Sign Up</Link>
+            </Button>
           </div>
         </div>
       )}
