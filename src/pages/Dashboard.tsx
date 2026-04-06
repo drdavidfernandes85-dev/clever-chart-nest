@@ -94,7 +94,6 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
 };
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("active");
 
   return (
     <div className="min-h-screen bg-background">
