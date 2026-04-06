@@ -12,7 +12,7 @@ const MentoringSection = () => (
           One-on-One <span className="text-gradient">Mentoring</span>
         </h2>
         <p className="mt-4 text-lg text-muted-foreground">
-          Get personalized coaching from our expert traders. 40% off your first session.
+          Get personalized coaching from our expert traders.
         </p>
         <Button size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90">
           Book a Session

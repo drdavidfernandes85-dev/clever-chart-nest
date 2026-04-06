@@ -24,14 +24,7 @@ const HeroSection = () => {
             <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
               Sign Up Today <ArrowRight className="h-4 w-4" />
             </Button>
-            <Button size="lg" variant="outline" className="gap-2 border-border text-foreground hover:bg-secondary">
-              <Play className="h-4 w-4" /> Watch Demo
-            </Button>
           </div>
-          <p className="text-sm text-muted-foreground">
-            GET YOUR FIRST 10 DAYS{" "}
-            <span className="font-semibold text-primary">FOR ONLY $1.00</span>
-          </p>
         </div>
         <div className="flex-1 animate-float">
           <img
