@@ -19,42 +19,35 @@ const formatTime = (dateStr: string) =>
 
 /** Render markdown-like content: **bold**, *italic*, `code`, [text](url), ![alt](url) */
 const renderContent = (content: string) => {
-  // Check for image markdown: ![alt](url)
-  const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  // Use a greedy URL matcher that handles parentheses in URLs (e.g. filenames with "(CMYK)")
+  const combined = /!\[([^\]]*)\]\((https?:\/\/[^\s]+?)\)(?=\s|$)|(?:^|(?<!!))\[([^\]]+)\]\((https?:\/\/[^\s]+?)\)(?=\s|$)/gm;
 
+  // Simple approach: split on image/link patterns manually
   const parts: (string | JSX.Element)[] = [];
-  let last = 0;
-  const combined = /!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)/g;
-  let match;
 
-  const text = content;
-  while ((match = combined.exec(text)) !== null) {
-    if (match.index > last) {
-      parts.push(renderInline(text.slice(last, match.index)));
-    }
-    if (match[0].startsWith("!")) {
-      // Image
+  // Match ![alt](url) or [text](url) — use a function that handles balanced parens
+  const tokens = splitMarkdownLinks(content);
+  tokens.forEach((token, i) => {
+    if (token.type === "image") {
       parts.push(
         <img
-          key={match.index}
-          src={match[2]}
-          alt={match[1]}
+          key={i}
+          src={token.url}
+          alt={token.text}
           className="mt-1 max-w-xs rounded-lg border border-border cursor-pointer hover:opacity-90"
-          onClick={() => window.open(match![2], "_blank")}
+          onClick={() => window.open(token.url, "_blank")}
         />
       );
-    } else {
-      // Link
+    } else if (token.type === "link") {
       parts.push(
-        <a key={match.index} href={match[4]} target="_blank" rel="noopener noreferrer" className="text-[hsl(45,100%,50%)] underline hover:opacity-80">
-          {match[3]}
+        <a key={i} href={token.url} target="_blank" rel="noopener noreferrer" className="text-[hsl(45,100%,50%)] underline hover:opacity-80">
+          {token.text}
         </a>
       );
+    } else {
+      parts.push(renderInline(token.text));
     }
-    last = match.index + match[0].length;
-  }
-  if (last < text.length) parts.push(renderInline(text.slice(last)));
+  });
   return parts;
 };
 
