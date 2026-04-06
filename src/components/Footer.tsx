@@ -8,11 +8,11 @@ const Footer = () => (
           <a href="#home" className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
             <span className="font-heading text-lg font-bold text-foreground">
-              Forex<span className="text-primary">Analytix</span>
+              Elite <span className="text-primary">Live Trading Room</span>
             </span>
           </a>
           <p className="mt-3 text-sm text-muted-foreground">
-            The complete market analysis platform for serious traders.
+            The Elite Live Trading Room for the INFINOX LATAM community.
           </p>
         </div>
         {[
@@ -44,7 +44,7 @@ const Footer = () => (
         ))}
       </div>
       <div className="mt-10 border-t border-border pt-6 text-center text-sm text-muted-foreground">
-        © {new Date().getFullYear()} ForexAnalytix. All rights reserved.
+        © {new Date().getFullYear()} Elite Live Trading Room — Powered by INFINOX. All rights reserved.
       </div>
     </div>
   </footer>

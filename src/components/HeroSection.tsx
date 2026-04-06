@@ -5,16 +5,16 @@ import heroLaptop from "@/assets/hero-laptop.png";
 const HeroSection = () => {
   return (
     <section id="home" className="hero-bg relative overflow-hidden pt-16">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(142_60%_45%/0.08),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(45_100%_50%/0.08),transparent_60%)]" />
       <div className="container relative flex min-h-[90vh] flex-col items-center justify-center gap-12 py-20 lg:flex-row">
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse-slow" />
-            Market Analysis Reinvented
+            Powered by INFINOX
           </div>
           <h1 className="font-heading text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
-            The Complete Market{" "}
-            <span className="text-gradient">Analysis Platform</span>
+            Elite Live{" "}
+            <span className="text-gradient">Trading Room</span>
           </h1>
           <p className="max-w-lg text-lg text-muted-foreground">
             Navigate the markets with confidence. Real-time analysis, expert insights,
@@ -36,7 +36,7 @@ const HeroSection = () => {
         <div className="flex-1 animate-float">
           <img
             src={heroLaptop}
-            alt="ForexAnalytix trading platform dashboard"
+            alt="Elite Live Trading Room platform dashboard"
             className="w-full max-w-xl drop-shadow-2xl"
           />
         </div>
