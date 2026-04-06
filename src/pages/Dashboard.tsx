@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
+import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 
 const tickersData = [
   { pair: "EUR/USD", price: "1.0842", change: "+0.12%", bias: "bullish", signal: "Candlestick", timeframe: "1H", lastUpdate: "5 min ago", strength: 78 },
@@ -232,6 +233,9 @@ const Dashboard = () => {
             </div>
             <TradingViewChart />
           </div>
+
+          {/* News Flow Widget */}
+          <NewsFlowWidget />
 
           {/* Bottom commentary */}
           <div className="rounded-lg border border-border bg-card p-4">
