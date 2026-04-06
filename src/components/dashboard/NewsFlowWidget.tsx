@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, Filter, RefreshCw, ChevronDown, Volume2, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, Filter, RefreshCw, ChevronDown, Volume2, AlertTriangle, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 
 const tagColors: Record<string, string> = {
   STOCKS: "bg-blue-600 text-white",
