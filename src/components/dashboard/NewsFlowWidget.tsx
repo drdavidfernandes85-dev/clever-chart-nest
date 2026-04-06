@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
-import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, Filter, RefreshCw, ChevronDown, Volume2, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, Filter, RefreshCw, ChevronDown, Volume2, AlertTriangle, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 
 const tagColors: Record<string, string> = {
   STOCKS: "bg-blue-600 text-white",
@@ -20,57 +21,23 @@ const tagColors: Record<string, string> = {
   COMMODITIES: "bg-yellow-700 text-white",
 };
 
-const newsItems = [
-  {
-    time: "Apr 6th, 17:50:15",
-    tags: ["STOCKS", "TECH", "ECONOMICS", "US STOCKS", "BIG TECH"],
-    extraTags: 5,
-    headline: "Oracle hires Schneider Electric's Maxson as CFO amid AI spending boom",
-    ticker: "ORCL",
-    tickerChange: "-0.91%",
-    tickerDown: true,
-    source: "Reuters",
-  },
-  {
-    time: "Apr 6th, 17:45:15",
-    tags: ["ECONOMICS", "GLOBAL ECONOMY", "ECONOMIC DATA"],
-    extraTags: 3,
-    headline: "New Jersey cannot regulate Kalshi's prediction market, US appeals court rules",
-    source: "Reuters",
-  },
-  {
-    time: "Apr 6th, 17:44:45",
-    tags: ["ENERGY", "ECONOMICS", "OIL", "US ECONOMY"],
-    extraTags: 3,
-    headline: "US Truck Rates at Highest Since 2022 Add to Inflation Pressures",
-    description: "Skyrocketing fuel prices due to the Iran war are fanning the embers of transportation costs, which were alread...",
-    source: "Bloomberg | Markets",
-  },
-  {
-    time: "Apr 6th, 17:38:00",
-    tags: ["FOREX", "ECONOMICS", "US ECONOMY"],
-    extraTags: 2,
-    headline: "Dollar slides as traders brace for FOMC minutes release",
-    source: "Reuters",
-  },
-  {
-    time: "Apr 6th, 17:30:10",
-    tags: ["CRYPTO", "TECH"],
-    extraTags: 1,
-    headline: "Bitcoin surges past $72k as institutional inflows accelerate",
-    ticker: "BTC",
-    tickerChange: "+3.24%",
-    tickerDown: false,
-    source: "CoinDesk",
-  },
-  {
-    time: "Apr 6th, 17:22:30",
-    tags: ["COMMODITIES", "ENERGY"],
-    extraTags: 2,
-    headline: "Gold hits record high amid geopolitical tensions and rate cut expectations",
-    source: "Bloomberg",
-  },
-];
+interface RssNewsItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  source: string;
+  category: string;
+  description?: string;
+}
+
+function formatTime(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  } catch {
+    return dateStr;
+  }
+}
 
 const squawkItems = [
   { time: "17:52:30", priority: "high" as const, category: "CENTRAL BANKS", headline: "FED'S WALLER: LABOR MARKET REMAINS SOLID, INFLATION PROGRESS HAS STALLED", impact: "USD", direction: "bullish" as const },
@@ -186,6 +153,35 @@ const LiveSquawkFeed = () => {
 
 const NewsFlowWidget = () => {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [newsItems, setNewsItems] = useState<RssNewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const fetchNews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
+      if (!error && data?.data) {
+        setNewsItems(data.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch news:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNews();
+    const interval = setInterval(fetchNews, 60000);
+    return () => clearInterval(interval);
+  }, [fetchNews]);
+
+  const filteredNews = newsItems.filter((item) => {
+    const matchesFilter = activeFilter === "all" || item.category.toLowerCase().includes(activeFilter);
+    const matchesSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -223,6 +219,8 @@ const NewsFlowWidget = () => {
                 <input
                   type="text"
                   placeholder="Type word(s) for quick filter..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
                 />
               </div>
@@ -231,62 +229,59 @@ const NewsFlowWidget = () => {
             {/* Sub-tabs */}
             <div className="flex items-center justify-between border-b border-border px-4 py-2">
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setActiveFilter("all")}
-                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${activeFilter === "all" ? "bg-[hsl(45,100%,50%)]/20 text-[hsl(45,100%,50%)]" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setActiveFilter("fa")}
-                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${activeFilter === "fa" ? "bg-[hsl(45,100%,50%)]/20 text-[hsl(45,100%,50%)]" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  FA Test 1
-                </button>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                {["all", "markets", "top news", "forex", "commodities"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveFilter(f)}
+                    className={`rounded px-3 py-1 text-xs font-medium transition-colors ${activeFilter === f ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
               </div>
               <div className="flex items-center gap-2">
                 <button className="text-muted-foreground hover:text-foreground">
                   <SlidersHorizontal className="h-4 w-4" />
                 </button>
-                <button className="text-muted-foreground hover:text-foreground">
-                  <Filter className="h-4 w-4" />
-                </button>
-                <button className="text-muted-foreground hover:text-foreground">
-                  <RefreshCw className="h-4 w-4" />
+                <button onClick={fetchNews} className="text-muted-foreground hover:text-foreground">
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 </button>
               </div>
             </div>
 
             {/* News Items */}
             <div className="max-h-[500px] overflow-y-auto divide-y divide-border/30">
-              {newsItems.map((item, i) => (
-                <div key={i} className="px-4 py-3 transition-colors hover:bg-muted/20">
-                  <p className="mb-1.5 text-[11px] text-muted-foreground">{item.time}</p>
-                  <div className="mb-2 flex flex-wrap items-center gap-1">
-                    {item.tags.map((tag) => (
-                      <span key={tag} className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${tagColors[tag] || "bg-muted text-muted-foreground"}`}>
-                        {tag}
-                      </span>
-                    ))}
-                    {item.extraTags > 0 && (
-                      <span className="text-[10px] text-primary font-medium">+{item.extraTags} more</span>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium text-foreground leading-snug">{item.headline}</p>
-                  {item.description && (
-                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{item.description}</p>
-                  )}
-                  {item.ticker && (
-                    <div className="mt-1.5">
-                      <Badge variant="outline" className={`text-xs ${item.tickerDown ? "text-red-400 border-red-400/30" : "text-emerald-400 border-emerald-400/30"}`}>
-                        {item.ticker} {item.tickerChange}
-                      </Badge>
-                    </div>
-                  )}
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">{item.source}</p>
+              {loading && newsItems.length === 0 ? (
+                <div className="flex h-40 items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              ))}
+              ) : filteredNews.length === 0 ? (
+                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+                  No news found
+                </div>
+              ) : (
+                filteredNews.map((item, i) => (
+                  <a
+                    key={i}
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-4 py-3 transition-colors hover:bg-muted/20"
+                  >
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground">{formatTime(item.pubDate)}</span>
+                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${tagColors[item.category] || "bg-muted text-muted-foreground"}`}>
+                        {item.category}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
+                    {item.description && (
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.description}</p>
+                    )}
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">{item.source}</p>
+                  </a>
+                ))
+              )}
             </div>
           </TabsContent>
 
