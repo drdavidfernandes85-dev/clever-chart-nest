@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown, Bell, RefreshCw, BarChart3, Globe, Clock, ChevronDown, Star, ArrowUpRight, ArrowDownRight, Activity, Zap, Eye, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
