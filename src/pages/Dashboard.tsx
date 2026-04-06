@@ -60,7 +60,6 @@ const StrengthBar = ({ value }: { value: number }) => (
 
 const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!containerRef.current) return;
     containerRef.current.innerHTML = "";
@@ -89,7 +88,7 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
   }, [symbol, interval]);
 
   return (
-    <div className="tradingview-widget-container h-[400px]" ref={containerRef} />
+    <div className="tradingview-widget-container h-[600px]" ref={containerRef} />
   );
 };
 
