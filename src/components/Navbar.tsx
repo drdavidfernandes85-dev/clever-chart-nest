@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -38,6 +39,12 @@ const Navbar = () => {
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Link to="/dashboard">Dashboard</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Link to="/chatroom">Chatroom</Link>
+          </Button>
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
             Login
           </Button>
