@@ -170,25 +170,36 @@ const Dashboard = () => {
 
         {/* Right Sidebar */}
         <div className="space-y-4">
-          {/* Updates Panel */}
+          {/* Tickers Panel */}
           <div className="rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Zap className="h-4 w-4 text-primary" />
-                Updates
+                <Activity className="h-4 w-4 text-primary" />
+                Tickers
               </h3>
-              <Badge variant="secondary" className="text-xs">{updatesData.length}</Badge>
+              <Badge variant="secondary" className="text-xs">{tickersData.length}</Badge>
             </div>
-            <div className="max-h-[400px] overflow-y-auto">
-              {updatesData.map((update, i) => (
-                <div key={i} className="border-b border-border/30 px-4 py-3 transition-colors hover:bg-muted/20">
-                  <div className="mb-1 flex items-center justify-between">
-                    <Badge variant="outline" className="text-[10px]">{update.type}</Badge>
-                    <span className="text-[10px] text-muted-foreground">{update.time}</span>
+            <div className="max-h-[400px] overflow-y-auto divide-y divide-border/30">
+              {tickersData.map((ticker) => (
+                <div key={ticker.pair} className="px-4 py-2.5 transition-colors hover:bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold text-foreground">{ticker.pair}</span>
+                    </div>
+                    <span className="text-xs font-mono text-foreground">{ticker.price}</span>
                   </div>
-                  <p className="text-xs text-foreground">
-                    <span className="font-medium text-primary">{update.pair}</span> — {update.message}
-                  </p>
+                  <div className="mt-1.5 flex items-center justify-between">
+                    <span className={`flex items-center gap-1 text-xs font-medium ${ticker.change.startsWith("+") ? "text-emerald-400" : "text-red-400"}`}>
+                      {ticker.change.startsWith("+") ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                      {ticker.change}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground">Strength</span>
+                      <StrengthBar value={ticker.strength} />
+                      <span className="text-[10px] text-muted-foreground">{ticker.strength}%</span>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
