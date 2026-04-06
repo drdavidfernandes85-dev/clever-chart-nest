@@ -229,19 +229,15 @@ const NewsFlowWidget = () => {
             {/* Sub-tabs */}
             <div className="flex items-center justify-between border-b border-border px-4 py-2">
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setActiveFilter("all")}
-                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${activeFilter === "all" ? "bg-[hsl(45,100%,50%)]/20 text-[hsl(45,100%,50%)]" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setActiveFilter("fa")}
-                  className={`rounded px-3 py-1 text-xs font-medium transition-colors ${activeFilter === "fa" ? "bg-[hsl(45,100%,50%)]/20 text-[hsl(45,100%,50%)]" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  FA Test 1
-                </button>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                {["all", "markets", "top news", "forex", "commodities"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveFilter(f)}
+                    className={`rounded px-3 py-1 text-xs font-medium transition-colors ${activeFilter === f ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
               </div>
               <div className="flex items-center gap-2">
                 <button className="text-muted-foreground hover:text-foreground">
