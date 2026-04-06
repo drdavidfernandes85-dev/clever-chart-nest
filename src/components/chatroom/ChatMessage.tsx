@@ -17,10 +17,48 @@ const getColor = (userId: string) => {
 const formatTime = (dateStr: string) =>
   new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+/** Parse markdown links/images handling parentheses in URLs */
+type Token = { type: "text" | "image" | "link"; text: string; url?: string };
+
+const splitMarkdownLinks = (content: string): Token[] => {
+  const tokens: Token[] = [];
+  // Match ![alt](url) or [text](url) — find the LAST closing paren that balances
+  const regex = /(!\[([^\]]*)\]\(|(?<!!)\[([^\]]+)\]\()/g;
+  let last = 0;
+  let m;
+
+  while ((m = regex.exec(content)) !== null) {
+    const isImage = m[0].startsWith("!");
+    const altText = isImage ? m[2] : m[3];
+    const urlStart = m.index + m[0].length;
+
+    // Find matching closing paren, accounting for balanced parens in URL
+    let depth = 1;
+    let i = urlStart;
+    while (i < content.length && depth > 0) {
+      if (content[i] === "(") depth++;
+      else if (content[i] === ")") depth--;
+      i++;
+    }
+    const url = content.slice(urlStart, i - 1);
+
+    if (m.index > last) {
+      tokens.push({ type: "text", text: content.slice(last, m.index) });
+    }
+    tokens.push({ type: isImage ? "image" : "link", text: altText, url });
+    last = i;
+    regex.lastIndex = i;
+  }
+
+  if (last < content.length) {
+    tokens.push({ type: "text", text: content.slice(last) });
+  }
+  return tokens;
+};
+
 /** Render markdown-like content: **bold**, *italic*, `code`, [text](url), ![alt](url) */
 const renderContent = (content: string) => {
-  // Use a greedy URL matcher that handles parentheses in URLs (e.g. filenames with "(CMYK)")
-  const combined = /!\[([^\]]*)\]\((https?:\/\/[^\s]+?)\)(?=\s|$)|(?:^|(?<!!))\[([^\]]+)\]\((https?:\/\/[^\s]+?)\)(?=\s|$)/gm;
+  // Use a greedy URL matcher that handles parentheses in URLs
 
   // Simple approach: split on image/link patterns manually
   const parts: (string | JSX.Element)[] = [];
