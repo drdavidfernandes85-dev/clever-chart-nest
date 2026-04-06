@@ -129,10 +129,9 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <div className="grid gap-4 p-4 lg:grid-cols-[1fr_320px]">
-        {/* Left: Chart + News */}
-        <div className="space-y-4">
-          {/* Chart Area */}
+      <div className="grid gap-4 p-4 lg:grid-cols-[1fr_380px]">
+        {/* Left: Chart */}
+        <div>
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -142,14 +141,13 @@ const Dashboard = () => {
             </div>
             <TradingViewChart />
           </div>
-
-          {/* News Flow Widget */}
-          <NewsFlowWidget />
-
         </div>
 
         {/* Right Sidebar */}
         <div className="space-y-4">
+          {/* News Flow Widget */}
+          <NewsFlowWidget />
+
           {/* Tickers Panel */}
           <div className="rounded-lg border border-border bg-card">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -184,8 +182,6 @@ const Dashboard = () => {
               ))}
             </div>
           </div>
-
-
         </div>
       </div>
     </div>
