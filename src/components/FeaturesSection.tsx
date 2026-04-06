@@ -1,4 +1,5 @@
 import { BarChart3, LineChart, Shield, Users, Zap, Globe } from "lucide-react";
+import ScrollReveal from "@/components/ScrollReveal";
 
 const features = [
   {
@@ -36,29 +37,30 @@ const features = [
 const FeaturesSection = () => (
   <section id="features" className="py-24">
     <div className="container">
-      <div className="mx-auto mb-16 max-w-2xl text-center">
-        <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl">
-          Everything You Need to{" "}
-          <span className="text-gradient">Trade Successfully</span>
-        </h2>
-        <p className="mt-4 text-muted-foreground">
-          Navigate complex markets with professional tools and expert guidance.
-        </p>
-      </div>
+      <ScrollReveal>
+        <div className="mx-auto mb-16 max-w-2xl text-center">
+          <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl">
+            Everything You Need to{" "}
+            <span className="text-gradient">Trade Successfully</span>
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Navigate complex markets with professional tools and expert guidance.
+          </p>
+        </div>
+      </ScrollReveal>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f) => (
-          <div
-            key={f.title}
-            className="card-glass group rounded-xl p-6 transition-all hover:glow-border"
-          >
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-              <f.icon className="h-6 w-6" />
+        {features.map((f, i) => (
+          <ScrollReveal key={f.title} delay={i * 100}>
+            <div className="card-glass group rounded-xl p-6 transition-all hover:glow-border h-full">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                <f.icon className="h-6 w-6" />
+              </div>
+              <h3 className="mb-2 font-heading text-lg font-semibold text-foreground">
+                {f.title}
+              </h3>
+              <p className="text-sm text-muted-foreground">{f.description}</p>
             </div>
-            <h3 className="mb-2 font-heading text-lg font-semibold text-foreground">
-              {f.title}
-            </h3>
-            <p className="text-sm text-muted-foreground">{f.description}</p>
-          </div>
+          </ScrollReveal>
         ))}
       </div>
     </div>

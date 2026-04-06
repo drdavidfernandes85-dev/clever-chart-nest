@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -9,15 +9,28 @@ const navLinks = [
   { label: "Programs", href: "#programs" },
   { label: "Education", href: "#education" },
   { label: "Team", href: "#team" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "FAQ", href: "#faq" },
   { label: "Contact", href: "#contact" },
 ];
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "border-b border-border bg-background/95 backdrop-blur-xl"
+          : "bg-transparent"
+      }`}
+    >
       <div className="container flex h-16 items-center justify-between">
         <a href="#home" className="flex items-center gap-2">
           <TrendingUp className="h-8 w-8 text-primary" />
@@ -73,13 +86,21 @@ const Navbar = () => {
               {link.label}
             </a>
           ))}
-          <div className="mt-3 flex gap-2">
-            <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
-              <Link to="/login">Login</Link>
+          <div className="mt-3 flex flex-col gap-2">
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)}>Dashboard</Link>
             </Button>
-            <Button size="sm" asChild>
-              <Link to="/register">Sign Up</Link>
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/chatroom" onClick={() => setMobileOpen(false)}>Chatroom</Link>
             </Button>
+            <div className="flex gap-2 mt-1">
+              <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+                <Link to="/login">Login</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/register">Sign Up</Link>
+              </Button>
+            </div>
           </div>
         </div>
       )}
