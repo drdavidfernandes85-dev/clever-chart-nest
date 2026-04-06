@@ -7,12 +7,14 @@ const SponsorsSection = () => {
         <p className="mb-8 text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           Official Partnerships & Sponsorships
         </p>
-        <div className="flex items-center justify-center">
-          <img
-            src={sponsorsStrip}
-            alt="Infinox sponsors and partners including Tottenham Hotspur, Porsche Carrera Cup Brasil, and Chestertons Polo"
-            className="w-full max-w-5xl object-contain invert brightness-0 invert-0 mix-blend-screen"
-          />
+        <div className="flex items-center justify-center rounded-lg overflow-hidden">
+          <div className="relative w-full max-w-5xl bg-background p-6">
+            <img
+              src={sponsorsStrip}
+              alt="Infinox sponsors and partners including Tottenham Hotspur, Porsche Carrera Cup Brasil, and Chestertons Polo"
+              className="w-full object-contain mix-blend-screen"
+            />
+          </div>
         </div>
       </div>
     </section>
