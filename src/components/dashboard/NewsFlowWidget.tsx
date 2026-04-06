@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Newspaper, Radio, Calendar, Clock, Wrench, Search, SlidersHorizontal, RefreshCw, Volume2, TrendingUp, TrendingDown, Minus, Loader2, AlertCircle } from "lucide-react";
+import { Newspaper, Radio, Calendar, Clock, Wrench, Search, RefreshCw, Volume2, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,16 @@ interface RssNewsItem {
   source: string;
   category: string;
   description?: string;
+}
+
+interface CalendarEvent {
+  time: string;
+  currency: string;
+  impact: "high" | "medium" | "low";
+  event: string;
+  forecast: string;
+  previous: string;
+  actual: string;
 }
 
 function formatTime(dateStr: string): string {
@@ -79,32 +89,28 @@ const categoryColors: Record<string, string> = {
   COMMODITIES: "text-yellow-400",
 };
 
-// Economic calendar data
-const calendarEvents = [
-  { time: "08:30", currency: "USD", impact: "high", event: "Non-Farm Payrolls", forecast: "180K", previous: "175K", actual: "—" },
-  { time: "08:30", currency: "USD", impact: "high", event: "Unemployment Rate", forecast: "3.8%", previous: "3.9%", actual: "—" },
-  { time: "10:00", currency: "USD", impact: "medium", event: "ISM Services PMI", forecast: "52.0", previous: "51.4", actual: "52.7" },
-  { time: "10:00", currency: "USD", impact: "low", event: "Factory Orders m/m", forecast: "0.8%", previous: "-1.6%", actual: "—" },
-  { time: "12:00", currency: "EUR", impact: "high", event: "ECB President Lagarde Speaks", forecast: "—", previous: "—", actual: "—" },
-  { time: "14:00", currency: "GBP", impact: "medium", event: "BOE Gov Bailey Speaks", forecast: "—", previous: "—", actual: "—" },
-  { time: "19:00", currency: "NZD", impact: "high", event: "RBNZ Rate Statement", forecast: "5.50%", previous: "5.50%", actual: "—" },
-  { time: "21:30", currency: "AUD", impact: "medium", event: "Trade Balance", forecast: "7.5B", previous: "7.3B", actual: "—" },
-  { time: "23:00", currency: "JPY", impact: "low", event: "Leading Indicators", forecast: "111.8", previous: "111.4", actual: "—" },
-];
-
 const impactColor = {
   high: "bg-red-500",
   medium: "bg-orange-400",
   low: "bg-yellow-400",
 };
 
+const SQUAWK_FILTERS = ["ALL", "BREAKING", "CENTRAL BANKS", "DATA", "FX", "GEOPOLITICS", "ENERGY"] as const;
+
 const LiveSquawkFeed = () => {
   const [pulse, setPulse] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<string>("ALL");
 
   useEffect(() => {
     const interval = setInterval(() => setPulse((p) => !p), 1500);
     return () => clearInterval(interval);
   }, []);
+
+  const filteredItems = squawkItems.filter((item) => {
+    if (activeFilter === "ALL") return true;
+    if (activeFilter === "BREAKING") return item.priority === "breaking";
+    return item.category === activeFilter;
+  });
 
   return (
     <div>
@@ -121,10 +127,11 @@ const LiveSquawkFeed = () => {
       </div>
 
       <div className="flex items-center gap-1.5 border-b border-border px-4 py-2 overflow-x-auto scrollbar-hide">
-        {["ALL", "BREAKING", "CENTRAL BANKS", "DATA", "FX", "GEOPOLITICS", "ENERGY"].map((f, i) => (
+        {SQUAWK_FILTERS.map((f) => (
           <button
             key={f}
-            className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${i === 0 ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
+            onClick={() => setActiveFilter(f)}
+            className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors ${activeFilter === f ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
           >
             {f}
           </button>
@@ -132,42 +139,71 @@ const LiveSquawkFeed = () => {
       </div>
 
       <div className="max-h-[400px] overflow-y-auto divide-y divide-border/20">
-        {squawkItems.map((item, i) => (
-          <div key={i} className={`border-l-2 px-4 py-2.5 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}>
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-muted-foreground">{item.time}</span>
-                <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${priorityBadge[item.priority]}`}>
-                  {item.priority === "breaking" ? "⚡ BREAKING" : item.priority.toUpperCase()}
-                </span>
-                <span className={`text-[10px] font-semibold ${categoryColors[item.category] || "text-muted-foreground"}`}>
-                  {item.category}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {item.impact}
-                </Badge>
-                {item.direction === "bullish" ? (
-                  <TrendingUp className="h-3 w-3 text-emerald-400" />
-                ) : item.direction === "bearish" ? (
-                  <TrendingDown className="h-3 w-3 text-red-400" />
-                ) : (
-                  <Minus className="h-3 w-3 text-muted-foreground" />
-                )}
-              </div>
-            </div>
-            <p className={`text-xs font-medium leading-snug ${item.priority === "breaking" ? "text-red-300" : "text-foreground"}`}>
-              {item.headline}
-            </p>
+        {filteredItems.length === 0 ? (
+          <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
+            No items for this filter
           </div>
-        ))}
+        ) : (
+          filteredItems.map((item, i) => (
+            <div key={i} className={`border-l-2 px-4 py-2.5 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-muted-foreground">{item.time}</span>
+                  <span className={`inline-block rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${priorityBadge[item.priority]}`}>
+                    {item.priority === "breaking" ? "⚡ BREAKING" : item.priority.toUpperCase()}
+                  </span>
+                  <span className={`text-[10px] font-semibold ${categoryColors[item.category] || "text-muted-foreground"}`}>
+                    {item.category}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    {item.impact}
+                  </Badge>
+                  {item.direction === "bullish" ? (
+                    <TrendingUp className="h-3 w-3 text-emerald-400" />
+                  ) : item.direction === "bearish" ? (
+                    <TrendingDown className="h-3 w-3 text-red-400" />
+                  ) : (
+                    <Minus className="h-3 w-3 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+              <p className={`text-xs font-medium leading-snug ${item.priority === "breaking" ? "text-red-300" : "text-foreground"}`}>
+                {item.headline}
+              </p>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 };
 
 const EconomicCalendar = () => {
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCalendar = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-economic-calendar");
+      if (!error && data?.data && data.data.length > 0) {
+        setEvents(data.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch calendar:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCalendar();
+    const interval = setInterval(fetchCalendar, 300000); // refresh every 5 min
+    return () => clearInterval(interval);
+  }, [fetchCalendar]);
+
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
@@ -175,10 +211,14 @@ const EconomicCalendar = () => {
     <div>
       <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-muted/20">
         <span className="text-xs font-semibold text-foreground">{dateStr}</span>
-        <span className="text-[10px] text-muted-foreground">Times in EST</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground">investing.com</span>
+          <button onClick={fetchCalendar} className="text-muted-foreground hover:text-foreground">
+            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
-      {/* Impact legend */}
       <div className="flex items-center gap-4 border-b border-border px-4 py-1.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-red-500" />
@@ -194,7 +234,6 @@ const EconomicCalendar = () => {
         </div>
       </div>
 
-      {/* Table header */}
       <div className="grid grid-cols-[50px_40px_20px_1fr_55px_55px_55px] gap-1 border-b border-border px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase">
         <span>Time</span>
         <span>Cur.</span>
@@ -205,19 +244,28 @@ const EconomicCalendar = () => {
         <span className="text-right">Actual</span>
       </div>
 
-      {/* Events */}
       <div className="max-h-[400px] overflow-y-auto divide-y divide-border/20">
-        {calendarEvents.map((evt, i) => (
-          <div key={i} className="grid grid-cols-[50px_40px_20px_1fr_55px_55px_55px] gap-1 items-center px-4 py-2 hover:bg-muted/20 transition-colors">
-            <span className="text-[11px] font-mono text-muted-foreground">{evt.time}</span>
-            <span className="text-[11px] font-semibold text-foreground">{evt.currency}</span>
-            <span className={`h-2.5 w-2.5 rounded-full ${impactColor[evt.impact as keyof typeof impactColor]}`} />
-            <span className="text-xs text-foreground truncate">{evt.event}</span>
-            <span className="text-[11px] text-right font-mono text-muted-foreground">{evt.forecast}</span>
-            <span className="text-[11px] text-right font-mono text-muted-foreground">{evt.previous}</span>
-            <span className={`text-[11px] text-right font-mono ${evt.actual !== "—" ? "text-foreground font-semibold" : "text-muted-foreground/50"}`}>{evt.actual}</span>
+        {loading && events.length === 0 ? (
+          <div className="flex h-32 items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
-        ))}
+        ) : events.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
+            No calendar events available
+          </div>
+        ) : (
+          events.map((evt, i) => (
+            <div key={i} className="grid grid-cols-[50px_40px_20px_1fr_55px_55px_55px] gap-1 items-center px-4 py-2 hover:bg-muted/20 transition-colors">
+              <span className="text-[11px] font-mono text-muted-foreground">{evt.time}</span>
+              <span className="text-[11px] font-semibold text-foreground">{evt.currency}</span>
+              <span className={`h-2.5 w-2.5 rounded-full ${impactColor[evt.impact] || impactColor.medium}`} />
+              <span className="text-xs text-foreground truncate">{evt.event}</span>
+              <span className="text-[11px] text-right font-mono text-muted-foreground">{evt.forecast}</span>
+              <span className="text-[11px] text-right font-mono text-muted-foreground">{evt.previous}</span>
+              <span className={`text-[11px] text-right font-mono ${evt.actual !== "—" ? "text-foreground font-semibold" : "text-muted-foreground/50"}`}>{evt.actual}</span>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -260,7 +308,6 @@ const NewsFlowWidget = () => {
   return (
     <div className="rounded-lg border border-border bg-card">
       <Tabs defaultValue="newsflow" className="w-full">
-        {/* Tab bar */}
         <div className="flex flex-wrap items-center justify-between gap-1 bg-[hsl(200,30%,20%)] px-2 py-1.5 rounded-t-lg">
           <TabsList className="h-auto w-auto flex-wrap gap-1 rounded-none border-none bg-transparent p-0">
             <TabsTrigger value="newsflow" className={tabTriggerClass}>
