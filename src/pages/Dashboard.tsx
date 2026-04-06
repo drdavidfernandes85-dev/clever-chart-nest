@@ -57,6 +57,41 @@ const StrengthBar = ({ value }: { value: number }) => (
   </div>
 );
 
+const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    containerRef.current.innerHTML = "";
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol,
+      interval,
+      timezone: "Etc/UTC",
+      theme: "dark",
+      style: "1",
+      locale: "en",
+      backgroundColor: "rgba(0, 0, 0, 0)",
+      gridColor: "rgba(255, 255, 255, 0.06)",
+      hide_top_toolbar: false,
+      hide_legend: false,
+      allow_symbol_change: true,
+      save_image: false,
+      calendar: false,
+      support_host: "https://www.tradingview.com",
+    });
+    containerRef.current.appendChild(script);
+  }, [symbol, interval]);
+
+  return (
+    <div className="tradingview-widget-container h-[400px]" ref={containerRef} />
+  );
+};
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("active");
 
