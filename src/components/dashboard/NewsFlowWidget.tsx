@@ -179,9 +179,7 @@ const NewsFlowWidget = () => {
           </TabsContent>
 
           <TabsContent value="livesquawk" className="mt-0">
-            <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-              LiveSquawk feed coming soon
-            </div>
+            <LiveSquawkFeed />
           </TabsContent>
           <TabsContent value="calendar" className="mt-0">
             <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
