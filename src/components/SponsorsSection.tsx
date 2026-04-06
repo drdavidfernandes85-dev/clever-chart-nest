@@ -2,7 +2,7 @@ import sponsorsStrip from "@/assets/sponsors-strip.png";
 
 const SponsorsSection = () => {
   return (
-    <section className="border-y border-border bg-card py-14">
+    <section className="border-y border-border bg-background py-14">
       <div className="container">
         <p className="mb-8 text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           Official Partnerships & Sponsorships
@@ -11,7 +11,7 @@ const SponsorsSection = () => {
           <img
             src={sponsorsStrip}
             alt="Infinox sponsors and partners including Tottenham Hotspur, Porsche Carrera Cup Brasil, and Chestertons Polo"
-            className="w-full max-w-5xl object-contain"
+            className="w-full max-w-5xl object-contain mix-blend-lighten"
           />
         </div>
       </div>
