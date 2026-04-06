@@ -21,57 +21,23 @@ const tagColors: Record<string, string> = {
   COMMODITIES: "bg-yellow-700 text-white",
 };
 
-const newsItems = [
-  {
-    time: "Apr 6th, 17:50:15",
-    tags: ["STOCKS", "TECH", "ECONOMICS", "US STOCKS", "BIG TECH"],
-    extraTags: 5,
-    headline: "Oracle hires Schneider Electric's Maxson as CFO amid AI spending boom",
-    ticker: "ORCL",
-    tickerChange: "-0.91%",
-    tickerDown: true,
-    source: "Reuters",
-  },
-  {
-    time: "Apr 6th, 17:45:15",
-    tags: ["ECONOMICS", "GLOBAL ECONOMY", "ECONOMIC DATA"],
-    extraTags: 3,
-    headline: "New Jersey cannot regulate Kalshi's prediction market, US appeals court rules",
-    source: "Reuters",
-  },
-  {
-    time: "Apr 6th, 17:44:45",
-    tags: ["ENERGY", "ECONOMICS", "OIL", "US ECONOMY"],
-    extraTags: 3,
-    headline: "US Truck Rates at Highest Since 2022 Add to Inflation Pressures",
-    description: "Skyrocketing fuel prices due to the Iran war are fanning the embers of transportation costs, which were alread...",
-    source: "Bloomberg | Markets",
-  },
-  {
-    time: "Apr 6th, 17:38:00",
-    tags: ["FOREX", "ECONOMICS", "US ECONOMY"],
-    extraTags: 2,
-    headline: "Dollar slides as traders brace for FOMC minutes release",
-    source: "Reuters",
-  },
-  {
-    time: "Apr 6th, 17:30:10",
-    tags: ["CRYPTO", "TECH"],
-    extraTags: 1,
-    headline: "Bitcoin surges past $72k as institutional inflows accelerate",
-    ticker: "BTC",
-    tickerChange: "+3.24%",
-    tickerDown: false,
-    source: "CoinDesk",
-  },
-  {
-    time: "Apr 6th, 17:22:30",
-    tags: ["COMMODITIES", "ENERGY"],
-    extraTags: 2,
-    headline: "Gold hits record high amid geopolitical tensions and rate cut expectations",
-    source: "Bloomberg",
-  },
-];
+interface RssNewsItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  source: string;
+  category: string;
+  description?: string;
+}
+
+function formatTime(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  } catch {
+    return dateStr;
+  }
+}
 
 const squawkItems = [
   { time: "17:52:30", priority: "high" as const, category: "CENTRAL BANKS", headline: "FED'S WALLER: LABOR MARKET REMAINS SOLID, INFLATION PROGRESS HAS STALLED", impact: "USD", direction: "bullish" as const },
