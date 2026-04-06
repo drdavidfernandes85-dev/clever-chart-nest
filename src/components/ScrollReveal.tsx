@@ -6,12 +6,9 @@ interface ScrollRevealProps {
   delay?: number;
 }
 
-const ScrollReveal = ({ children, className, delay = 0 }: ScrollRevealProps) => {
+const ScrollReveal = ({ children, className }: ScrollRevealProps) => {
   return (
-    <div
-      className={cn("animate-fade-in-up", className)}
-      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
-    >
+    <div className={cn(className)}>
       {children}
     </div>
   );
