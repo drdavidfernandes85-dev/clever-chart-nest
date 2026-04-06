@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroLaptop from "@/assets/hero-laptop.png";
 
 const HeroSection = () => {
@@ -21,8 +22,10 @@ const HeroSection = () => {
             and professional trading tools — all in one platform.
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2">
-              Sign Up Today <ArrowRight className="h-4 w-4" />
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2" asChild>
+              <Link to="/register">
+                Sign Up Today <ArrowRight className="h-4 w-4" />
+              </Link>
             </Button>
           </div>
         </div>
