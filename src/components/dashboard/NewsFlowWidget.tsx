@@ -186,30 +186,33 @@ const NewsFlowWidget = () => {
   return (
     <div className="rounded-lg border border-border bg-card">
       {/* Top Tabs */}
-      <div className="flex items-center border-b border-border bg-muted/30">
+      <div className="border-b border-border">
         <Tabs defaultValue="newsflow" className="w-full">
-          <TabsList className="h-10 w-full justify-start rounded-none border-none bg-transparent p-0">
-            <TabsTrigger value="newsflow" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-2 text-xs data-[state=active]:border-[hsl(45,100%,50%)] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(45,100%,50%)]">
-              <Newspaper className="h-3.5 w-3.5" />
-              NEWS FLOW
-            </TabsTrigger>
-            <TabsTrigger value="livesquawk" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-2 text-xs data-[state=active]:border-[hsl(45,100%,50%)] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(45,100%,50%)]">
-              <Radio className="h-3.5 w-3.5" />
-              LIVESQUAWK FEED
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-2 text-xs data-[state=active]:border-[hsl(45,100%,50%)] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(45,100%,50%)]">
-              <Calendar className="h-3.5 w-3.5" />
-              CALENDAR
-            </TabsTrigger>
-            <TabsTrigger value="updates" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-2 text-xs data-[state=active]:border-[hsl(45,100%,50%)] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(45,100%,50%)]">
-              <Clock className="h-3.5 w-3.5" />
-              UPDATES TIMELINE
-            </TabsTrigger>
-            <TabsTrigger value="tools" className="gap-1.5 rounded-none border-b-2 border-transparent px-3 py-2 text-xs data-[state=active]:border-[hsl(45,100%,50%)] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(45,100%,50%)]">
-              <Wrench className="h-3.5 w-3.5" />
-              EXTRA TOOLS
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between bg-[hsl(200,30%,20%)] px-2 py-1.5">
+            <TabsList className="h-auto w-auto gap-1 rounded-none border-none bg-transparent p-0">
+              <TabsTrigger value="newsflow" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
+                <Newspaper className="h-3.5 w-3.5" />
+                NEWS FLOW
+              </TabsTrigger>
+              <TabsTrigger value="livesquawk" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
+                <Radio className="h-3.5 w-3.5" />
+                LIVESQUAWK FEED
+              </TabsTrigger>
+              <TabsTrigger value="calendar" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
+                <Calendar className="h-3.5 w-3.5" />
+                CALENDAR
+              </TabsTrigger>
+              <TabsTrigger value="updates" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
+                <Clock className="h-3.5 w-3.5" />
+                UPDATES TIMELINE
+              </TabsTrigger>
+              <TabsTrigger value="tools" className="gap-1.5 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md">
+                <Wrench className="h-3.5 w-3.5" />
+                EXTRA TOOLS
+              </TabsTrigger>
+            </TabsList>
+            <span className="text-[10px] text-white/50 hidden sm:inline">Powered by <span className="font-bold text-[hsl(30,100%,55%)]">LIVESQUAWK</span></span>
+          </div>
 
           <TabsContent value="newsflow" className="mt-0">
             {/* Search Bar */}
