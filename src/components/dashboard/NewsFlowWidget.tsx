@@ -255,33 +255,37 @@ const NewsFlowWidget = () => {
 
             {/* News Items */}
             <div className="max-h-[500px] overflow-y-auto divide-y divide-border/30">
-              {newsItems.map((item, i) => (
-                <div key={i} className="px-4 py-3 transition-colors hover:bg-muted/20">
-                  <p className="mb-1.5 text-[11px] text-muted-foreground">{item.time}</p>
-                  <div className="mb-2 flex flex-wrap items-center gap-1">
-                    {item.tags.map((tag) => (
-                      <span key={tag} className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${tagColors[tag] || "bg-muted text-muted-foreground"}`}>
-                        {tag}
-                      </span>
-                    ))}
-                    {item.extraTags > 0 && (
-                      <span className="text-[10px] text-primary font-medium">+{item.extraTags} more</span>
-                    )}
-                  </div>
-                  <p className="text-sm font-medium text-foreground leading-snug">{item.headline}</p>
-                  {item.description && (
-                    <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{item.description}</p>
-                  )}
-                  {item.ticker && (
-                    <div className="mt-1.5">
-                      <Badge variant="outline" className={`text-xs ${item.tickerDown ? "text-red-400 border-red-400/30" : "text-emerald-400 border-emerald-400/30"}`}>
-                        {item.ticker} {item.tickerChange}
-                      </Badge>
-                    </div>
-                  )}
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">{item.source}</p>
+              {loading && newsItems.length === 0 ? (
+                <div className="flex h-40 items-center justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
-              ))}
+              ) : filteredNews.length === 0 ? (
+                <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+                  No news found
+                </div>
+              ) : (
+                filteredNews.map((item, i) => (
+                  <a
+                    key={i}
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block px-4 py-3 transition-colors hover:bg-muted/20"
+                  >
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <span className="text-[11px] text-muted-foreground">{formatTime(item.pubDate)}</span>
+                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${tagColors[item.category] || "bg-muted text-muted-foreground"}`}>
+                        {item.category}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-foreground leading-snug">{item.title}</p>
+                    {item.description && (
+                      <p className="mt-1 text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.description}</p>
+                    )}
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">{item.source}</p>
+                  </a>
+                ))
+              )}
             </div>
           </TabsContent>
 
