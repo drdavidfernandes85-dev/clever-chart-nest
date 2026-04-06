@@ -324,10 +324,6 @@ const NewsFlowWidget = () => {
               <Calendar className="h-3 w-3" />
               CALENDAR
             </TabsTrigger>
-            <TabsTrigger value="updates" className={tabTriggerClass}>
-              <Clock className="h-3 w-3" />
-              UPDATES
-            </TabsTrigger>
             <TabsTrigger value="tools" className={tabTriggerClass}>
               <Wrench className="h-3 w-3" />
               TOOLS
@@ -405,15 +401,8 @@ const NewsFlowWidget = () => {
         <TabsContent value="calendar" className="mt-0">
           <EconomicCalendar />
         </TabsContent>
-        <TabsContent value="updates" className="mt-0">
-          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-            Updates timeline coming soon
-          </div>
-        </TabsContent>
         <TabsContent value="tools" className="mt-0">
-          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-            Extra tools coming soon
-          </div>
+          <ToolsPanel />
         </TabsContent>
       </Tabs>
     </div>
