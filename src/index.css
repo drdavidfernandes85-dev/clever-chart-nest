@@ -61,14 +61,60 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Poppins', sans-serif;
     background-color: hsl(0 0% 4%);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle 600px at 10% 20%, hsl(45 100% 50% / 0.07), transparent),
+      radial-gradient(circle 500px at 90% 80%, hsl(280 60% 50% / 0.05), transparent),
+      radial-gradient(circle 400px at 50% 50%, hsl(200 80% 50% / 0.04), transparent);
+    animation: bg-shift 20s ease-in-out infinite alternate;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
     background-image:
-      radial-gradient(ellipse 70% 50% at 50% 0%, hsl(45 100% 50% / 0.12), transparent 70%),
-      radial-gradient(ellipse 50% 40% at 90% 70%, hsl(40 80% 40% / 0.08), transparent 70%),
-      radial-gradient(ellipse 40% 30% at 5% 50%, hsl(45 100% 50% / 0.06), transparent 70%),
-      linear-gradient(hsl(0 0% 100% / 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 0% 100% / 0.06) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 50px 50px, 50px 50px;
-    background-attachment: fixed;
+      radial-gradient(circle 1.5px at center, hsl(45 100% 50% / 0.15) 0%, transparent 100%);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 20%, transparent 70%);
+  }
+
+  body > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  @keyframes bg-shift {
+    0% {
+      background:
+        radial-gradient(circle 600px at 10% 20%, hsl(45 100% 50% / 0.07), transparent),
+        radial-gradient(circle 500px at 90% 80%, hsl(280 60% 50% / 0.05), transparent),
+        radial-gradient(circle 400px at 50% 50%, hsl(200 80% 50% / 0.04), transparent);
+    }
+    50% {
+      background:
+        radial-gradient(circle 600px at 30% 60%, hsl(45 100% 50% / 0.08), transparent),
+        radial-gradient(circle 500px at 70% 20%, hsl(280 60% 50% / 0.06), transparent),
+        radial-gradient(circle 400px at 80% 70%, hsl(200 80% 50% / 0.05), transparent);
+    }
+    100% {
+      background:
+        radial-gradient(circle 600px at 80% 30%, hsl(45 100% 50% / 0.06), transparent),
+        radial-gradient(circle 500px at 20% 70%, hsl(280 60% 50% / 0.04), transparent),
+        radial-gradient(circle 400px at 40% 40%, hsl(200 80% 50% / 0.06), transparent);
+    }
   }
 
   h1, h2, h3, h4, h5, h6 {
