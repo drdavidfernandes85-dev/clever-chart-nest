@@ -1,4 +1,4 @@
-import { BarChart3, LineChart, Shield, Users, MessageSquare, Globe, Video, GraduationCap } from "lucide-react";
+import { BarChart3, LineChart, Users, MessageSquare, Globe, Video, GraduationCap } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const features = [
@@ -18,19 +18,14 @@ const features = [
     description: "Professional-grade charting tools with technical indicators and overlays.",
   },
   {
-    icon: Shield,
-    title: "Risk Management",
-    description: "Built-in risk management tools to protect your capital.",
-  },
-  {
     icon: MessageSquare,
     title: "Chatroom",
     description: "Chat and discuss markets 24/7 with fellow traders and our expert team members.",
   },
   {
     icon: Video,
-    title: "Webinar",
-    description: "Daily 1.5hr webinars hosted by seasoned veterans with live market analysis and Q&A.",
+    title: "Daily Webinars",
+    description: "Daily webinars hosted by seasoned veterans with live market analysis and Q&A.",
   },
   {
     icon: GraduationCap,
