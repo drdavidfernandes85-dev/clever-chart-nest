@@ -138,7 +138,7 @@ const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputPr
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Message #${channelName}`}
-            className="flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            className="flex-1 border-0 bg-transparent p-0 text-sm text-gray-900 shadow-none placeholder:text-gray-400 focus-visible:ring-0"
           />
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
           <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
