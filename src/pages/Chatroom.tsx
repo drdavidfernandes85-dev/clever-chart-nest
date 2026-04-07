@@ -50,6 +50,7 @@ const Chatroom = () => {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; displayName: string; content: string } | null>(null);
+  const [allProfiles, setAllProfiles] = useState<{ user_id: string; display_name: string }[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Load channels + roles
@@ -72,6 +73,11 @@ const Chatroom = () => {
       }
     };
     loadRoles();
+    const loadProfiles = async () => {
+      const { data } = await supabase.from("profiles").select("user_id, display_name");
+      if (data) setAllProfiles(data);
+    };
+    loadProfiles();
   }, []);
 
   const loadMessages = useCallback(async () => {
@@ -329,6 +335,7 @@ const Chatroom = () => {
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           onSent={() => setReplyTo(null)}
+          members={allProfiles}
         />
       </div>
     </div>
