@@ -34,14 +34,15 @@ const faqs = [
 ];
 
 const FAQSection = () => (
-  <section id="faq" className="py-24">
-    <div className="container">
+  <section id="faq" className="relative py-28">
+    <div className="absolute inset-0 bg-radial-glow opacity-30" />
+    <div className="container relative">
       <ScrollReveal>
-        <div className="mx-auto mb-12 max-w-2xl text-center">
-          <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl">
+        <div className="mx-auto mb-14 max-w-2xl text-center">
+          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl tracking-tight">
             Frequently Asked <span className="text-gradient">Questions</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">
+          <p className="mt-5 text-lg text-muted-foreground">
             Everything you need to know about the Elite Live Trading Room.
           </p>
         </div>
@@ -53,12 +54,12 @@ const FAQSection = () => (
               <AccordionItem
                 key={i}
                 value={`item-${i}`}
-                className="card-glass rounded-lg border-none px-6"
+                className="card-glass rounded-2xl border-none px-6 transition-all duration-300 hover:border-primary/20"
               >
-                <AccordionTrigger className="text-sm font-semibold text-foreground hover:text-primary hover:no-underline">
+                <AccordionTrigger className="text-sm font-semibold text-foreground hover:text-primary hover:no-underline py-5">
                   {faq.q}
                 </AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground">
+                <AccordionContent className="text-sm leading-relaxed text-muted-foreground pb-5">
                   {faq.a}
                 </AccordionContent>
               </AccordionItem>
