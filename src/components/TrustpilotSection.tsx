@@ -42,7 +42,7 @@ const TrustpilotSection = () => {
   };
 
   return (
-    <section className="relative bg-background py-24">
+    <section className="relative py-24">
       <div className="absolute top-0 left-0 right-0 cyber-line" />
       <div className="container relative">
         <ScrollReveal>
