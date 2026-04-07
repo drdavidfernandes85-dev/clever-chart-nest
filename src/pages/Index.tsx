@@ -12,9 +12,11 @@ import NewsletterSection from "@/components/NewsletterSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Index = () => (
   <div className="min-h-screen">
+    <AnimatedBackground />
     <Navbar />
     <HeroSection />
     <ScrollReveal><SponsorsSection /></ScrollReveal>
