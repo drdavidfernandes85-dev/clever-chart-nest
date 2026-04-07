@@ -182,6 +182,7 @@ const Chatroom = () => {
                 userId={msg.user_id}
                 content={msg.content}
                 createdAt={msg.created_at}
+                role={userRoles[msg.user_id]}
               />
             ))}
           </div>
