@@ -3,11 +3,11 @@ import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const reviews = [
-  { name: "Arnaldo Tsukamoto", date: "23 Março", title: "Ótima experiência com a corretora e…", text: "Ótima experiência e atendimento TOP pelo Gabriel Chiqueti." },
-  { name: "Arnaldo Tsukamoto", date: "20 Março", title: "Corretora com pagamento e execução…", text: "Corretora com pagamento e execução rápida, gerente de contas Gabriel Chiqueti atenci…" },
-  { name: "Marcio Pereira", date: "20 Março", title: "muito boa a experiencia atendimento…", text: "muito boa a experiencia atendimento primeira linha" },
-  { name: "juarez pereira", date: "20 Março", title: "Rapidez e confiança", text: "Rapidez e confiança. A Corretora disperta confiança e rapidez nas soluções solicita…" },
-  { name: "Nilson Vieira", date: "20 Março", title: "Rapidez e eficiência", text: "Rapidez e eficiência" },
+  { name: "Arnaldo Tsukamoto", date: "23 March", title: "Great experience with the broker…", text: "Great experience and TOP service by Gabriel Chiqueti." },
+  { name: "Arnaldo Tsukamoto", date: "20 March", title: "Broker with fast payment and execution…", text: "Broker with fast payment and execution, account manager Gabriel Chiqueti very attentive…" },
+  { name: "Marcio Pereira", date: "20 March", title: "Very good experience, first-class…", text: "Very good experience, first-class customer service." },
+  { name: "juarez pereira", date: "20 March", title: "Speed and trust", text: "Speed and trust. The broker inspires confidence and delivers fast solutions…" },
+  { name: "Nilson Vieira", date: "20 March", title: "Speed and efficiency", text: "Speed and efficiency" },
 ];
 
 const Stars = () => (
@@ -48,13 +48,12 @@ const TrustpilotSection = () => {
       <div className="container">
         <ScrollReveal>
           <h2 className="mb-10 text-center font-heading text-3xl font-bold text-foreground">
-            O que dizem nossos clientes
+            What Our Clients Say
           </h2>
         </ScrollReveal>
 
         <ScrollReveal delay={150}>
           <div className="relative">
-            {/* Scroll buttons for mobile */}
             {canScrollLeft && (
               <button
                 onClick={() => scroll("left")}
@@ -95,11 +94,11 @@ const TrustpilotSection = () => {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            Pontuação <span className="font-semibold text-foreground">4.7 / 5</span> | baseado em{" "}
+            Rated <span className="font-semibold text-foreground">4.7 / 5</span> | based on{" "}
             <a href="https://www.trustpilot.com" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline">
-              1.142 avaliações
+              1,142 reviews
             </a>
-            . Nossas avaliações com 4 & 5 estrelas.
+            . Our 4 & 5 star reviews.
           </p>
           <div className="mt-2 flex items-center justify-center gap-1.5">
             <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
