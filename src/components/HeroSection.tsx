@@ -6,7 +6,7 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 
 const HeroSection = () => {
   return (
-    <section id="home" className="hero-bg relative overflow-hidden pt-16">
+    <section id="home" className="relative overflow-hidden pt-16">
       <div className="absolute inset-0 bg-grid-pattern opacity-20" />
       <div className="absolute inset-0 bg-radial-glow" />
       <div className="absolute top-16 left-0 right-0 cyber-line" />

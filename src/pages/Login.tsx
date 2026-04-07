@@ -33,7 +33,7 @@ const Login = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen bg-background overflow-hidden">
+    <div className="relative flex min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-grid-pattern opacity-15" />
         <div className="absolute left-1/3 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/[0.04] blur-[120px]" />
