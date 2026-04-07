@@ -5,70 +5,58 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import ScrollReveal from "@/components/ScrollReveal";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { TranslationKey } from "@/i18n/translations";
 
-const faqs = [
-  {
-    q: "What is the Elite Live Trading Room?",
-    a: "The Elite Live Trading Room is a real-time trading environment where professional analysts share live market analysis, trading signals, and educational content across FX, commodities, indices, and crypto markets.",
-  },
-  {
-    q: "Do I need trading experience to join?",
-    a: "No. Our room caters to all levels — from beginners learning the fundamentals to experienced traders refining their strategies. Our mentors provide guidance tailored to your skill level.",
-  },
-  {
-    q: "What markets are covered?",
-    a: "We cover all major Forex pairs, commodities (gold, oil), global indices (S&P 500, DAX, FTSE), and select crypto assets. Our coverage spans the Sydney, Tokyo, London, and New York sessions.",
-  },
-  {
-    q: "How do I access the trading room?",
-    a: "Simply sign up for an account and log in to the Dashboard. The live chatroom, trading signals, economic calendar, and all tools are available immediately upon registration.",
-  },
-  {
-    q: "Is there a free trial available?",
-    a: "Yes, we offer a free tier that gives you access to the chatroom and basic market updates. Premium features like live signals, one-on-one mentoring, and advanced tools require a subscription.",
-  },
-  {
-    q: "Can I use the platform on mobile?",
-    a: "Absolutely. The platform is fully responsive and works on any device — desktop, tablet, or smartphone. Trade and follow the markets from anywhere.",
-  },
+const faqKeys: { q: TranslationKey; a: TranslationKey }[] = [
+  { q: "faq.q1", a: "faq.a1" },
+  { q: "faq.q2", a: "faq.a2" },
+  { q: "faq.q3", a: "faq.a3" },
+  { q: "faq.q4", a: "faq.a4" },
+  { q: "faq.q5", a: "faq.a5" },
+  { q: "faq.q6", a: "faq.a6" },
 ];
 
-const FAQSection = () => (
-  <section id="faq" className="relative py-28">
-    <div className="absolute inset-0 bg-radial-glow opacity-20" />
-    <div className="container relative">
-      <ScrollReveal>
-        <div className="mx-auto mb-14 max-w-2xl text-center">
-          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
-            Frequently Asked <span className="text-gradient">Questions</span>
-          </h2>
-          <p className="mt-5 text-base text-muted-foreground">
-            Everything you need to know about the Elite Live Trading Room.
-          </p>
-        </div>
-      </ScrollReveal>
-      <ScrollReveal delay={150}>
-        <div className="mx-auto max-w-3xl">
-          <Accordion type="single" collapsible className="space-y-3">
-            {faqs.map((faq, i) => (
-              <AccordionItem
-                key={i}
-                value={`item-${i}`}
-                className="card-glass rounded-2xl border-none px-6 transition-all duration-300"
-              >
-                <AccordionTrigger className="text-sm font-medium text-foreground hover:text-primary hover:no-underline py-5">
-                  {faq.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-sm leading-relaxed text-muted-foreground pb-5">
-                  {faq.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
-      </ScrollReveal>
-    </div>
-  </section>
-);
+const FAQSection = () => {
+  const { t } = useLanguage();
+
+  return (
+    <section id="faq" className="relative py-28">
+      <div className="absolute inset-0 bg-radial-glow opacity-20" />
+      <div className="container relative">
+        <ScrollReveal>
+          <div className="mx-auto mb-14 max-w-2xl text-center">
+            <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
+              {t("faq.title1")} <span className="text-gradient">{t("faq.title2")}</span>
+            </h2>
+            <p className="mt-5 text-base text-muted-foreground">
+              {t("faq.desc")}
+            </p>
+          </div>
+        </ScrollReveal>
+        <ScrollReveal delay={150}>
+          <div className="mx-auto max-w-3xl">
+            <Accordion type="single" collapsible className="space-y-3">
+              {faqKeys.map((faq, i) => (
+                <AccordionItem
+                  key={i}
+                  value={`item-${i}`}
+                  className="card-glass rounded-2xl border-none px-6 transition-all duration-300"
+                >
+                  <AccordionTrigger className="text-sm font-medium text-foreground hover:text-primary hover:no-underline py-5">
+                    {t(faq.q)}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm leading-relaxed text-muted-foreground pb-5">
+                    {t(faq.a)}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
+  );
+};
 
 export default FAQSection;

@@ -1,83 +1,61 @@
 import { BarChart3, LineChart, Users, MessageSquare, Globe, Video, GraduationCap } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { TranslationKey } from "@/i18n/translations";
 
-const features = [
-  {
-    icon: LineChart,
-    title: "Real-Time Analysis",
-    description: "Live market analysis across FX, commodities, stocks, and crypto markets.",
-  },
-  {
-    icon: Users,
-    title: "Expert Community",
-    description: "Join a thriving community of professional traders and analysts.",
-  },
-  {
-    icon: BarChart3,
-    title: "Advanced Charts",
-    description: "Professional-grade charting tools with technical indicators and overlays.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Chatroom",
-    description: "Chat and discuss markets 24/7 with fellow traders and our expert team members.",
-  },
-  {
-    icon: Video,
-    title: "Daily Webinars",
-    description: "Daily webinars hosted by seasoned veterans with live market analysis and Q&A.",
-  },
-  {
-    icon: Globe,
-    title: "24/7 Coverage",
-    description: "Round-the-clock market coverage across all major trading sessions.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Education",
-    description: "Comprehensive trading courses and resources to sharpen your skills at every level.",
-  },
+const featureKeys: { icon: typeof LineChart; title: TranslationKey; desc: TranslationKey }[] = [
+  { icon: LineChart, title: "features.realtime", desc: "features.realtime.desc" },
+  { icon: Users, title: "features.community", desc: "features.community.desc" },
+  { icon: BarChart3, title: "features.charts", desc: "features.charts.desc" },
+  { icon: MessageSquare, title: "features.chatroom", desc: "features.chatroom.desc" },
+  { icon: Video, title: "features.webinars", desc: "features.webinars.desc" },
+  { icon: Globe, title: "features.coverage", desc: "features.coverage.desc" },
+  { icon: GraduationCap, title: "features.education", desc: "features.education.desc" },
 ];
 
-const FeaturesSection = () => (
-  <section id="features" className="relative py-28">
-    <div className="absolute inset-0 bg-radial-glow opacity-40" />
-    <div className="container relative">
-      <ScrollReveal>
-        <div className="mx-auto mb-20 max-w-2xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <img src={infinoxLogo} alt="INFINOX" className="h-4 opacity-60" />
-            Powered by INFINOX
-          </div>
-          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
-            Shaping the{" "}
-            <span className="text-gradient">Future</span>
-            <br />
-            of <span className="text-muted-foreground/50">Trading</span>
-          </h2>
-          <p className="mt-5 text-base text-muted-foreground">
-            Navigate complex markets with professional tools and expert guidance.
-          </p>
-        </div>
-      </ScrollReveal>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {features.map((f, i) => (
-          <ScrollReveal key={f.title} delay={i * 80}>
-            <div className="card-glass-hover group rounded-2xl p-7 h-full">
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all duration-500 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/10">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mb-2.5 font-heading text-base font-semibold text-foreground uppercase tracking-wide">
-                {f.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{f.description}</p>
+const FeaturesSection = () => {
+  const { t } = useLanguage();
+
+  return (
+    <section id="features" className="relative py-28">
+      <div className="absolute inset-0 bg-radial-glow opacity-40" />
+      <div className="container relative">
+        <ScrollReveal>
+          <div className="mx-auto mb-20 max-w-2xl text-center">
+            <div className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <img src={infinoxLogo} alt="INFINOX" className="h-4 opacity-60" />
+              {t("features.powered")}
             </div>
-          </ScrollReveal>
-        ))}
+            <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
+              {t("features.title1")}{" "}
+              <span className="text-gradient">{t("features.title2")}</span>
+              <br />
+              {t("features.title3")} <span className="text-muted-foreground/50">{t("features.title4")}</span>
+            </h2>
+            <p className="mt-5 text-base text-muted-foreground">
+              {t("features.desc")}
+            </p>
+          </div>
+        </ScrollReveal>
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {featureKeys.map((f, i) => (
+            <ScrollReveal key={f.title} delay={i * 80}>
+              <div className="card-glass-hover group rounded-2xl p-7 h-full">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all duration-500 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/10">
+                  <f.icon className="h-5 w-5" />
+                </div>
+                <h3 className="mb-2.5 font-heading text-base font-semibold text-foreground uppercase tracking-wide">
+                  {t(f.title)}
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">{t(f.desc)}</p>
+              </div>
+            </ScrollReveal>
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default FeaturesSection;
