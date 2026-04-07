@@ -82,6 +82,9 @@ const Chatroom = () => {
 
   const getInitial = (name: string) => name.charAt(0).toUpperCase();
 
+  const formatChannelName = (name: string) =>
+    name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
   const groupedChannels = channels.reduce<Record<string, Channel[]>>((acc, ch) => {
     (acc[ch.category] ??= []).push(ch);
     return acc;
@@ -118,7 +121,7 @@ const Chatroom = () => {
                   }`}
                 >
                   <Hash className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{ch.name}</span>
+                  <span className="truncate">{formatChannelName(ch.name)}</span>
                 </button>
               ))}
             </div>
@@ -144,7 +147,7 @@ const Chatroom = () => {
         <header className="flex h-14 items-center justify-between border-b border-border px-4">
           <div className="flex items-center gap-2">
             <Hash className="h-5 w-5 text-muted-foreground" />
-            <h2 className="font-heading text-base font-semibold text-foreground">{activeChannelName}</h2>
+            <h2 className="font-heading text-base font-semibold text-foreground">{formatChannelName(activeChannelName)}</h2>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Pin className="h-4 w-4" /></Button>
@@ -153,7 +156,7 @@ const Chatroom = () => {
           </div>
         </header>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 bg-white">
           <div className="space-y-3">
             {messages.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-8">No messages yet. Be the first to say something!</p>
