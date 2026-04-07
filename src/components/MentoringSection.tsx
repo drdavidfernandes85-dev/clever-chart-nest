@@ -46,9 +46,9 @@ const MentoringSection = () => {
             {!showForm && !submitted && (
               <>
                 <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
-                  Cyber <span className="text-gradient">Futurism</span>
-                  <br />
-                  <span className="text-muted-foreground/50">Starts Here</span>
+                   Your <span className="text-gradient">Trading Journey</span>
+                   <br />
+                   <span className="text-muted-foreground/50">Starts Here</span>
                 </h2>
                 <p className="mt-5 text-base text-muted-foreground">
                   Get personalized coaching from our expert traders.
