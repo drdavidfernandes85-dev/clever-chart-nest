@@ -32,15 +32,6 @@ interface RssNewsItem {
   description?: string;
 }
 
-interface CalendarEvent {
-  time: string;
-  currency: string;
-  impact: "high" | "medium" | "low";
-  event: string;
-  forecast: string;
-  previous: string;
-  actual: string;
-}
 
 function formatTime(dateStr: string): string {
   try {
@@ -91,11 +82,6 @@ const categoryColors: Record<string, string> = {
   COMMODITIES: "text-yellow-400",
 };
 
-const impactColor = {
-  high: "bg-red-500",
-  medium: "bg-orange-400",
-  low: "bg-yellow-400",
-};
 
 const SQUAWK_FILTERS = ["ALL", "BREAKING", "CENTRAL BANKS", "DATA", "FX", "GEOPOLITICS", "ENERGY"] as const;
 
