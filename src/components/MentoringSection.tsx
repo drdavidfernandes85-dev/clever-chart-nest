@@ -17,7 +17,7 @@ const MentoringSection = () => (
             Get personalized coaching from our expert traders.
           </p>
           <Button size="lg" className="mt-8 bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-            <a href="mailto:latam@infinox.com?subject=Book%20a%20Mentoring%20Session">
+            <a href="mailto:ventas@infinox.com?subject=Book%20a%20Mentoring%20Session">
               Book a Session
             </a>
           </Button>
