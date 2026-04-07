@@ -15,7 +15,7 @@
     --popover: 0 0% 7%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 0 85% 50%;
+    --primary: 45 100% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 10%;
@@ -24,7 +24,7 @@
     --muted: 0 0% 12%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 0 85% 50%;
+    --accent: 45 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -32,23 +32,23 @@
 
     --border: 0 0% 12%;
     --input: 0 0% 12%;
-    --ring: 0 85% 50%;
+    --ring: 45 100% 50%;
 
     --radius: 0.75rem;
 
     --hero-gradient: linear-gradient(170deg, hsl(0 0% 4%) 0%, hsl(0 5% 8%) 50%, hsl(0 0% 4%) 100%);
     --card-gradient: linear-gradient(180deg, hsl(0 0% 8%) 0%, hsl(0 0% 5%) 100%);
-    --glow-red: 0 0 40px hsl(0 85% 50% / 0.15);
-    --glow-red-strong: 0 0 80px hsl(0 85% 50% / 0.25);
+    --glow-red: 0 0 40px hsl(45 100% 50% / 0.15);
+    --glow-red-strong: 0 0 80px hsl(45 100% 50% / 0.25);
 
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 0 85% 50%;
+    --sidebar-primary: 45 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 80%;
     --sidebar-border: 0 0% 12%;
-    --sidebar-ring: 0 85% 50%;
+    --sidebar-ring: 45 100% 50%;
   }
 }
 
@@ -71,7 +71,7 @@
 @layer utilities {
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(0 85% 55%), hsl(15 90% 50%));
+    background-image: linear-gradient(135deg, hsl(45 100% 55%), hsl(35 100% 50%));
   }
 
   .text-gradient-muted {
@@ -95,7 +95,7 @@
   }
 
   .card-glass-hover:hover {
-    border-color: hsl(0 85% 50% / 0.3);
+    border-color: hsl(45 100% 50% / 0.3);
     box-shadow: 0 8px 32px hsl(0 0% 0% / 0.5), var(--glow-red);
     transform: translateY(-4px);
   }
@@ -130,12 +130,12 @@
   }
 
   .bg-radial-glow {
-    background: radial-gradient(ellipse 80% 50% at 50% 0%, hsl(0 85% 50% / 0.06), transparent),
-                radial-gradient(ellipse 50% 40% at 80% 20%, hsl(0 60% 40% / 0.04), transparent);
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, hsl(45 100% 50% / 0.06), transparent),
+                radial-gradient(ellipse 50% 40% at 80% 20%, hsl(40 80% 40% / 0.04), transparent);
   }
 
   .cyber-line {
-    background: linear-gradient(90deg, transparent, hsl(0 85% 50% / 0.3), transparent);
+    background: linear-gradient(90deg, transparent, hsl(45 100% 50% / 0.3), transparent);
     height: 1px;
   }
 }
