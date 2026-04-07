@@ -20,9 +20,9 @@ interface GeoShape {
   drift: number;
 }
 
-const PARTICLE_COUNT = 60;
-const GEO_COUNT = 8;
-const CONNECTION_DIST = 140;
+const PARTICLE_COUNT = 45;
+const GEO_COUNT = 14;
+const CONNECTION_DIST = 120;
 
 const AnimatedBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,10 +60,10 @@ const AnimatedBackground = () => {
     const geos: GeoShape[] = Array.from({ length: GEO_COUNT }, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      size: Math.random() * 60 + 30,
+      size: Math.random() * 100 + 50,
       rotation: Math.random() * Math.PI * 2,
-      rotationSpeed: (Math.random() - 0.5) * 0.003,
-      opacity: Math.random() * 0.06 + 0.02,
+      rotationSpeed: (Math.random() - 0.5) * 0.004,
+      opacity: Math.random() * 0.12 + 0.05,
       type: (["triangle", "hexagon", "diamond"] as const)[Math.floor(Math.random() * 3)],
       drift: Math.random() * 0.15 + 0.05,
     }));
