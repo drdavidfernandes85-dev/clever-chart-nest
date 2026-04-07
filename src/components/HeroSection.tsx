@@ -1,10 +1,48 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroLaptop from "@/assets/hero-laptop.png";
 import AnimatedCounter from "@/components/AnimatedCounter";
 
+// Next webinar config — update these as needed
+const NEXT_WEBINAR = {
+  label: "Next Live Session",
+  // Set to the next session date/time in UTC
+  dateUTC: (() => {
+    const now = new Date();
+    const target = new Date(now);
+    target.setUTCHours(14, 0, 0, 0); // 14:00 UTC daily
+    // If today's session already passed, move to tomorrow
+    if (target <= now) target.setUTCDate(target.getUTCDate() + 1);
+    // Skip weekends
+    while (target.getUTCDay() === 0 || target.getUTCDay() === 6) {
+      target.setUTCDate(target.getUTCDate() + 1);
+    }
+    return target;
+  })(),
+};
+
+function useCountdown(target: Date) {
+  const [diff, setDiff] = useState(() => Math.max(0, target.getTime() - Date.now()));
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setDiff(Math.max(0, target.getTime() - Date.now()));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [target]);
+
+  const totalSec = Math.floor(diff / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return { h, m, s, isLive: diff === 0 };
+}
+
 const HeroSection = () => {
+  const { h, m, s, isLive } = useCountdown(NEXT_WEBINAR.dateUTC);
+
   return (
     <section id="home" className="relative overflow-hidden pt-16">
       <div className="absolute inset-0 bg-grid-pattern opacity-20" />
@@ -52,7 +90,36 @@ const HeroSection = () => {
             </Button>
           </div>
 
-          <div className="flex gap-10 pt-6">
+          {/* Social Proof + Countdown Row */}
+          <div className="flex flex-wrap items-center gap-6 pt-4">
+            {/* Social proof */}
+            <div className="flex items-center gap-2 rounded-full border border-border/50 bg-card/60 px-4 py-2">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">1,200+</span>
+              <span className="text-xs text-muted-foreground">Active Traders</span>
+            </div>
+
+            {/* Webinar countdown */}
+            <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-2">
+              <Clock className="h-4 w-4 text-primary" />
+              {isLive ? (
+                <span className="text-sm font-bold text-primary animate-pulse">🔴 LIVE NOW</span>
+              ) : (
+                <>
+                  <span className="text-xs text-muted-foreground mr-1">Next session:</span>
+                  <div className="flex items-center gap-1 font-mono text-sm font-bold text-foreground">
+                    <span className="bg-secondary rounded px-1.5 py-0.5 text-xs">{String(h).padStart(2, "0")}h</span>
+                    <span className="text-muted-foreground">:</span>
+                    <span className="bg-secondary rounded px-1.5 py-0.5 text-xs">{String(m).padStart(2, "0")}m</span>
+                    <span className="text-muted-foreground">:</span>
+                    <span className="bg-secondary rounded px-1.5 py-0.5 text-xs">{String(s).padStart(2, "0")}s</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-10 pt-2">
             {[
               { value: "75%", label: "Win Rate" },
               { value: "99.8%", label: "Uptime" },

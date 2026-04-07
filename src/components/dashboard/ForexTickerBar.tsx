@@ -34,7 +34,22 @@ const ForexTickerBar = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (tickers.length === 0) return null;
+  if (tickers.length === 0) {
+    return (
+      <div className="overflow-hidden border-b border-border/30 bg-card/50">
+        <div className="flex gap-8 px-4 py-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="h-3 w-14 rounded bg-muted animate-pulse" />
+              <div className="h-3 w-12 rounded bg-muted animate-pulse" />
+              <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
+              <div className="h-3 w-10 rounded bg-muted animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden border-b border-border/30 bg-card/50">
