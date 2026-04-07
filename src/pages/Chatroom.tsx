@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { TrendingUp, Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X } from "lucide-react";
+import { Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import ChatMessage from "@/components/chatroom/ChatMessage";
 import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
+import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 interface Channel {
   id: string;
@@ -193,10 +194,11 @@ const Chatroom = () => {
   const sidebarContent = (
     <>
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-[hsl(45,100%,50%)]" />
-          <span className="font-heading text-sm font-bold text-foreground">
-            Elite <span className="text-[hsl(45,100%,50%)]">Live Trading Room</span>
+        <Link to="/" className="flex items-center gap-3">
+          <img src={infinoxLogo} alt="INFINOX" className="h-4" />
+          <span className="hidden sm:inline text-xs text-muted-foreground">|</span>
+          <span className="font-heading text-xs font-bold text-foreground">
+            Elite <span className="text-primary">Live Trading Room</span>
           </span>
         </Link>
         <button className="ml-auto md:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
