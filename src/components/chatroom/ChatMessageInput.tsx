@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Bold, Italic, Code, Link as LinkIcon, Send, Smile, Paperclip, Image } from "lucide-react";
+import { Bold, Italic, Code, Link as LinkIcon, Send, Smile, Paperclip, Image, X, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,9 +9,12 @@ interface ChatMessageInputProps {
   channelName: string;
   channelId: string | null;
   userId: string | undefined;
+  replyTo?: { id: string; displayName: string; content: string } | null;
+  onCancelReply?: () => void;
+  onSent?: () => void;
 }
 
-const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputProps) => {
+const ChatMessageInput = ({ channelName, channelId, userId, replyTo, onCancelReply, onSent }: ChatMessageInputProps) => {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -59,17 +62,14 @@ const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputPr
     }
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
       const path = `${userId}/${Date.now()}_${file.name}`;
       const { error } = await supabase.storage.from("chat-attachments").upload(path, file);
       if (error) throw error;
-
       const { data: urlData } = supabase.storage.from("chat-attachments").getPublicUrl(path);
       const isImage = file.type.startsWith("image/");
       const content = isImage
         ? `![${file.name}](${urlData.publicUrl})`
         : `[📎 ${file.name}](${urlData.publicUrl})`;
-
       const { error: msgError } = await supabase.from("messages").insert({
         content,
         channel_id: channelId,
@@ -93,15 +93,19 @@ const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputPr
   const handleSend = async () => {
     if (!message.trim() || !channelId || !userId) return;
     setSending(true);
-    const { error } = await supabase.from("messages").insert({
+    const insertData: any = {
       content: message.trim(),
       channel_id: channelId,
       user_id: userId,
-    });
+    };
+    if (replyTo) insertData.reply_to_id = replyTo.id;
+
+    const { error } = await supabase.from("messages").insert(insertData);
     if (error) {
       toast.error("Failed to send message");
     } else {
       setMessage("");
+      onSent?.();
     }
     setSending(false);
   };
@@ -115,23 +119,35 @@ const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputPr
 
   return (
     <div className="border-t border-gray-200 bg-white px-4 py-3">
+      {/* Reply preview bar */}
+      {replyTo && (
+        <div className="mb-2 flex items-center gap-2 rounded-md bg-gray-50 border border-gray-200 px-3 py-2 text-xs">
+          <Reply className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+          <span className="text-gray-500">Replying to</span>
+          <span className="font-semibold text-gray-700">{replyTo.displayName}</span>
+          <span className="truncate flex-1 text-gray-400">{replyTo.content.slice(0, 60)}</span>
+          <button onClick={onCancelReply} className="shrink-0 rounded p-0.5 text-gray-400 hover:text-gray-600">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
       <div className="rounded-lg border border-gray-200 bg-white">
-        <div className="flex items-center gap-1 border-b border-border/50 px-3 py-1.5">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={handleBold} title="Bold">
+        <div className="flex items-center gap-1 border-b border-gray-100 px-3 py-1.5">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700" onClick={handleBold} title="Bold">
             <Bold className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={handleItalic} title="Italic">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700" onClick={handleItalic} title="Italic">
             <Italic className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={handleCode} title="Code">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700" onClick={handleCode} title="Code">
             <Code className="h-3.5 w-3.5" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={handleLink} title="Link">
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-gray-400 hover:text-gray-700" onClick={handleLink} title="Link">
             <LinkIcon className="h-3.5 w-3.5" />
           </Button>
         </div>
         <div className="flex items-center gap-2 px-3 py-2">
-          <Smile className="h-5 w-5 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground" />
+          <Smile className="h-5 w-5 shrink-0 cursor-pointer text-gray-400 hover:text-gray-600" />
           <Input
             ref={inputRef}
             value={message}
@@ -143,11 +159,11 @@ const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputPr
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
           <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
           <Image
-            className="h-5 w-5 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+            className="h-5 w-5 shrink-0 cursor-pointer text-gray-400 hover:text-gray-600"
             onClick={() => imageInputRef.current?.click()}
           />
           <Paperclip
-            className="h-5 w-5 shrink-0 cursor-pointer text-muted-foreground hover:text-foreground"
+            className="h-5 w-5 shrink-0 cursor-pointer text-gray-400 hover:text-gray-600"
             onClick={() => fileInputRef.current?.click()}
           />
           <Button
@@ -161,7 +177,7 @@ const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputPr
           </Button>
         </div>
       </div>
-      {uploading && <p className="mt-1 text-xs text-muted-foreground">Uploading file...</p>}
+      {uploading && <p className="mt-1 text-xs text-gray-400">Uploading file...</p>}
     </div>
   );
 };
