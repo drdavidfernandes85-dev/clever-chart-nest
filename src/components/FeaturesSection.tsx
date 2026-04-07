@@ -1,4 +1,4 @@
-import { BarChart3, LineChart, Shield, Users, Zap, Globe } from "lucide-react";
+import { BarChart3, LineChart, Shield, Users, MessageSquare, Globe, Video, GraduationCap } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const features = [
@@ -23,9 +23,19 @@ const features = [
     description: "Built-in risk management tools to protect your capital.",
   },
   {
-    icon: Zap,
-    title: "Trading Signals",
-    description: "Actionable trading signals from our team of seasoned experts.",
+    icon: MessageSquare,
+    title: "Chatroom",
+    description: "Chat and discuss markets 24/7 with fellow traders and our expert team members.",
+  },
+  {
+    icon: Video,
+    title: "Webinar",
+    description: "Daily 1.5hr webinars hosted by seasoned veterans with live market analysis and Q&A.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Education",
+    description: "Comprehensive trading courses and resources to sharpen your skills at every level.",
   },
   {
     icon: Globe,
