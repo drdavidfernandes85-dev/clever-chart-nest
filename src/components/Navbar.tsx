@@ -37,6 +37,10 @@ const Navbar = () => {
       <div className="container flex h-16 items-center justify-between">
         <a href="#home" className="flex items-center gap-3">
           <img src={infinoxLogo} alt="INFINOX" className="h-6" />
+          <span className="hidden sm:inline text-[10px] text-muted-foreground/30 font-light">|</span>
+          <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
+            Elite <span className="text-primary">Live Trading Room</span>
+          </span>
         </a>
 
         <div className="hidden lg:flex" />
