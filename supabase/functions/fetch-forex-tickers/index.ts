@@ -3,30 +3,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const SYMBOLS = [
+const PAIRS = [
   'EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD',
   'NZD/USD', 'USD/CAD', 'USD/CHF', 'EUR/GBP',
 ]
 
-// ── Twelve Data (real-time) ──────────────────────────────────────────
+// ── Twelve Data (real-time, single API call = 1 credit per symbol) ───
 async function fetchFromTwelveData(apiKey: string) {
-  const symbolList = SYMBOLS.map(s => s.replace('/', '')).join(',')
+  // Twelve Data accepts forex as "EUR/USD" format
+  const symbolList = PAIRS.join(',')
   const url = `https://api.twelvedata.com/quote?symbol=${symbolList}&apikey=${apiKey}`
   const res = await fetch(url)
   const json = await res.json()
+  
 
-  if (json.code === 401 || json.status === 'error') {
-    throw new Error(`Twelve Data error: ${json.message ?? 'unauthorized'}`)
+  // Check for API-level errors (single error object or rate limit)
+  if (json.code && json.status === 'error') {
+    throw new Error(json.message ?? 'Twelve Data API error')
   }
 
-  // Single symbol returns object, multiple returns keyed object
-  const entries = Array.isArray(json) ? json : Object.values(json)
+  // When rate-limited on batch, some entries may be error objects
+  if (typeof json !== 'object' || !json) {
+    throw new Error('Invalid Twelve Data response')
+  }
 
-  return (entries as any[]).map((q: any) => {
-    const pair = q.symbol?.replace(/(\w{3})(\w{3})/, '$1/$2') ?? q.name
+  // Multiple symbols → keyed object { EURUSD: {...}, GBPUSD: {...} }
+  const entries = Object.values(json) as any[]
+
+  return entries.map((q: any) => {
+    if (!q || !q.symbol) return null
+    const pair = q.symbol as string
     const price = parseFloat(q.close)
     const prevClose = parseFloat(q.previous_close)
-    const changeValue = prevClose ? ((price - prevClose) / prevClose) * 100 : 0
+    const changeValue = prevClose && !isNaN(prevClose) ? ((price - prevClose) / prevClose) * 100 : 0
     const decimals = pair.includes('JPY') ? 3 : 5
 
     return {
@@ -37,7 +46,7 @@ async function fetchFromTwelveData(apiKey: string) {
       strength: Math.min(100, Math.max(0, 50 + changeValue * 10)),
       timestamp: new Date().toISOString(),
     }
-  })
+  }).filter(Boolean)
 }
 
 // ── Frankfurter (daily fallback) ─────────────────────────────────────
@@ -54,62 +63,44 @@ function getBusinessDaysBefore(date: Date, count: number): string[] {
 }
 
 async function fetchFromFrankfurter() {
-  const bases = [...new Set(SYMBOLS.map(p => p.split('/')[0]))]
-  const today = new Date()
-  const [day1, day2, day3] = getBusinessDaysBefore(today, 3)
+  const bases = [...new Set(PAIRS.map(p => p.split('/')[0]))]
+  const [day1, day2, day3] = getBusinessDaysBefore(new Date(), 3)
 
-  // Fetch latest + 3 previous business days in parallel
-  const fetchRates = async (dateOrLatest: string) => {
-    const endpoint = dateOrLatest === 'latest' ? 'latest' : dateOrLatest
-    return Promise.all(bases.map(async (base) => {
-      const tos = SYMBOLS.filter(p => p.startsWith(base + '/')).map(p => p.split('/')[1])
+  const fetchRates = async (endpoint: string) =>
+    Promise.all(bases.map(async (base) => {
+      const tos = PAIRS.filter(p => p.startsWith(base + '/')).map(p => p.split('/')[1])
       const res = await fetch(`https://api.frankfurter.dev/v1/${endpoint}?base=${base}&symbols=${tos.join(',')}`)
-      const json = await res.json()
-      return { base, rates: json.rates ?? {}, date: json.date }
+      return { base, rates: (await res.json()).rates ?? {} }
     }))
-  }
 
-  const [latestResults, d1Results, d2Results, d3Results] = await Promise.all([
-    fetchRates('latest'),
-    fetchRates(day1),
-    fetchRates(day2),
-    fetchRates(day3),
+  const [latestR, d1R, d2R, d3R] = await Promise.all([
+    fetchRates('latest'), fetchRates(day1), fetchRates(day2), fetchRates(day3),
   ])
 
-  const toMap = (results: typeof latestResults) => {
+  const toMap = (r: typeof latestR) => {
     const m: Record<string, Record<string, number>> = {}
-    for (const r of results) m[r.base] = r.rates
+    for (const x of r) m[x.base] = x.rates
     return m
   }
+  const latestMap = toMap(latestR)
+  const maps = [toMap(d1R), toMap(d2R), toMap(d3R)]
 
-  const latestMap = toMap(latestResults)
-  const maps = [toMap(d1Results), toMap(d2Results), toMap(d3Results)]
-  const latestDate = latestResults[0]?.date
-
-  return SYMBOLS.map((pair) => {
+  return PAIRS.map((pair) => {
     const [from, to] = pair.split('/')
     const price = latestMap[from]?.[to] ?? null
-
-    // Find the most recent DIFFERENT price for comparison
     let comparePrice: number | null = null
     for (const m of maps) {
       const p = m[from]?.[to]
-      if (p != null && price != null && Math.abs(p - price) > 0.000001) {
-        comparePrice = p
-        break
-      }
+      if (p != null && price != null && Math.abs(p - price) > 0.000001) { comparePrice = p; break }
     }
-    // If all days have same price, use the oldest available
     if (comparePrice === null) {
       for (const m of [...maps].reverse()) {
         const p = m[from]?.[to]
         if (p != null) { comparePrice = p; break }
       }
     }
-
     const changeValue = price && comparePrice ? ((price - comparePrice) / comparePrice) * 100 : 0
     const decimals = pair.includes('JPY') ? 3 : 5
-
     return {
       pair,
       price: price !== null ? price.toFixed(decimals) : '--',

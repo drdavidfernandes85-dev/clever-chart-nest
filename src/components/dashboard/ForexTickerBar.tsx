@@ -30,7 +30,7 @@ const ForexTickerBar = () => {
       }
     };
     fetchTickers();
-    const interval = setInterval(fetchTickers, 30000);
+    const interval = setInterval(fetchTickers, 60000);
     return () => clearInterval(interval);
   }, []);
 
