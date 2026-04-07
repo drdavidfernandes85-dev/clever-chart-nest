@@ -114,8 +114,8 @@ const ChatMessageInput = ({ channelName, channelId, userId }: ChatMessageInputPr
   };
 
   return (
-    <div className="border-t border-border px-4 py-3">
-      <div className="rounded-lg border border-border bg-card">
+    <div className="border-t border-gray-200 bg-white px-4 py-3">
+      <div className="rounded-lg border border-gray-200 bg-white">
         <div className="flex items-center gap-1 border-b border-border/50 px-3 py-1.5">
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={handleBold} title="Bold">
             <Bold className="h-3.5 w-3.5" />

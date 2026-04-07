@@ -100,16 +100,16 @@ const renderInline = (text: string): JSX.Element => {
 
 const ChatMessage = ({ displayName, userId, content, createdAt }: ChatMessageProps) => {
   return (
-    <div className="group flex gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/20">
-      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${getColor(userId)} text-sm font-bold text-white`}>
+    <div className="group flex gap-3 rounded-md px-2 py-2 transition-colors hover:bg-gray-100">
+      <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${getColor(userId)} text-sm font-bold text-white`}>
         {getInitial(displayName)}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-foreground">{displayName}</span>
-          <span className="text-xs text-muted-foreground">{formatTime(createdAt)}</span>
+          <span className="text-sm font-bold text-gray-900">{displayName}</span>
+          <span className="text-xs text-gray-500">{formatTime(createdAt)}</span>
         </div>
-        <div className="mt-0.5 text-sm text-foreground/90">{renderContent(content)}</div>
+        <div className="mt-0.5 text-sm text-gray-800">{renderContent(content)}</div>
       </div>
     </div>
   );
