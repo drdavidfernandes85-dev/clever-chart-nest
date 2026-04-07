@@ -3,20 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
-
-const navLinks = [
-  { label: "Home", href: "#home" },
-  { label: "Features", href: "#features" },
-  
-  { label: "Education", href: "#education" },
-  { label: "Team", href: "#team" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contact", href: "#contact" },
-];
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { t } = useLanguage();
+
+  const navLinks = [
+    { label: t("nav.home"), href: "#home" },
+    { label: t("nav.features"), href: "#features" },
+    { label: t("nav.education"), href: "#education" },
+    { label: t("nav.team"), href: "#team" },
+    { label: t("nav.faq"), href: "#faq" },
+    { label: t("nav.contact"), href: "#contact" },
+  ];
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -58,17 +60,24 @@ const Navbar = () => {
         </div>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <LanguageSwitcher />
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
-            <Link to="/dashboard">Dashboard</Link>
+            <Link to="/dashboard">{t("nav.dashboard")}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
-            <Link to="/chatroom">Chatroom</Link>
+            <Link to="/signals">{t("nav.signals")}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
-            <Link to="/login">Login</Link>
+            <Link to="/videos">{t("nav.videos")}</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Link to="/chatroom">{t("nav.chatroom")}</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Link to="/login">{t("nav.login")}</Link>
           </Button>
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-6 font-semibold" asChild>
-            <Link to="/register">Sign Up</Link>
+            <Link to="/register">{t("nav.signup")}</Link>
           </Button>
         </div>
 
@@ -93,18 +102,25 @@ const Navbar = () => {
             </a>
           ))}
           <div className="mt-3 flex flex-col gap-2">
+            <LanguageSwitcher />
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
-              <Link to="/dashboard" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)}>{t("nav.dashboard")}</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
-              <Link to="/chatroom" onClick={() => setMobileOpen(false)}>Chatroom</Link>
+              <Link to="/signals" onClick={() => setMobileOpen(false)}>{t("nav.signals")}</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/videos" onClick={() => setMobileOpen(false)}>{t("nav.videos")}</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
             </Button>
             <div className="flex gap-2 mt-1">
               <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
-                <Link to="/login">Login</Link>
+                <Link to="/login">{t("nav.login")}</Link>
               </Button>
               <Button size="sm" asChild className="rounded-full">
-                <Link to="/register">Sign Up</Link>
+                <Link to="/register">{t("nav.signup")}</Link>
               </Button>
             </div>
           </div>
