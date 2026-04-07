@@ -1,5 +1,6 @@
 import { BarChart3, LineChart, Users, MessageSquare, Globe, Video, GraduationCap } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
+import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const features = [
   {
@@ -44,6 +45,10 @@ const FeaturesSection = () => (
     <div className="container">
       <ScrollReveal>
         <div className="mx-auto mb-16 max-w-2xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary">
+            <img src={infinoxLogo} alt="INFINOX" className="h-4" />
+            Powered by INFINOX
+          </div>
           <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl">
             Everything You Need to{" "}
             <span className="text-gradient">Trade Successfully</span>

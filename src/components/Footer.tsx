@@ -1,16 +1,16 @@
-import { TrendingUp } from "lucide-react";
+import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Footer = () => (
   <footer className="border-t border-border py-12">
     <div className="container">
       <div className="grid gap-8 md:grid-cols-4">
         <div>
-          <a href="#home" className="flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            <span className="font-heading text-lg font-bold text-foreground">
-              Elite <span className="text-primary">Live Trading Room</span>
-            </span>
+          <a href="#home" className="flex items-center gap-3">
+            <img src={infinoxLogo} alt="INFINOX" className="h-6" />
           </a>
+          <span className="mt-2 inline-block font-heading text-sm font-bold text-foreground">
+            Elite <span className="text-primary">Live Trading Room</span>
+          </span>
           <p className="mt-3 text-sm text-muted-foreground">
             The Elite Live Trading Room for the INFINOX LATAM community.
           </p>
