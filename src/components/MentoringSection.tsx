@@ -52,7 +52,7 @@ const MentoringSection = () => {
                    <br />
                    <span className="text-primary-foreground">{t("mentoring.title3")}</span>
                 </h2>
-                <p className="mt-5 text-base text-muted-foreground">
+                <p className="mt-5 text-base text-secondary-foreground">
                   {t("mentoring.desc")}
                 </p>
                 <Button

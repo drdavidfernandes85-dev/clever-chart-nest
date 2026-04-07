@@ -21,7 +21,7 @@ const CTASection = () => {
               <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
                 {t("cta.title1")} <span className="text-gradient">{t("cta.title2")}</span>
               </h2>
-              <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground">
+              <p className="mx-auto mt-5 max-w-xl text-base text-secondary-foreground">
                 {t("cta.desc")}
               </p>
               <div className="mt-10 flex flex-wrap items-center justify-center gap-4">

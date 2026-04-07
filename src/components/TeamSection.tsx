@@ -33,7 +33,7 @@ const TeamSection = () => {
               <h3 className="font-heading text-lg font-semibold text-foreground">
                 Luis Arias
               </h3>
-              <p className="mt-1 text-xs text-muted-foreground uppercase tracking-wider">
+              <p className="mt-1 text-xs uppercase tracking-wider text-secondary-foreground">
                 {t("team.role")}
               </p>
             </div>

@@ -23,7 +23,7 @@ const FeaturesSection = () => {
       <div className="container relative">
         <ScrollReveal>
           <div className="mx-auto mb-20 max-w-2xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="mb-6 inline-flex items-center gap-2 text-sm text-primary-foreground">
               <img src={infinoxLogo} alt="INFINOX" className="h-4 opacity-60" />
               {t("features.powered")}
             </div>
@@ -33,7 +33,7 @@ const FeaturesSection = () => {
               <br />
               {t("features.title3")} <span className="text-primary-foreground">{t("features.title4")}</span>
             </h2>
-            <p className="mt-5 text-base text-muted-foreground">
+            <p className="mt-5 text-base text-primary-foreground">
               {t("features.desc")}
             </p>
           </div>
@@ -48,7 +48,7 @@ const FeaturesSection = () => {
                 <h3 className="mb-2.5 font-heading text-base font-semibold text-foreground uppercase tracking-wide">
                   {t(f.title)}
                 </h3>
-                <p className="text-sm leading-relaxed text-muted-foreground">{t(f.desc)}</p>
+                <p className="text-sm leading-relaxed text-secondary-foreground">{t(f.desc)}</p>
               </div>
             </ScrollReveal>
           ))}
