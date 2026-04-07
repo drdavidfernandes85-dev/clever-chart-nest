@@ -23,12 +23,15 @@ interface Message {
   profiles?: { display_name: string; avatar_url: string | null } | null;
 }
 
+type UserRoleMap = Record<string, string>;
+
 const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState("general");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRoleMap>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +45,17 @@ const Chatroom = () => {
       }
     };
     loadChannels();
+
+    // Load all user roles for badge display
+    const loadRoles = async () => {
+      const { data } = await supabase.from("user_roles").select("user_id, role");
+      if (data) {
+        const map: UserRoleMap = {};
+        data.forEach((r) => { if (r.role === "admin" || r.role === "moderator") map[r.user_id] = r.role; });
+        setUserRoles(map);
+      }
+    };
+    loadRoles();
   }, []);
 
   useEffect(() => {
@@ -168,6 +182,7 @@ const Chatroom = () => {
                 userId={msg.user_id}
                 content={msg.content}
                 createdAt={msg.created_at}
+                role={userRoles[msg.user_id]}
               />
             ))}
           </div>
