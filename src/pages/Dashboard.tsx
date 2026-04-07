@@ -35,9 +35,9 @@ const Dashboard = () => {
                 <span className="ml-1.5 hidden sm:inline">Chatroom</span>
               </Link>
             </Button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-              DH
-            </div>
+            <Link to="/profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/80 transition-colors">
+              <User className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </header>
