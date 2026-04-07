@@ -7,7 +7,13 @@ interface LanguageContextType {
   t: (key: TranslationKey) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const defaultT = (key: TranslationKey): string => translations.es?.[key] ?? translations.en[key] ?? key;
+
+const LanguageContext = createContext<LanguageContextType>({
+  locale: "es",
+  setLocale: () => {},
+  t: defaultT,
+});
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [locale, setLocaleState] = useState<Locale>(() => {
