@@ -16,9 +16,14 @@ async function fetchFromTwelveData(apiKey: string) {
   const res = await fetch(url)
   const json = await res.json()
 
-  // Check for API-level errors
+  // Check for API-level errors (single error object or rate limit)
   if (json.code && json.status === 'error') {
     throw new Error(json.message ?? 'Twelve Data API error')
+  }
+
+  // When rate-limited on batch, some entries may be error objects
+  if (typeof json !== 'object' || !json) {
+    throw new Error('Invalid Twelve Data response')
   }
 
   // Multiple symbols → keyed object { EURUSD: {...}, GBPUSD: {...} }
