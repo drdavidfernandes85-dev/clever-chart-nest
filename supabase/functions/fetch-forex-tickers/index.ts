@@ -17,20 +17,22 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get('TWELVE_DATA_API_KEY')
 
     if (apiKey) {
-      // Use Twelve Data for real-time prices with change data
-      const symbolStr = SYMBOLS.map(s => s.replace('/', '')).join(',')
+      // Twelve Data uses "EUR/USD" format for forex
+      const symbolStr = SYMBOLS.join(',')
       const res = await fetch(
-        `https://api.twelvedata.com/quote?symbol=${symbolStr}&apikey=${apiKey}`
+        `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbolStr)}&apikey=${apiKey}`
       )
       const data = await res.json()
 
       const tickers = SYMBOLS.map((pair) => {
-        const key = pair.replace('/', '')
-        const quote = data[key] || data
-        const price = parseFloat(quote?.close || quote?.price || '0')
-        const prevClose = parseFloat(quote?.previous_close || '0')
+        const quote = Object.keys(data).length === SYMBOLS.length ? data[pair] : data
+        if (!quote || quote.status === 'error') {
+          return { pair, price: '--', change: '+0.00%', bias: 'neutral' as const, strength: 50, timestamp: new Date().toISOString() }
+        }
+        const price = parseFloat(quote.close || '0')
+        const prevClose = parseFloat(quote.previous_close || '0')
         const changeVal = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0
-        const decimals = pair.includes('JPY') ? 3 : 4
+        const decimals = pair.includes('JPY') ? 3 : 5
 
         return {
           pair,
