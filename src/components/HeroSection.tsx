@@ -4,6 +4,7 @@ import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroLaptop from "@/assets/hero-laptop.png";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
 const NEXT_WEBINAR = {
@@ -42,6 +43,7 @@ function useCountdown(target: Date) {
 
 const HeroSection = () => {
   const { h, m, s, isLive } = useCountdown(NEXT_WEBINAR.dateUTC);
+  const { t } = useLanguage();
 
   return (
     <section id="home" className="relative overflow-hidden pt-16">
@@ -53,19 +55,18 @@ const HeroSection = () => {
         <div className="flex-1 space-y-8">
           <div className="inline-flex items-center gap-2.5 text-sm text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-slow" />
-            Powered by INFINOX
+            {t("hero.powered")}
           </div>
 
           <h1 className="font-heading text-5xl font-bold leading-[1.05] text-foreground md:text-6xl lg:text-7xl uppercase tracking-tight">
-            Elite Live
+            {t("hero.title1")}
             <br />
-            <span className="text-gradient">Trading</span>{" "}
-            <span className="text-muted-foreground/60">Room</span>
+            <span className="text-gradient">{t("hero.title2")}</span>{" "}
+            <span className="text-muted-foreground/60">{t("hero.title3")}</span>
           </h1>
 
           <p className="max-w-lg text-base leading-relaxed text-muted-foreground">
-            Navigate the markets with confidence. Real-time analysis, expert insights,
-            and professional trading tools — all in one platform.
+            {t("hero.desc")}
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
@@ -75,7 +76,7 @@ const HeroSection = () => {
               asChild
             >
               <Link to="/register">
-                Get Started <ArrowRight className="h-4 w-4" />
+                {t("hero.cta")} <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button
@@ -85,7 +86,7 @@ const HeroSection = () => {
               asChild
             >
               <Link to="/login">
-                Watch Demo
+                {t("hero.demo")}
               </Link>
             </Button>
           </div>
@@ -96,17 +97,17 @@ const HeroSection = () => {
             <div className="flex items-center gap-2 rounded-full border border-border/50 bg-card/60 px-4 py-2">
               <Users className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-foreground">1,200+</span>
-              <span className="text-xs text-muted-foreground">Active Traders</span>
+              <span className="text-xs text-muted-foreground">{t("hero.traders")}</span>
             </div>
 
             {/* Webinar countdown */}
             <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-2">
               <Clock className="h-4 w-4 text-primary" />
               {isLive ? (
-                <span className="text-sm font-bold text-primary animate-pulse">🔴 LIVE NOW</span>
+                <span className="text-sm font-bold text-primary animate-pulse">{t("hero.live")}</span>
               ) : (
                 <>
-                  <span className="text-xs text-muted-foreground mr-1">Next session:</span>
+                  <span className="text-xs text-muted-foreground mr-1">{t("hero.next")}</span>
                   <div className="flex items-center gap-1 font-mono text-sm font-bold text-foreground">
                     <span className="bg-secondary rounded px-1.5 py-0.5 text-xs">{String(h).padStart(2, "0")}h</span>
                     <span className="text-muted-foreground">:</span>
@@ -121,9 +122,9 @@ const HeroSection = () => {
 
           <div className="flex gap-10 pt-2">
             {[
-              { value: "75%", label: "Win Rate" },
-              { value: "99.8%", label: "Uptime" },
-              { value: "5K+", label: "Traders" },
+              { value: "75%", label: t("hero.winrate") },
+              { value: "99.8%", label: t("hero.uptime") },
+              { value: "5K+", label: t("hero.tradersLabel") },
             ].map((stat) => (
               <div key={stat.label}>
                 <div className="font-heading text-2xl font-bold text-foreground">
