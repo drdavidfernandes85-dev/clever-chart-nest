@@ -46,7 +46,7 @@ const Navbar = () => {
         <div className="hidden lg:flex" />
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/dashboard">{t("nav.dashboard")}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
