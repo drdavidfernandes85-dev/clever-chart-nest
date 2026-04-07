@@ -53,7 +53,7 @@ const HeroSection = () => {
 
       <div className="container relative flex min-h-[92vh] flex-col items-center justify-center gap-16 py-20 lg:flex-row">
         <div className="flex-1 space-y-8">
-          <div className="inline-flex items-center gap-2.5 text-sm text-muted-foreground">
+          <div className="inline-flex items-center gap-2.5 text-sm text-secondary-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-slow" />
             {t("hero.powered")}
           </div>
@@ -65,7 +65,7 @@ const HeroSection = () => {
             <span className="text-primary-foreground">{t("hero.title3")}</span>
           </h1>
 
-          <p className="max-w-lg text-base leading-relaxed text-muted-foreground font-sans">
+          <p className="max-w-lg text-base leading-relaxed font-sans text-secondary-foreground">
             {t("hero.desc")}
           </p>
 
