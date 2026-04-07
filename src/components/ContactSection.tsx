@@ -2,33 +2,46 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
 
+const emptyForm = {
+  name: "",
+  email: "",
+  subject: "",
+  message: "",
+};
+
 const ContactSection = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
+  const [formData, setFormData] = useState(emptyForm);
   const [sending, setSending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formData.name || !formData.email || !formData.subject || !formData.message) {
       toast.error("Please fill in all fields");
       return;
     }
+
     setSending(true);
 
-    const mailtoLink = `mailto:ventas@infinox.com?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(
-      `Name: ${formData.name}\nEmail: ${formData.email}\n\n${formData.message}`
-    )}`;
-    window.open(mailtoLink, "_blank");
+    try {
+      const { data, error } = await supabase.functions.invoke("send-contact-email", {
+        body: formData,
+      });
 
-    toast.success("Opening your email client...");
-    setSending(false);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("Message sent successfully");
+      setFormData(emptyForm);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send message");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -76,7 +89,7 @@ const ContactSection = () => {
             disabled={sending}
             className="w-full bg-primary text-primary-foreground hover:bg-primary/80 h-12 rounded-full font-semibold gap-2"
           >
-            <Send className="h-4 w-4" /> Send Message
+            <Send className="h-4 w-4" /> {sending ? "Sending..." : "Send Message"}
           </Button>
         </form>
       </div>
