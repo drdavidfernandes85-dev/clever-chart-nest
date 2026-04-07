@@ -7,7 +7,7 @@ import infinoxLogo from "@/assets/infinox-logo-white.png";
 const navLinks = [
   { label: "Home", href: "#home" },
   { label: "Features", href: "#features" },
-  { label: "Programs", href: "#programs" },
+  
   { label: "Education", href: "#education" },
   { label: "Team", href: "#team" },
   { label: "FAQ", href: "#faq" },
