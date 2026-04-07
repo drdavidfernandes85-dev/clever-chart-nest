@@ -23,12 +23,15 @@ interface Message {
   profiles?: { display_name: string; avatar_url: string | null } | null;
 }
 
+type UserRoleMap = Record<string, string>;
+
 const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState("general");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRoleMap>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
