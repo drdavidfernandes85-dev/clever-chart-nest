@@ -20,9 +20,9 @@ interface GeoShape {
   drift: number;
 }
 
-const PARTICLE_COUNT = 60;
-const GEO_COUNT = 8;
-const CONNECTION_DIST = 140;
+const PARTICLE_COUNT = 45;
+const GEO_COUNT = 14;
+const CONNECTION_DIST = 120;
 
 const AnimatedBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
