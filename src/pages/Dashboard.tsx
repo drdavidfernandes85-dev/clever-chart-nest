@@ -9,17 +9,17 @@ import infinoxLogo from "@/assets/infinox-logo-white.png";
 const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-2xl shadow-lg shadow-background/50">
+      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3">
               <img src={infinoxLogo} alt="INFINOX" className="h-5" />
-              <span className="hidden sm:inline text-xs text-muted-foreground/40">|</span>
-              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground tracking-tight">
+              <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
+              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
                 Elite <span className="text-primary">Live Trading Room</span>
               </span>
             </Link>
-            <Badge variant="secondary" className="text-xs rounded-lg">Dashboard</Badge>
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">Dashboard</Badge>
           </div>
 
           <div className="flex items-center gap-2">
@@ -35,7 +35,7 @@ const Dashboard = () => {
                 <span className="ml-1.5 hidden sm:inline">Chatroom</span>
               </Link>
             </Button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
               DH
             </div>
           </div>
@@ -43,10 +43,7 @@ const Dashboard = () => {
       </header>
 
       <div className="space-y-4 p-4">
-        {/* Webinar — Live & Recordings */}
         <WebinarWidget />
-
-        {/* News Flow / Squawk / Calendar / Tools — full width */}
         <NewsFlowWidget />
       </div>
     </div>

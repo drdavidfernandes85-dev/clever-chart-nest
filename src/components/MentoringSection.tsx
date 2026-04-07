@@ -34,25 +34,28 @@ const MentoringSection = () => {
   return (
     <section id="education" className="relative py-28">
       <div className="absolute inset-0 bg-secondary/20" />
-      <div className="absolute inset-0 bg-grid-pattern opacity-15" />
+      <div className="absolute inset-0 bg-grid-pattern opacity-10" />
+      <div className="absolute top-0 left-0 right-0 cyber-line" />
       <div className="container relative">
         <ScrollReveal>
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-              <GraduationCap className="h-8 w-8 text-primary" />
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <GraduationCap className="h-7 w-7 text-primary" />
             </div>
 
             {!showForm && !submitted && (
               <>
-                <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl tracking-tight">
-                  One-on-One <span className="text-gradient">Mentoring</span>
+                <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
+                  Cyber <span className="text-gradient">Futurism</span>
+                  <br />
+                  <span className="text-muted-foreground/50">Starts Here</span>
                 </h2>
-                <p className="mt-5 text-lg text-muted-foreground">
+                <p className="mt-5 text-base text-muted-foreground">
                   Get personalized coaching from our expert traders.
                 </p>
                 <Button
                   size="lg"
-                  className="mt-10 bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 text-base font-semibold rounded-xl shadow-lg shadow-primary/20"
+                  className="mt-10 bg-primary text-primary-foreground hover:bg-primary/80 h-12 px-8 text-sm font-semibold rounded-full"
                   onClick={() => setShowForm(true)}
                 >
                   Book a Session
@@ -62,8 +65,8 @@ const MentoringSection = () => {
 
             {showForm && !submitted && (
               <div className="animate-fade-in-up">
-                <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl tracking-tight">
-                  Book an Appointment with Our <span className="text-gradient">Analyst</span>
+                <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl uppercase tracking-tight">
+                  Book an <span className="text-gradient">Appointment</span>
                 </h2>
                 <p className="mx-auto mt-5 max-w-lg text-muted-foreground">
                   Leave your email and we'll get back to you to schedule your personalized mentoring session.
@@ -75,12 +78,12 @@ const MentoringSection = () => {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="flex-1 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-xl h-12"
+                    className="flex-1 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-full h-12 px-5"
                   />
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 rounded-xl h-12"
+                    className="bg-primary text-primary-foreground hover:bg-primary/80 gap-2 rounded-full h-12 px-6"
                   >
                     {loading ? "Sending..." : <><Send className="h-4 w-4" /> Send</>}
                   </Button>
@@ -97,8 +100,8 @@ const MentoringSection = () => {
             {submitted && (
               <div className="animate-fade-in-up">
                 <CheckCircle className="mx-auto mb-4 h-14 w-14 text-primary" />
-                <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl tracking-tight">
-                  Request Received!
+                <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl uppercase tracking-tight">
+                  Request <span className="text-gradient">Received!</span>
                 </h2>
                 <p className="mt-4 text-muted-foreground">
                   We'll contact you shortly to schedule your mentoring session.

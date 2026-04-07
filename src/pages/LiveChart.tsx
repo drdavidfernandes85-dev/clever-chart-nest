@@ -22,8 +22,8 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
       theme: "dark",
       style: "1",
       locale: "en",
-      backgroundColor: "hsl(228, 22%, 6%)",
-      gridColor: "rgba(255, 255, 255, 0.04)",
+      backgroundColor: "hsl(0, 0%, 4%)",
+      gridColor: "rgba(255, 255, 255, 0.03)",
       hide_top_toolbar: false,
       hide_legend: false,
       allow_symbol_change: true,
@@ -44,25 +44,23 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
     containerRef.current.appendChild(script);
   }, [symbol, interval]);
 
-  return (
-    <div className="tradingview-widget-container h-full" ref={containerRef} />
-  );
+  return <div className="tradingview-widget-container h-full" ref={containerRef} />;
 };
 
 const LiveChart = () => {
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-2xl shadow-lg shadow-background/50">
+      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3">
               <img src={infinoxLogo} alt="INFINOX" className="h-5" />
-              <span className="hidden sm:inline text-xs text-muted-foreground/40">|</span>
-              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground tracking-tight">
+              <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
+              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
                 Elite <span className="text-primary">Live Trading Room</span>
               </span>
             </Link>
-            <Badge variant="secondary" className="text-xs rounded-lg">Live Chart</Badge>
+            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">Live Chart</Badge>
           </div>
 
           <div className="flex items-center gap-2">
@@ -83,10 +81,10 @@ const LiveChart = () => {
       </header>
 
       <div className="p-4">
-        <div className="flex flex-col rounded-2xl border border-border/50 bg-card p-4" style={{ height: 'calc(100vh - 5.5rem)' }}>
+        <div className="flex flex-col rounded-2xl border border-border/30 bg-card p-4" style={{ height: 'calc(100vh - 5.5rem)' }}>
           <div className="mb-3 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
-            <h3 className="font-heading text-sm font-semibold text-foreground tracking-tight">EUR/USD — Live Chart</h3>
+            <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — Live Chart</h3>
           </div>
           <div className="flex-1 min-h-0">
             <TradingViewChart />

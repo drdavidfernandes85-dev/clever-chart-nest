@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['DM Sans', 'sans-serif'],
-        heading: ['Outfit', 'sans-serif'],
+        sans: ['Poppins', 'sans-serif'],
+        heading: ['Poppins', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
