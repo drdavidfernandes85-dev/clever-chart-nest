@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, TrendingUp } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const navLinks = [
   { label: "Home", href: "#home" },
@@ -32,9 +33,10 @@ const Navbar = () => {
       }`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <a href="#home" className="flex items-center gap-2">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <span className="font-heading text-xl font-bold text-foreground">
+        <a href="#home" className="flex items-center gap-3">
+          <img src={infinoxLogo} alt="INFINOX" className="h-6" />
+          <span className="hidden sm:inline text-xs text-muted-foreground">|</span>
+          <span className="hidden sm:inline font-heading text-sm font-bold text-foreground">
             Elite <span className="text-primary">Live Trading Room</span>
           </span>
         </a>
