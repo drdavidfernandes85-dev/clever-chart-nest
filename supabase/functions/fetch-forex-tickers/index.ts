@@ -25,19 +25,18 @@ Deno.serve(async (req) => {
   try {
     const symbols = PAIRS.join(',')
 
-    // Fetch current prices
-    const priceRes = await fetch(
-      `${TWELVE_DATA_URL}/price?symbol=${encodeURIComponent(symbols)}&apikey=${apiKey}`
+    // Fetch quotes (includes price + percent_change)
+    const quoteRes = await fetch(
+      `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(symbols)}&apikey=${apiKey}`
     )
-    const priceData = await priceRes.json()
-
-    // Fetch quotes for change data
-    console.log('Price response:', JSON.stringify(priceData))
+    const quoteData = await quoteRes.json()
+    console.log('Quote keys:', Object.keys(quoteData))
 
     const tickers = PAIRS.map((pair) => {
-      const price = priceData[pair]?.price ?? null
-      const change = 0
-      const changeStr = '+0.00%'
+      const q = quoteData[pair] ?? {}
+      const price = q.close ?? q.previous_close ?? null
+      const change = q.percent_change ? parseFloat(q.percent_change) : 0
+      const changeStr = change >= 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`
 
       return {
         pair,
@@ -45,7 +44,7 @@ Deno.serve(async (req) => {
         change: changeStr,
         bias: change > 0.05 ? 'bullish' : change < -0.05 ? 'bearish' : 'neutral',
         strength: Math.min(100, Math.max(0, 50 + change * 10)),
-        timestamp: quote.datetime ?? null,
+        timestamp: q.datetime ?? null,
       }
     })
 
