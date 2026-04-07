@@ -62,12 +62,12 @@
     font-family: 'Poppins', sans-serif;
     background-color: hsl(0 0% 4%);
     background-image:
-      radial-gradient(ellipse 70% 50% at 50% 0%, hsl(45 100% 50% / 0.08), transparent 70%),
-      radial-gradient(ellipse 50% 40% at 90% 70%, hsl(40 80% 40% / 0.06), transparent 70%),
-      radial-gradient(ellipse 40% 30% at 5% 50%, hsl(45 100% 50% / 0.05), transparent 70%),
-      linear-gradient(hsl(0 0% 100% / 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(0 0% 100% / 0.04) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 60px 60px, 60px 60px;
+      radial-gradient(ellipse 70% 50% at 50% 0%, hsl(45 100% 50% / 0.12), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 90% 70%, hsl(40 80% 40% / 0.08), transparent 70%),
+      radial-gradient(ellipse 40% 30% at 5% 50%, hsl(45 100% 50% / 0.06), transparent 70%),
+      linear-gradient(hsl(0 0% 100% / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.06) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 50px 50px, 50px 50px;
     background-attachment: fixed;
   }
 
