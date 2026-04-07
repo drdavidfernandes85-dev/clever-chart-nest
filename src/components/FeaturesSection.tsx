@@ -31,7 +31,7 @@ const FeaturesSection = () => {
               {t("features.title1")}{" "}
               <span className="text-gradient">{t("features.title2")}</span>
               <br />
-              {t("features.title3")} <span className="text-muted-foreground/50">{t("features.title4")}</span>
+              {t("features.title3")} <span className="text-primary-foreground">{t("features.title4")}</span>
             </h2>
             <p className="mt-5 text-base text-muted-foreground">
               {t("features.desc")}
