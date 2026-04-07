@@ -93,6 +93,9 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Webinar — Live & Recordings */}
+        <WebinarWidget />
+
         {/* News Flow / Squawk / Calendar / Tools — full width */}
         <NewsFlowWidget />
       </div>
