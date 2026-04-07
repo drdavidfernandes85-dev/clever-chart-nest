@@ -39,21 +39,7 @@ const Navbar = () => {
           <img src={infinoxLogo} alt="INFINOX" className="h-6" />
         </a>
 
-        <div className="hidden items-center gap-0 lg:flex">
-          {navLinks.map((link, i) => (
-            <span key={link.label} className="flex items-center">
-              <a
-                href={link.href}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-              >
-                {link.label}
-              </a>
-              {i < navLinks.length - 1 && (
-                <span className="text-border/60 text-xs">|</span>
-              )}
-            </span>
-          ))}
-        </div>
+        <div className="hidden lg:flex" />
 
         <div className="hidden items-center gap-3 lg:flex">
           <LanguageSwitcher />
