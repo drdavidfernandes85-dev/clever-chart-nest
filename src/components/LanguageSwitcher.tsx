@@ -1,5 +1,12 @@
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LOCALE_FLAGS, LOCALE_LABELS, Locale } from "@/i18n/translations";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
 const locales: Locale[] = ["en", "es", "pt"];
 
@@ -7,23 +14,29 @@ const LanguageSwitcher = () => {
   const { locale, setLocale } = useLanguage();
 
   return (
-    <div className="flex items-center gap-0.5 rounded-full border border-border/50 bg-secondary/50 p-0.5">
-      {locales.map((l) => (
-        <button
-          key={l}
-          onClick={() => setLocale(l)}
-          className={`flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium transition-colors ${
-            locale === l
-              ? "bg-primary/20 text-primary"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-          title={LOCALE_LABELS[l]}
-        >
-          <span>{LOCALE_FLAGS[l]}</span>
-          <span className="hidden sm:inline">{l.toUpperCase()}</span>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-1.5 rounded-full border border-border/50 bg-secondary/50 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary">
+          <span>{LOCALE_FLAGS[locale]}</span>
+          <span>{locale.toUpperCase()}</span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </button>
-      ))}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[120px]">
+        {locales.map((l) => (
+          <DropdownMenuItem
+            key={l}
+            onClick={() => setLocale(l)}
+            className={`flex items-center gap-2 text-sm ${
+              locale === l ? "text-primary font-semibold" : ""
+            }`}
+          >
+            <span>{LOCALE_FLAGS[l]}</span>
+            <span>{LOCALE_LABELS[l]}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 
