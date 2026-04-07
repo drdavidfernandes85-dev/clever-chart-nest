@@ -48,11 +48,15 @@ const ForexTickerBar = () => {
         {[...tickers, ...tickers].map((t, i) => (
           <div key={`${t.symbol}-${i}`} className="flex items-center gap-2 text-xs">
             <span className="font-semibold text-foreground">{t.symbol}</span>
-            <span className="text-muted-foreground">{Number(t.price).toFixed(Number(t.price) > 100 ? 2 : 4)}</span>
-            <Icon change={Number(t.change)} />
-            <span className={Number(t.change) > 0 ? "text-emerald-400" : Number(t.change) < 0 ? "text-red-400" : "text-muted-foreground"}>
-              {Number(t.change) > 0 ? "+" : ""}{Number(t.change).toFixed(2)}%
-            </span>
+            <span className="text-muted-foreground">{isNaN(Number(t.price)) ? t.price : Number(t.price).toFixed(Number(t.price) > 100 ? 2 : 4)}</span>
+            {!isNaN(Number(t.change)) && (
+              <>
+                <Icon change={Number(t.change)} />
+                <span className={Number(t.change) > 0 ? "text-emerald-400" : Number(t.change) < 0 ? "text-red-400" : "text-muted-foreground"}>
+                  {Number(t.change) > 0 ? "+" : ""}{Number(t.change).toFixed(2)}%
+                </span>
+              </>
+            )}
           </div>
         ))}
       </div>
