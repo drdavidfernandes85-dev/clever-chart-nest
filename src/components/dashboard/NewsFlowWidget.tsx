@@ -482,12 +482,12 @@ const NewsFlowWidget = () => {
     return matchesFilter && matchesSearch;
   });
 
-  const tabTriggerClass = "gap-1.5 rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md transition-colors";
+  const tabTriggerClass = "gap-1.5 rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wide text-foreground/70 data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:shadow-md transition-colors";
 
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div className="rounded-2xl border border-border/50 bg-card">
       <Tabs defaultValue="newsflow" className="w-full">
-        <div className="flex items-center justify-between bg-[hsl(200,30%,20%)] px-4 py-2 rounded-t-lg">
+        <div className="flex items-center justify-between bg-secondary/50 px-4 py-2 rounded-t-2xl">
           <TabsList className="h-auto w-auto gap-2 rounded-none border-none bg-transparent p-0">
             <TabsTrigger value="newsflow" className={tabTriggerClass}>
               <Newspaper className="h-3.5 w-3.5" />
@@ -506,7 +506,7 @@ const NewsFlowWidget = () => {
               TOOLS
             </TabsTrigger>
           </TabsList>
-          <span className="text-[10px] text-white/40">Powered by <span className="font-bold text-[hsl(30,100%,55%)]">LIVESQUAWK</span></span>
+          <span className="text-[10px] text-muted-foreground">Powered by <span className="font-bold text-primary">LIVESQUAWK</span></span>
         </div>
 
         <TabsContent value="newsflow" className="mt-0">
