@@ -32,16 +32,12 @@ Deno.serve(async (req) => {
     const priceData = await priceRes.json()
 
     // Fetch quotes for change data
-    const quoteRes = await fetch(
-      `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(symbols)}&apikey=${apiKey}`
-    )
-    const quoteData = await quoteRes.json()
+    console.log('Price response:', JSON.stringify(priceData))
 
     const tickers = PAIRS.map((pair) => {
       const price = priceData[pair]?.price ?? null
-      const quote = quoteData[pair] ?? {}
-      const change = quote.percent_change ? parseFloat(quote.percent_change) : 0
-      const changeStr = change >= 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`
+      const change = 0
+      const changeStr = '+0.00%'
 
       return {
         pair,
