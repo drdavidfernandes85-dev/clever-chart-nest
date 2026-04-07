@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Newspaper, Radio, Calendar, Wrench, Search, RefreshCw, Volume2, TrendingUp, TrendingDown, Minus, Loader2, RotateCcw } from "lucide-react";
+import { Newspaper, Radio, Wrench, Search, RefreshCw, Volume2, TrendingUp, TrendingDown, Minus, Loader2, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
