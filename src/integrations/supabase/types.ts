@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_requests: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          purpose: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          purpose?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          purpose?: string
+          status?: string
+        }
+        Relationships: []
+      }
       channels: {
         Row: {
           category: string
