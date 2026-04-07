@@ -70,12 +70,12 @@ const Dashboard = () => {
 
       <div className="space-y-4 p-4">
         {/* Chart */}
-        <div className="flex min-h-[700px] flex-col rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-col rounded-lg border border-border bg-card p-4" style={{ height: 'calc(100vh - 5.5rem)' }}>
           <div className="mb-3 flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
             <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — Live Chart</h3>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-h-0">
             <TradingViewChart />
           </div>
         </div>
