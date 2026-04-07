@@ -46,7 +46,6 @@ const Navbar = () => {
         <div className="hidden lg:flex" />
 
         <div className="hidden items-center gap-3 lg:flex">
-          <LanguageSwitcher />
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
             <Link to="/dashboard">{t("nav.dashboard")}</Link>
           </Button>
@@ -65,6 +64,7 @@ const Navbar = () => {
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-6 font-semibold" asChild>
             <Link to="/register">{t("nav.signup")}</Link>
           </Button>
+          <LanguageSwitcher />
         </div>
 
         <button
