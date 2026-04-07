@@ -26,27 +26,27 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "border-b border-border bg-background/95 backdrop-blur-xl"
+          ? "border-b border-border/50 bg-background/80 backdrop-blur-2xl shadow-lg shadow-background/50"
           : "bg-transparent"
       }`}
     >
       <div className="container flex h-16 items-center justify-between">
         <a href="#home" className="flex items-center gap-3">
           <img src={infinoxLogo} alt="INFINOX" className="h-6" />
-          <span className="hidden sm:inline text-xs text-muted-foreground">|</span>
-          <span className="hidden sm:inline font-heading text-sm font-bold text-foreground">
+          <span className="hidden sm:inline text-xs text-muted-foreground/40">|</span>
+          <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground tracking-tight">
             Elite <span className="text-primary">Live Trading Room</span>
           </span>
         </a>
 
-        <div className="hidden items-center gap-6 lg:flex">
+        <div className="hidden items-center gap-1 lg:flex">
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground rounded-lg hover:bg-secondary/50"
             >
               {link.label}
             </a>
@@ -63,7 +63,7 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
             <Link to="/login">Login</Link>
           </Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl font-semibold shadow-lg shadow-primary/20" asChild>
             <Link to="/register">Sign Up</Link>
           </Button>
         </div>
@@ -77,12 +77,12 @@ const Navbar = () => {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-border bg-background px-4 pb-4 lg:hidden">
+        <div className="border-t border-border/50 bg-background/95 backdrop-blur-2xl px-4 pb-4 lg:hidden">
           {navLinks.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className="block py-2 text-sm text-muted-foreground hover:text-primary"
+              className="block py-2.5 text-sm text-muted-foreground hover:text-primary transition-colors"
               onClick={() => setMobileOpen(false)}
             >
               {link.label}
@@ -99,7 +99,7 @@ const Navbar = () => {
               <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
                 <Link to="/login">Login</Link>
               </Button>
-              <Button size="sm" asChild>
+              <Button size="sm" asChild className="rounded-xl">
                 <Link to="/register">Sign Up</Link>
               </Button>
             </div>

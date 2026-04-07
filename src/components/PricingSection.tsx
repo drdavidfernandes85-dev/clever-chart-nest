@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import ScrollReveal from "@/components/ScrollReveal";
 
 const plans = [
   {
@@ -26,54 +27,60 @@ const plans = [
 ];
 
 const PricingSection = () => (
-  <section id="pricing" className="py-24">
-    <div className="container">
-      <div className="mx-auto mb-16 max-w-2xl text-center">
-        <h2 className="font-heading text-3xl font-bold text-foreground md:text-4xl">
-          Simple, Transparent <span className="text-gradient">Pricing</span>
-        </h2>
-        <p className="mt-4 text-muted-foreground">
-          Start with just $1. Upgrade anytime as your trading grows.
-        </p>
-      </div>
+  <section id="pricing" className="relative py-28">
+    <div className="absolute inset-0 bg-radial-glow opacity-30" />
+    <div className="container relative">
+      <ScrollReveal>
+        <div className="mx-auto mb-16 max-w-2xl text-center">
+          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl tracking-tight">
+            Simple, Transparent <span className="text-gradient">Pricing</span>
+          </h2>
+          <p className="mt-5 text-lg text-muted-foreground">
+            Start with just $1. Upgrade anytime as your trading grows.
+          </p>
+        </div>
+      </ScrollReveal>
       <div className="grid gap-6 md:grid-cols-3">
-        {plans.map((plan) => (
-          <div
-            key={plan.name}
-            className={`rounded-xl p-8 transition-all ${
-              plan.highlighted
-                ? "card-glass glow-border ring-1 ring-primary/30 scale-[1.02]"
-                : "card-glass"
-            }`}
-          >
-            {plan.highlighted && (
-              <span className="mb-4 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                Most Popular
-              </span>
-            )}
-            <h3 className="font-heading text-xl font-bold text-foreground">{plan.name}</h3>
-            <div className="mt-4 flex items-baseline gap-1">
-              <span className="font-heading text-4xl font-bold text-foreground">{plan.price}</span>
-              <span className="text-sm text-muted-foreground">{plan.period}</span>
-            </div>
-            <ul className="mt-6 space-y-3">
-              {plan.features.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <Button
-              className={`mt-8 w-full ${
+        {plans.map((plan, i) => (
+          <ScrollReveal key={plan.name} delay={i * 100}>
+            <div
+              className={`rounded-2xl p-8 transition-all duration-300 h-full ${
                 plan.highlighted
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  ? "card-glass ring-1 ring-primary/30 shadow-xl shadow-primary/10 scale-[1.03]"
+                  : "card-glass-hover"
               }`}
             >
-              Get Started
-            </Button>
-          </div>
+              {plan.highlighted && (
+                <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
+                  Most Popular
+                </span>
+              )}
+              <h3 className="font-heading text-xl font-bold text-foreground">{plan.name}</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="font-heading text-5xl font-bold text-foreground">{plan.price}</span>
+                <span className="text-sm text-muted-foreground">{plan.period}</span>
+              </div>
+              <ul className="mt-8 space-y-3.5">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-3 text-sm text-muted-foreground">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                      <Check className="h-3 w-3 text-primary" />
+                    </div>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Button
+                className={`mt-8 w-full rounded-xl h-11 font-semibold ${
+                  plan.highlighted
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                Get Started
+              </Button>
+            </div>
+          </ScrollReveal>
         ))}
       </div>
     </div>

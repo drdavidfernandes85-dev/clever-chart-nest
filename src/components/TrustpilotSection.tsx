@@ -13,7 +13,7 @@ const reviews = [
 const Stars = () => (
   <div className="flex gap-0.5">
     {[...Array(5)].map((_, i) => (
-      <div key={i} className="flex h-5 w-5 items-center justify-center bg-emerald-500">
+      <div key={i} className="flex h-5 w-5 items-center justify-center rounded-sm bg-emerald-500">
         <Star className="h-3 w-3 fill-foreground text-foreground" />
       </div>
     ))}
@@ -44,10 +44,11 @@ const TrustpilotSection = () => {
   };
 
   return (
-    <section className="bg-background py-16">
-      <div className="container">
+    <section className="relative bg-background py-20">
+      <div className="absolute inset-0 bg-secondary/10" />
+      <div className="container relative">
         <ScrollReveal>
-          <h2 className="mb-10 text-center font-heading text-3xl font-bold text-foreground">
+          <h2 className="mb-12 text-center font-heading text-4xl font-bold text-foreground tracking-tight">
             What Our Clients Say
           </h2>
         </ScrollReveal>
@@ -57,7 +58,7 @@ const TrustpilotSection = () => {
             {canScrollLeft && (
               <button
                 onClick={() => scroll("left")}
-                className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-border shadow-lg text-foreground lg:hidden"
+                className="absolute -left-3 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-border/50 shadow-lg text-foreground hover:bg-secondary transition-colors lg:hidden"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -65,7 +66,7 @@ const TrustpilotSection = () => {
             {canScrollRight && (
               <button
                 onClick={() => scroll("right")}
-                className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-card border border-border shadow-lg text-foreground lg:hidden"
+                className="absolute -right-3 top-1/2 z-10 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-border/50 shadow-lg text-foreground hover:bg-secondary transition-colors lg:hidden"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -78,11 +79,11 @@ const TrustpilotSection = () => {
               {reviews.map((r, i) => (
                 <div
                   key={i}
-                  className="min-w-[260px] snap-start rounded-lg border border-border/50 bg-card p-4 shadow-lg shadow-black/20 transition-all hover:border-primary/30 hover:shadow-primary/10 hover:shadow-xl lg:min-w-0"
+                  className="min-w-[260px] snap-start rounded-2xl border border-border/30 bg-card/60 p-5 backdrop-blur-sm shadow-lg shadow-background/30 transition-all duration-300 hover:border-primary/20 hover:shadow-primary/5 hover:shadow-xl lg:min-w-0"
                 >
                   <Stars />
                   <h3 className="mt-3 text-sm font-semibold text-foreground line-clamp-1">{r.title}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{r.text}</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground line-clamp-2">{r.text}</p>
                   <p className="mt-3 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">{r.name}</span>, {r.date}
                   </p>
@@ -92,10 +93,10 @@ const TrustpilotSection = () => {
           </div>
         </ScrollReveal>
 
-        <div className="mt-8 text-center">
+        <div className="mt-10 text-center">
           <p className="text-sm text-muted-foreground">
             Rated <span className="font-semibold text-foreground">4.7 / 5</span> | based on{" "}
-            <a href="https://www.trustpilot.com" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline">
+            <a href="https://www.trustpilot.com" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline underline-offset-2 hover:text-primary transition-colors">
               1,142 reviews
             </a>
             . Our 4 & 5 star reviews.
