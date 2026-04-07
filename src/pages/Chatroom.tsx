@@ -45,6 +45,17 @@ const Chatroom = () => {
       }
     };
     loadChannels();
+
+    // Load all user roles for badge display
+    const loadRoles = async () => {
+      const { data } = await supabase.from("user_roles").select("user_id, role");
+      if (data) {
+        const map: UserRoleMap = {};
+        data.forEach((r) => { if (r.role === "admin" || r.role === "moderator") map[r.user_id] = r.role; });
+        setUserRoles(map);
+      }
+    };
+    loadRoles();
   }, []);
 
   useEffect(() => {
