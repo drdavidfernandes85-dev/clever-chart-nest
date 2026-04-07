@@ -82,7 +82,8 @@ const renderInline = (text: string): string => {
   return text
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, '<code class="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono text-gray-800">$1</code>');
+    .replace(/`(.+?)`/g, '<code class="rounded bg-gray-100 px-1 py-0.5 text-xs font-mono text-gray-800">$1</code>')
+    .replace(/@(\w+)/g, '<span class="rounded bg-blue-100 px-1 py-0.5 text-xs font-semibold text-blue-700 cursor-pointer">@$1</span>');
 };
 
 const RoleBadge = ({ role }: { role?: string }) => {
