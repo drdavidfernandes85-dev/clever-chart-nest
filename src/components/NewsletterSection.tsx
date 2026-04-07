@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,16 +43,16 @@ const NewsletterSection = () => {
             <Mail className="h-7 w-7 text-primary" />
           </div>
           <h2 className="font-heading text-2xl font-bold text-foreground md:text-3xl uppercase tracking-tight">
-            Join Our <span className="text-gradient">Newsletter</span>
+            {t("newsletter.title1")} <span className="text-gradient">{t("newsletter.title2")}</span>
           </h2>
           <p className="mt-4 text-sm text-muted-foreground">
-            Get the latest market insights and analysis delivered to your inbox.
+            {t("newsletter.desc")}
           </p>
           <form onSubmit={handleSubscribe} className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Input
               type="email"
               required
-              placeholder="Your Email"
+              placeholder={t("newsletter.placeholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-full h-12 px-5"
@@ -60,7 +62,7 @@ const NewsletterSection = () => {
               disabled={loading}
               className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full h-12 px-8 font-semibold"
             >
-              {loading ? "Subscribing..." : "Subscribe"}
+              {loading ? t("newsletter.subscribing") : t("newsletter.subscribe")}
             </Button>
           </form>
         </div>

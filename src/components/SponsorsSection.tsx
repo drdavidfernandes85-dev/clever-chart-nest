@@ -1,13 +1,16 @@
 import sponsorsStrip from "@/assets/sponsors-strip.png";
 import ScrollReveal from "@/components/ScrollReveal";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const SponsorsSection = () => {
+  const { t } = useLanguage();
+
   return (
     <section className="relative border-y border-border/30 py-16">
       <div className="container relative">
         <ScrollReveal>
           <p className="mb-8 text-center text-[10px] font-medium uppercase tracking-[0.3em] text-muted-foreground/50">
-            Official Partnerships & Sponsorships
+            {t("sponsors.label")}
           </p>
           <div className="mx-auto max-w-5xl">
             <img

@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +52,7 @@ const Login = () => {
               </span>
             </Link>
             <div className="mx-auto mt-4 h-0.5 w-8 bg-primary" />
-            <h1 className="mt-4 font-heading text-2xl font-semibold text-primary uppercase">Sign In</h1>
+            <h1 className="mt-4 font-heading text-2xl font-semibold text-primary uppercase">{t("login.title")}</h1>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
@@ -58,14 +60,14 @@ const Login = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email address"
+              placeholder={t("login.email")}
               className="h-12 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-5 focus-visible:ring-1 focus-visible:ring-primary/50"
             />
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder={t("login.password")}
               className="h-12 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-5 focus-visible:ring-1 focus-visible:ring-primary/50"
             />
             <Button
@@ -73,15 +75,15 @@ const Login = () => {
               disabled={loading}
               className="h-12 w-full gap-2 bg-primary text-primary-foreground font-semibold hover:bg-primary/80 rounded-full"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? t("login.submitting") : t("login.submit")}
               {!loading && <ChevronRight className="h-4 w-4" />}
             </Button>
           </form>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
-            <Link to="/" className="text-primary hover:underline">Back to Home</Link>
-            <Link to="/register" className="text-primary hover:underline">Sign Up</Link>
-            <span className="cursor-pointer text-primary hover:underline">Forgot Password?</span>
+            <Link to="/" className="text-primary hover:underline">{t("login.backHome")}</Link>
+            <Link to="/register" className="text-primary hover:underline">{t("login.signup")}</Link>
+            <span className="cursor-pointer text-primary hover:underline">{t("login.forgot")}</span>
           </div>
         </div>
       </div>

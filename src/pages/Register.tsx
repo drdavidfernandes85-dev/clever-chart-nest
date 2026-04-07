@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Register = () => {
   const [displayName, setDisplayName] = useState("");
@@ -12,6 +13,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,14 +60,14 @@ const Register = () => {
               </span>
             </Link>
             <div className="mx-auto mt-4 h-0.5 w-8 bg-primary" />
-            <h1 className="mt-4 font-heading text-2xl font-semibold text-primary uppercase">Sign Up</h1>
+            <h1 className="mt-4 font-heading text-2xl font-semibold text-primary uppercase">{t("register.title")}</h1>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
             <Input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Username / Nickname"
+              placeholder={t("register.name")}
               maxLength={30}
               className="h-12 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-5 focus-visible:ring-1 focus-visible:ring-primary/50"
             />
@@ -73,14 +75,14 @@ const Register = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email address"
+              placeholder={t("register.email")}
               className="h-12 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-5 focus-visible:ring-1 focus-visible:ring-primary/50"
             />
             <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password (min 6 characters)"
+              placeholder={t("register.password")}
               className="h-12 border-border bg-secondary text-foreground placeholder:text-muted-foreground rounded-full px-5 focus-visible:ring-1 focus-visible:ring-primary/50"
             />
             <Button
@@ -88,14 +90,14 @@ const Register = () => {
               disabled={loading}
               className="h-12 w-full gap-2 bg-primary text-primary-foreground font-semibold hover:bg-primary/80 rounded-full"
             >
-              {loading ? "Creating account..." : "Sign Up"}
+              {loading ? t("register.submitting") : t("register.submit")}
               {!loading && <ChevronRight className="h-4 w-4" />}
             </Button>
           </form>
 
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
-            <Link to="/" className="text-primary hover:underline">Back to Home</Link>
-            <Link to="/login" className="text-primary hover:underline">Sign In</Link>
+            <Link to="/" className="text-primary hover:underline">{t("register.backHome")}</Link>
+            <Link to="/login" className="text-primary hover:underline">{t("register.login")}</Link>
           </div>
         </div>
       </div>
