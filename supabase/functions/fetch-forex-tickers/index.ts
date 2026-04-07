@@ -17,18 +17,23 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get('TWELVE_DATA_API_KEY')
 
     if (apiKey) {
-      // Twelve Data uses "EUR/USD" format for forex
-      const symbolStr = SYMBOLS.join(',')
-      const res = await fetch(
-        `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbolStr)}&apikey=${apiKey}`
+      // Fetch each pair individually with /quote endpoint
+      const results = await Promise.allSettled(
+        SYMBOLS.map(async (pair) => {
+          const res = await fetch(
+            `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(pair)}&apikey=${apiKey}`
+          )
+          const data = await res.json()
+          return { pair, data }
+        })
       )
-      const data = await res.json()
 
-      const tickers = SYMBOLS.map((pair) => {
-        const quote = Object.keys(data).length === SYMBOLS.length ? data[pair] : data
-        if (!quote || quote.status === 'error') {
+      const tickers = results.map((result, i) => {
+        const pair = SYMBOLS[i]
+        if (result.status === 'rejected' || !result.value.data || result.value.data.status === 'error') {
           return { pair, price: '--', change: '+0.00%', bias: 'neutral' as const, strength: 50, timestamp: new Date().toISOString() }
         }
+        const quote = result.value.data
         const price = parseFloat(quote.close || '0')
         const prevClose = parseFloat(quote.previous_close || '0')
         const changeVal = prevClose > 0 ? ((price - prevClose) / prevClose) * 100 : 0
