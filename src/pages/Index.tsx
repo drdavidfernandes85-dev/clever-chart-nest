@@ -13,7 +13,7 @@ import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 
 const Index = () => (
-  <div className="min-h-screen bg-background">
+  <div className="min-h-screen">
     <Navbar />
     <HeroSection />
     <ScrollReveal><SponsorsSection /></ScrollReveal>

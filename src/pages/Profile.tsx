@@ -60,7 +60,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">

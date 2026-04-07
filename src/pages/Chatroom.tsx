@@ -244,7 +244,7 @@ const Chatroom = () => {
   const messageItems = buildMessageList();
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border/50 bg-card md:flex">
         {sidebarContent}
