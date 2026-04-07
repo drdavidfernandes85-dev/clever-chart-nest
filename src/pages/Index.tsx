@@ -9,6 +9,7 @@ import TrustpilotSection from "@/components/TrustpilotSection";
 import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import NewsletterSection from "@/components/NewsletterSection";
+import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 
@@ -23,6 +24,7 @@ const Index = () => (
     <ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal>
     <ScrollReveal delay={100}><FAQSection /></ScrollReveal>
     <ScrollReveal><CTASection /></ScrollReveal>
+    <ScrollReveal><ContactSection /></ScrollReveal>
     <ScrollReveal><NewsletterSection /></ScrollReveal>
     <Footer />
   </div>
