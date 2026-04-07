@@ -10,19 +10,20 @@ import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import NewsletterSection from "@/components/NewsletterSection";
 import Footer from "@/components/Footer";
+import ScrollReveal from "@/components/ScrollReveal";
 
 const Index = () => (
   <div className="min-h-screen bg-background">
     <Navbar />
     <HeroSection />
-    <SponsorsSection />
-    <FeaturesSection />
-    <TeamSection />
-    <MentoringSection />
-    <TrustpilotSection />
-    <FAQSection />
-    <CTASection />
-    <NewsletterSection />
+    <ScrollReveal><SponsorsSection /></ScrollReveal>
+    <ScrollReveal delay={100}><FeaturesSection /></ScrollReveal>
+    <ScrollReveal delay={100}><TeamSection /></ScrollReveal>
+    <ScrollReveal delay={100}><MentoringSection /></ScrollReveal>
+    <ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal>
+    <ScrollReveal delay={100}><FAQSection /></ScrollReveal>
+    <ScrollReveal><CTASection /></ScrollReveal>
+    <ScrollReveal><NewsletterSection /></ScrollReveal>
     <Footer />
   </div>
 );

@@ -138,4 +138,9 @@
     background: linear-gradient(90deg, transparent, hsl(45 100% 50% / 0.3), transparent);
     height: 1px;
   }
+
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
 }

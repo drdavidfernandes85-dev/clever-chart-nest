@@ -1,9 +1,11 @@
-import { BarChart3, MessageSquare } from "lucide-react";
+import { BarChart3, MessageSquare, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
+import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
+import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -35,16 +37,20 @@ const Dashboard = () => {
                 <span className="ml-1.5 hidden sm:inline">Chatroom</span>
               </Link>
             </Button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-              DH
-            </div>
+            <Link to="/profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/80 transition-colors">
+              <User className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </header>
 
+      <ForexTickerBar />
       <div className="space-y-4 p-4">
         <WebinarWidget />
-        <NewsFlowWidget />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <EconomicCalendarWidget />
+          <NewsFlowWidget />
+        </div>
       </div>
     </div>
   );
