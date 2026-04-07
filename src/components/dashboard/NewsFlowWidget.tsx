@@ -405,10 +405,6 @@ const NewsFlowWidget = () => {
               <Radio className="h-3.5 w-3.5" />
               LIVESQUAWK
             </TabsTrigger>
-            <TabsTrigger value="calendar" className={tabTriggerClass}>
-              <Calendar className="h-3.5 w-3.5" />
-              CALENDAR
-            </TabsTrigger>
             <TabsTrigger value="tools" className={tabTriggerClass}>
               <Wrench className="h-3.5 w-3.5" />
               TOOLS
@@ -482,9 +478,6 @@ const NewsFlowWidget = () => {
 
         <TabsContent value="livesquawk" className="mt-0">
           <LiveSquawkFeed />
-        </TabsContent>
-        <TabsContent value="calendar" className="mt-0">
-          <EconomicCalendar />
         </TabsContent>
         <TabsContent value="tools" className="mt-0">
           <ToolsPanel />
