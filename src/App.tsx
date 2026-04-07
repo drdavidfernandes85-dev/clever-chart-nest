@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
+import LiveChart from "./pages/LiveChart.tsx";
 import Chatroom from "./pages/Chatroom.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
