@@ -45,7 +45,7 @@ const NewsletterSection = () => {
           <h2 className="font-heading text-2xl font-bold text-foreground md:text-3xl uppercase tracking-tight">
             {t("newsletter.title1")} <span className="text-gradient">{t("newsletter.title2")}</span>
           </h2>
-          <p className="mt-4 text-sm text-muted-foreground">
+          <p className="mt-4 text-sm text-secondary-foreground">
             {t("newsletter.desc")}
           </p>
           <form onSubmit={handleSubscribe} className="mt-8 flex flex-col gap-3 sm:flex-row">

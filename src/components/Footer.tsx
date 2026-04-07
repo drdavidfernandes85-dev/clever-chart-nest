@@ -30,7 +30,7 @@ const Footer = () => {
             <span className="mt-3 inline-block font-heading text-sm font-semibold text-foreground">
               Elite <span className="text-primary">Live Trading Room</span>
             </span>
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-xs leading-relaxed text-secondary-foreground">
               {t("footer.desc")}
             </p>
           </div>

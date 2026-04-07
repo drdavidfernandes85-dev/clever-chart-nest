@@ -53,7 +53,7 @@ const ContactSection = () => {
           <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
             {t("contact.title1")} <span className="text-gradient">{t("contact.title2")}</span>
           </h2>
-          <p className="mt-4 text-muted-foreground">
+          <p className="mt-4 text-secondary-foreground">
             {t("contact.desc")}
           </p>
         </div>

@@ -29,7 +29,7 @@ const FAQSection = () => {
             <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
               {t("faq.title1")} <span className="text-gradient">{t("faq.title2")}</span>
             </h2>
-            <p className="mt-5 text-base text-muted-foreground">
+            <p className="mt-5 text-base text-secondary-foreground">
               {t("faq.desc")}
             </p>
           </div>
