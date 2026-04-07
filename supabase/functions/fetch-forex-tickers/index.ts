@@ -15,7 +15,7 @@ async function fetchFromTwelveData(apiKey: string) {
   const url = `https://api.twelvedata.com/quote?symbol=${symbolList}&apikey=${apiKey}`
   const res = await fetch(url)
   const json = await res.json()
-  console.log('Twelve Data sample:', JSON.stringify(Object.keys(json)), JSON.stringify(Object.values(json)[0]?.symbol ?? Object.values(json)[0]?.code))
+  
 
   // Check for API-level errors (single error object or rate limit)
   if (json.code && json.status === 'error') {
