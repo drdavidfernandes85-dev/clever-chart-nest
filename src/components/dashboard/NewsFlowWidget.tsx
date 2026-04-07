@@ -482,31 +482,31 @@ const NewsFlowWidget = () => {
     return matchesFilter && matchesSearch;
   });
 
-  const tabTriggerClass = "gap-1 rounded px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md";
+  const tabTriggerClass = "gap-1.5 rounded-md px-4 py-2 text-xs font-bold uppercase tracking-wide text-white/70 data-[state=active]:bg-[hsl(195,80%,35%)] data-[state=active]:text-white data-[state=active]:shadow-md transition-colors";
 
   return (
     <div className="rounded-lg border border-border bg-card">
       <Tabs defaultValue="newsflow" className="w-full">
-        <div className="flex flex-wrap items-center justify-between gap-1 bg-[hsl(200,30%,20%)] px-2 py-1.5 rounded-t-lg">
-          <TabsList className="h-auto w-auto flex-wrap gap-1 rounded-none border-none bg-transparent p-0">
+        <div className="flex items-center justify-between bg-[hsl(200,30%,20%)] px-4 py-2 rounded-t-lg">
+          <TabsList className="h-auto w-auto gap-2 rounded-none border-none bg-transparent p-0">
             <TabsTrigger value="newsflow" className={tabTriggerClass}>
-              <Newspaper className="h-3 w-3" />
+              <Newspaper className="h-3.5 w-3.5" />
               NEWS FLOW
             </TabsTrigger>
             <TabsTrigger value="livesquawk" className={tabTriggerClass}>
-              <Radio className="h-3 w-3" />
+              <Radio className="h-3.5 w-3.5" />
               LIVESQUAWK
             </TabsTrigger>
             <TabsTrigger value="calendar" className={tabTriggerClass}>
-              <Calendar className="h-3 w-3" />
+              <Calendar className="h-3.5 w-3.5" />
               CALENDAR
             </TabsTrigger>
             <TabsTrigger value="tools" className={tabTriggerClass}>
-              <Wrench className="h-3 w-3" />
+              <Wrench className="h-3.5 w-3.5" />
               TOOLS
             </TabsTrigger>
           </TabsList>
-          <span className="text-[9px] text-white/40 hidden lg:inline">Powered by <span className="font-bold text-[hsl(30,100%,55%)]">LIVESQUAWK</span></span>
+          <span className="text-[10px] text-white/40">Powered by <span className="font-bold text-[hsl(30,100%,55%)]">LIVESQUAWK</span></span>
         </div>
 
         <TabsContent value="newsflow" className="mt-0">
