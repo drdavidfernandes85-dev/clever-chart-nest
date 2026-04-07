@@ -32,10 +32,7 @@ async function fetchFromTwelveData(apiKey: string) {
 
   return entries.map((q: any) => {
     if (!q || !q.symbol) return null
-
-    // Convert "EURUSD" → "EUR/USD"
-    const sym = q.symbol as string
-    const pair = sym.length === 6 ? `${sym.slice(0, 3)}/${sym.slice(3)}` : sym
+    const pair = q.symbol as string
     const price = parseFloat(q.close)
     const prevClose = parseFloat(q.previous_close)
     const changeValue = prevClose && !isNaN(prevClose) ? ((price - prevClose) / prevClose) * 100 : 0
