@@ -28,14 +28,14 @@ const plans = [
 
 const PricingSection = () => (
   <section id="pricing" className="relative py-28">
-    <div className="absolute inset-0 bg-radial-glow opacity-30" />
+    <div className="absolute inset-0 bg-radial-glow opacity-20" />
     <div className="container relative">
       <ScrollReveal>
         <div className="mx-auto mb-16 max-w-2xl text-center">
-          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl tracking-tight">
-            Simple, Transparent <span className="text-gradient">Pricing</span>
+          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
+            Simple <span className="text-gradient">Pricing</span>
           </h2>
-          <p className="mt-5 text-lg text-muted-foreground">
+          <p className="mt-5 text-base text-muted-foreground">
             Start with just $1. Upgrade anytime as your trading grows.
           </p>
         </div>
@@ -44,18 +44,18 @@ const PricingSection = () => (
         {plans.map((plan, i) => (
           <ScrollReveal key={plan.name} delay={i * 100}>
             <div
-              className={`rounded-2xl p-8 transition-all duration-300 h-full ${
+              className={`rounded-2xl p-8 transition-all duration-500 h-full ${
                 plan.highlighted
                   ? "card-glass ring-1 ring-primary/30 shadow-xl shadow-primary/10 scale-[1.03]"
                   : "card-glass-hover"
               }`}
             >
               {plan.highlighted && (
-                <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary">
+                <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-[10px] font-semibold text-primary uppercase tracking-wider">
                   Most Popular
                 </span>
               )}
-              <h3 className="font-heading text-xl font-bold text-foreground">{plan.name}</h3>
+              <h3 className="font-heading text-lg font-bold text-foreground uppercase">{plan.name}</h3>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="font-heading text-5xl font-bold text-foreground">{plan.price}</span>
                 <span className="text-sm text-muted-foreground">{plan.period}</span>
@@ -71,9 +71,9 @@ const PricingSection = () => (
                 ))}
               </ul>
               <Button
-                className={`mt-8 w-full rounded-xl h-11 font-semibold ${
+                className={`mt-8 w-full rounded-full h-11 font-semibold ${
                   plan.highlighted
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+                    ? "bg-primary text-primary-foreground hover:bg-primary/80"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
               >

@@ -42,19 +42,21 @@ const features = [
 
 const FeaturesSection = () => (
   <section id="features" className="relative py-28">
-    <div className="absolute inset-0 bg-radial-glow opacity-50" />
+    <div className="absolute inset-0 bg-radial-glow opacity-40" />
     <div className="container relative">
       <ScrollReveal>
         <div className="mx-auto mb-20 max-w-2xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 text-sm text-primary backdrop-blur-sm">
-            <img src={infinoxLogo} alt="INFINOX" className="h-4" />
+          <div className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <img src={infinoxLogo} alt="INFINOX" className="h-4 opacity-60" />
             Powered by INFINOX
           </div>
-          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl tracking-tight">
-            Everything You Need to{" "}
-            <span className="text-gradient">Trade Successfully</span>
+          <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
+            Shaping the{" "}
+            <span className="text-gradient">Future</span>
+            <br />
+            of <span className="text-muted-foreground/50">Trading</span>
           </h2>
-          <p className="mt-5 text-lg text-muted-foreground">
+          <p className="mt-5 text-base text-muted-foreground">
             Navigate complex markets with professional tools and expert guidance.
           </p>
         </div>
@@ -63,10 +65,10 @@ const FeaturesSection = () => (
         {features.map((f, i) => (
           <ScrollReveal key={f.title} delay={i * 80}>
             <div className="card-glass-hover group rounded-2xl p-7 h-full">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-all duration-300 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/10">
-                <f.icon className="h-6 w-6" />
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all duration-500 group-hover:bg-primary/20 group-hover:shadow-lg group-hover:shadow-primary/10">
+                <f.icon className="h-5 w-5" />
               </div>
-              <h3 className="mb-2.5 font-heading text-lg font-semibold text-foreground">
+              <h3 className="mb-2.5 font-heading text-base font-semibold text-foreground uppercase tracking-wide">
                 {f.title}
               </h3>
               <p className="text-sm leading-relaxed text-muted-foreground">{f.description}</p>
