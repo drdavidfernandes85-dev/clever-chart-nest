@@ -35,7 +35,7 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
   }, [symbol, interval]);
 
   return (
-    <div className="tradingview-widget-container h-full min-h-[700px]" ref={containerRef} />
+    <div className="tradingview-widget-container h-full" ref={containerRef} />
   );
 };
 
