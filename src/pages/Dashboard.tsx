@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
-import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -47,10 +46,7 @@ const Dashboard = () => {
       <ForexTickerBar />
       <div className="space-y-4 p-4">
         <WebinarWidget />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <EconomicCalendarWidget />
-          <NewsFlowWidget />
-        </div>
+        <NewsFlowWidget />
       </div>
     </div>
   );
