@@ -24,6 +24,7 @@ const Index = () => (
     <ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal>
     <ScrollReveal delay={100}><FAQSection /></ScrollReveal>
     <ScrollReveal><CTASection /></ScrollReveal>
+    <ScrollReveal><ContactSection /></ScrollReveal>
     <ScrollReveal><NewsletterSection /></ScrollReveal>
     <Footer />
   </div>
