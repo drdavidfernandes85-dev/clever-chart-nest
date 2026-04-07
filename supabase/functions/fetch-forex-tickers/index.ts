@@ -23,32 +23,42 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const symbols = PAIRS.join(',')
+    const tickerResults = await Promise.all(
+      PAIRS.map(async (pair) => {
+        const quoteRes = await fetch(
+          `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(pair)}&apikey=${apiKey}`
+        )
+        const quoteData = await quoteRes.json()
 
-    // Fetch quotes (includes price + percent_change)
-    const quoteRes = await fetch(
-      `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(symbols)}&apikey=${apiKey}`
+        if (!quoteRes.ok || quoteData?.status === 'error') {
+          console.error('Quote fetch failed for pair:', pair, JSON.stringify(quoteData))
+          return {
+            pair,
+            price: '--',
+            change: '+0.00%',
+            bias: 'neutral',
+            strength: 50,
+            timestamp: null,
+          }
+        }
+
+        const priceRaw = quoteData.close ?? quoteData.previous_close ?? quoteData.price ?? null
+        const priceValue = priceRaw ? parseFloat(priceRaw) : null
+        const changeValue = quoteData.percent_change ? parseFloat(quoteData.percent_change) : 0
+        const decimals = pair.includes('JPY') ? 3 : 4
+
+        return {
+          pair,
+          price: priceValue !== null && Number.isFinite(priceValue) ? priceValue.toFixed(decimals) : '--',
+          change: changeValue >= 0 ? `+${changeValue.toFixed(2)}%` : `${changeValue.toFixed(2)}%`,
+          bias: changeValue > 0.05 ? 'bullish' : changeValue < -0.05 ? 'bearish' : 'neutral',
+          strength: Math.min(100, Math.max(0, 50 + changeValue * 10)),
+          timestamp: quoteData.datetime ?? null,
+        }
+      })
     )
-    const quoteData = await quoteRes.json()
-    console.log('Quote keys:', Object.keys(quoteData))
 
-    const tickers = PAIRS.map((pair) => {
-      const q = quoteData[pair] ?? {}
-      const price = q.close ?? q.previous_close ?? null
-      const change = q.percent_change ? parseFloat(q.percent_change) : 0
-      const changeStr = change >= 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`
-
-      return {
-        pair,
-        price: price ? parseFloat(price).toFixed(4) : '--',
-        change: changeStr,
-        bias: change > 0.05 ? 'bullish' : change < -0.05 ? 'bearish' : 'neutral',
-        strength: Math.min(100, Math.max(0, 50 + change * 10)),
-        timestamp: q.datetime ?? null,
-      }
-    })
-
-    return new Response(JSON.stringify({ tickers, fetchedAt: new Date().toISOString() }), {
+    return new Response(JSON.stringify({ tickers: tickerResults, fetchedAt: new Date().toISOString() }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
