@@ -432,8 +432,18 @@ const NewsFlowWidget = () => {
 
           <div className="max-h-[400px] overflow-y-auto divide-y divide-border/30">
             {loading && newsItems.length === 0 ? (
-              <div className="flex h-32 items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <div className="space-y-0 divide-y divide-border/30">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="px-3 py-2.5 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+                      <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+                    </div>
+                    <div className="h-3 w-full rounded bg-muted animate-pulse" />
+                    <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+                    <div className="h-2.5 w-24 rounded bg-muted animate-pulse" />
+                  </div>
+                ))}
               </div>
             ) : filteredNews.length === 0 ? (
               <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">

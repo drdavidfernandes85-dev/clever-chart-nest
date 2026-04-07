@@ -92,8 +92,18 @@ const EconomicCalendarWidget = () => {
 
       <div className="max-h-[400px] overflow-y-auto divide-y divide-border/20">
         {loading && events.length === 0 ? (
-          <div className="flex h-32 items-center justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <div className="space-y-0 divide-y divide-border/20">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="grid grid-cols-[50px_40px_20px_1fr_55px_55px_55px] gap-1 items-center px-4 py-2">
+                <div className="h-3 w-10 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-8 rounded bg-muted animate-pulse" />
+                <div className="h-2.5 w-2.5 rounded-full bg-muted animate-pulse" />
+                <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
+                <div className="h-3 w-10 rounded bg-muted animate-pulse ml-auto" />
+                <div className="h-3 w-10 rounded bg-muted animate-pulse ml-auto" />
+                <div className="h-3 w-10 rounded bg-muted animate-pulse ml-auto" />
+              </div>
+            ))}
           </div>
         ) : events.length === 0 ? (
           <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
