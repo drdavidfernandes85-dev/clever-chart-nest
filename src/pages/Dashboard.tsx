@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { TrendingUp, BarChart3, MessageSquare } from "lucide-react";
+import { BarChart3, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
+import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,10 +56,11 @@ const Dashboard = () => {
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-[hsl(45,100%,50%)]" />
-              <span className="font-heading text-lg font-bold text-foreground">
-                Elite <span className="text-[hsl(45,100%,50%)]">Live Trading Room</span>
+            <Link to="/" className="flex items-center gap-3">
+              <img src={infinoxLogo} alt="INFINOX" className="h-5" />
+              <span className="hidden sm:inline text-xs text-muted-foreground">|</span>
+              <span className="hidden sm:inline font-heading text-sm font-bold text-foreground">
+                Elite <span className="text-primary">Live Trading Room</span>
               </span>
             </Link>
             <Badge variant="secondary" className="text-xs">Dashboard</Badge>
