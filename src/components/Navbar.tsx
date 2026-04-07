@@ -52,13 +52,13 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/signals">{t("nav.signals")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/videos">{t("nav.videos")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/login">{t("nav.login")}</Link>
           </Button>
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-6 font-semibold" asChild>
