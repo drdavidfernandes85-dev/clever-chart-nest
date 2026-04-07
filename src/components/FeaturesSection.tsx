@@ -28,14 +28,14 @@ const features = [
     description: "Daily webinars hosted by seasoned veterans with live market analysis and Q&A.",
   },
   {
-    icon: GraduationCap,
-    title: "Education",
-    description: "Comprehensive trading courses and resources to sharpen your skills at every level.",
-  },
-  {
     icon: Globe,
     title: "24/7 Coverage",
     description: "Round-the-clock market coverage across all major trading sessions.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Education",
+    description: "Comprehensive trading courses and resources to sharpen your skills at every level.",
   },
 ];
 
