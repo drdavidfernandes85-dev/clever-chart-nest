@@ -49,7 +49,7 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/dashboard">{t("nav.dashboard")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/signals">{t("nav.signals")}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
