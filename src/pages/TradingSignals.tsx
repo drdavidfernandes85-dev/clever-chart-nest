@@ -178,8 +178,31 @@ const TradingSignals = () => {
                         {isBuy ? t("signals.buy") : t("signals.sell")}
                       </Badge>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] gap-1 ${sc.color}`}>
-                      {sc.icon} {sc.label}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`text-[10px] gap-1 ${sc.color}`}>
+                        {sc.icon} {sc.label}
+                      </Badge>
+                      {isAdmin && signal.status === "active" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => updateStatus(signal.id, "hit_tp")} className="gap-2 text-emerald-400">
+                              <CheckCircle className="h-3.5 w-3.5" /> Mark TP Hit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateStatus(signal.id, "hit_sl")} className="gap-2 text-red-400">
+                              <XCircle className="h-3.5 w-3.5" /> Mark SL Hit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateStatus(signal.id, "cancelled")} className="gap-2 text-muted-foreground">
+                              <ShieldAlert className="h-3.5 w-3.5" /> Cancel Signal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                     </Badge>
                   </div>
 
