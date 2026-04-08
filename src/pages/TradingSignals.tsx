@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import NewSignalForm from "@/components/signals/NewSignalForm";
 
 interface Signal {
@@ -74,6 +76,18 @@ const TradingSignals = () => {
   const activeSignals = signals.filter((s) => s.status === "active");
   const closedSignals = signals.filter((s) => s.status !== "active");
   const displayed = tab === "active" ? activeSignals : closedSignals;
+
+  const updateStatus = async (signalId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from("trading_signals")
+      .update({ status: newStatus })
+      .eq("id", signalId);
+    if (error) {
+      toast.error("Failed to update signal status");
+    } else {
+      toast.success(`Signal marked as ${statusConfig[newStatus]?.label || newStatus}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -164,9 +178,31 @@ const TradingSignals = () => {
                         {isBuy ? t("signals.buy") : t("signals.sell")}
                       </Badge>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] gap-1 ${sc.color}`}>
-                      {sc.icon} {sc.label}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`text-[10px] gap-1 ${sc.color}`}>
+                        {sc.icon} {sc.label}
+                      </Badge>
+                      {isAdmin && signal.status === "active" && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => updateStatus(signal.id, "hit_tp")} className="gap-2 text-emerald-400">
+                              <CheckCircle className="h-3.5 w-3.5" /> Mark TP Hit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateStatus(signal.id, "hit_sl")} className="gap-2 text-red-400">
+                              <XCircle className="h-3.5 w-3.5" /> Mark SL Hit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => updateStatus(signal.id, "cancelled")} className="gap-2 text-muted-foreground">
+                              <ShieldAlert className="h-3.5 w-3.5" /> Cancel Signal
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 mb-3">
