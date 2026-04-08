@@ -1,7 +1,13 @@
-import { useState } from "react";
-import { Video, Play, Clock, Calendar, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Video, Play, Clock, Calendar, Settings2, X, Radio } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const PAST_RECORDINGS = [
   {
@@ -51,22 +57,203 @@ const PAST_RECORDINGS = [
   },
 ];
 
+/** Parse a YouTube URL/ID into an embed-ready video ID */
+function parseYoutubeId(input: string): string | null {
+  if (!input) return null;
+  // Already a plain ID
+  if (/^[\w-]{11}$/.test(input.trim())) return input.trim();
+  // Various YouTube URL formats
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/live\/)([\w-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = input.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/** Parse a Zoom meeting URL into meeting number + password */
+function parseZoomUrl(input: string): { meetingNumber: string; password?: string } | null {
+  if (!input) return null;
+  const m = input.match(/zoom\.us\/j\/(\d+)(?:\?pwd=(\w+))?/);
+  if (m) return { meetingNumber: m[1], password: m[2] };
+  // Just a meeting number
+  if (/^\d{9,11}$/.test(input.trim())) return { meetingNumber: input.trim() };
+  return null;
+}
+
+type LiveSource = {
+  type: "youtube" | "zoom" | "none";
+  url: string;
+};
+
 const LiveWebinarTab = () => {
-  const LIVE_STREAM_ID = "";
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [liveSource, setLiveSource] = useState<LiveSource>({ type: "none", url: "" });
+  const [inputUrl, setInputUrl] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .in("role", ["admin", "moderator"])
+      .then(({ data }) => setIsAdmin(!!(data && data.length > 0)));
+  }, [user]);
+
+  // Load saved live source from localStorage (could be moved to DB later)
+  useEffect(() => {
+    const saved = localStorage.getItem("live_webinar_source");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as LiveSource;
+        setLiveSource(parsed);
+        setInputUrl(parsed.url);
+      } catch { /* ignore */ }
+    }
+  }, []);
+
+  const handleSetLive = () => {
+    const trimmed = inputUrl.trim();
+    if (!trimmed) {
+      // Clear live
+      setLiveSource({ type: "none", url: "" });
+      localStorage.removeItem("live_webinar_source");
+      toast.success("Live stream cleared");
+      setShowSettings(false);
+      return;
+    }
+
+    const ytId = parseYoutubeId(trimmed);
+    if (ytId) {
+      const source: LiveSource = { type: "youtube", url: ytId };
+      setLiveSource(source);
+      localStorage.setItem("live_webinar_source", JSON.stringify(source));
+      toast.success("YouTube live stream set!");
+      setShowSettings(false);
+      return;
+    }
+
+    const zoom = parseZoomUrl(trimmed);
+    if (zoom) {
+      const source: LiveSource = { type: "zoom", url: trimmed };
+      setLiveSource(source);
+      localStorage.setItem("live_webinar_source", JSON.stringify(source));
+      toast.success("Zoom meeting link set!");
+      setShowSettings(false);
+      return;
+    }
+
+    toast.error("Paste a YouTube URL/ID or Zoom meeting link");
+  };
+
+  const handleStopLive = () => {
+    setLiveSource({ type: "none", url: "" });
+    setInputUrl("");
+    localStorage.removeItem("live_webinar_source");
+    toast.success("Live stream ended");
+  };
 
   return (
     <div className="p-4">
-      {LIVE_STREAM_ID ? (
-        <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/50">
-          <iframe
-            src={`https://www.youtube.com/embed/${LIVE_STREAM_ID}?autoplay=1`}
-            className="h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="Live Webinar"
-          />
+      {/* Admin controls */}
+      {isAdmin && (
+        <div className="mb-3">
+          {showSettings ? (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground uppercase">Set Live Stream</Label>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowSettings(false)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <Input
+                placeholder="YouTube URL/ID or Zoom meeting link"
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                className="text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Examples: youtube.com/watch?v=xxx, youtu.be/xxx, zoom.us/j/123456789
+              </p>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSetLive} className="rounded-full text-xs">
+                  Go Live
+                </Button>
+                {liveSource.type !== "none" && (
+                  <Button size="sm" variant="destructive" onClick={handleStopLive} className="rounded-full text-xs">
+                    Stop Live
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(true)}
+              className="gap-1.5 text-[10px] text-muted-foreground"
+            >
+              <Settings2 className="h-3 w-3" /> {liveSource.type !== "none" ? "Change Stream" : "Start Live Stream"}
+            </Button>
+          )}
         </div>
-      ) : (
+      )}
+
+      {/* Live stream display */}
+      {liveSource.type === "youtube" && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Badge className="bg-red-500 text-white border-0 gap-1 text-[10px] animate-pulse">
+              <Radio className="h-3 w-3" /> LIVE
+            </Badge>
+            <span className="text-xs text-muted-foreground">YouTube Live Stream</span>
+          </div>
+          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/50">
+            <iframe
+              src={`https://www.youtube.com/embed/${liveSource.url}?autoplay=1`}
+              className="h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="Live Webinar"
+            />
+          </div>
+        </div>
+      )}
+
+      {liveSource.type === "zoom" && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Badge className="bg-blue-500 text-white border-0 gap-1 text-[10px] animate-pulse">
+              <Radio className="h-3 w-3" /> LIVE
+            </Badge>
+            <span className="text-xs text-muted-foreground">Zoom Meeting</span>
+          </div>
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/5 py-12 px-6 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10">
+              <Video className="h-8 w-8 text-blue-400" />
+            </div>
+            <h4 className="text-sm font-semibold text-foreground mb-2">Zoom Meeting is Live</h4>
+            <p className="text-xs text-muted-foreground max-w-xs mb-4">
+              Click below to join the live trading session on Zoom.
+            </p>
+            <Button
+              asChild
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full px-8 gap-2"
+            >
+              <a href={liveSource.url.startsWith("http") ? liveSource.url : `https://zoom.us/j/${liveSource.url}`} target="_blank" rel="noopener noreferrer">
+                <Video className="h-4 w-4" /> Join Zoom Meeting
+              </a>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {liveSource.type === "none" && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 bg-secondary/20 py-16 px-6 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
             <Video className="h-8 w-8 text-primary" />
