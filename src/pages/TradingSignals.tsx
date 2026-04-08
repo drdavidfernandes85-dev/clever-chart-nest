@@ -77,6 +77,18 @@ const TradingSignals = () => {
   const closedSignals = signals.filter((s) => s.status !== "active");
   const displayed = tab === "active" ? activeSignals : closedSignals;
 
+  const updateStatus = async (signalId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from("trading_signals")
+      .update({ status: newStatus })
+      .eq("id", signalId);
+    if (error) {
+      toast.error("Failed to update signal status");
+    } else {
+      toast.success(`Signal marked as ${statusConfig[newStatus]?.label || newStatus}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl py-24">
