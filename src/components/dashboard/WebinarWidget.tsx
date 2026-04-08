@@ -88,6 +88,16 @@ type LiveSource = {
   url: string;
 };
 
+const SETTING_KEY = "live_webinar_source";
+
+/** Save live source to DB */
+async function saveLiveSourceToDB(source: LiveSource) {
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key: SETTING_KEY, value: source as any, updated_at: new Date().toISOString() }, { onConflict: "key" });
+  if (error) console.error("Failed to save live source", error);
+}
+
 const LiveWebinarTab = () => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -105,24 +115,50 @@ const LiveWebinarTab = () => {
       .then(({ data }) => setIsAdmin(!!(data && data.length > 0)));
   }, [user]);
 
-  // Load saved live source from localStorage (could be moved to DB later)
+  // Load from DB + subscribe to realtime changes
   useEffect(() => {
-    const saved = localStorage.getItem("live_webinar_source");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as LiveSource;
-        setLiveSource(parsed);
-        setInputUrl(parsed.url);
-      } catch { /* ignore */ }
-    }
+    // Initial fetch
+    supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", SETTING_KEY)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          const src = data.value as unknown as LiveSource;
+          setLiveSource(src);
+          setInputUrl(src.url);
+        }
+      });
+
+    // Realtime subscription
+    const channel = supabase
+      .channel("live-webinar")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "site_settings", filter: `key=eq.${SETTING_KEY}` },
+        (payload: any) => {
+          const newVal = payload.new?.value as LiveSource | undefined;
+          if (newVal) {
+            setLiveSource(newVal);
+            setInputUrl(newVal.url);
+          } else {
+            setLiveSource({ type: "none", url: "" });
+            setInputUrl("");
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const handleSetLive = () => {
+  const handleSetLive = async () => {
     const trimmed = inputUrl.trim();
     if (!trimmed) {
-      // Clear live
-      setLiveSource({ type: "none", url: "" });
-      localStorage.removeItem("live_webinar_source");
+      const source: LiveSource = { type: "none", url: "" };
+      setLiveSource(source);
+      await saveLiveSourceToDB(source);
       toast.success("Live stream cleared");
       setShowSettings(false);
       return;
@@ -132,7 +168,7 @@ const LiveWebinarTab = () => {
     if (ytId) {
       const source: LiveSource = { type: "youtube", url: ytId };
       setLiveSource(source);
-      localStorage.setItem("live_webinar_source", JSON.stringify(source));
+      await saveLiveSourceToDB(source);
       toast.success("YouTube live stream set!");
       setShowSettings(false);
       return;
@@ -142,7 +178,7 @@ const LiveWebinarTab = () => {
     if (zoom) {
       const source: LiveSource = { type: "zoom", url: trimmed };
       setLiveSource(source);
-      localStorage.setItem("live_webinar_source", JSON.stringify(source));
+      await saveLiveSourceToDB(source);
       toast.success("Zoom meeting link set!");
       setShowSettings(false);
       return;
@@ -151,10 +187,11 @@ const LiveWebinarTab = () => {
     toast.error("Paste a YouTube URL/ID or Zoom meeting link");
   };
 
-  const handleStopLive = () => {
-    setLiveSource({ type: "none", url: "" });
+  const handleStopLive = async () => {
+    const source: LiveSource = { type: "none", url: "" };
+    setLiveSource(source);
     setInputUrl("");
-    localStorage.removeItem("live_webinar_source");
+    await saveLiveSourceToDB(source);
     toast.success("Live stream ended");
   };
 
