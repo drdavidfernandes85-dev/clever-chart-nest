@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import NewSignalForm from "@/components/signals/NewSignalForm";
 
 interface Signal {
   id: string;
@@ -29,9 +31,11 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
 
 const TradingSignals = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchSignals = async () => {
