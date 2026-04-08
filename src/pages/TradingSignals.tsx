@@ -77,6 +77,34 @@ const TradingSignals = () => {
   const closedSignals = signals.filter((s) => s.status !== "active");
   const displayed = tab === "active" ? activeSignals : closedSignals;
 
+  // P&L calculations
+  const pnlStats = closedSignals.reduce(
+    (acc, signal) => {
+      const isJpy = signal.pair.includes("JPY");
+      const pipMul = isJpy ? 100 : 10000;
+      const isBuy = signal.direction === "buy";
+
+      if (signal.status === "hit_tp" && signal.take_profit) {
+        const pips = isBuy
+          ? (Number(signal.take_profit) - signal.entry_price) * pipMul
+          : (signal.entry_price - Number(signal.take_profit)) * pipMul;
+        acc.totalPips += pips;
+        acc.wins += 1;
+      } else if (signal.status === "hit_sl" && signal.stop_loss) {
+        const pips = isBuy
+          ? (Number(signal.stop_loss) - signal.entry_price) * pipMul
+          : (signal.entry_price - Number(signal.stop_loss)) * pipMul;
+        acc.totalPips += pips;
+        acc.losses += 1;
+      }
+      return acc;
+    },
+    { totalPips: 0, wins: 0, losses: 0 }
+  );
+  const winRate = pnlStats.wins + pnlStats.losses > 0
+    ? ((pnlStats.wins / (pnlStats.wins + pnlStats.losses)) * 100).toFixed(0)
+    : null;
+
   const updateStatus = async (signalId: string, newStatus: string) => {
     const { error } = await supabase
       .from("trading_signals")
@@ -104,6 +132,33 @@ const TradingSignals = () => {
           </h1>
           <p className="mt-2 text-muted-foreground">{t("signals.desc")}</p>
         </div>
+
+        {/* P&L Tracker */}
+        {closedSignals.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div className="rounded-xl border border-border/30 bg-card p-4 text-center">
+              <span className="text-[10px] text-muted-foreground uppercase block mb-1">Total P&L</span>
+              <span className={`text-xl font-heading font-bold ${pnlStats.totalPips >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {pnlStats.totalPips >= 0 ? "+" : ""}{pnlStats.totalPips.toFixed(1)}
+              </span>
+              <span className="text-[10px] text-muted-foreground ml-1">pips</span>
+            </div>
+            <div className="rounded-xl border border-border/30 bg-card p-4 text-center">
+              <span className="text-[10px] text-muted-foreground uppercase block mb-1">Win Rate</span>
+              <span className="text-xl font-heading font-bold text-foreground">
+                {winRate !== null ? `${winRate}%` : "—"}
+              </span>
+            </div>
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
+              <span className="text-[10px] text-emerald-400/70 uppercase block mb-1">Wins</span>
+              <span className="text-xl font-heading font-bold text-emerald-400">{pnlStats.wins}</span>
+            </div>
+            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
+              <span className="text-[10px] text-red-400/70 uppercase block mb-1">Losses</span>
+              <span className="text-xl font-heading font-bold text-red-400">{pnlStats.losses}</span>
+            </div>
+          </div>
+        )}
 
         {isAdmin && <NewSignalForm />}
         <div className="flex items-center gap-2 mb-6">
