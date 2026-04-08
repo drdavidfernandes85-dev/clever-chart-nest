@@ -91,7 +91,7 @@ const TradingSignals = () => {
           <p className="mt-2 text-muted-foreground">{t("signals.desc")}</p>
         </div>
 
-        {/* Tabs */}
+        {isAdmin && <NewSignalForm />}
         <div className="flex items-center gap-2 mb-6">
           <button
             onClick={() => setTab("active")}
