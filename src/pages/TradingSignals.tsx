@@ -79,24 +79,19 @@ const TradingSignals = () => {
   const closedSignals = signals.filter((s) => s.status !== "active");
   const displayed = tab === "active" ? activeSignals : closedSignals;
 
-  // P&L calculations
+  // P&L calculations — TP Hit = always positive pips, SL Hit = always negative
   const pnlStats = closedSignals.reduce(
     (acc, signal) => {
       const isJpy = signal.pair.includes("JPY");
       const pipMul = isJpy ? 100 : 10000;
-      const isBuy = signal.direction === "buy";
 
       if (signal.status === "hit_tp" && signal.take_profit) {
-        const pips = isBuy
-          ? (Number(signal.take_profit) - signal.entry_price) * pipMul
-          : (signal.entry_price - Number(signal.take_profit)) * pipMul;
+        const pips = Math.abs(Number(signal.take_profit) - signal.entry_price) * pipMul;
         acc.totalPips += pips;
         acc.wins += 1;
       } else if (signal.status === "hit_sl" && signal.stop_loss) {
-        const pips = isBuy
-          ? (Number(signal.stop_loss) - signal.entry_price) * pipMul
-          : (signal.entry_price - Number(signal.stop_loss)) * pipMul;
-        acc.totalPips += pips;
+        const pips = Math.abs(Number(signal.stop_loss) - signal.entry_price) * pipMul;
+        acc.totalPips -= pips;
         acc.losses += 1;
       }
       return acc;
@@ -117,16 +112,11 @@ const TradingSignals = () => {
     return closed.map((signal) => {
       const isJpy = signal.pair.includes("JPY");
       const pipMul = isJpy ? 100 : 10000;
-      const isBuy = signal.direction === "buy";
 
       if (signal.status === "hit_tp" && signal.take_profit) {
-        cumPips += isBuy
-          ? (Number(signal.take_profit) - signal.entry_price) * pipMul
-          : (signal.entry_price - Number(signal.take_profit)) * pipMul;
+        cumPips += Math.abs(Number(signal.take_profit) - signal.entry_price) * pipMul;
       } else if (signal.status === "hit_sl" && signal.stop_loss) {
-        cumPips += isBuy
-          ? (Number(signal.stop_loss) - signal.entry_price) * pipMul
-          : (signal.entry_price - Number(signal.stop_loss)) * pipMul;
+        cumPips -= Math.abs(Number(signal.stop_loss) - signal.entry_price) * pipMul;
       }
 
       return {
