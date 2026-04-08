@@ -203,7 +203,6 @@ const TradingSignals = () => {
                         </DropdownMenu>
                       )}
                     </div>
-                    </Badge>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 mb-3">
