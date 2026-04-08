@@ -154,6 +154,17 @@ const TradingSignals = () => {
               const sc = statusConfig[signal.status] || statusConfig.active;
               const isBuy = signal.direction === "buy";
 
+              // Calculate pips (for JPY pairs use 100, others use 10000)
+              const isJpy = signal.pair.includes("JPY");
+              const pipMultiplier = isJpy ? 100 : 10000;
+              const slPips = signal.stop_loss
+                ? Math.abs(signal.entry_price - Number(signal.stop_loss)) * pipMultiplier
+                : null;
+              const tpPips = signal.take_profit
+                ? Math.abs(Number(signal.take_profit) - signal.entry_price) * pipMultiplier
+                : null;
+              const rr = slPips && tpPips ? (tpPips / slPips) : null;
+
               return (
                 <div
                   key={signal.id}
@@ -214,15 +225,40 @@ const TradingSignals = () => {
                       <div>
                         <span className="text-[10px] text-muted-foreground uppercase block mb-0.5">{t("signals.sl")}</span>
                         <span className="text-sm font-mono font-semibold text-red-400">{Number(signal.stop_loss).toFixed(5)}</span>
+                        {slPips !== null && (
+                          <span className="text-[10px] text-red-400/70 ml-1">({slPips.toFixed(1)} pips)</span>
+                        )}
                       </div>
                     )}
                     {signal.take_profit && (
                       <div>
                         <span className="text-[10px] text-muted-foreground uppercase block mb-0.5">{t("signals.tp")}</span>
                         <span className="text-sm font-mono font-semibold text-emerald-400">{Number(signal.take_profit).toFixed(5)}</span>
+                        {tpPips !== null && (
+                          <span className="text-[10px] text-emerald-400/70 ml-1">({tpPips.toFixed(1)} pips)</span>
+                        )}
                       </div>
                     )}
                   </div>
+
+                  {/* Risk/Reward row */}
+                  {(slPips || tpPips || rr) && (
+                    <div className="flex items-center gap-4 mb-3 text-[11px]">
+                      {slPips !== null && (
+                        <span className="text-muted-foreground">Risk: <span className="font-semibold text-red-400">{slPips.toFixed(1)} pips</span></span>
+                      )}
+                      {tpPips !== null && (
+                        <span className="text-muted-foreground">Reward: <span className="font-semibold text-emerald-400">{tpPips.toFixed(1)} pips</span></span>
+                      )}
+                      {rr !== null && (
+                        <span className={`font-semibold px-2 py-0.5 rounded-full text-[10px] ${
+                          rr >= 2 ? "bg-emerald-500/20 text-emerald-400" : rr >= 1 ? "bg-primary/20 text-primary" : "bg-red-500/20 text-red-400"
+                        }`}>
+                          R:R {rr.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {signal.notes && (
                     <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/20 pt-3 mt-1">
