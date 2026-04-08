@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import NewSignalForm from "@/components/signals/NewSignalForm";
 
 interface Signal {
@@ -21,6 +22,7 @@ interface Signal {
   notes: string | null;
   status: string;
   created_at: string;
+  updated_at: string;
   author_id: string;
 }
 
@@ -105,6 +107,37 @@ const TradingSignals = () => {
     ? ((pnlStats.wins / (pnlStats.wins + pnlStats.losses)) * 100).toFixed(0)
     : null;
 
+  // Chart data: cumulative P&L over time
+  const chartData = useMemo(() => {
+    const closed = closedSignals
+      .filter((s) => s.status === "hit_tp" || s.status === "hit_sl")
+      .sort((a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime());
+
+    let cumPips = 0;
+    return closed.map((signal) => {
+      const isJpy = signal.pair.includes("JPY");
+      const pipMul = isJpy ? 100 : 10000;
+      const isBuy = signal.direction === "buy";
+
+      if (signal.status === "hit_tp" && signal.take_profit) {
+        cumPips += isBuy
+          ? (Number(signal.take_profit) - signal.entry_price) * pipMul
+          : (signal.entry_price - Number(signal.take_profit)) * pipMul;
+      } else if (signal.status === "hit_sl" && signal.stop_loss) {
+        cumPips += isBuy
+          ? (Number(signal.stop_loss) - signal.entry_price) * pipMul
+          : (signal.entry_price - Number(signal.stop_loss)) * pipMul;
+      }
+
+      return {
+        date: new Date(signal.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        pips: parseFloat(cumPips.toFixed(1)),
+        pair: signal.pair,
+        status: signal.status,
+      };
+    });
+  }, [closedSignals]);
+
   const updateStatus = async (signalId: string, newStatus: string) => {
     const { error } = await supabase
       .from("trading_signals")
@@ -135,29 +168,81 @@ const TradingSignals = () => {
 
         {/* P&L Tracker */}
         {closedSignals.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="rounded-xl border border-border/30 bg-card p-4 text-center">
-              <span className="text-[10px] text-muted-foreground uppercase block mb-1">Total P&L</span>
-              <span className={`text-xl font-heading font-bold ${pnlStats.totalPips >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                {pnlStats.totalPips >= 0 ? "+" : ""}{pnlStats.totalPips.toFixed(1)}
-              </span>
-              <span className="text-[10px] text-muted-foreground ml-1">pips</span>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+              <div className="rounded-xl border border-border/30 bg-card p-4 text-center">
+                <span className="text-[10px] text-muted-foreground uppercase block mb-1">Total P&L</span>
+                <span className={`text-xl font-heading font-bold ${pnlStats.totalPips >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  {pnlStats.totalPips >= 0 ? "+" : ""}{pnlStats.totalPips.toFixed(1)}
+                </span>
+                <span className="text-[10px] text-muted-foreground ml-1">pips</span>
+              </div>
+              <div className="rounded-xl border border-border/30 bg-card p-4 text-center">
+                <span className="text-[10px] text-muted-foreground uppercase block mb-1">Win Rate</span>
+                <span className="text-xl font-heading font-bold text-foreground">
+                  {winRate !== null ? `${winRate}%` : "—"}
+                </span>
+              </div>
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
+                <span className="text-[10px] text-emerald-400/70 uppercase block mb-1">Wins</span>
+                <span className="text-xl font-heading font-bold text-emerald-400">{pnlStats.wins}</span>
+              </div>
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
+                <span className="text-[10px] text-red-400/70 uppercase block mb-1">Losses</span>
+                <span className="text-xl font-heading font-bold text-red-400">{pnlStats.losses}</span>
+              </div>
             </div>
-            <div className="rounded-xl border border-border/30 bg-card p-4 text-center">
-              <span className="text-[10px] text-muted-foreground uppercase block mb-1">Win Rate</span>
-              <span className="text-xl font-heading font-bold text-foreground">
-                {winRate !== null ? `${winRate}%` : "—"}
-              </span>
-            </div>
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
-              <span className="text-[10px] text-emerald-400/70 uppercase block mb-1">Wins</span>
-              <span className="text-xl font-heading font-bold text-emerald-400">{pnlStats.wins}</span>
-            </div>
-            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
-              <span className="text-[10px] text-red-400/70 uppercase block mb-1">Losses</span>
-              <span className="text-xl font-heading font-bold text-red-400">{pnlStats.losses}</span>
-            </div>
-          </div>
+
+            {/* P&L Chart */}
+            {chartData.length >= 2 && (
+              <div className="rounded-xl border border-border/30 bg-card p-5 mb-6">
+                <h3 className="text-xs text-muted-foreground uppercase tracking-wider mb-4">Cumulative P&L (pips)</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="pnlGradientPos" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => `${v > 0 ? "+" : ""}${v}`}
+                    />
+                    <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        color: "hsl(var(--foreground))",
+                      }}
+                      formatter={(value: number) => [`${value > 0 ? "+" : ""}${value} pips`, "P&L"]}
+                      labelFormatter={(label) => label}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="pips"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      fill="url(#pnlGradientPos)"
+                      dot={{ r: 3, fill: "hsl(var(--primary))", stroke: "hsl(var(--card))", strokeWidth: 2 }}
+                      activeDot={{ r: 5, fill: "hsl(var(--primary))" }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </>
         )}
 
         {isAdmin && <NewSignalForm />}
