@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Menu, X, LogOut, User } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { t } = useLanguage();
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const navLinks = [
     { label: t("nav.home"), href: "#home" },
@@ -25,6 +34,14 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "";
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <nav
@@ -58,12 +75,36 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
-            <Link to="/login">{t("nav.login")}</Link>
-          </Button>
-          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-6 font-semibold" asChild>
-            <Link to="/register">{t("nav.signup")}</Link>
-          </Button>
+
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary/30 transition-colors">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                    {initial}
+                  </span>
+                  <span className="max-w-[100px] truncate">{displayName}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate("/profile")} className="gap-2">
+                  <User className="h-4 w-4" /> Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-red-400">
+                  <LogOut className="h-4 w-4" /> Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+                <Link to="/login">{t("nav.login")}</Link>
+              </Button>
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-6 font-semibold" asChild>
+                <Link to="/register">{t("nav.signup")}</Link>
+              </Button>
+            </>
+          )}
           <LanguageSwitcher />
         </div>
 
@@ -101,14 +142,27 @@ const Navbar = () => {
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
             </Button>
-            <div className="flex gap-2 mt-1">
-              <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
-                <Link to="/login">{t("nav.login")}</Link>
-              </Button>
-              <Button size="sm" asChild className="rounded-full">
-                <Link to="/register">{t("nav.signup")}</Link>
-              </Button>
-            </div>
+
+            {user ? (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {initial}
+                </span>
+                <span className="text-sm text-foreground font-medium truncate">{displayName}</span>
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-auto text-red-400">
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2 mt-1">
+                <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+                  <Link to="/login">{t("nav.login")}</Link>
+                </Button>
+                <Button size="sm" asChild className="rounded-full">
+                  <Link to="/register">{t("nav.signup")}</Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
