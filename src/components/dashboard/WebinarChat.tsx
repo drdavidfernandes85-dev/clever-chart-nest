@@ -87,7 +87,7 @@ const WebinarChat = ({ channelName = "webinar_chat" }: { channelName?: string })
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-2 border-b border-border/50 bg-secondary/30 px-3 py-2">
         <MessageSquare className="h-3.5 w-3.5 text-primary" />
         <span className="text-[11px] font-semibold uppercase tracking-wide text-foreground">Live Chat</span>
