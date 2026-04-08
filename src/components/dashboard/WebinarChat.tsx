@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Send, MessageSquare } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,7 +93,7 @@ const WebinarChat = ({ channelName = "webinar_chat" }: { channelName?: string })
         <span className="text-[10px] text-muted-foreground ml-auto">{messages.length} msgs</span>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="p-2 space-y-0.5">
           {messages.length === 0 && (
             <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Say something!</p>
@@ -118,7 +117,7 @@ const WebinarChat = ({ channelName = "webinar_chat" }: { channelName?: string })
           })}
           <div ref={bottomRef} />
         </div>
-      </ScrollArea>
+      </div>
 
       {user ? (
         <div className="border-t border-border/50 p-2">
