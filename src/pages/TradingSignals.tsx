@@ -22,6 +22,7 @@ interface Signal {
   notes: string | null;
   status: string;
   created_at: string;
+  updated_at: string;
   author_id: string;
 }
 
