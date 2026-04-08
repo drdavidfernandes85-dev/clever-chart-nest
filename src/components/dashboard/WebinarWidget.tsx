@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import WebinarChat from "./WebinarChat";
 import { Video, Play, Clock, Calendar, Settings2, X, Radio } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
