@@ -48,7 +48,6 @@ const TradingSignals = () => {
     };
     fetchSignals();
 
-    // Realtime
     const channel = supabase
       .channel("signals-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "trading_signals" }, () => {
@@ -58,6 +57,19 @@ const TradingSignals = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkRole = async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["admin", "moderator"]);
+      setIsAdmin(!!(data && data.length > 0));
+    };
+    checkRole();
+  }, [user]);
 
   const activeSignals = signals.filter((s) => s.status === "active");
   const closedSignals = signals.filter((s) => s.status !== "active");
