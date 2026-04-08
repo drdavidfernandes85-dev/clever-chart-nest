@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import WebinarChat from "./WebinarChat";
 import { Video, Play, Clock, Calendar, Settings2, X, Radio } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -250,14 +251,21 @@ const LiveWebinarTab = () => {
             </Badge>
             <span className="text-xs text-muted-foreground">YouTube Live Stream</span>
           </div>
-          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/50">
-            <iframe
-              src={`https://www.youtube.com/embed/${liveSource.url}?autoplay=1`}
-              className="h-full w-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title="Live Webinar"
-            />
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/50">
+                <iframe
+                  src={`https://www.youtube.com/embed/${liveSource.url}?autoplay=1`}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title="Live Webinar"
+                />
+              </div>
+            </div>
+            <div className="w-72 shrink-0 rounded-xl border border-border/50 overflow-hidden h-[360px]">
+              <WebinarChat />
+            </div>
           </div>
         </div>
       )}
