@@ -250,23 +250,14 @@ const LiveWebinarTab = () => {
             </Badge>
             <span className="text-xs text-muted-foreground">YouTube Live Stream</span>
           </div>
-          <div className="flex gap-3">
-            <div className="aspect-video flex-1 overflow-hidden rounded-xl border border-border/50">
-              <iframe
-                src={`https://www.youtube.com/embed/${liveSource.url}?autoplay=1`}
-                className="h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title="Live Webinar"
-              />
-            </div>
-            <div className="hidden md:flex w-[340px] shrink-0 overflow-hidden rounded-xl border border-border/50">
-              <iframe
-                src={`https://www.youtube.com/live_chat?v=${liveSource.url}&embed_domain=${window.location.hostname}`}
-                className="h-full w-full"
-                title="Live Chat"
-              />
-            </div>
+          <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/50">
+            <iframe
+              src={`https://www.youtube.com/embed/${liveSource.url}?autoplay=1`}
+              className="h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title="Live Webinar"
+            />
           </div>
         </div>
       )}
