@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import NewSignalForm from "@/components/signals/NewSignalForm";
 
 interface Signal {
   id: string;
@@ -29,9 +31,11 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
 
 const TradingSignals = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const fetchSignals = async () => {
@@ -44,7 +48,6 @@ const TradingSignals = () => {
     };
     fetchSignals();
 
-    // Realtime
     const channel = supabase
       .channel("signals-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "trading_signals" }, () => {
@@ -54,6 +57,19 @@ const TradingSignals = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const checkRole = async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["admin", "moderator"]);
+      setIsAdmin(!!(data && data.length > 0));
+    };
+    checkRole();
+  }, [user]);
 
   const activeSignals = signals.filter((s) => s.status === "active");
   const closedSignals = signals.filter((s) => s.status !== "active");
@@ -75,7 +91,7 @@ const TradingSignals = () => {
           <p className="mt-2 text-muted-foreground">{t("signals.desc")}</p>
         </div>
 
-        {/* Tabs */}
+        {isAdmin && <NewSignalForm />}
         <div className="flex items-center gap-2 mb-6">
           <button
             onClick={() => setTab("active")}
