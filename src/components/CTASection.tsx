@@ -13,7 +13,7 @@ const CTASection = () => {
         <ScrollReveal>
           <div className="relative overflow-hidden rounded-3xl bg-card border border-border/30 px-6 py-20 text-center md:px-16">
             <div className="absolute inset-0 bg-grid-pattern opacity-10" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(0_85%_50%/0.08),transparent_70%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(48_100%_51%/0.08),transparent_70%)]" />
             <div className="absolute top-0 left-0 right-0 cyber-line" />
             <div className="absolute bottom-0 left-0 right-0 cyber-line" />
 
