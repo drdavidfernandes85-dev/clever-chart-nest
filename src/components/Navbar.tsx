@@ -4,6 +4,7 @@ import { Menu, X, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -105,6 +106,7 @@ const Navbar = () => {
               </Button>
             </>
           )}
+          <ThemeToggle />
           <LanguageSwitcher />
         </div>
 
@@ -129,7 +131,10 @@ const Navbar = () => {
             </a>
           ))}
           <div className="mt-3 flex flex-col gap-2">
-            <LanguageSwitcher />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageSwitcher />
+            </div>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/dashboard" onClick={() => setMobileOpen(false)}>{t("nav.dashboard")}</Link>
             </Button>
