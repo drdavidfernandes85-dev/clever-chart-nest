@@ -91,7 +91,7 @@ const Navbar = () => {
                 <DropdownMenuItem onClick={() => navigate("/profile")} className="gap-2">
                   <User className="h-4 w-4" /> Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-red-400">
+                <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-destructive">
                   <LogOut className="h-4 w-4" /> Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -154,7 +154,7 @@ const Navbar = () => {
                   {initial}
                 </span>
                 <span className="text-sm text-foreground font-medium truncate">{displayName}</span>
-                <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-auto text-red-400">
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-auto text-destructive">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
