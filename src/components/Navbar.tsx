@@ -98,7 +98,7 @@ const Navbar = () => {
             </DropdownMenu>
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+              <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
                 <Link to="/login">{t("nav.login")}</Link>
               </Button>
               <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-6 font-semibold" asChild>
