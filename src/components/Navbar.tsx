@@ -21,7 +21,9 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const { t } = useLanguage();
   const { user, profile, signOut } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
+  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
 
   const navLinks = [
     { label: t("nav.home"), href: "#home" },
