@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "react";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const BUSINESS_UNIT_ID = "598bbe860000ff0005a886c9";
 
@@ -13,6 +14,7 @@ const localeMap: Record<string, string> = {
 const TrustpilotSection = () => {
   const trustBoxRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useLanguage();
+  const { theme } = useTheme();
 
   useEffect(() => {
     const scriptId = "trustpilot-bootstrap";
@@ -30,7 +32,7 @@ const TrustpilotSection = () => {
     } else if (trustBoxRef.current && (window as any).Trustpilot) {
       (window as any).Trustpilot.loadFromElement(trustBoxRef.current, true);
     }
-  }, [locale]);
+  }, [locale, theme]);
 
   return (
     <section className="relative py-24">
@@ -55,7 +57,7 @@ const TrustpilotSection = () => {
             data-businessunit-id={BUSINESS_UNIT_ID}
             data-style-height="140px"
             data-style-width="100%"
-            data-theme="dark"
+            data-theme={theme === "dark" ? "dark" : "light"}
             data-stars="4,5"
             data-review-languages="en"
           >
