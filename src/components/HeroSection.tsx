@@ -62,7 +62,7 @@ const HeroSection = () => {
             {t("hero.title1")}
             <br />
             <span className="text-gradient">{t("hero.title2")}</span>{" "}
-            <span className="text-primary-foreground">{t("hero.title3")}</span>
+            <span className="text-foreground">{t("hero.title3")}</span>
           </h1>
 
           <p className="max-w-lg text-base leading-relaxed font-sans text-secondary-foreground">

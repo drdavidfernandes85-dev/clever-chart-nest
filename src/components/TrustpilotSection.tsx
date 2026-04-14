@@ -43,7 +43,7 @@ const TrustpilotSection = () => {
             <h2 className="font-heading text-4xl font-bold text-foreground uppercase tracking-tight">
               {t("trustpilot.title1")} <span className="text-gradient">{t("trustpilot.title2")}</span>
               <br />
-              <span className="text-primary-foreground">{t("trustpilot.title3")}</span>
+              <span className="text-foreground">{t("trustpilot.title3")}</span>
             </h2>
           </div>
         </ScrollReveal>
