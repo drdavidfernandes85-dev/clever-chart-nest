@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import infinoxLogo from "@/assets/infinox-logo-white.png";
+import infinoxLogoWhite from "@/assets/infinox-logo-white.png";
+import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
