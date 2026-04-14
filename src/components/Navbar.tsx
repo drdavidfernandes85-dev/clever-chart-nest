@@ -4,6 +4,7 @@ import { Menu, X, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -62,17 +63,17 @@ const Navbar = () => {
 
         <div className="hidden lg:flex" />
 
-        <div className="hidden items-center gap-3 lg:flex text-primary-foreground">
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+        <div className="hidden items-center gap-3 lg:flex text-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/dashboard">{t("nav.dashboard")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/signals">{t("nav.signals")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/videos">{t("nav.videos")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
 
@@ -90,14 +91,14 @@ const Navbar = () => {
                 <DropdownMenuItem onClick={() => navigate("/profile")} className="gap-2">
                   <User className="h-4 w-4" /> Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-red-400">
+                <DropdownMenuItem onClick={handleSignOut} className="gap-2 text-destructive">
                   <LogOut className="h-4 w-4" /> Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <>
-              <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+              <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
                 <Link to="/login">{t("nav.login")}</Link>
               </Button>
               <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full px-6 font-semibold" asChild>
@@ -105,6 +106,7 @@ const Navbar = () => {
               </Button>
             </>
           )}
+          <ThemeToggle />
           <LanguageSwitcher />
         </div>
 
@@ -129,7 +131,10 @@ const Navbar = () => {
             </a>
           ))}
           <div className="mt-3 flex flex-col gap-2">
-            <LanguageSwitcher />
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageSwitcher />
+            </div>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/dashboard" onClick={() => setMobileOpen(false)}>{t("nav.dashboard")}</Link>
             </Button>
@@ -149,7 +154,7 @@ const Navbar = () => {
                   {initial}
                 </span>
                 <span className="text-sm text-foreground font-medium truncate">{displayName}</span>
-                <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-auto text-red-400">
+                <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-auto text-destructive">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>

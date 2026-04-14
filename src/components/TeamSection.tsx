@@ -14,7 +14,7 @@ const TeamSection = () => {
             <h2 className="font-heading text-4xl font-bold text-foreground md:text-5xl uppercase tracking-tight">
               {t("team.title1")} <span className="text-gradient">{t("team.title2")}</span>
               <br />
-              <span className="text-primary-foreground">{t("team.title3")}</span>
+              <span className="text-foreground">{t("team.title3")}</span>
             </h2>
           </div>
         </ScrollReveal>
