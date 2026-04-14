@@ -63,17 +63,17 @@ const Navbar = () => {
 
         <div className="hidden lg:flex" />
 
-        <div className="hidden items-center gap-3 lg:flex text-primary-foreground">
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+        <div className="hidden items-center gap-3 lg:flex text-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/dashboard">{t("nav.dashboard")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/signals">{t("nav.signals")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/videos">{t("nav.videos")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-primary-foreground">
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
 
