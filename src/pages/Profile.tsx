@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { User, Camera, ArrowLeft, Save, Trophy, Mail, RefreshCw, Shield } from "lucide-react";
+import { User, Camera, ArrowLeft, Save, Trophy, Mail, RefreshCw, Shield, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -228,6 +228,9 @@ const Profile = () => {
             className="rounded-xl gap-1.5"
           >
             <RefreshCw className="h-4 w-4" /> Restart tour
+          </Button>
+          <Button variant="outline" asChild className="rounded-xl gap-1.5">
+            <Link to="/analytics"><BarChart3 className="h-4 w-4" /> My Analytics</Link>
           </Button>
           {isAdmin && (
             <Button variant="outline" asChild className="rounded-xl gap-1.5">
