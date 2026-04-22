@@ -24,7 +24,7 @@ const MessageReactions = ({ messageId }: MessageReactionsProps) => {
       .from("message_reactions" as any)
       .select("emoji, user_id")
       .eq("message_id", messageId);
-    setReactions((data ?? []) as ReactionRow[]);
+    setReactions((data ?? []) as unknown as ReactionRow[]);
   };
 
   useEffect(() => {

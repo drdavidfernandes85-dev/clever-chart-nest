@@ -31,7 +31,7 @@ const Analytics = () => {
       .eq("user_id", user.id)
       .order("week_start", { ascending: false })
       .limit(10);
-    setReports((data ?? []) as WeeklyReport[]);
+    setReports((data ?? []) as unknown as WeeklyReport[]);
     setLoading(false);
   };
 
