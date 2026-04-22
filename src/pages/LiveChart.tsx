@@ -8,7 +8,7 @@ import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
 
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
-import SymbolIntelligence from "@/components/trading/SymbolIntelligence";
+
 import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import SEO from "@/components/SEO";
@@ -27,8 +27,9 @@ const SYMBOL_OPTIONS = [
 const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!containerRef.current) return;
-    containerRef.current.innerHTML = "";
+    const container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = '<div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>';
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.type = "text/javascript";
@@ -41,8 +42,8 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
       theme: "dark",
       style: "1",
       locale: "en",
-      backgroundColor: "hsl(0, 0%, 4%)",
-      gridColor: "rgba(255, 255, 255, 0.03)",
+      backgroundColor: "#1E1E1E",
+      gridColor: "rgba(255, 205, 5, 0.08)",
       hide_top_toolbar: false,
       hide_legend: false,
       allow_symbol_change: true,
@@ -59,11 +60,21 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
       withdateranges: true,
       hide_side_toolbar: false,
       drawings_access: { type: "all" },
+      overrides: {
+        "mainSeriesProperties.candleStyle.upColor": "#FFCD05",
+        "mainSeriesProperties.candleStyle.downColor": "#FF4D6B",
+        "mainSeriesProperties.candleStyle.borderUpColor": "#FFCD05",
+        "mainSeriesProperties.candleStyle.borderDownColor": "#FF4D6B",
+        "mainSeriesProperties.candleStyle.wickUpColor": "#FFCD05",
+        "mainSeriesProperties.candleStyle.wickDownColor": "#FF4D6B",
+        "paneProperties.background": "#1E1E1E",
+        "paneProperties.backgroundType": "solid",
+      },
     });
-    containerRef.current.appendChild(script);
+    container.appendChild(script);
   }, [symbol, interval]);
 
-  return <div className="tradingview-widget-container h-full" ref={containerRef} />;
+  return <div className="tradingview-widget-container h-full w-full" ref={containerRef} />;
 };
 
 const LiveChart = () => {
@@ -112,36 +123,31 @@ const LiveChart = () => {
       </header>
 
       <div className="space-y-4 p-4">
-        {/* Chart + Intelligence */}
-        <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-5.5rem)]">
-          <div className="lg:col-span-2 rounded-2xl border border-border/30 bg-card p-4 flex flex-col min-h-[500px]">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                <h3 className="font-heading text-sm font-semibold text-foreground">{currentLabel} — Live Chart</h3>
-              </div>
-              <div className="flex items-center gap-1 rounded-full border border-border/40 bg-muted/30 p-0.5">
-                {SYMBOL_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setSymbol(opt.value)}
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
-                      symbol === opt.value
-                        ? "bg-primary/20 text-primary"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
+        {/* Chart full-width */}
+        <div className="rounded-2xl border border-border/30 bg-card p-4 flex flex-col h-[calc(100vh-7rem)] min-h-[500px]">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <h3 className="font-heading text-sm font-semibold text-foreground">{currentLabel} — Live Chart</h3>
             </div>
-            <div className="flex-1 min-h-0">
-              <TradingViewChart symbol={symbol} />
+            <div className="flex items-center gap-1 rounded-full border border-border/40 bg-muted/30 p-0.5">
+              {SYMBOL_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setSymbol(opt.value)}
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                    symbol === opt.value
+                      ? "bg-primary/20 text-primary"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="lg:col-span-1 min-h-[500px]">
-            <SymbolIntelligence symbol={symbol} />
+          <div className="flex-1 min-h-0">
+            <TradingViewChart symbol={symbol} />
           </div>
         </div>
 
