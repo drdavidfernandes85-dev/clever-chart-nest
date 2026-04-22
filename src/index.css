@@ -253,33 +253,37 @@
     animation: shimmer 2s infinite linear;
   }
 
-  /* ── Neural Lattice background + hero ── */
-  @keyframes lattice-drift {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(14px, -18px); }
+  /* ── Topographical Gold background + hero ── */
+  @keyframes mesh-rotate {
+    0% { transform: translate(-50%, -50%) rotateX(68deg) rotateZ(0deg); }
+    100% { transform: translate(-50%, -50%) rotateX(68deg) rotateZ(360deg); }
   }
-  .animate-lattice-drift { animation: lattice-drift 24s ease-in-out infinite; }
+  .animate-mesh-rotate { animation: mesh-rotate 180s linear infinite; }
 
-  @keyframes synapse-fire {
-    0%, 100% { opacity: 0.15; transform: scale(0.85); }
-    8%, 18% { opacity: 1; transform: scale(1.15); }
-    50% { opacity: 0.4; transform: scale(1); }
+  @keyframes mesh-rotate-slow {
+    0% { transform: rotateX(45deg) rotateZ(0deg) scale(1.2); }
+    100% { transform: rotateX(45deg) rotateZ(360deg) scale(1.2); }
   }
-
-  @keyframes line-trace {
-    0% { transform: scaleX(0); transform-origin: left; }
-    50% { transform: scaleX(1); transform-origin: left; }
-    51% { transform: scaleX(1); transform-origin: right; }
-    100% { transform: scaleX(0); transform-origin: right; }
+  .animate-mesh-rotate-slow {
+    animation: mesh-rotate-slow 90s linear infinite;
+    transform-origin: center 70%;
   }
 
-  @keyframes dust-float {
-    0%, 100% { transform: translate(0, 0); opacity: 0.4; }
-    50% { transform: translate(8px, -14px); opacity: 0.85; }
+  @keyframes current-drift {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+    100% { transform: translate(-40%, -60%) scale(1.25); opacity: 1; }
   }
 
-  @keyframes dash-flow {
-    to { stroke-dashoffset: -40; }
+  @keyframes contour-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.45; }
+    50% { transform: scale(1.04); opacity: 0.85; }
+  }
+
+  @keyframes spark-rise {
+    0% { transform: translateY(0) scale(0.8); opacity: 0; }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.8; }
+    100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
   }
 
   @keyframes panel-float {
