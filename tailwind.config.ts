@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
         heading: ['Poppins', 'sans-serif'],
+        display: ['Fraunces', 'Times New Roman', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",

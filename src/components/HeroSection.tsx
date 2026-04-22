@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
-import heroLaptop from "@/assets/hero-laptop.png";
 import AnimatedCounter from "@/components/AnimatedCounter";
+import MagneticButton from "@/components/MagneticButton";
+import Hero3DScene from "@/components/hero/Hero3DScene";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
@@ -70,25 +71,29 @@ const HeroSection = () => {
           </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
-            <Button
-              size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/80 gap-2 h-12 px-8 text-sm font-semibold rounded-full"
-              asChild
-            >
-              <Link to="/register">
-                {t("hero.cta")} <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-border bg-transparent text-foreground hover:bg-secondary gap-2 h-12 px-8 text-sm rounded-full"
-              asChild
-            >
-              <Link to="/login">
-                {t("hero.demo")}
-              </Link>
-            </Button>
+            <MagneticButton strength={0.25}>
+              <Button
+                size="lg"
+                className="bg-primary text-primary-foreground hover:bg-primary/80 gap-2 h-12 px-8 text-sm font-semibold rounded-full shadow-[0_10px_40px_-10px_hsl(48_100%_51%/0.6)]"
+                asChild
+              >
+                <Link to="/register">
+                  {t("hero.cta")} <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </MagneticButton>
+            <MagneticButton strength={0.2}>
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-border bg-transparent text-foreground hover:bg-secondary gap-2 h-12 px-8 text-sm rounded-full"
+                asChild
+              >
+                <Link to="/login">
+                  {t("hero.demo")}
+                </Link>
+              </Button>
+            </MagneticButton>
           </div>
 
           {/* Social Proof + Countdown Row */}
@@ -127,24 +132,17 @@ const HeroSection = () => {
               { value: "5K+", label: t("hero.tradersLabel") },
             ].map((stat) => (
               <div key={stat.label}>
-                <div className="font-heading text-2xl font-bold text-foreground">
+                <div className="font-display text-4xl font-semibold text-foreground tabular-nums">
                   <AnimatedCounter value={stat.value} />
                 </div>
-                <div className="text-xs text-muted-foreground">{stat.label}</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider mt-1">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex-1 animate-float">
-          <div className="relative">
-            <div className="absolute -inset-8 rounded-3xl bg-[radial-gradient(ellipse,hsl(48_100%_51%/0.1),transparent_70%)]" />
-            <img
-              src={heroLaptop}
-              alt="Elite Live Trading Room platform dashboard"
-              className="relative w-full max-w-xl drop-shadow-2xl"
-            />
-          </div>
+        <div className="flex-1 w-full">
+          <Hero3DScene />
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&display=swap');
 
 @layer base {
   /* ── Dark theme (default) ── */
@@ -263,5 +263,38 @@
     0% { transform: scale(1.05) translate(0, 0); }
     50% { transform: scale(1.1) translate(-1.5%, -1%); }
     100% { transform: scale(1.05) translate(1.5%, 1%); }
+  }
+
+  /* Editorial display serif for hero numbers */
+  .font-display {
+    font-family: 'Fraunces', 'Times New Roman', serif;
+    font-feature-settings: "tnum", "ss01";
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+    letter-spacing: -0.02em;
+  }
+
+  /* Cinematic page transition */
+  @keyframes hero-blur-in {
+    0% { opacity: 0; filter: blur(12px); transform: translateY(8px); }
+    100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+  }
+  .animate-hero-blur-in {
+    animation: hero-blur-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* Shimmer skeleton */
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted) / 0.4) 0%,
+      hsl(var(--muted) / 0.7) 50%,
+      hsl(var(--muted) / 0.4) 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
   }
 }
