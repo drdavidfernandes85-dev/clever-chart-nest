@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +41,7 @@ const TradingSignals = () => {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
+  const [view, setView] = useState<"cards" | "grid">("cards");
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -242,7 +244,7 @@ const TradingSignals = () => {
         )}
 
         {isAdmin && <NewSignalForm />}
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
           <button
             onClick={() => setTab("active")}
             className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
@@ -259,6 +261,29 @@ const TradingSignals = () => {
           >
             {t("signals.closed")} ({closedSignals.length})
           </button>
+          {/* Layout toggle — Cards vs dense Grid (Bloomberg-style) */}
+          <div className="ml-auto flex items-center gap-1 rounded-full border border-border/40 bg-muted/30 p-0.5">
+            <button
+              onClick={() => setView("cards")}
+              aria-label="Card view"
+              title="Card view"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                view === "cards" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" /> Cards
+            </button>
+            <button
+              onClick={() => setView("grid")}
+              aria-label="Dense grid view"
+              title="Dense grid view"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                view === "grid" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Rows3 className="h-3.5 w-3.5" /> Grid
+            </button>
+          </div>
         </div>
 
         {/* Signals */}
@@ -283,6 +308,119 @@ const TradingSignals = () => {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Target className="h-12 w-12 text-muted-foreground/30 mb-4" />
             <p className="text-muted-foreground">{t("signals.empty")}</p>
+          </div>
+        ) : view === "grid" ? (
+          <div className="overflow-hidden rounded-2xl border border-border/40 glass-panel">
+            <div className="max-h-[70vh] overflow-auto">
+              <Table className="font-mono text-[12px]">
+                <TableHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-md">
+                  <TableRow className="border-border/40 hover:bg-transparent">
+                    <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Pair</TableHead>
+                    <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Side</TableHead>
+                    <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Entry</TableHead>
+                    <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">SL</TableHead>
+                    <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">TP</TableHead>
+                    <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Risk</TableHead>
+                    <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Reward</TableHead>
+                    <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">R:R</TableHead>
+                    <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Status</TableHead>
+                    <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Time</TableHead>
+                    {isAdmin && <TableHead className="h-9 w-10" />}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayed.map((signal) => {
+                    const sc = statusConfig[signal.status] || statusConfig.active;
+                    const isBuy = signal.direction === "buy";
+                    const isJpy = signal.pair.includes("JPY");
+                    const pipMul = isJpy ? 100 : 10000;
+                    const slPips = signal.stop_loss
+                      ? Math.abs(signal.entry_price - Number(signal.stop_loss)) * pipMul
+                      : null;
+                    const tpPips = signal.take_profit
+                      ? Math.abs(Number(signal.take_profit) - signal.entry_price) * pipMul
+                      : null;
+                    const rr = slPips && tpPips ? tpPips / slPips : null;
+                    return (
+                      <TableRow
+                        key={signal.id}
+                        className="border-border/20 hover:bg-primary/5 transition-colors"
+                      >
+                        <TableCell className="py-2 font-heading text-sm font-bold text-foreground">{signal.pair}</TableCell>
+                        <TableCell className="py-2">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                              isBuy
+                                ? "bg-emerald-500/15 text-emerald-400"
+                                : "bg-red-500/15 text-red-400"
+                            }`}
+                          >
+                            {isBuy ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                            {isBuy ? "BUY" : "SELL"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-2 text-right tabular-nums text-foreground">{Number(signal.entry_price).toFixed(5)}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums text-red-400/90">{signal.stop_loss ? Number(signal.stop_loss).toFixed(5) : "—"}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums text-emerald-400/90">{signal.take_profit ? Number(signal.take_profit).toFixed(5) : "—"}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums text-red-400/80">{slPips !== null ? `${slPips.toFixed(1)}p` : "—"}</TableCell>
+                        <TableCell className="py-2 text-right tabular-nums text-emerald-400/80">{tpPips !== null ? `${tpPips.toFixed(1)}p` : "—"}</TableCell>
+                        <TableCell className="py-2 text-right">
+                          {rr !== null ? (
+                            <span
+                              className={`tabular-nums font-semibold ${
+                                rr >= 2
+                                  ? "text-emerald-400"
+                                  : rr >= 1
+                                  ? "text-primary"
+                                  : "text-red-400"
+                              }`}
+                            >
+                              {rr.toFixed(2)}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] ${sc.color}`}>
+                            {sc.icon} {sc.label}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-2 text-[10px] text-muted-foreground">
+                          {new Date(signal.created_at).toLocaleString("en-US", {
+                            month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                          })}
+                        </TableCell>
+                        {isAdmin && (
+                          <TableCell className="py-2">
+                            {signal.status === "active" && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => updateStatus(signal.id, "hit_tp")} className="gap-2 text-emerald-400">
+                                    <CheckCircle className="h-3.5 w-3.5" /> Mark TP Hit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateStatus(signal.id, "hit_sl")} className="gap-2 text-red-400">
+                                    <XCircle className="h-3.5 w-3.5" /> Mark SL Hit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateStatus(signal.id, "cancelled")} className="gap-2 text-muted-foreground">
+                                    <ShieldAlert className="h-3.5 w-3.5" /> Cancel Signal
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
