@@ -219,7 +219,14 @@ const Profile = () => {
 
         {/* Tour + admin */}
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={restartTour} className="rounded-xl gap-1.5">
+          <Button
+            variant="outline"
+            onClick={() => {
+              localStorage.removeItem("onboarding_completed");
+              window.location.href = "/dashboard";
+            }}
+            className="rounded-xl gap-1.5"
+          >
             <RefreshCw className="h-4 w-4" /> Restart tour
           </Button>
           {isAdmin && (
