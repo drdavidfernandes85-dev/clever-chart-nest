@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 
 /**
- * Hero "Neural Execution Node" — a living lattice card with sparking nodes,
- * tracing connections, and live data readouts. Matches the site background.
+ * Hero "Topographical Heatmap" panel — a 3D depth-mapped trading visualization
+ * with rotating mesh, momentum contour rings, and live momentum readouts.
  */
 
 const seedRand = (seed: number) => {
@@ -15,51 +15,29 @@ const seedRand = (seed: number) => {
 
 const AnimatedTradingChart = () => {
   const [tick, setTick] = useState(0);
-  const [confidence, setConfidence] = useState(99.948);
-  const [latticeDepth, setLatticeDepth] = useState(482911);
-  const [drift, setDrift] = useState(0.089);
+  const [momentum, setMomentum] = useState(87.42);
+  const [volume, setVolume] = useState(1284033);
+  const [delta, setDelta] = useState(0.214);
 
   useEffect(() => {
     const id = setInterval(() => {
       setTick((t) => t + 1);
-      setConfidence((c) => +(Math.min(99.999, Math.max(99.6, c + (Math.random() - 0.5) * 0.04))).toFixed(3));
-      setLatticeDepth((d) => d + Math.floor((Math.random() - 0.4) * 400));
-      setDrift((d) => +(d + (Math.random() - 0.5) * 0.008).toFixed(3));
-    }, 1600);
+      setMomentum((m) => +(Math.min(99.9, Math.max(60, m + (Math.random() - 0.45) * 1.6))).toFixed(2));
+      setVolume((v) => v + Math.floor((Math.random() - 0.4) * 1200));
+      setDelta((d) => +(d + (Math.random() - 0.5) * 0.04).toFixed(3));
+    }, 1500);
     return () => clearInterval(id);
   }, []);
 
-  // Stable lattice points
-  const { nodes, edges } = useMemo(() => {
-    const r = seedRand(7);
-    const nodes = Array.from({ length: 14 }, () => ({
-      x: 10 + r() * 80,
-      y: 10 + r() * 80,
-      size: 2 + r() * 3,
-      delay: r() * 3,
-      dur: 2.5 + r() * 3,
-      bright: r() > 0.5,
-    }));
-    const edges: { from: number; to: number; delay: number }[] = [];
-    for (let i = 0; i < nodes.length; i++) {
-      // connect each node to its 1-2 nearest neighbors
-      const dists = nodes
-        .map((n, j) => ({ j, d: Math.hypot(n.x - nodes[i].x, n.y - nodes[i].y) }))
-        .filter((x) => x.j !== i)
-        .sort((a, b) => a.d - b.d)
-        .slice(0, 2);
-      for (const { j } of dists) {
-        if (!edges.find((e) => (e.from === i && e.to === j) || (e.from === j && e.to === i))) {
-          edges.push({ from: i, to: j, delay: r() * 3 });
-        }
-      }
-    }
-    return { nodes, edges };
+  // Stable heatmap cell intensities (16x9 grid)
+  const cells = useMemo(() => {
+    const r = seedRand(23);
+    return Array.from({ length: 16 * 9 }, () => 0.15 + r() * 0.85);
   }, []);
 
-  // Mini bar values driven by tick for live feel
+  // Live oscillating momentum bars
   const bars = useMemo(
-    () => Array.from({ length: 14 }, (_, i) => 0.35 + Math.abs(Math.sin(i * 0.7 + tick * 0.4)) * 0.65),
+    () => Array.from({ length: 18 }, (_, i) => 0.25 + Math.abs(Math.sin(i * 0.55 + tick * 0.35)) * 0.75),
     [tick],
   );
 
@@ -67,28 +45,28 @@ const AnimatedTradingChart = () => {
     <div className="relative w-full max-w-xl">
       {/* Outer glow */}
       <div
-        className="absolute -inset-12 blur-3xl opacity-60 pointer-events-none"
+        className="absolute -inset-12 blur-3xl opacity-70 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 60% 60% at 50% 50%, hsl(48 90% 60% / 0.28), transparent 70%)",
+            "radial-gradient(ellipse 60% 60% at 50% 50%, hsl(45 90% 55% / 0.3), transparent 70%)",
         }}
         aria-hidden="true"
       />
 
-      {/* Floating sub-panel: anomaly */}
+      {/* Floating sub-panel: depth scanner */}
       <div
-        className="absolute -left-8 -top-6 z-20 hidden md:block w-[220px] backdrop-blur-md border border-primary/30 bg-background/85 p-3 shadow-2xl shadow-black/50"
+        className="absolute -left-8 -top-6 z-20 hidden md:block w-[230px] backdrop-blur-md border border-primary/30 bg-background/85 p-3 shadow-2xl shadow-black/50"
         style={{ animation: "panel-float 7s ease-in-out infinite" }}
       >
         <div className="flex items-center gap-2 mb-2">
           <span className="size-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_hsl(48_100%_55%)]" />
           <span className="text-[9px] font-mono text-primary uppercase tracking-[0.18em]">
-            Anomaly Detected
+            Liquidity Surge
           </span>
         </div>
         <div className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-          Cluster <span className="text-foreground">A-7X</span> deviating from
-          standard alignment. Rerouting liquidity matrix.
+          Deep order block forming at <span className="text-foreground">1.0842</span>.
+          Bullish momentum elevated.
         </div>
       </div>
 
@@ -99,94 +77,101 @@ const AnimatedTradingChart = () => {
       >
         <div className="flex flex-col">
           <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
-            Vol Index
+            Δ Vol
           </span>
-          <span className="text-xs font-mono text-foreground tabular-nums">12.44</span>
+          <span className="text-xs font-mono text-foreground tabular-nums">+18.3%</span>
         </div>
         <div className="h-6 w-px bg-primary/30" />
         <div className="flex flex-col">
           <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
-            Drift
+            Delta
           </span>
           <span className="text-xs font-mono text-primary tabular-nums">
-            {drift >= 0 ? "+" : ""}
-            {drift.toFixed(3)}
+            {delta >= 0 ? "+" : ""}
+            {delta.toFixed(3)}
           </span>
         </div>
       </div>
 
-      {/* Main neural panel */}
+      {/* Main topographic panel */}
       <div className="relative backdrop-blur-xl border border-primary/20 bg-background/70 p-6 shadow-2xl shadow-black/60">
         {/* Header */}
         <div className="flex justify-between items-end border-b border-primary/15 pb-3 mb-5">
           <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.22em]">
-            Neural Execution Node
+            Momentum Topography
           </div>
           <div className="text-3xl font-mono font-light text-primary tabular-nums leading-none">
-            {confidence.toFixed(3)}
+            {momentum.toFixed(2)}
             <span className="text-sm text-muted-foreground ml-0.5">%</span>
           </div>
         </div>
 
-        {/* Lattice visualization */}
-        <div className="relative h-48 w-full mb-5 overflow-hidden">
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-            {/* Grid */}
-            <defs>
-              <pattern id="latticeGrid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(48 90% 60% / 0.08)" strokeWidth="0.2" />
-              </pattern>
-            </defs>
-            <rect width="100" height="100" fill="url(#latticeGrid)" />
-
-            {/* Edges */}
-            {edges.map((e, i) => {
-              const a = nodes[e.from];
-              const b = nodes[e.to];
+        {/* 3D heatmap visualization */}
+        <div
+          className="relative h-48 w-full mb-5 overflow-hidden"
+          style={{ perspective: "600px" }}
+        >
+          {/* Tilted heatmap grid */}
+          <div
+            className="absolute inset-0 grid gap-[2px] animate-mesh-rotate-slow"
+            style={{
+              gridTemplateColumns: "repeat(16, 1fr)",
+              gridTemplateRows: "repeat(9, 1fr)",
+              transform: "rotateX(45deg) scale(1.2)",
+              transformOrigin: "center 70%",
+              maskImage:
+                "radial-gradient(ellipse 70% 90% at 50% 50%, black 30%, transparent 95%)",
+              WebkitMaskImage:
+                "radial-gradient(ellipse 70% 90% at 50% 50%, black 30%, transparent 95%)",
+            }}
+          >
+            {cells.map((v, i) => {
+              const wave = (Math.sin(i * 0.4 + tick * 0.5) + 1) * 0.5;
+              const intensity = v * 0.6 + wave * 0.4;
               return (
-                <g key={`e${i}`}>
-                  <line
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke="hsl(48 90% 60% / 0.15)"
-                    strokeWidth="0.3"
-                  />
-                  <line
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke="hsl(48 95% 70%)"
-                    strokeWidth="0.4"
-                    strokeDasharray="6 14"
-                    style={{
-                      animation: `dash-flow 3s ${e.delay}s linear infinite`,
-                      filter: "drop-shadow(0 0 1px hsl(48 100% 60%))",
-                    }}
-                  />
-                </g>
-              );
-            })}
-
-            {/* Nodes */}
-            {nodes.map((n, i) => (
-              <g key={`n${i}`}>
-                <circle
-                  cx={n.x}
-                  cy={n.y}
-                  r={n.size * 0.6}
-                  fill={n.bright ? "hsl(48 95% 65%)" : "hsl(45 50% 55%)"}
+                <div
+                  key={i}
+                  className="transition-all duration-1000 ease-out"
                   style={{
-                    animation: `synapse-fire ${n.dur}s ${n.delay}s infinite ease-out`,
-                    filter: n.bright ? "drop-shadow(0 0 2px hsl(48 100% 60%))" : "none",
-                    transformOrigin: `${n.x}px ${n.y}px`,
-                    transformBox: "fill-box" as const,
+                    background: `hsl(${42 + intensity * 12} 95% ${30 + intensity * 35}% / ${0.15 + intensity * 0.6})`,
+                    boxShadow: intensity > 0.78 ? `0 0 6px hsl(48 100% 60% / 0.6)` : undefined,
                   }}
                 />
-              </g>
+              );
+            })}
+          </div>
+
+          {/* Contour ring overlay */}
+          <svg
+            viewBox="-50 -28 100 56"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full pointer-events-none"
+          >
+            {[10, 18, 26, 34].map((r, i) => (
+              <ellipse
+                key={i}
+                cx="0"
+                cy="0"
+                rx={r}
+                ry={r * 0.5}
+                fill="none"
+                stroke="hsl(48 95% 60%)"
+                strokeWidth="0.25"
+                strokeOpacity={0.45 - i * 0.08}
+                strokeDasharray="2 3"
+                style={{ animation: `contour-pulse ${6 + i}s ${i * 0.3}s ease-in-out infinite` }}
+              />
             ))}
+            {/* Center pulse */}
+            <circle
+              cx="0"
+              cy="0"
+              r="1.2"
+              fill="hsl(48 100% 65%)"
+              style={{ filter: "drop-shadow(0 0 3px hsl(48 100% 60%))" }}
+            >
+              <animate attributeName="r" values="1.2;2.2;1.2" dur="2.4s" repeatCount="indefinite" />
+            </circle>
           </svg>
         </div>
 
@@ -194,35 +179,35 @@ const AnimatedTradingChart = () => {
         <div className="grid grid-cols-2 gap-y-5 gap-x-4 mb-4">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
-              Theta Decay Var
+              Order Flow Imbalance
             </span>
             <span className="text-sm font-mono text-foreground tabular-nums">
-              -0.00412 <span className="text-primary">Δ</span>
+              +0.0421 <span className="text-primary">↑</span>
             </span>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
-              Lattice Depth
+              Cumulative Volume
             </span>
             <span className="text-sm font-mono text-foreground tabular-nums">
-              {latticeDepth.toLocaleString()} <span className="text-primary">T</span>
+              {volume.toLocaleString()} <span className="text-primary">L</span>
             </span>
           </div>
           <div className="col-span-2">
             <div className="flex justify-between text-[9px] font-mono text-muted-foreground uppercase tracking-[0.18em] mb-2">
-              <span>Algorithmic Confidence</span>
-              <span className="text-primary">Optimal</span>
+              <span>Momentum Strength</span>
+              <span className="text-primary">Bullish</span>
             </div>
             <div className="h-[2px] w-full bg-secondary relative overflow-hidden">
               <div
                 className="absolute top-0 left-0 h-full bg-primary shadow-[0_0_8px_hsl(48_100%_60%)] transition-all duration-1000 ease-out"
-                style={{ width: `${(confidence - 99) * 100}%` }}
+                style={{ width: `${momentum}%` }}
               />
             </div>
           </div>
         </div>
 
-        {/* Live activity bars */}
+        {/* Live momentum bars */}
         <div className="flex items-end gap-1 h-10">
           {bars.map((v, i) => (
             <div
