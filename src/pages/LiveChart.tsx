@@ -83,23 +83,19 @@ const LiveChart = () => {
       </header>
 
       <div className="space-y-4 p-4">
-        <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-5.5rem)]">
-          <div className="lg:col-span-2 flex flex-col rounded-2xl border border-border/30 bg-card p-4 min-h-0">
-            <div className="mb-3 flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — Live Chart</h3>
-            </div>
-            <div className="flex-1 min-h-0">
-              <TradingViewChart />
-            </div>
+        <div className="rounded-2xl border border-border/30 bg-card p-4 flex flex-col h-[calc(100vh-5.5rem)]">
+          <div className="mb-3 flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — Live Chart</h3>
           </div>
-          <div className="lg:col-span-1 min-h-0 overflow-auto">
-            <TradeJournal />
+          <div className="flex-1 min-h-0">
+            <TradingViewChart />
           </div>
         </div>
 
-        <div>
+        <div className="grid gap-4 lg:grid-cols-2">
           <PerformanceAnalytics />
+          <TradeJournal />
         </div>
       </div>
     </div>
