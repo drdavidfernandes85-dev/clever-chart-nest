@@ -105,7 +105,7 @@ const Dashboard = () => {
 
           {/* Center column — chart + lower row */}
           <div className="space-y-4 min-w-0">
-            <LightweightCandlestickChart symbol="EUR/USD" height={420} />
+            <TradingViewMiniChart symbol="FX:EURUSD" interval="60" height={420} />
 
             {/* Lower row: Sessions + News + Calendar */}
             <div className="grid gap-4 md:grid-cols-2">
