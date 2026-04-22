@@ -107,6 +107,9 @@ const HeroSection = () => {
         />
       </div>
 
+      {/* Parallax dust + particles — gold/green tinted to match the laptop screen */}
+      <HeroParticles />
+
       <div className="container relative z-10 flex min-h-[92vh] flex-col items-center justify-center gap-16 py-20 lg:flex-row">
         <div className="flex-1 space-y-8">
           <div className="inline-flex items-center gap-2.5 text-sm text-secondary-foreground">
