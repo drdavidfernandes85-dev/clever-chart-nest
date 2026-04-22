@@ -66,6 +66,16 @@ const Dashboard = () => {
       </div>
 
       <div className="space-y-4 p-4">
+        {/* AI row: Briefing + Sentiment */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <DailyBriefing />
+          </div>
+          <div>
+            <SentimentGauge />
+          </div>
+        </div>
+
         {/* Webinar */}
         <div>
           <WebinarWidget />
@@ -77,6 +87,8 @@ const Dashboard = () => {
           <NewsFlowWidget />
         </div>
       </div>
+
+      <AICopilot />
     </div>
   );
 };
