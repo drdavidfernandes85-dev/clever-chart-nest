@@ -5,13 +5,10 @@ import { Link } from "react-router-dom";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
-import KpiStrip from "@/components/dashboard/KpiStrip";
 import TradingViewMiniChart from "@/components/dashboard/TradingViewMiniChart";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
-import CommandBar from "@/components/dashboard/CommandBar";
 import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
-import OrderBook from "@/components/dashboard/OrderBook";
 import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
