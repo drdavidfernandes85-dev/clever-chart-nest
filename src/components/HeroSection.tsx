@@ -4,7 +4,7 @@ import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
-import heroFintech from "@/assets/hero-fintech.jpg";
+import AnimatedTradingChart from "@/components/hero/AnimatedTradingChart";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
@@ -142,30 +142,7 @@ const HeroSection = () => {
         </div>
 
         <div className="flex-1 w-full flex items-center justify-center">
-          <div className="relative w-full max-w-xl">
-            {/* Soft gold glow behind */}
-            <div
-              className="absolute -inset-10 rounded-full blur-3xl opacity-60"
-              style={{
-                background:
-                  "radial-gradient(circle, hsl(48 100% 51% / 0.25), transparent 70%)",
-              }}
-              aria-hidden="true"
-            />
-            <img
-              src={heroFintech}
-              alt="Premium gold rising trading chart visualization"
-              width={1280}
-              height={1280}
-              className="relative w-full h-auto rounded-2xl"
-              style={{
-                maskImage:
-                  "radial-gradient(ellipse 85% 85% at 50% 50%, black 55%, transparent 95%)",
-                WebkitMaskImage:
-                  "radial-gradient(ellipse 85% 85% at 50% 50%, black 55%, transparent 95%)",
-              }}
-            />
-          </div>
+          <AnimatedTradingChart />
         </div>
       </div>
 
