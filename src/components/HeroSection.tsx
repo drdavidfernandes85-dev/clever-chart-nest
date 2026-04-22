@@ -142,30 +142,7 @@ const HeroSection = () => {
         </div>
 
         <div className="flex-1 w-full flex items-center justify-center">
-          <div className="relative w-full max-w-xl">
-            {/* Soft gold glow behind */}
-            <div
-              className="absolute -inset-10 rounded-full blur-3xl opacity-60"
-              style={{
-                background:
-                  "radial-gradient(circle, hsl(48 100% 51% / 0.25), transparent 70%)",
-              }}
-              aria-hidden="true"
-            />
-            <img
-              src={heroFintech}
-              alt="Premium gold rising trading chart visualization"
-              width={1280}
-              height={1280}
-              className="relative w-full h-auto rounded-2xl"
-              style={{
-                maskImage:
-                  "radial-gradient(ellipse 85% 85% at 50% 50%, black 55%, transparent 95%)",
-                WebkitMaskImage:
-                  "radial-gradient(ellipse 85% 85% at 50% 50%, black 55%, transparent 95%)",
-              }}
-            />
-          </div>
+          <AnimatedTradingChart />
         </div>
       </div>
 
