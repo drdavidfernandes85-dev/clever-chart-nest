@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Profile = () => {
@@ -78,7 +79,12 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-16 md:pb-0">
+      <SEO
+        title="My Profile | Elite Live Trading Room"
+        description="Manage your trader profile, avatar and leaderboard visibility."
+        canonical="https://elitelivetradingroom.com/profile"
+      />
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">

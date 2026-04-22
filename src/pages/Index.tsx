@@ -1,4 +1,5 @@
 import Navbar from "@/components/Navbar";
+import SEO from "@/components/SEO";
 import HeroSection from "@/components/HeroSection";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import SponsorsSection from "@/components/SponsorsSection";
@@ -16,6 +17,20 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 
 const Index = () => (
   <div className="min-h-screen">
+    <SEO
+      title="Elite Live Trading Room | Real-Time Forex by INFINOX"
+      description="Real-time forex analysis, expert signals, live chatroom, and pro tools — join the Elite Live Trading Room powered by INFINOX."
+      canonical="https://elitelivetradingroom.com/"
+      image="https://elitelivetradingroom.com/og-image.jpg"
+      jsonLd={{
+        "@context": "https://schema.org",
+        "@type": "FinancialService",
+        name: "Elite Live Trading Room",
+        url: "https://elitelivetradingroom.com",
+        areaServed: "Worldwide",
+        serviceType: "Forex education and live trading community",
+      }}
+    />
     <AnimatedBackground />
     <Navbar />
     <HeroSection />

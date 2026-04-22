@@ -4,6 +4,7 @@ import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Crown, Medal, Award } from
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 type Period = "pnl_7d" | "pnl_30d" | "total_pnl";
@@ -61,7 +62,12 @@ const Leaderboard = () => {
   const ranked = rows.filter((r) => r.total_trades > 0);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-16 md:pb-0">
+      <SEO
+        title="Trader Leaderboard | Elite Live Trading Room"
+        description="Live ranking of community traders by 7-day, 30-day and all-time P&L, win rate and average R."
+        canonical="https://elitelivetradingroom.com/leaderboard"
+      />
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <Link to="/dashboard" className="flex items-center gap-3">

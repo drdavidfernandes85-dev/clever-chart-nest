@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import SEO from "@/components/SEO";
 
 interface Video {
   id: string;
@@ -53,7 +54,12 @@ const VideoLibrary = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
+      <SEO
+        title="Video Library | Elite Live Trading Room"
+        description="On-demand webinars, tutorials and market analysis from Elite Live Trading Room mentors."
+        canonical="https://elitelivetradingroom.com/videos"
+      />
       <div className="container max-w-6xl py-24">
         <div className="mb-2">
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground gap-1">
