@@ -47,12 +47,57 @@ const HeroSection = () => {
   const { t } = useLanguage();
 
   return (
-    <section id="home" className="relative overflow-hidden pt-16">
-      <div className="absolute inset-0 bg-grid-pattern opacity-20" />
-      <div className="absolute inset-0 bg-radial-glow" />
-      <div className="absolute top-16 left-0 right-0 cyber-line" />
+    <section id="home" className="relative pt-16">
+      {/* Page-wide ambient layer — extends beyond the section so it bleeds into neighbors */}
+      <div
+        className="pointer-events-none absolute -inset-x-[20%] -top-40 -bottom-60 z-0"
+        aria-hidden="true"
+      >
+        {/* Soft gold ambient core, sits behind the laptop */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 55% at 70% 45%, hsl(48 95% 55% / 0.18) 0%, hsl(40 80% 45% / 0.08) 35%, transparent 70%)",
+          }}
+        />
+        {/* Counter-balance glow on the copy side */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 50% 40% at 20% 35%, hsl(45 90% 50% / 0.08) 0%, transparent 65%)",
+          }}
+        />
+        {/* Faint grid, masked to fade out at all edges (no hard cutoff anywhere) */}
+        <div
+          className="absolute inset-0 bg-grid-pattern opacity-[0.12]"
+          style={{
+            maskImage:
+              "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 85%)",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 85%)",
+          }}
+        />
+        {/* Page-wide vignette — darkens edges so the bright glow feels embedded */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 90% 80% at 50% 45%, transparent 40%, hsl(0 0% 4% / 0.45) 80%, hsl(0 0% 3% / 0.85) 100%)",
+          }}
+        />
+        {/* Bottom seam — fades the entire ambient layer into the next section */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-72"
+          style={{
+            background:
+              "linear-gradient(to bottom, transparent 0%, hsl(0 0% 7% / 0.6) 60%, hsl(0 0% 7%) 100%)",
+          }}
+        />
+      </div>
 
-      <div className="container relative flex min-h-[92vh] flex-col items-center justify-center gap-16 py-20 lg:flex-row">
+      <div className="container relative z-10 flex min-h-[92vh] flex-col items-center justify-center gap-16 py-20 lg:flex-row">
         <div className="flex-1 space-y-8">
           <div className="inline-flex items-center gap-2.5 text-sm text-secondary-foreground">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse-slow" />
