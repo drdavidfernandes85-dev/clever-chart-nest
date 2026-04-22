@@ -113,7 +113,7 @@ const AnimatedTradingChart = () => {
         >
           {/* Tilted heatmap grid */}
           <div
-            className="absolute inset-0 grid grid-cols-16 gap-[2px] animate-mesh-rotate-slow"
+            className="absolute inset-0 grid gap-[2px] animate-mesh-rotate-slow"
             style={{
               gridTemplateColumns: "repeat(16, 1fr)",
               gridTemplateRows: "repeat(9, 1fr)",
