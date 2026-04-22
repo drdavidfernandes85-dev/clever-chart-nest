@@ -14,9 +14,14 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
-        heading: ['Poppins', 'sans-serif'],
+        sans: ['Proxima Nova', 'Poppins', 'Arial', 'system-ui', 'sans-serif'],
+        heading: ['Proxima Nova', 'Poppins', 'Arial', 'system-ui', 'sans-serif'],
+        proxima: ['Proxima Nova', 'Arial', 'system-ui', 'sans-serif'],
         display: ['Fraunces', 'Times New Roman', 'serif'],
+      },
+      boxShadow: {
+        'ix-glow': '0 0 20px -5px #FFCD05',
+        'ix-card': '0 10px 30px -10px rgba(255, 205, 5, 0.3)',
       },
       colors: {
         border: "hsl(var(--border))",
