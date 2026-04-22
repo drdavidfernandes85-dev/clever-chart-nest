@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import NewSignalForm from "@/components/signals/NewSignalForm";
+import SEO from "@/components/SEO";
 
 interface Signal {
   id: string;

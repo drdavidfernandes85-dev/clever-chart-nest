@@ -9,6 +9,7 @@ import AICopilot from "@/components/ai/AICopilot";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
 import SymbolIntelligence from "@/components/trading/SymbolIntelligence";
+import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const SYMBOL_OPTIONS = [
