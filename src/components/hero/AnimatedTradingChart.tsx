@@ -1,367 +1,242 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 /**
- * Animated SVG trading chart for the hero.
- * - Live candles materialize one-by-one
- * - Trend line draws progressively
- * - Floating ticker badges with pulsing prices
- * - Gold particles drift upward
- * Pure SVG + CSS, no images.
+ * Hero "Neural Execution Node" — a living lattice card with sparking nodes,
+ * tracing connections, and live data readouts. Matches the site background.
  */
 
-type Candle = {
-  x: number;
-  open: number;
-  close: number;
-  high: number;
-  low: number;
-  bullish: boolean;
-};
-
-const generateCandles = (count: number): Candle[] => {
-  const candles: Candle[] = [];
-  let price = 50;
-  const stepX = 480 / count;
-  for (let i = 0; i < count; i++) {
-    const change = (Math.random() - 0.4) * 8; // upward bias
-    const open = price;
-    const close = Math.max(10, Math.min(90, price + change));
-    const high = Math.max(open, close) + Math.random() * 4;
-    const low = Math.min(open, close) - Math.random() * 4;
-    candles.push({
-      x: 40 + i * stepX,
-      open,
-      close,
-      high,
-      low,
-      bullish: close >= open,
-    });
-    price = close;
-  }
-  return candles;
+const seedRand = (seed: number) => {
+  let s = seed;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
 };
 
 const AnimatedTradingChart = () => {
-  const [candles] = useState(() => generateCandles(22));
   const [tick, setTick] = useState(0);
-  const [livePrice, setLivePrice] = useState(1.0847);
+  const [confidence, setConfidence] = useState(99.948);
+  const [latticeDepth, setLatticeDepth] = useState(482911);
+  const [drift, setDrift] = useState(0.089);
 
   useEffect(() => {
     const id = setInterval(() => {
       setTick((t) => t + 1);
-      setLivePrice((p) => +(p + (Math.random() - 0.45) * 0.0015).toFixed(4));
-    }, 1800);
+      setConfidence((c) => +(Math.min(99.999, Math.max(99.6, c + (Math.random() - 0.5) * 0.04))).toFixed(3));
+      setLatticeDepth((d) => d + Math.floor((Math.random() - 0.4) * 400));
+      setDrift((d) => +(d + (Math.random() - 0.5) * 0.008).toFixed(3));
+    }, 1600);
     return () => clearInterval(id);
   }, []);
 
-  // Convert price (0-100) to y in viewbox 0-220 (inverted)
-  const yScale = (p: number) => 200 - (p / 100) * 170;
+  // Stable lattice points
+  const { nodes, edges } = useMemo(() => {
+    const r = seedRand(7);
+    const nodes = Array.from({ length: 14 }, () => ({
+      x: 10 + r() * 80,
+      y: 10 + r() * 80,
+      size: 2 + r() * 3,
+      delay: r() * 3,
+      dur: 2.5 + r() * 3,
+      bright: r() > 0.5,
+    }));
+    const edges: { from: number; to: number; delay: number }[] = [];
+    for (let i = 0; i < nodes.length; i++) {
+      // connect each node to its 1-2 nearest neighbors
+      const dists = nodes
+        .map((n, j) => ({ j, d: Math.hypot(n.x - nodes[i].x, n.y - nodes[i].y) }))
+        .filter((x) => x.j !== i)
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 2);
+      for (const { j } of dists) {
+        if (!edges.find((e) => (e.from === i && e.to === j) || (e.from === j && e.to === i))) {
+          edges.push({ from: i, to: j, delay: r() * 3 });
+        }
+      }
+    }
+    return { nodes, edges };
+  }, []);
 
-  // Path along closes for trend line
-  const trendPath = candles
-    .map((c, i) => `${i === 0 ? "M" : "L"} ${c.x} ${yScale(c.close)}`)
-    .join(" ");
-
-  const lastCandle = candles[candles.length - 1];
-  const trend = lastCandle.close >= candles[0].close ? "up" : "down";
+  // Mini bar values driven by tick for live feel
+  const bars = useMemo(
+    () => Array.from({ length: 14 }, (_, i) => 0.35 + Math.abs(Math.sin(i * 0.7 + tick * 0.4)) * 0.65),
+    [tick],
+  );
 
   return (
-    <div className="relative w-full max-w-xl aspect-[5/4]">
-      {/* Glow halo */}
+    <div className="relative w-full max-w-xl">
+      {/* Outer glow */}
       <div
-        className="absolute inset-0 blur-3xl opacity-70"
+        className="absolute -inset-12 blur-3xl opacity-60 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 60% 60% at 50% 55%, hsl(48 100% 51% / 0.35), transparent 70%)",
+            "radial-gradient(ellipse 60% 60% at 50% 50%, hsl(48 90% 60% / 0.28), transparent 70%)",
         }}
         aria-hidden="true"
       />
 
-      <svg
-        viewBox="0 0 540 430"
-        className="relative w-full h-full"
-        role="img"
-        aria-label="Animated live trading chart"
+      {/* Floating sub-panel: anomaly */}
+      <div
+        className="absolute -left-8 -top-6 z-20 hidden md:block w-[220px] backdrop-blur-md border border-primary/30 bg-background/85 p-3 shadow-2xl shadow-black/50"
+        style={{ animation: "panel-float 7s ease-in-out infinite" }}
       >
-        <defs>
-          <linearGradient id="bgPanel" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(0 0% 12%)" stopOpacity="0.7" />
-            <stop offset="100%" stopColor="hsl(0 0% 6%)" stopOpacity="0.3" />
-          </linearGradient>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="size-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_hsl(48_100%_55%)]" />
+          <span className="text-[9px] font-mono text-primary uppercase tracking-[0.18em]">
+            Anomaly Detected
+          </span>
+        </div>
+        <div className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+          Cluster <span className="text-foreground">A-7X</span> deviating from
+          standard alignment. Rerouting liquidity matrix.
+        </div>
+      </div>
 
-          <linearGradient id="goldFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(48 100% 60%)" />
-            <stop offset="100%" stopColor="hsl(40 100% 45%)" />
-          </linearGradient>
+      {/* Floating data ribbon */}
+      <div
+        className="absolute -right-6 top-1/2 z-20 hidden md:flex items-center gap-4 px-4 py-2 backdrop-blur border border-primary/25 bg-background/85"
+        style={{ animation: "panel-float 9s ease-in-out infinite reverse" }}
+      >
+        <div className="flex flex-col">
+          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
+            Vol Index
+          </span>
+          <span className="text-xs font-mono text-foreground tabular-nums">12.44</span>
+        </div>
+        <div className="h-6 w-px bg-primary/30" />
+        <div className="flex flex-col">
+          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
+            Drift
+          </span>
+          <span className="text-xs font-mono text-primary tabular-nums">
+            {drift >= 0 ? "+" : ""}
+            {drift.toFixed(3)}
+          </span>
+        </div>
+      </div>
 
-          <linearGradient id="trendGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="hsl(48 100% 51%)" stopOpacity="0" />
-            <stop offset="20%" stopColor="hsl(48 100% 51%)" stopOpacity="1" />
-            <stop offset="100%" stopColor="hsl(48 100% 65%)" stopOpacity="1" />
-          </linearGradient>
+      {/* Main neural panel */}
+      <div className="relative backdrop-blur-xl border border-primary/20 bg-background/70 p-6 shadow-2xl shadow-black/60">
+        {/* Header */}
+        <div className="flex justify-between items-end border-b border-primary/15 pb-3 mb-5">
+          <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-[0.22em]">
+            Neural Execution Node
+          </div>
+          <div className="text-3xl font-mono font-light text-primary tabular-nums leading-none">
+            {confidence.toFixed(3)}
+            <span className="text-sm text-muted-foreground ml-0.5">%</span>
+          </div>
+        </div>
 
-          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(48 100% 51%)" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="hsl(48 100% 51%)" stopOpacity="0" />
-          </linearGradient>
+        {/* Lattice visualization */}
+        <div className="relative h-48 w-full mb-5 overflow-hidden">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+            {/* Grid */}
+            <defs>
+              <pattern id="latticeGrid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(48 90% 60% / 0.08)" strokeWidth="0.2" />
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#latticeGrid)" />
 
-          <filter id="goldGlow">
-            <feGaussianBlur stdDeviation="2.5" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Glass panel */}
-        <rect
-          x="20"
-          y="20"
-          width="500"
-          height="390"
-          rx="20"
-          fill="url(#bgPanel)"
-          stroke="hsl(48 100% 51% / 0.25)"
-          strokeWidth="1"
-        />
-
-        {/* Inner grid */}
-        <g opacity="0.18">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <line
-              key={`h${i}`}
-              x1="40"
-              x2="520"
-              y1={50 + i * 40}
-              y2={50 + i * 40}
-              stroke="hsl(48 100% 51%)"
-              strokeWidth="0.5"
-            />
-          ))}
-          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-            <line
-              key={`v${i}`}
-              x1={60 + i * 75}
-              x2={60 + i * 75}
-              y1="40"
-              y2="240"
-              stroke="hsl(48 100% 51%)"
-              strokeWidth="0.5"
-            />
-          ))}
-        </g>
-
-        {/* Area fill under trend */}
-        <path
-          d={`${trendPath} L ${lastCandle.x} 230 L ${candles[0].x} 230 Z`}
-          fill="url(#areaFill)"
-          opacity="0.6"
-        />
-
-        {/* Trend line */}
-        <path
-          d={trendPath}
-          stroke="url(#trendGrad)"
-          strokeWidth="2.5"
-          fill="none"
-          filter="url(#goldGlow)"
-          strokeDasharray="800"
-          strokeDashoffset="800"
-          className="animate-draw-line"
-        />
-
-        {/* Candles */}
-        <g>
-          {candles.map((c, i) => {
-            const top = yScale(Math.max(c.open, c.close));
-            const bottom = yScale(Math.min(c.open, c.close));
-            const bodyH = Math.max(2, bottom - top);
-            const fill = c.bullish ? "url(#goldFill)" : "hsl(0 0% 35%)";
-            return (
-              <g
-                key={i}
-                style={{
-                  animation: `candle-pop 0.5s ${i * 0.06}s both ease-out`,
-                  transformOrigin: `${c.x}px 230px`,
-                }}
-              >
-                <line
-                  x1={c.x}
-                  x2={c.x}
-                  y1={yScale(c.high)}
-                  y2={yScale(c.low)}
-                  stroke={c.bullish ? "hsl(48 100% 55%)" : "hsl(0 0% 50%)"}
-                  strokeWidth="1"
-                />
-                <rect
-                  x={c.x - 6}
-                  y={top}
-                  width="12"
-                  height={bodyH}
-                  rx="1.5"
-                  fill={fill}
-                  filter={c.bullish ? "url(#goldGlow)" : undefined}
-                />
-              </g>
-            );
-          })}
-        </g>
-
-        {/* Pulse dot at last candle */}
-        <g>
-          <circle
-            cx={lastCandle.x}
-            cy={yScale(lastCandle.close)}
-            r="4"
-            fill="hsl(48 100% 60%)"
-            filter="url(#goldGlow)"
-          />
-          <circle
-            cx={lastCandle.x}
-            cy={yScale(lastCandle.close)}
-            r="4"
-            fill="hsl(48 100% 60%)"
-            opacity="0.6"
-            className="animate-ping-slow"
-          />
-        </g>
-
-        {/* Bottom info row */}
-        <g transform="translate(40, 270)">
-          {/* EUR/USD live */}
-          <rect
-            width="200"
-            height="50"
-            rx="10"
-            fill="hsl(0 0% 8% / 0.7)"
-            stroke="hsl(48 100% 51% / 0.3)"
-          />
-          <circle cx="18" cy="25" r="4" fill="hsl(48 100% 55%)" className="animate-ping-slow" />
-          <text x="32" y="22" fill="hsl(0 0% 70%)" fontSize="10" fontFamily="monospace">
-            EUR / USD
-          </text>
-          <text
-            x="32"
-            y="40"
-            fill="hsl(48 100% 55%)"
-            fontSize="16"
-            fontWeight="700"
-            fontFamily="monospace"
-          >
-            {livePrice.toFixed(4)}
-          </text>
-          <text
-            x="180"
-            y="40"
-            fill={trend === "up" ? "hsl(140 60% 55%)" : "hsl(0 70% 55%)"}
-            fontSize="11"
-            fontWeight="700"
-            fontFamily="monospace"
-            textAnchor="end"
-          >
-            {trend === "up" ? "▲ +0.42%" : "▼ -0.18%"}
-          </text>
-        </g>
-
-        <g transform="translate(260, 270)">
-          <rect
-            width="220"
-            height="50"
-            rx="10"
-            fill="hsl(0 0% 8% / 0.7)"
-            stroke="hsl(48 100% 51% / 0.3)"
-          />
-          <text x="14" y="22" fill="hsl(0 0% 70%)" fontSize="10" fontFamily="monospace">
-            ACTIVE SIGNALS
-          </text>
-          <text
-            x="14"
-            y="40"
-            fill="hsl(0 0% 95%)"
-            fontSize="16"
-            fontWeight="700"
-            fontFamily="monospace"
-          >
-            12 LIVE
-          </text>
-          <g transform="translate(150, 18)">
-            {[0, 1, 2].map((i) => (
-              <circle
-                key={i}
-                cx={i * 16}
-                cy="8"
-                r="6"
-                fill="hsl(48 100% 51%)"
-                opacity={0.3 + i * 0.25}
-                style={{
-                  animation: `signal-blink 1.4s ${i * 0.2}s infinite ease-in-out`,
-                }}
-              />
-            ))}
-          </g>
-        </g>
-
-        {/* Win-rate stat */}
-        <g transform="translate(40, 340)">
-          <rect
-            width="440"
-            height="56"
-            rx="10"
-            fill="hsl(0 0% 8% / 0.7)"
-            stroke="hsl(48 100% 51% / 0.3)"
-          />
-          <text x="16" y="22" fill="hsl(0 0% 70%)" fontSize="10" fontFamily="monospace">
-            30D WIN RATE
-          </text>
-          <text
-            x="16"
-            y="44"
-            fill="hsl(48 100% 60%)"
-            fontSize="22"
-            fontWeight="800"
-            fontFamily="monospace"
-          >
-            74.8%
-          </text>
-          {/* Mini bars */}
-          <g transform="translate(150, 18)">
-            {Array.from({ length: 18 }).map((_, i) => {
-              const h = 8 + Math.abs(Math.sin(i * 0.6 + tick * 0.3)) * 24;
+            {/* Edges */}
+            {edges.map((e, i) => {
+              const a = nodes[e.from];
+              const b = nodes[e.to];
               return (
-                <rect
-                  key={i}
-                  x={i * 14}
-                  y={32 - h}
-                  width="8"
-                  height={h}
-                  rx="1"
-                  fill="hsl(48 100% 51%)"
-                  opacity={0.4 + (i / 18) * 0.5}
-                  style={{ transition: "all 0.6s ease-out" }}
-                />
+                <g key={`e${i}`}>
+                  <line
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke="hsl(48 90% 60% / 0.15)"
+                    strokeWidth="0.3"
+                  />
+                  <line
+                    x1={a.x}
+                    y1={a.y}
+                    x2={b.x}
+                    y2={b.y}
+                    stroke="hsl(48 95% 70%)"
+                    strokeWidth="0.4"
+                    strokeDasharray="6 14"
+                    style={{
+                      animation: `dash-flow 3s ${e.delay}s linear infinite`,
+                      filter: "drop-shadow(0 0 1px hsl(48 100% 60%))",
+                    }}
+                  />
+                </g>
               );
             })}
-          </g>
-        </g>
 
-        {/* Floating particles */}
-        <g>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <circle
+            {/* Nodes */}
+            {nodes.map((n, i) => (
+              <g key={`n${i}`}>
+                <circle
+                  cx={n.x}
+                  cy={n.y}
+                  r={n.size * 0.6}
+                  fill={n.bright ? "hsl(48 95% 65%)" : "hsl(45 50% 55%)"}
+                  style={{
+                    animation: `synapse-fire ${n.dur}s ${n.delay}s infinite ease-out`,
+                    filter: n.bright ? "drop-shadow(0 0 2px hsl(48 100% 60%))" : "none",
+                    transformOrigin: `${n.x}px ${n.y}px`,
+                    transformBox: "fill-box" as const,
+                  }}
+                />
+              </g>
+            ))}
+          </svg>
+        </div>
+
+        {/* Data flow grid */}
+        <div className="grid grid-cols-2 gap-y-5 gap-x-4 mb-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
+              Theta Decay Var
+            </span>
+            <span className="text-sm font-mono text-foreground tabular-nums">
+              -0.00412 <span className="text-primary">Δ</span>
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
+              Lattice Depth
+            </span>
+            <span className="text-sm font-mono text-foreground tabular-nums">
+              {latticeDepth.toLocaleString()} <span className="text-primary">T</span>
+            </span>
+          </div>
+          <div className="col-span-2">
+            <div className="flex justify-between text-[9px] font-mono text-muted-foreground uppercase tracking-[0.18em] mb-2">
+              <span>Algorithmic Confidence</span>
+              <span className="text-primary">Optimal</span>
+            </div>
+            <div className="h-[2px] w-full bg-secondary relative overflow-hidden">
+              <div
+                className="absolute top-0 left-0 h-full bg-primary shadow-[0_0_8px_hsl(48_100%_60%)] transition-all duration-1000 ease-out"
+                style={{ width: `${(confidence - 99) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Live activity bars */}
+        <div className="flex items-end gap-1 h-10">
+          {bars.map((v, i) => (
+            <div
               key={i}
-              cx={60 + ((i * 73) % 460)}
-              cy={50 + ((i * 31) % 180)}
-              r="1.5"
-              fill="hsl(48 100% 60%)"
-              opacity="0.6"
+              className="flex-1 bg-primary/60 transition-all duration-700 ease-out"
               style={{
-                animation: `particle-float ${4 + (i % 3)}s ${i * 0.3}s infinite ease-in-out`,
+                height: `${v * 100}%`,
+                opacity: 0.4 + (i / bars.length) * 0.55,
+                boxShadow: i === bars.length - 1 ? "0 0 10px hsl(48 100% 60%)" : undefined,
               }}
             />
           ))}
-        </g>
-      </svg>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,127 +1,154 @@
 import { useTheme } from "@/contexts/ThemeContext";
+import { useMemo } from "react";
 
 /**
- * Pure-CSS / SVG futuristic fintech background.
- * No raster images = perfectly crisp at any resolution.
- * Layers: deep base → animated grid → drifting orbs → flowing data line → noise.
+ * Neural Lattice background — sitewide.
+ * Magnetic field grid + sparking gold synapse nodes + tracing connection lines.
+ * Pure CSS/SVG, no images. Drifts slowly so it feels alive without distracting.
  */
+
+type Node = { top: number; left: number; size: number; delay: number; dur: number; bright: boolean };
+type Line = { top: number; left: number; width: number; rotate: number; delay: number; dur: number };
+
+const seedRand = (seed: number) => {
+  let s = seed;
+  return () => {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+};
+
 const AnimatedBackground = () => {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // Stable per-mount layout (deterministic so it doesn't reflow on theme switch)
+  const { nodes, lines, dust } = useMemo(() => {
+    const r = seedRand(42);
+    const nodes: Node[] = Array.from({ length: 26 }, () => ({
+      top: r() * 100,
+      left: r() * 100,
+      size: 2 + Math.floor(r() * 6),
+      delay: r() * 4,
+      dur: 3 + r() * 5,
+      bright: r() > 0.55,
+    }));
+    const lines: Line[] = Array.from({ length: 14 }, () => ({
+      top: r() * 100,
+      left: r() * 100,
+      width: 6 + r() * 18,
+      rotate: r() * 360,
+      delay: r() * 3,
+      dur: 2.5 + r() * 4,
+    }));
+    const dust = Array.from({ length: 10 }, () => ({
+      top: r() * 100,
+      left: r() * 100,
+      delay: r() * 5,
+    }));
+    return { nodes, lines, dust };
+  }, []);
+
+  const goldCore = "hsl(48 90% 70%)";
+  const goldDust = "hsl(45 45% 50%)";
+  const trace = isDark ? "rgba(166,144,90,0.18)" : "rgba(140,110,40,0.22)";
 
   return (
     <div
       className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
       aria-hidden="true"
     >
-      {/* Deep base gradient */}
+      {/* Deep base */}
       <div
         className="absolute inset-0"
         style={{
           background: isDark
-            ? "radial-gradient(ellipse 100% 80% at 50% 0%, hsl(0 0% 11%) 0%, hsl(0 0% 6%) 60%, hsl(0 0% 4%) 100%)"
-            : "radial-gradient(ellipse 100% 80% at 50% 0%, hsl(0 0% 100%) 0%, hsl(0 0% 97%) 60%, hsl(0 0% 94%) 100%)",
+            ? "radial-gradient(ellipse 100% 80% at 50% 30%, hsl(0 0% 8%) 0%, hsl(0 0% 4%) 70%, hsl(0 0% 2%) 100%)"
+            : "radial-gradient(ellipse 100% 80% at 50% 30%, hsl(48 30% 99%) 0%, hsl(0 0% 96%) 70%, hsl(0 0% 93%) 100%)",
         }}
       />
 
-      {/* Animated perspective grid */}
-      <div className="absolute inset-0 opacity-60">
-        <div
-          className="absolute inset-0 animate-grid-pan"
-          style={{
-            backgroundImage: isDark
-              ? `linear-gradient(hsl(48 100% 51% / 0.08) 1px, transparent 1px),
-                 linear-gradient(90deg, hsl(48 100% 51% / 0.08) 1px, transparent 1px)`
-              : `linear-gradient(hsl(48 100% 45% / 0.10) 1px, transparent 1px),
-                 linear-gradient(90deg, hsl(48 100% 45% / 0.10) 1px, transparent 1px)`,
-            backgroundSize: "80px 80px",
-            maskImage:
-              "radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 90%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 70% 60% at 50% 50%, black 30%, transparent 90%)",
-          }}
-        />
+      {/* Magnetic-field grid with radial mask */}
+      <div
+        className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage: `linear-gradient(to right, ${trace} 1px, transparent 1px),
+                            linear-gradient(to bottom, ${trace} 1px, transparent 1px)`,
+          backgroundSize: "64px 64px",
+          maskImage:
+            "radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 90%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 90%)",
+        }}
+      />
+
+      {/* Slow drifting layer holds nodes + traces */}
+      <div className="absolute inset-0 animate-lattice-drift">
+        {/* Synapse nodes */}
+        {nodes.map((n, i) => (
+          <span
+            key={`n${i}`}
+            className="absolute rounded-full"
+            style={{
+              top: `${n.top}%`,
+              left: `${n.left}%`,
+              width: `${n.size}px`,
+              height: `${n.size}px`,
+              background: n.bright ? goldCore : goldDust,
+              animation: `synapse-fire ${n.dur}s ${n.delay}s infinite ease-out`,
+            }}
+          />
+        ))}
+
+        {/* Tracing connection lines */}
+        {lines.map((l, i) => (
+          <span
+            key={`l${i}`}
+            className="absolute h-px origin-left"
+            style={{
+              top: `${l.top}%`,
+              left: `${l.left}%`,
+              width: `${l.width}%`,
+              transform: `rotate(${l.rotate}deg)`,
+              background: `linear-gradient(to right, ${goldCore}55, ${goldDust}22, transparent)`,
+            }}
+          >
+            <span
+              className="block h-full w-full"
+              style={{
+                background: goldCore,
+                animation: `line-trace ${l.dur}s ${l.delay}s infinite cubic-bezier(0.4,0,0.2,1)`,
+              }}
+            />
+          </span>
+        ))}
+
+        {/* Floating gold dust */}
+        {dust.map((d, i) => (
+          <span
+            key={`d${i}`}
+            className="absolute rounded-full blur-[1px]"
+            style={{
+              top: `${d.top}%`,
+              left: `${d.left}%`,
+              width: "3px",
+              height: "3px",
+              background: goldCore,
+              boxShadow: `0 0 8px ${goldCore}`,
+              opacity: 0.5,
+              animation: `dust-float ${6 + (i % 4)}s ${d.delay}s infinite ease-in-out`,
+            }}
+          />
+        ))}
       </div>
 
-      {/* Floating gold orbs (drift) */}
-      <div
-        className="absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full blur-3xl animate-orb-1"
-        style={{
-          background:
-            "radial-gradient(circle, hsl(48 100% 51% / 0.18), transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute top-1/3 -right-40 w-[640px] h-[640px] rounded-full blur-3xl animate-orb-2"
-        style={{
-          background:
-            "radial-gradient(circle, hsl(40 100% 50% / 0.14), transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute -bottom-40 left-1/4 w-[580px] h-[580px] rounded-full blur-3xl animate-orb-3"
-        style={{
-          background:
-            "radial-gradient(circle, hsl(48 100% 51% / 0.12), transparent 70%)",
-        }}
-      />
-
-      {/* Flowing data wave (SVG, animated stroke) */}
-      <svg
-        className="absolute inset-0 w-full h-full opacity-40"
-        viewBox="0 0 1600 900"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="hsl(48 100% 51%)" stopOpacity="0" />
-            <stop offset="50%" stopColor="hsl(48 100% 51%)" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="hsl(48 100% 51%)" stopOpacity="0" />
-          </linearGradient>
-          <filter id="waveGlow">
-            <feGaussianBlur stdDeviation="3" result="b" />
-            <feMerge>
-              <feMergeNode in="b" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <path
-          d="M0,500 C200,420 400,580 600,480 C800,380 1000,520 1200,440 C1400,360 1500,500 1600,460"
-          stroke="url(#waveGrad)"
-          strokeWidth="2"
-          fill="none"
-          filter="url(#waveGlow)"
-          className="animate-wave-1"
-        />
-        <path
-          d="M0,620 C220,560 420,680 640,600 C860,520 1080,640 1300,580 C1450,540 1550,600 1600,580"
-          stroke="url(#waveGrad)"
-          strokeWidth="1.5"
-          fill="none"
-          filter="url(#waveGlow)"
-          opacity="0.6"
-          className="animate-wave-2"
-        />
-      </svg>
-
-      {/* Vignette so content stays readable */}
+      {/* Soft vignette so foreground content stays readable */}
       <div
         className="absolute inset-0"
         style={{
           background: isDark
-            ? "radial-gradient(ellipse at center, transparent 0%, hsl(0 0% 6% / 0.4) 65%, hsl(0 0% 4% / 0.85) 100%)"
-            : "radial-gradient(ellipse at center, transparent 0%, hsl(0 0% 100% / 0.4) 60%, hsl(0 0% 100% / 0.9) 100%)",
-        }}
-      />
-
-      {/* Subtle noise */}
-      <div
-        className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "256px 256px",
+            ? "radial-gradient(ellipse at center, transparent 0%, hsl(0 0% 4% / 0.45) 70%, hsl(0 0% 2% / 0.85) 100%)"
+            : "radial-gradient(ellipse at center, transparent 0%, hsl(0 0% 100% / 0.5) 65%, hsl(0 0% 100% / 0.92) 100%)",
         }}
       />
     </div>
