@@ -244,7 +244,7 @@ const TradingSignals = () => {
         )}
 
         {isAdmin && <NewSignalForm />}
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-6 flex-wrap">
           <button
             onClick={() => setTab("active")}
             className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
@@ -261,6 +261,29 @@ const TradingSignals = () => {
           >
             {t("signals.closed")} ({closedSignals.length})
           </button>
+          {/* Layout toggle — Cards vs dense Grid (Bloomberg-style) */}
+          <div className="ml-auto flex items-center gap-1 rounded-full border border-border/40 bg-muted/30 p-0.5">
+            <button
+              onClick={() => setView("cards")}
+              aria-label="Card view"
+              title="Card view"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                view === "cards" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" /> Cards
+            </button>
+            <button
+              onClick={() => setView("grid")}
+              aria-label="Dense grid view"
+              title="Dense grid view"
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+                view === "grid" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Rows3 className="h-3.5 w-3.5" /> Grid
+            </button>
+          </div>
         </div>
 
         {/* Signals */}
