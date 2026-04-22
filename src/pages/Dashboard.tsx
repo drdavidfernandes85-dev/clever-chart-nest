@@ -2,29 +2,37 @@ import { BarChart3, MessageSquare, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import KpiStrip from "@/components/dashboard/KpiStrip";
 import LightweightCandlestickChart from "@/components/dashboard/LightweightCandlestickChart";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
+import CommunityNest from "@/components/dashboard/CommunityNest";
+import CommandBar from "@/components/dashboard/CommandBar";
+import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
+      {/* Top header */}
+      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/85 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3">
               <img src={infinoxLogo} alt="INFINOX" className="h-5" />
               <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
-              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
+              <span className="hidden sm:inline font-proxima text-sm font-semibold text-foreground">
                 Elite <span className="text-primary">Live Trading Room</span>
               </span>
             </Link>
-            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">Dashboard</Badge>
+            <Badge
+              variant="secondary"
+              className="text-[10px] uppercase tracking-wider rounded-full border-primary/30 bg-primary/10 text-primary"
+            >
+              Clever Chart Nest
+            </Badge>
           </div>
 
           <div className="flex items-center gap-2">
@@ -41,47 +49,68 @@ const Dashboard = () => {
               </Link>
             </Button>
             <NotificationsBell />
-            <Link to="/profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/80 transition-colors">
+            <Link
+              to="/profile"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/80 transition-colors"
+            >
               <User className="h-4 w-4" />
             </Link>
           </div>
         </div>
       </header>
 
+      {/* Live ticker */}
       <ForexTickerBar />
 
-      {/* Welcome strip */}
-      <div className="px-4 pt-6">
+      {/* Floating command bar */}
+      <div className="px-4 pt-4">
+        <CommandBar />
+      </div>
+
+      {/* Title strip */}
+      <div className="px-4 pt-4">
         <div className="flex items-end justify-between flex-wrap gap-2">
           <div>
-            <h1 className="font-display text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
-              Trading <span className="text-gradient">Command Center</span>
+            <h1 className="font-proxima text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+              Trading <span className="text-primary">Command Center</span>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">Live markets, your performance, and the room — all in one place.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Bloomberg-style multi-panel terminal · Live markets · Community Nest
+            </p>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5">
-            <span className="h-2 w-2 rounded-full bg-[hsl(145_65%_50%)] animate-pulse" />
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[hsl(145_65%_50%)]" />
+            </span>
             <span className="text-xs font-mono text-foreground">MARKETS OPEN</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4 p-4">
-        {/* KPI Strip — hedge-fund style at-a-glance metrics */}
+      {/* Bloomberg-style modular grid */}
+      <div className="px-4 py-4">
+        {/* KPI strip — sparkline tiles in IX yellow */}
         <KpiStrip />
 
-        {/* Featured live chart */}
-        <LightweightCandlestickChart symbol="EUR/USD" height={340} />
+        {/* Main grid: chart center + Community Nest sidebar */}
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
+          {/* Center column */}
+          <div className="space-y-4 min-w-0">
+            <LightweightCandlestickChart symbol="EUR/USD" height={380} />
 
-        {/* Webinar */}
-        <div>
-          <WebinarWidget />
-        </div>
+            {/* Sessions + News row */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <UpcomingSessions />
+              <NewsFlowWidget />
+            </div>
 
-        {/* News + Calendar */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <EconomicCalendarWidget />
-          <NewsFlowWidget />
+            {/* Calendar full-width */}
+            <EconomicCalendarWidget />
+          </div>
+
+          {/* Right sidebar — Community Nest */}
+          <CommunityNest />
         </div>
       </div>
     </div>
