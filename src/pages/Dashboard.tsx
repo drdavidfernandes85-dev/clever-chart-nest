@@ -6,6 +6,9 @@ import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
+import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
+import TradeJournal from "@/components/dashboard/TradeJournal";
+import TradingViewMiniChart from "@/components/dashboard/TradingViewMiniChart";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -45,8 +48,45 @@ const Dashboard = () => {
       </header>
 
       <ForexTickerBar />
+
+      {/* Welcome strip */}
+      <div className="px-4 pt-6">
+        <div className="flex items-end justify-between flex-wrap gap-2">
+          <div>
+            <h1 className="font-display text-3xl md:text-4xl font-semibold text-foreground tracking-tight">
+              Trading <span className="text-gradient">Command Center</span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Live markets, your performance, and the room — all in one place.</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-mono text-foreground">MARKETS OPEN</span>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-4 p-4">
-        <WebinarWidget />
+        {/* Top row: Performance + Webinar */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <PerformanceAnalytics />
+          </div>
+          <div>
+            <WebinarWidget />
+          </div>
+        </div>
+
+        {/* Chart + Journal */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <TradingViewMiniChart />
+          </div>
+          <div>
+            <TradeJournal />
+          </div>
+        </div>
+
+        {/* News + Calendar */}
         <div className="grid gap-4 lg:grid-cols-2">
           <EconomicCalendarWidget />
           <NewsFlowWidget />
