@@ -10,6 +10,7 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
 import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
 import SmartAlerts from "@/components/dashboard/SmartAlerts";
+import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -85,30 +86,28 @@ const Dashboard = () => {
       {/* Bloomberg-style modular grid */}
       <div className="px-4 py-4">
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          {/* Center column — chart + lower row */}
+          {/* Center column — chart + signals + alerts + lower row */}
           <div className="space-y-4 min-w-0">
             <TradingViewMiniChart symbol="FX:EURUSD" interval="60" height={420} />
 
-            {/* Lower row: Sessions + News + Calendar */}
+            {/* Smart Alerts + Live Shared Signals beside the chart */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <SmartAlerts />
+              <LiveSharedSignals />
+            </div>
+
+            {/* Lower row: Sessions + News */}
             <div className="grid gap-4 md:grid-cols-2">
               <UpcomingSessions />
               <NewsFlowWidget />
             </div>
 
             <EconomicCalendarWidget />
-
-            {/* Mobile-only fallback so Smart Alerts remain accessible */}
-            <div className="lg:hidden">
-              <SmartAlerts />
-            </div>
           </div>
 
-          {/* Right sidebar — Community Nest + Smart Alerts */}
+          {/* Right sidebar — Community Nest */}
           <aside className="space-y-4">
             <CommunityNest />
-            <div className="hidden lg:block">
-              <SmartAlerts />
-            </div>
           </aside>
         </div>
       </div>
