@@ -352,7 +352,13 @@ const Chatroom = () => {
         />
       </div>
 
-      <AICopilot />
+      {!focusMode && (
+        <AICopilot
+          embedded
+          collapsed={copilotCollapsed}
+          onToggleCollapsed={() => setCopilotCollapsed((v) => !v)}
+        />
+      )}
 
     </div>
   );
