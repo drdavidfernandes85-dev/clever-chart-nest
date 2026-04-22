@@ -4,7 +4,7 @@ import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
-import AnimatedTradingChart from "@/components/hero/AnimatedTradingChart";
+import heroLaptop from "@/assets/hero-laptop-charts.jpg";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
@@ -142,7 +142,24 @@ const HeroSection = () => {
         </div>
 
         <div className="flex-1 w-full flex items-center justify-center">
-          <AnimatedTradingChart />
+          <div className="relative w-full max-w-2xl">
+            {/* Glow halo */}
+            <div
+              className="absolute -inset-10 blur-3xl opacity-70 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse 60% 60% at 50% 50%, hsl(48 95% 55% / 0.35), transparent 70%)",
+              }}
+              aria-hidden="true"
+            />
+            <img
+              src={heroLaptop}
+              alt="Laptop displaying live trading charts"
+              width={1280}
+              height={960}
+              className="relative w-full h-auto rounded-2xl animate-float drop-shadow-[0_30px_60px_hsl(0_0%_0%/0.6)]"
+            />
+          </div>
         </div>
       </div>
 
