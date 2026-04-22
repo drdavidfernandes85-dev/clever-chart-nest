@@ -65,7 +65,7 @@ const XPBar = () => {
             <Zap className="h-3.5 w-3.5" />
             <span className="font-mono">{xp.total_xp.toLocaleString()} XP</span>
           </div>
-          <div className="flex items-center gap-1 text-orange-400">
+          <div className="flex items-center gap-1 text-muted-foreground">
             <Flame className="h-3.5 w-3.5" />
             <span className="font-mono">{xp.current_streak}d</span>
           </div>

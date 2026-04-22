@@ -8,8 +8,10 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminRoute from "@/components/AdminRoute";
 import PageTransition from "@/components/PageTransition";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import Index from "./pages/Index.tsx";
 
 // Code-split heavier authenticated routes
@@ -22,6 +24,7 @@ const Profile = lazy(() => import("./pages/Profile.tsx"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary.tsx"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals.tsx"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
+const Admin = lazy(() => import("./pages/Admin.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
@@ -54,10 +57,12 @@ const App = () => (
                   <Route path="/videos" element={<ProtectedRoute><VideoLibrary /></ProtectedRoute>} />
                   <Route path="/signals" element={<ProtectedRoute><TradingSignals /></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+                  <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
             </PageTransition>
+            <OnboardingTour />
             <MobileBottomNav />
           </AuthProvider>
         </BrowserRouter>
