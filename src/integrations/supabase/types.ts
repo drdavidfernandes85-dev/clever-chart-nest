@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      badges: {
+        Row: {
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          slug: string
+          tier: string
+          xp_reward: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          name: string
+          slug: string
+          tier?: string
+          xp_reward?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          slug?: string
+          tier?: string
+          xp_reward?: number
+        }
+        Relationships: []
+      }
       booking_requests: {
         Row: {
           created_at: string
@@ -67,6 +100,7 @@ export type Database = {
           channel_id: string
           content: string
           created_at: string
+          deleted_at: string | null
           id: string
           reply_to_id: string | null
           updated_at: string
@@ -76,6 +110,7 @@ export type Database = {
           channel_id: string
           content: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           reply_to_id?: string | null
           updated_at?: string
@@ -85,6 +120,7 @@ export type Database = {
           channel_id?: string
           content?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           reply_to_id?: string | null
           updated_at?: string
@@ -120,6 +156,33 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      mute_list: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          muted_until: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          muted_until?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          muted_until?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       newsletter_subscribers: {
         Row: {
@@ -334,6 +397,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -351,6 +443,72 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          digest_day: number
+          email_digest_optin: boolean
+          id: string
+          onboarding_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          digest_day?: number
+          email_digest_optin?: boolean
+          id?: string
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          digest_day?: number
+          email_digest_optin?: boolean
+          id?: string
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_xp: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          level: number
+          longest_streak: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          total_xp?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -391,6 +549,33 @@ export type Database = {
         }
         Relationships: []
       }
+      xp_events: {
+        Row: {
+          amount: number
+          context: Json
+          created_at: string
+          id: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          context?: Json
+          created_at?: string
+          id?: string
+          source: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          context?: Json
+          created_at?: string
+          id?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       leaderboard_stats: {
@@ -410,6 +595,31 @@ export type Database = {
       }
     }
     Functions: {
+      award_xp: {
+        Args: {
+          _amount: number
+          _context?: Json
+          _source: string
+          _user_id: string
+        }
+        Returns: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          level: number
+          longest_streak: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_xp"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
