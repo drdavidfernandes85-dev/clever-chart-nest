@@ -69,11 +69,6 @@ const FloatingCandles = ({ className = "", side = "left" }: { className?: string
                 stroke={stroke}
                 strokeWidth="0.8"
                 rx="1"
-                style={
-                  c.isAccent
-                    ? { filter: "drop-shadow(0 0 6px hsl(48 100% 51% / 0.7))" }
-                    : undefined
-                }
               />
             </g>
           );

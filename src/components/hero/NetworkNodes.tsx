@@ -59,9 +59,9 @@ const NetworkNodes = ({ className = "" }: { className?: string }) => {
               <circle
                 cx={n.x}
                 cy={n.y}
-                r={n.size + 4}
+                r={n.size + 2}
                 fill="hsl(48 100% 51%)"
-                opacity="0.18"
+                opacity="0.08"
               />
             )}
             <circle
@@ -69,12 +69,7 @@ const NetworkNodes = ({ className = "" }: { className?: string }) => {
               cy={n.y}
               r={n.size}
               fill={n.accent ? "hsl(48 100% 51%)" : "hsl(0 0% 80%)"}
-              opacity={n.accent ? 0.95 : 0.55}
-              style={
-                n.accent
-                  ? { filter: "drop-shadow(0 0 4px hsl(48 100% 51% / 0.9))" }
-                  : undefined
-              }
+              opacity={n.accent ? 0.85 : 0.55}
             />
           </g>
         ))}

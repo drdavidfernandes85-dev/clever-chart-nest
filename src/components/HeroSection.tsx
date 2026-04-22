@@ -4,7 +4,6 @@ import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
-import HeroParticles from "@/components/hero/HeroParticles";
 import FloatingCandles from "@/components/hero/FloatingCandles";
 import NetworkNodes from "@/components/hero/NetworkNodes";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -50,66 +49,6 @@ const HeroSection = () => {
 
   return (
     <section id="home" className="relative pt-16">
-      {/* Page-wide ambient layer — extends beyond the section so it bleeds into neighbors */}
-      <div
-        className="pointer-events-none absolute -inset-x-[20%] -top-40 -bottom-60 z-0"
-        aria-hidden="true"
-      >
-        {/* Soft gold ambient core, sits behind the laptop */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 55% at 70% 45%, hsl(48 95% 55% / 0.22) 0%, hsl(40 80% 45% / 0.10) 35%, transparent 70%)",
-          }}
-        />
-        {/* Green chart spill — picks up the candlestick green from the laptop screen */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 45% 35% at 68% 55%, hsl(140 70% 45% / 0.10) 0%, transparent 70%)",
-            mixBlendMode: "screen",
-          }}
-        />
-        {/* Counter-balance glow on the copy side */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 50% 40% at 20% 35%, hsl(45 90% 50% / 0.10) 0%, transparent 65%)",
-          }}
-        />
-        {/* Faint grid, masked to fade out at all edges (no hard cutoff anywhere) */}
-        <div
-          className="absolute inset-0 bg-grid-pattern opacity-[0.12]"
-          style={{
-            maskImage:
-              "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 85%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 85%)",
-          }}
-        />
-        {/* Page-wide vignette — darkens edges so the bright glow feels embedded */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 90% 80% at 50% 45%, transparent 40%, hsl(0 0% 4% / 0.45) 80%, hsl(0 0% 3% / 0.85) 100%)",
-          }}
-        />
-        {/* Bottom seam — fades the entire ambient layer into the next section */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-72"
-          style={{
-            background:
-              "linear-gradient(to bottom, transparent 0%, hsl(0 0% 7% / 0.6) 60%, hsl(0 0% 7%) 100%)",
-          }}
-        />
-      </div>
-
-      {/* Parallax dust + particles — gold/green tinted to match the laptop screen */}
-      <HeroParticles />
 
       {/* Live market ticker — sits above the fold for instant "trading" identity */}
       <div
@@ -180,15 +119,11 @@ const HeroSection = () => {
             {t("hero.desc")}
           </p>
 
-          {/* Glowing INFINOX-yellow CTA */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <MagneticButton strength={0.25}>
               <Button
                 size="lg"
-                className="relative bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-14 px-10 text-base font-bold rounded-full
-                           shadow-[0_0_60px_-5px_hsl(48_100%_51%/0.7),0_10px_40px_-10px_hsl(48_100%_51%/0.8)]
-                           ring-1 ring-primary/40
-                           transition-shadow duration-500 hover:shadow-[0_0_80px_-2px_hsl(48_100%_51%/0.95)]"
+                className="relative h-14 gap-2 rounded-full bg-primary px-10 text-base font-bold text-primary-foreground ring-1 ring-primary/20 transition-colors duration-300 hover:bg-primary/90"
                 asChild
               >
                 <Link to="/register">
