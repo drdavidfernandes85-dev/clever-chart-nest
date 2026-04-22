@@ -6,6 +6,8 @@ import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
+import KpiStrip from "@/components/dashboard/KpiStrip";
+import LightweightCandlestickChart from "@/components/dashboard/LightweightCandlestickChart";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
