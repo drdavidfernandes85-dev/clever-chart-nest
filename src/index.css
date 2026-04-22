@@ -113,7 +113,8 @@
 
   body {
     @apply text-foreground antialiased;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-proxima);
+    font-weight: 400;
     position: relative;
     overflow-x: hidden;
     background-color: transparent;
@@ -127,17 +128,21 @@
     background-color: hsl(0 0% 100%);
   }
 
-  /* Body overlays removed — AnimatedBackground component handles ambient visuals */
-
   body > * {
     position: relative;
     z-index: 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-proxima);
     letter-spacing: -0.01em;
   }
+
+  /* Guideline weights */
+  h1, .hero-title { font-weight: 300; }   /* Light for hero */
+  h2, h3 { font-weight: 600; }            /* SemiBold for sections */
+  .heading-semibold { font-weight: 600; }
+  .heading-bold { font-weight: 700; }
 }
 
 @layer utilities {
