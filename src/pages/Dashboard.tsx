@@ -76,16 +76,6 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Chart + Journal */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <TradingViewMiniChart />
-          </div>
-          <div>
-            <TradeJournal />
-          </div>
-        </div>
-
         {/* News + Calendar */}
         <div className="grid gap-4 lg:grid-cols-2">
           <EconomicCalendarWidget />
