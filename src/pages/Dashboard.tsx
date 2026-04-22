@@ -6,7 +6,7 @@ import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import KpiStrip from "@/components/dashboard/KpiStrip";
-import LightweightCandlestickChart from "@/components/dashboard/LightweightCandlestickChart";
+import TradingViewMiniChart from "@/components/dashboard/TradingViewMiniChart";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
 import CommandBar from "@/components/dashboard/CommandBar";
@@ -105,7 +105,7 @@ const Dashboard = () => {
 
           {/* Center column — chart + lower row */}
           <div className="space-y-4 min-w-0">
-            <LightweightCandlestickChart symbol="EUR/USD" height={420} />
+            <TradingViewMiniChart symbol="FX:EURUSD" interval="60" height={420} />
 
             {/* Lower row: Sessions + News + Calendar */}
             <div className="grid gap-4 md:grid-cols-2">
