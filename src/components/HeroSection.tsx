@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import heroLaptop from "@/assets/hero-laptop-charts.jpg";
+import HeroParticles from "@/components/hero/HeroParticles";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
@@ -58,7 +59,16 @@ const HeroSection = () => {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 70% 55% at 70% 45%, hsl(48 95% 55% / 0.18) 0%, hsl(40 80% 45% / 0.08) 35%, transparent 70%)",
+              "radial-gradient(ellipse 70% 55% at 70% 45%, hsl(48 95% 55% / 0.22) 0%, hsl(40 80% 45% / 0.10) 35%, transparent 70%)",
+          }}
+        />
+        {/* Green chart spill — picks up the candlestick green from the laptop screen */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 45% 35% at 68% 55%, hsl(140 70% 45% / 0.10) 0%, transparent 70%)",
+            mixBlendMode: "screen",
           }}
         />
         {/* Counter-balance glow on the copy side */}
@@ -66,7 +76,7 @@ const HeroSection = () => {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 50% 40% at 20% 35%, hsl(45 90% 50% / 0.08) 0%, transparent 65%)",
+              "radial-gradient(ellipse 50% 40% at 20% 35%, hsl(45 90% 50% / 0.10) 0%, transparent 65%)",
           }}
         />
         {/* Faint grid, masked to fade out at all edges (no hard cutoff anywhere) */}
