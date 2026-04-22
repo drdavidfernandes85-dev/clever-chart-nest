@@ -2,7 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&display=swap');
+
+/* Proxima Nova stack — guideline weights: 300 Light · 400 Regular · 600 SemiBold · 700 Bold.
+   Inter is loaded as a metric-compatible fallback in index.html. */
+:root {
+  --font-proxima: 'Proxima Nova', 'proxima-nova', 'Inter', 'Arial', system-ui, sans-serif;
+}
 
 @layer base {
   /* ── Dark theme (default) — INFINOX official palette ── */
@@ -107,7 +113,8 @@
 
   body {
     @apply text-foreground antialiased;
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-proxima);
+    font-weight: 400;
     position: relative;
     overflow-x: hidden;
     background-color: transparent;
@@ -121,17 +128,21 @@
     background-color: hsl(0 0% 100%);
   }
 
-  /* Body overlays removed — AnimatedBackground component handles ambient visuals */
-
   body > * {
     position: relative;
     z-index: 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-proxima);
     letter-spacing: -0.01em;
   }
+
+  /* Guideline weights */
+  h1, .hero-title { font-weight: 300; }   /* Light for hero */
+  h2, h3 { font-weight: 600; }            /* SemiBold for sections */
+  .heading-semibold { font-weight: 600; }
+  .heading-bold { font-weight: 700; }
 }
 
 @layer utilities {
