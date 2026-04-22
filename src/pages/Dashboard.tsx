@@ -2,11 +2,8 @@ import { BarChart3, MessageSquare, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
-import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
-import DailyBriefing from "@/components/ai/DailyBriefing";
 import SentimentGauge from "@/components/ai/SentimentGauge";
 import AICopilot from "@/components/ai/AICopilot";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
@@ -69,25 +66,14 @@ const Dashboard = () => {
       </div>
 
       <div className="space-y-4 p-4">
-        {/* AI row: Briefing + Sentiment */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <DailyBriefing />
-          </div>
-          <div>
-            <SentimentGauge />
-          </div>
+        {/* Sentiment */}
+        <div>
+          <SentimentGauge />
         </div>
 
         {/* Webinar */}
         <div>
           <WebinarWidget />
-        </div>
-
-        {/* News + Calendar */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <EconomicCalendarWidget />
-          <NewsFlowWidget />
         </div>
       </div>
 

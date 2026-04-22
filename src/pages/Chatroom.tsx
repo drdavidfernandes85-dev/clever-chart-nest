@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import ChatMessage from "@/components/chatroom/ChatMessage";
 import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
+import DailyBriefing from "@/components/ai/DailyBriefing";
+import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
+import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 interface Channel {
@@ -260,7 +263,7 @@ const Chatroom = () => {
         </div>
       )}
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 min-w-0 flex-col">
         <header className="flex h-14 items-center justify-between border-b border-border/50 px-4 bg-card/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <button className="md:hidden text-muted-foreground mr-1" onClick={() => setSidebarOpen(true)}>
@@ -332,6 +335,17 @@ const Chatroom = () => {
           members={allProfiles}
         />
       </div>
+
+      {/* Right info rail — Daily Briefing on top, Calendar + News at the bottom */}
+      <aside className="hidden xl:flex w-[420px] shrink-0 flex-col border-l border-border/50 bg-card/30 overflow-y-auto">
+        <div className="p-3 border-b border-border/50">
+          <DailyBriefing />
+        </div>
+        <div className="mt-auto flex flex-col gap-3 p-3">
+          <EconomicCalendarWidget />
+          <NewsFlowWidget />
+        </div>
+      </aside>
     </div>
   );
 };
