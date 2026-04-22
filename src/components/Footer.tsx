@@ -1,8 +1,12 @@
-import infinoxLogo from "@/assets/infinox-logo-white.png";
+import infinoxLogoWhite from "@/assets/infinox-logo-white.png";
+import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const Footer = () => {
   const { t } = useLanguage();
+  const { theme } = useTheme();
+  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
 
   const columns = [
     {
@@ -20,7 +24,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="border-t border-border/30 py-16">
+    <footer className="relative bg-background/95 backdrop-blur-xl border-t border-border py-16">
       <div className="container">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
@@ -30,7 +34,7 @@ const Footer = () => {
             <span className="mt-3 inline-block font-heading text-sm font-semibold text-foreground">
               Elite <span className="text-primary">Live Trading Room</span>
             </span>
-            <p className="mt-3 text-xs leading-relaxed text-secondary-foreground">
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}
             </p>
           </div>
