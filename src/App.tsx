@@ -25,6 +25,8 @@ const VideoLibrary = lazy(() => import("./pages/VideoLibrary.tsx"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals.tsx"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
+const Analytics = lazy(() => import("./pages/Analytics.tsx"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
@@ -58,6 +60,8 @@ const App = () => (
                   <Route path="/signals" element={<ProtectedRoute><TradingSignals /></ProtectedRoute>} />
                   <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
                   <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                  <Route path="/u/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
