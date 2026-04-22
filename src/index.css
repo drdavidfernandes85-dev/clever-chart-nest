@@ -105,18 +105,18 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     font-family: 'Poppins', sans-serif;
     position: relative;
     overflow-x: hidden;
+    background-color: transparent;
   }
 
-  .dark body,
-  :root body {
+  /* Base color sits on <html> so the fixed AnimatedBackground (z-0) is actually visible */
+  html {
     background-color: hsl(0 0% 7%);
   }
-
-  .light body {
+  html.light {
     background-color: hsl(0 0% 100%);
   }
 
