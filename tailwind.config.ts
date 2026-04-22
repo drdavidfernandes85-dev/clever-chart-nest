@@ -24,6 +24,16 @@ export default {
         'ix-card': '0 10px 30px -10px rgba(255, 205, 5, 0.3)',
       },
       colors: {
+        // Official INFINOX brand palette (literal hex)
+        'ix-yellow': '#FFCD05',
+        'ix-charcoal': '#1E1E1E',
+        'ix-black': '#1D1D1B',
+        'ix-white': '#FFFFFF',
+        'ix-light-gray': '#F5F5F5',
+        'ix-yellow-100': '#FFCD05',
+        'ix-yellow-200': '#FFDB4D',
+        'ix-yellow-300': '#FFE680',
+        // Semantic tokens (themeable via index.css)
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
