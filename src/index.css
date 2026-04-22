@@ -253,70 +253,37 @@
     animation: shimmer 2s infinite linear;
   }
 
-  /* ── Animated Background ── */
-  @keyframes grid-pan {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(80px, 80px); }
+  /* ── Neural Lattice background + hero ── */
+  @keyframes lattice-drift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(14px, -18px); }
   }
-  .animate-grid-pan {
-    animation: grid-pan 18s linear infinite;
+  .animate-lattice-drift { animation: lattice-drift 24s ease-in-out infinite; }
+
+  @keyframes synapse-fire {
+    0%, 100% { opacity: 0.15; transform: scale(0.85); }
+    8%, 18% { opacity: 1; transform: scale(1.15); }
+    50% { opacity: 0.4; transform: scale(1); }
   }
 
-  @keyframes orb-1 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(60px, 40px) scale(1.1); }
-  }
-  .animate-orb-1 { animation: orb-1 14s ease-in-out infinite; }
-
-  @keyframes orb-2 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-50px, 60px) scale(1.15); }
-  }
-  .animate-orb-2 { animation: orb-2 18s ease-in-out infinite; }
-
-  @keyframes orb-3 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(40px, -50px) scale(1.08); }
-  }
-  .animate-orb-3 { animation: orb-3 16s ease-in-out infinite; }
-
-  @keyframes wave-flow {
-    0% { stroke-dasharray: 200 1600; stroke-dashoffset: 0; }
-    100% { stroke-dasharray: 200 1600; stroke-dashoffset: -1800; }
-  }
-  .animate-wave-1 { animation: wave-flow 8s linear infinite; }
-  .animate-wave-2 { animation: wave-flow 12s linear infinite reverse; }
-
-  /* ── Animated Trading Chart ── */
-  @keyframes candle-pop {
-    0% { opacity: 0; transform: translateY(20px) scaleY(0.3); }
-    100% { opacity: 1; transform: translateY(0) scaleY(1); }
+  @keyframes line-trace {
+    0% { transform: scaleX(0); transform-origin: left; }
+    50% { transform: scaleX(1); transform-origin: left; }
+    51% { transform: scaleX(1); transform-origin: right; }
+    100% { transform: scaleX(0); transform-origin: right; }
   }
 
-  @keyframes draw-line {
-    to { stroke-dashoffset: 0; }
-  }
-  .animate-draw-line {
-    animation: draw-line 2.5s 1.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  @keyframes dust-float {
+    0%, 100% { transform: translate(0, 0); opacity: 0.4; }
+    50% { transform: translate(8px, -14px); opacity: 0.85; }
   }
 
-  @keyframes ping-slow {
-    0% { transform: scale(1); opacity: 0.6; }
-    100% { transform: scale(3); opacity: 0; }
-  }
-  .animate-ping-slow {
-    transform-origin: center;
-    transform-box: fill-box;
-    animation: ping-slow 2s ease-out infinite;
+  @keyframes dash-flow {
+    to { stroke-dashoffset: -40; }
   }
 
-  @keyframes signal-blink {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
-  }
-
-  @keyframes particle-float {
-    0%, 100% { transform: translateY(0); opacity: 0.4; }
-    50% { transform: translateY(-12px); opacity: 0.8; }
+  @keyframes panel-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
   }
 }
