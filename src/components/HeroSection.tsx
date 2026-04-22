@@ -149,9 +149,19 @@ const HeroSection = () => {
         </div>
       </div>
 
-      <div className="container relative z-10 flex min-h-[88vh] flex-col items-center justify-center gap-16 py-16 lg:flex-row">
-        <div className="flex-1 space-y-8">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs uppercase tracking-[0.2em] text-primary/90">
+      {/* ── Centered hero with side ornaments (matches reference) ── */}
+      <div className="container relative z-10 min-h-[88vh] py-16">
+        {/* Floating candles — left side */}
+        <FloatingCandles
+          side="left"
+          className="absolute left-0 top-1/2 hidden -translate-y-1/2 w-[22rem] h-[34rem] md:block animate-float"
+        />
+        {/* Network nodes — right side */}
+        <NetworkNodes className="absolute right-0 top-1/2 hidden -translate-y-1/2 w-[22rem] h-[34rem] md:block animate-float" />
+
+        <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-8 text-center">
+          {/* Proxima Nova / brand pill */}
+          <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-primary/90 backdrop-blur-sm">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
@@ -159,22 +169,26 @@ const HeroSection = () => {
             {t("hero.powered")}
           </div>
 
-          <h1 className="font-heading text-5xl font-bold leading-[1.05] text-foreground md:text-6xl lg:text-7xl uppercase tracking-tight">
-            {t("hero.title1")}
+          <h1 className="font-heading text-5xl font-bold leading-[1.05] text-foreground md:text-6xl lg:text-7xl tracking-tight">
+            {t("hero.title1")}{" "}
+            <span className="text-primary">|</span>
             <br />
-            <span className="text-gradient">{t("hero.title2")}</span>{" "}
-            <span className="text-foreground">{t("hero.title3")}</span>
+            <span className="text-foreground">{t("hero.title2")} {t("hero.title3")}</span>
           </h1>
 
-          <p className="max-w-lg text-base leading-relaxed font-sans text-secondary-foreground">
+          <p className="max-w-xl text-base leading-relaxed font-sans text-secondary-foreground">
             {t("hero.desc")}
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 pt-2">
+          {/* Glowing INFINOX-yellow CTA */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <MagneticButton strength={0.25}>
               <Button
                 size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/80 gap-2 h-12 px-8 text-sm font-semibold rounded-full shadow-[0_10px_40px_-10px_hsl(48_100%_51%/0.6)]"
+                className="relative bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-14 px-10 text-base font-bold rounded-full
+                           shadow-[0_0_60px_-5px_hsl(48_100%_51%/0.7),0_10px_40px_-10px_hsl(48_100%_51%/0.8)]
+                           ring-1 ring-primary/40
+                           transition-shadow duration-500 hover:shadow-[0_0_80px_-2px_hsl(48_100%_51%/0.95)]"
                 asChild
               >
                 <Link to="/register">
@@ -186,27 +200,23 @@ const HeroSection = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-border bg-transparent text-foreground hover:bg-secondary gap-2 h-12 px-8 text-sm rounded-full"
+                className="border-border bg-card/40 text-foreground hover:bg-secondary gap-2 h-14 px-8 text-sm rounded-full backdrop-blur-md"
                 asChild
               >
-                <Link to="/login">
-                  {t("hero.demo")}
-                </Link>
+                <Link to="/login">{t("hero.demo")}</Link>
               </Button>
             </MagneticButton>
           </div>
 
           {/* Social Proof + Countdown Row */}
-          <div className="flex flex-wrap items-center gap-6 pt-4">
-            {/* Social proof */}
-            <div className="flex items-center gap-2 rounded-full border border-border/50 bg-card/60 px-4 py-2">
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <div className="flex items-center gap-2 rounded-full border border-border/50 bg-card/60 px-4 py-2 backdrop-blur-md">
               <Users className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-foreground">1,200+</span>
               <span className="text-xs text-muted-foreground">{t("hero.traders")}</span>
             </div>
 
-            {/* Webinar countdown */}
-            <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-2">
+            <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-4 py-2 backdrop-blur-md">
               <Clock className="h-4 w-4 text-primary" />
               {isLive ? (
                 <span className="text-sm font-bold text-primary animate-pulse">{t("hero.live")}</span>
@@ -225,13 +235,13 @@ const HeroSection = () => {
             </div>
           </div>
 
-          <div className="flex gap-10 pt-2">
+          <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 pt-6">
             {[
               { value: "75%", label: t("hero.winrate") },
               { value: "99.8%", label: t("hero.uptime") },
               { value: "5K+", label: t("hero.tradersLabel") },
             ].map((stat) => (
-              <div key={stat.label}>
+              <div key={stat.label} className="text-center">
                 <div className="font-display text-4xl font-semibold text-foreground tabular-nums">
                   <AnimatedCounter value={stat.value} />
                 </div>
@@ -240,49 +250,7 @@ const HeroSection = () => {
             ))}
           </div>
         </div>
-
-        <div className="flex-1 w-full flex items-center justify-center">
-          <div className="relative w-full max-w-2xl group">
-            {/* Soft gold ambient halo behind the cutout */}
-            <div
-              className="absolute -inset-20 blur-[90px] opacity-80 pointer-events-none animate-pulse-slow"
-              style={{
-                background:
-                  "radial-gradient(ellipse 55% 55% at 50% 50%, hsl(48 95% 55% / 0.32), hsl(40 80% 45% / 0.12) 45%, transparent 75%)",
-              }}
-              aria-hidden="true"
-            />
-            {/* Faint green chart-spill glow on the screen side */}
-            <div
-              className="absolute inset-x-0 top-[10%] h-1/2 blur-3xl opacity-50 pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(ellipse 50% 60% at 50% 40%, hsl(140 70% 45% / 0.22), transparent 70%)",
-              }}
-              aria-hidden="true"
-            />
-            {/* Floor contact shadow — anchors the laptop to the page */}
-            <div
-              className="absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[72%] h-10 blur-2xl opacity-90 pointer-events-none"
-              style={{
-                background:
-                  "radial-gradient(ellipse 50% 100% at 50% 0%, hsl(0 0% 0% / 0.7), transparent 75%)",
-              }}
-              aria-hidden="true"
-            />
-            <img
-              src={heroLaptop}
-              alt="Laptop displaying live trading charts"
-              width={1024}
-              height={1024}
-              className="relative w-full h-auto animate-float transition-transform duration-700 group-hover:scale-[1.02]"
-              style={{
-                filter:
-                  "drop-shadow(0 35px 50px hsl(0 0% 0% / 0.55)) drop-shadow(0 0 45px hsl(48 95% 55% / 0.28))",
-              }}
-            />
-          </div>
-        </div>
+      </div>
       </div>
 
       
