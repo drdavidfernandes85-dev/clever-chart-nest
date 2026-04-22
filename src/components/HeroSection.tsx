@@ -6,6 +6,7 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import FloatingCandles from "@/components/hero/FloatingCandles";
 import NetworkNodes from "@/components/hero/NetworkNodes";
+import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
@@ -50,42 +51,11 @@ const HeroSection = () => {
   return (
     <section id="home" className="relative pt-16">
 
-      {/* Live market ticker — sits above the fold for instant "trading" identity */}
-      <div
-        className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-border/60 bg-card/40 backdrop-blur-md"
-        aria-hidden="true"
-      >
+      {/* Live market ticker — same live feed as the dashboard */}
+      <div className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-primary/30 bg-card/40 backdrop-blur-md">
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent z-10" />
-        <div className="flex w-max animate-ticker py-2 font-mono text-[11px] tracking-widest text-foreground/70">
-          {[...Array(2)].map((_, dup) => (
-            <div className="flex shrink-0" key={dup}>
-              {[
-                ["XAU/USD", "2,412.50", "+12.40", "up"],
-                ["EUR/USD", "1.0942", "+0.0014", "up"],
-                ["GBP/JPY", "192.45", "-0.15", "down"],
-                ["BTC/USD", "64,210", "+840.00", "up"],
-                ["DXY", "104.20", "-0.05", "down"],
-                ["US30", "39,820", "+128.00", "up"],
-                ["NAS100", "18,540", "+92.30", "up"],
-                ["WTI", "78.42", "-0.22", "down"],
-              ].map(([sym, price, chg, dir], i) => (
-                <span key={`${dup}-${i}`} className="flex items-center gap-2 px-6 whitespace-nowrap">
-                  <span className="font-semibold text-foreground/90">{sym}</span>
-                  <span className="tabular-nums">{price}</span>
-                  <span
-                    className={`tabular-nums ${
-                      dir === "up" ? "text-[hsl(145_65%_50%)]" : "text-[hsl(0_70%_55%)]"
-                    }`}
-                  >
-                    {dir === "up" ? "▲" : "▼"} {chg}
-                  </span>
-                  <span className="text-border">|</span>
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
+        <ForexTickerBar />
       </div>
 
       {/* ── Centered hero with side ornaments (matches reference) ── */}
