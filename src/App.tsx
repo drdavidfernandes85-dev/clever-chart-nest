@@ -17,6 +17,7 @@ import Register from "./pages/Register.tsx";
 import Profile from "./pages/Profile.tsx";
 import VideoLibrary from "./pages/VideoLibrary.tsx";
 import TradingSignals from "./pages/TradingSignals.tsx";
+import Leaderboard from "./pages/Leaderboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/videos" element={<ProtectedRoute><VideoLibrary /></ProtectedRoute>} />
                 <Route path="/signals" element={<ProtectedRoute><TradingSignals /></ProtectedRoute>} />
+                <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </PageTransition>

@@ -25,6 +25,7 @@ const translations = {
     "nav.chatroom": "Chatroom",
     "nav.signals": "Signals",
     "nav.videos": "Videos",
+    "nav.leaderboard": "Leaderboard",
     "nav.login": "Login",
     "nav.signup": "Sign Up",
     // Hero
@@ -232,6 +233,7 @@ const translations = {
     "nav.chatroom": "Chatroom",
     "nav.signals": "Señales",
     "nav.videos": "Videos",
+    "nav.leaderboard": "Ranking",
     "nav.login": "Ingresar",
     "nav.signup": "Registrarse",
     "hero.powered": "Impulsado por INFINOX",
@@ -421,6 +423,7 @@ const translations = {
     "nav.chatroom": "Chatroom",
     "nav.signals": "Sinais",
     "nav.videos": "Vídeos",
+    "nav.leaderboard": "Ranking",
     "nav.login": "Entrar",
     "nav.signup": "Cadastrar",
     "hero.powered": "Desenvolvido por INFINOX",

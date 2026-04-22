@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
-import { User, Camera, ArrowLeft, Save } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { User, Camera, ArrowLeft, Save, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,9 +14,22 @@ const Profile = () => {
   const { user, profile } = useAuth();
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
+  const [leaderboardOptOut, setLeaderboardOptOut] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("leaderboard_opt_out")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setLeaderboardOptOut(!!(data as any).leaderboard_opt_out);
+      });
+  }, [user]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,7 +60,11 @@ const Profile = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: displayName, avatar_url: avatarUrl || null })
+        .update({
+          display_name: displayName,
+          avatar_url: avatarUrl || null,
+          leaderboard_opt_out: leaderboardOptOut,
+        } as any)
         .eq("user_id", user.id);
       if (error) throw error;
       toast.success("Profile updated!");
@@ -138,6 +156,27 @@ const Profile = () => {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your display name"
               className="bg-card border-border/50"
+            />
+          </div>
+        </div>
+
+        {/* Privacy */}
+        <div className="rounded-2xl border border-border/40 bg-card p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15">
+                <Trophy className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Show on leaderboard</p>
+                <p className="text-xs text-muted-foreground mt-0.5 max-w-xs">
+                  Display your name, avatar and trade journal P&L on the public leaderboard.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={!leaderboardOptOut}
+              onCheckedChange={(v) => setLeaderboardOptOut(!v)}
             />
           </div>
         </div>

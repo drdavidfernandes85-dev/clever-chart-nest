@@ -109,6 +109,13 @@ export type Database = {
             foreignKeyName: "messages_user_id_profiles_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "leaderboard_stats"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "messages_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -138,6 +145,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          leaderboard_opt_out: boolean
           updated_at: string
           user_id: string
         }
@@ -146,6 +154,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id?: string
+          leaderboard_opt_out?: boolean
           updated_at?: string
           user_id: string
         }
@@ -154,6 +163,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          leaderboard_opt_out?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -347,7 +357,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_stats: {
+        Row: {
+          avatar_url: string | null
+          avg_r: number | null
+          best_trade: number | null
+          display_name: string | null
+          pnl_30d: number | null
+          pnl_7d: number | null
+          total_pnl: number | null
+          total_trades: number | null
+          user_id: string | null
+          win_rate: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {

@@ -78,6 +78,9 @@ const Navbar = () => {
             <Link to="/videos">{t("nav.videos")}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
+            <Link to="/leaderboard">{t("nav.leaderboard")}</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
 
@@ -147,6 +150,9 @@ const Navbar = () => {
             </Button>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/videos" onClick={() => setMobileOpen(false)}>{t("nav.videos")}</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/leaderboard" onClick={() => setMobileOpen(false)}>{t("nav.leaderboard")}</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
