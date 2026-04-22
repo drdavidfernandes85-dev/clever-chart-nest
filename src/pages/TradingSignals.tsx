@@ -41,6 +41,7 @@ const TradingSignals = () => {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
+  const [view, setView] = useState<"cards" | "grid">("cards");
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
