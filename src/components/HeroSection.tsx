@@ -4,7 +4,7 @@ import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
-import heroFintech from "@/assets/hero-fintech.jpg";
+import AnimatedTradingChart from "@/components/hero/AnimatedTradingChart";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
