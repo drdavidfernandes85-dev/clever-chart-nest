@@ -13,6 +13,7 @@ import PageTransition from "@/components/PageTransition";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import Index from "./pages/Index.tsx";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 // Code-split heavier authenticated routes
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
@@ -47,6 +48,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <AnimatedBackground />
             <PageTransition>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
