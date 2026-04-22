@@ -26,8 +26,10 @@ Deno.serve(async (req) => {
       }).then((r) => r.json()),
     ]);
 
-    const news = (newsRes.status === "fulfilled" ? newsRes.value?.news || newsRes.value || [] : []).slice(0, 12);
-    const calendar = (calRes.status === "fulfilled" ? calRes.value?.events || calRes.value || [] : []).slice(0, 8);
+    const newsRaw = newsRes.status === "fulfilled" ? newsRes.value?.data || newsRes.value?.news || newsRes.value || [] : [];
+    const calRaw = calRes.status === "fulfilled" ? calRes.value?.data || calRes.value?.events || calRes.value || [] : [];
+    const news = Array.isArray(newsRaw) ? newsRaw.slice(0, 12) : [];
+    const calendar = Array.isArray(calRaw) ? calRaw.slice(0, 8) : [];
 
     const newsBlock = news
       .map((n: any) => `- [${n.category || n.source || "NEWS"}] ${n.title}`)

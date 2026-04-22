@@ -29,7 +29,8 @@ Deno.serve(async (req) => {
         .limit(20),
     ]);
 
-    const news = (newsRes.status === "fulfilled" ? newsRes.value?.news || newsRes.value || [] : []).slice(0, 15);
+    const newsRaw = newsRes.status === "fulfilled" ? newsRes.value?.data || newsRes.value?.news || newsRes.value || [] : [];
+    const news = Array.isArray(newsRaw) ? newsRaw.slice(0, 15) : [];
     const signals: any[] = signalsRes.status === "fulfilled" ? signalsRes.value.data || [] : [];
 
     const longs = signals.filter((s) => s.direction === "long").length;

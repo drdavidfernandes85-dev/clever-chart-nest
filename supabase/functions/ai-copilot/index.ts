@@ -28,8 +28,10 @@ async function fetchContext(supabase: ReturnType<typeof createClient>, userId: s
     }).then((r) => r.json()),
   ]);
 
-  const news = newsRes.status === "fulfilled" ? (newsRes.value?.news || newsRes.value || []).slice(0, 10) : [];
-  const calendar = calRes.status === "fulfilled" ? (calRes.value?.events || calRes.value || []).slice(0, 8) : [];
+  const newsArr = newsRes.status === "fulfilled" ? newsRes.value?.data || newsRes.value?.news || newsRes.value || [] : [];
+  const calArr = calRes.status === "fulfilled" ? calRes.value?.data || calRes.value?.events || calRes.value || [] : [];
+  const news = Array.isArray(newsArr) ? newsArr.slice(0, 10) : [];
+  const calendar = Array.isArray(calArr) ? calArr.slice(0, 8) : [];
 
   // Active signals
   const { data: signals } = await supabase
