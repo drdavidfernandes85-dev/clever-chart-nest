@@ -115,7 +115,7 @@
 
   /* Base color sits on <html> so the fixed AnimatedBackground (z-0) is actually visible */
   html {
-    background-color: hsl(0 0% 7%);
+    background-color: hsl(0 0% 12%); /* #1E1E1E IX Charcoal */
   }
   html.light {
     background-color: hsl(0 0% 100%);
