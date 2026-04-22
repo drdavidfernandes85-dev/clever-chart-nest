@@ -1,20 +1,20 @@
 import { ReactNode, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
+/**
+ * Cinematic page transition: blur + fade + slight rise.
+ * Replaces the previous opacity-only transition.
+ */
 const PageTransition = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const [show, setShow] = useState(false);
+  const [key, setKey] = useState(0);
 
   useEffect(() => {
-    setShow(false);
-    const t = requestAnimationFrame(() => setShow(true));
-    return () => cancelAnimationFrame(t);
+    setKey((k) => k + 1);
   }, [location.pathname]);
 
   return (
-    <div
-      className={`transition-opacity duration-300 ease-out ${show ? "opacity-100" : "opacity-0"}`}
-    >
+    <div key={key} className="animate-hero-blur-in">
       {children}
     </div>
   );
