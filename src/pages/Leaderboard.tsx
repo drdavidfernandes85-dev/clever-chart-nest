@@ -33,9 +33,9 @@ const formatPnl = (n: number) => {
 };
 
 const RankBadge = ({ rank }: { rank: number }) => {
-  if (rank === 1) return <Crown className="h-5 w-5 text-yellow-400" />;
-  if (rank === 2) return <Medal className="h-5 w-5 text-zinc-300" />;
-  if (rank === 3) return <Award className="h-5 w-5 text-amber-600" />;
+  if (rank === 1) return <Crown className="h-5 w-5 text-primary" />;
+  if (rank === 2) return <Medal className="h-5 w-5 text-muted-foreground" />;
+  if (rank === 3) return <Award className="h-5 w-5 text-primary/60" />;
   return <span className="font-mono text-sm text-muted-foreground w-5 text-center">{rank}</span>;
 };
 
