@@ -6,7 +6,7 @@ import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
-import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
+
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -64,14 +64,9 @@ const Dashboard = () => {
       </div>
 
       <div className="space-y-4 p-4">
-        {/* Top row: Performance + Webinar */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <PerformanceAnalytics />
-          </div>
-          <div>
-            <WebinarWidget />
-          </div>
+        {/* Webinar */}
+        <div>
+          <WebinarWidget />
         </div>
 
         {/* News + Calendar */}

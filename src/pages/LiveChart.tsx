@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import TradeJournal from "@/components/dashboard/TradeJournal";
+import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
@@ -81,8 +82,8 @@ const LiveChart = () => {
         </div>
       </header>
 
-      <div className="p-4">
-        <div className="grid gap-4 lg:grid-cols-3" style={{ height: 'calc(100vh - 5.5rem)' }}>
+      <div className="space-y-4 p-4">
+        <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-5.5rem)]">
           <div className="lg:col-span-2 flex flex-col rounded-2xl border border-border/30 bg-card p-4 min-h-0">
             <div className="mb-3 flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
@@ -95,6 +96,10 @@ const LiveChart = () => {
           <div className="lg:col-span-1 min-h-0 overflow-auto">
             <TradeJournal />
           </div>
+        </div>
+
+        <div>
+          <PerformanceAnalytics />
         </div>
       </div>
     </div>
