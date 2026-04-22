@@ -1,12 +1,25 @@
-import { useRef, useEffect } from "react";
-import { BarChart3, MessageSquare, LayoutDashboard } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
+import { BarChart3, MessageSquare, LayoutDashboard, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
 import AICopilot from "@/components/ai/AICopilot";
+import NotificationsBell from "@/components/notifications/NotificationsBell";
+import RiskCalculator from "@/components/trading/RiskCalculator";
+import SymbolIntelligence from "@/components/trading/SymbolIntelligence";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+
+const SYMBOL_OPTIONS = [
+  { label: "EUR/USD", value: "FX:EURUSD" },
+  { label: "GBP/USD", value: "FX:GBPUSD" },
+  { label: "USD/JPY", value: "FX:USDJPY" },
+  { label: "AUD/USD", value: "FX:AUDUSD" },
+  { label: "USD/CAD", value: "FX:USDCAD" },
+  { label: "XAU/USD", value: "OANDA:XAUUSD" },
+  { label: "GBP/JPY", value: "FX:GBPJPY" },
+];
 
 const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,6 +64,9 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
 };
 
 const LiveChart = () => {
+  const [symbol, setSymbol] = useState("FX:EURUSD");
+  const currentLabel = SYMBOL_OPTIONS.find((s) => s.value === symbol)?.label ?? symbol;
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
@@ -79,18 +95,45 @@ const LiveChart = () => {
                 <span className="ml-1.5 hidden sm:inline">Chatroom</span>
               </Link>
             </Button>
+            <NotificationsBell />
+            <Link to="/profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/80 transition-colors">
+              <User className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </header>
 
       <div className="space-y-4 p-4">
-        <div className="rounded-2xl border border-border/30 bg-card p-4 flex flex-col h-[calc(100vh-5.5rem)]">
-          <div className="mb-3 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <h3 className="font-heading text-sm font-semibold text-foreground">EUR/USD — Live Chart</h3>
+        {/* Chart + Intelligence */}
+        <div className="grid gap-4 lg:grid-cols-3 h-[calc(100vh-5.5rem)]">
+          <div className="lg:col-span-2 rounded-2xl border border-border/30 bg-card p-4 flex flex-col min-h-[500px]">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <h3 className="font-heading text-sm font-semibold text-foreground">{currentLabel} — Live Chart</h3>
+              </div>
+              <div className="flex items-center gap-1 rounded-full border border-border/40 bg-muted/30 p-0.5">
+                {SYMBOL_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSymbol(opt.value)}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                      symbol === opt.value
+                        ? "bg-primary/20 text-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 min-h-0">
+              <TradingViewChart symbol={symbol} />
+            </div>
           </div>
-          <div className="flex-1 min-h-0">
-            <TradingViewChart />
+          <div className="lg:col-span-1 min-h-[500px]">
+            <SymbolIntelligence symbol={symbol} />
           </div>
         </div>
 
@@ -101,6 +144,7 @@ const LiveChart = () => {
       </div>
 
       <AICopilot />
+      <RiskCalculator />
     </div>
   );
 };
