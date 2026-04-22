@@ -11,9 +11,7 @@ const CTASection = () => {
     <section className="py-28">
       <div className="container">
         <ScrollReveal>
-          <div className="shimmer-border relative overflow-hidden rounded-3xl glass-panel px-6 py-20 text-center md:px-16">
-            {/* Ambient glow */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(48_100%_51%/0.12),transparent_70%)]" />
+          <div className="relative overflow-hidden rounded-3xl glass-panel px-6 py-20 text-center md:px-16">
             {/* Faint connected node network — community motif */}
             <svg
               viewBox="0 0 600 220"
@@ -58,7 +56,7 @@ const CTASection = () => {
               <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
                 <Button
                   size="lg"
-                  className="bg-primary text-primary-foreground hover:bg-primary/80 gap-2 h-12 px-8 text-sm font-semibold rounded-full shadow-[0_10px_40px_-10px_hsl(48_100%_51%/0.6)]"
+                  className="h-12 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground hover:bg-primary/80"
                   asChild
                 >
                   <Link to="/register">

@@ -103,10 +103,7 @@ const HeroParticles = () => {
               width: `${p.size}px`,
               height: `${p.size}px`,
               background: color,
-              opacity: 0.25 + p.depth * 0.55,
-              boxShadow: p.glow
-                ? `0 0 ${4 + p.size * 3}px ${color}`
-                : undefined,
+              opacity: 0.18 + p.depth * 0.4,
               filter: p.depth < 0.35 ? "blur(1.5px)" : undefined,
               transform: `translate3d(${tx}px, ${ty}px, 0)`,
               transition: "transform 600ms cubic-bezier(0.22, 1, 0.36, 1)",
