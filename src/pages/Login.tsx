@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
+import SEO from "@/components/SEO";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -36,6 +37,11 @@ const Login = () => {
 
   return (
     <div className="relative flex min-h-screen overflow-hidden">
+      <SEO
+        title="Login | Elite Live Trading Room"
+        description="Sign in to access live forex analysis, signals and the Elite Live Trading Room community."
+        canonical="https://elitelivetradingroom.com/login"
+      />
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-grid-pattern opacity-15" />
         <div className="absolute left-1/3 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/[0.04] blur-[120px]" />
