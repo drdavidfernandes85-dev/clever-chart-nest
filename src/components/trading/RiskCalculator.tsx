@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calculator, X, Minimize2, Maximize2 } from "lucide-react";
+import { Calculator, X, Minimize2, Maximize2, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ const loadState = (): State => {
 
 const RiskCalculator = () => {
   const [state, setState] = useState<State>(defaultState);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => { setState(loadState()); }, []);
   useEffect(() => {
@@ -52,6 +54,12 @@ const RiskCalculator = () => {
   }, [state]);
 
   const update = <K extends keyof State>(k: K, v: State[K]) => setState((s) => ({ ...s, [k]: v }));
+
+  const refresh = () => {
+    setRefreshing(true);
+    setRefreshNonce((n) => n + 1);
+    window.setTimeout(() => setRefreshing(false), 450);
+  };
 
   const calc = useMemo(() => {
     const { account, riskPct, pair, entry, stop } = state;
@@ -78,7 +86,9 @@ const RiskCalculator = () => {
       units,
       pipValue: pipValuePerLot * lotSize,
     };
-  }, [state]);
+    // refreshNonce is intentionally a dep so the manual refresh re-runs the memo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, refreshNonce]);
 
   if (!state.open) {
     return (
@@ -100,6 +110,14 @@ const RiskCalculator = () => {
           <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Risk Calculator</span>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={refresh}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Recalculate"
+            title="Recalculate"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+          </button>
           <button onClick={() => update("minimized", !state.minimized)} className="text-muted-foreground hover:text-foreground">
             {state.minimized ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
           </button>

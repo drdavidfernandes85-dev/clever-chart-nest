@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X } from "lucide-react";
+import { Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,6 +42,9 @@ const getDateLabel = (dateStr: string) => {
   return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 };
 
+const FOCUS_KEY = "infinox.chatroom.focus";
+const COPILOT_COLLAPSED_KEY = "infinox.chatroom.copilotCollapsed";
+
 const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -53,7 +56,22 @@ const Chatroom = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; displayName: string; content: string } | null>(null);
   const [allProfiles, setAllProfiles] = useState<{ user_id: string; display_name: string }[]>([]);
+  const [focusMode, setFocusMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(FOCUS_KEY) === "1";
+  });
+  const [copilotCollapsed, setCopilotCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(COPILOT_COLLAPSED_KEY) === "1";
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem(FOCUS_KEY, focusMode ? "1" : "0");
+  }, [focusMode]);
+  useEffect(() => {
+    if (typeof window !== "undefined") localStorage.setItem(COPILOT_COLLAPSED_KEY, copilotCollapsed ? "1" : "0");
+  }, [copilotCollapsed]);
 
   useEffect(() => {
     const load = async () => {
@@ -274,6 +292,17 @@ const Chatroom = () => {
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Pin className="h-4 w-4" /></Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Users className="h-4 w-4" /></Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Search className="h-4 w-4" /></Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-8 px-2 gap-1.5 text-xs ${focusMode ? "text-primary" : ""}`}
+              onClick={() => setFocusMode((v) => !v)}
+              aria-pressed={focusMode}
+              title={focusMode ? "Exit focus mode" : "Enter focus mode"}
+            >
+              {focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{focusMode ? "Exit Focus" : "Focus"}</span>
+            </Button>
           </div>
         </header>
 
@@ -334,7 +363,13 @@ const Chatroom = () => {
         />
       </div>
 
-      <AICopilot />
+      {!focusMode && (
+        <AICopilot
+          embedded
+          collapsed={copilotCollapsed}
+          onToggleCollapsed={() => setCopilotCollapsed((v) => !v)}
+        />
+      )}
 
     </div>
   );
