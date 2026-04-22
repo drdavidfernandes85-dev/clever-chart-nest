@@ -4,8 +4,9 @@ import { ArrowRight, Users, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
-import heroLaptop from "@/assets/hero-laptop-cutout.png";
 import HeroParticles from "@/components/hero/HeroParticles";
+import FloatingCandles from "@/components/hero/FloatingCandles";
+import NetworkNodes from "@/components/hero/NetworkNodes";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 // Next webinar config — update these as needed
