@@ -16,6 +16,7 @@ import Index from "./pages/Index.tsx";
 
 // Code-split heavier authenticated routes
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
+const CommandDeck = lazy(() => import("./pages/CommandDeck.tsx"));
 const LiveChart = lazy(() => import("./pages/LiveChart.tsx"));
 const Chatroom = lazy(() => import("./pages/Chatroom.tsx"));
 const Login = lazy(() => import("./pages/Login.tsx"));
@@ -53,6 +54,7 @@ const App = () => (
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                  <Route path="/command" element={<ProtectedRoute><CommandDeck /></ProtectedRoute>} />
                   <Route path="/live-chart" element={<ProtectedRoute><LiveChart /></ProtectedRoute>} />
                   <Route path="/chatroom" element={<ProtectedRoute><Chatroom /></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
