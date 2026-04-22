@@ -64,14 +64,9 @@ const Dashboard = () => {
       </div>
 
       <div className="space-y-4 p-4">
-        {/* Top row: Performance + Webinar */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <PerformanceAnalytics />
-          </div>
-          <div>
-            <WebinarWidget />
-          </div>
+        {/* Webinar */}
+        <div>
+          <WebinarWidget />
         </div>
 
         {/* News + Calendar */}
