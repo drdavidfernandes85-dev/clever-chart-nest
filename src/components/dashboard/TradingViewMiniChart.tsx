@@ -9,12 +9,14 @@ interface Props {
 }
 
 const TradingViewMiniChart = ({ symbol = "FX:EURUSD", interval = "60", height = 380 }: Props) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
   useEffect(() => {
-    if (!ref.current) return;
-    ref.current.innerHTML = "";
+    const container = containerRef.current;
+    if (!container) return;
+    container.innerHTML = '<div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>';
+
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.type = "text/javascript";
@@ -59,7 +61,7 @@ const TradingViewMiniChart = ({ symbol = "FX:EURUSD", interval = "60", height = 
       },
       support_host: "https://www.tradingview.com",
     });
-    ref.current.appendChild(script);
+    container.appendChild(script);
   }, [symbol, interval, theme]);
 
   return (
@@ -75,7 +77,11 @@ const TradingViewMiniChart = ({ symbol = "FX:EURUSD", interval = "60", height = 
           TradingView · Live
         </span>
       </div>
-      <div ref={ref} style={{ height }} className="w-full tradingview-widget-container" />
+      <div
+        ref={containerRef}
+        style={{ height }}
+        className="tradingview-widget-container w-full"
+      />
     </Card>
   );
 };
