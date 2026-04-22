@@ -11,6 +11,8 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
 import CommandBar from "@/components/dashboard/CommandBar";
 import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
+import OrderBook from "@/components/dashboard/OrderBook";
+import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -93,20 +95,31 @@ const Dashboard = () => {
         {/* KPI strip — sparkline tiles in IX yellow */}
         <KpiStrip />
 
-        {/* Main grid: chart center + Community Nest sidebar */}
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
-          {/* Center column */}
-          <div className="space-y-4 min-w-0">
-            <LightweightCandlestickChart symbol="EUR/USD" height={380} />
+        {/* Bloomberg-style 3-column terminal grid */}
+        <div className="mt-4 grid gap-4 lg:grid-cols-[240px_1fr_320px]">
+          {/* Left rail — Order Book + Smart Alerts */}
+          <div className="space-y-4 min-w-0 hidden lg:block">
+            <OrderBook />
+            <SmartAlerts />
+          </div>
 
-            {/* Sessions + News row */}
+          {/* Center column — chart + lower row */}
+          <div className="space-y-4 min-w-0">
+            <LightweightCandlestickChart symbol="EUR/USD" height={420} />
+
+            {/* Lower row: Sessions + News + Calendar */}
             <div className="grid gap-4 md:grid-cols-2">
               <UpcomingSessions />
               <NewsFlowWidget />
             </div>
 
-            {/* Calendar full-width */}
             <EconomicCalendarWidget />
+
+            {/* Mobile-only fallback so left-rail panels remain accessible */}
+            <div className="grid gap-4 md:grid-cols-2 lg:hidden">
+              <OrderBook />
+              <SmartAlerts />
+            </div>
           </div>
 
           {/* Right sidebar — Community Nest */}
