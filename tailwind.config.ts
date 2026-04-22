@@ -20,8 +20,8 @@ export default {
         display: ['Fraunces', 'Times New Roman', 'serif'],
       },
       boxShadow: {
-        'ix-glow': '0 0 20px -5px #FFCD05',
-        'ix-card': '0 10px 30px -10px rgba(255, 205, 5, 0.3)',
+        'ix-glow': 'none',
+        'ix-card': '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
       },
       colors: {
         // Official INFINOX brand palette (literal hex)
