@@ -180,6 +180,72 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_journal: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          direction: string
+          entry_price: number
+          exit_price: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          pair: string
+          pnl: number | null
+          position_size: number | null
+          r_multiple: number | null
+          screenshot_url: string | null
+          setup_tag: string | null
+          status: string
+          stop_loss: number | null
+          take_profit: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          direction: string
+          entry_price: number
+          exit_price?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          pair: string
+          pnl?: number | null
+          position_size?: number | null
+          r_multiple?: number | null
+          screenshot_url?: string | null
+          setup_tag?: string | null
+          status?: string
+          stop_loss?: number | null
+          take_profit?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          direction?: string
+          entry_price?: number
+          exit_price?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          pair?: string
+          pnl?: number | null
+          position_size?: number | null
+          r_multiple?: number | null
+          screenshot_url?: string | null
+          setup_tag?: string | null
+          status?: string
+          stop_loss?: number | null
+          take_profit?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trading_signals: {
         Row: {
           author_id: string
