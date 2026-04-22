@@ -9,6 +9,8 @@ import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
 import SymbolIntelligence from "@/components/trading/SymbolIntelligence";
+import SmartAlerts from "@/components/dashboard/SmartAlerts";
+import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
@@ -141,6 +143,12 @@ const LiveChart = () => {
           <div className="lg:col-span-1 min-h-[500px]">
             <SymbolIntelligence symbol={symbol} />
           </div>
+        </div>
+
+        {/* Smart Alerts + Live Shared Signals */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <SmartAlerts />
+          <LiveSharedSignals />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
