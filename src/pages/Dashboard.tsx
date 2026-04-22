@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
-import AICopilot from "@/components/ai/AICopilot";
+import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
+import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
-import RiskCalculator from "@/components/trading/RiskCalculator";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -69,10 +69,13 @@ const Dashboard = () => {
         <div>
           <WebinarWidget />
         </div>
-      </div>
 
-      <AICopilot />
-      <RiskCalculator />
+        {/* News + Calendar */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <EconomicCalendarWidget />
+          <NewsFlowWidget />
+        </div>
+      </div>
     </div>
   );
 };
