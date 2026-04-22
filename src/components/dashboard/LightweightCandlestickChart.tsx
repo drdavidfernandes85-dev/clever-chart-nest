@@ -24,9 +24,10 @@ interface Props {
   className?: string;
 }
 
-const BULL = "hsl(145, 65%, 50%)";
-const BEAR = "hsl(0, 70%, 55%)";
-const GOLD = "hsl(48, 100%, 51%)";
+// lightweight-charts color parser requires comma-less hsl() OR hex. Using hex to be safe.
+const BULL = "#2EC46D";
+const BEAR = "#DC3545";
+const GOLD = "#FFCD05"; // INFINOX Yellow
 const GRID = "rgba(255, 255, 255, 0.04)";
 const TEXT = "rgba(255, 255, 255, 0.55)";
 
