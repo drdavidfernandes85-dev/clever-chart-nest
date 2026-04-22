@@ -292,6 +292,17 @@ const Chatroom = () => {
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Pin className="h-4 w-4" /></Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Users className="h-4 w-4" /></Button>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Search className="h-4 w-4" /></Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-8 px-2 gap-1.5 text-xs ${focusMode ? "text-primary" : ""}`}
+              onClick={() => setFocusMode((v) => !v)}
+              aria-pressed={focusMode}
+              title={focusMode ? "Exit focus mode" : "Enter focus mode"}
+            >
+              {focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{focusMode ? "Exit Focus" : "Focus"}</span>
+            </Button>
           </div>
         </header>
 
