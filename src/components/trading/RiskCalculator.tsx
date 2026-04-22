@@ -110,6 +110,14 @@ const RiskCalculator = () => {
           <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Risk Calculator</span>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={refresh}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Recalculate"
+            title="Recalculate"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-primary" : ""}`} />
+          </button>
           <button onClick={() => update("minimized", !state.minimized)} className="text-muted-foreground hover:text-foreground">
             {state.minimized ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
           </button>
