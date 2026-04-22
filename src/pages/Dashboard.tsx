@@ -6,7 +6,9 @@ import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
-
+import DailyBriefing from "@/components/ai/DailyBriefing";
+import SentimentGauge from "@/components/ai/SentimentGauge";
+import AICopilot from "@/components/ai/AICopilot";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
