@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
-import SentimentGauge from "@/components/ai/SentimentGauge";
 import AICopilot from "@/components/ai/AICopilot";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
@@ -66,11 +65,6 @@ const Dashboard = () => {
       </div>
 
       <div className="space-y-4 p-4">
-        {/* Sentiment */}
-        <div>
-          <SentimentGauge />
-        </div>
-
         {/* Webinar */}
         <div>
           <WebinarWidget />

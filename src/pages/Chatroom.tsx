@@ -7,7 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import ChatMessage from "@/components/chatroom/ChatMessage";
 import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
-import DailyBriefing from "@/components/ai/DailyBriefing";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
