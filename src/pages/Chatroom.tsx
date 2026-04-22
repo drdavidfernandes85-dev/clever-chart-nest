@@ -335,11 +335,8 @@ const Chatroom = () => {
         />
       </div>
 
-      {/* Right info rail — Daily Briefing on top, Calendar + News at the bottom */}
+      {/* Right info rail — Calendar + News */}
       <aside className="hidden xl:flex w-[420px] shrink-0 flex-col border-l border-border/50 bg-card/30 overflow-y-auto">
-        <div className="p-3 border-b border-border/50">
-          <DailyBriefing />
-        </div>
         <div className="mt-auto flex flex-col gap-3 p-3">
           <EconomicCalendarWidget />
           <NewsFlowWidget />
