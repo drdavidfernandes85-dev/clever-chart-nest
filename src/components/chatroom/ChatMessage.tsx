@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Reply, Pencil, Trash2, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import MessageReactions from "./MessageReactions";
 
 export interface ChatMessageProps {
   id: string;
@@ -164,13 +166,16 @@ const ChatMessage = ({
 
         {!isGrouped && (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-foreground">{displayName}</span>
+            <Link to={`/u/${userId}`} className="text-sm font-bold text-foreground hover:text-primary transition-colors">
+              {displayName}
+            </Link>
             <RoleBadge role={role} />
             <span className="text-xs text-muted-foreground">{formatTime(createdAt)}</span>
           </div>
         )}
 
         <div className="text-sm text-secondary-foreground leading-relaxed">{renderContent(content)}</div>
+        <MessageReactions messageId={id} />
       </div>
 
       {/* Hover action buttons */}
