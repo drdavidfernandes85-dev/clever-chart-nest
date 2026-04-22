@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { User, Camera, ArrowLeft, Save, Trophy } from "lucide-react";
+import { User, Camera, ArrowLeft, Save, Trophy, Mail, RefreshCw, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,13 +9,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import XPBar from "@/components/gamification/XPBar";
+import BadgeShelf from "@/components/gamification/BadgeShelf";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Profile = () => {
   const { user, profile } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [leaderboardOptOut, setLeaderboardOptOut] = useState(false);
+  const [emailDigestOptIn, setEmailDigestOptIn] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
