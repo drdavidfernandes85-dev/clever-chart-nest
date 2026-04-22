@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
-import AICopilot from "@/components/ai/AICopilot";
+
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
 import SymbolIntelligence from "@/components/trading/SymbolIntelligence";
@@ -149,7 +149,6 @@ const LiveChart = () => {
         </div>
       </div>
 
-      <AICopilot />
       <RiskCalculator />
     </div>
   );
