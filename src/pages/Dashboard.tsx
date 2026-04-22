@@ -10,7 +10,6 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
 import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
-import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
   return (
