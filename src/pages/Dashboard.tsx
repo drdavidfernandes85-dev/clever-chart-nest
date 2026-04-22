@@ -6,7 +6,9 @@ import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
-
+import DailyBriefing from "@/components/ai/DailyBriefing";
+import SentimentGauge from "@/components/ai/SentimentGauge";
+import AICopilot from "@/components/ai/AICopilot";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -64,6 +66,16 @@ const Dashboard = () => {
       </div>
 
       <div className="space-y-4 p-4">
+        {/* AI row: Briefing + Sentiment */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <DailyBriefing />
+          </div>
+          <div>
+            <SentimentGauge />
+          </div>
+        </div>
+
         {/* Webinar */}
         <div>
           <WebinarWidget />
@@ -75,6 +87,8 @@ const Dashboard = () => {
           <NewsFlowWidget />
         </div>
       </div>
+
+      <AICopilot />
     </div>
   );
 };
