@@ -195,6 +195,40 @@ const Profile = () => {
           </div>
         </div>
 
+        {/* Email digest */}
+        <div className="rounded-2xl border border-border/40 bg-card p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15">
+                <Mail className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Weekly email digest</p>
+                <p className="text-xs text-muted-foreground mt-0.5 max-w-xs">
+                  Top signals, best traders and upcoming webinars — once a week.
+                </p>
+              </div>
+            </div>
+            <Switch checked={emailDigestOptIn} onCheckedChange={setEmailDigestOptIn} />
+          </div>
+        </div>
+
+        {/* Gamification */}
+        <XPBar />
+        <BadgeShelf />
+
+        {/* Tour + admin */}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={restartTour} className="rounded-xl gap-1.5">
+            <RefreshCw className="h-4 w-4" /> Restart tour
+          </Button>
+          {isAdmin && (
+            <Button variant="outline" asChild className="rounded-xl gap-1.5">
+              <Link to="/admin"><Shield className="h-4 w-4" /> Admin Console</Link>
+            </Button>
+          )}
+        </div>
+
         <Button
           onClick={handleSave}
           disabled={saving}
