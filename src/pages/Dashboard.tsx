@@ -60,13 +60,19 @@ const Dashboard = () => {
             <p className="text-sm text-muted-foreground mt-1">Live markets, your performance, and the room — all in one place.</p>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-[hsl(145_65%_50%)] animate-pulse" />
             <span className="text-xs font-mono text-foreground">MARKETS OPEN</span>
           </div>
         </div>
       </div>
 
       <div className="space-y-4 p-4">
+        {/* KPI Strip — hedge-fund style at-a-glance metrics */}
+        <KpiStrip />
+
+        {/* Featured live chart */}
+        <LightweightCandlestickChart symbol="EUR/USD" height={340} />
+
         {/* Webinar */}
         <div>
           <WebinarWidget />
