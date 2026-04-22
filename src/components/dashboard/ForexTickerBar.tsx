@@ -52,7 +52,7 @@ const ForexTickerBar = () => {
   }
 
   return (
-    <div className="overflow-hidden border-b border-border/30 bg-card/50">
+    <div className="overflow-hidden border-y border-primary/20 bg-card/60 backdrop-blur-md">
       <div className="flex animate-[scroll_30s_linear_infinite] gap-8 px-4 py-2 whitespace-nowrap">
         {[...tickers, ...tickers].map((t, i) => {
           const changeNum = parseFloat(t.change);
@@ -60,17 +60,17 @@ const ForexTickerBar = () => {
           const isNegative = changeNum < 0;
 
           return (
-            <div key={`${t.pair}-${i}`} className="flex items-center gap-2 text-xs">
-              <span className="font-semibold text-foreground">{t.pair}</span>
-              <span className="text-muted-foreground">{t.price}</span>
+            <div key={`${t.pair}-${i}`} className="flex items-center gap-2 text-xs font-mono tabular-nums">
+              <span className="font-bold text-foreground tracking-wide">{t.pair}</span>
+              <span className="text-foreground/80">{t.price}</span>
               {isPositive ? (
-                <TrendingUp className="h-3 w-3 text-emerald-400" />
+                <TrendingUp className="h-3 w-3 text-primary" />
               ) : isNegative ? (
-                <TrendingDown className="h-3 w-3 text-red-400" />
+                <TrendingDown className="h-3 w-3 text-destructive" />
               ) : (
                 <Minus className="h-3 w-3 text-muted-foreground" />
               )}
-              <span className={isPositive ? "text-emerald-400" : isNegative ? "text-red-400" : "text-muted-foreground"}>
+              <span className={isPositive ? "text-primary font-semibold" : isNegative ? "text-destructive font-semibold" : "text-muted-foreground"}>
                 {t.change}
               </span>
             </div>
