@@ -7,8 +7,6 @@ import WebinarWidget from "@/components/dashboard/WebinarWidget";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
-import TradeJournal from "@/components/dashboard/TradeJournal";
-import TradingViewMiniChart from "@/components/dashboard/TradingViewMiniChart";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -73,16 +71,6 @@ const Dashboard = () => {
           </div>
           <div>
             <WebinarWidget />
-          </div>
-        </div>
-
-        {/* Chart + Journal */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <TradingViewMiniChart />
-          </div>
-          <div>
-            <TradeJournal />
           </div>
         </div>
 
