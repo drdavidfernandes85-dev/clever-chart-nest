@@ -84,10 +84,8 @@ const Dashboard = () => {
       {/* Bloomberg-style modular grid */}
       <div className="px-4 py-4">
         <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-          {/* Center column — chart + lower row */}
+          {/* Center column — sessions + news + calendar */}
           <div className="space-y-4 min-w-0">
-            <TradingViewMiniChart symbol="FX:EURUSD" interval="60" height={420} />
-
             {/* Lower row: Sessions + News */}
             <div className="grid gap-4 md:grid-cols-2">
               <UpcomingSessions />
