@@ -73,8 +73,11 @@ const Profile = () => {
         } as any)
         .eq("user_id", user.id);
       if (error) throw error;
+      await (supabase.from as any)("user_settings").upsert(
+        { user_id: user.id, email_digest_optin: emailDigestOptIn },
+        { onConflict: "user_id" }
+      );
       toast.success("Profile updated!");
-      // Force reload to update context
       window.location.reload();
     } catch (err: any) {
       toast.error(err.message || "Save failed");
