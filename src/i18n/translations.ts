@@ -221,6 +221,28 @@ const translations = {
     "register.submitting": "Creating account...",
     "register.backHome": "Back to Home",
     "register.login": "Sign In",
+    // Analytics
+    "analytics.title": "My Analytics",
+    "analytics.desc": "Equity curve, drawdown and AI-generated weekly reports.",
+    "analytics.generate": "Generate weekly report",
+    "analytics.generating": "Generating...",
+    "analytics.reports": "AI Weekly Reports",
+    "analytics.empty": "No reports yet. Generate your first weekly review above.",
+    "analytics.weekOf": "Week of",
+    // Profile (additions)
+    "profile.myAnalytics": "My Analytics",
+    "profile.adminConsole": "Admin Console",
+    "profile.restartTour": "Restart tour",
+    // Social
+    "social.follow": "Follow",
+    "social.following": "Following",
+    "social.followers": "Followers",
+    "social.followingCount": "Following",
+    "social.winRate": "Win rate",
+    "social.trades": "Trades",
+    "social.totalPnl": "Total P&L",
+    "social.profileNotFound": "Profile not found.",
+    "social.backToLeaderboard": "Back to leaderboard",
   },
   es: {
     "nav.home": "Inicio",
