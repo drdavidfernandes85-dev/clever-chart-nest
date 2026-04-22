@@ -99,6 +99,8 @@ const LiveChart = () => {
           <TradeJournal />
         </div>
       </div>
+
+      <AICopilot />
     </div>
   );
 };
