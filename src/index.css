@@ -281,9 +281,12 @@
   /* ── Liquid Capital sitewide background ── */
   @keyframes capital-rise {
     0%   { transform: translateY(0) scale(0.6); opacity: 0; }
-    15%  { opacity: 0.9; }
-    85%  { opacity: 0.9; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
     100% { transform: translateY(-110vh) scale(1.1); opacity: 0; }
+  }
+  .animate-capital-rise {
+    animation: capital-rise linear infinite;
   }
 
   @keyframes chart-draw {
@@ -310,10 +313,39 @@
     transform-origin: center;
   }
 
+  @keyframes liquid-shift-a {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(4%, 6%) scale(1.06); }
+  }
+  @keyframes liquid-shift-b {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-3%, 4%) scale(0.95); }
+  }
+  .animate-liquid-shift-a {
+    animation: liquid-shift-a 22s ease-in-out infinite alternate;
+    transform-origin: center;
+  }
+  .animate-liquid-shift-b {
+    animation: liquid-shift-b 28s ease-in-out infinite alternate;
+    transform-origin: center;
+  }
+
+  @keyframes data-stream {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100vw); }
+  }
+  .animate-data-stream {
+    animation: data-stream linear infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-candle-drift,
     .animate-hex-pulse,
-    .animate-mesh-rotate-slow {
+    .animate-mesh-rotate-slow,
+    .animate-liquid-shift-a,
+    .animate-liquid-shift-b,
+    .animate-data-stream,
+    .animate-capital-rise {
       animation: none !important;
     }
   }
