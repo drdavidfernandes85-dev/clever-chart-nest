@@ -9,6 +9,8 @@ import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidge
 import DailyBriefing from "@/components/ai/DailyBriefing";
 import SentimentGauge from "@/components/ai/SentimentGauge";
 import AICopilot from "@/components/ai/AICopilot";
+import NotificationsBell from "@/components/notifications/NotificationsBell";
+import RiskCalculator from "@/components/trading/RiskCalculator";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Dashboard = () => {
@@ -40,6 +42,7 @@ const Dashboard = () => {
                 <span className="ml-1.5 hidden sm:inline">Chatroom</span>
               </Link>
             </Button>
+            <NotificationsBell />
             <Link to="/profile" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/80 transition-colors">
               <User className="h-4 w-4" />
             </Link>
@@ -89,6 +92,7 @@ const Dashboard = () => {
       </div>
 
       <AICopilot />
+      <RiskCalculator />
     </div>
   );
 };

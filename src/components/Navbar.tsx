@@ -6,6 +6,7 @@ import infinoxLogoWhite from "@/assets/infinox-logo-white.png";
 import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationsBell from "@/components/notifications/NotificationsBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -85,7 +86,9 @@ const Navbar = () => {
           </Button>
 
           {user ? (
-            <DropdownMenu>
+            <>
+              <NotificationsBell />
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 rounded-full bg-primary/20 px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary/30 transition-colors">
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
@@ -102,7 +105,8 @@ const Navbar = () => {
                   <LogOut className="h-4 w-4" /> Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </>
           ) : (
             <>
               <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
