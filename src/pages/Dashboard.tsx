@@ -64,11 +64,6 @@ const Dashboard = () => {
       {/* Live ticker */}
       <ForexTickerBar />
 
-      {/* Floating command bar */}
-      <div className="px-4 pt-4">
-        <CommandBar />
-      </div>
-
       {/* Title strip */}
       <div className="px-4 pt-4">
         <div className="flex items-end justify-between flex-wrap gap-2">
@@ -92,17 +87,7 @@ const Dashboard = () => {
 
       {/* Bloomberg-style modular grid */}
       <div className="px-4 py-4">
-        {/* KPI strip — sparkline tiles in IX yellow */}
-        <KpiStrip />
-
-        {/* Bloomberg-style 3-column terminal grid */}
-        <div className="mt-4 grid gap-4 lg:grid-cols-[240px_1fr_320px]">
-          {/* Left rail — Order Book + Smart Alerts */}
-          <div className="space-y-4 min-w-0 hidden lg:block">
-            <OrderBook />
-            <SmartAlerts />
-          </div>
-
+        <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
           {/* Center column — chart + lower row */}
           <div className="space-y-4 min-w-0">
             <TradingViewMiniChart symbol="FX:EURUSD" interval="60" height={420} />
@@ -115,15 +100,19 @@ const Dashboard = () => {
 
             <EconomicCalendarWidget />
 
-            {/* Mobile-only fallback so left-rail panels remain accessible */}
-            <div className="grid gap-4 md:grid-cols-2 lg:hidden">
-              <OrderBook />
+            {/* Mobile-only fallback so Smart Alerts remain accessible */}
+            <div className="lg:hidden">
               <SmartAlerts />
             </div>
           </div>
 
-          {/* Right sidebar — Community Nest */}
-          <CommunityNest />
+          {/* Right sidebar — Community Nest + Smart Alerts */}
+          <aside className="space-y-4">
+            <CommunityNest />
+            <div className="hidden lg:block">
+              <SmartAlerts />
+            </div>
+          </aside>
         </div>
       </div>
     </div>
