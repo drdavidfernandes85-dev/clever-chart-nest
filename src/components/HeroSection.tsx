@@ -142,13 +142,22 @@ const HeroSection = () => {
         </div>
 
         <div className="flex-1 w-full flex items-center justify-center">
-          <div className="relative w-full max-w-2xl">
-            {/* Glow halo */}
+          <div className="relative w-full max-w-2xl group">
+            {/* Ambient gold halo — bleeds the laptop scene into the page background */}
             <div
-              className="absolute -inset-10 blur-3xl opacity-70 pointer-events-none"
+              className="absolute -inset-24 blur-[80px] opacity-80 pointer-events-none animate-pulse-slow"
               style={{
                 background:
-                  "radial-gradient(ellipse 60% 60% at 50% 50%, hsl(48 95% 55% / 0.35), transparent 70%)",
+                  "radial-gradient(ellipse 55% 55% at 50% 50%, hsl(48 95% 55% / 0.32), hsl(40 80% 45% / 0.12) 40%, transparent 75%)",
+              }}
+              aria-hidden="true"
+            />
+            {/* Floor reflection glow */}
+            <div
+              className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[80%] h-24 blur-3xl opacity-60 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse 50% 100% at 50% 0%, hsl(48 95% 55% / 0.4), transparent 70%)",
               }}
               aria-hidden="true"
             />
@@ -157,7 +166,31 @@ const HeroSection = () => {
               alt="Laptop displaying live trading charts"
               width={1280}
               height={960}
-              className="relative w-full h-auto rounded-2xl animate-float drop-shadow-[0_30px_60px_hsl(0_0%_0%/0.6)]"
+              className="relative w-full h-auto animate-float transition-transform duration-700 group-hover:scale-[1.02]"
+              style={{
+                /* Feather the photo edges into the page so it stops looking like a pasted rectangle */
+                maskImage:
+                  "radial-gradient(ellipse 78% 80% at 50% 50%, black 55%, transparent 95%)",
+                WebkitMaskImage:
+                  "radial-gradient(ellipse 78% 80% at 50% 50%, black 55%, transparent 95%)",
+                filter:
+                  "drop-shadow(0 25px 50px hsl(0 0% 0% / 0.55)) drop-shadow(0 0 40px hsl(48 95% 55% / 0.25))",
+                /* Lift midtones to harmonize with the dark page background */
+                mixBlendMode: "screen",
+              }}
+            />
+            {/* Subtle scanline shimmer over the laptop screen for "live" feel */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-30 animate-pulse-slow"
+              style={{
+                background:
+                  "linear-gradient(180deg, transparent 0%, hsl(48 95% 60% / 0.06) 45%, transparent 90%)",
+                maskImage:
+                  "radial-gradient(ellipse 60% 50% at 50% 45%, black 60%, transparent 100%)",
+                WebkitMaskImage:
+                  "radial-gradient(ellipse 60% 50% at 50% 45%, black 60%, transparent 100%)",
+              }}
+              aria-hidden="true"
             />
           </div>
         </div>
