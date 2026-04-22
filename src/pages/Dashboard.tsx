@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
-import TradingViewMiniChart from "@/components/dashboard/TradingViewMiniChart";
+
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
 import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
