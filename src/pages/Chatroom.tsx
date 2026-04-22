@@ -7,8 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import ChatMessage from "@/components/chatroom/ChatMessage";
 import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
-import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
-import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
+import AICopilot from "@/components/ai/AICopilot";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 interface Channel {
@@ -335,13 +334,8 @@ const Chatroom = () => {
         />
       </div>
 
-      {/* Right info rail — Calendar + News */}
-      <aside className="hidden xl:flex w-[420px] shrink-0 flex-col border-l border-border/50 bg-card/30 overflow-y-auto">
-        <div className="mt-auto flex flex-col gap-3 p-3">
-          <EconomicCalendarWidget />
-          <NewsFlowWidget />
-        </div>
-      </aside>
+      <AICopilot />
+
     </div>
   );
 };
