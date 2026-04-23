@@ -96,6 +96,34 @@ const Dashboard = () => {
                 <AccountSnapshot />
               </div>
 
+              {/* Connected via EA — compact status pill */}
+              {isConnected && (
+                <span
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-[hsl(145_65%_50%)]/30 bg-[hsl(145_65%_50%)]/10 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[hsl(145_65%_50%)]"
+                  title={`MT${account?.platform === "mt4" ? "4" : "5"} #${account?.login} • Connected via EA`}
+                >
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-60" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[hsl(145_65%_50%)]" />
+                  </span>
+                  EA · #{account?.login}
+                </span>
+              )}
+
+              {/* Launch Advanced Trading Terminal — prominent header CTA */}
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                className="hidden lg:inline-flex h-9 px-3 border-primary/40 bg-primary/5 text-primary hover:bg-primary/15 hover:text-primary font-bold text-xs uppercase tracking-wider rounded-lg"
+              >
+                <Link to="/live-chart" className="flex items-center gap-1.5">
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  Terminal
+                  <ArrowUpRight className="h-3 w-3" />
+                </Link>
+              </Button>
+
               {/* Trade button — desktop */}
               <Button
                 onClick={() => openTrade()}
