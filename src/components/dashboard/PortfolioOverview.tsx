@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Briefcase, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
+import { Briefcase, TrendingUp, TrendingDown, ArrowUpRight, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface Position {
@@ -11,7 +11,7 @@ interface Position {
   current: number;
 }
 
-const POSITIONS: Position[] = [
+const INITIAL_POSITIONS: Position[] = [
   { symbol: "EUR/USD", side: "long", size: 2.5, entry: 1.0832, current: 1.0867 },
   { symbol: "GBP/JPY", side: "short", size: 1.0, entry: 192.45, current: 191.86 },
   { symbol: "XAU/USD", side: "long", size: 0.5, entry: 2402.1, current: 2418.3 },
@@ -19,11 +19,13 @@ const POSITIONS: Position[] = [
   { symbol: "AUD/USD", side: "long", size: 2.0, entry: 0.6612, current: 0.6604 },
 ];
 
-// Equity curve sparkline points (last 30 ticks, normalized 0..100)
+// Equity curve sparkline points (last 30 ticks)
 const EQUITY = [
   42, 45, 44, 47, 49, 48, 51, 53, 52, 56, 58, 57, 60, 62, 61, 64, 66, 65, 68, 71,
   73, 72, 75, 78, 76, 80, 82, 81, 85, 88,
 ];
+
+const ACCOUNT_EQUITY = 48211.27;
 
 const fmtPrice = (n: number) => (n > 100 ? n.toFixed(2) : n.toFixed(5));
 
@@ -32,19 +34,20 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
   const diff = (p.current - p.entry) * dir;
   const pipMultiplier = p.symbol.includes("JPY") ? 100 : p.symbol.includes("XAU") ? 1 : 10000;
   const pips = diff * pipMultiplier;
-  // Approx: 1 pip ≈ $10 per standard lot for most majors
   const pnl = pips * (p.symbol.includes("XAU") ? 100 : 10) * p.size;
   const pct = (diff / p.entry) * 100 * (p.side === "long" ? 1 : -1);
   return { pnl, pct };
 };
 
 const PortfolioOverview = () => {
+  const [positions, setPositions] = useState<Position[]>(INITIAL_POSITIONS);
+
   const totalPnl = useMemo(
-    () => POSITIONS.reduce((acc, p) => acc + calcPnl(p).pnl, 0),
-    []
+    () => positions.reduce((acc, p) => acc + calcPnl(p).pnl, 0),
+    [positions]
   );
   const totalPct = useMemo(() => {
-    const w = POSITIONS.reduce(
+    const w = positions.reduce(
       (acc, p) => {
         const c = calcPnl(p);
         return { num: acc.num + c.pct * p.size, den: acc.den + p.size };
@@ -52,12 +55,12 @@ const PortfolioOverview = () => {
       { num: 0, den: 0 }
     );
     return w.den ? w.num / w.den : 0;
-  }, []);
+  }, [positions]);
 
-  // Build sparkline path
+  // Larger sparkline
   const spark = useMemo(() => {
-    const w = 220;
-    const h = 44;
+    const w = 320;
+    const h = 64;
     const max = Math.max(...EQUITY);
     const min = Math.min(...EQUITY);
     const range = max - min || 1;
@@ -71,18 +74,20 @@ const PortfolioOverview = () => {
   }, []);
 
   const isUp = totalPnl >= 0;
+  const closePosition = (symbol: string) =>
+    setPositions((prev) => prev.filter((p) => p.symbol !== symbol));
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
+      className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.15)]"
     >
-      {/* Header with equity sparkline */}
+      {/* Header with bigger equity sparkline */}
       <div className="flex items-start justify-between gap-6 border-b border-border/40 px-6 py-5">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2.5">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
               <Briefcase className="h-3.5 w-3.5" />
             </div>
@@ -99,14 +104,19 @@ const PortfolioOverview = () => {
           </div>
           <div className="flex items-baseline gap-3">
             <span
-              className={`font-mono text-2xl font-semibold tabular-nums ${
+              className={`font-mono text-3xl font-bold tabular-nums tracking-tight ${
                 isUp ? "text-emerald-400" : "text-red-400"
               }`}
+              style={{
+                textShadow: isUp
+                  ? "0 0 30px hsl(160 84% 50% / 0.35)"
+                  : "0 0 30px hsl(0 84% 60% / 0.35)",
+              }}
             >
               {isUp ? "+" : "−"}${Math.abs(totalPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
             </span>
             <span
-              className={`font-mono text-xs tabular-nums ${
+              className={`font-mono text-xs font-semibold tabular-nums ${
                 isUp ? "text-emerald-400" : "text-red-400"
               }`}
             >
@@ -118,14 +128,17 @@ const PortfolioOverview = () => {
           </div>
         </div>
 
-        {/* Equity sparkline */}
+        {/* Bigger equity sparkline */}
         <div className="hidden md:flex items-end gap-3">
           <div className="text-right">
             <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
               Equity 30D
             </div>
-            <div className="font-mono text-xs font-semibold text-foreground">
-              $48,211.27
+            <div className="font-mono text-sm font-bold text-foreground">
+              ${ACCOUNT_EQUITY.toLocaleString()}
+            </div>
+            <div className="text-[10px] font-mono text-emerald-400 mt-0.5">
+              ▲ +12.4%
             </div>
           </div>
           <svg
@@ -137,7 +150,7 @@ const PortfolioOverview = () => {
           >
             <defs>
               <linearGradient id="equity-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(48 100% 51%)" stopOpacity="0.4" />
+                <stop offset="0%" stopColor="hsl(48 100% 51%)" stopOpacity="0.45" />
                 <stop offset="100%" stopColor="hsl(48 100% 51%)" stopOpacity="0" />
               </linearGradient>
             </defs>
@@ -149,17 +162,36 @@ const PortfolioOverview = () => {
               d={spark.d}
               fill="none"
               stroke="hsl(48 100% 51%)"
-              strokeWidth={1.5}
+              strokeWidth={1.75}
               strokeLinejoin="round"
               strokeLinecap="round"
+              style={{ filter: "drop-shadow(0 0 6px hsl(48 100% 51% / 0.45))" }}
             />
+            {/* End dot */}
+            {(() => {
+              const last = EQUITY[EQUITY.length - 1];
+              const max = Math.max(...EQUITY);
+              const min = Math.min(...EQUITY);
+              const range = max - min || 1;
+              const cx = spark.w;
+              const cy = spark.h - ((last - min) / range) * spark.h;
+              return (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={3}
+                  fill="hsl(48 100% 51%)"
+                  style={{ filter: "drop-shadow(0 0 6px hsl(48 100% 51%))" }}
+                />
+              );
+            })()}
           </svg>
         </div>
       </div>
 
       {/* Positions table */}
       <div className="px-2 py-2">
-        <div className="grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_0.9fr_1fr_1fr] gap-2 px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+        <div className="grid grid-cols-[1.3fr_0.7fr_0.6fr_0.85fr_0.85fr_1fr_0.7fr_0.8fr_36px] gap-2 px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
           <span>Symbol</span>
           <span>Side</span>
           <span className="text-right">Size</span>
@@ -167,16 +199,20 @@ const PortfolioOverview = () => {
           <span className="text-right">Current</span>
           <span className="text-right">P&amp;L</span>
           <span className="text-right">%</span>
+          <span className="text-right">% Equity</span>
+          <span />
         </div>
         <div className="divide-y divide-border/30">
-          {POSITIONS.map((p) => {
+          {positions.map((p) => {
             const { pnl, pct } = calcPnl(p);
             const up = pnl >= 0;
             const isLong = p.side === "long";
+            const notional = p.size * p.current * (p.symbol.includes("XAU") ? 100 : 100000);
+            const equityPct = (notional / ACCOUNT_EQUITY) * 100;
             return (
               <div
                 key={p.symbol}
-                className="grid grid-cols-[1.4fr_0.7fr_0.7fr_0.9fr_0.9fr_1fr_1fr] gap-2 items-center px-4 py-3 hover:bg-muted/20 transition-colors rounded-lg"
+                className="group grid grid-cols-[1.3fr_0.7fr_0.6fr_0.85fr_0.85fr_1fr_0.7fr_0.8fr_36px] gap-2 items-center px-4 py-3 hover:bg-muted/20 transition-colors rounded-lg"
               >
                 <span className="font-heading text-xs font-semibold text-foreground">
                   {p.symbol}
@@ -201,30 +237,51 @@ const PortfolioOverview = () => {
                   {fmtPrice(p.current)}
                 </span>
                 <span
-                  className={`text-right font-mono text-xs font-semibold tabular-nums ${
+                  className={`text-right font-mono text-sm font-bold tabular-nums ${
                     up ? "text-emerald-400" : "text-red-400"
                   }`}
+                  style={{
+                    textShadow: up
+                      ? "0 0 12px hsl(160 84% 50% / 0.4)"
+                      : "0 0 12px hsl(0 84% 60% / 0.4)",
+                  }}
                 >
                   {up ? "+" : "−"}${Math.abs(pnl).toFixed(2)}
                 </span>
                 <span
-                  className={`text-right font-mono text-xs tabular-nums ${
+                  className={`text-right font-mono text-xs font-semibold tabular-nums ${
                     up ? "text-emerald-400" : "text-red-400"
                   }`}
                 >
                   {up ? "+" : ""}
                   {pct.toFixed(2)}%
                 </span>
+                <span className="text-right font-mono text-[11px] tabular-nums text-muted-foreground">
+                  {equityPct.toFixed(1)}%
+                </span>
+                <button
+                  onClick={() => closePosition(p.symbol)}
+                  aria-label={`Close ${p.symbol} position`}
+                  className="opacity-0 group-hover:opacity-100 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 ring-1 ring-transparent hover:ring-red-500/30 transition-all"
+                  title="Close position"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </div>
             );
           })}
+          {positions.length === 0 && (
+            <div className="px-4 py-8 text-center text-xs text-muted-foreground font-mono">
+              No open positions
+            </div>
+          )}
         </div>
       </div>
 
       {/* Footer link */}
       <div className="border-t border-border/40 px-6 py-3 flex items-center justify-between">
         <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          {POSITIONS.length} open positions
+          {positions.length} open position{positions.length === 1 ? "" : "s"}
         </span>
         <Link
           to="/analytics"

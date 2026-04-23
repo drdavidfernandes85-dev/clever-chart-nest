@@ -146,46 +146,61 @@ const Dashboard = () => {
           >
             {/* Main column — Command Center */}
             <div className="min-w-0 space-y-8 lg:space-y-10">
-              {/* Quick action: Open Full Live Charts */}
+              {/* Hero CTA — Launch Advanced Trading Terminal */}
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 sm:p-6"
+                transition={{ duration: 0.45 }}
+                className="group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/[0.06] to-transparent p-6 sm:p-7 transition-all hover:border-primary/60"
+                style={{
+                  boxShadow:
+                    "0 20px 60px -25px hsl(48 100% 51% / 0.35), inset 0 1px 0 hsl(48 100% 51% / 0.15)",
+                }}
               >
                 <div
-                  className="pointer-events-none absolute inset-0 opacity-60"
+                  className="pointer-events-none absolute inset-0 opacity-70 transition-opacity duration-500 group-hover:opacity-100"
                   style={{
                     background:
-                      "radial-gradient(600px circle at 0% 50%, hsl(48 100% 51% / 0.12), transparent 60%)",
+                      "radial-gradient(700px circle at 0% 50%, hsl(48 100% 51% / 0.18), transparent 60%), radial-gradient(500px circle at 100% 100%, hsl(48 100% 51% / 0.08), transparent 60%)",
                   }}
                 />
-                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
-                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                {/* Animated shimmer */}
+                <div
+                  className="pointer-events-none absolute -inset-x-20 -top-px h-px opacity-60"
+                  style={{
+                    background:
+                      "linear-gradient(90deg, transparent, hsl(48 100% 51% / 0.8), transparent)",
+                  }}
+                />
+                <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_hsl(48_100%_51%)]" />
                       </span>
-                      <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary">
+                      <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary font-bold">
                         Markets are live
                       </span>
                     </div>
-                    <h2 className="font-heading text-base sm:text-lg font-semibold text-foreground">
-                      Open the full Live Charts workspace
+                    <h2 className="font-heading text-xl sm:text-2xl lg:text-[26px] font-bold text-foreground leading-tight">
+                      Launch <span className="text-primary">Advanced Trading Terminal</span>
                     </h2>
-                    <p className="text-xs text-muted-foreground max-w-md mt-0.5">
-                      Multi-timeframe TradingView charts, indicators, drawing tools, smart alerts and shared signals.
+                    <p className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground mt-2">
+                      Multi-chart <span className="text-primary/70">•</span> Indicators{" "}
+                      <span className="text-primary/70">•</span> Drawing{" "}
+                      <span className="text-primary/70">•</span> Shared Signals
                     </p>
                   </div>
                   <Button
                     asChild
-                    className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_8px_30px_-10px_hsl(48_100%_51%/0.55)] rounded-xl h-11 px-5"
+                    size="lg"
+                    className="relative bg-primary text-primary-foreground hover:bg-primary font-bold rounded-xl h-14 px-7 text-sm tracking-wide overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_15px_50px_-10px_hsl(48_100%_51%/0.8)] shadow-[0_10px_40px_-10px_hsl(48_100%_51%/0.6)]"
                   >
-                    <Link to="/live-chart" className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      Open Full Live Charts
-                      <ArrowUpRight className="h-4 w-4" />
+                    <Link to="/live-chart" className="flex items-center gap-2.5">
+                      <BarChart3 className="h-5 w-5" />
+                      Launch Terminal
+                      <ArrowUpRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                     </Link>
                   </Button>
                 </div>

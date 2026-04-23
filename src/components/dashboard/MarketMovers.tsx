@@ -52,52 +52,52 @@ const MoverList = ({
       : "text-primary bg-primary/10 ring-primary/30";
 
   return (
-    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-        <div className="flex items-center gap-2">
+    <div className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border/40 px-3.5 py-2.5">
+        <div className="flex items-center gap-1.5">
           <div
-            className={`flex h-6 w-6 items-center justify-center rounded-lg ring-1 ${accent}`}
+            className={`flex h-5 w-5 items-center justify-center rounded-md ring-1 ${accent}`}
           >
-            <Icon className="h-3 w-3" />
+            <Icon className="h-2.5 w-2.5" />
           </div>
-          <h3 className="font-heading text-xs font-semibold text-foreground tracking-wide uppercase">
+          <h3 className="font-heading text-[11px] font-semibold text-foreground tracking-wide uppercase">
             {title}
           </h3>
         </div>
-        <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+        <span className="text-[8px] font-mono uppercase tracking-widest text-muted-foreground">
           24H
         </span>
       </div>
-      <ul className="divide-y divide-border/30">
+      <ul className="divide-y divide-border/20">
         {rows.map((m) => {
           const up = m.changePct >= 0;
           return (
             <li
               key={m.symbol}
-              className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors"
+              className="flex items-center justify-between gap-2 px-3.5 py-2 hover:bg-muted/20 transition-colors"
             >
-              <div className="min-w-0">
-                <div className="font-heading text-xs font-semibold text-foreground">
+              <div className="min-w-0 flex items-baseline gap-2">
+                <span className="font-heading text-[11px] font-semibold text-foreground">
                   {m.symbol}
-                </div>
+                </span>
                 {showVolume && m.volume && (
-                  <div className="text-[10px] font-mono text-muted-foreground">
-                    Vol {m.volume}
-                  </div>
+                  <span className="text-[9px] font-mono text-muted-foreground">
+                    {m.volume}
+                  </span>
                 )}
               </div>
-              <div className="text-right">
-                <div className="font-mono text-xs tabular-nums text-foreground">
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono text-[11px] tabular-nums text-foreground">
                   {fmt(m.price)}
-                </div>
-                <div
-                  className={`font-mono text-[10px] tabular-nums ${
+                </span>
+                <span
+                  className={`font-mono text-[10px] font-semibold tabular-nums ${
                     up ? "text-emerald-400" : "text-red-400"
                   }`}
                 >
-                  {up ? "▲ +" : "▼ "}
+                  {up ? "+" : ""}
                   {m.changePct.toFixed(2)}%
-                </div>
+                </span>
               </div>
             </li>
           );
@@ -115,7 +115,7 @@ const MarketMovers = () => {
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
       aria-labelledby="market-movers-heading"
     >
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <h2
           id="market-movers-heading"
           className="font-heading text-sm font-semibold text-foreground tracking-wide"
@@ -126,7 +126,7 @@ const MarketMovers = () => {
           Last 24 hours
         </span>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <MoverList title="Top Gainers" rows={TOP_GAINERS} variant="gainers" />
         <MoverList title="Top Losers" rows={TOP_LOSERS} variant="losers" />
         <MoverList title="Most Active" rows={MOST_ACTIVE} variant="active" showVolume />
