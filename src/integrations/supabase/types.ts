@@ -614,6 +614,7 @@ export type Database = {
           margin: number | null
           margin_level: number | null
           metaapi_account_id: string | null
+          metaapi_token_encrypted: string | null
           nickname: string | null
           platform: string
           region: string | null
@@ -640,6 +641,7 @@ export type Database = {
           margin?: number | null
           margin_level?: number | null
           metaapi_account_id?: string | null
+          metaapi_token_encrypted?: string | null
           nickname?: string | null
           platform: string
           region?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           margin?: number | null
           margin_level?: number | null
           metaapi_account_id?: string | null
+          metaapi_token_encrypted?: string | null
           nickname?: string | null
           platform?: string
           region?: string | null
@@ -880,6 +883,7 @@ export type Database = {
           currency: string | null
           equity: number | null
           free_margin: number | null
+          has_metaapi_token: boolean | null
           has_password: boolean | null
           id: string | null
           last_error: string | null
@@ -906,6 +910,7 @@ export type Database = {
           currency?: string | null
           equity?: number | null
           free_margin?: number | null
+          has_metaapi_token?: never
           has_password?: never
           id?: string | null
           last_error?: string | null
@@ -932,6 +937,7 @@ export type Database = {
           currency?: string | null
           equity?: number | null
           free_margin?: number | null
+          has_metaapi_token?: never
           has_password?: never
           id?: string | null
           last_error?: string | null
