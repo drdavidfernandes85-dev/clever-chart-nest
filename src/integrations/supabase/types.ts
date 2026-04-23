@@ -607,13 +607,16 @@ export type Database = {
           free_margin: number | null
           id: string
           investor_password_encrypted: string | null
+          last_error: string | null
           last_synced_at: string | null
           leverage: number | null
           login: string
           margin: number | null
           margin_level: number | null
+          metaapi_account_id: string | null
           nickname: string | null
           platform: string
+          region: string | null
           server_name: string
           status: string
           status_message: string | null
@@ -630,13 +633,16 @@ export type Database = {
           free_margin?: number | null
           id?: string
           investor_password_encrypted?: string | null
+          last_error?: string | null
           last_synced_at?: string | null
           leverage?: number | null
           login: string
           margin?: number | null
           margin_level?: number | null
+          metaapi_account_id?: string | null
           nickname?: string | null
           platform: string
+          region?: string | null
           server_name: string
           status?: string
           status_message?: string | null
@@ -653,13 +659,16 @@ export type Database = {
           free_margin?: number | null
           id?: string
           investor_password_encrypted?: string | null
+          last_error?: string | null
           last_synced_at?: string | null
           leverage?: number | null
           login?: string
           margin?: number | null
           margin_level?: number | null
+          metaapi_account_id?: string | null
           nickname?: string | null
           platform?: string
+          region?: string | null
           server_name?: string
           status?: string
           status_message?: string | null
@@ -873,13 +882,16 @@ export type Database = {
           free_margin: number | null
           has_password: boolean | null
           id: string | null
+          last_error: string | null
           last_synced_at: string | null
           leverage: number | null
           login: string | null
           margin: number | null
           margin_level: number | null
+          metaapi_account_id: string | null
           nickname: string | null
           platform: string | null
+          region: string | null
           server_name: string | null
           status: string | null
           status_message: string | null
@@ -896,13 +908,16 @@ export type Database = {
           free_margin?: number | null
           has_password?: never
           id?: string | null
+          last_error?: string | null
           last_synced_at?: string | null
           leverage?: number | null
           login?: string | null
           margin?: number | null
           margin_level?: number | null
+          metaapi_account_id?: string | null
           nickname?: string | null
           platform?: string | null
+          region?: string | null
           server_name?: string | null
           status?: string | null
           status_message?: string | null
@@ -919,13 +934,16 @@ export type Database = {
           free_margin?: number | null
           has_password?: never
           id?: string | null
+          last_error?: string | null
           last_synced_at?: string | null
           leverage?: number | null
           login?: string | null
           margin?: number | null
           margin_level?: number | null
+          metaapi_account_id?: string | null
           nickname?: string | null
           platform?: string | null
+          region?: string | null
           server_name?: string | null
           status?: string | null
           status_message?: string | null
