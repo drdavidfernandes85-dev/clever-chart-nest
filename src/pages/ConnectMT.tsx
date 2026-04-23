@@ -412,7 +412,7 @@ const ConnectMT = () => {
               <Select value={brokerName} onValueChange={(v) => {
                 setBrokerName(v);
                 const b = COMMON_BROKERS.find((x) => x.name === v);
-                setServerName(b?.servers[0] ?? "");
+                setServerName(b?.serversByPlatform[platform][0] ?? "");
               }}>
                 <SelectTrigger className="bg-card border-border/50">
                   <SelectValue />
