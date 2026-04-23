@@ -50,9 +50,14 @@ const Dashboard = () => {
     localStorage.setItem("eltr.rail.open", railOpen ? "1" : "0");
   }, [railOpen]);
 
-  // Lock body scroll when bottom sheet / drawer is open
+  // Lock body scroll only when an actual overlay is open on mobile.
+  // The desktop Quick Trade panel is inline, so `tradeOpen` alone must
+  // NOT lock scroll on desktop — only when the mobile bottom sheet is
+  // visible (viewport < lg / 1024px).
   useEffect(() => {
-    const lock = tradeOpen || mobileNavOpen;
+    const isMobile =
+      typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
+    const lock = mobileNavOpen || (tradeOpen && isMobile);
     document.body.style.overflow = lock ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
