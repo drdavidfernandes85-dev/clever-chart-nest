@@ -113,6 +113,7 @@ const ConnectMT = () => {
       // poller in useMTAccount will keep polling state every 15s)
       await sync(data.id);
       setInvestorPassword("");
+      setMetaapiToken("");
       await refresh();
       // Stay on this page so the user sees provisioning progress live
     } catch (err: any) {
@@ -532,9 +533,16 @@ const ConnectMT = () => {
               )}
             </Button>
 
-            <p className="text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground pt-1">
-              <span className="text-primary">⚡</span> Powered by MetaApi.cloud — real-time sync every 30 seconds
-            </p>
+            <a
+              href="https://app.metaapi.cloud/accounts"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-auto flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+            >
+              <span>⚡</span>
+              Powered by MetaApi.cloud
+              <span className="text-muted-foreground">— real-time sync every 30s</span>
+            </a>
           </motion.div>
         )}
 
