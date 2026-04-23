@@ -83,14 +83,26 @@ const QuickTradePanel = ({ compact = false }: Props) => {
       try {
         const { base, quote } = splitPair(symbol);
         if (!base || !quote) return;
-        const res = await fetch(
-          `https://api.exchangerate.host/latest?base=${base}&symbols=${quote}`,
-          { cache: "no-store" },
-        );
-        const json = await res.json();
-        const p = json?.rates?.[quote];
-        if (typeof p === "number" && !cancelled) {
-          setLivePrices((prev) => ({ ...prev, [symbol]: p }));
+
+        let p: number | null = null;
+
+        if (base === "XAU" || quote === "XAU") {
+          const res = await fetch("https://api.gold-api.com/price/XAU", {
+            cache: "no-store",
+          });
+          const json = await res.json();
+          p = Number(json?.price);
+        } else {
+          const res = await fetch(
+            `https://api.frankfurter.dev/v1/latest?base=${base}&symbols=${quote}`,
+            { cache: "no-store" },
+          );
+          const json = await res.json();
+          p = Number(json?.rates?.[quote]);
+        }
+
+        if (Number.isFinite(p) && !cancelled) {
+          setLivePrices((prev) => ({ ...prev, [symbol]: p as number }));
         }
       } catch {
         /* swallow */

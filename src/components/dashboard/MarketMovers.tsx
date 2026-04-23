@@ -111,42 +111,55 @@ const MarketMovers = () => {
   const [loading, setLoading] = useState(true);
 
   // Fetch live spot price + yesterday's close, derive 24h % change.
+  // Uses Frankfurter (free, no API key, CORS-enabled) for FX pairs.
+  // For XAU/USD we fall back to a metals endpoint.
   useEffect(() => {
     let cancelled = false;
+
+    const fetchPair = async (p: typeof PAIRS[number]): Promise<Mover | null> => {
+      try {
+        // XAU is not on Frankfurter — use a public metals proxy
+        if (p.base === "XAU" || p.quote === "XAU") {
+          const res = await fetch(
+            "https://api.gold-api.com/price/XAU",
+            { cache: "no-store" },
+          );
+          const json = await res.json();
+          const price = Number(json?.price);
+          const prev = Number(json?.prev_close_price ?? json?.previous_close ?? price);
+          if (!Number.isFinite(price)) return null;
+          const changePct = prev ? ((price - prev) / prev) * 100 : 0;
+          return { symbol: p.symbol, price, changePct, volume: p.volume };
+        }
+
+        // Frankfurter: latest + 24h ago in two calls
+        const yest = new Date(Date.now() - 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10);
+        const [latestRes, histRes] = await Promise.all([
+          fetch(
+            `https://api.frankfurter.dev/v1/latest?base=${p.base}&symbols=${p.quote}`,
+            { cache: "no-store" },
+          ),
+          fetch(
+            `https://api.frankfurter.dev/v1/${yest}?base=${p.base}&symbols=${p.quote}`,
+            { cache: "no-store" },
+          ),
+        ]);
+        const latest = await latestRes.json();
+        const hist = await histRes.json();
+        const price = Number(latest?.rates?.[p.quote]);
+        const prev = Number(hist?.rates?.[p.quote] ?? price);
+        if (!Number.isFinite(price)) return null;
+        const changePct = prev ? ((price - prev) / prev) * 100 : 0;
+        return { symbol: p.symbol, price, changePct, volume: p.volume };
+      } catch {
+        return null;
+      }
+    };
+
     const fetchAll = async () => {
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10);
-      const next = await Promise.all(
-        PAIRS.map(async (p) => {
-          try {
-            const [latestRes, histRes] = await Promise.all([
-              fetch(
-                `https://api.exchangerate.host/latest?base=${p.base}&symbols=${p.quote}`,
-                { cache: "no-store" },
-              ),
-              fetch(
-                `https://api.exchangerate.host/${yesterday}?base=${p.base}&symbols=${p.quote}`,
-                { cache: "no-store" },
-              ),
-            ]);
-            const latest = await latestRes.json();
-            const hist = await histRes.json();
-            const price = latest?.rates?.[p.quote];
-            const prev = hist?.rates?.[p.quote] ?? price;
-            if (typeof price !== "number") return null;
-            const changePct = prev ? ((price - prev) / prev) * 100 : 0;
-            return {
-              symbol: p.symbol,
-              price,
-              changePct,
-              volume: p.volume,
-            } as Mover;
-          } catch {
-            return null;
-          }
-        }),
-      );
+      const next = await Promise.all(PAIRS.map(fetchPair));
       if (!cancelled) {
         setData(next.filter(Boolean) as Mover[]);
         setLoading(false);
