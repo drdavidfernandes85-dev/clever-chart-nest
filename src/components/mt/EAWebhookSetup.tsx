@@ -292,6 +292,7 @@ export const EAWebhookSetup = () => {
                 <Input
                   readOnly
                   value={rawToken}
+                  onFocus={(e) => e.currentTarget.select()}
                   className="bg-primary/5 border-primary/40 font-mono text-xs text-foreground"
                 />
                 <Button
@@ -305,10 +306,12 @@ export const EAWebhookSetup = () => {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
-                <Shield className="h-3 w-3" />
-                Paste this into the EA's input parameters in MetaEditor. Keep it private.
-              </p>
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+                <Shield className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+                <p className="text-[11px] text-destructive/90 leading-relaxed">
+                  <span className="font-semibold">Keep this token secret.</span> Anyone with it can send data to your account.
+                </p>
+              </div>
               {token?.last_used_at && (
                 <p className="text-[10px] text-muted-foreground/80">
                   Last used {formatDistanceToNow(new Date(token.last_used_at), { addSuffix: true })}
@@ -316,10 +319,10 @@ export const EAWebhookSetup = () => {
               )}
             </>
           ) : token ? (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-xs text-muted-foreground">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-3 text-xs text-muted-foreground">
               <span className="text-foreground font-mono">{token.token_prefix}…</span>{" "}
               <span className="opacity-80">
-                Token exists but isn't cached on this device. Open the page on the device where you generated it to see the full value.
+                Your token isn't cached on this browser. For security we can't recover the original — click <span className="text-foreground font-medium">Regenerate token</span> above to create a new one (you'll need to re-download the EA).
               </span>
             </div>
           ) : (
