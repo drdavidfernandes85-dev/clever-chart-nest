@@ -1,7 +1,21 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Briefcase, TrendingUp, TrendingDown, ArrowUpRight, X, Plug } from "lucide-react";
+import {
+  Briefcase,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  X,
+  Plug,
+  RefreshCw,
+  Loader2,
+  CheckCircle2,
+  Trash2,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
 
 interface Position {

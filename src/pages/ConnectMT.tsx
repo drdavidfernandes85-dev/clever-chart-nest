@@ -102,10 +102,18 @@ const ConnectMT = () => {
         .single();
       if (error) throw error;
 
-      toast.success("Account added — running initial sync");
+      toast.success("Account connected successfully. Syncing your data...", {
+        description: `${finalBroker} • ${finalServer}`,
+      });
+      // Small delay so the user perceives the sync animation
+      await new Promise((r) => setTimeout(r, 2200));
       await sync(data.id);
-      toast.success("Connected and synced");
+      toast.success("Sync complete — your dashboard is now live", {
+        description: "Portfolio, positions, risk and leaderboard updated.",
+      });
       setInvestorPassword("");
+      // Bring the user back to the dashboard to see live data
+      setTimeout(() => navigate("/dashboard"), 600);
     } catch (err: any) {
       toast.error(err.message || "Failed to connect");
     } finally {
