@@ -25,6 +25,7 @@ export interface MTAccount {
   metaapi_account_id: string | null;
   region: string | null;
   has_password: boolean;
+  has_metaapi_token: boolean;
   created_at: string;
   updated_at: string;
 }

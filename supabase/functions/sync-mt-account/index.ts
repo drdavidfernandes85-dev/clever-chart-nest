@@ -14,7 +14,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const METAAPI_TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
+const FALLBACK_METAAPI_TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
 
 const provisioningUrl = (region: string) =>
   `https://mt-provisioning-api-v1.${region}.agiliumtrade.ai`;
@@ -32,6 +32,7 @@ interface AccountRow {
   metaapi_account_id: string | null;
   region: string | null;
   investor_password_encrypted: Uint8Array | null;
+  metaapi_token_encrypted: Uint8Array | null;
 }
 
 // Decode the password we stored as `enc:<plaintext>` base64 wrapper
@@ -61,12 +62,13 @@ function decodePassword(raw: Uint8Array | string | null): string | null {
 
 async function metaapi(
   url: string,
+  token: string,
   init: RequestInit = {},
 ): Promise<Response> {
   return await fetch(url, {
     ...init,
     headers: {
-      "auth-token": METAAPI_TOKEN,
+      "auth-token": token,
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
@@ -76,6 +78,7 @@ async function metaapi(
 async function provisionAccount(
   account: AccountRow,
   password: string,
+  token: string,
 ): Promise<{ metaapiId: string; region: string }> {
   const region = account.region || "new-york";
   const body = {
@@ -90,10 +93,11 @@ async function provisionAccount(
     keywords: [account.broker_name],
     metastatsApiEnabled: false,
   };
-  const res = await metaapi(`${provisioningUrl(region)}/users/current/accounts`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  const res = await metaapi(
+    `${provisioningUrl(region)}/users/current/accounts`,
+    token,
+    { method: "POST", body: JSON.stringify(body) },
+  );
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`Provision failed (${res.status}): ${txt}`);
@@ -103,22 +107,25 @@ async function provisionAccount(
   // Trigger deploy explicitly (idempotent)
   await metaapi(
     `${provisioningUrl(region)}/users/current/accounts/${metaapiId}/deploy`,
+    token,
     { method: "POST" },
   ).catch(() => {});
   return { metaapiId, region };
 }
 
-async function getAccountState(metaapiId: string, region: string) {
+async function getAccountState(metaapiId: string, region: string, token: string) {
   const res = await metaapi(
     `${provisioningUrl(region)}/users/current/accounts/${metaapiId}`,
+    token,
   );
   if (!res.ok) return null;
   return await res.json();
 }
 
-async function fetchAccountInformation(metaapiId: string, region: string) {
+async function fetchAccountInformation(metaapiId: string, region: string, token: string) {
   const res = await metaapi(
     `${clientUrl(region)}/users/current/accounts/${metaapiId}/account-information`,
+    token,
   );
   if (!res.ok) {
     const txt = await res.text();
@@ -127,19 +134,21 @@ async function fetchAccountInformation(metaapiId: string, region: string) {
   return await res.json();
 }
 
-async function fetchPositions(metaapiId: string, region: string) {
+async function fetchPositions(metaapiId: string, region: string, token: string) {
   const res = await metaapi(
     `${clientUrl(region)}/users/current/accounts/${metaapiId}/positions`,
+    token,
   );
   if (!res.ok) return [] as any[];
   return await res.json();
 }
 
-async function fetchRecentDeals(metaapiId: string, region: string) {
+async function fetchRecentDeals(metaapiId: string, region: string, token: string) {
   const to = new Date().toISOString();
   const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
   const res = await metaapi(
     `${clientUrl(region)}/users/current/accounts/${metaapiId}/history-deals/time/${from}/${to}`,
+    token,
   );
   if (!res.ok) return [] as any[];
   return await res.json();
@@ -150,14 +159,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    if (!METAAPI_TOKEN) {
-      return new Response(
-        JSON.stringify({
-          error: "MetaApi not configured. Add METAAPI_TOKEN secret.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // Token is resolved per-account below; if neither per-account nor global is set we fail there.
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -199,7 +201,7 @@ Deno.serve(async (req) => {
     const { data: account, error: accErr } = await admin
       .from("user_mt_accounts")
       .select(
-        "id, user_id, platform, account_type, broker_name, server_name, login, metaapi_account_id, region, investor_password_encrypted",
+        "id, user_id, platform, account_type, broker_name, server_name, login, metaapi_account_id, region, investor_password_encrypted, metaapi_token_encrypted",
       )
       .eq("id", accountId)
       .single();
@@ -213,6 +215,27 @@ Deno.serve(async (req) => {
 
     const acc = account as AccountRow;
     const password = decodePassword(acc.investor_password_encrypted);
+    // Resolve which MetaApi token to use: per-account first, fall back to shared.
+    const userToken = decodePassword(acc.metaapi_token_encrypted);
+    const token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
+    if (!token) {
+      await admin
+        .from("user_mt_accounts")
+        .update({
+          status: "error",
+          status_message: "No MetaApi token",
+          last_error:
+            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
+        })
+        .eq("id", accountId);
+      return new Response(
+        JSON.stringify({
+          error:
+            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // ---- 1. Provision if needed ----
     let metaapiId = acc.metaapi_account_id;
@@ -234,7 +257,7 @@ Deno.serve(async (req) => {
         );
       }
       try {
-        const prov = await provisionAccount(acc, password);
+        const prov = await provisionAccount(acc, password, token);
         metaapiId = prov.metaapiId;
         region = prov.region;
         await admin
@@ -265,7 +288,7 @@ Deno.serve(async (req) => {
     }
 
     // ---- 2. Check deploy state ----
-    const state = await getAccountState(metaapiId, region);
+    const state = await getAccountState(metaapiId, region, token);
     const deployedState = state?.state ?? "UNKNOWN";
     const connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
 
@@ -295,7 +318,7 @@ Deno.serve(async (req) => {
     // ---- 3. Fetch live data ----
     let info: any;
     try {
-      info = await fetchAccountInformation(metaapiId, region);
+      info = await fetchAccountInformation(metaapiId, region, token);
     } catch (e) {
       const msg = String(e instanceof Error ? e.message : e);
       // Likely auth error — invalid investor password
@@ -316,8 +339,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const positions: any[] = await fetchPositions(metaapiId, region);
-    const deals: any[] = await fetchRecentDeals(metaapiId, region);
+    const positions: any[] = await fetchPositions(metaapiId, region, token);
+    const deals: any[] = await fetchRecentDeals(metaapiId, region, token);
 
     // ---- 4. Persist ----
     await admin

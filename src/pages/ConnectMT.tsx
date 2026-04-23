@@ -59,6 +59,7 @@ const ConnectMT = () => {
   const [customServer, setCustomServer] = useState("");
   const [login, setLogin] = useState("");
   const [investorPassword, setInvestorPassword] = useState("");
+  const [metaapiToken, setMetaapiToken] = useState("");
   const [nickname, setNickname] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmedReadOnly, setConfirmedReadOnly] = useState(false);
@@ -95,6 +96,9 @@ const ConnectMT = () => {
           investor_password_encrypted: new TextEncoder().encode(
             btoa(`enc:${investorPassword}`),
           ),
+          metaapi_token_encrypted: metaapiToken.trim()
+            ? new TextEncoder().encode(btoa(`enc:${metaapiToken.trim()}`))
+            : null,
           status: "syncing",
           status_message: "Initial sync in progress",
         })
@@ -109,6 +113,7 @@ const ConnectMT = () => {
       // poller in useMTAccount will keep polling state every 15s)
       await sync(data.id);
       setInvestorPassword("");
+      setMetaapiToken("");
       await refresh();
       // Stay on this page so the user sees provisioning progress live
     } catch (err: any) {
@@ -208,18 +213,34 @@ const ConnectMT = () => {
                   </p>
                 </div>
               </div>
-              {(() => {
-                const cfg = statusConfig[account.status];
-                const Icon = cfg.Icon;
-                return (
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider ring-1 ${cfg.bg} ${cfg.color} ${cfg.ring}`}
-                  >
-                    <Icon className={`h-3 w-3 ${account.status === "syncing" ? "animate-spin" : ""}`} />
-                    {cfg.label}
-                  </span>
-                );
-              })()}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest ${
+                    account.has_metaapi_token
+                      ? "border-primary/30 bg-primary/5 text-primary"
+                      : "border-border/50 bg-muted/40 text-muted-foreground"
+                  }`}
+                  title={
+                    account.has_metaapi_token
+                      ? "Using your personal MetaApi token"
+                      : "Using the platform's shared MetaApi connection"
+                  }
+                >
+                  {account.has_metaapi_token ? "Own token" : "Shared"}
+                </span>
+                {(() => {
+                  const cfg = statusConfig[account.status];
+                  const Icon = cfg.Icon;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider ring-1 ${cfg.bg} ${cfg.color} ${cfg.ring}`}
+                    >
+                      <Icon className={`h-3 w-3 ${account.status === "syncing" ? "animate-spin" : ""}`} />
+                      {cfg.label}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-5">
@@ -450,6 +471,35 @@ const ConnectMT = () => {
               </p>
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <KeyRound className="inline h-3 w-3" /> MetaApi.cloud Token
+                <span className="ml-1 rounded-full bg-muted/60 px-1.5 py-px text-[9px] font-bold text-muted-foreground">
+                  OPTIONAL
+                </span>
+              </Label>
+              <Input
+                type="password"
+                value={metaapiToken}
+                onChange={(e) => setMetaapiToken(e.target.value)}
+                placeholder="Paste your personal MetaApi token (or leave empty)"
+                autoComplete="off"
+                className="bg-card border-border/50 font-mono text-xs"
+              />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Bring your own MetaApi.cloud account for higher limits and full control.
+                If empty, we'll use the platform's shared MetaApi connection.{" "}
+                <a
+                  href="https://app.metaapi.cloud/token"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Get a free token →
+                </a>
+              </p>
+            </div>
+
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" />
@@ -499,9 +549,16 @@ const ConnectMT = () => {
               )}
             </Button>
 
-            <p className="text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground pt-1">
-              <span className="text-primary">⚡</span> Powered by MetaApi.cloud — real-time sync every 30 seconds
-            </p>
+            <a
+              href="https://app.metaapi.cloud/accounts"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-auto flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+            >
+              <span>⚡</span>
+              Powered by MetaApi.cloud
+              <span className="text-muted-foreground">— real-time sync every 30s</span>
+            </a>
           </motion.div>
         )}
 
