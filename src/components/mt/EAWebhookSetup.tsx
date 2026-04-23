@@ -4,10 +4,8 @@ import {
   Download,
   KeyRound,
   Loader2,
-  Plug,
-  RefreshCw,
+  Lock,
   Shield,
-  Trash2,
   Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,15 +96,13 @@ export const EAWebhookSetup = () => {
 
   const generate = async () => {
     if (!user) return;
+    // Hard guard: token is permanent, never regenerate.
+    if (token) {
+      toast.error("Your webhook token is permanent and cannot be regenerated.");
+      return;
+    }
     setCreating(true);
     try {
-      // Revoke previous tokens (one active token per user keeps it simple)
-      await (supabase as any)
-        .from("mt_webhook_tokens")
-        .update({ revoked_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .is("revoked_at", null);
-
       const raw = generateToken();
       const hash = await sha256Hex(raw);
       const { data, error } = await (supabase as any)
@@ -122,25 +118,13 @@ export const EAWebhookSetup = () => {
       setToken(data);
       setRawToken(raw);
       toast.success("Webhook token generated", {
-        description: "Copy it now — you won't be able to see it again.",
+        description: "This is your permanent token — save it now, it won't be shown again.",
       });
     } catch (e: any) {
       toast.error(e.message ?? "Could not create token");
     } finally {
       setCreating(false);
     }
-  };
-
-  const revoke = async () => {
-    if (!token) return;
-    if (!confirm("Revoke this webhook token? Your EA will stop syncing until you generate a new one.")) return;
-    await (supabase as any)
-      .from("mt_webhook_tokens")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("id", token.id);
-    setToken(null);
-    setRawToken(null);
-    toast.success("Token revoked");
   };
 
   const copy = (text: string, label: string) => {
@@ -230,31 +214,10 @@ export const EAWebhookSetup = () => {
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : token ? (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={generate}
-                disabled={creating}
-                className="rounded-lg gap-1.5"
-              >
-                {creating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                Rotate
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={revoke}
-                className="rounded-lg gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Revoke
-              </Button>
-            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+              <Lock className="h-3 w-3" />
+              Locked — permanent
+            </span>
           ) : (
             <Button
               size="sm"
@@ -326,7 +289,7 @@ export const EAWebhookSetup = () => {
           ) : token ? (
             <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground font-mono">
               <span className="text-foreground">{token.token_prefix}…</span>{" "}
-              <span className="opacity-60">(hidden — rotate to reveal a new one)</span>
+              <span className="opacity-60">(hidden for security — your token is permanent)</span>
               {token.last_used_at && (
                 <div className="mt-1 text-[10px] text-muted-foreground/80">
                   Last used {formatDistanceToNow(new Date(token.last_used_at), { addSuffix: true })}
