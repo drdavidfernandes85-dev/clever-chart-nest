@@ -96,15 +96,13 @@ export const EAWebhookSetup = () => {
 
   const generate = async () => {
     if (!user) return;
+    // Hard guard: token is permanent, never regenerate.
+    if (token) {
+      toast.error("Your webhook token is permanent and cannot be regenerated.");
+      return;
+    }
     setCreating(true);
     try {
-      // Revoke previous tokens (one active token per user keeps it simple)
-      await (supabase as any)
-        .from("mt_webhook_tokens")
-        .update({ revoked_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .is("revoked_at", null);
-
       const raw = generateToken();
       const hash = await sha256Hex(raw);
       const { data, error } = await (supabase as any)
@@ -120,7 +118,7 @@ export const EAWebhookSetup = () => {
       setToken(data);
       setRawToken(raw);
       toast.success("Webhook token generated", {
-        description: "Copy it now — you won't be able to see it again.",
+        description: "This is your permanent token — save it now, it won't be shown again.",
       });
     } catch (e: any) {
       toast.error(e.message ?? "Could not create token");
