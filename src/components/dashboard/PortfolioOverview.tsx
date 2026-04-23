@@ -28,20 +28,6 @@ interface Position {
   pct?: number;
 }
 
-const MOCK_POSITIONS: Position[] = [
-  { symbol: "EUR/USD", side: "long", size: 2.5, entry: 1.0832, current: 1.0867 },
-  { symbol: "GBP/JPY", side: "short", size: 1.0, entry: 192.45, current: 191.86 },
-  { symbol: "XAU/USD", side: "long", size: 0.5, entry: 2402.1, current: 2418.3 },
-  { symbol: "USD/JPY", side: "short", size: 1.5, entry: 154.92, current: 154.61 },
-  { symbol: "AUD/USD", side: "long", size: 2.0, entry: 0.6612, current: 0.6604 },
-];
-
-const MOCK_EQUITY_CURVE = [
-  42, 45, 44, 47, 49, 48, 51, 53, 52, 56, 58, 57, 60, 62, 61, 64, 66, 65, 68, 71,
-  73, 72, 75, 78, 76, 80, 82, 81, 85, 88,
-];
-const MOCK_ACCOUNT_EQUITY = 48211.27;
-
 const fmtPrice = (n: number) => (n > 100 ? n.toFixed(2) : n.toFixed(5));
 
 const calcPnl = (p: Position): { pnl: number; pct: number } => {
@@ -74,32 +60,30 @@ const PortfolioOverview = () => {
     refresh();
   };
 
-  // Map MT positions to local Position shape (or use mock when not connected)
+  // Map MT positions to local Position shape — live data only, no mocks.
   const livePositions: Position[] = useMemo(() => {
-    if (isConnected && mtPositions.length > 0) {
-      return mtPositions.map((mp) => ({
-        symbol: mp.symbol,
-        side: mp.side === "buy" ? "long" : "short",
-        size: Number(mp.volume),
-        entry: Number(mp.open_price),
-        current: Number(mp.current_price ?? mp.open_price),
-        pnl: Number(mp.profit ?? 0),
-        pct:
-          mp.current_price && mp.open_price
-            ? ((Number(mp.current_price) - Number(mp.open_price)) /
-                Number(mp.open_price)) *
-              100 *
-              (mp.side === "buy" ? 1 : -1)
-            : 0,
-      }));
-    }
-    return MOCK_POSITIONS;
+    if (!isConnected) return [];
+    return mtPositions.map((mp) => ({
+      symbol: mp.symbol,
+      side: mp.side === "buy" ? "long" : "short",
+      size: Number(mp.volume),
+      entry: Number(mp.open_price),
+      current: Number(mp.current_price ?? mp.open_price),
+      pnl: Number(mp.profit ?? 0),
+      pct:
+        mp.current_price && mp.open_price
+          ? ((Number(mp.current_price) - Number(mp.open_price)) /
+              Number(mp.open_price)) *
+            100 *
+            (mp.side === "buy" ? 1 : -1)
+          : 0,
+    }));
   }, [isConnected, mtPositions]);
 
   const [positions, setPositions] = useState<Position[]>(livePositions);
   useEffect(() => setPositions(livePositions), [livePositions]);
 
-  const accountEquity = isConnected && account?.equity ? Number(account.equity) : MOCK_ACCOUNT_EQUITY;
+  const accountEquity = isConnected && account?.equity ? Number(account.equity) : 0;
 
   const totalPnl = useMemo(
     () => positions.reduce((acc, p) => acc + calcPnl(p).pnl, 0),
@@ -116,13 +100,16 @@ const PortfolioOverview = () => {
     return w.den ? w.num / w.den : 0;
   }, [positions]);
 
-  // Equity curve from snapshots when available
+  // Equity curve from real snapshots only — flat line if not enough data yet.
   const equityValues = useMemo(() => {
     if (isConnected && snapshots.length >= 2) {
       return snapshots.map((s) => Number(s.equity));
     }
-    return MOCK_EQUITY_CURVE;
-  }, [isConnected, snapshots]);
+    if (isConnected && account?.equity != null) {
+      return [Number(account.equity), Number(account.equity)];
+    }
+    return [0, 0];
+  }, [isConnected, snapshots, account]);
 
   const spark = useMemo(() => {
     const w = 320;
