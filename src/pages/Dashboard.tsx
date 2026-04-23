@@ -209,7 +209,7 @@ const Dashboard = () => {
           <KpiStrip />
 
           {/* 2. Command Center — Portfolio (hero) + Right Sidebar */}
-          <div className="grid gap-6 sm:gap-8 lg:gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_336px] items-start">
             {/* Hero — Portfolio Overview with sparkline + open positions */}
             <motion.section
               initial={{ opacity: 0, y: 8 }}
@@ -221,7 +221,7 @@ const Dashboard = () => {
             </motion.section>
 
             {/* Right narrow sidebar — Risk → Quick Trade → Watchlist */}
-            <aside className="min-w-0 space-y-6">
+            <aside className="min-w-0 space-y-5 lg:sticky lg:top-20 self-start">
               <RiskMeter />
               <div className="hidden lg:block">
                 <QuickTradePanel />
