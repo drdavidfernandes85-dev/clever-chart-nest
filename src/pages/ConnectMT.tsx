@@ -437,13 +437,13 @@ const ConnectMT = () => {
               <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 <Server className="inline h-3 w-3 mr-1" /> Server
               </Label>
-              {!isCustomBroker && selectedBroker && selectedBroker.servers.length > 0 ? (
+              {!isCustomBroker && platformServers.length > 0 ? (
                 <Select value={serverName} onValueChange={setServerName}>
                   <SelectTrigger className="bg-card border-border/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedBroker.servers.map((s) => (
+                    {platformServers.map((s) => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>
