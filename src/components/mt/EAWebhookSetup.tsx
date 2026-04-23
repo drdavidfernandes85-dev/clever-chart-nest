@@ -372,6 +372,7 @@ export const EAWebhookSetup = forwardRef<HTMLDivElement>((_props, ref) => {
       </div>
     </div>
   );
-};
+});
+EAWebhookSetup.displayName = "EAWebhookSetup";
 
 export default EAWebhookSetup;
