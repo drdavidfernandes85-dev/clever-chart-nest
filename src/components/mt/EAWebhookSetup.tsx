@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import {
+  CheckCircle2,
   Copy,
   Download,
   KeyRound,
+  Lightbulb,
   Loader2,
   Shield,
+  Sparkles,
   Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatDistanceToNow } from "date-fns";
 
 const WEBHOOK_URL = `https://${
   import.meta.env.VITE_SUPABASE_PROJECT_ID
@@ -70,10 +72,11 @@ export const EAWebhookSetup = () => {
   const [token, setToken] = useState<TokenRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  // Raw token is only available in-memory immediately after generation.
   const [rawToken, setRawToken] = useState<string | null>(null);
+  const [downloaded, setDownloaded] = useState<"mt4" | "mt5" | null>(null);
 
   const storageKey = user ? `mt_webhook_raw_token_${user.id}` : null;
+  const downloadedKey = user ? `mt_webhook_downloaded_${user.id}` : null;
 
   const refresh = async () => {
     if (!user) return;
@@ -89,7 +92,18 @@ export const EAWebhookSetup = () => {
     setToken(data ?? null);
     if (storageKey) {
       const stored = localStorage.getItem(storageKey);
-      if (stored) setRawToken(stored);
+      if (stored) {
+        setRawToken(stored);
+      } else if (data) {
+        // No cached raw token but a hashed one exists — auto-rotate so token is always visible
+        await createToken();
+      } else {
+        await createToken();
+      }
+    }
+    if (downloadedKey) {
+      const dl = localStorage.getItem(downloadedKey) as "mt4" | "mt5" | null;
+      if (dl) setDownloaded(dl);
     }
     setLoading(false);
   };
@@ -103,7 +117,6 @@ export const EAWebhookSetup = () => {
     if (!user) return;
     setCreating(true);
     try {
-      // Revoke any existing active tokens first (so only one active per user).
       await (supabase as any)
         .from("mt_webhook_tokens")
         .update({ revoked_at: new Date().toISOString() })
@@ -125,9 +138,6 @@ export const EAWebhookSetup = () => {
       setToken(data);
       setRawToken(raw);
       if (storageKey) localStorage.setItem(storageKey, raw);
-      toast.success("Webhook token ready", {
-        description: "Copy it into your EA — it stays visible on this page.",
-      });
     } catch (e: any) {
       toast.error(e.message ?? "Could not create token");
     } finally {
@@ -135,36 +145,53 @@ export const EAWebhookSetup = () => {
     }
   };
 
-  const generate = async () => {
-    if (token) {
-      toast.error("You already have a token. Use Regenerate if you lost it.");
-      return;
-    }
-    await createToken();
-  };
-
-  const regenerate = async () => {
-    if (!confirm("This will invalidate your current token. Your EA will stop working until you re-download it. Continue?")) return;
-    await createToken();
-  };
-
   const copy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copied`);
+    toast.success(`${label} copied to clipboard`);
   };
 
   const onDownload = async (platform: "mt4" | "mt5") => {
     if (!rawToken) {
-      toast.error("Generate your token first.");
+      toast.error("Token not ready yet — please wait a second.");
       return;
     }
     await downloadEA(platform, rawToken);
+    setDownloaded(platform);
+    if (downloadedKey) localStorage.setItem(downloadedKey, platform);
     toast.success(`EA for ${platform.toUpperCase()} downloaded`);
   };
 
+  const steps = [
+    {
+      n: 1,
+      title: "Download the Expert Advisor",
+      body: "Click the green button below to download the EA file (.mq5 for MT5, or .mq4 for MT4). It's already pre-configured with your webhook URL and token.",
+    },
+    {
+      n: 2,
+      title: "Open it in MetaEditor",
+      body: "Double-click the downloaded file. MetaEditor (which comes with MT5) will open automatically. If it doesn't, right-click → Open with → MetaEditor.",
+    },
+    {
+      n: 3,
+      title: "Check the Webhook URL & Secret Token",
+      body: "Inside MetaEditor, scroll to the input parameters at the top. Both fields are already filled — but if needed, copy them again from the boxes below.",
+    },
+    {
+      n: 4,
+      title: "Press F7 to compile",
+      body: "Hit the F7 key (or click the Compile button). You should see “0 errors” at the bottom. The compiled EA is now ready to run.",
+    },
+    {
+      n: 5,
+      title: "Drag the EA onto any chart",
+      body: "Go back to MetaTrader 5, open the Navigator (Ctrl+N), find the EA under Expert Advisors, and drag it onto any chart. Allow AutoTrading — done!",
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Intro / why */}
+      {/* Intro */}
       <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
@@ -176,178 +203,92 @@ export const EAWebhookSetup = () => {
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Runs directly inside your MT4/MT5 terminal and pushes account &
-              positions to your dashboard every 8 seconds. <span className="text-foreground font-medium">No broker
-              credentials leave your computer.</span> 100% free, no MetaApi subscription required.
+              positions to your dashboard every 8 seconds.{" "}
+              <span className="text-foreground font-medium">
+                You only need to do this once. The EA will run automatically after.
+              </span>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Steps */}
-      <div className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden">
-        <div className="border-b border-border/40 px-5 py-3">
-          <h3 className="font-heading text-sm font-semibold text-foreground">
-            Setup in 4 steps
-          </h3>
-        </div>
-        <ol className="divide-y divide-border/40">
-          {[
-            {
-              n: 1,
-              title: "Generate your secret token",
-              body: "Creates a unique key that authorises your EA to push data to your account. Keep it private — anyone with this token can write to your dashboard.",
-            },
-            {
-              n: 2,
-              title: "Download the Expert Advisor",
-              body: "We pre-fill your webhook URL and token inside the .mq4 / .mq5 file so you don't have to edit anything.",
-            },
-            {
-              n: 3,
-              title: "Install the EA in MetaTrader",
-              body: "MT5: File → Open Data Folder → MQL5 → Experts. Drop the file in, then refresh from the Navigator. MT4: same path under MQL4 → Experts.",
-            },
-            {
-              n: 4,
-              title: "Allow WebRequest & attach to a chart",
-              body: "Tools → Options → Expert Advisors → enable AutoTrading & WebRequest, then add the Webhook URL to the allowed list. Drag the EA onto any chart — your dashboard goes live in ~10s.",
-            },
-          ].map((s) => (
-            <li key={s.n} className="flex items-start gap-4 px-5 py-4">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary font-mono text-xs font-bold ring-1 ring-primary/30">
-                {s.n}
-              </span>
-              <div className="space-y-1 min-w-0">
-                <div className="text-sm font-semibold text-foreground">{s.title}</div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{s.body}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {/* Credentials */}
+      {/* Credentials — moved to top, very prominent */}
       <div className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-heading text-sm font-semibold text-foreground inline-flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-primary" /> Your webhook credentials
           </h3>
-          {loading ? (
+          {(loading || creating) && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : token && rawToken ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={regenerate}
-              disabled={creating}
-              className="rounded-lg gap-1.5"
-            >
-              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
-              Regenerate
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={token ? regenerate : generate}
-              disabled={creating}
-              className="rounded-lg gap-1.5"
-            >
-              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
-              {token ? "Regenerate token" : "Generate token"}
-            </Button>
           )}
         </div>
 
+        {/* Webhook URL */}
         <div className="space-y-2">
           <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-            Webhook URL
+            1. Webhook URL
           </Label>
           <div className="flex gap-2">
             <Input
               readOnly
               value={WEBHOOK_URL}
-              className="bg-muted/40 border-border/50 font-mono text-xs"
+              onFocus={(e) => e.currentTarget.select()}
+              className="bg-muted/40 border-border/50 font-mono text-xs h-11"
             />
             <Button
               type="button"
-              variant="outline"
-              size="icon"
               onClick={() => copy(WEBHOOK_URL, "Webhook URL")}
-              className="shrink-0"
-              aria-label="Copy webhook URL"
+              className="shrink-0 h-11 gap-2 px-4"
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-4 w-4" /> Copy
             </Button>
           </div>
         </div>
 
+        {/* Secret Token — always visible */}
         <div className="space-y-2">
           <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-            Secret Token
+            2. Secret Token
           </Label>
-          {rawToken ? (
-            <>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={rawToken}
-                  onFocus={(e) => e.currentTarget.select()}
-                  className="bg-primary/5 border-primary/40 font-mono text-xs text-foreground"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => copy(rawToken, "Secret token")}
-                  className="shrink-0"
-                  aria-label="Copy secret token"
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
-                <Shield className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
-                <p className="text-[11px] text-destructive/90 leading-relaxed">
-                  <span className="font-semibold">Keep this token secret.</span> Anyone with it can send data to your account.
-                </p>
-              </div>
-              {token?.last_used_at && (
-                <p className="text-[10px] text-muted-foreground/80">
-                  Last used {formatDistanceToNow(new Date(token.last_used_at), { addSuffix: true })}
-                </p>
-              )}
-            </>
-          ) : token ? (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-3 text-xs text-muted-foreground">
-              <span className="text-foreground font-mono">{token.token_prefix}…</span>{" "}
-              <span className="opacity-80">
-                Your token isn't cached on this browser. For security we can't recover the original — click <span className="text-foreground font-medium">Regenerate token</span> above to create a new one (you'll need to re-download the EA).
-              </span>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed border-border/50 bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
-              No token yet. Click <span className="text-foreground font-medium">Generate token</span> above to create one.
-            </div>
-          )}
+          <div className="flex gap-2">
+            <Input
+              readOnly
+              value={rawToken ?? "Generating your token…"}
+              onFocus={(e) => e.currentTarget.select()}
+              className="bg-primary/5 border-primary/40 font-mono text-xs h-11 text-foreground"
+            />
+            <Button
+              type="button"
+              onClick={() => rawToken && copy(rawToken, "Secret token")}
+              disabled={!rawToken}
+              className="shrink-0 h-11 gap-2 px-4"
+            >
+              <Copy className="h-4 w-4" /> Copy
+            </Button>
+          </div>
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+            <Shield className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+            <p className="text-[11px] text-destructive/90 leading-relaxed">
+              <span className="font-semibold">Keep this token secret.</span>{" "}
+              Anyone with it can send data to your account.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Downloads */}
+      {/* Download buttons */}
       <div className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-4">
         <h3 className="font-heading text-sm font-semibold text-foreground inline-flex items-center gap-2">
           <Download className="h-4 w-4 text-primary" /> Download Expert Advisor
         </h3>
         <p className="text-xs text-muted-foreground">
-          Your URL and secret are baked into the file at download time, so the EA works
-          out-of-the-box. {!rawToken && (
-            <span className="text-primary">Generate a token first to enable downloads.</span>
-          )}
+          Your URL and secret are baked into the file at download time, so it works out-of-the-box.
         </p>
         <div className="grid sm:grid-cols-2 gap-3">
           <Button
             onClick={() => onDownload("mt5")}
             disabled={!rawToken}
-            className="rounded-xl gap-2 h-11"
+            className="rounded-xl gap-2 h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
           >
             <Download className="h-4 w-4" /> Download EA for MT5
           </Button>
@@ -355,10 +296,68 @@ export const EAWebhookSetup = () => {
             onClick={() => onDownload("mt4")}
             disabled={!rawToken}
             variant="outline"
-            className="rounded-xl gap-2 h-11"
+            className="rounded-xl gap-2 h-12"
           >
             <Download className="h-4 w-4" /> Download EA for MT4
           </Button>
+        </div>
+
+        {/* Success message after download */}
+        {downloaded && (
+          <div className="flex items-start gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">
+                EA for {downloaded.toUpperCase()} downloaded successfully!
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Now follow steps 2 → 5 below to install it in MetaTrader. Your
+                dashboard will go live within ~10 seconds after you drag the EA
+                onto a chart.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 5-step setup */}
+      <div className="rounded-2xl border border-border/40 bg-card/60 overflow-hidden">
+        <div className="border-b border-border/40 px-5 py-3 flex items-center justify-between">
+          <h3 className="font-heading text-sm font-semibold text-foreground inline-flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" /> Setup in 5 simple steps
+          </h3>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            ~3 min
+          </span>
+        </div>
+        <ol className="divide-y divide-border/40">
+          {steps.map((s) => (
+            <li key={s.n} className="flex items-start gap-4 px-5 py-4">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary font-mono text-sm font-bold ring-1 ring-primary/30">
+                {s.n}
+              </span>
+              <div className="space-y-1 min-w-0">
+                <div className="text-sm font-semibold text-foreground">
+                  {s.title}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {s.body}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Pro tip */}
+      <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+        <Lightbulb className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+        <div className="space-y-0.5">
+          <p className="text-sm font-semibold text-foreground">Pro tip</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            After compiling, you can minimize MetaTrader 5 — the EA will continue
+            working in the background as long as your computer is on and MT5 is running.
+          </p>
         </div>
       </div>
     </div>
