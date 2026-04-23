@@ -35,21 +35,29 @@ import SEO from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
 
 // INFINOX brokers — server names verified against MetaApi provisioning catalog.
-// "InfinoxLimited-MT5Live" is the canonical Live server for retail clients.
-const COMMON_BROKERS: { name: string; servers: string[] }[] = [
-  {
-    name: "Infinox Capital Limited",
-    servers: ["InfinoxCapitalLimited-MT5Live"],
-  },
+// Servers are split per platform (MT4 vs MT5).
+// "InfinoxLimited-MT5Live" is the canonical Live MT5 server for retail clients.
+type BrokerEntry = {
+  name: string;
+  serversByPlatform: { mt4: string[]; mt5: string[] };
+};
+
+const COMMON_BROKERS: BrokerEntry[] = [
   {
     name: "Infinox Limited",
-    servers: [
-      "InfinoxLimited-MT5Live",
-      "InfinoxLimited-MT5Demo",
-      "INFINOXLimited-MT5",
-    ],
+    serversByPlatform: {
+      mt5: ["InfinoxLimited-MT5Live", "InfinoxLimited-MT5Demo"],
+      mt4: [
+        "INFINOX-Live",
+        "InfinoxCapital-Live03",
+        "InfinoxLimited-Live04",
+        "InfinoxLimited-Live05",
+        "INFINOX-Demo",
+        "InfinoxCapital-Demo",
+      ],
+    },
   },
-  { name: "Custom / Other", servers: [] },
+  { name: "Custom / Other", serversByPlatform: { mt4: [], mt5: [] } },
 ];
 
 const ConnectMT = () => {
@@ -62,7 +70,9 @@ const ConnectMT = () => {
   const defaultBroker = COMMON_BROKERS.find((b) => b.name === "Infinox Limited") ?? COMMON_BROKERS[0];
   const [brokerName, setBrokerName] = useState(defaultBroker.name);
   const [customBroker, setCustomBroker] = useState("");
-  const [serverName, setServerName] = useState(defaultBroker.servers[0] ?? "");
+  const [serverName, setServerName] = useState(
+    defaultBroker.serversByPlatform.mt5[0] ?? "",
+  );
   const [customServer, setCustomServer] = useState("");
   const [login, setLogin] = useState("");
   const [investorPassword, setInvestorPassword] = useState("");
@@ -73,19 +83,22 @@ const ConnectMT = () => {
 
   const selectedBroker = COMMON_BROKERS.find((b) => b.name === brokerName);
   const isCustomBroker = brokerName === "Custom / Other";
+  const platformServers = selectedBroker?.serversByPlatform[platform] ?? [];
   const finalBroker = isCustomBroker ? customBroker.trim() : brokerName;
-  const finalServer = isCustomBroker || (selectedBroker?.servers.length === 0)
+  const finalServer = isCustomBroker || platformServers.length === 0
     ? customServer.trim()
     : serverName;
 
   // Auto-pick the matching server when platform / account type / broker changes.
   useEffect(() => {
-    if (!selectedBroker || selectedBroker.servers.length === 0) return;
-    if (platform !== "mt5") return;
+    if (!selectedBroker) return;
+    const servers = selectedBroker.serversByPlatform[platform];
+    if (servers.length === 0) return;
     const wantLive = accountType === "live";
-    const match = selectedBroker.servers.find((s) =>
-      wantLive ? /live/i.test(s) : /demo/i.test(s),
-    );
+    // Prefer an exact live/demo match; otherwise fall back to the first server.
+    const match =
+      servers.find((s) => (wantLive ? /live/i.test(s) : /demo/i.test(s))) ??
+      servers[0];
     if (match && match !== serverName) setServerName(match);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform, accountType, brokerName]);
@@ -399,7 +412,7 @@ const ConnectMT = () => {
               <Select value={brokerName} onValueChange={(v) => {
                 setBrokerName(v);
                 const b = COMMON_BROKERS.find((x) => x.name === v);
-                setServerName(b?.servers[0] ?? "");
+                setServerName(b?.serversByPlatform[platform][0] ?? "");
               }}>
                 <SelectTrigger className="bg-card border-border/50">
                   <SelectValue />
@@ -424,13 +437,13 @@ const ConnectMT = () => {
               <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
                 <Server className="inline h-3 w-3 mr-1" /> Server
               </Label>
-              {!isCustomBroker && selectedBroker && selectedBroker.servers.length > 0 ? (
+              {!isCustomBroker && platformServers.length > 0 ? (
                 <Select value={serverName} onValueChange={setServerName}>
                   <SelectTrigger className="bg-card border-border/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedBroker.servers.map((s) => (
+                    {platformServers.map((s) => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>
