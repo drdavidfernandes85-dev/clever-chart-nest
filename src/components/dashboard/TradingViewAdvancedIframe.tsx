@@ -42,7 +42,10 @@ const TradingViewAdvancedIframe = ({
 
     // Reset
     host.innerHTML = `
-      <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+      <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+      <div class="tradingview-widget-copyright" style="height:32px;line-height:32px;text-align:center;font-size:11px;color:#555">
+        <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank" style="color:#FFCD05">Track all markets on TradingView</a>
+      </div>
     `;
 
     const script = document.createElement("script");
