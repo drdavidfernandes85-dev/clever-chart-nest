@@ -69,6 +69,7 @@ export function useMTAccount() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const lastSyncRef = useRef<number>(0);
+  const realtimeInstanceRef = useRef(Math.random().toString(36).slice(2));
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -199,8 +200,9 @@ export function useMTAccount() {
 
   useEffect(() => {
     if (!user || !accountId) return;
+    const channelName = `mt-live-${accountId}-${realtimeInstanceRef.current}`;
     const channel = (supabase as any)
-      .channel(`mt-live-${accountId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "user_mt_accounts", filter: `id=eq.${accountId}` },
