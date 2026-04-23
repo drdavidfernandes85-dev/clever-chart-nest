@@ -1,10 +1,11 @@
 //+------------------------------------------------------------------+
-//| InfinoX_EA_MT5_to_Lovable.mq5                                    |
-//| Sends account & open positions to your Elite Live Trading Room   |
-//| Lovable Cloud webhook every 10 seconds.                          |
+//|                     InfinoX_Sync_EA v1.02                        |
+//|                  Fixed JSON + WebRequest                         |
+//|  Sends account & open positions to your Elite Live Trading Room  |
+//|  Lovable Cloud webhook every 10 seconds.                         |
 //+------------------------------------------------------------------+
 #property copyright "InfinoX Elite Room"
-#property version   "1.01"
+#property version   "1.02"
 #property strict
 
 input string WebhookURL  = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
@@ -12,14 +13,15 @@ input string SecretToken = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded fr
 
 datetime lastSend = 0;
 
-int OnInit()
+//+------------------------------------------------------------------+
+void OnInit()
 {
-   Print("✅ InfinoX EA v1.01 loaded successfully. Webhook: ", WebhookURL);
+   Print("✅ InfinoX EA v1.02 loaded successfully. Webhook: ", WebhookURL);
    if(StringLen(SecretToken) < 16)
       Print("⚠️ WARNING: SecretToken looks empty/short. Re-download EA from your dashboard.");
-   return(INIT_SUCCEEDED);
 }
 
+//+------------------------------------------------------------------+
 void OnTick()
 {
    if(TimeCurrent() - lastSend < 10) return;
@@ -28,36 +30,29 @@ void OnTick()
    SendOpenPositions();
 }
 
+//+------------------------------------------------------------------+
 void SendAccountInfo()
 {
-   string json = StringFormat(
-      "{\"type\":\"account\",\"platform\":\"mt5\",\"account\":%I64d,\"balance\":%.2f,\"equity\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,\"timestamp\":%I64d}",
-      AccountInfoInteger(ACCOUNT_LOGIN),
-      AccountInfoDouble(ACCOUNT_BALANCE),
-      AccountInfoDouble(ACCOUNT_EQUITY),
-      AccountInfoDouble(ACCOUNT_MARGIN),
-      AccountInfoDouble(ACCOUNT_MARGIN_FREE),
-      (long)TimeCurrent()
-   );
+   string json = StringFormat("{\"type\":\"account\",\"platform\":\"mt5\",\"account\":%I64d,\"balance\":%.2f,\"equity\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,\"timestamp\":%d}",
+                  AccountInfoInteger(ACCOUNT_LOGIN),
+                  AccountInfoDouble(ACCOUNT_BALANCE),
+                  AccountInfoDouble(ACCOUNT_EQUITY),
+                  AccountInfoDouble(ACCOUNT_MARGIN),
+                  AccountInfoDouble(ACCOUNT_MARGIN_FREE),
+                  TimeCurrent());
    PostToWebhook(json);
 }
 
+//+------------------------------------------------------------------+
 void SendOpenPositions()
 {
    string positions = "[";
    int total = PositionsTotal();
-   bool first = true;
    for(int i = 0; i < total; i++)
    {
+      if(i > 0) positions += ",";
       ulong ticket = PositionGetTicket(i);
-      if(ticket == 0) continue;
-      if(!PositionSelectByTicket(ticket)) continue;
-
-      if(!first) positions += ",";
-      first = false;
-
-      positions += StringFormat(
-         "{\"ticket\":%I64u,\"symbol\":\"%s\",\"type\":%d,\"volume\":%.2f,\"entry\":%.5f,\"sl\":%.5f,\"tp\":%.5f,\"profit\":%.2f}",
+      positions += StringFormat("{\"ticket\":%d,\"symbol\":\"%s\",\"type\":%d,\"volume\":%.2f,\"entry\":%.5f,\"sl\":%.5f,\"tp\":%.5f,\"profit\":%.2f}",
          ticket,
          PositionGetString(POSITION_SYMBOL),
          (int)PositionGetInteger(POSITION_TYPE),
@@ -65,25 +60,22 @@ void SendOpenPositions()
          PositionGetDouble(POSITION_PRICE_OPEN),
          PositionGetDouble(POSITION_SL),
          PositionGetDouble(POSITION_TP),
-         PositionGetDouble(POSITION_PROFIT)
-      );
+         PositionGetDouble(POSITION_PROFIT));
    }
    positions += "]";
 
-   string json = StringFormat(
-      "{\"type\":\"positions\",\"platform\":\"mt5\",\"account\":%I64d,\"positions\":%s}",
-      AccountInfoInteger(ACCOUNT_LOGIN), positions
-   );
+   string json = StringFormat("{\"type\":\"positions\",\"platform\":\"mt5\",\"account\":%I64d,\"positions\":%s}",
+                  AccountInfoInteger(ACCOUNT_LOGIN), positions);
    PostToWebhook(json);
 }
 
+//+------------------------------------------------------------------+
 void PostToWebhook(string json)
 {
    char postData[];
-   StringToCharArray(json, postData, 0, StringLen(json), CP_UTF8);
-   ArrayResize(postData, ArraySize(postData) - 1); // strip null terminator
+   StringToCharArray(json, postData, 0, StringLen(json));
 
-   string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + SecretToken + "\r\n";
+   string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + SecretToken;
    char result[];
    string responseHeaders;
 
@@ -94,7 +86,10 @@ void PostToWebhook(string json)
       Print("❌ WebRequest failed. Error ", GetLastError(),
             " — add ", WebhookURL, " to Tools > Options > Expert Advisors > Allow WebRequest.");
    else if(res == 200)
-      Print("✅ Data sent successfully");
+      Print("✅ Data sent successfully to InfinoX");
    else
-      Print("❌ Webhook failed. Code: ", res, " Body: ", CharArrayToString(result));
+   {
+      string response = CharArrayToString(result);
+      Print("❌ Webhook failed. Code: ", res, " Response: ", response);
+   }
 }
