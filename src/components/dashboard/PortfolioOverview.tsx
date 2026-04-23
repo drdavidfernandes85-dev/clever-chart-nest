@@ -1,7 +1,21 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Briefcase, TrendingUp, TrendingDown, ArrowUpRight, X, Plug } from "lucide-react";
+import {
+  Briefcase,
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  X,
+  Plug,
+  RefreshCw,
+  Loader2,
+  CheckCircle2,
+  Trash2,
+} from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
 
 interface Position {
@@ -42,8 +56,23 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
 };
 
 const PortfolioOverview = () => {
-  const { account, positions: mtPositions, snapshots } = useMTAccount();
+  const { account, positions: mtPositions, snapshots, syncing, sync, refresh } = useMTAccount();
   const isConnected = !!account && account.status === "connected";
+
+  const handleDisconnect = async () => {
+    if (!account) return;
+    if (!confirm("Disconnect this MetaTrader account? Your synced history will be removed.")) return;
+    const { error } = await (supabase as any)
+      .from("user_mt_accounts")
+      .delete()
+      .eq("id", account.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Account disconnected");
+    refresh();
+  };
 
   // Map MT positions to local Position shape (or use mock when not connected)
   const livePositions: Position[] = useMemo(() => {
@@ -122,6 +151,60 @@ const PortfolioOverview = () => {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.15)]"
     >
+      {/* Connection status banner — only when MT account is connected */}
+      {isConnected && account && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 bg-emerald-500/[0.04] px-6 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_hsl(160_84%_50%)]" />
+            </span>
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+            <span className="text-[11px] font-mono text-foreground truncate">
+              <span className="font-bold text-emerald-400">Connected:</span>{" "}
+              <span className="text-foreground">
+                {account.broker_name} • {account.server_name}
+              </span>
+              <span className="text-muted-foreground">
+                {" "}• #{account.login} •{" "}
+                {account.last_synced_at
+                  ? `Last synced ${formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })}`
+                  : "syncing…"}
+              </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => sync()}
+              disabled={syncing}
+              className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors disabled:opacity-60"
+              title="Re-sync this account"
+            >
+              {syncing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              Sync now
+            </button>
+            <Link
+              to="/connect-mt"
+              className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-card/60 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+            >
+              Manage
+            </Link>
+            <button
+              onClick={handleDisconnect}
+              className="inline-flex items-center gap-1 rounded-md border border-red-500/30 bg-red-500/5 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/15 transition-colors"
+              title="Disconnect MT account"
+            >
+              <Trash2 className="h-3 w-3" />
+              Disconnect
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header with bigger equity sparkline */}
       <div className="flex items-start justify-between gap-6 border-b border-border/40 px-6 py-5">
         <div className="min-w-0">
