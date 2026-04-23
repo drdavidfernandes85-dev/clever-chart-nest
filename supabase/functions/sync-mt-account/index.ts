@@ -69,6 +69,34 @@ const METAAPI_RETRY_DELAY_MS = 2_000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function makeTransactionId(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function logTokenMetadata(token: string, source: "user" | "shared") {
+  console.log("MetaApi token metadata", {
+    source,
+    length: token.length,
+    prefix: token.slice(0, 4),
+    suffix: token.slice(-4),
+  });
+}
+
+function parseMetaApiError(raw: string): {
+  id?: number;
+  error?: string;
+  message?: string;
+  details?: string;
+} {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return { message: raw };
+  }
+}
+
 function getMetaApiHost(url: string): string | null {
   try {
     const hostname = new URL(url).hostname;
@@ -112,25 +140,37 @@ async function metaapi(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort("MetaApi timeout"), init.timeoutMs ?? METAAPI_TIMEOUT_MS);
     const client = createMetaApiClient(url);
+    const method = init.method ?? "GET";
+    const hasBody = method !== "GET" && method !== "HEAD";
+    const baseHeaders = new Headers(init.headers ?? {});
+
+    if (!baseHeaders.has("Content-Type") && hasBody) {
+      baseHeaders.set("Content-Type", "application/json");
+    }
+    if (!baseHeaders.has("Accept")) {
+      baseHeaders.set("Accept", "application/json");
+    }
+    if (!baseHeaders.has("auth-token")) {
+      baseHeaders.set("auth-token", token);
+    }
+    if (hasBody && !baseHeaders.has("transaction-id")) {
+      baseHeaders.set("transaction-id", makeTransactionId());
+    }
+    baseHeaders.set("User-Agent", "infinox-elite-trading/1.0");
 
     try {
       const response = await fetch(url, {
         ...init,
+        method,
         signal: controller.signal,
         client,
-        headers: {
-          "auth-token": token,
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "User-Agent": "infinox-elite-trading/1.0",
-          ...(init.headers ?? {}),
-        },
+        headers: baseHeaders,
       });
 
       if (!response.ok) {
         console.error("MetaApi HTTP error", {
           url,
-          method: init.method ?? "GET",
+          method,
           status: response.status,
           statusText: response.statusText,
           attempt,
@@ -143,7 +183,7 @@ async function metaapi(
       const message = String(e instanceof Error ? e.message : e);
       console.error("MetaApi request failed", {
         url,
-        method: init.method ?? "GET",
+        method,
         attempt,
         error: message,
       });
@@ -165,31 +205,94 @@ async function metaapi(
 
 
 // Map raw MetaApi provisioning errors to a clear, user-facing message.
-// Especially important for E_AUTH which is a common Infinox edge case
-// (server name capitalization, "Live" vs "Demo", investor vs master pwd).
 function friendlyProvisionError(status: number, raw: string, account: AccountRow): string {
-  let parsed: any = null;
-  try { parsed = JSON.parse(raw); } catch { /* keep raw */ }
-
+  const parsed = parseMetaApiError(raw);
   const details = parsed?.details ?? "";
   const message = parsed?.message ?? raw;
 
   if (details === "E_AUTH" || /failed to authenticate/i.test(message)) {
     return [
       `MetaApi could not log in to MT5 #${account.login} on "${account.server_name}".`,
-      `This usually means one of:`,
-      `• Wrong server name — for Infinox Live use "InfinoxLimited-MT5Live" exactly.`,
-      `• You entered the master password instead of the investor (read-only) password.`,
-      `• The account is disabled or password was changed in the broker portal.`,
-      `Please double-check on MT5 desktop, then reconnect.`,
+      `The server name in the app is correct, so the remaining likely causes are:`,
+      `• the saved password was encoded incorrectly or is stale,`,
+      `• the broker changed the investor password,`,
+      `• or MetaApi has a stale failed deployment for this account.`,
+      `We automatically retry and redeploy, but if it still fails please reconnect the account to save the password again.`,
     ].join(" ");
   }
 
+  if (status === 403) {
+    return "The MetaApi token does not have the required permissions. Enable Trading account management and MT manager API for the token, then reconnect.";
+  }
+
   if (status === 429) {
-    return "MetaApi is rate-limiting this account due to repeated auth errors. Wait a few minutes before retrying.";
+    return "MetaApi is rate-limiting this account due to repeated auth failures. Wait a few minutes before retrying.";
   }
 
   return `Provision failed (${status}): ${message}`;
+}
+
+async function redeployAccount(metaapiId: string, region: string, token: string): Promise<void> {
+  const res = await metaapi(
+    `${provisioningUrl(region)}/users/current/accounts/${metaapiId}/redeploy`,
+    token,
+    { method: "POST" },
+  );
+
+  if (!res.ok) {
+    const txt = await res.text();
+    console.error("MetaApi redeploy response", {
+      metaapiId,
+      region,
+      status: res.status,
+      statusText: res.statusText,
+      body: txt.slice(0, 1000),
+    });
+    throw new Error(`Redeploy failed (${res.status}): ${parseMetaApiError(txt).message ?? txt}`);
+  }
+
+  console.log("MetaApi redeploy triggered", { metaapiId, region });
+}
+
+async function deleteMetaApiAccount(metaapiId: string, region: string, token: string): Promise<void> {
+  const res = await metaapi(
+    `${provisioningUrl(region)}/users/current/accounts/${metaapiId}`,
+    token,
+    { method: "DELETE" },
+  );
+
+  if (!res.ok && res.status !== 404) {
+    const txt = await res.text();
+    console.error("MetaApi delete response", {
+      metaapiId,
+      region,
+      status: res.status,
+      statusText: res.statusText,
+      body: txt.slice(0, 1000),
+    });
+    throw new Error(`Delete failed (${res.status}): ${parseMetaApiError(txt).message ?? txt}`);
+  }
+
+  console.log("MetaApi account deleted or already missing", { metaapiId, region, status: res.status });
+}
+
+async function reprovisionAccount(
+  account: AccountRow,
+  password: string,
+  token: string,
+  currentMetaapiId: string | null,
+  currentRegion: string,
+): Promise<{ metaapiId: string; region: string }> {
+  if (currentMetaapiId) {
+    try {
+      await deleteMetaApiAccount(currentMetaapiId, currentRegion, token);
+      await sleep(2_000);
+    } catch (error) {
+      console.error("MetaApi delete before reprovision failed", String(error));
+    }
+  }
+
+  return await provisionAccount(account, password, token);
 }
 
 async function provisionAccount(
@@ -208,7 +311,9 @@ async function provisionAccount(
     application: "MetaApi",
     magic: 0,
     keywords: [account.broker_name],
+    reliability: "high",
     metastatsApiEnabled: false,
+    region,
   };
 
   console.log("MetaApi provision request", {
@@ -227,9 +332,13 @@ async function provisionAccount(
 
   if (!res.ok) {
     const txt = await res.text();
+    const parsed = parseMetaApiError(txt);
     console.error("MetaApi provision response", {
       status: res.status,
       statusText: res.statusText,
+      error: parsed.error,
+      details: parsed.details,
+      id: parsed.id,
       body: txt.slice(0, 1000),
     });
     throw new Error(friendlyProvisionError(res.status, txt, account));
@@ -237,32 +346,13 @@ async function provisionAccount(
 
   const json = await res.json();
   const metaapiId = json.id as string;
-  console.log("MetaApi account created", { metaapiId, region });
+  console.log("MetaApi account created", { metaapiId, region, state: json.state ?? null });
 
-  // Give MetaApi 7s to settle the new account record before deploying.
-  // This avoids transient E_AUTH on the very first deploy attempt.
+  // Give MetaApi 7s to settle the new account record before first deploy.
   await sleep(7_000);
-
-  // Trigger deploy explicitly (idempotent). Log the result so we can
-  // diagnose broker auth issues that surface only at deploy time.
-  try {
-    const deployRes = await metaapi(
-      `${provisioningUrl(region)}/users/current/accounts/${metaapiId}/deploy`,
-      token,
-      { method: "POST" },
-    );
-    if (!deployRes.ok) {
-      const deployTxt = await deployRes.text();
-      console.error("MetaApi deploy response", {
-        status: deployRes.status,
-        body: deployTxt.slice(0, 500),
-      });
-    } else {
-      console.log("MetaApi deploy triggered", { metaapiId });
-    }
-  } catch (e) {
-    console.error("MetaApi deploy error (non-fatal)", String(e));
-  }
+  await redeployAccount(metaapiId, region, token).catch((e) => {
+    console.error("MetaApi redeploy after create failed (non-fatal)", String(e));
+  });
 
   return { metaapiId, region };
 }
@@ -369,12 +459,10 @@ Deno.serve(async (req) => {
 
     const acc = account as AccountRow;
     const password = decodePassword(acc.investor_password_encrypted);
-    // Resolve which MetaApi token to use: per-account first, fall back to shared.
     const userToken = decodePassword(acc.metaapi_token_encrypted);
+    const tokenSource = userToken && userToken.trim() ? "user" : "shared";
     let token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
-    // Sanity: a real MetaApi token is a JWT (~500–1500 chars). If the stored
-    // value is huge, the user pasted something wrong (e.g. JSON dump) — fall
-    // back to the shared platform token rather than send a 34KB header.
+
     if (token && token.length > 4000) {
       console.error("MetaApi token rejected: oversized", { length: token.length });
       token = FALLBACK_METAAPI_TOKEN;
@@ -393,25 +481,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ---- 1. Provision if needed ----
+    logTokenMetadata(token, tokenSource);
+
+    if (!password) {
+      await admin
+        .from("user_mt_accounts")
+        .update({
+          status: "error",
+          status_message: "Missing investor password",
+          last_error: "Missing investor password",
+        })
+        .eq("id", accountId);
+      return new Response(
+        JSON.stringify({ error: "Missing investor password" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     let metaapiId = acc.metaapi_account_id;
     let region = acc.region || "new-york";
 
+    // ---- 1. Provision if needed ----
     if (!metaapiId) {
-      if (!password) {
-        await admin
-          .from("user_mt_accounts")
-          .update({
-            status: "error",
-            status_message: "Missing investor password",
-            last_error: "Missing investor password",
-          })
-          .eq("id", accountId);
-        return new Response(
-          JSON.stringify({ error: "Missing investor password" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
       try {
         const prov = await provisionAccount(acc, password, token);
         metaapiId = prov.metaapiId;
@@ -443,13 +534,69 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---- 2. Check deploy state ----
-    const state = await getAccountState(metaapiId, region, token);
-    const deployedState = state?.state ?? "UNKNOWN";
-    const connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
+    // ---- 2. Check / recover deploy state ----
+    let state = await getAccountState(metaapiId, region, token);
+    let deployedState = state?.state ?? "UNKNOWN";
+    let connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
 
-    const isReady =
-      deployedState === "DEPLOYED" && connectionStatus === "CONNECTED";
+    if (metaapiId && deployedState === "DEPLOYED" && connectionStatus !== "CONNECTED") {
+      console.log("MetaApi account not connected, attempting redeploy", {
+        metaapiId,
+        region,
+        deployedState,
+        connectionStatus,
+      });
+      try {
+        await redeployAccount(metaapiId, region, token);
+        await sleep(7_000);
+        state = await getAccountState(metaapiId, region, token);
+        deployedState = state?.state ?? "UNKNOWN";
+        connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
+      } catch (error) {
+        console.error("MetaApi redeploy recovery failed", String(error));
+      }
+    }
+
+    if (metaapiId && deployedState === "DEPLOYED" && connectionStatus === "DISCONNECTED") {
+      console.log("MetaApi account still disconnected after redeploy, reprovisioning", {
+        metaapiId,
+        region,
+      });
+      try {
+        const reprovisioned = await reprovisionAccount(acc, password, token, metaapiId, region);
+        metaapiId = reprovisioned.metaapiId;
+        region = reprovisioned.region;
+        await admin
+          .from("user_mt_accounts")
+          .update({
+            metaapi_account_id: metaapiId,
+            region,
+            status: "syncing",
+            status_message: "Refreshing MT terminal connection…",
+            last_error: null,
+          })
+          .eq("id", accountId);
+        state = await getAccountState(metaapiId, region, token);
+        deployedState = state?.state ?? "UNKNOWN";
+        connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
+      } catch (error) {
+        const msg = String(error instanceof Error ? error.message : error);
+        await admin
+          .from("user_mt_accounts")
+          .update({
+            status: "error",
+            status_message: "Broker authentication failed",
+            last_error: msg,
+          })
+          .eq("id", accountId);
+        return new Response(JSON.stringify({ error: msg }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const isReady = deployedState === "DEPLOYED" && connectionStatus === "CONNECTED";
 
     if (!isReady) {
       await admin
@@ -477,9 +624,8 @@ Deno.serve(async (req) => {
       info = await fetchAccountInformation(metaapiId, region, token);
     } catch (e) {
       const msg = String(e instanceof Error ? e.message : e);
-      // Likely auth error — invalid investor password
       const friendly = /401|403|invalid|password|unauthor/i.test(msg)
-        ? "Invalid investor password — please reconnect with the correct one."
+        ? "MetaApi connected to the broker but could not fetch account data. Reconnect the account to refresh the saved investor password or verify the token permissions."
         : msg;
       await admin
         .from("user_mt_accounts")
