@@ -147,12 +147,8 @@ const Watchlist = () => {
             const pipMul = item.symbol.includes("JPY") ? 100 : item.symbol.includes("XAU") ? 10 : 10000;
             const pips = change * pipMul;
             return (
-              <motion.li
+              <li
                 key={item.id}
-                layout
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
                 draggable
                 onDragStart={onDragStart(item.id)}
                 onDragOver={onDragOver}
@@ -196,7 +192,7 @@ const Watchlist = () => {
                 >
                   <X className="h-3 w-3" />
                 </button>
-              </motion.li>
+              </li>
             );
           })}
         </AnimatePresence>
