@@ -157,16 +157,6 @@ const Dashboard = () => {
                 asChild
                 className="hidden md:inline-flex text-muted-foreground hover:text-primary"
               >
-                <Link to="/live-chart" aria-label="Live chart">
-                  <BarChart3 className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="hidden md:inline-flex text-muted-foreground hover:text-primary"
-              >
                 <Link to="/chatroom" aria-label="Chatroom">
                   <MessageSquare className="h-4 w-4" />
                 </Link>
