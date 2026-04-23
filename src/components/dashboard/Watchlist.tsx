@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 interface WatchItem {
   id: string;
