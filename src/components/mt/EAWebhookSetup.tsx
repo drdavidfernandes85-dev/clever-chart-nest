@@ -100,15 +100,17 @@ export const EAWebhookSetup = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const generate = async () => {
+  const createToken = async () => {
     if (!user) return;
-    // Hard guard: token is permanent, never regenerate.
-    if (token) {
-      toast.error("Your webhook token is permanent and cannot be regenerated.");
-      return;
-    }
     setCreating(true);
     try {
+      // Revoke any existing active tokens first (so only one active per user).
+      await (supabase as any)
+        .from("mt_webhook_tokens")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .is("revoked_at", null);
+
       const raw = generateToken();
       const hash = await sha256Hex(raw);
       const { data, error } = await (supabase as any)
@@ -124,14 +126,27 @@ export const EAWebhookSetup = () => {
       setToken(data);
       setRawToken(raw);
       if (storageKey) localStorage.setItem(storageKey, raw);
-      toast.success("Webhook token generated", {
-        description: "Copy this token into your EA — it's permanent and always visible here.",
+      toast.success("Webhook token ready", {
+        description: "Copy it into your EA — it stays visible on this page.",
       });
     } catch (e: any) {
       toast.error(e.message ?? "Could not create token");
     } finally {
       setCreating(false);
     }
+  };
+
+  const generate = async () => {
+    if (token) {
+      toast.error("You already have a token. Use Regenerate if you lost it.");
+      return;
+    }
+    await createToken();
+  };
+
+  const regenerate = async () => {
+    if (!confirm("This will invalidate your current token. Your EA will stop working until you re-download it. Continue?")) return;
+    await createToken();
   };
 
   const copy = (text: string, label: string) => {
