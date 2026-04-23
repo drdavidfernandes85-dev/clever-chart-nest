@@ -141,7 +141,7 @@ export const EAWebhookSetup = () => {
 
   const onDownload = async (platform: "mt4" | "mt5") => {
     if (!rawToken) {
-      toast.error("Generate a fresh token first — we can't reveal your old one for security.");
+      toast.error("Generate your token first.");
       return;
     }
     await downloadEA(platform, rawToken);
