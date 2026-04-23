@@ -59,9 +59,10 @@ const ConnectMT = () => {
 
   const [platform, setPlatform] = useState<"mt4" | "mt5">("mt5");
   const [accountType, setAccountType] = useState<"live" | "demo">("live");
-  const [brokerName, setBrokerName] = useState(COMMON_BROKERS[0].name);
+  const defaultBroker = COMMON_BROKERS.find((b) => b.name === "Infinox Limited") ?? COMMON_BROKERS[0];
+  const [brokerName, setBrokerName] = useState(defaultBroker.name);
   const [customBroker, setCustomBroker] = useState("");
-  const [serverName, setServerName] = useState(COMMON_BROKERS[0].servers[0] ?? "");
+  const [serverName, setServerName] = useState(defaultBroker.servers[0] ?? "");
   const [customServer, setCustomServer] = useState("");
   const [login, setLogin] = useState("");
   const [investorPassword, setInvestorPassword] = useState("");
