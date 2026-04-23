@@ -11,12 +11,14 @@ import {
   Loader2,
   CheckCircle2,
   Trash2,
+  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 interface Position {
   symbol: string;
