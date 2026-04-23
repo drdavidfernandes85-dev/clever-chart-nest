@@ -13,6 +13,7 @@ import NewsletterSection from "@/components/NewsletterSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
+import TradingViewMiniChart from "@/components/dashboard/TradingViewMiniChart";
 
 const Index = () => (
   <div className="min-h-screen">
@@ -33,6 +34,22 @@ const Index = () => (
     <Navbar />
     <HeroSection />
     <ScrollReveal><SponsorsSection /></ScrollReveal>
+    <ScrollReveal delay={100}>
+      <section className="container mx-auto px-4 py-12">
+        <div className="mb-6 text-center">
+          <span className="inline-block rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-primary">
+            Live Market
+          </span>
+          <h2 className="mt-3 font-proxima text-3xl font-semibold text-foreground md:text-4xl">
+            Gráfico en vivo · EUR/USD
+          </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            TradingView en tiempo real con velas INFINOX
+          </p>
+        </div>
+        <TradingViewMiniChart symbol="FX:EURUSD" interval="5" height={520} />
+      </section>
+    </ScrollReveal>
     <ScrollReveal delay={100}><FeaturesSection /></ScrollReveal>
     <ScrollReveal delay={100}><TeamSection /></ScrollReveal>
     <ScrollReveal delay={100}><MentoringSection /></ScrollReveal>
