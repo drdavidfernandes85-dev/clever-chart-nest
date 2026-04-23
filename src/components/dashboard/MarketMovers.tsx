@@ -62,6 +62,12 @@ const MoverList = ({
         </span>
       </div>
       <ul className="divide-y divide-border/20">
+        {rows.length === 0 && (
+          <li className="px-3.5 py-6 text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <Loader2 className="inline h-3 w-3 animate-spin mr-1" />
+            Loading…
+          </li>
+        )}
         {rows.map((m) => {
           const up = m.changePct >= 0;
           return (
