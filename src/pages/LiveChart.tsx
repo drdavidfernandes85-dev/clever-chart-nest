@@ -90,7 +90,13 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
     };
   }, [symbol, interval]);
 
-  return <div className="tradingview-widget-container h-full w-full" ref={containerRef} />;
+  return (
+    <div
+      className="tradingview-widget-container w-full"
+      ref={containerRef}
+      style={{ height: "100%", minHeight: 600 }}
+    />
+  );
 };
 
 const LiveChart = () => {
@@ -140,7 +146,7 @@ const LiveChart = () => {
 
       <div className="space-y-4 p-4">
         {/* Chart full-width */}
-        <div className="rounded-2xl border border-border/30 bg-card p-4 flex flex-col h-[calc(100vh-7rem)] min-h-[500px]">
+        <div className="rounded-2xl border border-border/30 bg-card p-4 flex flex-col h-[calc(100vh-7rem)] min-h-[640px]">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />

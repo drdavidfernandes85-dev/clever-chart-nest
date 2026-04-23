@@ -14,6 +14,8 @@ import {
   User,
   LogOut,
   Users,
+  Newspaper,
+  CalendarDays,
 } from "lucide-react";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,8 @@ const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/live-chart", label: "Live Charts", icon: LineChart },
   { to: "/signals", label: "Signals", icon: Radio },
+  { to: "/news", label: "News", icon: Newspaper },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/chatroom", label: "Chatroom", icon: MessageSquare },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/videos", label: "Video Library", icon: Video },
