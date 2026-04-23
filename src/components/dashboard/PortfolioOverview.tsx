@@ -1,17 +1,20 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Briefcase, TrendingUp, TrendingDown, ArrowUpRight, X } from "lucide-react";
+import { Briefcase, TrendingUp, TrendingDown, ArrowUpRight, X, Plug } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useMTAccount } from "@/hooks/useMTAccount";
 
 interface Position {
   symbol: string;
   side: "long" | "short";
-  size: number; // lots
+  size: number;
   entry: number;
   current: number;
+  pnl?: number; // override (when from MT)
+  pct?: number;
 }
 
-const INITIAL_POSITIONS: Position[] = [
+const MOCK_POSITIONS: Position[] = [
   { symbol: "EUR/USD", side: "long", size: 2.5, entry: 1.0832, current: 1.0867 },
   { symbol: "GBP/JPY", side: "short", size: 1.0, entry: 192.45, current: 191.86 },
   { symbol: "XAU/USD", side: "long", size: 0.5, entry: 2402.1, current: 2418.3 },
@@ -19,17 +22,16 @@ const INITIAL_POSITIONS: Position[] = [
   { symbol: "AUD/USD", side: "long", size: 2.0, entry: 0.6612, current: 0.6604 },
 ];
 
-// Equity curve sparkline points (last 30 ticks)
-const EQUITY = [
+const MOCK_EQUITY_CURVE = [
   42, 45, 44, 47, 49, 48, 51, 53, 52, 56, 58, 57, 60, 62, 61, 64, 66, 65, 68, 71,
   73, 72, 75, 78, 76, 80, 82, 81, 85, 88,
 ];
-
-const ACCOUNT_EQUITY = 48211.27;
+const MOCK_ACCOUNT_EQUITY = 48211.27;
 
 const fmtPrice = (n: number) => (n > 100 ? n.toFixed(2) : n.toFixed(5));
 
 const calcPnl = (p: Position): { pnl: number; pct: number } => {
+  if (p.pnl != null && p.pct != null) return { pnl: p.pnl, pct: p.pct };
   const dir = p.side === "long" ? 1 : -1;
   const diff = (p.current - p.entry) * dir;
   const pipMultiplier = p.symbol.includes("JPY") ? 100 : p.symbol.includes("XAU") ? 1 : 10000;
@@ -40,7 +42,35 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
 };
 
 const PortfolioOverview = () => {
-  const [positions, setPositions] = useState<Position[]>(INITIAL_POSITIONS);
+  const { account, positions: mtPositions, snapshots } = useMTAccount();
+  const isConnected = !!account && account.status === "connected";
+
+  // Map MT positions to local Position shape (or use mock when not connected)
+  const livePositions: Position[] = useMemo(() => {
+    if (isConnected && mtPositions.length > 0) {
+      return mtPositions.map((mp) => ({
+        symbol: mp.symbol,
+        side: mp.side === "buy" ? "long" : "short",
+        size: Number(mp.volume),
+        entry: Number(mp.open_price),
+        current: Number(mp.current_price ?? mp.open_price),
+        pnl: Number(mp.profit ?? 0),
+        pct:
+          mp.current_price && mp.open_price
+            ? ((Number(mp.current_price) - Number(mp.open_price)) /
+                Number(mp.open_price)) *
+              100 *
+              (mp.side === "buy" ? 1 : -1)
+            : 0,
+      }));
+    }
+    return MOCK_POSITIONS;
+  }, [isConnected, mtPositions]);
+
+  const [positions, setPositions] = useState<Position[]>(livePositions);
+  useEffect(() => setPositions(livePositions), [livePositions]);
+
+  const accountEquity = isConnected && account?.equity ? Number(account.equity) : MOCK_ACCOUNT_EQUITY;
 
   const totalPnl = useMemo(
     () => positions.reduce((acc, p) => acc + calcPnl(p).pnl, 0),
@@ -57,25 +87,33 @@ const PortfolioOverview = () => {
     return w.den ? w.num / w.den : 0;
   }, [positions]);
 
-  // Larger sparkline
+  // Equity curve from snapshots when available
+  const equityValues = useMemo(() => {
+    if (isConnected && snapshots.length >= 2) {
+      return snapshots.map((s) => Number(s.equity));
+    }
+    return MOCK_EQUITY_CURVE;
+  }, [isConnected, snapshots]);
+
   const spark = useMemo(() => {
     const w = 320;
     const h = 64;
-    const max = Math.max(...EQUITY);
-    const min = Math.min(...EQUITY);
+    const max = Math.max(...equityValues);
+    const min = Math.min(...equityValues);
     const range = max - min || 1;
-    const step = w / (EQUITY.length - 1);
-    const pts = EQUITY.map((v, i) => {
+    const step = w / Math.max(1, equityValues.length - 1);
+    const pts = equityValues.map((v, i) => {
       const x = i * step;
       const y = h - ((v - min) / range) * h;
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
-    return { d: `M ${pts.join(" L ")}`, w, h };
-  }, []);
+    return { d: `M ${pts.join(" L ")}`, w, h, last: equityValues[equityValues.length - 1], min, max, range };
+  }, [equityValues]);
 
   const isUp = totalPnl >= 0;
   const closePosition = (symbol: string) =>
     setPositions((prev) => prev.filter((p) => p.symbol !== symbol));
+
 
   return (
     <motion.div
