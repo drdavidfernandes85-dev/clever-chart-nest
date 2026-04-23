@@ -102,18 +102,15 @@ const ConnectMT = () => {
         .single();
       if (error) throw error;
 
-      toast.success("Account connected successfully. Syncing your data...", {
-        description: `${finalBroker} • ${finalServer}`,
+      toast.success("Account connected. Provisioning your terminal…", {
+        description: `${finalBroker} • ${finalServer} — initial deploy can take up to 8 minutes`,
       });
-      // Small delay so the user perceives the sync animation
-      await new Promise((r) => setTimeout(r, 2200));
+      // Kick off provisioning on MetaApi (this returns fast — the background
+      // poller in useMTAccount will keep polling state every 15s)
       await sync(data.id);
-      toast.success("Sync complete — your dashboard is now live", {
-        description: "Portfolio, positions, risk and leaderboard updated.",
-      });
       setInvestorPassword("");
-      // Bring the user back to the dashboard to see live data
-      setTimeout(() => navigate("/dashboard"), 600);
+      await refresh();
+      // Stay on this page so the user sees provisioning progress live
     } catch (err: any) {
       toast.error(err.message || "Failed to connect");
     } finally {
@@ -244,6 +241,39 @@ const ConnectMT = () => {
                 </div>
               ))}
             </div>
+
+            {/* Provisioning progress / error */}
+            {(account.status === "syncing" || account.status === "pending") && (
+              <div className="border-t border-border/40 bg-primary/[0.04] px-6 py-3">
+                <div className="flex items-start gap-2.5">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-semibold text-foreground">
+                      {account.status_message ?? "Provisioning MetaTrader terminal…"}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                      Initial deploy on MetaApi.cloud takes 3–8 minutes. You can leave this page —
+                      we'll keep syncing in the background and the dashboard will update automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {account.status === "error" && account.last_error && (
+              <div className="border-t border-red-500/30 bg-red-500/[0.06] px-6 py-3">
+                <div className="flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[12px] font-semibold text-red-300">
+                      Sync failed
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                      {account.last_error}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-border/40 px-6 py-4 flex items-center justify-between gap-3">
               <div className="text-[11px] text-muted-foreground font-mono">
@@ -468,6 +498,10 @@ const ConnectMT = () => {
                 </>
               )}
             </Button>
+
+            <p className="text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground pt-1">
+              <span className="text-primary">⚡</span> Powered by MetaApi.cloud — real-time sync every 30 seconds
+            </p>
           </motion.div>
         )}
 
