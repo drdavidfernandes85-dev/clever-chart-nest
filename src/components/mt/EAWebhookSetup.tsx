@@ -216,31 +216,10 @@ export const EAWebhookSetup = () => {
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           ) : token ? (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={generate}
-                disabled={creating}
-                className="rounded-lg gap-1.5"
-              >
-                {creating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
-                Rotate
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={revoke}
-                className="rounded-lg gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Revoke
-              </Button>
-            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
+              <Lock className="h-3 w-3" />
+              Locked — permanent
+            </span>
           ) : (
             <Button
               size="sm"
