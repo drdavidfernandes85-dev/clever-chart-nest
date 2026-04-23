@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { BarChart3, MessageSquare, Search, Activity } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { BarChart3, MessageSquare, Search, Activity, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -91,39 +91,53 @@ const MarketSessionsClock = () => {
 };
 
 const Dashboard = () => {
+  const [tickerOpen, setTickerOpen] = useState(false);
+
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-background">
       {/* Left rail navigation */}
       <DashboardSidebar />
 
       {/* Main shell */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Top header */}
-        <header className="sticky top-0 z-50 border-b border-primary/15 bg-background/80 backdrop-blur-2xl">
-          <div className="flex h-14 items-center gap-3 px-4 lg:px-6">
-            {/* Page title (hidden on small to make room for search) */}
-            <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground">
+        {/* Top header — clean: search + account + actions */}
+        <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
+          <div className="flex h-16 items-center gap-4 px-6 lg:px-10">
+            <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground shrink-0">
               Centro de <span className="text-primary">Comando</span>
             </h1>
 
             {/* Global search */}
-            <div className="relative flex-1 max-w-xl ml-auto xl:ml-6">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <div className="relative flex-1 max-w-lg ml-auto xl:ml-8">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Buscar instrumento, señal, miembro…"
-                className="h-9 pl-9 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40"
+                className="h-9 pl-10 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40 rounded-xl"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 ml-auto xl:ml-0">
+            <div className="flex items-center gap-2 ml-auto xl:ml-0">
               <AccountSnapshot />
+              <button
+                onClick={() => setTickerOpen((v) => !v)}
+                className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/50 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+                aria-expanded={tickerOpen}
+                aria-label="Toggle market ticker"
+              >
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                Mercados
+                {tickerOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </button>
               <Button
                 variant="ghost"
                 size="sm"
                 asChild
                 className="hidden sm:inline-flex text-muted-foreground hover:text-primary"
               >
-                <Link to="/live-chart">
+                <Link to="/live-chart" aria-label="Live chart">
                   <BarChart3 className="h-4 w-4" />
                 </Link>
               </Button>
@@ -133,7 +147,7 @@ const Dashboard = () => {
                 asChild
                 className="hidden sm:inline-flex text-muted-foreground hover:text-primary"
               >
-                <Link to="/chatroom">
+                <Link to="/chatroom" aria-label="Chatroom">
                   <MessageSquare className="h-4 w-4" />
                 </Link>
               </Button>
@@ -141,26 +155,41 @@ const Dashboard = () => {
               <Link
                 to="/profile"
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/85 transition-colors"
+                aria-label="Profile"
               >
                 A
               </Link>
             </div>
           </div>
 
-          {/* Live ticker pinned to header */}
-          <ForexTickerBar />
+          {/* Collapsible live ticker */}
+          <AnimatePresence initial={false}>
+            {tickerOpen && (
+              <motion.div
+                key="ticker"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="overflow-hidden"
+              >
+                <ForexTickerBar />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </header>
 
-        {/* Page body */}
-        <main className="flex-1 p-4 lg:p-8 space-y-6 lg:space-y-8">
-          {/* KPIs */}
+        {/* Page body — generous spacing, hero chart layout */}
+        <main className="flex-1 px-6 py-8 lg:px-10 lg:py-10 space-y-8 lg:space-y-10">
+          {/* KPIs — 4 max, already responsive */}
           <KpiStrip />
 
-          {/* Hero grid: chart dominant, slim community rail */}
-          <div className="grid gap-6 lg:gap-8 xl:grid-cols-[1fr_340px]">
+          {/* Hero grid: dominant chart + narrow community rail */}
+          <div className="grid gap-8 lg:gap-10 xl:grid-cols-[minmax(0,1fr)_280px]">
             {/* Chart + supporting widgets */}
-            <div className="space-y-6 lg:space-y-8 min-w-0">
-              <LightweightCandlestickChart symbol="EUR/USD" height={460} />
+            <div className="space-y-8 lg:space-y-10 min-w-0">
+              {/* HERO CHART — visual centerpiece */}
+              <LightweightCandlestickChart symbol="EUR/USD" height={620} />
 
               {/* Secondary row: news + calendar */}
               <motion.div
@@ -185,14 +214,14 @@ const Dashboard = () => {
               </motion.div>
             </div>
 
-            {/* Right community rail */}
+            {/* Narrow right community rail (280px) */}
             <motion.aside
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
               className="min-w-0"
             >
-              <div className="xl:sticky xl:top-[112px]">
+              <div className="xl:sticky xl:top-24">
                 <CommunityNest />
               </div>
             </motion.aside>
