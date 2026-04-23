@@ -31,6 +31,7 @@ import RiskMeter from "@/components/dashboard/RiskMeter";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import MobileSidebarDrawer from "@/components/dashboard/MobileSidebarDrawer";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { useMTAccount } from "@/hooks/useMTAccount";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
