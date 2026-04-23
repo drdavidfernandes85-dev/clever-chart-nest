@@ -390,7 +390,7 @@ const PortfolioOverview = () => {
               <span className="text-emerald-400">●</span> MT live • {positions.length} open
             </>
           ) : (
-            <>{positions.length} open position{positions.length === 1 ? "" : "s"} • <span className="text-primary">demo data</span></>
+            <>No MT account connected</>
           )}
         </span>
         <div className="flex items-center gap-3">
