@@ -147,20 +147,34 @@ export function useMTAccount() {
     [account, refresh],
   );
 
-  // ---- Background poller ----
-  // - While syncing: poll every 15s to track MetaApi provisioning
-  // - While connected: pull live data every 30s
+  // ---- Background refresh ----
+  // EA-webhook accounts (no MetaApi token) get fresh DB reads every 8s,
+  // since the EA pushes every 10s. We also subscribe to Postgres realtime
+  // so the UI reacts instantly when new data arrives.
+  // MetaApi accounts trigger sync-mt-account every 30s for cloud pulls.
   useEffect(() => {
     if (!account) return;
+    const isEAWebhook =
+      account.broker_name === "Connected via EA" ||
+      account.server_name === "EA Webhook" ||
+      !account.has_metaapi_token;
+
     let cancelled = false;
     const tick = async () => {
       if (cancelled) return;
-      // Skip if a manual sync was started in the last 10s
+      if (isEAWebhook) {
+        // Just re-read from DB — the EA already pushed fresh data
+        await refresh();
+        return;
+      }
+      // MetaApi flow: trigger cloud sync (skipped server-side for EA accounts)
       if (Date.now() - lastSyncRef.current < 10_000) return;
       await sync(account.id);
     };
-    const interval =
-      account.status === "syncing" || account.status === "pending"
+
+    const interval = isEAWebhook
+      ? 8_000
+      : account.status === "syncing" || account.status === "pending"
         ? 15_000
         : account.status === "connected"
           ? 30_000
@@ -171,7 +185,34 @@ export function useMTAccount() {
       cancelled = true;
       clearInterval(handle);
     };
-  }, [account, sync]);
+  }, [account, sync, refresh]);
+
+  // ---- Realtime subscription ----
+  // Push-based updates so the dashboard reflects EA data within ~1 second.
+  useEffect(() => {
+    if (!user || !account) return;
+    const channel = (supabase as any)
+      .channel(`mt-live-${account.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_mt_accounts", filter: `id=eq.${account.id}` },
+        () => refresh(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mt_positions", filter: `account_id=eq.${account.id}` },
+        () => refresh(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "mt_account_snapshots", filter: `account_id=eq.${account.id}` },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => {
+      (supabase as any).removeChannel(channel);
+    };
+  }, [user, account, refresh]);
 
   return { account, positions, snapshots, loading, syncing, sync, refresh };
 }
