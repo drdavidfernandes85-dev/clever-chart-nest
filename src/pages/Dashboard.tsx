@@ -160,14 +160,7 @@ const Dashboard = () => {
           <div className="grid gap-6 lg:gap-8 xl:grid-cols-[1fr_340px]">
             {/* Chart + supporting widgets */}
             <div className="space-y-6 lg:space-y-8 min-w-0">
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, ease: "easeOut" }}
-                className="rounded-2xl overflow-hidden"
-              >
-                <LightweightCandlestickChart symbol="EUR/USD" height={460} />
-              </motion.div>
+              <LightweightCandlestickChart symbol="EUR/USD" height={460} />
 
               {/* Secondary row: news + calendar */}
               <motion.div
