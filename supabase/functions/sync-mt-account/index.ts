@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
     const { data: account, error: accErr } = await admin
       .from("user_mt_accounts")
       .select(
-        "id, user_id, platform, account_type, broker_name, server_name, login, metaapi_account_id, region, investor_password_encrypted",
+        "id, user_id, platform, account_type, broker_name, server_name, login, metaapi_account_id, region, investor_password_encrypted, metaapi_token_encrypted",
       )
       .eq("id", accountId)
       .single();
@@ -215,6 +215,27 @@ Deno.serve(async (req) => {
 
     const acc = account as AccountRow;
     const password = decodePassword(acc.investor_password_encrypted);
+    // Resolve which MetaApi token to use: per-account first, fall back to shared.
+    const userToken = decodePassword(acc.metaapi_token_encrypted);
+    const token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
+    if (!token) {
+      await admin
+        .from("user_mt_accounts")
+        .update({
+          status: "error",
+          status_message: "No MetaApi token",
+          last_error:
+            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
+        })
+        .eq("id", accountId);
+      return new Response(
+        JSON.stringify({
+          error:
+            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // ---- 1. Provision if needed ----
     let metaapiId = acc.metaapi_account_id;
