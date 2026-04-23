@@ -51,7 +51,7 @@ const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
-  const [activeChannelName, setActiveChannelName] = useState("trades_room");
+  const [activeChannelName, setActiveChannelName] = useState("general");
   const [messages, setMessages] = useState<Message[]>([]);
   const [userRoles, setUserRoles] = useState<UserRoleMap>({});
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -80,7 +80,10 @@ const Chatroom = () => {
       const { data } = await supabase.from("channels").select("*").order("created_at");
       if (data) {
         setChannels(data);
-        const first = data.find((c) => c.name === "trades_room") || data[0];
+        const first =
+          data.find((c) => c.name === "general") ||
+          data.find((c) => c.name === "trades_room") ||
+          data[0];
         if (first) { setActiveChannelId(first.id); setActiveChannelName(first.name); }
       }
     };
