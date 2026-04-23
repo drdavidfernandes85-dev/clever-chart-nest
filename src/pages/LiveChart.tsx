@@ -104,9 +104,6 @@ const LiveChart = () => {
               hideSideToolbar={false}
               withDateRanges={true}
               saveImage={true}
-              calendar={true}
-              details={true}
-              hotlist={true}
               studies={["STD;RSI", "STD;MACD"]}
             />
           </div>
