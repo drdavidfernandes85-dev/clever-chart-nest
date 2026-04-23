@@ -56,8 +56,23 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
 };
 
 const PortfolioOverview = () => {
-  const { account, positions: mtPositions, snapshots } = useMTAccount();
+  const { account, positions: mtPositions, snapshots, syncing, sync, refresh } = useMTAccount();
   const isConnected = !!account && account.status === "connected";
+
+  const handleDisconnect = async () => {
+    if (!account) return;
+    if (!confirm("Disconnect this MetaTrader account? Your synced history will be removed.")) return;
+    const { error } = await (supabase as any)
+      .from("user_mt_accounts")
+      .delete()
+      .eq("id", account.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Account disconnected");
+    refresh();
+  };
 
   // Map MT positions to local Position shape (or use mock when not connected)
   const livePositions: Position[] = useMemo(() => {
