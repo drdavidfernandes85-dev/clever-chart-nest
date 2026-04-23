@@ -313,17 +313,34 @@ const PortfolioOverview = () => {
       </div>
 
       {/* Footer link */}
-      <div className="border-t border-border/40 px-6 py-3 flex items-center justify-between">
+      <div className="border-t border-border/40 px-6 py-3 flex items-center justify-between gap-3">
         <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          {positions.length} open position{positions.length === 1 ? "" : "s"}
+          {isConnected ? (
+            <>
+              <span className="text-emerald-400">●</span> MT live • {positions.length} open
+            </>
+          ) : (
+            <>{positions.length} open position{positions.length === 1 ? "" : "s"} • <span className="text-primary">demo data</span></>
+          )}
         </span>
-        <Link
-          to="/analytics"
-          className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
-        >
-          View full analytics
-          <ArrowUpRight className="h-3 w-3" />
-        </Link>
+        <div className="flex items-center gap-3">
+          {!isConnected && (
+            <Link
+              to="/connect-mt"
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              <Plug className="h-3 w-3" />
+              Connect MT4/5
+            </Link>
+          )}
+          <Link
+            to="/analytics"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+          >
+            View full analytics
+            <ArrowUpRight className="h-3 w-3" />
+          </Link>
+        </div>
       </div>
     </motion.div>
   );
