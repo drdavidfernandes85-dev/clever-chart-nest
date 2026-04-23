@@ -254,6 +254,47 @@ async function redeployAccount(metaapiId: string, region: string, token: string)
   console.log("MetaApi redeploy triggered", { metaapiId, region });
 }
 
+async function deleteMetaApiAccount(metaapiId: string, region: string, token: string): Promise<void> {
+  const res = await metaapi(
+    `${provisioningUrl(region)}/users/current/accounts/${metaapiId}`,
+    token,
+    { method: "DELETE" },
+  );
+
+  if (!res.ok && res.status !== 404) {
+    const txt = await res.text();
+    console.error("MetaApi delete response", {
+      metaapiId,
+      region,
+      status: res.status,
+      statusText: res.statusText,
+      body: txt.slice(0, 1000),
+    });
+    throw new Error(`Delete failed (${res.status}): ${parseMetaApiError(txt).message ?? txt}`);
+  }
+
+  console.log("MetaApi account deleted or already missing", { metaapiId, region, status: res.status });
+}
+
+async function reprovisionAccount(
+  account: AccountRow,
+  password: string,
+  token: string,
+  currentMetaapiId: string | null,
+  currentRegion: string,
+): Promise<{ metaapiId: string; region: string }> {
+  if (currentMetaapiId) {
+    try {
+      await deleteMetaApiAccount(currentMetaapiId, currentRegion, token);
+      await sleep(2_000);
+    } catch (error) {
+      console.error("MetaApi delete before reprovision failed", String(error));
+    }
+  }
+
+  return await provisionAccount(account, password, token);
+}
+
 async function provisionAccount(
   account: AccountRow,
   password: string,
