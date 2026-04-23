@@ -15,14 +15,6 @@ interface Activity {
   closedAt: string;
 }
 
-const MOCK_RECENT: Activity[] = [
-  { id: "1", symbol: "EUR/USD", side: "buy", pnl: 312.4, closedAt: "2m ago" },
-  { id: "2", symbol: "XAU/USD", side: "buy", pnl: 845.0, closedAt: "18m ago" },
-  { id: "3", symbol: "USD/JPY", side: "sell", pnl: -127.5, closedAt: "47m ago" },
-  { id: "4", symbol: "GBP/JPY", side: "sell", pnl: 218.9, closedAt: "1h ago" },
-  { id: "5", symbol: "AUD/USD", side: "buy", pnl: -64.2, closedAt: "2h ago" },
-];
-
 const RecentActivity = () => {
   const { user } = useAuth();
   const { account, positions } = useMTAccount();
@@ -66,11 +58,7 @@ const RecentActivity = () => {
       }))
     : [];
 
-  const items: Activity[] =
-    isConnected || closedTrades.length > 0
-      ? [...livePositionsAsActivity, ...closedTrades].slice(0, 8)
-      : MOCK_RECENT;
-
+  const items: Activity[] = [...livePositionsAsActivity, ...closedTrades].slice(0, 8);
   const showEmptyHint = !isConnected && closedTrades.length === 0;
 
   return (
