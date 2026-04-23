@@ -241,6 +241,16 @@ const RiskMeter = () => {
                 : "Well within risk budget"}
             </span>
           </div>
+
+          {!isConnected && (
+            <Link
+              to="/connect-mt"
+              className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              <Plug className="h-3 w-3" />
+              Connect MT4/5 for real-time risk
+            </Link>
+          )}
         </div>
       </div>
     </motion.div>
