@@ -40,45 +40,59 @@ const TradingViewAdvancedIframe = ({
     const host = containerRef.current;
     if (!host) return;
 
-    // Reset
-    host.innerHTML = `
-      <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-      <div class="tradingview-widget-copyright" style="height:32px;line-height:32px;text-align:center;font-size:11px;color:#555">
-        <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank" style="color:#FFCD05">Track all markets on TradingView</a>
-      </div>
-    `;
+    let cancelled = false;
 
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.type = "text/javascript";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol,
-      interval,
-      timezone: "Etc/UTC",
-      theme: "dark",
-      style: "1",
-      locale: "en",
-      enable_publishing: false,
-      allow_symbol_change: allowSymbolChange,
-      hide_side_toolbar: hideSideToolbar,
-      withdateranges: withDateRanges,
-      save_image: saveImage,
-      calendar,
-      details,
-      hotlist,
-      studies,
-      backgroundColor: "rgba(11,11,11,1)",
-      gridColor: "rgba(255,205,5,0.04)",
-      toolbar_bg: "#0b0b0b",
-      hide_volume: false,
-      support_host: "https://www.tradingview.com",
-    });
+    const init = () => {
+      if (cancelled || !host) return;
+      const rect = host.getBoundingClientRect();
+      // Wait until the container actually has size (flex layouts can be 0 on first paint)
+      if (rect.height < 50 || rect.width < 50) {
+        requestAnimationFrame(init);
+        return;
+      }
 
-    host.appendChild(script);
+      host.innerHTML = `
+        <div class="tradingview-widget-container__widget" style="height:calc(100% - 28px);width:100%"></div>
+        <div class="tradingview-widget-copyright" style="height:28px;line-height:28px;text-align:center;font-size:11px;color:#555">
+          <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank" style="color:#FFCD05">Track all markets on TradingView</a>
+        </div>
+      `;
+
+      const script = document.createElement("script");
+      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+      script.type = "text/javascript";
+      script.async = true;
+      script.innerHTML = JSON.stringify({
+        autosize: true,
+        symbol,
+        interval,
+        timezone: "Etc/UTC",
+        theme: "dark",
+        style: "1",
+        locale: "en",
+        enable_publishing: false,
+        allow_symbol_change: allowSymbolChange,
+        hide_side_toolbar: hideSideToolbar,
+        withdateranges: withDateRanges,
+        save_image: saveImage,
+        calendar,
+        details,
+        hotlist,
+        studies,
+        backgroundColor: "rgba(11,11,11,1)",
+        gridColor: "rgba(255,205,5,0.04)",
+        toolbar_bg: "#0b0b0b",
+        hide_volume: false,
+        support_host: "https://www.tradingview.com",
+      });
+
+      host.appendChild(script);
+    };
+
+    init();
 
     return () => {
+      cancelled = true;
       if (host) host.innerHTML = "";
     };
   }, [
