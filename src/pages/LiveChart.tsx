@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useState } from "react";
 import { BarChart3, MessageSquare, LayoutDashboard, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 
 const SYMBOL_OPTIONS = [
   { label: "EUR/USD", value: "FX:EURUSD" },
@@ -24,80 +25,6 @@ const SYMBOL_OPTIONS = [
   { label: "GBP/JPY", value: "FX:GBPJPY" },
 ];
 
-const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: string; interval?: string }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    // Safely clear container without innerHTML
-    while (container.firstChild) container.removeChild(container.firstChild);
-
-    const widgetDiv = document.createElement("div");
-    widgetDiv.className = "tradingview-widget-container__widget";
-    widgetDiv.style.height = "100%";
-    widgetDiv.style.width = "100%";
-    container.appendChild(widgetDiv);
-
-    const config = {
-      autosize: true,
-      symbol,
-      interval,
-      timezone: "Etc/UTC",
-      theme: "dark",
-      style: "1",
-      locale: "en",
-      backgroundColor: "#1E1E1E",
-      gridColor: "rgba(255, 205, 5, 0.08)",
-      hide_top_toolbar: false,
-      hide_legend: false,
-      allow_symbol_change: true,
-      save_image: true,
-      calendar: true,
-      details: true,
-      hotlist: true,
-      studies: ["STD;RSI", "STD;MACD"],
-      show_popup_button: true,
-      popup_width: "1000",
-      popup_height: "650",
-      support_host: "https://www.tradingview.com",
-      enable_publishing: false,
-      withdateranges: true,
-      hide_side_toolbar: false,
-      drawings_access: { type: "all" },
-      overrides: {
-        "mainSeriesProperties.candleStyle.upColor": "#FFCD05",
-        "mainSeriesProperties.candleStyle.downColor": "#FF4D6B",
-        "mainSeriesProperties.candleStyle.borderUpColor": "#FFCD05",
-        "mainSeriesProperties.candleStyle.borderDownColor": "#FF4D6B",
-        "mainSeriesProperties.candleStyle.wickUpColor": "#FFCD05",
-        "mainSeriesProperties.candleStyle.wickDownColor": "#FF4D6B",
-        "paneProperties.background": "#1E1E1E",
-        "paneProperties.backgroundType": "solid",
-      },
-    };
-
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.type = "text/javascript";
-    script.async = true;
-    // textContent is safe (no HTML parsing); TradingView reads JSON config from script body
-    script.textContent = JSON.stringify(config);
-    container.appendChild(script);
-
-    return () => {
-      while (container.firstChild) container.removeChild(container.firstChild);
-    };
-  }, [symbol, interval]);
-
-  return (
-    <div
-      className="tradingview-widget-container w-full"
-      ref={containerRef}
-      style={{ height: "100%", minHeight: 600 }}
-    />
-  );
-};
 
 const LiveChart = () => {
   const [symbol, setSymbol] = useState("FX:EURUSD");
@@ -169,7 +96,19 @@ const LiveChart = () => {
             </div>
           </div>
           <div className="flex-1 min-h-0">
-            <TradingViewChart symbol={symbol} />
+            <TradingViewAdvancedIframe
+              symbol={symbol}
+              interval="1"
+              height="100%"
+              allowSymbolChange={true}
+              hideSideToolbar={false}
+              withDateRanges={true}
+              saveImage={true}
+              calendar={true}
+              details={true}
+              hotlist={true}
+              studies={["STD;RSI", "STD;MACD"]}
+            />
           </div>
         </div>
 

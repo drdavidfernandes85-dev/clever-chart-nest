@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity } from "lucide-react";
+import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 
 /**
  * Real live market chart powered by TradingView Advanced Chart widget.
@@ -33,68 +34,8 @@ const LiveTradingViewChart = ({
   height = 720,
   className = "",
 }: Props) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [openPrice, setOpenPrice] = useState<number | null>(null);
-
-  // Mount the real TradingView Advanced Chart widget
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    while (container.firstChild) container.removeChild(container.firstChild);
-
-    const widgetDiv = document.createElement("div");
-    widgetDiv.className = "tradingview-widget-container__widget";
-    widgetDiv.style.height = "100%";
-    widgetDiv.style.width = "100%";
-    container.appendChild(widgetDiv);
-
-    const config = {
-      autosize: true,
-      symbol,
-      interval,
-      timezone: "Etc/UTC",
-      theme: "dark",
-      style: "1",
-      locale: "en",
-      backgroundColor: "#0B0B0B",
-      gridColor: "rgba(255, 205, 5, 0.05)",
-      hide_top_toolbar: false,
-      hide_legend: false,
-      allow_symbol_change: false,
-      save_image: false,
-      calendar: false,
-      details: false,
-      hide_side_toolbar: true,
-      withdateranges: false,
-      enable_publishing: false,
-      studies: [],
-      support_host: "https://www.tradingview.com",
-      overrides: {
-        "mainSeriesProperties.candleStyle.upColor": "#2EC46D",
-        "mainSeriesProperties.candleStyle.downColor": "#DC3545",
-        "mainSeriesProperties.candleStyle.borderUpColor": "#2EC46D",
-        "mainSeriesProperties.candleStyle.borderDownColor": "#DC3545",
-        "mainSeriesProperties.candleStyle.wickUpColor": "#2EC46D",
-        "mainSeriesProperties.candleStyle.wickDownColor": "#DC3545",
-        "paneProperties.background": "#0B0B0B",
-        "paneProperties.backgroundType": "solid",
-      },
-    };
-
-    const script = document.createElement("script");
-    script.src =
-      "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.type = "text/javascript";
-    script.async = true;
-    script.textContent = JSON.stringify(config);
-    container.appendChild(script);
-
-    return () => {
-      while (container.firstChild) container.removeChild(container.firstChild);
-    };
-  }, [symbol, interval]);
 
   // Live FX price polling for the badge — uses free exchangerate.host (no API key)
   useEffect(() => {
@@ -180,10 +121,18 @@ const LiveTradingViewChart = ({
       </div>
 
       {/* Real TradingView widget */}
-      <div
-        ref={containerRef}
-        className="tradingview-widget-container w-full"
-        style={{ height, minHeight: 480 }}
+      <TradingViewAdvancedIframe
+        symbol={symbol}
+        interval={interval}
+        height={height}
+        allowSymbolChange={false}
+        hideSideToolbar={true}
+        withDateRanges={false}
+        saveImage={false}
+        calendar={false}
+        details={false}
+        hotlist={false}
+        studies={[]}
       />
 
       {/* Premium glowing LIVE price badge — top right */}
