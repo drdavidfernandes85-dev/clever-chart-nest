@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Shield, AlertTriangle } from "lucide-react";
+import { Shield, AlertTriangle, Plug } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useMTAccount } from "@/hooks/useMTAccount";
 
 interface Exposure {
   symbol: string;
@@ -8,23 +10,46 @@ interface Exposure {
   riskUsd: number;
 }
 
-const ACCOUNT_EQUITY = 48211.27;
-
-const POSITIONS_RISK: Exposure[] = [
+const MOCK_EQUITY = 48211.27;
+const MOCK_RISK: Exposure[] = [
   { symbol: "EUR/USD", riskPct: 0.6, riskUsd: 289.27 },
   { symbol: "XAU/USD", riskPct: 0.8, riskUsd: 385.69 },
   { symbol: "GBP/JPY", riskPct: 0.4, riskUsd: 192.85 },
 ];
 
 const RiskMeter = () => {
+  const { account, positions } = useMTAccount();
+  const isConnected = !!account && account.status === "connected";
+
+  const ACCOUNT_EQUITY = isConnected && account?.equity ? Number(account.equity) : MOCK_EQUITY;
+
+  // Real risk derived from MT positions (distance from open to SL × volume × pip value)
+  const POSITIONS_RISK: Exposure[] = useMemo(() => {
+    if (isConnected && positions.length > 0) {
+      return positions.map((p) => {
+        const open = Number(p.open_price);
+        const sl = p.stop_loss != null ? Number(p.stop_loss) : open * (p.side === "buy" ? 0.99 : 1.01);
+        const distance = Math.abs(open - sl);
+        const pipMult = p.symbol.includes("JPY") ? 100 : p.symbol.includes("XAU") ? 1 : 10000;
+        const pips = distance * pipMult;
+        const pipValue = p.symbol.includes("XAU") ? 100 : 10;
+        const riskUsd = pips * pipValue * Number(p.volume);
+        const riskPct = ACCOUNT_EQUITY > 0 ? (riskUsd / ACCOUNT_EQUITY) * 100 : 0;
+        return { symbol: p.symbol, riskUsd, riskPct };
+      });
+    }
+    return MOCK_RISK;
+  }, [isConnected, positions, ACCOUNT_EQUITY]);
+
   const total = useMemo(
     () => POSITIONS_RISK.reduce((acc, p) => acc + p.riskPct, 0),
-    []
+    [POSITIONS_RISK],
   );
   const totalUsd = useMemo(
     () => POSITIONS_RISK.reduce((acc, p) => acc + p.riskUsd, 0),
-    []
+    [POSITIONS_RISK],
   );
+
 
   // Updated thresholds: <1.5 safe, 1.5-3 moderate, >3 high
   const level: "safe" | "moderate" | "high" =
@@ -216,6 +241,16 @@ const RiskMeter = () => {
                 : "Well within risk budget"}
             </span>
           </div>
+
+          {!isConnected && (
+            <Link
+              to="/connect-mt"
+              className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
+            >
+              <Plug className="h-3 w-3" />
+              Connect MT4/5 for real-time risk
+            </Link>
+          )}
         </div>
       </div>
     </motion.div>

@@ -210,6 +210,123 @@ export type Database = {
           },
         ]
       }
+      mt_account_snapshots: {
+        Row: {
+          account_id: string
+          balance: number
+          equity: number
+          id: string
+          margin: number | null
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          balance: number
+          equity: number
+          id?: string
+          margin?: number | null
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          balance?: number
+          equity?: number
+          id?: string
+          margin?: number | null
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mt_account_snapshots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mt_account_snapshots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mt_positions: {
+        Row: {
+          account_id: string
+          commission: number | null
+          current_price: number | null
+          id: string
+          open_price: number
+          opened_at: string
+          profit: number | null
+          side: string
+          stop_loss: number | null
+          swap: number | null
+          symbol: string
+          take_profit: number | null
+          ticket: string
+          updated_at: string
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          account_id: string
+          commission?: number | null
+          current_price?: number | null
+          id?: string
+          open_price: number
+          opened_at?: string
+          profit?: number | null
+          side: string
+          stop_loss?: number | null
+          swap?: number | null
+          symbol: string
+          take_profit?: number | null
+          ticket: string
+          updated_at?: string
+          user_id: string
+          volume: number
+        }
+        Update: {
+          account_id?: string
+          commission?: number | null
+          current_price?: number | null
+          id?: string
+          open_price?: number
+          opened_at?: string
+          profit?: number | null
+          side?: string
+          stop_loss?: number | null
+          swap?: number | null
+          symbol?: string
+          take_profit?: number | null
+          ticket?: string
+          updated_at?: string
+          user_id?: string
+          volume?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mt_positions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mt_positions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mute_list: {
         Row: {
           created_at: string
@@ -479,6 +596,78 @@ export type Database = {
           },
         ]
       }
+      user_mt_accounts: {
+        Row: {
+          account_type: string
+          balance: number | null
+          broker_name: string
+          created_at: string
+          currency: string | null
+          equity: number | null
+          free_margin: number | null
+          id: string
+          investor_password_encrypted: string | null
+          last_synced_at: string | null
+          leverage: number | null
+          login: string
+          margin: number | null
+          margin_level: number | null
+          nickname: string | null
+          platform: string
+          server_name: string
+          status: string
+          status_message: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_type?: string
+          balance?: number | null
+          broker_name: string
+          created_at?: string
+          currency?: string | null
+          equity?: number | null
+          free_margin?: number | null
+          id?: string
+          investor_password_encrypted?: string | null
+          last_synced_at?: string | null
+          leverage?: number | null
+          login: string
+          margin?: number | null
+          margin_level?: number | null
+          nickname?: string | null
+          platform: string
+          server_name: string
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_type?: string
+          balance?: number | null
+          broker_name?: string
+          created_at?: string
+          currency?: string | null
+          equity?: number | null
+          free_margin?: number | null
+          id?: string
+          investor_password_encrypted?: string | null
+          last_synced_at?: string | null
+          leverage?: number | null
+          login?: string
+          margin?: number | null
+          margin_level?: number | null
+          nickname?: string | null
+          platform?: string
+          server_name?: string
+          status?: string
+          status_message?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -670,6 +859,78 @@ export type Database = {
           total_trades: number | null
           user_id: string | null
           win_rate: number | null
+        }
+        Relationships: []
+      }
+      user_mt_accounts_safe: {
+        Row: {
+          account_type: string | null
+          balance: number | null
+          broker_name: string | null
+          created_at: string | null
+          currency: string | null
+          equity: number | null
+          free_margin: number | null
+          has_password: boolean | null
+          id: string | null
+          last_synced_at: string | null
+          leverage: number | null
+          login: string | null
+          margin: number | null
+          margin_level: number | null
+          nickname: string | null
+          platform: string | null
+          server_name: string | null
+          status: string | null
+          status_message: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          account_type?: string | null
+          balance?: number | null
+          broker_name?: string | null
+          created_at?: string | null
+          currency?: string | null
+          equity?: number | null
+          free_margin?: number | null
+          has_password?: never
+          id?: string | null
+          last_synced_at?: string | null
+          leverage?: number | null
+          login?: string | null
+          margin?: number | null
+          margin_level?: number | null
+          nickname?: string | null
+          platform?: string | null
+          server_name?: string | null
+          status?: string | null
+          status_message?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          account_type?: string | null
+          balance?: number | null
+          broker_name?: string | null
+          created_at?: string | null
+          currency?: string | null
+          equity?: number | null
+          free_margin?: number | null
+          has_password?: never
+          id?: string | null
+          last_synced_at?: string | null
+          leverage?: number | null
+          login?: string | null
+          margin?: number | null
+          margin_level?: number | null
+          nickname?: string | null
+          platform?: string | null
+          server_name?: string | null
+          status?: string | null
+          status_message?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

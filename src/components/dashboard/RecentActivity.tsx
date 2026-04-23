@@ -1,6 +1,11 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { History, ArrowUpRight } from "lucide-react";
+import { History, ArrowUpRight, Plug } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useMTAccount } from "@/hooks/useMTAccount";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatDistanceToNow } from "date-fns";
 
 interface Activity {
   id: string;
@@ -10,7 +15,7 @@ interface Activity {
   closedAt: string;
 }
 
-const RECENT: Activity[] = [
+const MOCK_RECENT: Activity[] = [
   { id: "1", symbol: "EUR/USD", side: "buy", pnl: 312.4, closedAt: "2m ago" },
   { id: "2", symbol: "XAU/USD", side: "buy", pnl: 845.0, closedAt: "18m ago" },
   { id: "3", symbol: "USD/JPY", side: "sell", pnl: -127.5, closedAt: "47m ago" },
@@ -19,6 +24,55 @@ const RECENT: Activity[] = [
 ];
 
 const RecentActivity = () => {
+  const { user } = useAuth();
+  const { account, positions } = useMTAccount();
+  const isConnected = !!account && account.status === "connected";
+  const [closedTrades, setClosedTrades] = useState<Activity[]>([]);
+
+  // Pull closed trades from trade_journal as a richer real-data source
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("trade_journal")
+        .select("id, pair, direction, pnl, closed_at, opened_at")
+        .eq("user_id", user.id)
+        .eq("status", "closed")
+        .not("pnl", "is", null)
+        .order("closed_at", { ascending: false })
+        .limit(8);
+      setClosedTrades(
+        (data ?? []).map((t: any) => ({
+          id: t.id,
+          symbol: t.pair,
+          side: t.direction === "long" || t.direction === "buy" ? "buy" : "sell",
+          pnl: Number(t.pnl ?? 0),
+          closedAt: t.closed_at
+            ? formatDistanceToNow(new Date(t.closed_at), { addSuffix: false }) + " ago"
+            : "—",
+        })),
+      );
+    })();
+  }, [user]);
+
+  // Combine open MT positions (as live entries) + closed trades
+  const livePositionsAsActivity: Activity[] = isConnected
+    ? positions.slice(0, 5).map((p) => ({
+        id: p.id,
+        symbol: p.symbol,
+        side: p.side,
+        pnl: Number(p.profit ?? 0),
+        closedAt: "open",
+      }))
+    : [];
+
+  const items: Activity[] =
+    isConnected || closedTrades.length > 0
+      ? [...livePositionsAsActivity, ...closedTrades].slice(0, 8)
+      : MOCK_RECENT;
+
+  const showEmptyHint = !isConnected && closedTrades.length === 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -34,6 +88,12 @@ const RecentActivity = () => {
           <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
             Recent Activity
           </h3>
+          {isConnected && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-400 ring-1 ring-emerald-500/30">
+              <span className="h-1 w-1 rounded-full bg-emerald-400" />
+              MT
+            </span>
+          )}
         </div>
         <Link
           to="/analytics"
@@ -45,7 +105,7 @@ const RecentActivity = () => {
       </div>
 
       <ul className="divide-y divide-border/30">
-        {RECENT.map((a) => {
+        {items.map((a) => {
           const up = a.pnl >= 0;
           return (
             <li
@@ -78,6 +138,16 @@ const RecentActivity = () => {
           );
         })}
       </ul>
+
+      {showEmptyHint && (
+        <Link
+          to="/connect-mt"
+          className="block border-t border-border/40 px-5 py-2.5 text-center text-[11px] font-semibold text-primary hover:bg-primary/5 transition-colors"
+        >
+          <Plug className="inline h-3 w-3 mr-1" />
+          Connect MT4/5 for real activity
+        </Link>
+      )}
     </motion.div>
   );
 };

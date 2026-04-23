@@ -1,30 +1,62 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, TrendingUp } from "lucide-react";
+import { Wallet, TrendingUp, Plug } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useMTAccount } from "@/hooks/useMTAccount";
 
 /**
- * Top-bar account snapshot: equity + day P&L pill.
- * Equity ticks subtly to feel alive; values are placeholder until wired
- * to live account stats. Brand stays IX yellow; gains use semantic green.
+ * Top-bar account snapshot. When an MT account is connected, shows real
+ * equity + day P&L delta from the latest snapshots. Otherwise shows a
+ * compact "Connect MT" call-to-action.
  */
-const BASE_EQUITY = 48212.3;
-const DAY_PNL = 2418.5;
+const FALLBACK_EQUITY = 48212.3;
+const FALLBACK_DAY_PNL = 2418.5;
 
 const AccountSnapshot = () => {
-  const [equity, setEquity] = useState(BASE_EQUITY);
+  const { account, snapshots } = useMTAccount();
+  const isConnected =
+    !!account && account.status === "connected" && account.equity != null;
+
+  const [equity, setEquity] = useState(
+    isConnected ? Number(account!.equity) : FALLBACK_EQUITY,
+  );
 
   useEffect(() => {
+    if (isConnected) {
+      setEquity(Number(account!.equity));
+      return;
+    }
     const id = window.setInterval(() => {
-      // tiny random walk for "live" feel
       setEquity((prev) => +(prev + (Math.random() - 0.5) * 6).toFixed(2));
     }, 4000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [isConnected, account]);
+
+  const dayPnl = (() => {
+    if (!isConnected || snapshots.length < 2) return FALLBACK_DAY_PNL;
+    const today = new Date().toISOString().slice(0, 10);
+    const todays = snapshots.filter((s) => s.recorded_at.startsWith(today));
+    const baseline = (todays[0] ?? snapshots[0]).equity;
+    return Number(account!.equity) - Number(baseline);
+  })();
+
+  if (!isConnected) {
+    return (
+      <Link
+        to="/connect-mt"
+        className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
+      >
+        <Plug className="h-3.5 w-3.5" />
+        Connect MT4/5
+      </Link>
+    );
+  }
 
   const formatted = equity.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  const positivePnl = dayPnl >= 0;
 
   return (
     <div className="hidden md:flex items-center gap-2">
@@ -48,12 +80,34 @@ const AccountSnapshot = () => {
           </AnimatePresence>
         </span>
       </div>
-      <div className="flex items-center gap-1.5 rounded-full border border-[hsl(145_65%_50%)]/30 bg-[hsl(145_65%_50%)]/10 px-3 py-1.5">
-        <TrendingUp className="h-3.5 w-3.5 text-[hsl(145_65%_50%)]" />
-        <span className="font-mono text-xs font-semibold tabular-nums text-[hsl(145_65%_50%)]">
-          +${DAY_PNL.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+      <div
+        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 ${
+          positivePnl
+            ? "border-[hsl(145_65%_50%)]/30 bg-[hsl(145_65%_50%)]/10"
+            : "border-red-500/30 bg-red-500/10"
+        }`}
+      >
+        <TrendingUp
+          className={`h-3.5 w-3.5 ${
+            positivePnl ? "text-[hsl(145_65%_50%)]" : "text-red-400 rotate-180"
+          }`}
+        />
+        <span
+          className={`font-mono text-xs font-semibold tabular-nums ${
+            positivePnl ? "text-[hsl(145_65%_50%)]" : "text-red-400"
+          }`}
+        >
+          {positivePnl ? "+" : "−"}$
+          {Math.abs(dayPnl).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-wider text-[hsl(145_65%_50%)]/80">
+        <span
+          className={`font-mono text-[10px] uppercase tracking-wider ${
+            positivePnl ? "text-[hsl(145_65%_50%)]/80" : "text-red-400/80"
+          }`}
+        >
           today
         </span>
       </div>
