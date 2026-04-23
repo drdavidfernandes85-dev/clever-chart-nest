@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
         );
       }
       try {
-        const prov = await provisionAccount(acc, password);
+        const prov = await provisionAccount(acc, password, token);
         metaapiId = prov.metaapiId;
         region = prov.region;
         await admin
@@ -288,7 +288,7 @@ Deno.serve(async (req) => {
     }
 
     // ---- 2. Check deploy state ----
-    const state = await getAccountState(metaapiId, region);
+    const state = await getAccountState(metaapiId, region, token);
     const deployedState = state?.state ?? "UNKNOWN";
     const connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
 
@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
     // ---- 3. Fetch live data ----
     let info: any;
     try {
-      info = await fetchAccountInformation(metaapiId, region);
+      info = await fetchAccountInformation(metaapiId, region, token);
     } catch (e) {
       const msg = String(e instanceof Error ? e.message : e);
       // Likely auth error — invalid investor password
@@ -339,8 +339,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const positions: any[] = await fetchPositions(metaapiId, region);
-    const deals: any[] = await fetchRecentDeals(metaapiId, region);
+    const positions: any[] = await fetchPositions(metaapiId, region, token);
+    const deals: any[] = await fetchRecentDeals(metaapiId, region, token);
 
     // ---- 4. Persist ----
     await admin
