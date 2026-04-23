@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { BarChart3, MessageSquare, Search, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,35 +152,57 @@ const Dashboard = () => {
         </header>
 
         {/* Page body */}
-        <main className="flex-1 p-4 lg:p-6 space-y-5">
+        <main className="flex-1 p-4 lg:p-8 space-y-6 lg:space-y-8">
           {/* KPIs */}
           <KpiStrip />
 
           {/* Hero grid: chart dominant, slim community rail */}
-          <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+          <div className="grid gap-6 lg:gap-8 xl:grid-cols-[1fr_340px]">
             {/* Chart + supporting widgets */}
-            <div className="space-y-5 min-w-0">
-              <LightweightCandlestickChart symbol="EUR/USD" height={420} />
+            <div className="space-y-6 lg:space-y-8 min-w-0">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, ease: "easeOut" }}
+                className="rounded-2xl overflow-hidden"
+              >
+                <LightweightCandlestickChart symbol="EUR/USD" height={460} />
+              </motion.div>
 
               {/* Secondary row: news + calendar */}
-              <div className="grid gap-5 md:grid-cols-2">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+                className="grid gap-6 md:grid-cols-2"
+              >
                 <NewsFlowWidget />
                 <EconomicCalendarWidget />
-              </div>
+              </motion.div>
 
               {/* Tertiary row: sessions clock + upcoming */}
-              <div className="grid gap-5 md:grid-cols-2">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.25, ease: "easeOut" }}
+                className="grid gap-6 md:grid-cols-2"
+              >
                 <MarketSessionsClock />
                 <UpcomingSessions />
-              </div>
+              </motion.div>
             </div>
 
             {/* Right community rail */}
-            <aside className="min-w-0">
+            <motion.aside
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+              className="min-w-0"
+            >
               <div className="xl:sticky xl:top-[112px]">
                 <CommunityNest />
               </div>
-            </aside>
+            </motion.aside>
           </div>
         </main>
       </div>
