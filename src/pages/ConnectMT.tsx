@@ -27,11 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
+import EAWebhookSetup from "@/components/mt/EAWebhookSetup";
 import { formatDistanceToNow } from "date-fns";
 
 // INFINOX brokers — server names verified against MetaApi provisioning catalog.
