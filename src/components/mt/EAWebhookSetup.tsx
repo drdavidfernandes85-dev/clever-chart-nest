@@ -74,6 +74,8 @@ export const EAWebhookSetup = () => {
   // Raw token is only available in-memory immediately after generation.
   const [rawToken, setRawToken] = useState<string | null>(null);
 
+  const storageKey = user ? `mt_webhook_raw_token_${user.id}` : null;
+
   const refresh = async () => {
     if (!user) return;
     setLoading(true);
@@ -86,6 +88,10 @@ export const EAWebhookSetup = () => {
       .limit(1)
       .maybeSingle();
     setToken(data ?? null);
+    if (storageKey) {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) setRawToken(stored);
+    }
     setLoading(false);
   };
 
@@ -117,8 +123,9 @@ export const EAWebhookSetup = () => {
       if (error) throw error;
       setToken(data);
       setRawToken(raw);
+      if (storageKey) localStorage.setItem(storageKey, raw);
       toast.success("Webhook token generated", {
-        description: "This is your permanent token — save it now, it won't be shown again.",
+        description: "Copy this token into your EA — it's permanent and always visible here.",
       });
     } catch (e: any) {
       toast.error(e.message ?? "Could not create token");
@@ -134,7 +141,7 @@ export const EAWebhookSetup = () => {
 
   const onDownload = async (platform: "mt4" | "mt5") => {
     if (!rawToken) {
-      toast.error("Generate a fresh token first — we can't reveal your old one for security.");
+      toast.error("Generate your token first.");
       return;
     }
     await downloadEA(platform, rawToken);
@@ -281,20 +288,22 @@ export const EAWebhookSetup = () => {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-[11px] text-primary/90 inline-flex items-center gap-1.5">
+              <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
                 <Shield className="h-3 w-3" />
-                Save this now — for security we won't show it again.
+                Paste this into the EA's input parameters in MetaEditor. Keep it private.
               </p>
+              {token?.last_used_at && (
+                <p className="text-[10px] text-muted-foreground/80">
+                  Last used {formatDistanceToNow(new Date(token.last_used_at), { addSuffix: true })}
+                </p>
+              )}
             </>
           ) : token ? (
-            <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground font-mono">
-              <span className="text-foreground">{token.token_prefix}…</span>{" "}
-              <span className="opacity-60">(hidden for security — your token is permanent)</span>
-              {token.last_used_at && (
-                <div className="mt-1 text-[10px] text-muted-foreground/80">
-                  Last used {formatDistanceToNow(new Date(token.last_used_at), { addSuffix: true })}
-                </div>
-              )}
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-xs text-muted-foreground">
+              <span className="text-foreground font-mono">{token.token_prefix}…</span>{" "}
+              <span className="opacity-80">
+                Token exists but isn't cached on this device. Open the page on the device where you generated it to see the full value.
+              </span>
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-border/50 bg-muted/20 px-3 py-3 text-xs text-muted-foreground">
