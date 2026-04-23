@@ -90,7 +90,13 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
     };
   }, [symbol, interval]);
 
-  return <div className="tradingview-widget-container h-full w-full" ref={containerRef} />;
+  return (
+    <div
+      className="tradingview-widget-container w-full"
+      ref={containerRef}
+      style={{ height: "100%", minHeight: 600 }}
+    />
+  );
 };
 
 const LiveChart = () => {

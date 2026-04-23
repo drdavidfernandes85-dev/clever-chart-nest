@@ -104,10 +104,10 @@ const KpiStrip = () => {
         return (
           <motion.div
             key={k.label}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: idx * 0.07, ease: "easeOut" }}
-            className="group relative overflow-hidden rounded-2xl glass-panel p-4 transition-all duration-500 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_20px_50px_-25px_hsl(48_100%_51%/0.4)]"
+            transition={{ duration: 0.4, delay: idx * 0.06, ease: "easeOut" }}
+            className="group relative overflow-hidden rounded-xl glass-panel p-3 transition-all duration-500 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_16px_40px_-25px_hsl(48_100%_51%/0.4)]"
           >
             {/* Accent edge */}
             <div
@@ -117,20 +117,20 @@ const KpiStrip = () => {
               }}
             />
 
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-1">
-                  <Icon className="h-3 w-3" style={{ color: c }} />
+            <div className="flex items-start justify-between mb-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                  <Icon className="h-2.5 w-2.5" style={{ color: c }} />
                   {k.label}
                 </div>
-                <div className="font-display text-2xl font-semibold text-foreground tabular-nums leading-none">
+                <div className="font-display text-lg font-semibold text-foreground tabular-nums leading-none">
                   {k.value}
                 </div>
               </div>
             </div>
 
             {/* Sparkline */}
-            <div className="h-10 -mx-1">
+            <div className="h-7 -mx-1">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
                   <defs>
@@ -143,7 +143,7 @@ const KpiStrip = () => {
                     type="monotone"
                     dataKey="v"
                     stroke={c}
-                    strokeWidth={1.5}
+                    strokeWidth={1.25}
                     fill={`url(#sp-${k.label})`}
                     isAnimationActive={false}
                   />
@@ -151,12 +151,12 @@ const KpiStrip = () => {
               </ResponsiveContainer>
             </div>
 
-            <div className="mt-2 flex items-center gap-1.5">
-              <DeltaIcon className="h-3 w-3" style={{ color: c }} />
-              <span className="font-mono text-[11px] tabular-nums" style={{ color: c }}>
+            <div className="mt-1.5 flex items-center gap-1">
+              <DeltaIcon className="h-2.5 w-2.5" style={{ color: c }} />
+              <span className="font-mono text-[10px] tabular-nums" style={{ color: c }}>
                 {k.delta}
               </span>
-              <span className="font-mono text-[10px] text-muted-foreground ml-auto uppercase tracking-wider">
+              <span className="font-mono text-[9px] text-muted-foreground ml-auto uppercase tracking-wider">
                 24h
               </span>
             </div>
