@@ -38,6 +38,8 @@ const Dashboard = () => {
   const [railOpen, setRailOpen] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
+  const { account } = useMTAccount();
+  const isConnected = !!account && account.status === "connected";
 
   // Persist rail state
   useEffect(() => {
