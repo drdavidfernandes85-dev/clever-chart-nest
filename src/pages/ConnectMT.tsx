@@ -27,11 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
+import EAWebhookSetup from "@/components/mt/EAWebhookSetup";
 import { formatDistanceToNow } from "date-fns";
 
 // INFINOX brokers — server names verified against MetaApi provisioning catalog.
@@ -364,234 +366,268 @@ const ConnectMT = () => {
           </motion.div>
         )}
 
-        {!loading && !account && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 space-y-5"
-          >
-            <h2 className="font-heading text-base font-semibold text-foreground">
-              Add MT4 / MT5 Account
-            </h2>
+        {!loading && (
+          <Tabs defaultValue={account ? "webhook" : "metaapi"} className="w-full">
+            <TabsList className="grid grid-cols-2 w-full bg-card/60 border border-border/40 p-1 h-auto rounded-xl">
+              <TabsTrigger
+                value="metaapi"
+                className="rounded-lg py-2.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_8px_24px_-12px_hsl(48_100%_51%/0.6)]"
+              >
+                <Activity className="h-3.5 w-3.5 mr-1.5" />
+                Easy Cloud Sync
+                <span className="hidden sm:inline ml-1 opacity-70">(MetaApi)</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="webhook"
+                className="rounded-lg py-2.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-[0_8px_24px_-12px_hsl(48_100%_51%/0.6)]"
+              >
+                <Plug className="h-3.5 w-3.5 mr-1.5" />
+                Real-time EA Webhook
+                <span className="hidden sm:inline ml-1 opacity-70">(Free)</span>
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Platform
-                </Label>
-                <Select value={platform} onValueChange={(v) => setPlatform(v as any)}>
-                  <SelectTrigger className="bg-card border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mt5">MetaTrader 5</SelectItem>
-                    <SelectItem value="mt4">MetaTrader 4</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Account Type
-                </Label>
-                <Select value={accountType} onValueChange={(v) => setAccountType(v as any)}>
-                  <SelectTrigger className="bg-card border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="live">Live (Real money)</SelectItem>
-                    <SelectItem value="demo">Demo (Practice)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Broker
-              </Label>
-              <Select value={brokerName} onValueChange={(v) => {
-                setBrokerName(v);
-                const b = COMMON_BROKERS.find((x) => x.name === v);
-                setServerName(b?.serversByPlatform[platform][0] ?? "");
-              }}>
-                <SelectTrigger className="bg-card border-border/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_BROKERS.map((b) => (
-                    <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isCustomBroker && (
-                <Input
-                  value={customBroker}
-                  onChange={(e) => setCustomBroker(e.target.value)}
-                  placeholder="Enter broker name"
-                  className="bg-card border-border/50 mt-2"
-                />
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                <Server className="inline h-3 w-3 mr-1" /> Server
-              </Label>
-              {!isCustomBroker && platformServers.length > 0 ? (
-                <Select value={serverName} onValueChange={setServerName}>
-                  <SelectTrigger className="bg-card border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {platformServers.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <TabsContent value="metaapi" className="mt-6">
+              {account ? (
+                <div className="rounded-2xl border border-border/40 bg-card/40 p-5 text-center text-sm text-muted-foreground">
+                  You already have an account connected above. Disconnect it to add a different one
+                  via MetaApi, or switch to the <span className="text-foreground font-medium">EA Webhook</span> tab.
+                </div>
               ) : (
-                <Input
-                  value={customServer}
-                  onChange={(e) => setCustomServer(e.target.value)}
-                  placeholder="e.g. ICMarketsSC-Live02"
-                  className="bg-card border-border/50"
-                />
-              )}
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Account Number / Login
-                </Label>
-                <Input
-                  value={login}
-                  onChange={(e) => setLogin(e.target.value)}
-                  placeholder="123456789"
-                  inputMode="numeric"
-                  className="bg-card border-border/50 font-mono"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                  Nickname (optional)
-                </Label>
-                <Input
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  placeholder="My swing account"
-                  className="bg-card border-border/50"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                <KeyRound className="inline h-3 w-3 mr-1" /> Investor Password (read-only)
-              </Label>
-              <Input
-                type="password"
-                value={investorPassword}
-                onChange={(e) => setInvestorPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="off"
-                className="bg-card border-border/50 font-mono"
-              />
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Use the <span className="text-primary font-semibold">investor password</span>,
-                not your master password. The investor password only allows reading account data
-                and can never place, modify, or close trades.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <KeyRound className="inline h-3 w-3" /> MetaApi.cloud Token
-                <span className="ml-1 rounded-full bg-muted/60 px-1.5 py-px text-[9px] font-bold text-muted-foreground">
-                  OPTIONAL
-                </span>
-              </Label>
-              <Input
-                type="password"
-                value={metaapiToken}
-                onChange={(e) => setMetaapiToken(e.target.value)}
-                placeholder="Paste your personal MetaApi token (or leave empty)"
-                autoComplete="off"
-                className="bg-card border-border/50 font-mono text-xs"
-              />
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Bring your own MetaApi.cloud account for higher limits and full control.
-                If empty, we'll use the platform's shared MetaApi connection.{" "}
-                <a
-                  href="https://app.metaapi.cloud/token"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary font-semibold hover:underline"
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 space-y-5"
                 >
-                  Get a free token →
-                </a>
-              </p>
-            </div>
+                  <h2 className="font-heading text-base font-semibold text-foreground">
+                    Add MT4 / MT5 Account
+                  </h2>
 
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">
-                  Security
-                </span>
-              </div>
-              <ul className="text-[12px] text-muted-foreground space-y-1.5 leading-relaxed">
-                <li className="flex gap-2">
-                  <Lock className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
-                  Investor password is encrypted at rest and only ever used for read-only sync.
-                </li>
-                <li className="flex gap-2">
-                  <Lock className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
-                  We never request your master password and cannot place trades on your behalf.
-                </li>
-                <li className="flex gap-2">
-                  <Lock className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
-                  Disconnect at any time — all synced data is immediately purged.
-                </li>
-              </ul>
-              <div className="flex items-center justify-between gap-3 pt-2 border-t border-primary/20">
-                <Label htmlFor="confirm-ro" className="text-[12px] text-foreground cursor-pointer">
-                  I confirm this is the read-only investor password
-                </Label>
-                <Switch
-                  id="confirm-ro"
-                  checked={confirmedReadOnly}
-                  onCheckedChange={setConfirmedReadOnly}
-                />
-              </div>
-            </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                        Platform
+                      </Label>
+                      <Select value={platform} onValueChange={(v) => setPlatform(v as any)}>
+                        <SelectTrigger className="bg-card border-border/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mt5">MetaTrader 5</SelectItem>
+                          <SelectItem value="mt4">MetaTrader 4</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                        Account Type
+                      </Label>
+                      <Select value={accountType} onValueChange={(v) => setAccountType(v as any)}>
+                        <SelectTrigger className="bg-card border-border/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="live">Live (Real money)</SelectItem>
+                          <SelectItem value="demo">Demo (Practice)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-            <Button
-              onClick={handleConnect}
-              disabled={submitting || syncing}
-              className="w-full rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary font-bold gap-2 shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.7)]"
-            >
-              {submitting || syncing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Connecting…
-                </>
-              ) : (
-                <>
-                  <Activity className="h-4 w-4" /> Connect & Sync Now
-                </>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      Broker
+                    </Label>
+                    <Select value={brokerName} onValueChange={(v) => {
+                      setBrokerName(v);
+                      const b = COMMON_BROKERS.find((x) => x.name === v);
+                      setServerName(b?.serversByPlatform[platform][0] ?? "");
+                    }}>
+                      <SelectTrigger className="bg-card border-border/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COMMON_BROKERS.map((b) => (
+                          <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isCustomBroker && (
+                      <Input
+                        value={customBroker}
+                        onChange={(e) => setCustomBroker(e.target.value)}
+                        placeholder="Enter broker name"
+                        className="bg-card border-border/50 mt-2"
+                      />
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      <Server className="inline h-3 w-3 mr-1" /> Server
+                    </Label>
+                    {!isCustomBroker && platformServers.length > 0 ? (
+                      <Select value={serverName} onValueChange={setServerName}>
+                        <SelectTrigger className="bg-card border-border/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {platformServers.map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={customServer}
+                        onChange={(e) => setCustomServer(e.target.value)}
+                        placeholder="e.g. ICMarketsSC-Live02"
+                        className="bg-card border-border/50"
+                      />
+                    )}
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                        Account Number / Login
+                      </Label>
+                      <Input
+                        value={login}
+                        onChange={(e) => setLogin(e.target.value)}
+                        placeholder="123456789"
+                        inputMode="numeric"
+                        className="bg-card border-border/50 font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                        Nickname (optional)
+                      </Label>
+                      <Input
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value)}
+                        placeholder="My swing account"
+                        className="bg-card border-border/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                      <KeyRound className="inline h-3 w-3 mr-1" /> Investor Password (read-only)
+                    </Label>
+                    <Input
+                      type="password"
+                      value={investorPassword}
+                      onChange={(e) => setInvestorPassword(e.target.value)}
+                      placeholder="••••••••"
+                      autoComplete="off"
+                      className="bg-card border-border/50 font-mono"
+                    />
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Use the <span className="text-primary font-semibold">investor password</span>,
+                      not your master password. The investor password only allows reading account data
+                      and can never place, modify, or close trades.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <KeyRound className="inline h-3 w-3" /> MetaApi.cloud Token
+                      <span className="ml-1 rounded-full bg-muted/60 px-1.5 py-px text-[9px] font-bold text-muted-foreground">
+                        OPTIONAL
+                      </span>
+                    </Label>
+                    <Input
+                      type="password"
+                      value={metaapiToken}
+                      onChange={(e) => setMetaapiToken(e.target.value)}
+                      placeholder="Paste your personal MetaApi token (or leave empty)"
+                      autoComplete="off"
+                      className="bg-card border-border/50 font-mono text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      Bring your own MetaApi.cloud account for higher limits and full control.
+                      If empty, we'll use the platform's shared MetaApi connection.{" "}
+                      <a
+                        href="https://app.metaapi.cloud/token"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary font-semibold hover:underline"
+                      >
+                        Get a free token →
+                      </a>
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-primary">
+                        Security
+                      </span>
+                    </div>
+                    <ul className="text-[12px] text-muted-foreground space-y-1.5 leading-relaxed">
+                      <li className="flex gap-2">
+                        <Lock className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                        Investor password is encrypted at rest and only ever used for read-only sync.
+                      </li>
+                      <li className="flex gap-2">
+                        <Lock className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                        We never request your master password and cannot place trades on your behalf.
+                      </li>
+                      <li className="flex gap-2">
+                        <Lock className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+                        Disconnect at any time — all synced data is immediately purged.
+                      </li>
+                    </ul>
+                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-primary/20">
+                      <Label htmlFor="confirm-ro" className="text-[12px] text-foreground cursor-pointer">
+                        I confirm this is the read-only investor password
+                      </Label>
+                      <Switch
+                        id="confirm-ro"
+                        checked={confirmedReadOnly}
+                        onCheckedChange={setConfirmedReadOnly}
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={handleConnect}
+                    disabled={submitting || syncing}
+                    className="w-full rounded-xl h-11 bg-primary text-primary-foreground hover:bg-primary font-bold gap-2 shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.7)]"
+                  >
+                    {submitting || syncing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Connecting…
+                      </>
+                    ) : (
+                      <>
+                        <Activity className="h-4 w-4" /> Connect & Sync Now
+                      </>
+                    )}
+                  </Button>
+
+                  <a
+                    href="https://app.metaapi.cloud/accounts"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mx-auto flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <span>⚡</span>
+                    Powered by MetaApi.cloud
+                    <span className="text-muted-foreground">— real-time sync every 30s</span>
+                  </a>
+                </motion.div>
               )}
-            </Button>
+            </TabsContent>
 
-            <a
-              href="https://app.metaapi.cloud/accounts"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mx-auto flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
-            >
-              <span>⚡</span>
-              Powered by MetaApi.cloud
-              <span className="text-muted-foreground">— real-time sync every 30s</span>
-            </a>
-          </motion.div>
+            <TabsContent value="webhook" className="mt-6">
+              <EAWebhookSetup />
+            </TabsContent>
+          </Tabs>
         )}
 
         {loading && (
