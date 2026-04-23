@@ -6,8 +6,8 @@ import { useMTAccount } from "@/hooks/useMTAccount";
 
 /**
  * Hedge-fund style KPI strip — 4 dense KPI tiles with embedded sparklines.
- * When an MT account is connected, P&L Today / Volume / Win Streak come from
- * live snapshots + open positions. Otherwise we show illustrative demo data.
+ * 100% live: all values come from MT snapshots + open positions. When no
+ * MT account is connected the cards show empty/zeroed state, never mock data.
  */
 
 interface KPI {
@@ -37,11 +37,11 @@ const buildSpark = (s: number, trend: number) => {
   });
 };
 
-const MOCK_KPI: KPI[] = [
-  { label: "P&L Today", value: "+$2,418.50", delta: "+4.82%", deltaDir: "up", icon: DollarSign, spark: [], accent: "bull" },
-  { label: "Win Rate (30d)", value: "74.2%", delta: "+2.1%", deltaDir: "up", icon: Target, spark: [], accent: "gold" },
-  { label: "Volume Traded", value: "12.4 lots", delta: "+18%", deltaDir: "up", icon: Activity, spark: [], accent: "bull" },
-  { label: "Win Streak", value: "7", delta: "Personal best", deltaDir: "up", icon: Flame, spark: [], accent: "gold" },
+const EMPTY_KPI: KPI[] = [
+  { label: "P&L Today", value: "—", delta: "Connect MT", deltaDir: "flat", icon: DollarSign, spark: [], accent: "gold" },
+  { label: "Win Rate", value: "—", delta: "No data", deltaDir: "flat", icon: Target, spark: [], accent: "gold" },
+  { label: "Volume Open", value: "—", delta: "No positions", deltaDir: "flat", icon: Activity, spark: [], accent: "gold" },
+  { label: "Win Streak", value: "—", delta: "—", deltaDir: "flat", icon: Flame, spark: [], accent: "gold" },
 ];
 
 const accentColor: Record<KPI["accent"], string> = {
@@ -126,11 +126,13 @@ const KpiStrip = () => {
 
   const items = useMemo(
     () =>
-      (liveKpis ?? MOCK_KPI).map((k, i) => ({
+      (liveKpis ?? EMPTY_KPI).map((k, i) => ({
         ...k,
-        spark: buildSpark(11 + i * 7, k.deltaDir === "up" ? 0.4 : k.deltaDir === "down" ? -0.4 : 0).map(
-          (p) => p.v,
-        ),
+        spark: liveKpis
+          ? buildSpark(11 + i * 7, k.deltaDir === "up" ? 0.4 : k.deltaDir === "down" ? -0.4 : 0).map(
+              (p) => p.v,
+            )
+          : [],
       })),
     [liveKpis],
   );

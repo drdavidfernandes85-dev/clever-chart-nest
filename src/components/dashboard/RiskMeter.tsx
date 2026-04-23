@@ -10,35 +10,27 @@ interface Exposure {
   riskUsd: number;
 }
 
-const MOCK_EQUITY = 48211.27;
-const MOCK_RISK: Exposure[] = [
-  { symbol: "EUR/USD", riskPct: 0.6, riskUsd: 289.27 },
-  { symbol: "XAU/USD", riskPct: 0.8, riskUsd: 385.69 },
-  { symbol: "GBP/JPY", riskPct: 0.4, riskUsd: 192.85 },
-];
-
 const RiskMeter = () => {
   const { account, positions } = useMTAccount();
   const isConnected = !!account && account.status === "connected";
 
-  const ACCOUNT_EQUITY = isConnected && account?.equity ? Number(account.equity) : MOCK_EQUITY;
+  const ACCOUNT_EQUITY = isConnected && account?.equity ? Number(account.equity) : 0;
 
-  // Real risk derived from MT positions (distance from open to SL × volume × pip value)
+  // Real risk derived from MT positions only (distance from open to SL × volume × pip value).
+  // No mocks — empty array when no positions are open.
   const POSITIONS_RISK: Exposure[] = useMemo(() => {
-    if (isConnected && positions.length > 0) {
-      return positions.map((p) => {
-        const open = Number(p.open_price);
-        const sl = p.stop_loss != null ? Number(p.stop_loss) : open * (p.side === "buy" ? 0.99 : 1.01);
-        const distance = Math.abs(open - sl);
-        const pipMult = p.symbol.includes("JPY") ? 100 : p.symbol.includes("XAU") ? 1 : 10000;
-        const pips = distance * pipMult;
-        const pipValue = p.symbol.includes("XAU") ? 100 : 10;
-        const riskUsd = pips * pipValue * Number(p.volume);
-        const riskPct = ACCOUNT_EQUITY > 0 ? (riskUsd / ACCOUNT_EQUITY) * 100 : 0;
-        return { symbol: p.symbol, riskUsd, riskPct };
-      });
-    }
-    return MOCK_RISK;
+    if (!isConnected || positions.length === 0) return [];
+    return positions.map((p) => {
+      const open = Number(p.open_price);
+      const sl = p.stop_loss != null ? Number(p.stop_loss) : open * (p.side === "buy" ? 0.99 : 1.01);
+      const distance = Math.abs(open - sl);
+      const pipMult = p.symbol.includes("JPY") ? 100 : p.symbol.includes("XAU") ? 1 : 10000;
+      const pips = distance * pipMult;
+      const pipValue = p.symbol.includes("XAU") ? 100 : 10;
+      const riskUsd = pips * pipValue * Number(p.volume);
+      const riskPct = ACCOUNT_EQUITY > 0 ? (riskUsd / ACCOUNT_EQUITY) * 100 : 0;
+      return { symbol: p.symbol, riskUsd, riskPct };
+    });
   }, [isConnected, positions, ACCOUNT_EQUITY]);
 
   const total = useMemo(
