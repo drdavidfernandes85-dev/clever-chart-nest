@@ -28,6 +28,8 @@ const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
 const Admin = lazy(() => import("./pages/Admin.tsx"));
 const Analytics = lazy(() => import("./pages/Analytics.tsx"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile.tsx"));
+const News = lazy(() => import("./pages/News.tsx"));
+const CalendarPage = lazy(() => import("./pages/Calendar.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
@@ -63,6 +65,8 @@ const App = () => (
                   <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
                   <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                  <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
+                  <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                   <Route path="/u/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
