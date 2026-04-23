@@ -69,6 +69,34 @@ const METAAPI_RETRY_DELAY_MS = 2_000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function makeTransactionId(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function logTokenMetadata(token: string, source: "user" | "shared") {
+  console.log("MetaApi token metadata", {
+    source,
+    length: token.length,
+    prefix: token.slice(0, 4),
+    suffix: token.slice(-4),
+  });
+}
+
+function parseMetaApiError(raw: string): {
+  id?: number;
+  error?: string;
+  message?: string;
+  details?: string;
+} {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return { message: raw };
+  }
+}
+
 function getMetaApiHost(url: string): string | null {
   try {
     const hostname = new URL(url).hostname;
@@ -112,25 +140,37 @@ async function metaapi(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort("MetaApi timeout"), init.timeoutMs ?? METAAPI_TIMEOUT_MS);
     const client = createMetaApiClient(url);
+    const method = init.method ?? "GET";
+    const hasBody = method !== "GET" && method !== "HEAD";
+    const baseHeaders = new Headers(init.headers ?? {});
+
+    if (!baseHeaders.has("Content-Type") && hasBody) {
+      baseHeaders.set("Content-Type", "application/json");
+    }
+    if (!baseHeaders.has("Accept")) {
+      baseHeaders.set("Accept", "application/json");
+    }
+    if (!baseHeaders.has("auth-token")) {
+      baseHeaders.set("auth-token", token);
+    }
+    if (hasBody && !baseHeaders.has("transaction-id")) {
+      baseHeaders.set("transaction-id", makeTransactionId());
+    }
+    baseHeaders.set("User-Agent", "infinox-elite-trading/1.0");
 
     try {
       const response = await fetch(url, {
         ...init,
+        method,
         signal: controller.signal,
         client,
-        headers: {
-          "auth-token": token,
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "User-Agent": "infinox-elite-trading/1.0",
-          ...(init.headers ?? {}),
-        },
+        headers: baseHeaders,
       });
 
       if (!response.ok) {
         console.error("MetaApi HTTP error", {
           url,
-          method: init.method ?? "GET",
+          method,
           status: response.status,
           statusText: response.statusText,
           attempt,
@@ -143,7 +183,7 @@ async function metaapi(
       const message = String(e instanceof Error ? e.message : e);
       console.error("MetaApi request failed", {
         url,
-        method: init.method ?? "GET",
+        method,
         attempt,
         error: message,
       });
