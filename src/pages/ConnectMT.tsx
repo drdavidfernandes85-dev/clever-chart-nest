@@ -454,6 +454,35 @@ const ConnectMT = () => {
               </p>
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <KeyRound className="inline h-3 w-3" /> MetaApi.cloud Token
+                <span className="ml-1 rounded-full bg-muted/60 px-1.5 py-px text-[9px] font-bold text-muted-foreground">
+                  OPTIONAL
+                </span>
+              </Label>
+              <Input
+                type="password"
+                value={metaapiToken}
+                onChange={(e) => setMetaapiToken(e.target.value)}
+                placeholder="Paste your personal MetaApi token (or leave empty)"
+                autoComplete="off"
+                className="bg-card border-border/50 font-mono text-xs"
+              />
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Bring your own MetaApi.cloud account for higher limits and full control.
+                If empty, we'll use the platform's shared MetaApi connection.{" "}
+                <a
+                  href="https://app.metaapi.cloud/token"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Get a free token →
+                </a>
+              </p>
+            </div>
+
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-primary" />
