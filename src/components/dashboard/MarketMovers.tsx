@@ -1,5 +1,6 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, Loader2 } from "lucide-react";
 
 interface Mover {
   symbol: string;
@@ -8,25 +9,17 @@ interface Mover {
   volume?: string;
 }
 
-const TOP_GAINERS: Mover[] = [
-  { symbol: "XAU/USD", price: 2418.3, changePct: 1.84 },
-  { symbol: "GBP/USD", price: 1.2784, changePct: 0.92 },
-  { symbol: "EUR/USD", price: 1.0867, changePct: 0.41 },
-  { symbol: "AUD/USD", price: 0.6604, changePct: 0.28 },
-];
-
-const TOP_LOSERS: Mover[] = [
-  { symbol: "USD/JPY", price: 154.61, changePct: -0.62 },
-  { symbol: "USD/CHF", price: 0.8842, changePct: -0.48 },
-  { symbol: "NZD/USD", price: 0.6021, changePct: -0.31 },
-  { symbol: "USD/CAD", price: 1.3712, changePct: -0.18 },
-];
-
-const MOST_ACTIVE: Mover[] = [
-  { symbol: "EUR/USD", price: 1.0867, changePct: 0.41, volume: "2.4B" },
-  { symbol: "USD/JPY", price: 154.61, changePct: -0.62, volume: "1.9B" },
-  { symbol: "GBP/JPY", price: 191.86, changePct: 0.31, volume: "1.2B" },
-  { symbol: "XAU/USD", price: 2418.3, changePct: 1.84, volume: "0.9B" },
+// Pairs we monitor for movers — daily-volume rank (BIS Triennial) for "Most Active"
+const PAIRS: Array<{ symbol: string; base: string; quote: string; volume: string }> = [
+  { symbol: "EUR/USD", base: "EUR", quote: "USD", volume: "6.6T" },
+  { symbol: "USD/JPY", base: "USD", quote: "JPY", volume: "1.7T" },
+  { symbol: "GBP/USD", base: "GBP", quote: "USD", volume: "1.3T" },
+  { symbol: "AUD/USD", base: "AUD", quote: "USD", volume: "0.9T" },
+  { symbol: "USD/CAD", base: "USD", quote: "CAD", volume: "0.7T" },
+  { symbol: "USD/CHF", base: "USD", quote: "CHF", volume: "0.6T" },
+  { symbol: "NZD/USD", base: "NZD", quote: "USD", volume: "0.4T" },
+  { symbol: "XAU/USD", base: "XAU", quote: "USD", volume: "0.3T" },
+  { symbol: "GBP/JPY", base: "GBP", quote: "JPY", volume: "0.3T" },
 ];
 
 const fmt = (n: number) => (n > 100 ? n.toFixed(2) : n.toFixed(4));
