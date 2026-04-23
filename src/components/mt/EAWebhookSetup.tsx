@@ -129,16 +129,9 @@ export const EAWebhookSetup = () => {
     }
   };
 
-  const revoke = async () => {
-    if (!token) return;
-    if (!confirm("Revoke this webhook token? Your EA will stop syncing until you generate a new one.")) return;
-    await (supabase as any)
-      .from("mt_webhook_tokens")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("id", token.id);
-    setToken(null);
-    setRawToken(null);
-    toast.success("Token revoked");
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied`);
   };
 
   const copy = (text: string, label: string) => {
