@@ -164,6 +164,34 @@ async function metaapi(
 }
 
 
+// Map raw MetaApi provisioning errors to a clear, user-facing message.
+// Especially important for E_AUTH which is a common Infinox edge case
+// (server name capitalization, "Live" vs "Demo", investor vs master pwd).
+function friendlyProvisionError(status: number, raw: string, account: AccountRow): string {
+  let parsed: any = null;
+  try { parsed = JSON.parse(raw); } catch { /* keep raw */ }
+
+  const details = parsed?.details ?? "";
+  const message = parsed?.message ?? raw;
+
+  if (details === "E_AUTH" || /failed to authenticate/i.test(message)) {
+    return [
+      `MetaApi could not log in to MT5 #${account.login} on "${account.server_name}".`,
+      `This usually means one of:`,
+      `• Wrong server name — for Infinox Live use "InfinoxLimited-MT5Live" exactly.`,
+      `• You entered the master password instead of the investor (read-only) password.`,
+      `• The account is disabled or password was changed in the broker portal.`,
+      `Please double-check on MT5 desktop, then reconnect.`,
+    ].join(" ");
+  }
+
+  if (status === 429) {
+    return "MetaApi is rate-limiting this account due to repeated auth errors. Wait a few minutes before retrying.";
+  }
+
+  return `Provision failed (${status}): ${message}`;
+}
+
 async function provisionAccount(
   account: AccountRow,
   password: string,
@@ -182,23 +210,60 @@ async function provisionAccount(
     keywords: [account.broker_name],
     metastatsApiEnabled: false,
   };
+
+  console.log("MetaApi provision request", {
+    login: account.login,
+    server: account.server_name,
+    platform: account.platform,
+    region,
+    passwordLength: password.length,
+  });
+
   const res = await metaapi(
     `${provisioningUrl(region)}/users/current/accounts`,
     token,
     { method: "POST", body: JSON.stringify(body) },
   );
+
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Provision failed (${res.status}): ${txt}`);
+    console.error("MetaApi provision response", {
+      status: res.status,
+      statusText: res.statusText,
+      body: txt.slice(0, 1000),
+    });
+    throw new Error(friendlyProvisionError(res.status, txt, account));
   }
+
   const json = await res.json();
   const metaapiId = json.id as string;
-  // Trigger deploy explicitly (idempotent)
-  await metaapi(
-    `${provisioningUrl(region)}/users/current/accounts/${metaapiId}/deploy`,
-    token,
-    { method: "POST" },
-  ).catch(() => {});
+  console.log("MetaApi account created", { metaapiId, region });
+
+  // Give MetaApi 7s to settle the new account record before deploying.
+  // This avoids transient E_AUTH on the very first deploy attempt.
+  await sleep(7_000);
+
+  // Trigger deploy explicitly (idempotent). Log the result so we can
+  // diagnose broker auth issues that surface only at deploy time.
+  try {
+    const deployRes = await metaapi(
+      `${provisioningUrl(region)}/users/current/accounts/${metaapiId}/deploy`,
+      token,
+      { method: "POST" },
+    );
+    if (!deployRes.ok) {
+      const deployTxt = await deployRes.text();
+      console.error("MetaApi deploy response", {
+        status: deployRes.status,
+        body: deployTxt.slice(0, 500),
+      });
+    } else {
+      console.log("MetaApi deploy triggered", { metaapiId });
+    }
+  } catch (e) {
+    console.error("MetaApi deploy error (non-fatal)", String(e));
+  }
+
   return { metaapiId, region };
 }
 
