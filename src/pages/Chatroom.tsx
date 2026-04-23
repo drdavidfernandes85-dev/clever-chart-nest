@@ -311,7 +311,19 @@ const Chatroom = () => {
         <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 bg-background">
           <div className="space-y-0">
             {messages.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-8">No messages yet. Be the first to say something!</p>
+              <>
+                <div className="mb-4 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
+                  <div className="flex h-2 w-2 shrink-0">
+                    <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-primary opacity-70" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                  </div>
+                  <p className="text-xs text-foreground/80">
+                    <span className="font-semibold text-primary">Welcome to the Elite Live Trading Room.</span>{" "}
+                    Below is a preview of recent community activity. Drop your first message to join in.
+                  </p>
+                </div>
+                <SampleMessages />
+              </>
             )}
             {messageItems.map((item: any) => {
               if (item.type === "date") {
@@ -352,6 +364,10 @@ const Chatroom = () => {
               New messages
             </button>
           )}
+        </div>
+
+        <div className="px-4 pt-1">
+          <TypingIndicator />
         </div>
 
         <ChatMessageInput
