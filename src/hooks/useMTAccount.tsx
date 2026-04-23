@@ -135,7 +135,11 @@ export function useMTAccount() {
         await refresh();
         return { data };
       } catch (err: any) {
-        return { error: err?.message ?? String(err) };
+        const message = err?.message ?? String(err);
+        if (/account not found/i.test(message)) {
+          await refresh();
+        }
+        return { error: message };
       } finally {
         setSyncing(false);
       }
