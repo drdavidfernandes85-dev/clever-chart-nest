@@ -459,12 +459,10 @@ Deno.serve(async (req) => {
 
     const acc = account as AccountRow;
     const password = decodePassword(acc.investor_password_encrypted);
-    // Resolve which MetaApi token to use: per-account first, fall back to shared.
     const userToken = decodePassword(acc.metaapi_token_encrypted);
+    const tokenSource = userToken && userToken.trim() ? "user" : "shared";
     let token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
-    // Sanity: a real MetaApi token is a JWT (~500–1500 chars). If the stored
-    // value is huge, the user pasted something wrong (e.g. JSON dump) — fall
-    // back to the shared platform token rather than send a 34KB header.
+
     if (token && token.length > 4000) {
       console.error("MetaApi token rejected: oversized", { length: token.length });
       token = FALLBACK_METAAPI_TOKEN;
@@ -483,25 +481,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ---- 1. Provision if needed ----
+    logTokenMetadata(token, tokenSource);
+
+    if (!password) {
+      await admin
+        .from("user_mt_accounts")
+        .update({
+          status: "error",
+          status_message: "Missing investor password",
+          last_error: "Missing investor password",
+        })
+        .eq("id", accountId);
+      return new Response(
+        JSON.stringify({ error: "Missing investor password" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     let metaapiId = acc.metaapi_account_id;
     let region = acc.region || "new-york";
 
+    // ---- 1. Provision if needed ----
     if (!metaapiId) {
-      if (!password) {
-        await admin
-          .from("user_mt_accounts")
-          .update({
-            status: "error",
-            status_message: "Missing investor password",
-            last_error: "Missing investor password",
-          })
-          .eq("id", accountId);
-        return new Response(
-          JSON.stringify({ error: "Missing investor password" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
       try {
         const prov = await provisionAccount(acc, password, token);
         metaapiId = prov.metaapiId;
@@ -533,13 +534,69 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---- 2. Check deploy state ----
-    const state = await getAccountState(metaapiId, region, token);
-    const deployedState = state?.state ?? "UNKNOWN";
-    const connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
+    // ---- 2. Check / recover deploy state ----
+    let state = await getAccountState(metaapiId, region, token);
+    let deployedState = state?.state ?? "UNKNOWN";
+    let connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
 
-    const isReady =
-      deployedState === "DEPLOYED" && connectionStatus === "CONNECTED";
+    if (metaapiId && deployedState === "DEPLOYED" && connectionStatus !== "CONNECTED") {
+      console.log("MetaApi account not connected, attempting redeploy", {
+        metaapiId,
+        region,
+        deployedState,
+        connectionStatus,
+      });
+      try {
+        await redeployAccount(metaapiId, region, token);
+        await sleep(7_000);
+        state = await getAccountState(metaapiId, region, token);
+        deployedState = state?.state ?? "UNKNOWN";
+        connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
+      } catch (error) {
+        console.error("MetaApi redeploy recovery failed", String(error));
+      }
+    }
+
+    if (metaapiId && deployedState === "DEPLOYED" && connectionStatus === "DISCONNECTED") {
+      console.log("MetaApi account still disconnected after redeploy, reprovisioning", {
+        metaapiId,
+        region,
+      });
+      try {
+        const reprovisioned = await reprovisionAccount(acc, password, token, metaapiId, region);
+        metaapiId = reprovisioned.metaapiId;
+        region = reprovisioned.region;
+        await admin
+          .from("user_mt_accounts")
+          .update({
+            metaapi_account_id: metaapiId,
+            region,
+            status: "syncing",
+            status_message: "Refreshing MT terminal connection…",
+            last_error: null,
+          })
+          .eq("id", accountId);
+        state = await getAccountState(metaapiId, region, token);
+        deployedState = state?.state ?? "UNKNOWN";
+        connectionStatus = state?.connectionStatus ?? "DISCONNECTED";
+      } catch (error) {
+        const msg = String(error instanceof Error ? error.message : error);
+        await admin
+          .from("user_mt_accounts")
+          .update({
+            status: "error",
+            status_message: "Broker authentication failed",
+            last_error: msg,
+          })
+          .eq("id", accountId);
+        return new Response(JSON.stringify({ error: msg }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    const isReady = deployedState === "DEPLOYED" && connectionStatus === "CONNECTED";
 
     if (!isReady) {
       await admin
@@ -567,9 +624,8 @@ Deno.serve(async (req) => {
       info = await fetchAccountInformation(metaapiId, region, token);
     } catch (e) {
       const msg = String(e instanceof Error ? e.message : e);
-      // Likely auth error — invalid investor password
       const friendly = /401|403|invalid|password|unauthor/i.test(msg)
-        ? "Invalid investor password — please reconnect with the correct one."
+        ? "MetaApi connected to the broker but could not fetch account data. Reconnect the account to refresh the saved investor password or verify the token permissions."
         : msg;
       await admin
         .from("user_mt_accounts")
