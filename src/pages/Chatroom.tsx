@@ -51,7 +51,7 @@ const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
-  const [activeChannelName, setActiveChannelName] = useState("trades_room");
+  const [activeChannelName, setActiveChannelName] = useState("general");
   const [messages, setMessages] = useState<Message[]>([]);
   const [userRoles, setUserRoles] = useState<UserRoleMap>({});
   const [showScrollBtn, setShowScrollBtn] = useState(false);
@@ -80,7 +80,10 @@ const Chatroom = () => {
       const { data } = await supabase.from("channels").select("*").order("created_at");
       if (data) {
         setChannels(data);
-        const first = data.find((c) => c.name === "trades_room") || data[0];
+        const first =
+          data.find((c) => c.name === "general") ||
+          data.find((c) => c.name === "trades_room") ||
+          data[0];
         if (first) { setActiveChannelId(first.id); setActiveChannelName(first.name); }
       }
     };
@@ -310,20 +313,25 @@ const Chatroom = () => {
 
         <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 bg-background">
           <div className="space-y-0">
-            {messages.length === 0 && (
+            {messages.length === 0 && activeChannelName === "general" && (
               <>
                 <div className="mb-4 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
-                  <div className="flex h-2 w-2 shrink-0">
+                  <div className="relative flex h-2 w-2 shrink-0">
                     <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-primary opacity-70" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                   </div>
                   <p className="text-xs text-foreground/80">
-                    <span className="font-semibold text-primary">Welcome to the Elite Live Trading Room.</span>{" "}
+                    <span className="font-semibold text-primary">Welcome to #general.</span>{" "}
                     Below is a preview of recent community activity. Drop your first message to join in.
                   </p>
                 </div>
                 <SampleMessages />
               </>
+            )}
+            {messages.length === 0 && activeChannelName !== "general" && (
+              <p className="text-center text-sm text-muted-foreground py-12">
+                No messages in #{activeChannelName.replace(/_/g, " ")} yet. Be the first to post.
+              </p>
             )}
             {messageItems.map((item: any) => {
               if (item.type === "date") {
