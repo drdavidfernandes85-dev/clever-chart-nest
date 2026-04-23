@@ -159,14 +159,7 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    if (!METAAPI_TOKEN) {
-      return new Response(
-        JSON.stringify({
-          error: "MetaApi not configured. Add METAAPI_TOKEN secret.",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // Token is resolved per-account below; if neither per-account nor global is set we fail there.
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
