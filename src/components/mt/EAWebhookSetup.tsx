@@ -74,6 +74,8 @@ export const EAWebhookSetup = () => {
   // Raw token is only available in-memory immediately after generation.
   const [rawToken, setRawToken] = useState<string | null>(null);
 
+  const storageKey = user ? `mt_webhook_raw_token_${user.id}` : null;
+
   const refresh = async () => {
     if (!user) return;
     setLoading(true);
@@ -86,6 +88,10 @@ export const EAWebhookSetup = () => {
       .limit(1)
       .maybeSingle();
     setToken(data ?? null);
+    if (storageKey) {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) setRawToken(stored);
+    }
     setLoading(false);
   };
 
