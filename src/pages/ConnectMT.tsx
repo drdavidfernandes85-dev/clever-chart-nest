@@ -498,6 +498,10 @@ const ConnectMT = () => {
                 </>
               )}
             </Button>
+
+            <p className="text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground pt-1">
+              <span className="text-primary">⚡</span> Powered by MetaApi.cloud — real-time sync every 30 seconds
+            </p>
           </motion.div>
         )}
 
