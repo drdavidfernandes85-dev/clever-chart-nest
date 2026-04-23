@@ -235,24 +235,26 @@ export const EAWebhookSetup = () => {
           </h3>
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : token ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-              <Lock className="h-3 w-3" />
-              Locked — permanent
-            </span>
-          ) : (
+          ) : token && rawToken ? (
             <Button
               size="sm"
-              onClick={generate}
+              variant="outline"
+              onClick={regenerate}
               disabled={creating}
               className="rounded-lg gap-1.5"
             >
-              {creating ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <KeyRound className="h-3.5 w-3.5" />
-              )}
-              Generate token
+              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+              Regenerate
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={token ? regenerate : generate}
+              disabled={creating}
+              className="rounded-lg gap-1.5"
+            >
+              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+              {token ? "Regenerate token" : "Generate token"}
             </Button>
           )}
         </div>
