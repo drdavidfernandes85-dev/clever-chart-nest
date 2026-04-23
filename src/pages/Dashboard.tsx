@@ -115,7 +115,7 @@ const Dashboard = () => {
                 </span>
               )}
 
-              {/* Launch Advanced Trading Terminal — prominent header CTA */}
+              {/* Launch Advanced Trading Terminal — secondary header CTA */}
               <Button
                 asChild
                 size="sm"
@@ -125,17 +125,16 @@ const Dashboard = () => {
                 <Link to="/live-chart" className="flex items-center gap-1.5">
                   <BarChart3 className="h-3.5 w-3.5" />
                   Terminal
-                  <ArrowUpRight className="h-3 w-3" />
                 </Link>
               </Button>
 
-              {/* Trade button — desktop */}
+              {/* TRADE — primary header CTA, prominent */}
               <Button
                 onClick={() => openTrade()}
                 size="sm"
-                className="hidden sm:inline-flex h-9 px-3 bg-primary text-primary-foreground hover:bg-primary font-bold text-xs uppercase tracking-wider rounded-lg shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] hover:shadow-[0_12px_35px_-10px_hsl(48_100%_51%/0.85)] transition-all"
+                className="hidden sm:inline-flex h-10 px-4 bg-primary text-primary-foreground hover:bg-primary font-bold text-xs uppercase tracking-[0.18em] rounded-lg shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.7)] hover:shadow-[0_14px_40px_-10px_hsl(48_100%_51%/0.9)] hover:-translate-y-px transition-all"
               >
-                <Zap className="h-3.5 w-3.5 mr-1" />
+                <Zap className="h-4 w-4 mr-1.5" />
                 Trade
               </Button>
 
@@ -152,16 +151,6 @@ const Dashboard = () => {
                 Mercados
                 {tickerOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="hidden md:inline-flex text-muted-foreground hover:text-primary"
-              >
-                <Link to="/live-chart" aria-label="Live chart">
-                  <BarChart3 className="h-4 w-4" />
-                </Link>
-              </Button>
               <Button
                 variant="ghost"
                 size="sm"

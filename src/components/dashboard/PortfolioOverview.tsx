@@ -11,12 +11,14 @@ import {
   Loader2,
   CheckCircle2,
   Trash2,
+  Zap,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 interface Position {
   symbol: string;
@@ -43,6 +45,7 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
 
 const PortfolioOverview = () => {
   const { account, positions: mtPositions, snapshots, syncing, sync, refresh } = useMTAccount();
+  const { openTrade } = useQuickTrade();
   const isConnected = !!account && account.status === "connected";
 
   const handleDisconnect = async () => {
@@ -387,15 +390,24 @@ const PortfolioOverview = () => {
                   ? "Your MT account is live. New trades will stream here in real time."
                   : "Connect your MetaTrader account to stream positions in real time."}
               </p>
-              {!isConnected && (
-                <Link
-                  to="/connect-mt"
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] hover:bg-primary/90 transition-colors"
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={() => openTrade()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] hover:bg-primary/90 transition-colors"
                 >
-                  <Plug className="h-3.5 w-3.5" />
-                  Connect MT4/5
-                </Link>
-              )}
+                  <Zap className="h-3.5 w-3.5" />
+                  Open Quick Trade
+                </button>
+                {!isConnected && (
+                  <Link
+                    to="/connect-mt"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Plug className="h-3.5 w-3.5" />
+                    Connect MT4/5
+                  </Link>
+                )}
+              </div>
             </div>
           )}
         </div>
