@@ -16,68 +16,67 @@ const corsHeaders = {
 
 const FALLBACK_METAAPI_TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
 
-// MetaApi global endpoints — use the canonical `agiliumtrade.agiliumtrade.ai`
-// hostnames which serve a publicly-trusted Let's Encrypt cert chain.
-// The per-region `*.agiliumtrade.ai` hosts use a private CA that Deno's
-// bundled root store does not trust ("invalid peer certificate: Unknown issuer").
-// MetaApi automatically routes to the correct region based on the account.
+const METAAPI_PROVISIONING_HOST = "mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai";
 const provisioningUrl = (_region: string) =>
-  `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai`;
+  `https://${METAAPI_PROVISIONING_HOST}`;
 const clientUrl = (region: string) =>
   `https://mt-client-api-v1.${region}.agiliumtrade.agiliumtrade.ai`;
 
-interface AccountRow {
-  id: string;
-  user_id: string;
-  platform: "mt4" | "mt5";
-  account_type: "live" | "demo";
-  broker_name: string;
-  server_name: string;
-  login: string;
-  metaapi_account_id: string | null;
-  region: string | null;
-  investor_password_encrypted: Uint8Array | null;
-  metaapi_token_encrypted: Uint8Array | null;
-}
+const METAAPI_TIMEOUT_MS = 30_000;
+const METAAPI_RETRIES = 3;
+const METAAPI_RETRY_DELAY_MS = 2_000;
 
-// Decode the password we stored as `enc:<plaintext>` base64 wrapper
-// (kept compatible with the previous mock). When we move to true Vault encryption
-// we just swap this function out.
-function decodePassword(raw: Uint8Array | string | null): string | null {
-  if (!raw) return null;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function getMetaApiHost(url: string): string | null {
   try {
-    let str: string;
-    if (typeof raw === "string") {
-      str = raw;
-    } else {
-      str = new TextDecoder().decode(raw);
+    const hostname = new URL(url).hostname;
+    if (hostname === METAAPI_PROVISIONING_HOST) return hostname;
+    if (/^mt-client-api-v1\.[a-z0-9-]+\.agiliumtrade\.agiliumtrade\.ai$/i.test(hostname)) {
+      return hostname;
     }
-    // pgsodium / Vault would return bytes; for now we expect base64('enc:...')
-    try {
-      const decoded = atob(str);
-      if (decoded.startsWith("enc:")) return decoded.slice(4);
-      return decoded;
-    } catch {
-      return str;
+    if (/^mt-(provisioning|client)-api-v1\.[a-z0-9-]+\.agiliumtrade\.ai$/i.test(hostname)) {
+      return hostname;
     }
+    return null;
   } catch {
     return null;
   }
 }
 
+function createMetaApiClient(url: string): Deno.HttpClient | undefined {
+  const host = getMetaApiHost(url);
+  if (!host) return undefined;
+
+  // Temporary workaround for MetaApi TLS chain issues.
+  // Scope certificate bypass to MetaApi hosts only.
+  return Deno.createHttpClient({
+    unsafelyIgnoreCertificateErrors: [host],
+    http2: false,
+  });
+}
+
+interface MetaApiRequestOptions extends RequestInit {
+  timeoutMs?: number;
+}
+
 async function metaapi(
   url: string,
   token: string,
-  init: RequestInit = {},
+  init: MetaApiRequestOptions = {},
 ): Promise<Response> {
-  // MetaApi endpoints occasionally drop the first connection attempt from
-  // Deno's fetch (broken pipe / stream reset during HTTP/2 negotiation).
-  // Retry transient network errors with exponential backoff.
   let lastErr: unknown;
-  for (let attempt = 0; attempt < 4; attempt++) {
+
+  for (let attempt = 1; attempt <= METAAPI_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort("MetaApi timeout"), init.timeoutMs ?? METAAPI_TIMEOUT_MS);
+    const client = createMetaApiClient(url);
+
     try {
-      return await fetch(url, {
+      const response = await fetch(url, {
         ...init,
+        signal: controller.signal,
+        client,
         headers: {
           "auth-token": token,
           "Content-Type": "application/json",
@@ -86,16 +85,40 @@ async function metaapi(
           ...(init.headers ?? {}),
         },
       });
+
+      if (!response.ok) {
+        console.error("MetaApi HTTP error", {
+          url,
+          method: init.method ?? "GET",
+          status: response.status,
+          statusText: response.statusText,
+          attempt,
+        });
+      }
+
+      return response;
     } catch (e) {
       lastErr = e;
-      const msg = String(e instanceof Error ? e.message : e);
-      // Only retry on transient network errors
-      if (!/broken pipe|connection|reset|stream closed|SendRequest|EOF|timed? out/i.test(msg)) {
+      const message = String(e instanceof Error ? e.message : e);
+      console.error("MetaApi request failed", {
+        url,
+        method: init.method ?? "GET",
+        attempt,
+        error: message,
+      });
+
+      const retryable = /broken pipe|connection|reset|stream closed|SendRequest|EOF|timed? out|aborted/i.test(message);
+      if (!retryable || attempt === METAAPI_RETRIES) {
         throw e;
       }
-      await new Promise((r) => setTimeout(r, 400 * Math.pow(2, attempt)));
+
+      await sleep(METAAPI_RETRY_DELAY_MS);
+    } finally {
+      clearTimeout(timeoutId);
+      client?.close();
     }
   }
+
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
