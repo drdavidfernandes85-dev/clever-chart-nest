@@ -134,11 +134,6 @@ export const EAWebhookSetup = () => {
     toast.success(`${label} copied`);
   };
 
-  const copy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied`);
-  };
-
   const onDownload = async (platform: "mt4" | "mt5") => {
     if (!rawToken) {
       toast.error("Generate a fresh token first — we can't reveal your old one for security.");
