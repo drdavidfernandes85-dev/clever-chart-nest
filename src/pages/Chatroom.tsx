@@ -8,6 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import ChatMessage from "@/components/chatroom/ChatMessage";
 import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
 import AICopilot from "@/components/ai/AICopilot";
+import SampleMessages from "@/components/chatroom/SampleMessages";
+import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 interface Channel {
