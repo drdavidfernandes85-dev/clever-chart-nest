@@ -375,8 +375,27 @@ const PortfolioOverview = () => {
             );
           })}
           {positions.length === 0 && (
-            <div className="px-4 py-8 text-center text-xs text-muted-foreground font-mono">
-              No open positions
+            <div className="px-6 py-10 sm:py-14 flex flex-col items-center justify-center text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20 mb-3">
+                <Briefcase className="h-5 w-5 text-primary" />
+              </div>
+              <p className="font-heading text-sm font-semibold text-foreground">
+                No open positions
+              </p>
+              <p className="mt-1 max-w-sm text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                {isConnected
+                  ? "Your MT account is live. New trades will stream here in real time."
+                  : "Connect your MetaTrader account to stream positions in real time."}
+              </p>
+              {!isConnected && (
+                <Link
+                  to="/connect-mt"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] hover:bg-primary/90 transition-colors"
+                >
+                  <Plug className="h-3.5 w-3.5" />
+                  Connect MT4/5
+                </Link>
+              )}
             </div>
           )}
         </div>
