@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 interface Props {
   symbol?: string;
@@ -15,11 +15,49 @@ interface Props {
   className?: string;
 }
 
-/**
- * Real TradingView Advanced Chart widget — loads the official tv.js script
- * inside an isolated container. This gives us the full toolbar (timeframes,
- * indicators, drawing tools, fullscreen, compare) and live market data.
- */
+declare global {
+  interface Window {
+    TradingView?: {
+      widget: new (config: Record<string, unknown>) => unknown;
+    };
+  }
+}
+
+let tradingViewLoader: Promise<void> | null = null;
+
+const loadTradingViewScript = () => {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (window.TradingView?.widget) {
+    return Promise.resolve();
+  }
+
+  if (tradingViewLoader) {
+    return tradingViewLoader;
+  }
+
+  tradingViewLoader = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[src="https://s3.tradingview.com/tv.js"]');
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("TradingView script failed to load")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/tv.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("TradingView script failed to load"));
+    document.head.appendChild(script);
+  });
+
+  return tradingViewLoader;
+};
+
 const TradingViewAdvancedIframe = ({
   symbol = "FX:EURUSD",
   interval = "15",
@@ -28,92 +66,91 @@ const TradingViewAdvancedIframe = ({
   hideSideToolbar = false,
   withDateRanges = true,
   saveImage = true,
-  calendar = false,
-  details = false,
-  hotlist = false,
   studies = [],
   className = "",
 }: Props) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerId = useId().replace(/:/g, "");
+  const hostRef = useRef<HTMLDivElement>(null);
+  const [hasError, setHasError] = useState(false);
+
+  const widgetConfig = useMemo(
+    () => ({
+      autosize: true,
+      symbol,
+      interval,
+      timezone: "Etc/UTC",
+      theme: "dark",
+      style: "1",
+      locale: "en",
+      enable_publishing: false,
+      allow_symbol_change: allowSymbolChange,
+      hide_side_toolbar: hideSideToolbar,
+      withdateranges: withDateRanges,
+      save_image: saveImage,
+      studies,
+      container_id: containerId,
+      toolbar_bg: "#0b0b0b",
+      hide_top_toolbar: false,
+      hide_legend: false,
+      hide_volume: false,
+      backgroundColor: "#0b0b0b",
+      gridColor: "rgba(255,205,5,0.04)",
+      support_host: "https://www.tradingview.com",
+    }),
+    [
+      allowSymbolChange,
+      containerId,
+      hideSideToolbar,
+      interval,
+      saveImage,
+      studies,
+      symbol,
+      withDateRanges,
+    ]
+  );
 
   useEffect(() => {
-    const host = containerRef.current;
-    if (!host) return;
-
     let cancelled = false;
+    setHasError(false);
 
-    const init = () => {
-      if (cancelled || !host) return;
-      const rect = host.getBoundingClientRect();
-      // Wait until the container actually has size (flex layouts can be 0 on first paint)
-      if (rect.height < 50 || rect.width < 50) {
-        requestAnimationFrame(init);
-        return;
+    const init = async () => {
+      try {
+        await loadTradingViewScript();
+        if (cancelled || !window.TradingView?.widget || !hostRef.current) {
+          return;
+        }
+
+        hostRef.current.innerHTML = `<div id="${containerId}" style="height:100%;width:100%"></div>`;
+        new window.TradingView.widget(widgetConfig);
+      } catch (error) {
+        console.error("TradingView widget init failed", error);
+        if (!cancelled) {
+          setHasError(true);
+        }
       }
-
-      host.innerHTML = `
-        <div class="tradingview-widget-container__widget" style="height:calc(100% - 28px);width:100%"></div>
-        <div class="tradingview-widget-copyright" style="height:28px;line-height:28px;text-align:center;font-size:11px;color:#555">
-          <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank" style="color:#FFCD05">Track all markets on TradingView</a>
-        </div>
-      `;
-
-      const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.innerHTML = JSON.stringify({
-        autosize: true,
-        symbol,
-        interval,
-        timezone: "Etc/UTC",
-        theme: "dark",
-        style: "1",
-        locale: "en",
-        enable_publishing: false,
-        allow_symbol_change: allowSymbolChange,
-        hide_side_toolbar: hideSideToolbar,
-        withdateranges: withDateRanges,
-        save_image: saveImage,
-        calendar,
-        details,
-        hotlist,
-        studies,
-        backgroundColor: "rgba(11,11,11,1)",
-        gridColor: "rgba(255,205,5,0.04)",
-        toolbar_bg: "#0b0b0b",
-        hide_volume: false,
-        support_host: "https://www.tradingview.com",
-      });
-
-      host.appendChild(script);
     };
 
     init();
 
     return () => {
       cancelled = true;
-      if (host) host.innerHTML = "";
+      if (hostRef.current) {
+        hostRef.current.innerHTML = "";
+      }
     };
-  }, [
-    symbol,
-    interval,
-    allowSymbolChange,
-    hideSideToolbar,
-    withDateRanges,
-    saveImage,
-    calendar,
-    details,
-    hotlist,
-    JSON.stringify(studies),
-  ]);
+  }, [containerId, widgetConfig]);
 
   return (
-    <div
-      className={`tradingview-widget-container w-full ${className}`}
-      style={{ height, minHeight: 600 }}
-      ref={containerRef}
-    />
+    <div className={`relative w-full ${className}`} style={{ height, minHeight: 600 }}>
+      <div ref={hostRef} className="h-full w-full" />
+      {hasError ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/90">
+          <div className="rounded-xl border border-border/50 bg-card/90 px-4 py-3 text-sm text-muted-foreground">
+            Live chart unavailable right now.
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 };
 
