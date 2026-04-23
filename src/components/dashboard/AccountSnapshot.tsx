@@ -5,35 +5,26 @@ import { Link } from "react-router-dom";
 import { useMTAccount } from "@/hooks/useMTAccount";
 
 /**
- * Top-bar account snapshot. When an MT account is connected, shows real
- * equity + day P&L delta from the latest snapshots. Otherwise shows a
- * compact "Connect MT" call-to-action.
+ * Top-bar account snapshot. Shows real equity + day P&L delta from the
+ * latest MT snapshots. When no MT account is connected, shows a compact
+ * "Connect MT" call-to-action — no mock data.
  */
-const FALLBACK_EQUITY = 48212.3;
-const FALLBACK_DAY_PNL = 2418.5;
-
 const AccountSnapshot = () => {
   const { account, snapshots } = useMTAccount();
   const isConnected =
     !!account && account.status === "connected" && account.equity != null;
 
-  const [equity, setEquity] = useState(
-    isConnected ? Number(account!.equity) : FALLBACK_EQUITY,
+  const [equity, setEquity] = useState<number>(
+    isConnected ? Number(account!.equity) : 0,
   );
 
   useEffect(() => {
-    if (isConnected) {
-      setEquity(Number(account!.equity));
-      return;
-    }
-    const id = window.setInterval(() => {
-      setEquity((prev) => +(prev + (Math.random() - 0.5) * 6).toFixed(2));
-    }, 4000);
-    return () => window.clearInterval(id);
+    if (isConnected) setEquity(Number(account!.equity));
   }, [isConnected, account]);
 
   const dayPnl = (() => {
-    if (!isConnected || snapshots.length < 2) return FALLBACK_DAY_PNL;
+    if (!isConnected) return 0;
+    if (snapshots.length === 0) return 0;
     const today = new Date().toISOString().slice(0, 10);
     const todays = snapshots.filter((s) => s.recorded_at.startsWith(today));
     const baseline = (todays[0] ?? snapshots[0]).equity;
