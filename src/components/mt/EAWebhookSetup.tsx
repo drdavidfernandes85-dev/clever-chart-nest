@@ -68,7 +68,7 @@ async function downloadEA(
   URL.revokeObjectURL(a.href);
 }
 
-export const EAWebhookSetup = () => {
+export const EAWebhookSetup = forwardRef<HTMLDivElement>((_props, ref) => {
   const { user } = useAuth();
   const [token, setToken] = useState<TokenRow | null>(null);
   const [loading, setLoading] = useState(true);
