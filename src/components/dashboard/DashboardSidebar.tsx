@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   LineChart,
@@ -12,9 +12,12 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  LogOut,
+  Users,
 } from "lucide-react";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * Premium left rail navigation. Collapsible on desktop, hidden on mobile
@@ -35,6 +38,13 @@ const NAV = [
 const DashboardSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <aside
@@ -113,6 +123,53 @@ const DashboardSidebar = () => {
           </div>
         )}
       </nav>
+
+      {/* Online traders counter */}
+      <div className="border-t border-primary/10 px-3 py-2.5">
+        {collapsed ? (
+          <div
+            className="flex flex-col items-center gap-1"
+            title="Traders online"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[hsl(145_65%_50%)]" />
+            </span>
+            <span className="font-mono text-[9px] tabular-nums text-muted-foreground">12K</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 rounded-lg bg-card/60 px-2.5 py-1.5">
+            <span className="relative flex h-2 w-2 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[hsl(145_65%_50%)]" />
+            </span>
+            <Users className="h-3 w-3 text-muted-foreground" />
+            <div className="flex items-baseline gap-1 min-w-0">
+              <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground">
+                12,487
+              </span>
+              <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
+                online
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Sign out */}
+      {user && (
+        <button
+          onClick={handleSignOut}
+          title={collapsed ? "Sign out" : undefined}
+          className={cn(
+            "flex items-center gap-2 border-t border-primary/10 px-3 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
+            collapsed && "justify-center"
+          )}
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Sign out</span>}
+        </button>
+      )}
 
       {/* Collapse toggle */}
       <button

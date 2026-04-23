@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   createChart,
   ColorType,
@@ -186,9 +187,15 @@ const LightweightCandlestickChart = ({
   }, [height]);
 
   const isUp = change >= 0;
+  const liveColor = isUp ? BULL : BEAR;
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl glass-panel ${className}`}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: "easeOut" }}
+      className={`relative overflow-hidden rounded-2xl glass-panel ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between gap-4 border-b border-border/40 px-5 py-3">
         <div className="flex items-center gap-3">
@@ -225,7 +232,47 @@ const LightweightCandlestickChart = ({
 
       {/* Chart canvas */}
       <div ref={containerRef} className="w-full" style={{ height }} />
-    </div>
+
+      {/* Floating live price overlay */}
+      {lastPrice !== null && (
+        <div className="pointer-events-none absolute right-4 top-20 z-10 flex flex-col items-end gap-1">
+          <div
+            className="flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1.5 backdrop-blur-md shadow-lg"
+            style={{
+              borderColor: `${liveColor}55`,
+              boxShadow: `0 0 24px -8px ${liveColor}66`,
+            }}
+          >
+            <span className="relative flex h-1.5 w-1.5">
+              <span
+                className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+                style={{ backgroundColor: liveColor }}
+              />
+              <span
+                className="relative inline-flex h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: liveColor }}
+              />
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+              Live
+            </span>
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={lastPrice}
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 10, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="font-mono text-xs font-semibold tabular-nums"
+                style={{ color: liveColor }}
+              >
+                {lastPrice.toFixed(5)}
+              </motion.span>
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
+    </motion.div>
   );
 };
 
