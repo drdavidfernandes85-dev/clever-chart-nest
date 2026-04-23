@@ -173,10 +173,10 @@ const PortfolioOverview = () => {
               Equity 30D
             </div>
             <div className="font-mono text-sm font-bold text-foreground">
-              ${ACCOUNT_EQUITY.toLocaleString()}
+              ${accountEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
             <div className="text-[10px] font-mono text-emerald-400 mt-0.5">
-              ▲ +12.4%
+              {isConnected ? (account?.account_type === "live" ? "Live MT" : "Demo MT") : "▲ +12.4%"}
             </div>
           </div>
           <svg
@@ -207,12 +207,8 @@ const PortfolioOverview = () => {
             />
             {/* End dot */}
             {(() => {
-              const last = EQUITY[EQUITY.length - 1];
-              const max = Math.max(...EQUITY);
-              const min = Math.min(...EQUITY);
-              const range = max - min || 1;
               const cx = spark.w;
-              const cy = spark.h - ((last - min) / range) * spark.h;
+              const cy = spark.h - ((spark.last - spark.min) / spark.range) * spark.h;
               return (
                 <circle
                   cx={cx}
@@ -246,7 +242,7 @@ const PortfolioOverview = () => {
             const up = pnl >= 0;
             const isLong = p.side === "long";
             const notional = p.size * p.current * (p.symbol.includes("XAU") ? 100 : 100000);
-            const equityPct = (notional / ACCOUNT_EQUITY) * 100;
+            const equityPct = (notional / accountEquity) * 100;
             return (
               <div
                 key={p.symbol}
