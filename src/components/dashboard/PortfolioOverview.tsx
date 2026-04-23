@@ -45,6 +45,7 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
 
 const PortfolioOverview = () => {
   const { account, positions: mtPositions, snapshots, syncing, sync, refresh } = useMTAccount();
+  const { openTrade } = useQuickTrade();
   const isConnected = !!account && account.status === "connected";
 
   const handleDisconnect = async () => {
