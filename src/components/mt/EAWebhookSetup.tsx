@@ -4,7 +4,6 @@ import {
   Download,
   KeyRound,
   Loader2,
-  Lock,
   Shield,
   Webhook,
 } from "lucide-react";
