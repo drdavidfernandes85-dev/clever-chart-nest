@@ -70,7 +70,9 @@ const ConnectMT = () => {
   const defaultBroker = COMMON_BROKERS.find((b) => b.name === "Infinox Limited") ?? COMMON_BROKERS[0];
   const [brokerName, setBrokerName] = useState(defaultBroker.name);
   const [customBroker, setCustomBroker] = useState("");
-  const [serverName, setServerName] = useState(defaultBroker.servers[0] ?? "");
+  const [serverName, setServerName] = useState(
+    defaultBroker.serversByPlatform.mt5[0] ?? "",
+  );
   const [customServer, setCustomServer] = useState("");
   const [login, setLogin] = useState("");
   const [investorPassword, setInvestorPassword] = useState("");
@@ -81,19 +83,22 @@ const ConnectMT = () => {
 
   const selectedBroker = COMMON_BROKERS.find((b) => b.name === brokerName);
   const isCustomBroker = brokerName === "Custom / Other";
+  const platformServers = selectedBroker?.serversByPlatform[platform] ?? [];
   const finalBroker = isCustomBroker ? customBroker.trim() : brokerName;
-  const finalServer = isCustomBroker || (selectedBroker?.servers.length === 0)
+  const finalServer = isCustomBroker || platformServers.length === 0
     ? customServer.trim()
     : serverName;
 
   // Auto-pick the matching server when platform / account type / broker changes.
   useEffect(() => {
-    if (!selectedBroker || selectedBroker.servers.length === 0) return;
-    if (platform !== "mt5") return;
+    if (!selectedBroker) return;
+    const servers = selectedBroker.serversByPlatform[platform];
+    if (servers.length === 0) return;
     const wantLive = accountType === "live";
-    const match = selectedBroker.servers.find((s) =>
-      wantLive ? /live/i.test(s) : /demo/i.test(s),
-    );
+    // Prefer an exact live/demo match; otherwise fall back to the first server.
+    const match =
+      servers.find((s) => (wantLive ? /live/i.test(s) : /demo/i.test(s))) ??
+      servers[0];
     if (match && match !== serverName) setServerName(match);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform, accountType, brokerName]);
