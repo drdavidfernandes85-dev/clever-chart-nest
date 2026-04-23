@@ -26,24 +26,34 @@ interface AccountRow {
   login: string;
   metaapi_account_id: string | null;
   region: string | null;
-  investor_password_encrypted: Uint8Array | string | null;
-  metaapi_token_encrypted: Uint8Array | string | null;
+  investor_password_encrypted: Uint8Array | string | { type: string; data: number[] } | null;
+  metaapi_token_encrypted: Uint8Array | string | { type: string; data: number[] } | null;
 }
 
-// Decode the password we stored as `enc:<plaintext>` base64 wrapper.
-function decodePassword(raw: Uint8Array | string | null): string | null {
-  if (!raw) return null;
+// Convert any of the shapes Postgres bytea may arrive as into a string.
+function bytesToString(raw: unknown): string | null {
+  if (raw == null) return null;
+  if (typeof raw === "string") return raw;
+  if (raw instanceof Uint8Array) return new TextDecoder().decode(raw);
+  // PostgREST sometimes returns bytea as { type: "Buffer", data: number[] }
+  if (typeof raw === "object" && raw !== null && Array.isArray((raw as any).data)) {
+    return new TextDecoder().decode(new Uint8Array((raw as any).data));
+  }
+  return null;
+}
+
+// Decode the password/token we stored as base64('enc:<plaintext>').
+// Falls back gracefully if the value is already plaintext.
+function decodePassword(raw: unknown): string | null {
+  const str = bytesToString(raw);
+  if (!str) return null;
+  const trimmed = str.trim();
   try {
-    const str = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
-    try {
-      const decoded = atob(str);
-      if (decoded.startsWith("enc:")) return decoded.slice(4);
-      return decoded;
-    } catch {
-      return str;
-    }
+    const decoded = atob(trimmed);
+    if (decoded.startsWith("enc:")) return decoded.slice(4).trim();
+    return decoded.trim();
   } catch {
-    return null;
+    return trimmed;
   }
 }
 
@@ -296,22 +306,24 @@ Deno.serve(async (req) => {
     const password = decodePassword(acc.investor_password_encrypted);
     // Resolve which MetaApi token to use: per-account first, fall back to shared.
     const userToken = decodePassword(acc.metaapi_token_encrypted);
-    const token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
+    let token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
+    // Sanity: a real MetaApi token is a JWT (~500–1500 chars). If the stored
+    // value is huge, the user pasted something wrong (e.g. JSON dump) — fall
+    // back to the shared platform token rather than send a 34KB header.
+    if (token && token.length > 4000) {
+      console.error("MetaApi token rejected: oversized", { length: token.length });
+      token = FALLBACK_METAAPI_TOKEN;
+    }
     if (!token) {
+      const msg = userToken && userToken.length > 4000
+        ? "Saved MetaApi token is invalid (too large). Re-paste just the JWT token from app.metaapi.cloud/token."
+        : "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.";
       await admin
         .from("user_mt_accounts")
-        .update({
-          status: "error",
-          status_message: "No MetaApi token",
-          last_error:
-            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
-        })
+        .update({ status: "error", status_message: "Invalid MetaApi token", last_error: msg })
         .eq("id", accountId);
       return new Response(
-        JSON.stringify({
-          error:
-            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
-        }),
+        JSON.stringify({ error: msg }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
