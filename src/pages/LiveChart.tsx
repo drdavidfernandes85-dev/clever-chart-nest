@@ -98,7 +98,7 @@ const LiveChart = () => {
           <div className="flex-1 min-h-0">
             <TradingViewAdvancedIframe
               symbol={symbol}
-              interval="1"
+              interval="15"
               height="100%"
               allowSymbolChange={true}
               hideSideToolbar={false}

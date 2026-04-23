@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useRef } from "react";
 
 interface Props {
   symbol?: string;
@@ -15,68 +15,87 @@ interface Props {
   className?: string;
 }
 
+/**
+ * Real TradingView Advanced Chart widget — loads the official tv.js script
+ * inside an isolated container. This gives us the full toolbar (timeframes,
+ * indicators, drawing tools, fullscreen, compare) and live market data.
+ */
 const TradingViewAdvancedIframe = ({
   symbol = "FX:EURUSD",
-  interval = "1",
+  interval = "15",
   height = "100%",
-  allowSymbolChange = false,
-  hideSideToolbar = true,
-  withDateRanges = false,
-  saveImage = false,
+  allowSymbolChange = true,
+  hideSideToolbar = false,
+  withDateRanges = true,
+  saveImage = true,
   calendar = false,
   details = false,
   hotlist = false,
   studies = [],
   className = "",
 }: Props) => {
-  const src = useMemo(() => {
-    const params = new URLSearchParams({
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const host = containerRef.current;
+    if (!host) return;
+
+    // Reset
+    host.innerHTML = `
+      <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+    `;
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      autosize: true,
       symbol,
       interval,
+      timezone: "Etc/UTC",
       theme: "dark",
       style: "1",
       locale: "en",
-      timezone: "Etc/UTC",
-      studies: JSON.stringify(studies),
-      withdateranges: withDateRanges ? "1" : "0",
-      hide_top_toolbar: "0",
-      hide_legend: "0",
-      hide_side_toolbar: hideSideToolbar ? "1" : "0",
-      allow_symbol_change: allowSymbolChange ? "1" : "0",
-      saveimage: saveImage ? "1" : "0",
-      calendar: calendar ? "1" : "0",
-      details: details ? "1" : "0",
-      hotlist: hotlist ? "1" : "0",
-      toolbarbg: "#0b0b0b",
-      backgroundColor: "#0b0b0b",
-      gridColor: "rgba(255,205,5,0.05)",
-      watchlist: "[]",
+      enable_publishing: false,
+      allow_symbol_change: allowSymbolChange,
+      hide_side_toolbar: hideSideToolbar,
+      withdateranges: withDateRanges,
+      save_image: saveImage,
+      calendar,
+      details,
+      hotlist,
+      studies,
+      backgroundColor: "rgba(11,11,11,1)",
+      gridColor: "rgba(255,205,5,0.04)",
+      toolbar_bg: "#0b0b0b",
+      hide_volume: false,
+      support_host: "https://www.tradingview.com",
     });
 
-    return `https://s.tradingview.com/widgetembed/?${params.toString()}`;
+    host.appendChild(script);
+
+    return () => {
+      if (host) host.innerHTML = "";
+    };
   }, [
+    symbol,
+    interval,
     allowSymbolChange,
+    hideSideToolbar,
+    withDateRanges,
+    saveImage,
     calendar,
     details,
-    hideSideToolbar,
     hotlist,
-    interval,
-    saveImage,
-    studies,
-    symbol,
-    withDateRanges,
+    JSON.stringify(studies),
   ]);
 
   return (
-    <iframe
-      key={`${symbol}-${interval}-${hideSideToolbar ? "compact" : "full"}`}
-      title={`TradingView chart for ${symbol}`}
-      src={src}
-      className={`w-full border-0 bg-background ${className}`}
+    <div
+      className={`tradingview-widget-container w-full ${className}`}
       style={{ height, minHeight: 600 }}
-      loading="eager"
-      referrerPolicy="strict-origin-when-cross-origin"
-      allowFullScreen
+      ref={containerRef}
     />
   );
 };
