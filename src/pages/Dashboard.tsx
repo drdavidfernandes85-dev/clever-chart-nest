@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   Zap,
   X,
+  Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,11 +29,14 @@ import MarketMovers from "@/components/dashboard/MarketMovers";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import RiskMeter from "@/components/dashboard/RiskMeter";
 import RecentActivity from "@/components/dashboard/RecentActivity";
+import MobileSidebarDrawer from "@/components/dashboard/MobileSidebarDrawer";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
-  const [tradeSheetOpen, setTradeSheetOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
 
   // Persist rail state
   useEffect(() => {
@@ -43,27 +47,34 @@ const Dashboard = () => {
     localStorage.setItem("eltr.rail.open", railOpen ? "1" : "0");
   }, [railOpen]);
 
-  // Lock body scroll when bottom sheet is open
+  // Lock body scroll when bottom sheet / drawer is open
   useEffect(() => {
-    if (tradeSheetOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    const lock = tradeOpen || mobileNavOpen;
+    document.body.style.overflow = lock ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [tradeSheetOpen]);
+  }, [tradeOpen, mobileNavOpen]);
 
   return (
     <div className="min-h-screen flex bg-background">
       <DashboardSidebar />
+      <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       {/* Main shell */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top header */}
         <header className="sticky top-0 z-40 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
           <div className="flex h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-12">
+            {/* Hamburger — mobile/tablet */}
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open menu"
+              className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
             <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground shrink-0">
               Centro de <span className="text-primary">Comando</span>
             </h1>
@@ -81,6 +92,17 @@ const Dashboard = () => {
               <div className="hidden sm:block">
                 <AccountSnapshot />
               </div>
+
+              {/* Trade button — desktop */}
+              <Button
+                onClick={() => openTrade()}
+                size="sm"
+                className="hidden sm:inline-flex h-9 px-3 bg-primary text-primary-foreground hover:bg-primary font-bold text-xs uppercase tracking-wider rounded-lg shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] hover:shadow-[0_12px_35px_-10px_hsl(48_100%_51%/0.85)] transition-all"
+              >
+                <Zap className="h-3.5 w-3.5 mr-1" />
+                Trade
+              </Button>
+
               <button
                 onClick={() => setTickerOpen((v) => !v)}
                 className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/50 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
@@ -98,7 +120,7 @@ const Dashboard = () => {
                 variant="ghost"
                 size="sm"
                 asChild
-                className="hidden sm:inline-flex text-muted-foreground hover:text-primary"
+                className="hidden md:inline-flex text-muted-foreground hover:text-primary"
               >
                 <Link to="/live-chart" aria-label="Live chart">
                   <BarChart3 className="h-4 w-4" />
@@ -108,7 +130,7 @@ const Dashboard = () => {
                 variant="ghost"
                 size="sm"
                 asChild
-                className="hidden sm:inline-flex text-muted-foreground hover:text-primary"
+                className="hidden md:inline-flex text-muted-foreground hover:text-primary"
               >
                 <Link to="/chatroom" aria-label="Chatroom">
                   <MessageSquare className="h-4 w-4" />
@@ -151,17 +173,14 @@ const Dashboard = () => {
         </header>
 
         {/* Page body */}
-        <main className="flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-6 sm:space-y-10 lg:space-y-12 pb-24 lg:pb-12">
-          {/* KPI strip */}
+        <main className="flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-6 sm:space-y-10 lg:space-y-12 pb-28 lg:pb-12">
           <KpiStrip />
 
-          {/* Hero zone */}
           <div
             className={`grid gap-6 sm:gap-8 lg:gap-10 ${
               railOpen ? "xl:grid-cols-[minmax(0,1fr)_268px]" : "xl:grid-cols-1"
             }`}
           >
-            {/* Main column */}
             <div className="min-w-0 space-y-6 sm:space-y-8 lg:space-y-10">
               {/* Hero CTA */}
               <motion.div
@@ -222,10 +241,10 @@ const Dashboard = () => {
                 </div>
               </motion.div>
 
-              {/* Risk Meter — full width */}
+              {/* Risk Meter */}
               <RiskMeter />
 
-              {/* Portfolio + Watchlist/Signals/Trade */}
+              {/* Portfolio + Watchlist/Trade/Signals */}
               <div className="grid gap-6 sm:gap-8 lg:grid-cols-[3fr_2fr]">
                 <div className="space-y-6 sm:space-y-8 min-w-0">
                   <PortfolioOverview />
@@ -233,7 +252,7 @@ const Dashboard = () => {
                 </div>
                 <div className="space-y-6 min-w-0">
                   <Watchlist />
-                  {/* Quick Trade — desktop only inline */}
+                  {/* Inline Quick Trade — desktop only */}
                   <div className="hidden lg:block">
                     <QuickTradePanel />
                   </div>
@@ -241,7 +260,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Market Movers */}
               <MarketMovers />
             </div>
 
@@ -268,9 +286,9 @@ const Dashboard = () => {
 
       {/* Floating Quick Trade FAB — mobile / tablet only */}
       <button
-        onClick={() => setTradeSheetOpen(true)}
+        onClick={() => openTrade()}
         aria-label="Open Quick Trade"
-        className="lg:hidden fixed bottom-6 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_15px_40px_-8px_hsl(48_100%_51%/0.7)] hover:scale-110 active:scale-95 transition-transform"
+        className="lg:hidden fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_15px_40px_-8px_hsl(48_100%_51%/0.7)] hover:scale-110 active:scale-95 transition-transform"
       >
         <Zap className="h-6 w-6" />
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
@@ -281,14 +299,14 @@ const Dashboard = () => {
 
       {/* Mobile Quick Trade bottom sheet */}
       <AnimatePresence>
-        {tradeSheetOpen && (
+        {tradeOpen && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setTradeSheetOpen(false)}
-              className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              onClick={closeTrade}
+              className="lg:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
             />
             <motion.div
               initial={{ y: "100%" }}
@@ -296,6 +314,7 @@ const Dashboard = () => {
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 280 }}
               className="lg:hidden fixed inset-x-0 bottom-0 z-50 max-h-[92vh] overflow-y-auto rounded-t-3xl bg-card border-t border-border/40 shadow-2xl"
+              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             >
               <div className="sticky top-0 z-10 flex items-center justify-between bg-card/95 backdrop-blur-xl border-b border-border/30 px-4 py-3">
                 <div className="mx-auto h-1 w-10 rounded-full bg-muted-foreground/30 absolute left-1/2 -translate-x-1/2 top-1.5" />
@@ -303,7 +322,7 @@ const Dashboard = () => {
                   Quick Trade
                 </h3>
                 <button
-                  onClick={() => setTradeSheetOpen(false)}
+                  onClick={closeTrade}
                   aria-label="Close"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40 mt-1"
                 >
