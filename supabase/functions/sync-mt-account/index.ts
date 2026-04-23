@@ -14,7 +14,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const METAAPI_TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
+const FALLBACK_METAAPI_TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
 
 const provisioningUrl = (region: string) =>
   `https://mt-provisioning-api-v1.${region}.agiliumtrade.ai`;
@@ -32,6 +32,7 @@ interface AccountRow {
   metaapi_account_id: string | null;
   region: string | null;
   investor_password_encrypted: Uint8Array | null;
+  metaapi_token_encrypted: Uint8Array | null;
 }
 
 // Decode the password we stored as `enc:<plaintext>` base64 wrapper
