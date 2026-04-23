@@ -11,10 +11,12 @@ import { cn } from "@/lib/utils";
 type Msg = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
-  "What's moving markets right now?",
-  "How am I performing this week?",
-  "Any high-impact events today?",
-  "Explain the active signals.",
+  "Explain the current EUR/USD move",
+  "What's driving XAU/USD right now?",
+  "Any high-impact events in the next 4h?",
+  "Review my last 5 trades",
+  "Suggest a setup for today's London session",
+  "Summarize today's room signals",
 ];
 
 const OPEN_KEY = "infinox.copilot.open";
