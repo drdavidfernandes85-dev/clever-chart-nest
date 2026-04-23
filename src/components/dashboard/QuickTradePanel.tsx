@@ -1,13 +1,38 @@
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { Zap, TrendingUp, TrendingDown, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  ChevronDown,
+  Plus,
+  Minus,
+  AlertTriangle,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
-const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY"];
+const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
+
+// Approx live prices for preview math (fallback only)
+const PRICE_HINTS: Record<string, number> = {
+  "EUR/USD": 1.0867,
+  "GBP/USD": 1.2784,
+  "USD/JPY": 154.61,
+  "XAU/USD": 2418.3,
+  "AUD/USD": 0.6604,
+  "GBP/JPY": 191.86,
+  "USD/CAD": 1.3712,
+  "NZD/USD": 0.6021,
+};
+
+const ACCOUNT_EQUITY = 48211.27;
+const LEVERAGE = 30;
 
 const tradeSchema = z.object({
   symbol: z.string().min(3).max(10),
@@ -19,30 +44,83 @@ const tradeSchema = z.object({
   tp: z.number().nonnegative().optional(),
 });
 
-const QuickTradePanel = ({ compact = false }: { compact?: boolean }) => {
-  const [symbol, setSymbol] = useState("EUR/USD");
+const pipMul = (sym: string) =>
+  sym.includes("JPY") ? 100 : sym.includes("XAU") ? 10 : 10000;
+
+const pipValuePerLot = (sym: string) => (sym.includes("XAU") ? 10 : 10);
+
+interface Props {
+  compact?: boolean;
+}
+
+const QuickTradePanel = ({ compact = false }: Props) => {
+  const { symbol: ctxSymbol, side: ctxSide, setSymbol: setCtxSymbol, setSide: setCtxSide } = useQuickTrade();
+
   const [type, setType] = useState<"market" | "limit">("market");
-  const [side, setSide] = useState<"buy" | "sell">("buy");
-  const [lots, setLots] = useState("1.0");
+  const [lots, setLots] = useState("1.00");
   const [entry, setEntry] = useState("");
   const [sl, setSl] = useState("");
   const [tp, setTp] = useState("");
   const [openSymbols, setOpenSymbols] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  const symbol = ctxSymbol;
+  const side = ctxSide;
+
+  // Reset SL/TP placeholders when symbol changes
+  useEffect(() => {
+    setEntry("");
+    setSl("");
+    setTp("");
+  }, [symbol]);
+
+  const livePrice = PRICE_HINTS[symbol] ?? 1;
+  const refPrice = type === "limit" && entry ? parseFloat(entry) || livePrice : livePrice;
+
+  const lotsNum = parseFloat(lots) || 0;
 
   const margin = useMemo(() => {
-    const l = parseFloat(lots) || 0;
-    return (l * 100000) / 30; // 1:30 leverage estimate
-  }, [lots]);
+    const notional = lotsNum * (symbol.includes("XAU") ? refPrice * 100 : 100000);
+    return notional / LEVERAGE;
+  }, [lotsNum, refPrice, symbol]);
+
+  // Potential P&L preview based on TP target
+  const tpNum = parseFloat(tp) || 0;
+  const slNum = parseFloat(sl) || 0;
+
+  const projectedPnl = useMemo(() => {
+    if (!tpNum || lotsNum <= 0) return 0;
+    const dir = side === "buy" ? 1 : -1;
+    const diff = (tpNum - refPrice) * dir;
+    const pips = diff * pipMul(symbol);
+    return pips * pipValuePerLot(symbol) * lotsNum * (symbol.includes("XAU") ? 10 : 1);
+  }, [tpNum, refPrice, side, lotsNum, symbol]);
+
+  const projectedRiskUsd = useMemo(() => {
+    if (!slNum || lotsNum <= 0) return 0;
+    const dir = side === "buy" ? 1 : -1;
+    const diff = (refPrice - slNum) * dir;
+    const pips = diff * pipMul(symbol);
+    return Math.abs(pips * pipValuePerLot(symbol) * lotsNum * (symbol.includes("XAU") ? 10 : 1));
+  }, [slNum, refPrice, side, lotsNum, symbol]);
+
+  const projectedPnlPct = (projectedPnl / ACCOUNT_EQUITY) * 100;
+  const riskPct = (projectedRiskUsd / ACCOUNT_EQUITY) * 100;
+
+  const adjustLots = (delta: number) => {
+    const next = Math.max(0.01, Math.min(100, lotsNum + delta));
+    setLots(next.toFixed(2));
+  };
 
   const handlePlace = () => {
     const parsed = tradeSchema.safeParse({
       symbol,
       side,
       type,
-      lots: parseFloat(lots),
+      lots: lotsNum,
       entry: entry ? parseFloat(entry) : undefined,
-      sl: sl ? parseFloat(sl) : undefined,
-      tp: tp ? parseFloat(tp) : undefined,
+      sl: slNum || undefined,
+      tp: tpNum || undefined,
     });
     if (!parsed.success) {
       toast.error("Invalid order", {
@@ -54,143 +132,192 @@ const QuickTradePanel = ({ compact = false }: { compact?: boolean }) => {
       toast.error("Limit order requires entry price");
       return;
     }
-    toast.success(
-      `${side.toUpperCase()} ${parsed.data.lots} lots ${symbol}`,
-      {
-        description: `${type.toUpperCase()}${
-          parsed.data.entry ? ` @ ${parsed.data.entry}` : ""
-        }${parsed.data.sl ? ` • SL ${parsed.data.sl}` : ""}${
-          parsed.data.tp ? ` • TP ${parsed.data.tp}` : ""
-        }`,
-      }
-    );
+    setConfirming(true);
   };
 
+  const confirmTrade = () => {
+    setConfirming(false);
+    toast.success(`${side.toUpperCase()} ${lotsNum} lots ${symbol}`, {
+      description: `${type.toUpperCase()}${
+        type === "limit" && entry ? ` @ ${entry}` : ""
+      }${slNum ? ` • SL ${slNum}` : ""}${tpNum ? ` • TP ${tpNum}` : ""}`,
+    });
+  };
+
+  const isBuy = side === "buy";
+  const sideAccent = isBuy
+    ? "from-emerald-500/15 to-transparent border-emerald-500/30"
+    : "from-red-500/15 to-transparent border-red-500/30";
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden ${
-        compact ? "" : "shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.2)]"
-      }`}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-            <Zap className="h-3.5 w-3.5" />
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className={`rounded-2xl border bg-gradient-to-br ${sideAccent} backdrop-blur-sm overflow-hidden transition-colors ${
+          compact ? "" : "shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.2)]"
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5 bg-card/60">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+              <Zap className="h-3.5 w-3.5" />
+            </div>
+            <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
+              Quick Trade
+            </h3>
           </div>
-          <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
-            Quick Trade
-          </h3>
-        </div>
-        <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400 flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          Open
-        </span>
-      </div>
-
-      <div className="p-5 space-y-4">
-        {/* Symbol selector */}
-        <div className="relative">
-          <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
-            Symbol
-          </Label>
-          <button
-            type="button"
-            onClick={() => setOpenSymbols((v) => !v)}
-            className="flex h-11 w-full items-center justify-between rounded-xl border border-border/50 bg-background/60 px-3.5 text-left transition-colors hover:border-primary/40"
-          >
-            <span className="font-heading text-sm font-bold text-foreground">{symbol}</span>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${openSymbols ? "rotate-180" : ""}`} />
-          </button>
-          {openSymbols && (
-            <ul className="absolute left-0 right-0 z-20 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
-              {SYMBOLS.map((s) => (
-                <li key={s}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSymbol(s);
-                      setOpenSymbols(false);
-                    }}
-                    className={`w-full px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
-                      s === symbol ? "text-primary bg-primary/5" : "text-foreground"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live
+          </span>
         </div>
 
-        {/* Side toggle: Buy / Sell */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setSide("buy")}
-            className={`h-11 rounded-xl font-heading text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ring-1 ${
-              side === "buy"
-                ? "bg-emerald-500/15 text-emerald-400 ring-emerald-500/40 shadow-[0_0_20px_-5px_hsl(160_84%_50%/0.4)]"
-                : "bg-muted/30 text-muted-foreground ring-border/40 hover:text-foreground"
-            }`}
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            Buy
-          </button>
-          <button
-            onClick={() => setSide("sell")}
-            className={`h-11 rounded-xl font-heading text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ring-1 ${
-              side === "sell"
-                ? "bg-red-500/15 text-red-400 ring-red-500/40 shadow-[0_0_20px_-5px_hsl(0_84%_60%/0.4)]"
-                : "bg-muted/30 text-muted-foreground ring-border/40 hover:text-foreground"
-            }`}
-          >
-            <TrendingDown className="h-3.5 w-3.5" />
-            Sell
-          </button>
-        </div>
+        <div className="p-5 space-y-4 bg-card/60">
+          {/* Symbol selector */}
+          <div className="relative">
+            <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
+              Symbol
+            </Label>
+            <button
+              type="button"
+              onClick={() => setOpenSymbols((v) => !v)}
+              className="flex h-12 w-full items-center justify-between rounded-xl border border-border/50 bg-background/60 px-3.5 text-left transition-colors hover:border-primary/40"
+            >
+              <div className="flex items-baseline gap-3 min-w-0">
+                <span className="font-heading text-base font-bold text-foreground">
+                  {symbol}
+                </span>
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                  {livePrice.toFixed(symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5)}
+                </span>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform ${
+                  openSymbols ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {openSymbols && (
+              <ul className="absolute left-0 right-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
+                {SYMBOLS.map((s) => (
+                  <li key={s}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCtxSymbol(s);
+                        setOpenSymbols(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
+                        s === symbol ? "text-primary bg-primary/5" : "text-foreground"
+                      }`}
+                    >
+                      <span>{s}</span>
+                      <span className="font-mono tabular-nums text-muted-foreground">
+                        {(PRICE_HINTS[s] ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5)}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-        {/* Order type */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setType("market")}
-            className={`h-9 rounded-lg font-mono text-[10px] uppercase tracking-widest transition-all ring-1 ${
-              type === "market"
-                ? "bg-primary/15 text-primary ring-primary/40"
-                : "bg-muted/20 text-muted-foreground ring-border/30 hover:text-foreground"
-            }`}
-          >
-            Market
-          </button>
-          <button
-            onClick={() => setType("limit")}
-            className={`h-9 rounded-lg font-mono text-[10px] uppercase tracking-widest transition-all ring-1 ${
-              type === "limit"
-                ? "bg-primary/15 text-primary ring-primary/40"
-                : "bg-muted/20 text-muted-foreground ring-border/30 hover:text-foreground"
-            }`}
-          >
-            Limit
-          </button>
-        </div>
+          {/* Side toggle */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setCtxSide("buy")}
+              className={`h-12 rounded-xl font-heading text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ring-1 ${
+                isBuy
+                  ? "bg-emerald-500/20 text-emerald-400 ring-emerald-500/50 shadow-[0_0_25px_-5px_hsl(160_84%_50%/0.5)]"
+                  : "bg-muted/30 text-muted-foreground ring-border/40 hover:text-foreground"
+              }`}
+            >
+              <TrendingUp className="h-4 w-4" />
+              Buy
+            </button>
+            <button
+              onClick={() => setCtxSide("sell")}
+              className={`h-12 rounded-xl font-heading text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ring-1 ${
+                !isBuy
+                  ? "bg-red-500/20 text-red-400 ring-red-500/50 shadow-[0_0_25px_-5px_hsl(0_84%_60%/0.5)]"
+                  : "bg-muted/30 text-muted-foreground ring-border/40 hover:text-foreground"
+              }`}
+            >
+              <TrendingDown className="h-4 w-4" />
+              Sell
+            </button>
+          </div>
 
-        {/* Inputs */}
-        <div className="space-y-3">
+          {/* Order type */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setType("market")}
+              className={`h-9 rounded-lg font-mono text-[10px] uppercase tracking-widest transition-all ring-1 ${
+                type === "market"
+                  ? "bg-primary/15 text-primary ring-primary/40"
+                  : "bg-muted/20 text-muted-foreground ring-border/30 hover:text-foreground"
+              }`}
+            >
+              Market
+            </button>
+            <button
+              onClick={() => setType("limit")}
+              className={`h-9 rounded-lg font-mono text-[10px] uppercase tracking-widest transition-all ring-1 ${
+                type === "limit"
+                  ? "bg-primary/15 text-primary ring-primary/40"
+                  : "bg-muted/20 text-muted-foreground ring-border/30 hover:text-foreground"
+              }`}
+            >
+              Limit
+            </button>
+          </div>
+
+          {/* Lots stepper */}
           <div>
             <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
               Lots
             </Label>
-            <Input
-              inputMode="decimal"
-              value={lots}
-              onChange={(e) => setLots(e.target.value.replace(/[^0-9.]/g, "").slice(0, 8))}
-              className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-primary/40"
-            />
+            <div className="flex items-stretch gap-2">
+              <button
+                onClick={() => adjustLots(-0.1)}
+                aria-label="Decrease lots"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
+              >
+                <Minus className="h-4 w-4" />
+              </button>
+              <Input
+                inputMode="decimal"
+                value={lots}
+                onChange={(e) =>
+                  setLots(e.target.value.replace(/[^0-9.]/g, "").slice(0, 8))
+                }
+                className="h-12 flex-1 bg-background/60 border-border/50 font-mono text-base font-bold tabular-nums text-center focus-visible:ring-primary/40"
+              />
+              <button
+                onClick={() => adjustLots(0.1)}
+                aria-label="Increase lots"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="mt-1.5 flex gap-1">
+              {[0.1, 0.5, 1, 2, 5].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setLots(v.toFixed(2))}
+                  className="flex-1 h-7 rounded-md bg-muted/30 hover:bg-primary/10 hover:text-primary text-[10px] font-mono tabular-nums text-muted-foreground transition-colors"
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
           </div>
 
+          {/* Entry price (limit only) */}
           {type === "limit" && (
             <div>
               <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
@@ -198,14 +325,17 @@ const QuickTradePanel = ({ compact = false }: { compact?: boolean }) => {
               </Label>
               <Input
                 inputMode="decimal"
-                placeholder="0.00000"
+                placeholder={livePrice.toFixed(5)}
                 value={entry}
-                onChange={(e) => setEntry(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))}
+                onChange={(e) =>
+                  setEntry(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))
+                }
                 className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-primary/40"
               />
             </div>
           )}
 
+          {/* SL / TP */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-[10px] font-mono uppercase tracking-widest text-red-400/80 mb-1.5 block">
@@ -215,8 +345,10 @@ const QuickTradePanel = ({ compact = false }: { compact?: boolean }) => {
                 inputMode="decimal"
                 placeholder="—"
                 value={sl}
-                onChange={(e) => setSl(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))}
-                className="h-10 bg-background/60 border-border/50 font-mono text-xs tabular-nums focus-visible:ring-red-500/40"
+                onChange={(e) =>
+                  setSl(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))
+                }
+                className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-red-500/40"
               />
             </div>
             <div>
@@ -227,33 +359,189 @@ const QuickTradePanel = ({ compact = false }: { compact?: boolean }) => {
                 inputMode="decimal"
                 placeholder="—"
                 value={tp}
-                onChange={(e) => setTp(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))}
-                className="h-10 bg-background/60 border-border/50 font-mono text-xs tabular-nums focus-visible:ring-emerald-500/40"
+                onChange={(e) =>
+                  setTp(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))
+                }
+                className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-emerald-500/40"
               />
             </div>
           </div>
-        </div>
 
-        {/* Margin estimate */}
-        <div className="flex items-center justify-between rounded-lg border border-border/30 bg-muted/20 px-3 py-2">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            Est. Margin
-          </span>
-          <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
-            ${margin.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-          </span>
-        </div>
+          {/* Live preview metrics */}
+          <div className="rounded-xl border border-border/40 bg-background/40 divide-y divide-border/30 overflow-hidden">
+            <Row label="Est. Margin" value={`$${margin.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
+            <Row
+              label="Potential P&L"
+              value={
+                tpNum
+                  ? `${projectedPnl >= 0 ? "+" : "−"}$${Math.abs(projectedPnl).toFixed(2)}  (${
+                      projectedPnl >= 0 ? "+" : "−"
+                    }${Math.abs(projectedPnlPct).toFixed(2)}%)`
+                  : "—"
+              }
+              valueClass={
+                tpNum
+                  ? projectedPnl >= 0
+                    ? "text-emerald-400"
+                    : "text-red-400"
+                  : "text-muted-foreground"
+              }
+            />
+            <Row
+              label="Risk %"
+              value={slNum ? `${riskPct.toFixed(2)}%  ($${projectedRiskUsd.toFixed(2)})` : "—"}
+              valueClass={
+                slNum
+                  ? riskPct > 3
+                    ? "text-red-400"
+                    : riskPct > 1.5
+                    ? "text-primary"
+                    : "text-emerald-400"
+                  : "text-muted-foreground"
+              }
+            />
+          </div>
 
-        {/* Place trade button */}
-        <Button
-          onClick={handlePlace}
-          className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary font-bold text-sm tracking-wide rounded-xl shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.6)] hover:shadow-[0_15px_40px_-10px_hsl(48_100%_51%/0.8)] transition-all hover:scale-[1.01]"
-        >
-          Place {side === "buy" ? "Buy" : "Sell"} Trade
-        </Button>
-      </div>
-    </motion.div>
+          {/* Place trade button */}
+          <Button
+            onClick={handlePlace}
+            className={`w-full h-14 font-bold text-base tracking-wide rounded-xl transition-all hover:scale-[1.01] ${
+              isBuy
+                ? "bg-emerald-500 hover:bg-emerald-500 text-white shadow-[0_10px_30px_-10px_hsl(160_84%_50%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(160_84%_50%/0.9)]"
+                : "bg-red-500 hover:bg-red-500 text-white shadow-[0_10px_30px_-10px_hsl(0_84%_60%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(0_84%_60%/0.9)]"
+            }`}
+          >
+            PLACE {isBuy ? "BUY" : "SELL"} TRADE
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Confirmation modal */}
+      <AnimatePresence>
+        {confirming && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setConfirming(false)}
+              className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ type: "spring", damping: 22, stiffness: 280 }}
+              className="fixed left-1/2 top-1/2 z-[61] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden"
+            >
+              <div
+                className={`px-5 py-4 border-b border-border/40 ${
+                  isBuy ? "bg-emerald-500/10" : "bg-red-500/10"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle
+                    className={`h-4 w-4 ${isBuy ? "text-emerald-400" : "text-red-400"}`}
+                  />
+                  <h4 className="font-heading text-sm font-bold text-foreground">
+                    Confirm {isBuy ? "Buy" : "Sell"} Order
+                  </h4>
+                </div>
+              </div>
+              <div className="px-5 py-4 space-y-2.5 text-xs">
+                <ConfirmRow label="Symbol" value={symbol} />
+                <ConfirmRow
+                  label="Side"
+                  value={isBuy ? "BUY (long)" : "SELL (short)"}
+                  valueClass={isBuy ? "text-emerald-400" : "text-red-400"}
+                />
+                <ConfirmRow label="Type" value={type.toUpperCase()} />
+                <ConfirmRow label="Size" value={`${lotsNum.toFixed(2)} lots`} />
+                {type === "limit" && entry && (
+                  <ConfirmRow label="Entry" value={entry} />
+                )}
+                {sl && <ConfirmRow label="Stop Loss" value={sl} valueClass="text-red-400" />}
+                {tp && <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />}
+                <ConfirmRow
+                  label="Est. Margin"
+                  value={`$${margin.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                />
+                {slNum > 0 && (
+                  <ConfirmRow
+                    label="Risk"
+                    value={`${riskPct.toFixed(2)}% ($${projectedRiskUsd.toFixed(2)})`}
+                    valueClass={
+                      riskPct > 3
+                        ? "text-red-400"
+                        : riskPct > 1.5
+                        ? "text-primary"
+                        : "text-emerald-400"
+                    }
+                  />
+                )}
+              </div>
+              <div className="flex gap-2 px-5 py-4 border-t border-border/40 bg-muted/20">
+                <Button
+                  variant="ghost"
+                  onClick={() => setConfirming(false)}
+                  className="flex-1 h-11"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmTrade}
+                  className={`flex-1 h-11 font-bold ${
+                    isBuy
+                      ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
+                      : "bg-red-500 hover:bg-red-500/90 text-white"
+                  }`}
+                >
+                  <Check className="h-4 w-4 mr-1.5" />
+                  Confirm
+                </Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
+
+const Row = ({
+  label,
+  value,
+  valueClass = "text-foreground",
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) => (
+  <div className="flex items-center justify-between px-3.5 py-2.5">
+    <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+      {label}
+    </span>
+    <span className={`font-mono text-xs font-semibold tabular-nums ${valueClass}`}>
+      {value}
+    </span>
+  </div>
+);
+
+const ConfirmRow = ({
+  label,
+  value,
+  valueClass = "text-foreground",
+}: {
+  label: string;
+  value: string;
+  valueClass?: string;
+}) => (
+  <div className="flex items-center justify-between">
+    <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+      {label}
+    </span>
+    <span className={`font-heading font-bold ${valueClass}`}>{value}</span>
+  </div>
+);
 
 export default QuickTradePanel;

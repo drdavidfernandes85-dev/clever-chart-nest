@@ -4,13 +4,16 @@ import { Shield, AlertTriangle } from "lucide-react";
 
 interface Exposure {
   symbol: string;
-  riskPct: number; // % of equity at risk on this position
+  riskPct: number;
+  riskUsd: number;
 }
 
+const ACCOUNT_EQUITY = 48211.27;
+
 const POSITIONS_RISK: Exposure[] = [
-  { symbol: "EUR/USD", riskPct: 0.6 },
-  { symbol: "XAU/USD", riskPct: 0.8 },
-  { symbol: "GBP/JPY", riskPct: 0.4 },
+  { symbol: "EUR/USD", riskPct: 0.6, riskUsd: 289.27 },
+  { symbol: "XAU/USD", riskPct: 0.8, riskUsd: 385.69 },
+  { symbol: "GBP/JPY", riskPct: 0.4, riskUsd: 192.85 },
 ];
 
 const RiskMeter = () => {
@@ -18,10 +21,14 @@ const RiskMeter = () => {
     () => POSITIONS_RISK.reduce((acc, p) => acc + p.riskPct, 0),
     []
   );
+  const totalUsd = useMemo(
+    () => POSITIONS_RISK.reduce((acc, p) => acc + p.riskUsd, 0),
+    []
+  );
 
-  // Risk levels: <2% safe, 2-5% moderate, >5% high
+  // Updated thresholds: <1.5 safe, 1.5-3 moderate, >3 high
   const level: "safe" | "moderate" | "high" =
-    total < 2 ? "safe" : total < 5 ? "moderate" : "high";
+    total < 1.5 ? "safe" : total <= 3 ? "moderate" : "high";
 
   const color =
     level === "safe"
@@ -31,39 +38,33 @@ const RiskMeter = () => {
       : "hsl(0 84% 60%)";
 
   const label =
-    level === "safe" ? "Safe" : level === "moderate" ? "Moderate" : "High Risk";
+    level === "safe" ? "Conservative" : level === "moderate" ? "Moderate" : "High Risk";
 
-  // Gauge: 0..10% scale
-  const max = 10;
+  // Gauge: 0..6% scale (more sensitive)
+  const max = 6;
   const pct = Math.min(100, (total / max) * 100);
 
-  // Arc geometry
-  const size = 140;
-  const stroke = 12;
+  // Full circular gauge geometry
+  const size = 160;
+  const stroke = 14;
   const radius = (size - stroke) / 2;
   const cx = size / 2;
   const cy = size / 2;
-  // Half-circle arc: 180 deg from left to right
-  const circ = Math.PI * radius;
-  const dash = (pct / 100) * circ;
+  const fullCirc = 2 * Math.PI * radius;
+  // 270 deg arc (starts at -135deg)
+  const arcLen = fullCirc * 0.75;
+  const dash = (pct / 100) * arcLen;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
-      className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
+      className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.15)]"
     >
       <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
         <div className="flex items-center gap-2">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-lg ring-1"
-            style={{
-              backgroundColor: `${color.replace(")", " / 0.12)")}`,
-              color,
-              boxShadow: `inset 0 0 0 1px ${color.replace(")", " / 0.3)")}`,
-            }}
-          >
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
             <Shield className="h-3.5 w-3.5" />
           </div>
           <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
@@ -71,103 +72,150 @@ const RiskMeter = () => {
           </h3>
         </div>
         <span
-          className="text-[9px] font-mono uppercase tracking-widest font-bold"
-          style={{ color }}
+          className="text-[10px] font-mono uppercase tracking-widest font-bold px-2 py-0.5 rounded-full ring-1"
+          style={{
+            color,
+            borderColor: color.replace(")", " / 0.4)"),
+            backgroundColor: color.replace(")", " / 0.1)"),
+          }}
         >
           {label}
         </span>
       </div>
 
-      <div className="px-5 py-5 flex items-center gap-5">
-        {/* Half-circle gauge */}
-        <div className="relative shrink-0" style={{ width: size, height: size / 2 + 6 }}>
+      <div className="px-5 py-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        {/* Circular gauge */}
+        <div className="relative shrink-0" style={{ width: size, height: size }}>
           <svg
             width={size}
-            height={size / 2 + 6}
-            viewBox={`0 0 ${size} ${size / 2 + 6}`}
-            className="overflow-visible"
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+            className="overflow-visible -rotate-[135deg]"
             aria-hidden
           >
             {/* Track */}
-            <path
-              d={`M ${stroke / 2} ${cy} A ${radius} ${radius} 0 0 1 ${size - stroke / 2} ${cy}`}
+            <circle
+              cx={cx}
+              cy={cy}
+              r={radius}
               fill="none"
               stroke="hsl(var(--border))"
               strokeOpacity={0.4}
               strokeWidth={stroke}
               strokeLinecap="round"
+              strokeDasharray={`${arcLen} ${fullCirc}`}
             />
             {/* Value arc */}
-            <path
-              d={`M ${stroke / 2} ${cy} A ${radius} ${radius} 0 0 1 ${size - stroke / 2} ${cy}`}
+            <circle
+              cx={cx}
+              cy={cy}
+              r={radius}
               fill="none"
               stroke={color}
               strokeWidth={stroke}
               strokeLinecap="round"
-              strokeDasharray={`${dash} ${circ}`}
+              strokeDasharray={`${dash} ${fullCirc}`}
               style={{
-                filter: `drop-shadow(0 0 8px ${color.replace(")", " / 0.6)")})`,
-                transition: "stroke-dasharray 0.6s ease-out",
+                filter: `drop-shadow(0 0 10px ${color.replace(")", " / 0.7)")})`,
+                transition: "stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
               }}
             />
           </svg>
           {/* Center value */}
-          <div
-            className="absolute inset-x-0 bottom-0 flex flex-col items-center"
-            style={{ top: cy - 18 }}
-          >
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+              Total Risk
+            </span>
             <span
-              className="font-mono text-2xl font-bold tabular-nums"
-              style={{ color, textShadow: `0 0 16px ${color.replace(")", " / 0.4)")}` }}
+              className="font-mono text-3xl font-bold tabular-nums leading-none mt-0.5"
+              style={{
+                color,
+                textShadow: `0 0 18px ${color.replace(")", " / 0.5)")}`,
+              }}
             >
               {total.toFixed(1)}%
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mt-0.5">
-              Of Equity
+            <span className="text-[10px] font-mono text-muted-foreground mt-1">
+              ${totalUsd.toFixed(0)} max
             </span>
           </div>
         </div>
 
         {/* Breakdown */}
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-            {POSITIONS_RISK.length} positions
+        <div className="flex-1 min-w-0 w-full space-y-2.5">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              {POSITIONS_RISK.length} positions
+            </span>
+            <span className="text-[10px] font-mono text-muted-foreground">
+              of ${ACCOUNT_EQUITY.toLocaleString()} equity
+            </span>
           </div>
-          <ul className="space-y-1.5">
-            {POSITIONS_RISK.map((p) => (
-              <li key={p.symbol} className="flex items-center justify-between gap-2">
-                <span className="font-heading text-[11px] font-semibold text-foreground truncate">
-                  {p.symbol}
-                </span>
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="relative h-1 w-16 sm:w-20 rounded-full bg-muted/40 overflow-hidden">
+          <ul className="space-y-2">
+            {POSITIONS_RISK.map((p) => {
+              const pColor =
+                p.riskPct < 1.5
+                  ? "hsl(160 84% 50%)"
+                  : p.riskPct <= 3
+                  ? "hsl(48 100% 51%)"
+                  : "hsl(0 84% 60%)";
+              return (
+                <li key={p.symbol} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-heading text-[11px] font-semibold text-foreground">
+                      {p.symbol}
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                        ${p.riskUsd.toFixed(0)}
+                      </span>
+                      <span
+                        className="font-mono text-[11px] font-bold tabular-nums w-12 text-right"
+                        style={{ color: pColor }}
+                      >
+                        {p.riskPct.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="relative h-1.5 rounded-full bg-muted/40 overflow-hidden">
                     <div
                       className="absolute inset-y-0 left-0 rounded-full"
                       style={{
-                        width: `${Math.min(100, (p.riskPct / 2) * 100)}%`,
-                        backgroundColor: color,
-                        boxShadow: `0 0 6px ${color.replace(")", " / 0.6)")}`,
+                        width: `${Math.min(100, (p.riskPct / 3) * 100)}%`,
+                        backgroundColor: pColor,
+                        boxShadow: `0 0 8px ${pColor.replace(")", " / 0.7)")}`,
                       }}
                     />
                   </div>
-                  <span
-                    className="font-mono text-[10px] tabular-nums w-10 text-right"
-                    style={{ color }}
-                  >
-                    {p.riskPct.toFixed(2)}%
-                  </span>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
-          {level === "high" && (
-            <div className="flex items-center gap-1.5 mt-2 rounded-md bg-red-500/10 ring-1 ring-red-500/30 px-2 py-1">
-              <AlertTriangle className="h-3 w-3 text-red-400" />
-              <span className="text-[10px] font-mono uppercase tracking-wider text-red-400">
-                Reduce exposure
-              </span>
-            </div>
-          )}
+
+          {/* Status banner */}
+          <div
+            className={`flex items-center gap-2 mt-3 rounded-lg px-3 py-2 ring-1`}
+            style={{
+              backgroundColor: color.replace(")", " / 0.08)"),
+              borderColor: color.replace(")", " / 0.3)"),
+            }}
+          >
+            {level === "high" ? (
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color }} />
+            ) : (
+              <Shield className="h-3.5 w-3.5 shrink-0" style={{ color }} />
+            )}
+            <span
+              className="text-[11px] font-mono tracking-wide"
+              style={{ color }}
+            >
+              {level === "high"
+                ? "Above target — consider reducing exposure"
+                : level === "moderate"
+                ? "Within healthy range"
+                : "Well within risk budget"}
+            </span>
+          </div>
         </div>
       </div>
     </motion.div>
