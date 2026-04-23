@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -13,6 +13,7 @@ export interface MTAccount {
   nickname: string | null;
   status: "pending" | "syncing" | "connected" | "error" | "disconnected";
   status_message: string | null;
+  last_error: string | null;
   last_synced_at: string | null;
   balance: number | null;
   equity: number | null;
@@ -21,6 +22,8 @@ export interface MTAccount {
   margin_level: number | null;
   currency: string | null;
   leverage: number | null;
+  metaapi_account_id: string | null;
+  region: string | null;
   has_password: boolean;
   created_at: string;
   updated_at: string;
@@ -51,7 +54,12 @@ export interface MTSnapshot {
   recorded_at: string;
 }
 
-/** Returns the user's primary connected MT account + open positions + equity curve. */
+/**
+ * Returns the user's primary MT account + open positions + equity curve.
+ *
+ * - Syncs every 30s while connected (real MetaApi pull)
+ * - Polls every 15s while status === "syncing" (provisioning / deploy)
+ */
 export function useMTAccount() {
   const { user } = useAuth();
   const [account, setAccount] = useState<MTAccount | null>(null);
@@ -59,6 +67,7 @@ export function useMTAccount() {
   const [snapshots, setSnapshots] = useState<MTSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const lastSyncRef = useRef<number>(0);
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -115,6 +124,7 @@ export function useMTAccount() {
       const id = accountId ?? account?.id;
       if (!id) return { error: "No account" };
       setSyncing(true);
+      lastSyncRef.current = Date.now();
       try {
         const { data, error } = await (supabase as any).functions.invoke(
           "sync-mt-account",
@@ -123,14 +133,40 @@ export function useMTAccount() {
         if (error) throw error;
         await refresh();
         return { data };
-      } catch (err) {
-        return { error: String(err) };
+      } catch (err: any) {
+        return { error: err?.message ?? String(err) };
       } finally {
         setSyncing(false);
       }
     },
     [account, refresh],
   );
+
+  // ---- Background poller ----
+  // - While syncing: poll every 15s to track MetaApi provisioning
+  // - While connected: pull live data every 30s
+  useEffect(() => {
+    if (!account) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled) return;
+      // Skip if a manual sync was started in the last 10s
+      if (Date.now() - lastSyncRef.current < 10_000) return;
+      await sync(account.id);
+    };
+    const interval =
+      account.status === "syncing" || account.status === "pending"
+        ? 15_000
+        : account.status === "connected"
+          ? 30_000
+          : 0;
+    if (!interval) return;
+    const handle = setInterval(tick, interval);
+    return () => {
+      cancelled = true;
+      clearInterval(handle);
+    };
+  }, [account, sync]);
 
   return { account, positions, snapshots, loading, syncing, sync, refresh };
 }
