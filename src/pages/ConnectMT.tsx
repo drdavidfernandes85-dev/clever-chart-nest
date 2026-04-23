@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -34,30 +34,19 @@ import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
 
-// INFINOX brokers — only the two regulated trading entities are exposed.
-// Server names cover both MT4 and MT5 production + demo environments.
+// INFINOX brokers — server names verified against MetaApi provisioning catalog.
+// "InfinoxLimited-MT5Live" is the canonical Live server for retail clients.
 const COMMON_BROKERS: { name: string; servers: string[] }[] = [
   {
-    name: "INFINOX Capital",
-    servers: [
-      "INFINOXCapital-MT5",
-      "INFINOXCapital-MT5-Live",
-      "INFINOXCapital-MT5-Demo",
-      "INFINOXCapital-Live",
-      "INFINOXCapital-Live2",
-      "INFINOXCapital-Demo",
-    ],
+    name: "Infinox Capital Limited",
+    servers: ["InfinoxCapitalLimited-MT5Live"],
   },
   {
-    name: "INFINOX Limited",
+    name: "Infinox Limited",
     servers: [
+      "InfinoxLimited-MT5Live",
+      "InfinoxLimited-MT5Demo",
       "INFINOXLimited-MT5",
-      "INFINOXLimited-MT5-Live",
-      "INFINOXLimited-MT5-Live2",
-      "INFINOXLimited-MT5-Demo",
-      "INFINOXLimited-Live",
-      "INFINOXLimited-Live2",
-      "INFINOXLimited-Demo",
     ],
   },
   { name: "Custom / Other", servers: [] },
@@ -70,9 +59,10 @@ const ConnectMT = () => {
 
   const [platform, setPlatform] = useState<"mt4" | "mt5">("mt5");
   const [accountType, setAccountType] = useState<"live" | "demo">("live");
-  const [brokerName, setBrokerName] = useState(COMMON_BROKERS[0].name);
+  const defaultBroker = COMMON_BROKERS.find((b) => b.name === "Infinox Limited") ?? COMMON_BROKERS[0];
+  const [brokerName, setBrokerName] = useState(defaultBroker.name);
   const [customBroker, setCustomBroker] = useState("");
-  const [serverName, setServerName] = useState(COMMON_BROKERS[0].servers[0] ?? "");
+  const [serverName, setServerName] = useState(defaultBroker.servers[0] ?? "");
   const [customServer, setCustomServer] = useState("");
   const [login, setLogin] = useState("");
   const [investorPassword, setInvestorPassword] = useState("");
@@ -87,6 +77,18 @@ const ConnectMT = () => {
   const finalServer = isCustomBroker || (selectedBroker?.servers.length === 0)
     ? customServer.trim()
     : serverName;
+
+  // Auto-pick the matching server when platform / account type / broker changes.
+  useEffect(() => {
+    if (!selectedBroker || selectedBroker.servers.length === 0) return;
+    if (platform !== "mt5") return;
+    const wantLive = accountType === "live";
+    const match = selectedBroker.servers.find((s) =>
+      wantLive ? /live/i.test(s) : /demo/i.test(s),
+    );
+    if (match && match !== serverName) setServerName(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platform, accountType, brokerName]);
 
   const handleConnect = async () => {
     if (!user) return;
