@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { motion } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Activity, Target, Flame, DollarSign } from "lucide-react";
 
@@ -93,7 +94,7 @@ const KpiStrip = () => {
 
   return (
     <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-      {items.map((k) => {
+      {items.map((k, idx) => {
         const c = accentColor[k.accent];
         const Icon = k.icon;
         const data = k.spark.map((v, i) => ({ i, v }));
@@ -101,9 +102,12 @@ const KpiStrip = () => {
         const DeltaIcon = isUp ? TrendingUp : TrendingDown;
 
         return (
-          <div
+          <motion.div
             key={k.label}
-            className="group relative overflow-hidden rounded-2xl glass-panel p-4 transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_20px_50px_-25px_hsl(48_100%_51%/0.4)]"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: idx * 0.07, ease: "easeOut" }}
+            className="group relative overflow-hidden rounded-2xl glass-panel p-4 transition-all duration-500 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_20px_50px_-25px_hsl(48_100%_51%/0.4)]"
           >
             {/* Accent edge */}
             <div
@@ -156,7 +160,7 @@ const KpiStrip = () => {
                 24h
               </span>
             </div>
-          </div>
+          </motion.div>
         );
       })}
     </div>
