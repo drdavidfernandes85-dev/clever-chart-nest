@@ -31,6 +31,7 @@ const Analytics = lazy(() => import("./pages/Analytics.tsx"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile.tsx"));
 const News = lazy(() => import("./pages/News.tsx"));
 const CalendarPage = lazy(() => import("./pages/Calendar.tsx"));
+const ConnectMT = lazy(() => import("./pages/ConnectMT.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ const App = () => (
                   <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
                   <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+                  <Route path="/connect-mt" element={<ProtectedRoute><ConnectMT /></ProtectedRoute>} />
                   <Route path="/u/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
