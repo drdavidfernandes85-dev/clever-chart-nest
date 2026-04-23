@@ -16,6 +16,37 @@ const corsHeaders = {
 
 const FALLBACK_METAAPI_TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
 
+interface AccountRow {
+  id: string;
+  user_id: string;
+  platform: "mt4" | "mt5";
+  account_type: "live" | "demo";
+  broker_name: string;
+  server_name: string;
+  login: string;
+  metaapi_account_id: string | null;
+  region: string | null;
+  investor_password_encrypted: Uint8Array | string | null;
+  metaapi_token_encrypted: Uint8Array | string | null;
+}
+
+// Decode the password we stored as `enc:<plaintext>` base64 wrapper.
+function decodePassword(raw: Uint8Array | string | null): string | null {
+  if (!raw) return null;
+  try {
+    const str = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
+    try {
+      const decoded = atob(str);
+      if (decoded.startsWith("enc:")) return decoded.slice(4);
+      return decoded;
+    } catch {
+      return str;
+    }
+  } catch {
+    return null;
+  }
+}
+
 const METAAPI_PROVISIONING_HOST = "mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai";
 const provisioningUrl = (_region: string) =>
   `https://${METAAPI_PROVISIONING_HOST}`;
