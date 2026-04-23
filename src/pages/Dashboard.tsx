@@ -204,114 +204,56 @@ const Dashboard = () => {
         </header>
 
         {/* Page body */}
-        <main className="flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-6 sm:space-y-10 lg:space-y-12 pb-28 lg:pb-12">
+        <main className="flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-8 sm:space-y-10 lg:space-y-12 pb-28 lg:pb-12">
+          {/* 1. Top KPI row — 4 clean cards */}
           <KpiStrip />
 
-          <div
-            className={`grid gap-6 sm:gap-8 lg:gap-10 ${
-              railOpen ? "xl:grid-cols-[minmax(0,1fr)_268px]" : "xl:grid-cols-1"
-            }`}
-          >
-            <div className="min-w-0 space-y-6 sm:space-y-8 lg:space-y-10">
-              {/* Hero CTA */}
-              <motion.div
+          {/* 2. Command Center — Portfolio (hero) + Right Sidebar */}
+          <div className="grid gap-6 sm:gap-8 lg:gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+            {/* Hero — Portfolio Overview with sparkline + open positions */}
+            <motion.section
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="min-w-0"
+            >
+              <PortfolioOverview />
+            </motion.section>
+
+            {/* Right narrow sidebar — Risk → Quick Trade → Watchlist */}
+            <aside className="min-w-0 space-y-6">
+              <RiskMeter />
+              <div className="hidden lg:block">
+                <QuickTradePanel />
+              </div>
+              <Watchlist />
+            </aside>
+          </div>
+
+          {/* 3. Bottom — Market Movers (Top Gainers / Losers / Most Active) */}
+          <section>
+            <MarketMovers />
+          </section>
+
+          {/* Optional community rail — toggleable, kept out of main flow */}
+          <AnimatePresence initial={false}>
+            {railOpen && (
+              <motion.aside
+                key="rail"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45 }}
-                className="group relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/[0.06] to-transparent p-5 sm:p-7 transition-all hover:border-primary/60"
-                style={{
-                  boxShadow:
-                    "0 20px 60px -25px hsl(48 100% 51% / 0.35), inset 0 1px 0 hsl(48 100% 51% / 0.15)",
-                }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.3 }}
+                className="hidden xl:grid gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_320px]"
               >
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-70 transition-opacity duration-500 group-hover:opacity-100"
-                  style={{
-                    background:
-                      "radial-gradient(700px circle at 0% 50%, hsl(48 100% 51% / 0.18), transparent 60%), radial-gradient(500px circle at 100% 100%, hsl(48 100% 51% / 0.08), transparent 60%)",
-                  }}
-                />
-                <div
-                  className="pointer-events-none absolute -inset-x-20 -top-px h-px opacity-60"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, transparent, hsl(48 100% 51% / 0.8), transparent)",
-                  }}
-                />
-                <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="relative flex h-2 w-2">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                        <span className="relative inline-flex h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_hsl(48_100%_51%)]" />
-                      </span>
-                      <span className="text-[10px] font-mono uppercase tracking-[0.3em] text-primary font-bold">
-                        Markets are live
-                      </span>
-                    </div>
-                    <h2 className="font-heading text-xl sm:text-2xl lg:text-[26px] font-bold text-foreground leading-tight">
-                      Launch <span className="text-primary">Advanced Trading Terminal</span>
-                    </h2>
-                    <p className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.18em] text-muted-foreground mt-2">
-                      Multi-chart <span className="text-primary/70">•</span> Indicators{" "}
-                      <span className="text-primary/70">•</span> Drawing{" "}
-                      <span className="text-primary/70">•</span> Shared Signals
-                    </p>
-                  </div>
-                  <Button
-                    asChild
-                    size="lg"
-                    className="relative bg-primary text-primary-foreground hover:bg-primary font-bold rounded-xl h-12 sm:h-14 px-5 sm:px-7 text-sm tracking-wide overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_15px_50px_-10px_hsl(48_100%_51%/0.8)] shadow-[0_10px_40px_-10px_hsl(48_100%_51%/0.6)]"
-                  >
-                    <Link to="/live-chart" className="flex items-center justify-center gap-2.5">
-                      <BarChart3 className="h-5 w-5" />
-                      Launch Terminal
-                      <ArrowUpRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                    </Link>
-                  </Button>
-                </div>
-              </motion.div>
-
-              {/* Risk Meter */}
-              <RiskMeter />
-
-              {/* Portfolio + Watchlist/Trade/Signals */}
-              <div className="grid gap-6 sm:gap-8 lg:grid-cols-[3fr_2fr]">
-                <div className="space-y-6 sm:space-y-8 min-w-0">
-                  <PortfolioOverview />
-                  <RecentActivity />
-                </div>
-                <div className="space-y-6 min-w-0">
-                  <Watchlist />
-                  {/* Inline Quick Trade — desktop only */}
-                  <div className="hidden lg:block">
-                    <QuickTradePanel />
-                  </div>
+                <RecentActivity />
+                <div className="min-w-0 space-y-6">
                   <LiveSharedSignals />
+                  <CommunityNest />
                 </div>
-              </div>
-
-              <MarketMovers />
-            </div>
-
-            {/* Right community rail */}
-            <AnimatePresence initial={false}>
-              {railOpen && (
-                <motion.aside
-                  key="rail"
-                  initial={{ opacity: 0, x: 16, width: 0 }}
-                  animate={{ opacity: 1, x: 0, width: "auto" }}
-                  exit={{ opacity: 0, x: 16, width: 0 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="hidden xl:block min-w-0 overflow-hidden"
-                >
-                  <div className="xl:sticky xl:top-24">
-                    <CommunityNest />
-                  </div>
-                </motion.aside>
-              )}
-            </AnimatePresence>
-          </div>
+              </motion.aside>
+            )}
+          </AnimatePresence>
         </main>
       </div>
 
