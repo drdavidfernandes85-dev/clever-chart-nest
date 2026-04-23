@@ -29,12 +29,17 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    container.innerHTML = '<div class="tradingview-widget-container__widget" style="height:100%;width:100%;"></div>';
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.type = "text/javascript";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
+
+    // Safely clear container without innerHTML
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    const widgetDiv = document.createElement("div");
+    widgetDiv.className = "tradingview-widget-container__widget";
+    widgetDiv.style.height = "100%";
+    widgetDiv.style.width = "100%";
+    container.appendChild(widgetDiv);
+
+    const config = {
       autosize: true,
       symbol,
       interval,
@@ -70,8 +75,19 @@ const TradingViewChart = ({ symbol = "FX:EURUSD", interval = "60" }: { symbol?: 
         "paneProperties.background": "#1E1E1E",
         "paneProperties.backgroundType": "solid",
       },
-    });
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
+    // textContent is safe (no HTML parsing); TradingView reads JSON config from script body
+    script.textContent = JSON.stringify(config);
     container.appendChild(script);
+
+    return () => {
+      while (container.firstChild) container.removeChild(container.firstChild);
+    };
   }, [symbol, interval]);
 
   return <div className="tradingview-widget-container h-full w-full" ref={containerRef} />;

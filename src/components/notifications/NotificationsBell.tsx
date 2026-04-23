@@ -74,7 +74,9 @@ const NotificationsBell = () => {
           if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
             try {
               new Notification(n.title, { body: n.body ?? "", icon: "/favicon.ico" });
-            } catch {}
+            } catch (err) {
+              console.error("Failed to show browser notification:", err);
+            }
           }
         }
       )

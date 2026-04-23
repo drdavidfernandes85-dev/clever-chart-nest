@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Reply, Pencil, Trash2, Check, X } from "lucide-react";
+import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import MessageReactions from "./MessageReactions";
@@ -74,7 +75,11 @@ const renderContent = (content: string) => {
         <a key={i} href={token.url} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">{token.text}</a>
       );
     } else {
-      parts.push(<span key={i} dangerouslySetInnerHTML={{ __html: renderInline(token.text) }} />);
+      const safeHtml = DOMPurify.sanitize(renderInline(token.text), {
+        ALLOWED_TAGS: ["strong", "em", "code", "span"],
+        ALLOWED_ATTR: ["class"],
+      });
+      parts.push(<span key={i} dangerouslySetInnerHTML={{ __html: safeHtml }} />);
     }
   });
   return parts;
