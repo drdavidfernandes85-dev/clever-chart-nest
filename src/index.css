@@ -256,6 +256,16 @@
     background: linear-gradient(90deg, transparent, hsl(48 100% 60% / 0.6), transparent);
   }
 
+  .cta-button {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    font-weight: 600;
+  }
+  .cta-button:hover {
+    background: hsl(48 100% 56%);
+    box-shadow: 0 10px 30px -10px hsl(48 100% 51% / 0.6);
+  }
+
   @property --angle {
     syntax: "<angle>";
     initial-value: 0deg;
