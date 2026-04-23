@@ -32,6 +32,7 @@ const Watchlist = () => {
   const [items, setItems] = useState<WatchItem[]>(DEFAULT_WATCHLIST);
   const [prices, setPrices] = useState<Record<string, PriceState>>({});
   const dragId = useRef<string | null>(null);
+  const { openTrade } = useQuickTrade();
 
   // Restore order
   useEffect(() => {
