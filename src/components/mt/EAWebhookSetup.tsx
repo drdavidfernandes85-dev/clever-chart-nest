@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import {
   Copy,
   Download,
@@ -68,7 +68,7 @@ async function downloadEA(
   URL.revokeObjectURL(a.href);
 }
 
-export const EAWebhookSetup = () => {
+export const EAWebhookSetup = forwardRef<HTMLDivElement>((_props, ref) => {
   const { user } = useAuth();
   const [token, setToken] = useState<TokenRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,7 +158,7 @@ export const EAWebhookSetup = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div ref={ref} className="space-y-6">
       {/* Intro / why */}
       <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
         <div className="flex items-start gap-3">
@@ -372,6 +372,7 @@ export const EAWebhookSetup = () => {
       </div>
     </div>
   );
-};
+});
+EAWebhookSetup.displayName = "EAWebhookSetup";
 
 export default EAWebhookSetup;
