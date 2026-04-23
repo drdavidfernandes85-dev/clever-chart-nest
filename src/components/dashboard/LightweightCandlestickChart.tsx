@@ -233,44 +233,55 @@ const LightweightCandlestickChart = ({
       {/* Chart canvas */}
       <div ref={containerRef} className="w-full" style={{ height }} />
 
-      {/* Floating live price overlay */}
+      {/* Premium glowing LIVE price badge — top right */}
       {lastPrice !== null && (
-        <div className="pointer-events-none absolute right-4 top-20 z-10 flex flex-col items-end gap-1">
-          <div
-            className="flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1.5 backdrop-blur-md shadow-lg"
-            style={{
-              borderColor: `${liveColor}55`,
-              boxShadow: `0 0 24px -8px ${liveColor}66`,
-            }}
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span
-                className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
-                style={{ backgroundColor: liveColor }}
-              />
-              <span
-                className="relative inline-flex h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: liveColor }}
-              />
-            </span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-              Live
-            </span>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92, y: -6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut", delay: 0.2 }}
+          className="pointer-events-none absolute right-5 top-20 z-20 flex items-center gap-3 rounded-2xl border border-primary/40 bg-background/85 px-5 py-3 backdrop-blur-xl"
+          style={{
+            boxShadow:
+              "0 0 0 1px hsl(48 100% 51% / 0.08), 0 10px 40px -10px hsl(48 100% 51% / 0.45), 0 0 60px -20px hsl(48 100% 51% / 0.6)",
+          }}
+        >
+          <span className="relative flex h-2.5 w-2.5">
+            <span
+              className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+              style={{ backgroundColor: liveColor }}
+            />
+            <span
+              className="relative inline-flex h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: liveColor }}
+            />
+          </span>
+          <div className="flex flex-col">
             <AnimatePresence mode="popLayout">
               <motion.span
                 key={lastPrice}
-                initial={{ y: -10, opacity: 0 }}
+                initial={{ y: -8, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 10, opacity: 0 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="font-mono text-xs font-semibold tabular-nums"
-                style={{ color: liveColor }}
+                exit={{ y: 8, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="font-mono text-xl font-semibold tabular-nums leading-none text-foreground"
               >
                 {lastPrice.toFixed(5)}
               </motion.span>
             </AnimatePresence>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span
+                className="font-mono text-[11px] font-semibold tabular-nums"
+                style={{ color: liveColor }}
+              >
+                {isUp ? "+" : ""}
+                {(change * 10000).toFixed(1)} pips
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-primary">
+                Live
+              </span>
+            </div>
           </div>
-        </div>
+        </motion.div>
       )}
     </motion.div>
   );
