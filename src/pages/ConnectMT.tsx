@@ -34,30 +34,19 @@ import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
 
-// INFINOX brokers — only the two regulated trading entities are exposed.
-// Server names cover both MT4 and MT5 production + demo environments.
+// INFINOX brokers — server names verified against MetaApi provisioning catalog.
+// "InfinoxLimited-MT5Live" is the canonical Live server for retail clients.
 const COMMON_BROKERS: { name: string; servers: string[] }[] = [
   {
-    name: "INFINOX Capital",
-    servers: [
-      "INFINOXCapital-MT5",
-      "INFINOXCapital-MT5-Live",
-      "INFINOXCapital-MT5-Demo",
-      "INFINOXCapital-Live",
-      "INFINOXCapital-Live2",
-      "INFINOXCapital-Demo",
-    ],
+    name: "Infinox Capital Limited",
+    servers: ["InfinoxCapitalLimited-MT5Live"],
   },
   {
-    name: "INFINOX Limited",
+    name: "Infinox Limited",
     servers: [
+      "InfinoxLimited-MT5Live",
+      "InfinoxLimited-MT5Demo",
       "INFINOXLimited-MT5",
-      "INFINOXLimited-MT5-Live",
-      "INFINOXLimited-MT5-Live2",
-      "INFINOXLimited-MT5-Demo",
-      "INFINOXLimited-Live",
-      "INFINOXLimited-Live2",
-      "INFINOXLimited-Demo",
     ],
   },
   { name: "Custom / Other", servers: [] },
