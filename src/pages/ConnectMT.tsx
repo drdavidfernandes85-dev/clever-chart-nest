@@ -59,6 +59,7 @@ const ConnectMT = () => {
   const [customServer, setCustomServer] = useState("");
   const [login, setLogin] = useState("");
   const [investorPassword, setInvestorPassword] = useState("");
+  const [metaapiToken, setMetaapiToken] = useState("");
   const [nickname, setNickname] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmedReadOnly, setConfirmedReadOnly] = useState(false);
@@ -95,6 +96,9 @@ const ConnectMT = () => {
           investor_password_encrypted: new TextEncoder().encode(
             btoa(`enc:${investorPassword}`),
           ),
+          metaapi_token_encrypted: metaapiToken.trim()
+            ? new TextEncoder().encode(btoa(`enc:${metaapiToken.trim()}`))
+            : null,
           status: "syncing",
           status_message: "Initial sync in progress",
         })
