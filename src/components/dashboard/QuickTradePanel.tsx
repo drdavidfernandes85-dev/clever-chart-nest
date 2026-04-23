@@ -246,7 +246,7 @@ const QuickTradePanel = ({ compact = false }: Props) => {
                     >
                       <span>{s}</span>
                       <span className="font-mono tabular-nums text-muted-foreground">
-                        {(PRICE_HINTS[s] ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5)}
+                        {(livePrices[s] ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5)}
                       </span>
                     </button>
                   </li>
