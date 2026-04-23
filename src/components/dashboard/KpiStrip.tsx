@@ -2,10 +2,12 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Activity, Target, Flame, DollarSign } from "lucide-react";
+import { useMTAccount } from "@/hooks/useMTAccount";
 
 /**
  * Hedge-fund style KPI strip — 4 dense KPI tiles with embedded sparklines.
- * Pure presentation; data is illustrative until wired to user stats.
+ * When an MT account is connected, P&L Today / Volume / Win Streak come from
+ * live snapshots + open positions. Otherwise we show illustrative demo data.
  */
 
 interface KPI {
@@ -35,43 +37,11 @@ const buildSpark = (s: number, trend: number) => {
   });
 };
 
-const KPI_CONFIG: KPI[] = [
-  {
-    label: "P&L Today",
-    value: "+$2,418.50",
-    delta: "+4.82%",
-    deltaDir: "up",
-    icon: DollarSign,
-    spark: [],
-    accent: "bull",
-  },
-  {
-    label: "Win Rate (30d)",
-    value: "74.2%",
-    delta: "+2.1%",
-    deltaDir: "up",
-    icon: Target,
-    spark: [],
-    accent: "gold",
-  },
-  {
-    label: "Volume Traded",
-    value: "12.4 lots",
-    delta: "+18%",
-    deltaDir: "up",
-    icon: Activity,
-    spark: [],
-    accent: "bull",
-  },
-  {
-    label: "Win Streak",
-    value: "7",
-    delta: "Personal best",
-    deltaDir: "up",
-    icon: Flame,
-    spark: [],
-    accent: "gold",
-  },
+const MOCK_KPI: KPI[] = [
+  { label: "P&L Today", value: "+$2,418.50", delta: "+4.82%", deltaDir: "up", icon: DollarSign, spark: [], accent: "bull" },
+  { label: "Win Rate (30d)", value: "74.2%", delta: "+2.1%", deltaDir: "up", icon: Target, spark: [], accent: "gold" },
+  { label: "Volume Traded", value: "12.4 lots", delta: "+18%", deltaDir: "up", icon: Activity, spark: [], accent: "bull" },
+  { label: "Win Streak", value: "7", delta: "Personal best", deltaDir: "up", icon: Flame, spark: [], accent: "gold" },
 ];
 
 const accentColor: Record<KPI["accent"], string> = {
@@ -81,15 +51,88 @@ const accentColor: Record<KPI["accent"], string> = {
 };
 
 const KpiStrip = () => {
+  const { account, positions, snapshots } = useMTAccount();
+  const isConnected = !!account && account.status === "connected";
+
+  const liveKpis = useMemo<KPI[] | null>(() => {
+    if (!isConnected || !account) return null;
+
+    // P&L Today: equity - earliest snapshot today (fallback: sum of open profit)
+    const today = new Date().toISOString().slice(0, 10);
+    const todays = snapshots.filter((s) => s.recorded_at.startsWith(today));
+    const baselineEquity = todays.length > 0 ? Number(todays[0].equity) : null;
+    const equity = Number(account.equity ?? 0);
+    const openPnl = positions.reduce((sum, p) => sum + Number(p.profit ?? 0), 0);
+    const pnlToday = baselineEquity != null ? equity - baselineEquity : openPnl;
+    const pnlPct = baselineEquity && baselineEquity !== 0 ? (pnlToday / baselineEquity) * 100 : 0;
+
+    // Volume traded = sum of open volume (lots)
+    const volume = positions.reduce((sum, p) => sum + Number(p.volume ?? 0), 0);
+
+    // Win rate from open positions (winners / total)
+    const winners = positions.filter((p) => Number(p.profit ?? 0) > 0).length;
+    const winRate = positions.length > 0 ? (winners / positions.length) * 100 : 0;
+
+    // Win streak from open positions (consecutive winners from most recent)
+    const sorted = [...positions].sort(
+      (a, b) => new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime(),
+    );
+    let streak = 0;
+    for (const p of sorted) {
+      if (Number(p.profit ?? 0) > 0) streak++;
+      else break;
+    }
+
+    const pnlUp = pnlToday >= 0;
+    return [
+      {
+        label: "P&L Today",
+        value: `${pnlUp ? "+" : "−"}$${Math.abs(pnlToday).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        delta: `${pnlUp ? "+" : "−"}${Math.abs(pnlPct).toFixed(2)}%`,
+        deltaDir: pnlUp ? "up" : "down",
+        icon: DollarSign,
+        spark: [],
+        accent: pnlUp ? "bull" : "bear",
+      },
+      {
+        label: "Win Rate (open)",
+        value: `${winRate.toFixed(1)}%`,
+        delta: `${winners}/${positions.length} winners`,
+        deltaDir: winRate >= 50 ? "up" : "down",
+        icon: Target,
+        spark: [],
+        accent: "gold",
+      },
+      {
+        label: "Volume Open",
+        value: `${volume.toFixed(2)} lots`,
+        delta: `${positions.length} positions`,
+        deltaDir: "up",
+        icon: Activity,
+        spark: [],
+        accent: "bull",
+      },
+      {
+        label: "Win Streak",
+        value: String(streak),
+        delta: streak >= 3 ? "On a run" : "Keep going",
+        deltaDir: "up",
+        icon: Flame,
+        spark: [],
+        accent: "gold",
+      },
+    ];
+  }, [isConnected, account, positions, snapshots]);
+
   const items = useMemo(
     () =>
-      KPI_CONFIG.map((k, i) => ({
+      (liveKpis ?? MOCK_KPI).map((k, i) => ({
         ...k,
         spark: buildSpark(11 + i * 7, k.deltaDir === "up" ? 0.4 : k.deltaDir === "down" ? -0.4 : 0).map(
-          (p) => p.v
+          (p) => p.v,
         ),
       })),
-    []
+    [liveKpis],
   );
 
   return (
