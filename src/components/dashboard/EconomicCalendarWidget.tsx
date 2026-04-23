@@ -25,7 +25,7 @@ const EconomicCalendarWidget = () => {
       "https://sslecal2.investing.com?columns=exc_flags,exc_currency,exc_importance,exc_actual,exc_forecast,exc_previous&category=_employment,_economicActivity,_inflation,_credit,_centralBanks,_confidenceIndex,_balance,_Bonds&importance=2,3&features=datepicker,timezone,timeselector,filters&countries=5,72,17,4,12,17,32,6,37,22&calType=week&timeZone=8&lang=1";
     iframe.title = "Live Economic Calendar";
     iframe.frameBorder = "0";
-    iframe.allowTransparency = true;
+    iframe.setAttribute("allowtransparency", "true");
     iframe.scrolling = "yes";
     iframe.style.width = "100%";
     iframe.style.height = "560px";
