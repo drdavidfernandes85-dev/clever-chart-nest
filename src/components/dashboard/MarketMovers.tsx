@@ -101,6 +101,75 @@ const MoverList = ({
 };
 
 const MarketMovers = () => {
+  const [data, setData] = useState<Mover[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch live spot price + yesterday's close, derive 24h % change.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAll = async () => {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      const next = await Promise.all(
+        PAIRS.map(async (p) => {
+          try {
+            const [latestRes, histRes] = await Promise.all([
+              fetch(
+                `https://api.exchangerate.host/latest?base=${p.base}&symbols=${p.quote}`,
+                { cache: "no-store" },
+              ),
+              fetch(
+                `https://api.exchangerate.host/${yesterday}?base=${p.base}&symbols=${p.quote}`,
+                { cache: "no-store" },
+              ),
+            ]);
+            const latest = await latestRes.json();
+            const hist = await histRes.json();
+            const price = latest?.rates?.[p.quote];
+            const prev = hist?.rates?.[p.quote] ?? price;
+            if (typeof price !== "number") return null;
+            const changePct = prev ? ((price - prev) / prev) * 100 : 0;
+            return {
+              symbol: p.symbol,
+              price,
+              changePct,
+              volume: p.volume,
+            } as Mover;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (!cancelled) {
+        setData(next.filter(Boolean) as Mover[]);
+        setLoading(false);
+      }
+    };
+    fetchAll();
+    const id = window.setInterval(fetchAll, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
+
+  const gainers = useMemo(
+    () => [...data].sort((a, b) => b.changePct - a.changePct).slice(0, 4),
+    [data],
+  );
+  const losers = useMemo(
+    () => [...data].sort((a, b) => a.changePct - b.changePct).slice(0, 4),
+    [data],
+  );
+  const mostActive = useMemo(
+    () =>
+      [...data]
+        .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+        .slice(0, 4),
+    [data],
+  );
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
@@ -115,14 +184,15 @@ const MarketMovers = () => {
         >
           Market Movers
         </h2>
-        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          Last 24 hours
+        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1">
+          {loading && <Loader2 className="h-3 w-3 animate-spin" />}
+          {loading ? "Loading…" : "Live · 24h"}
         </span>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
-        <MoverList title="Top Gainers" rows={TOP_GAINERS} variant="gainers" />
-        <MoverList title="Top Losers" rows={TOP_LOSERS} variant="losers" />
-        <MoverList title="Most Active" rows={MOST_ACTIVE} variant="active" showVolume />
+        <MoverList title="Top Gainers" rows={gainers} variant="gainers" />
+        <MoverList title="Top Losers" rows={losers} variant="losers" />
+        <MoverList title="Most Active" rows={mostActive} variant="active" showVolume />
       </div>
     </motion.section>
   );
