@@ -16,10 +16,15 @@ const corsHeaders = {
 
 const FALLBACK_METAAPI_TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
 
-const provisioningUrl = (region: string) =>
-  `https://mt-provisioning-api-v1.${region}.agiliumtrade.ai`;
+// MetaApi global endpoints — use the canonical `agiliumtrade.agiliumtrade.ai`
+// hostnames which serve a publicly-trusted Let's Encrypt cert chain.
+// The per-region `*.agiliumtrade.ai` hosts use a private CA that Deno's
+// bundled root store does not trust ("invalid peer certificate: Unknown issuer").
+// MetaApi automatically routes to the correct region based on the account.
+const provisioningUrl = (_region: string) =>
+  `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai`;
 const clientUrl = (region: string) =>
-  `https://mt-client-api-v1.${region}.agiliumtrade.ai`;
+  `https://mt-client-api-v1.${region}.agiliumtrade.agiliumtrade.ai`;
 
 interface AccountRow {
   id: string;
