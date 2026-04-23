@@ -34,15 +34,32 @@ import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
 
+// INFINOX brokers — only the two regulated trading entities are exposed.
+// Server names cover both MT4 and MT5 production + demo environments.
 const COMMON_BROKERS: { name: string; servers: string[] }[] = [
-  { name: "Infinox Capital", servers: ["INFINOX-Live", "INFINOX-Live2", "INFINOX-Demo"] },
-  { name: "IC Markets", servers: ["ICMarketsSC-Live01", "ICMarketsSC-Live02", "ICMarketsSC-Demo"] },
-  { name: "Pepperstone", servers: ["Pepperstone-Live01", "Pepperstone-Live02", "Pepperstone-Demo"] },
-  { name: "FXTM", servers: ["ForexTimeFXTM-Live", "ForexTimeFXTM-Demo"] },
-  { name: "Exness", servers: ["Exness-Real4", "Exness-Real5", "Exness-Trial"] },
-  { name: "FBS", servers: ["FBS-Real", "FBS-Demo"] },
-  { name: "XM Global", servers: ["XMGlobal-Real 7", "XMGlobal-Demo 3"] },
-  { name: "OANDA", servers: ["OANDA-v20 Live", "OANDA-v20 Practice"] },
+  {
+    name: "INFINOX Capital",
+    servers: [
+      "INFINOXCapital-MT5",
+      "INFINOXCapital-MT5-Live",
+      "INFINOXCapital-MT5-Demo",
+      "INFINOXCapital-Live",
+      "INFINOXCapital-Live2",
+      "INFINOXCapital-Demo",
+    ],
+  },
+  {
+    name: "INFINOX Limited",
+    servers: [
+      "INFINOXLimited-MT5",
+      "INFINOXLimited-MT5-Live",
+      "INFINOXLimited-MT5-Live2",
+      "INFINOXLimited-MT5-Demo",
+      "INFINOXLimited-Live",
+      "INFINOXLimited-Live2",
+      "INFINOXLimited-Demo",
+    ],
+  },
   { name: "Custom / Other", servers: [] },
 ];
 
