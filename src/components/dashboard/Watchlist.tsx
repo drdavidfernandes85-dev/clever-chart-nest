@@ -236,15 +236,15 @@ const Watchlist = () => {
                   </div>
                 </div>
 
-                {/* Trade button */}
-                <Link
-                  to={`/live-chart?symbol=FX:${item.base}${item.quote}`}
+                {/* Trade button — opens global Quick Trade pre-filled */}
+                <button
+                  onClick={() => openTrade(item.symbol)}
                   className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 rounded-md bg-primary/10 hover:bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary ring-1 ring-primary/30 transition-all"
                   title={`Trade ${item.label}`}
                 >
                   <Zap className="h-2.5 w-2.5" />
                   Trade
-                </Link>
+                </button>
 
                 <button
                   onClick={() => removeItem(item.id)}
