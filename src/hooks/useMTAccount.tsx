@@ -189,30 +189,38 @@ export function useMTAccount() {
 
   // ---- Realtime subscription ----
   // Push-based updates so the dashboard reflects EA data within ~1 second.
+  // Depend on account?.id (stable string) so we don't re-subscribe on every
+  // refresh that returns a new account object reference.
+  const accountId = account?.id ?? null;
+  const refreshRef = useRef(refresh);
   useEffect(() => {
-    if (!user || !account) return;
+    refreshRef.current = refresh;
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!user || !accountId) return;
     const channel = (supabase as any)
-      .channel(`mt-live-${account.id}`)
+      .channel(`mt-live-${accountId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "user_mt_accounts", filter: `id=eq.${account.id}` },
-        () => refresh(),
+        { event: "*", schema: "public", table: "user_mt_accounts", filter: `id=eq.${accountId}` },
+        () => refreshRef.current(),
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "mt_positions", filter: `account_id=eq.${account.id}` },
-        () => refresh(),
+        { event: "*", schema: "public", table: "mt_positions", filter: `account_id=eq.${accountId}` },
+        () => refreshRef.current(),
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "mt_account_snapshots", filter: `account_id=eq.${account.id}` },
-        () => refresh(),
+        { event: "INSERT", schema: "public", table: "mt_account_snapshots", filter: `account_id=eq.${accountId}` },
+        () => refreshRef.current(),
       )
       .subscribe();
     return () => {
       (supabase as any).removeChannel(channel);
     };
-  }, [user, account, refresh]);
+  }, [user, accountId]);
 
   return { account, positions, snapshots, loading, syncing, sync, refresh };
 }
