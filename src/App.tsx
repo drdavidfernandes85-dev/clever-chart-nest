@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { QuickTradeProvider } from "@/contexts/QuickTradeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
 import PageTransition from "@/components/PageTransition";
@@ -49,6 +50,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <QuickTradeProvider>
             <PageTransition>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
@@ -74,6 +76,7 @@ const App = () => (
             </PageTransition>
             <OnboardingTour />
             <MobileBottomNav />
+            </QuickTradeProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
