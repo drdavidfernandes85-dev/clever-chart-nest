@@ -4,7 +4,6 @@ import {
   Download,
   KeyRound,
   Loader2,
-  Lock,
   Shield,
   Webhook,
 } from "lucide-react";
@@ -100,15 +99,17 @@ export const EAWebhookSetup = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const generate = async () => {
+  const createToken = async () => {
     if (!user) return;
-    // Hard guard: token is permanent, never regenerate.
-    if (token) {
-      toast.error("Your webhook token is permanent and cannot be regenerated.");
-      return;
-    }
     setCreating(true);
     try {
+      // Revoke any existing active tokens first (so only one active per user).
+      await (supabase as any)
+        .from("mt_webhook_tokens")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .is("revoked_at", null);
+
       const raw = generateToken();
       const hash = await sha256Hex(raw);
       const { data, error } = await (supabase as any)
@@ -124,14 +125,27 @@ export const EAWebhookSetup = () => {
       setToken(data);
       setRawToken(raw);
       if (storageKey) localStorage.setItem(storageKey, raw);
-      toast.success("Webhook token generated", {
-        description: "Copy this token into your EA — it's permanent and always visible here.",
+      toast.success("Webhook token ready", {
+        description: "Copy it into your EA — it stays visible on this page.",
       });
     } catch (e: any) {
       toast.error(e.message ?? "Could not create token");
     } finally {
       setCreating(false);
     }
+  };
+
+  const generate = async () => {
+    if (token) {
+      toast.error("You already have a token. Use Regenerate if you lost it.");
+      return;
+    }
+    await createToken();
+  };
+
+  const regenerate = async () => {
+    if (!confirm("This will invalidate your current token. Your EA will stop working until you re-download it. Continue?")) return;
+    await createToken();
   };
 
   const copy = (text: string, label: string) => {
@@ -220,24 +234,26 @@ export const EAWebhookSetup = () => {
           </h3>
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : token ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-400">
-              <Lock className="h-3 w-3" />
-              Locked — permanent
-            </span>
-          ) : (
+          ) : token && rawToken ? (
             <Button
               size="sm"
-              onClick={generate}
+              variant="outline"
+              onClick={regenerate}
               disabled={creating}
               className="rounded-lg gap-1.5"
             >
-              {creating ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <KeyRound className="h-3.5 w-3.5" />
-              )}
-              Generate token
+              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+              Regenerate
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={token ? regenerate : generate}
+              disabled={creating}
+              className="rounded-lg gap-1.5"
+            >
+              {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+              {token ? "Regenerate token" : "Generate token"}
             </Button>
           )}
         </div>
@@ -275,6 +291,7 @@ export const EAWebhookSetup = () => {
                 <Input
                   readOnly
                   value={rawToken}
+                  onFocus={(e) => e.currentTarget.select()}
                   className="bg-primary/5 border-primary/40 font-mono text-xs text-foreground"
                 />
                 <Button
@@ -288,10 +305,12 @@ export const EAWebhookSetup = () => {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
-                <Shield className="h-3 w-3" />
-                Paste this into the EA's input parameters in MetaEditor. Keep it private.
-              </p>
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+                <Shield className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+                <p className="text-[11px] text-destructive/90 leading-relaxed">
+                  <span className="font-semibold">Keep this token secret.</span> Anyone with it can send data to your account.
+                </p>
+              </div>
               {token?.last_used_at && (
                 <p className="text-[10px] text-muted-foreground/80">
                   Last used {formatDistanceToNow(new Date(token.last_used_at), { addSuffix: true })}
@@ -299,10 +318,10 @@ export const EAWebhookSetup = () => {
               )}
             </>
           ) : token ? (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-xs text-muted-foreground">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-3 text-xs text-muted-foreground">
               <span className="text-foreground font-mono">{token.token_prefix}…</span>{" "}
               <span className="opacity-80">
-                Token exists but isn't cached on this device. Open the page on the device where you generated it to see the full value.
+                Your token isn't cached on this browser. For security we can't recover the original — click <span className="text-foreground font-medium">Regenerate token</span> above to create a new one (you'll need to re-download the EA).
               </span>
             </div>
           ) : (
