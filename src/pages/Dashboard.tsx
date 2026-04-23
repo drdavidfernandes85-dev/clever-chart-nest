@@ -8,17 +8,21 @@ import {
   ChevronUp,
   PanelRightClose,
   PanelRightOpen,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import KpiStrip from "@/components/dashboard/KpiStrip";
-import LiveTradingViewChart from "@/components/dashboard/LiveTradingViewChart";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
+import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
+import Watchlist from "@/components/dashboard/Watchlist";
+import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
+import MarketMovers from "@/components/dashboard/MarketMovers";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
@@ -129,25 +133,75 @@ const Dashboard = () => {
           </AnimatePresence>
         </header>
 
-        {/* Page body — generous spacing, hero chart layout */}
+        {/* Page body — Command Center, generous spacing, no big chart */}
         <main className="flex-1 px-6 py-10 lg:px-12 lg:py-12 space-y-10 lg:space-y-12">
-          {/* KPIs — compact, 4 cards */}
+          {/* KPI strip */}
           <KpiStrip />
 
-          {/* Hero grid: dominant chart + collapsible community rail */}
+          {/* Hero zone: Portfolio + Watchlist/Signals + Community rail */}
           <div
-            className={`grid gap-10 lg:gap-12 ${
+            className={`grid gap-8 lg:gap-10 ${
               railOpen ? "xl:grid-cols-[minmax(0,1fr)_268px]" : "xl:grid-cols-1"
             }`}
           >
-            {/* HERO CHART — real live TradingView Advanced Chart */}
-            <div className="min-w-0">
-              <LiveTradingViewChart
-                symbol="FX:EURUSD"
-                displaySymbol="EUR/USD"
-                interval="1"
-                height={720}
-              />
+            {/* Main column — Command Center */}
+            <div className="min-w-0 space-y-8 lg:space-y-10">
+              {/* Quick action: Open Full Live Charts */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 sm:p-6"
+              >
+                <div
+                  className="pointer-events-none absolute inset-0 opacity-60"
+                  style={{
+                    background:
+                      "radial-gradient(600px circle at 0% 50%, hsl(48 100% 51% / 0.12), transparent 60%)",
+                  }}
+                />
+                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                      </span>
+                      <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-primary">
+                        Markets are live
+                      </span>
+                    </div>
+                    <h2 className="font-heading text-base sm:text-lg font-semibold text-foreground">
+                      Open the full Live Charts workspace
+                    </h2>
+                    <p className="text-xs text-muted-foreground max-w-md mt-0.5">
+                      Multi-timeframe TradingView charts, indicators, drawing tools, smart alerts and shared signals.
+                    </p>
+                  </div>
+                  <Button
+                    asChild
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_8px_30px_-10px_hsl(48_100%_51%/0.55)] rounded-xl h-11 px-5"
+                  >
+                    <Link to="/live-chart" className="flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      Open Full Live Charts
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </motion.div>
+
+              {/* Two-column: Portfolio (60%) + Watchlist + Live Signals (40%) */}
+              <div className="grid gap-8 lg:grid-cols-[3fr_2fr]">
+                <PortfolioOverview />
+                <div className="space-y-6">
+                  <Watchlist />
+                  <LiveSharedSignals />
+                </div>
+              </div>
+
+              {/* Market Movers row */}
+              <MarketMovers />
             </div>
 
             {/* Right community rail — collapsible */}
