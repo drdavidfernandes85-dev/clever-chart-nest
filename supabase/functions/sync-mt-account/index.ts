@@ -62,12 +62,13 @@ function decodePassword(raw: Uint8Array | string | null): string | null {
 
 async function metaapi(
   url: string,
+  token: string,
   init: RequestInit = {},
 ): Promise<Response> {
   return await fetch(url, {
     ...init,
     headers: {
-      "auth-token": METAAPI_TOKEN,
+      "auth-token": token,
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
@@ -77,6 +78,7 @@ async function metaapi(
 async function provisionAccount(
   account: AccountRow,
   password: string,
+  token: string,
 ): Promise<{ metaapiId: string; region: string }> {
   const region = account.region || "new-york";
   const body = {
@@ -91,10 +93,11 @@ async function provisionAccount(
     keywords: [account.broker_name],
     metastatsApiEnabled: false,
   };
-  const res = await metaapi(`${provisioningUrl(region)}/users/current/accounts`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+  const res = await metaapi(
+    `${provisioningUrl(region)}/users/current/accounts`,
+    token,
+    { method: "POST", body: JSON.stringify(body) },
+  );
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`Provision failed (${res.status}): ${txt}`);
@@ -104,22 +107,25 @@ async function provisionAccount(
   // Trigger deploy explicitly (idempotent)
   await metaapi(
     `${provisioningUrl(region)}/users/current/accounts/${metaapiId}/deploy`,
+    token,
     { method: "POST" },
   ).catch(() => {});
   return { metaapiId, region };
 }
 
-async function getAccountState(metaapiId: string, region: string) {
+async function getAccountState(metaapiId: string, region: string, token: string) {
   const res = await metaapi(
     `${provisioningUrl(region)}/users/current/accounts/${metaapiId}`,
+    token,
   );
   if (!res.ok) return null;
   return await res.json();
 }
 
-async function fetchAccountInformation(metaapiId: string, region: string) {
+async function fetchAccountInformation(metaapiId: string, region: string, token: string) {
   const res = await metaapi(
     `${clientUrl(region)}/users/current/accounts/${metaapiId}/account-information`,
+    token,
   );
   if (!res.ok) {
     const txt = await res.text();
@@ -128,19 +134,21 @@ async function fetchAccountInformation(metaapiId: string, region: string) {
   return await res.json();
 }
 
-async function fetchPositions(metaapiId: string, region: string) {
+async function fetchPositions(metaapiId: string, region: string, token: string) {
   const res = await metaapi(
     `${clientUrl(region)}/users/current/accounts/${metaapiId}/positions`,
+    token,
   );
   if (!res.ok) return [] as any[];
   return await res.json();
 }
 
-async function fetchRecentDeals(metaapiId: string, region: string) {
+async function fetchRecentDeals(metaapiId: string, region: string, token: string) {
   const to = new Date().toISOString();
   const from = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
   const res = await metaapi(
     `${clientUrl(region)}/users/current/accounts/${metaapiId}/history-deals/time/${from}/${to}`,
+    token,
   );
   if (!res.ok) return [] as any[];
   return await res.json();
