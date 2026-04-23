@@ -16,23 +16,17 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { useMTAccount } from "@/hooks/useMTAccount";
 
 const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
 
-// Approx live prices for preview math (fallback only)
-const PRICE_HINTS: Record<string, number> = {
-  "EUR/USD": 1.0867,
-  "GBP/USD": 1.2784,
-  "USD/JPY": 154.61,
-  "XAU/USD": 2418.3,
-  "AUD/USD": 0.6604,
-  "GBP/JPY": 191.86,
-  "USD/CAD": 1.3712,
-  "NZD/USD": 0.6021,
-};
-
-const ACCOUNT_EQUITY = 48211.27;
 const LEVERAGE = 30;
+
+// Map a "EUR/USD" style symbol to base/quote for the FX API.
+const splitPair = (sym: string) => {
+  const [base, quote] = sym.split("/");
+  return { base, quote };
+};
 
 const tradeSchema = z.object({
   symbol: z.string().min(3).max(10),
