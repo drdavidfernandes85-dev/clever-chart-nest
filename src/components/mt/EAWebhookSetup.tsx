@@ -4,10 +4,8 @@ import {
   Download,
   KeyRound,
   Loader2,
-  Plug,
-  RefreshCw,
+  Lock,
   Shield,
-  Trash2,
   Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
