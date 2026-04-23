@@ -35,21 +35,29 @@ import SEO from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
 
 // INFINOX brokers — server names verified against MetaApi provisioning catalog.
-// "InfinoxLimited-MT5Live" is the canonical Live server for retail clients.
-const COMMON_BROKERS: { name: string; servers: string[] }[] = [
-  {
-    name: "Infinox Capital Limited",
-    servers: ["InfinoxCapitalLimited-MT5Live"],
-  },
+// Servers are split per platform (MT4 vs MT5).
+// "InfinoxLimited-MT5Live" is the canonical Live MT5 server for retail clients.
+type BrokerEntry = {
+  name: string;
+  serversByPlatform: { mt4: string[]; mt5: string[] };
+};
+
+const COMMON_BROKERS: BrokerEntry[] = [
   {
     name: "Infinox Limited",
-    servers: [
-      "InfinoxLimited-MT5Live",
-      "InfinoxLimited-MT5Demo",
-      "INFINOXLimited-MT5",
-    ],
+    serversByPlatform: {
+      mt5: ["InfinoxLimited-MT5Live", "InfinoxLimited-MT5Demo"],
+      mt4: [
+        "INFINOX-Live",
+        "InfinoxCapital-Live03",
+        "InfinoxLimited-Live04",
+        "InfinoxLimited-Live05",
+        "INFINOX-Demo",
+        "InfinoxCapital-Demo",
+      ],
+    },
   },
-  { name: "Custom / Other", servers: [] },
+  { name: "Custom / Other", serversByPlatform: { mt4: [], mt5: [] } },
 ];
 
 const ConnectMT = () => {
