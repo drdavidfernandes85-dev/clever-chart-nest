@@ -123,8 +123,9 @@ export const EAWebhookSetup = () => {
       if (error) throw error;
       setToken(data);
       setRawToken(raw);
+      if (storageKey) localStorage.setItem(storageKey, raw);
       toast.success("Webhook token generated", {
-        description: "This is your permanent token — save it now, it won't be shown again.",
+        description: "Copy this token into your EA — it's permanent and always visible here.",
       });
     } catch (e: any) {
       toast.error(e.message ?? "Could not create token");
