@@ -289,7 +289,7 @@ export const EAWebhookSetup = () => {
           ) : token ? (
             <div className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2.5 text-xs text-muted-foreground font-mono">
               <span className="text-foreground">{token.token_prefix}…</span>{" "}
-              <span className="opacity-60">(hidden — rotate to reveal a new one)</span>
+              <span className="opacity-60">(hidden for security — your token is permanent)</span>
               {token.last_used_at && (
                 <div className="mt-1 text-[10px] text-muted-foreground/80">
                   Last used {formatDistanceToNow(new Date(token.last_used_at), { addSuffix: true })}
