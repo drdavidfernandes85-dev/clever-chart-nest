@@ -16,23 +16,17 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { useMTAccount } from "@/hooks/useMTAccount";
 
 const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
 
-// Approx live prices for preview math (fallback only)
-const PRICE_HINTS: Record<string, number> = {
-  "EUR/USD": 1.0867,
-  "GBP/USD": 1.2784,
-  "USD/JPY": 154.61,
-  "XAU/USD": 2418.3,
-  "AUD/USD": 0.6604,
-  "GBP/JPY": 191.86,
-  "USD/CAD": 1.3712,
-  "NZD/USD": 0.6021,
-};
-
-const ACCOUNT_EQUITY = 48211.27;
 const LEVERAGE = 30;
+
+// Map a "EUR/USD" style symbol to base/quote for the FX API.
+const splitPair = (sym: string) => {
+  const [base, quote] = sym.split("/");
+  return { base, quote };
+};
 
 const tradeSchema = z.object({
   symbol: z.string().min(3).max(10),
@@ -55,6 +49,13 @@ interface Props {
 
 const QuickTradePanel = ({ compact = false }: Props) => {
   const { symbol: ctxSymbol, side: ctxSide, setSymbol: setCtxSymbol, setSide: setCtxSide } = useQuickTrade();
+  const { account } = useMTAccount();
+
+  // Live equity from MT account; fall back to 0 if not connected.
+  const accountEquity =
+    account && account.status === "connected" && account.equity != null
+      ? Number(account.equity)
+      : 0;
 
   const [type, setType] = useState<"market" | "limit">("market");
   const [lots, setLots] = useState("1.00");
@@ -63,6 +64,7 @@ const QuickTradePanel = ({ compact = false }: Props) => {
   const [tp, setTp] = useState("");
   const [openSymbols, setOpenSymbols] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({});
 
   const symbol = ctxSymbol;
   const side = ctxSide;
@@ -74,7 +76,35 @@ const QuickTradePanel = ({ compact = false }: Props) => {
     setTp("");
   }, [symbol]);
 
-  const livePrice = PRICE_HINTS[symbol] ?? 1;
+  // Poll live price for the active symbol every 5s.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchPrice = async () => {
+      try {
+        const { base, quote } = splitPair(symbol);
+        if (!base || !quote) return;
+        const res = await fetch(
+          `https://api.exchangerate.host/latest?base=${base}&symbols=${quote}`,
+          { cache: "no-store" },
+        );
+        const json = await res.json();
+        const p = json?.rates?.[quote];
+        if (typeof p === "number" && !cancelled) {
+          setLivePrices((prev) => ({ ...prev, [symbol]: p }));
+        }
+      } catch {
+        /* swallow */
+      }
+    };
+    fetchPrice();
+    const id = window.setInterval(fetchPrice, 5000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [symbol]);
+
+  const livePrice = livePrices[symbol] ?? 0;
   const refPrice = type === "limit" && entry ? parseFloat(entry) || livePrice : livePrice;
 
   const lotsNum = parseFloat(lots) || 0;
@@ -104,8 +134,8 @@ const QuickTradePanel = ({ compact = false }: Props) => {
     return Math.abs(pips * pipValuePerLot(symbol) * lotsNum * (symbol.includes("XAU") ? 10 : 1));
   }, [slNum, refPrice, side, lotsNum, symbol]);
 
-  const projectedPnlPct = (projectedPnl / ACCOUNT_EQUITY) * 100;
-  const riskPct = (projectedRiskUsd / ACCOUNT_EQUITY) * 100;
+  const projectedPnlPct = accountEquity > 0 ? (projectedPnl / accountEquity) * 100 : 0;
+  const riskPct = accountEquity > 0 ? (projectedRiskUsd / accountEquity) * 100 : 0;
 
   const adjustLots = (delta: number) => {
     const next = Math.max(0.01, Math.min(100, lotsNum + delta));
@@ -216,7 +246,7 @@ const QuickTradePanel = ({ compact = false }: Props) => {
                     >
                       <span>{s}</span>
                       <span className="font-mono tabular-nums text-muted-foreground">
-                        {(PRICE_HINTS[s] ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5)}
+                        {(livePrices[s] ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5)}
                       </span>
                     </button>
                   </li>

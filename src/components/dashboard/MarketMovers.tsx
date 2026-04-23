@@ -1,5 +1,6 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, Loader2 } from "lucide-react";
 
 interface Mover {
   symbol: string;
@@ -8,25 +9,17 @@ interface Mover {
   volume?: string;
 }
 
-const TOP_GAINERS: Mover[] = [
-  { symbol: "XAU/USD", price: 2418.3, changePct: 1.84 },
-  { symbol: "GBP/USD", price: 1.2784, changePct: 0.92 },
-  { symbol: "EUR/USD", price: 1.0867, changePct: 0.41 },
-  { symbol: "AUD/USD", price: 0.6604, changePct: 0.28 },
-];
-
-const TOP_LOSERS: Mover[] = [
-  { symbol: "USD/JPY", price: 154.61, changePct: -0.62 },
-  { symbol: "USD/CHF", price: 0.8842, changePct: -0.48 },
-  { symbol: "NZD/USD", price: 0.6021, changePct: -0.31 },
-  { symbol: "USD/CAD", price: 1.3712, changePct: -0.18 },
-];
-
-const MOST_ACTIVE: Mover[] = [
-  { symbol: "EUR/USD", price: 1.0867, changePct: 0.41, volume: "2.4B" },
-  { symbol: "USD/JPY", price: 154.61, changePct: -0.62, volume: "1.9B" },
-  { symbol: "GBP/JPY", price: 191.86, changePct: 0.31, volume: "1.2B" },
-  { symbol: "XAU/USD", price: 2418.3, changePct: 1.84, volume: "0.9B" },
+// Pairs we monitor for movers — daily-volume rank (BIS Triennial) for "Most Active"
+const PAIRS: Array<{ symbol: string; base: string; quote: string; volume: string }> = [
+  { symbol: "EUR/USD", base: "EUR", quote: "USD", volume: "6.6T" },
+  { symbol: "USD/JPY", base: "USD", quote: "JPY", volume: "1.7T" },
+  { symbol: "GBP/USD", base: "GBP", quote: "USD", volume: "1.3T" },
+  { symbol: "AUD/USD", base: "AUD", quote: "USD", volume: "0.9T" },
+  { symbol: "USD/CAD", base: "USD", quote: "CAD", volume: "0.7T" },
+  { symbol: "USD/CHF", base: "USD", quote: "CHF", volume: "0.6T" },
+  { symbol: "NZD/USD", base: "NZD", quote: "USD", volume: "0.4T" },
+  { symbol: "XAU/USD", base: "XAU", quote: "USD", volume: "0.3T" },
+  { symbol: "GBP/JPY", base: "GBP", quote: "JPY", volume: "0.3T" },
 ];
 
 const fmt = (n: number) => (n > 100 ? n.toFixed(2) : n.toFixed(4));
@@ -69,6 +62,12 @@ const MoverList = ({
         </span>
       </div>
       <ul className="divide-y divide-border/20">
+        {rows.length === 0 && (
+          <li className="px-3.5 py-6 text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <Loader2 className="inline h-3 w-3 animate-spin mr-1" />
+            Loading…
+          </li>
+        )}
         {rows.map((m) => {
           const up = m.changePct >= 0;
           return (
@@ -108,6 +107,75 @@ const MoverList = ({
 };
 
 const MarketMovers = () => {
+  const [data, setData] = useState<Mover[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch live spot price + yesterday's close, derive 24h % change.
+  useEffect(() => {
+    let cancelled = false;
+    const fetchAll = async () => {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+      const next = await Promise.all(
+        PAIRS.map(async (p) => {
+          try {
+            const [latestRes, histRes] = await Promise.all([
+              fetch(
+                `https://api.exchangerate.host/latest?base=${p.base}&symbols=${p.quote}`,
+                { cache: "no-store" },
+              ),
+              fetch(
+                `https://api.exchangerate.host/${yesterday}?base=${p.base}&symbols=${p.quote}`,
+                { cache: "no-store" },
+              ),
+            ]);
+            const latest = await latestRes.json();
+            const hist = await histRes.json();
+            const price = latest?.rates?.[p.quote];
+            const prev = hist?.rates?.[p.quote] ?? price;
+            if (typeof price !== "number") return null;
+            const changePct = prev ? ((price - prev) / prev) * 100 : 0;
+            return {
+              symbol: p.symbol,
+              price,
+              changePct,
+              volume: p.volume,
+            } as Mover;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      if (!cancelled) {
+        setData(next.filter(Boolean) as Mover[]);
+        setLoading(false);
+      }
+    };
+    fetchAll();
+    const id = window.setInterval(fetchAll, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
+
+  const gainers = useMemo(
+    () => [...data].sort((a, b) => b.changePct - a.changePct).slice(0, 4),
+    [data],
+  );
+  const losers = useMemo(
+    () => [...data].sort((a, b) => a.changePct - b.changePct).slice(0, 4),
+    [data],
+  );
+  const mostActive = useMemo(
+    () =>
+      [...data]
+        .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
+        .slice(0, 4),
+    [data],
+  );
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 8 }}
@@ -122,14 +190,15 @@ const MarketMovers = () => {
         >
           Market Movers
         </h2>
-        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          Last 24 hours
+        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1">
+          {loading && <Loader2 className="h-3 w-3 animate-spin" />}
+          {loading ? "Loading…" : "Live · 24h"}
         </span>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
-        <MoverList title="Top Gainers" rows={TOP_GAINERS} variant="gainers" />
-        <MoverList title="Top Losers" rows={TOP_LOSERS} variant="losers" />
-        <MoverList title="Most Active" rows={MOST_ACTIVE} variant="active" showVolume />
+        <MoverList title="Top Gainers" rows={gainers} variant="gainers" />
+        <MoverList title="Top Losers" rows={losers} variant="losers" />
+        <MoverList title="Most Active" rows={mostActive} variant="active" showVolume />
       </div>
     </motion.section>
   );
