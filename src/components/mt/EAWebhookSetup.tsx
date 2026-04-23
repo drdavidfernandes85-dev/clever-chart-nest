@@ -158,7 +158,7 @@ export const EAWebhookSetup = forwardRef<HTMLDivElement>((_props, ref) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div ref={ref} className="space-y-6">
       {/* Intro / why */}
       <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
         <div className="flex items-start gap-3">
