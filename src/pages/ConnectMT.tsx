@@ -78,6 +78,18 @@ const ConnectMT = () => {
     ? customServer.trim()
     : serverName;
 
+  // Auto-pick the matching server when platform / account type / broker changes.
+  useEffect(() => {
+    if (!selectedBroker || selectedBroker.servers.length === 0) return;
+    if (platform !== "mt5") return;
+    const wantLive = accountType === "live";
+    const match = selectedBroker.servers.find((s) =>
+      wantLive ? /live/i.test(s) : /demo/i.test(s),
+    );
+    if (match && match !== serverName) setServerName(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platform, accountType, brokerName]);
+
   const handleConnect = async () => {
     if (!user) return;
     if (!finalBroker || !finalServer || !login || !investorPassword) {
