@@ -56,8 +56,8 @@ async function downloadEA(
   const res = await fetch(url);
   const tpl = await res.text();
   const filled = tpl
-    .replaceAll("{{WEBHOOK_URL}}", WEBHOOK_URL)
-    .replaceAll("{{SECRET_TOKEN}}", token);
+    .split("{{WEBHOOK_URL}}").join(WEBHOOK_URL)
+    .split("{{SECRET_TOKEN}}").join(token);
   const blob = new Blob([filled], { type: "text/plain" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
