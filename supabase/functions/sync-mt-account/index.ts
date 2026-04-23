@@ -70,15 +70,35 @@ async function metaapi(
   token: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  return await fetch(url, {
-    ...init,
-    headers: {
-      "auth-token": token,
-      "Content-Type": "application/json",
-      ...(init.headers ?? {}),
-    },
-  });
+  // MetaApi endpoints occasionally drop the first connection attempt from
+  // Deno's fetch (broken pipe / stream reset during HTTP/2 negotiation).
+  // Retry transient network errors with exponential backoff.
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      return await fetch(url, {
+        ...init,
+        headers: {
+          "auth-token": token,
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "User-Agent": "infinox-elite-trading/1.0",
+          ...(init.headers ?? {}),
+        },
+      });
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e instanceof Error ? e.message : e);
+      // Only retry on transient network errors
+      if (!/broken pipe|connection|reset|stream closed|SendRequest|EOF|timed? out/i.test(msg)) {
+        throw e;
+      }
+      await new Promise((r) => setTimeout(r, 400 * Math.pow(2, attempt)));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
+
 
 async function provisionAccount(
   account: AccountRow,
