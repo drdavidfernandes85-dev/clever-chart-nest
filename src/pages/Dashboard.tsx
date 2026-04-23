@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import KpiStrip from "@/components/dashboard/KpiStrip";
-import LightweightCandlestickChart from "@/components/dashboard/LightweightCandlestickChart";
+import LiveTradingViewChart from "@/components/dashboard/LiveTradingViewChart";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
@@ -140,9 +140,14 @@ const Dashboard = () => {
               railOpen ? "xl:grid-cols-[minmax(0,1fr)_268px]" : "xl:grid-cols-1"
             }`}
           >
-            {/* HERO CHART — dominant, ~70% of viewport */}
+            {/* HERO CHART — real live TradingView Advanced Chart */}
             <div className="min-w-0">
-              <LightweightCandlestickChart symbol="EUR/USD" height={720} />
+              <LiveTradingViewChart
+                symbol="FX:EURUSD"
+                displaySymbol="EUR/USD"
+                interval="1"
+                height={720}
+              />
             </div>
 
             {/* Right community rail — collapsible */}
