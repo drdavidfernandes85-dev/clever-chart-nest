@@ -306,22 +306,24 @@ Deno.serve(async (req) => {
     const password = decodePassword(acc.investor_password_encrypted);
     // Resolve which MetaApi token to use: per-account first, fall back to shared.
     const userToken = decodePassword(acc.metaapi_token_encrypted);
-    const token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
+    let token = (userToken && userToken.trim()) || FALLBACK_METAAPI_TOKEN;
+    // Sanity: a real MetaApi token is a JWT (~500–1500 chars). If the stored
+    // value is huge, the user pasted something wrong (e.g. JSON dump) — fall
+    // back to the shared platform token rather than send a 34KB header.
+    if (token && token.length > 4000) {
+      console.error("MetaApi token rejected: oversized", { length: token.length });
+      token = FALLBACK_METAAPI_TOKEN;
+    }
     if (!token) {
+      const msg = userToken && userToken.length > 4000
+        ? "Saved MetaApi token is invalid (too large). Re-paste just the JWT token from app.metaapi.cloud/token."
+        : "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.";
       await admin
         .from("user_mt_accounts")
-        .update({
-          status: "error",
-          status_message: "No MetaApi token",
-          last_error:
-            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
-        })
+        .update({ status: "error", status_message: "Invalid MetaApi token", last_error: msg })
         .eq("id", accountId);
       return new Response(
-        JSON.stringify({
-          error:
-            "No MetaApi token configured for this account. Add yours in Connect → MetaApi token.",
-        }),
+        JSON.stringify({ error: msg }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
