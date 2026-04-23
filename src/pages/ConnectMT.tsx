@@ -102,18 +102,15 @@ const ConnectMT = () => {
         .single();
       if (error) throw error;
 
-      toast.success("Account connected successfully. Syncing your data...", {
-        description: `${finalBroker} • ${finalServer}`,
+      toast.success("Account connected. Provisioning your terminal…", {
+        description: `${finalBroker} • ${finalServer} — initial deploy can take up to 8 minutes`,
       });
-      // Small delay so the user perceives the sync animation
-      await new Promise((r) => setTimeout(r, 2200));
+      // Kick off provisioning on MetaApi (this returns fast — the background
+      // poller in useMTAccount will keep polling state every 15s)
       await sync(data.id);
-      toast.success("Sync complete — your dashboard is now live", {
-        description: "Portfolio, positions, risk and leaderboard updated.",
-      });
       setInvestorPassword("");
-      // Bring the user back to the dashboard to see live data
-      setTimeout(() => navigate("/dashboard"), 600);
+      await refresh();
+      // Stay on this page so the user sees provisioning progress live
     } catch (err: any) {
       toast.error(err.message || "Failed to connect");
     } finally {
