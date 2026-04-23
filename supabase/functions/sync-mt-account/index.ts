@@ -458,6 +458,20 @@ Deno.serve(async (req) => {
     }
 
     const acc = account as AccountRow;
+
+    // EA Webhook accounts don't use MetaApi — data arrives via mt-webhook.
+    // Skip silently so the dashboard's generic "sync" button doesn't error.
+    if (acc.broker_name === "Connected via EA" || acc.server_name === "EA Webhook") {
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          skipped: true,
+          reason: "EA Webhook account — data arrives in real-time from MetaTrader.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const password = decodePassword(acc.investor_password_encrypted);
     const userToken = decodePassword(acc.metaapi_token_encrypted);
     const tokenSource = userToken && userToken.trim() ? "user" : "shared";
