@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, GripVertical, Plus, X } from "lucide-react";
+import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface WatchItem {
   id: string;
@@ -16,11 +17,15 @@ const DEFAULT_WATCHLIST: WatchItem[] = [
   { id: "usdjpy", symbol: "USD/JPY", label: "USD/JPY", base: "USD", quote: "JPY" },
   { id: "audusd", symbol: "AUD/USD", label: "AUD/USD", base: "AUD", quote: "USD" },
   { id: "xauusd", symbol: "XAU/USD", label: "XAU/USD", base: "XAU", quote: "USD" },
+  { id: "usdcad", symbol: "USD/CAD", label: "USD/CAD", base: "USD", quote: "CAD" },
+  { id: "nzdusd", symbol: "NZD/USD", label: "NZD/USD", base: "NZD", quote: "USD" },
 ];
 
 interface PriceState {
   price: number;
   prev: number;
+  history: number[]; // small history for sparkline
+  open: number; // session open for % change
 }
 
 const Watchlist = () => {
@@ -52,7 +57,7 @@ const Watchlist = () => {
     );
   }, [items]);
 
-  // Live polling — exchangerate.host (free, no key) for FX, fallback for XAU
+  // Live polling — exchangerate.host (free, no key)
   useEffect(() => {
     let cancelled = false;
     const fetchAll = async () => {
@@ -68,8 +73,13 @@ const Watchlist = () => {
             const json = await res.json();
             const p = json?.rates?.[item.quote];
             if (typeof p === "number") {
-              const prev = next[item.id]?.price ?? p;
-              next[item.id] = { price: p, prev };
+              const existing = next[item.id];
+              const prev = existing?.price ?? p;
+              const open = existing?.open ?? p;
+              const history = existing
+                ? [...existing.history.slice(-23), p]
+                : [p];
+              next[item.id] = { price: p, prev, history, open };
             }
           } catch {
             /* swallow */
@@ -119,7 +129,7 @@ const Watchlist = () => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.05 }}
-      className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
+      className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden flex flex-col"
     >
       <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
         <div className="flex items-center gap-2">
@@ -129,6 +139,9 @@ const Watchlist = () => {
           <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
             Watchlist
           </h3>
+          <span className="ml-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+            {items.length}
+          </span>
         </div>
         <button
           aria-label="Add symbol"
@@ -138,14 +151,21 @@ const Watchlist = () => {
         </button>
       </div>
 
-      <ul className="divide-y divide-border/30">
+      <ul className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
         <AnimatePresence initial={false}>
           {items.map((item) => {
             const p = prices[item.id];
             const up = p ? p.price >= p.prev : true;
             const change = p ? p.price - p.prev : 0;
-            const pipMul = item.symbol.includes("JPY") ? 100 : item.symbol.includes("XAU") ? 10 : 10000;
+            const pipMul = item.symbol.includes("JPY")
+              ? 100
+              : item.symbol.includes("XAU")
+              ? 10
+              : 10000;
             const pips = change * pipMul;
+            const sessionPct = p ? ((p.price - p.open) / p.open) * 100 : 0;
+            const sessionUp = sessionPct >= 0;
+
             return (
               <li
                 key={item.id}
@@ -153,18 +173,34 @@ const Watchlist = () => {
                 onDragStart={onDragStart(item.id)}
                 onDragOver={onDragOver}
                 onDrop={onDrop(item.id)}
-                className="group flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors cursor-grab active:cursor-grabbing"
+                className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors cursor-grab active:cursor-grabbing"
               >
-                <GripVertical className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-heading text-xs font-semibold text-foreground">
+                <GripVertical className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
+
+                {/* Symbol info */}
+                <div className="min-w-0 w-[68px] shrink-0">
+                  <div className="font-heading text-xs font-semibold text-foreground truncate">
                     {item.label}
                   </div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                    {item.base}/{item.quote}
+                  <div
+                    className={`flex items-center gap-0.5 font-mono text-[10px] font-semibold tabular-nums ${
+                      sessionUp ? "text-emerald-400" : "text-red-400"
+                    }`}
+                  >
+                    {sessionUp ? (
+                      <ArrowUp className="h-2.5 w-2.5" />
+                    ) : (
+                      <ArrowDown className="h-2.5 w-2.5" />
+                    )}
+                    {Math.abs(sessionPct).toFixed(2)}%
                   </div>
                 </div>
-                <div className="text-right">
+
+                {/* Sparkline */}
+                <Sparkline history={p?.history ?? []} up={sessionUp} />
+
+                {/* Price */}
+                <div className="text-right ml-auto">
                   <AnimatePresence mode="popLayout">
                     <motion.div
                       key={p?.price ?? "—"}
@@ -174,17 +210,41 @@ const Watchlist = () => {
                       transition={{ duration: 0.18 }}
                       className="font-mono text-xs font-semibold tabular-nums text-foreground"
                     >
-                      {p ? p.price.toFixed(item.symbol.includes("JPY") ? 3 : item.symbol.includes("XAU") ? 2 : 5) : "—"}
+                      {p
+                        ? p.price.toFixed(
+                            item.symbol.includes("JPY")
+                              ? 3
+                              : item.symbol.includes("XAU")
+                              ? 2
+                              : 5
+                          )
+                        : "—"}
                     </motion.div>
                   </AnimatePresence>
                   <div
-                    className={`font-mono text-[10px] tabular-nums ${
+                    className={`flex items-center justify-end gap-0.5 font-mono text-[10px] tabular-nums ${
                       up ? "text-emerald-400" : "text-red-400"
                     }`}
                   >
-                    {p ? `${up ? "+" : ""}${pips.toFixed(1)} pips` : "—"}
+                    {up ? (
+                      <ArrowUp className="h-2 w-2" />
+                    ) : (
+                      <ArrowDown className="h-2 w-2" />
+                    )}
+                    {p ? `${Math.abs(pips).toFixed(1)}p` : "—"}
                   </div>
                 </div>
+
+                {/* Trade button */}
+                <Link
+                  to={`/live-chart?symbol=FX:${item.base}${item.quote}`}
+                  className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 rounded-md bg-primary/10 hover:bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary ring-1 ring-primary/30 transition-all"
+                  title={`Trade ${item.label}`}
+                >
+                  <Zap className="h-2.5 w-2.5" />
+                  Trade
+                </Link>
+
                 <button
                   onClick={() => removeItem(item.id)}
                   aria-label={`Remove ${item.label}`}
@@ -198,6 +258,50 @@ const Watchlist = () => {
         </AnimatePresence>
       </ul>
     </motion.div>
+  );
+};
+
+const Sparkline = ({ history, up }: { history: number[]; up: boolean }) => {
+  const path = useMemo(() => {
+    if (history.length < 2) return null;
+    const w = 56;
+    const h = 22;
+    const max = Math.max(...history);
+    const min = Math.min(...history);
+    const range = max - min || 1;
+    const step = w / (history.length - 1);
+    const pts = history.map((v, i) => {
+      const x = i * step;
+      const y = h - ((v - min) / range) * h;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    return { d: `M ${pts.join(" L ")}`, w, h };
+  }, [history]);
+
+  if (!path) {
+    return <div className="w-14 h-[22px] shrink-0" aria-hidden />;
+  }
+
+  const color = up ? "hsl(160 84% 50%)" : "hsl(0 84% 60%)";
+
+  return (
+    <svg
+      width={path.w}
+      height={path.h}
+      viewBox={`0 0 ${path.w} ${path.h}`}
+      className="shrink-0"
+      aria-hidden
+    >
+      <path
+        d={path.d}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.25}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        opacity={0.9}
+      />
+    </svg>
   );
 };
 
