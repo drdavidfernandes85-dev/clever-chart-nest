@@ -213,18 +213,34 @@ const ConnectMT = () => {
                   </p>
                 </div>
               </div>
-              {(() => {
-                const cfg = statusConfig[account.status];
-                const Icon = cfg.Icon;
-                return (
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider ring-1 ${cfg.bg} ${cfg.color} ${cfg.ring}`}
-                  >
-                    <Icon className={`h-3 w-3 ${account.status === "syncing" ? "animate-spin" : ""}`} />
-                    {cfg.label}
-                  </span>
-                );
-              })()}
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest ${
+                    account.has_metaapi_token
+                      ? "border-primary/30 bg-primary/5 text-primary"
+                      : "border-border/50 bg-muted/40 text-muted-foreground"
+                  }`}
+                  title={
+                    account.has_metaapi_token
+                      ? "Using your personal MetaApi token"
+                      : "Using the platform's shared MetaApi connection"
+                  }
+                >
+                  {account.has_metaapi_token ? "Own token" : "Shared"}
+                </span>
+                {(() => {
+                  const cfg = statusConfig[account.status];
+                  const Icon = cfg.Icon;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider ring-1 ${cfg.bg} ${cfg.color} ${cfg.ring}`}
+                    >
+                      <Icon className={`h-3 w-3 ${account.status === "syncing" ? "animate-spin" : ""}`} />
+                      {cfg.label}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-5">
