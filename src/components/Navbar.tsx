@@ -63,7 +63,7 @@ const Navbar = () => {
             <img
               src={infinoxLogo}
               alt="INFINOX"
-              className="w-[180px] sm:w-[200px] lg:w-[220px] h-auto object-contain select-none"
+              className="h-8 sm:h-9 lg:h-10 w-auto object-contain select-none"
               draggable={false}
             />
           </div>
