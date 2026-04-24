@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Activity, Target, Flame, DollarSign } from "lucide-react";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Hedge-fund style KPI strip — 4 dense KPI tiles with embedded sparklines.
@@ -37,12 +38,7 @@ const buildSpark = (s: number, trend: number) => {
   });
 };
 
-const EMPTY_KPI: KPI[] = [
-  { label: "P&L Today", value: "—", delta: "Connect MT", deltaDir: "flat", icon: DollarSign, spark: [], accent: "gold" },
-  { label: "Win Rate", value: "—", delta: "No data", deltaDir: "flat", icon: Target, spark: [], accent: "gold" },
-  { label: "Volume Open", value: "—", delta: "No positions", deltaDir: "flat", icon: Activity, spark: [], accent: "gold" },
-  { label: "Win Streak", value: "—", delta: "—", deltaDir: "flat", icon: Flame, spark: [], accent: "gold" },
-];
+// EMPTY_KPI is built inside the component so labels can be translated.
 
 const accentColor: Record<KPI["accent"], string> = {
   bull: "hsl(145 65% 50%)",
@@ -52,7 +48,15 @@ const accentColor: Record<KPI["accent"], string> = {
 
 const KpiStrip = () => {
   const { account, positions, snapshots } = useMTAccount();
+  const { t } = useLanguage();
   const isConnected = !!account && account.status === "connected";
+
+  const EMPTY_KPI: KPI[] = [
+    { label: t("kpi.pnlToday"), value: "—", delta: t("kpi.connectMT"), deltaDir: "flat", icon: DollarSign, spark: [], accent: "gold" },
+    { label: t("kpi.winRate"), value: "—", delta: t("kpi.noData"), deltaDir: "flat", icon: Target, spark: [], accent: "gold" },
+    { label: t("kpi.volumeOpen"), value: "—", delta: t("kpi.noPositions"), deltaDir: "flat", icon: Activity, spark: [], accent: "gold" },
+    { label: t("kpi.winStreak"), value: "—", delta: "—", deltaDir: "flat", icon: Flame, spark: [], accent: "gold" },
+  ];
 
   const liveKpis = useMemo<KPI[] | null>(() => {
     if (!isConnected || !account) return null;
@@ -86,7 +90,7 @@ const KpiStrip = () => {
     const pnlUp = pnlToday >= 0;
     return [
       {
-        label: "P&L Today",
+        label: t("kpi.pnlToday"),
         value: `${pnlUp ? "+" : "−"}$${Math.abs(pnlToday).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         delta: `${pnlUp ? "+" : "−"}${Math.abs(pnlPct).toFixed(2)}%`,
         deltaDir: pnlUp ? "up" : "down",
@@ -95,34 +99,34 @@ const KpiStrip = () => {
         accent: pnlUp ? "bull" : "bear",
       },
       {
-        label: "Win Rate (open)",
+        label: t("kpi.winRate"),
         value: `${winRate.toFixed(1)}%`,
-        delta: `${winners}/${positions.length} winners`,
+        delta: `${winners}/${positions.length} ${t("kpi.winners")}`,
         deltaDir: winRate >= 50 ? "up" : "down",
         icon: Target,
         spark: [],
         accent: "gold",
       },
       {
-        label: "Volume Open",
+        label: t("kpi.volumeOpen"),
         value: `${volume.toFixed(2)} lots`,
-        delta: `${positions.length} positions`,
+        delta: `${positions.length} ${t("kpi.positions")}`,
         deltaDir: "up",
         icon: Activity,
         spark: [],
         accent: "bull",
       },
       {
-        label: "Win Streak",
+        label: t("kpi.winStreak"),
         value: String(streak),
-        delta: streak >= 3 ? "On a run" : "Keep going",
+        delta: streak >= 3 ? t("kpi.onRun") : t("kpi.keepGoing"),
         deltaDir: "up",
         icon: Flame,
         spark: [],
         accent: "gold",
       },
     ];
-  }, [isConnected, account, positions, snapshots]);
+  }, [isConnected, account, positions, snapshots, t]);
 
   const items = useMemo(
     () =>
@@ -134,7 +138,8 @@ const KpiStrip = () => {
             )
           : [],
       })),
-    [liveKpis],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [liveKpis, t],
   );
 
   return (
