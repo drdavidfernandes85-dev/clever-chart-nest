@@ -63,22 +63,22 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
-                  <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                  <Route path="/command" element={<ProtectedRoute><CommandDeck /></ProtectedRoute>} />
-                  <Route path="/live-chart" element={<ProtectedRoute><LiveChart /></ProtectedRoute>} />
-                  <Route path="/chatroom" element={<ProtectedRoute><Chatroom /></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                  <Route path="/videos" element={<ProtectedRoute><VideoLibrary /></ProtectedRoute>} />
-                  <Route path="/signals" element={<ProtectedRoute><TradingSignals /></ProtectedRoute>} />
-                  <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-                  <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-                  <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
-                  <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-                  <Route path="/connect-mt" element={<ProtectedRoute><ConnectMT /></ProtectedRoute>} />
-                  <Route path="/webinars" element={<ProtectedRoute><Webinars /></ProtectedRoute>} />
-                  <Route path="/webinars/:id" element={<ProtectedRoute><Webinars /></ProtectedRoute>} />
-                  <Route path="/u/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/command" element={<ProtectedRoute><DashboardLayout><CommandDeck /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/live-chart" element={<ProtectedRoute><DashboardLayout><LiveChart /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/chatroom" element={<ProtectedRoute><DashboardLayout><Chatroom /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/profile" element={<ProtectedRoute><DashboardLayout><Profile /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/videos" element={<ProtectedRoute><DashboardLayout><VideoLibrary /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/signals" element={<ProtectedRoute><DashboardLayout><TradingSignals /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/leaderboard" element={<ProtectedRoute><DashboardLayout><Leaderboard /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/admin" element={<AdminRoute><DashboardLayout><Admin /></DashboardLayout></AdminRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute><DashboardLayout><Analytics /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/news" element={<ProtectedRoute><DashboardLayout><News /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/calendar" element={<ProtectedRoute><DashboardLayout><CalendarPage /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/connect-mt" element={<ProtectedRoute><DashboardLayout><ConnectMT /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/webinars" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/webinars/:id" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/u/:userId" element={<ProtectedRoute><DashboardLayout><PublicProfile /></DashboardLayout></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
