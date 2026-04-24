@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Position {
   symbol: string;
