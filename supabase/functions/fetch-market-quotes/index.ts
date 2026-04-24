@@ -38,24 +38,24 @@ const FOREX = [
   "USD/CAD", "USD/CHF", "NZD/USD", "EUR/GBP",
 ];
 
-// Yahoo Finance symbols. Indices use the ^ prefix.
-const INDICES: Array<{ yahoo: string; label: string }> = [
-  { yahoo: "^GSPC", label: "S&P 500" },
-  { yahoo: "^NDX",  label: "Nasdaq 100" },
-  { yahoo: "^DJI",  label: "Dow Jones" },
-  { yahoo: "^RUT",  label: "Russell 2000" },
-  { yahoo: "^VIX",  label: "VIX" },
-  { yahoo: "^GDAXI", label: "DAX 40" },
+// Stooq symbols. Indices use the ^ prefix; US stocks use lowercase + ".us".
+const INDICES: Array<{ stooq: string; label: string }> = [
+  { stooq: "^spx",  label: "S&P 500" },
+  { stooq: "^ndx",  label: "Nasdaq 100" },
+  { stooq: "^dji",  label: "Dow Jones" },
+  { stooq: "^rut",  label: "Russell 2000" },
+  { stooq: "^vix",  label: "VIX" },
+  { stooq: "^dax",  label: "DAX 40" },
 ];
 
-const STOCKS: Array<{ yahoo: string; label: string }> = [
-  { yahoo: "AAPL",  label: "AAPL"  },
-  { yahoo: "MSFT",  label: "MSFT"  },
-  { yahoo: "NVDA",  label: "NVDA"  },
-  { yahoo: "TSLA",  label: "TSLA"  },
-  { yahoo: "AMZN",  label: "AMZN"  },
-  { yahoo: "META",  label: "META"  },
-  { yahoo: "GOOGL", label: "GOOGL" },
+const STOCKS: Array<{ stooq: string; label: string }> = [
+  { stooq: "aapl.us",  label: "AAPL"  },
+  { stooq: "msft.us",  label: "MSFT"  },
+  { stooq: "nvda.us",  label: "NVDA"  },
+  { stooq: "tsla.us",  label: "TSLA"  },
+  { stooq: "amzn.us",  label: "AMZN"  },
+  { stooq: "meta.us",  label: "META"  },
+  { stooq: "googl.us", label: "GOOGL" },
 ];
 
 // ── Fetchers ─────────────────────────────────────────────────────────
@@ -85,11 +85,13 @@ async function fetchCrypto(): Promise<Quote[]> {
   }
 }
 
-function getPrevBusinessDay(d: Date): string {
+function getPrevBusinessDay(d: Date, skip = 1): string {
   const x = new Date(d);
+  let n = 0;
   do {
     x.setDate(x.getDate() - 1);
-  } while (x.getDay() === 0 || x.getDay() === 6);
+    if (x.getDay() !== 0 && x.getDay() !== 6) n++;
+  } while (n < skip);
   return x.toISOString().slice(0, 10);
 }
 
