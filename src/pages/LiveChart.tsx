@@ -39,6 +39,8 @@ import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import ChartHeaderStats from "@/components/livechart/ChartHeaderStats";
+import MiniWatchlist from "@/components/livechart/MiniWatchlist";
+import SymbolPositions from "@/components/livechart/SymbolPositions";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 const SYMBOL_OPTIONS = [
