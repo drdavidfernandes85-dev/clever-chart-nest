@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3, Zap } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3, Zap, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,8 +13,9 @@ import { toast } from "sonner";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import NewSignalForm from "@/components/signals/NewSignalForm";
 import SEO from "@/components/SEO";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
-import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import CopyTradeModal, { CopyTradeRequest } from "@/components/copytrade/CopyTradeModal";
+import CopiedTradesHistory from "@/components/copytrade/CopiedTradesHistory";
+import { useCopiedSignals } from "@/hooks/useCopiedSignals";
 
 interface Signal {
   id: string;
@@ -40,7 +41,8 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
 const TradingSignals = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { openTrade } = useQuickTrade();
+  const copied = useCopiedSignals();
+  const [request, setRequest] = useState<CopyTradeRequest | null>(null);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
@@ -328,6 +330,7 @@ const TradingSignals = () => {
                     <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">R:R</TableHead>
                     <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Status</TableHead>
                     <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Time</TableHead>
+                    <TableHead className="h-9 w-28 text-center text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Action</TableHead>
                     {isAdmin && <TableHead className="h-9 w-10" />}
                   </TableRow>
                 </TableHeader>
@@ -393,6 +396,30 @@ const TradingSignals = () => {
                           {new Date(signal.created_at).toLocaleString("en-US", {
                             month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                           })}
+                        </TableCell>
+                        <TableCell className="py-2 text-center">
+                          {signal.status === "active" && (
+                            <button
+                              onClick={() =>
+                                setRequest({
+                                  signalId: signal.id,
+                                  pair: signal.pair,
+                                  side: isBuy ? "buy" : "sell",
+                                  entry: Number(signal.entry_price),
+                                  sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
+                                  tp: signal.take_profit != null ? Number(signal.take_profit) : null,
+                                })
+                              }
+                              className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                                copied.has(signal.id)
+                                  ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
+                                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+                              }`}
+                            >
+                              {copied.has(signal.id) ? <CheckCircle2 className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+                              {copied.has(signal.id) ? "Copied" : "Copy"}
+                            </button>
+                          )}
                         </TableCell>
                         {isAdmin && (
                           <TableCell className="py-2">
@@ -550,22 +577,41 @@ const TradingSignals = () => {
                       })}
                     </div>
                     {signal.status === "active" && (
-                      <button
-                        onClick={() =>
-                          openTrade({
-                            symbol: signal.pair,
-                            side: isBuy ? "buy" : "sell",
-                            lots: "0.10",
-                            sl: signal.stop_loss != null ? String(signal.stop_loss) : undefined,
-                            tp: signal.take_profit != null ? String(signal.take_profit) : undefined,
-                            signalId: signal.id,
-                          })
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] transition-colors"
-                      >
-                        <Zap className="h-3 w-3" />
-                        Take This Signal
-                      </button>
+                      copied.has(signal.id) ? (
+                        <button
+                          onClick={() =>
+                            setRequest({
+                              signalId: signal.id,
+                              pair: signal.pair,
+                              side: isBuy ? "buy" : "sell",
+                              entry: Number(signal.entry_price),
+                              sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
+                              tp: signal.take_profit != null ? Number(signal.take_profit) : null,
+                            })
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-colors"
+                        >
+                          <CheckCircle2 className="h-3 w-3" />
+                          Copied · Take Again
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() =>
+                            setRequest({
+                              signalId: signal.id,
+                              pair: signal.pair,
+                              side: isBuy ? "buy" : "sell",
+                              entry: Number(signal.entry_price),
+                              sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
+                              tp: signal.take_profit != null ? Number(signal.take_profit) : null,
+                            })
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] transition-colors"
+                        >
+                          <Zap className="h-3 w-3" />
+                          Take This Signal
+                        </button>
+                      )
                     )}
                   </div>
                 </div>
@@ -573,28 +619,15 @@ const TradingSignals = () => {
             })}
           </div>
         )}
-      </div>
-      {/* Floating Quick Trade panel — only renders when openTrade() has been triggered */}
-      <SignalsQuickTradeMount />
-    </div>
-  );
-};
 
-// Render QuickTradePanel as a floating modal whenever the global Quick Trade
-// context is open, so users on /signals can take signals without leaving the page.
-const SignalsQuickTradeMount = () => {
-  const { open, close } = useQuickTrade();
-  if (!open) return null;
-  return (
-    <>
-      <div
-        onClick={close}
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-      />
-      <div className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2">
-        <QuickTradePanel compact />
+        {/* Copied Trades history */}
+        <div className="mt-8">
+          <CopiedTradesHistory limit={10} />
+        </div>
       </div>
-    </>
+
+      <CopyTradeModal request={request} onClose={() => setRequest(null)} />
+    </div>
   );
 };
 

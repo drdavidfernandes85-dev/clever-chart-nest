@@ -25,6 +25,7 @@ import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
 import Watchlist from "@/components/dashboard/Watchlist";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
+import CopiedTradesHistory from "@/components/copytrade/CopiedTradesHistory";
 import MarketMovers from "@/components/dashboard/MarketMovers";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import RiskMeter from "@/components/dashboard/RiskMeter";
@@ -243,6 +244,7 @@ const Dashboard = () => {
                 <RecentActivity />
                 <div className="min-w-0 space-y-6">
                   <LiveSharedSignals />
+                  <CopiedTradesHistory limit={6} compact />
                   <CommunityNest />
                 </div>
               </motion.aside>
