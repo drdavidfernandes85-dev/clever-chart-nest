@@ -11,7 +11,6 @@ import {
   ArrowUpRight,
   Zap,
   X,
-  Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,7 @@ import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import KpiStrip from "@/components/dashboard/KpiStrip";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import CommunityNest from "@/components/dashboard/CommunityNest";
-import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
 import Watchlist from "@/components/dashboard/Watchlist";
@@ -30,7 +29,7 @@ import MarketMovers from "@/components/dashboard/MarketMovers";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import RiskMeter from "@/components/dashboard/RiskMeter";
 import RecentActivity from "@/components/dashboard/RecentActivity";
-import MobileSidebarDrawer from "@/components/dashboard/MobileSidebarDrawer";
+
 import WebinarHeroBanner from "@/components/webinars/WebinarHeroBanner";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useMTAccount } from "@/hooks/useMTAccount";

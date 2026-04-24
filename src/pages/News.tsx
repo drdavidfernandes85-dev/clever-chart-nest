@@ -8,7 +8,7 @@ import { BarChart3, MessageSquare } from "lucide-react";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
-import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import SEO from "@/components/SEO";
 import { useLanguage } from "@/i18n/LanguageContext";
