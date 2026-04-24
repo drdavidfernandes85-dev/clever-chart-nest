@@ -13,6 +13,7 @@ import AdminRoute from "@/components/AdminRoute";
 import PageTransition from "@/components/PageTransition";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
+import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
 import Index from "./pages/Index.tsx";
 
 // Code-split heavier authenticated routes
@@ -32,6 +33,7 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile.tsx"));
 const News = lazy(() => import("./pages/News.tsx"));
 const CalendarPage = lazy(() => import("./pages/Calendar.tsx"));
 const ConnectMT = lazy(() => import("./pages/ConnectMT.tsx"));
+const Webinars = lazy(() => import("./pages/Webinars.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
@@ -71,6 +73,8 @@ const App = () => (
                   <Route path="/news" element={<ProtectedRoute><News /></ProtectedRoute>} />
                   <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
                   <Route path="/connect-mt" element={<ProtectedRoute><ConnectMT /></ProtectedRoute>} />
+                  <Route path="/webinars" element={<ProtectedRoute><Webinars /></ProtectedRoute>} />
+                  <Route path="/webinars/:id" element={<ProtectedRoute><Webinars /></ProtectedRoute>} />
                   <Route path="/u/:userId" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
@@ -78,6 +82,7 @@ const App = () => (
             </PageTransition>
             <OnboardingTour />
             <MobileBottomNav />
+            <FloatingJoinLive />
             </QuickTradeProvider>
           </AuthProvider>
         </BrowserRouter>

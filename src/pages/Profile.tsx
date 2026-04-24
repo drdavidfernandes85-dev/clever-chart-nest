@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { User, Camera, ArrowLeft, Save, Trophy, Mail, RefreshCw, Shield, BarChart3, Plug } from "lucide-react";
+import { User, Camera, ArrowLeft, Save, Trophy, Mail, RefreshCw, Shield, BarChart3, Plug, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,8 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [leaderboardOptOut, setLeaderboardOptOut] = useState(false);
   const [emailDigestOptIn, setEmailDigestOptIn] = useState(true);
+  const [webinarEmail, setWebinarEmail] = useState(true);
+  const [webinarInapp, setWebinarInapp] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -34,6 +36,20 @@ const Profile = () => {
       .maybeSingle()
       .then(({ data }) => {
         if (data) setLeaderboardOptOut(!!(data as any).leaderboard_opt_out);
+      });
+    (supabase.from as any)("user_settings")
+      .select("webinar_email_reminders, webinar_inapp_reminders, email_digest_optin")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }: { data: any }) => {
+        if (data) {
+          if (typeof data.webinar_email_reminders === "boolean")
+            setWebinarEmail(data.webinar_email_reminders);
+          if (typeof data.webinar_inapp_reminders === "boolean")
+            setWebinarInapp(data.webinar_inapp_reminders);
+          if (typeof data.email_digest_optin === "boolean")
+            setEmailDigestOptIn(data.email_digest_optin);
+        }
       });
   }, [user]);
 
@@ -74,7 +90,12 @@ const Profile = () => {
         .eq("user_id", user.id);
       if (error) throw error;
       await (supabase.from as any)("user_settings").upsert(
-        { user_id: user.id, email_digest_optin: emailDigestOptIn },
+        {
+          user_id: user.id,
+          email_digest_optin: emailDigestOptIn,
+          webinar_email_reminders: webinarEmail,
+          webinar_inapp_reminders: webinarInapp,
+        },
         { onConflict: "user_id" }
       );
       toast.success("Profile updated!");

@@ -809,6 +809,8 @@ export type Database = {
           onboarding_completed: boolean
           updated_at: string
           user_id: string
+          webinar_email_reminders: boolean
+          webinar_inapp_reminders: boolean
         }
         Insert: {
           created_at?: string
@@ -818,6 +820,8 @@ export type Database = {
           onboarding_completed?: boolean
           updated_at?: string
           user_id: string
+          webinar_email_reminders?: boolean
+          webinar_inapp_reminders?: boolean
         }
         Update: {
           created_at?: string
@@ -827,6 +831,8 @@ export type Database = {
           onboarding_completed?: boolean
           updated_at?: string
           user_id?: string
+          webinar_email_reminders?: boolean
+          webinar_inapp_reminders?: boolean
         }
         Relationships: []
       }
@@ -899,6 +905,66 @@ export type Database = {
           title?: string
           updated_at?: string
           youtube_id?: string
+        }
+        Relationships: []
+      }
+      webinars: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          host_name: string
+          id: string
+          performance_impact: string | null
+          recording_url: string | null
+          reminder_15m_sent: boolean
+          reminder_live_sent: boolean
+          scheduled_at: string
+          status: string
+          stream_url: string | null
+          thumbnail_url: string | null
+          title: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          host_name: string
+          id?: string
+          performance_impact?: string | null
+          recording_url?: string | null
+          reminder_15m_sent?: boolean
+          reminder_live_sent?: boolean
+          scheduled_at: string
+          status?: string
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          title: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          host_name?: string
+          id?: string
+          performance_impact?: string | null
+          recording_url?: string | null
+          reminder_15m_sent?: boolean
+          reminder_live_sent?: boolean
+          scheduled_at?: string
+          status?: string
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          topic?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

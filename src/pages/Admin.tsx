@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import AdminWebinarsTab from "@/components/admin/AdminWebinarsTab";
 
 interface Channel { id: string; name: string; category: string; }
 interface Profile { user_id: string; display_name: string; }
@@ -126,13 +127,19 @@ const Admin = () => {
           Moderation <span className="text-primary">Console</span>
         </h1>
 
-        <Tabs defaultValue="channels">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <Tabs defaultValue="webinars">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+            <TabsTrigger value="webinars"><Radio className="h-3.5 w-3.5 mr-1.5" /> Webinars</TabsTrigger>
             <TabsTrigger value="channels"><Hash className="h-3.5 w-3.5 mr-1.5" /> Channels</TabsTrigger>
             <TabsTrigger value="messages"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Messages</TabsTrigger>
             <TabsTrigger value="mutes"><UserX className="h-3.5 w-3.5 mr-1.5" /> Mutes</TabsTrigger>
             <TabsTrigger value="announce"><Megaphone className="h-3.5 w-3.5 mr-1.5" /> Banner</TabsTrigger>
           </TabsList>
+
+          {/* WEBINARS */}
+          <TabsContent value="webinars" className="mt-4">
+            <AdminWebinarsTab />
+          </TabsContent>
 
           {/* CHANNELS */}
           <TabsContent value="channels" className="mt-4 space-y-4">

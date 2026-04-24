@@ -19,9 +19,11 @@ import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
+import { useWebinars } from "@/hooks/useWebinars";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/webinars", label: "Live Webinars", icon: Radio, flagship: true },
   { to: "/live-chart", label: "Live Charts", icon: LineChart },
   { to: "/signals", label: "Signals", icon: Radio },
   { to: "/news", label: "News", icon: Newspaper },
@@ -42,6 +44,11 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { liveNow, upcoming } = useWebinars();
+  const startingSoon =
+    !!upcoming &&
+    new Date(upcoming.scheduled_at).getTime() - Date.now() < 30 * 60 * 1000;
+  const showLiveBadge = !!liveNow || startingSoon;
 
   const handleSignOut = async () => {
     onClose();
@@ -99,6 +106,8 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                   const active =
                     pathname === item.to ||
                     (item.to !== "/dashboard" && pathname.startsWith(item.to));
+                  const isWebinars = item.to === "/webinars";
+                  const showBadge = isWebinars && showLiveBadge;
                   return (
                     <li key={item.to}>
                       <Link
@@ -108,18 +117,33 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                           "group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
                           active
                             ? "bg-primary/15 text-primary"
-                            : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                            : "text-muted-foreground hover:bg-primary/5 hover:text-foreground",
+                          isWebinars && "ring-1 ring-primary/20"
                         )}
                       >
                         <Icon
                           className={cn(
                             "h-5 w-5 shrink-0",
-                            active ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                            active ? "text-primary" : "text-muted-foreground group-hover:text-primary",
+                            isWebinars && "text-primary"
                           )}
                         />
                         <span className="truncate">{item.label}</span>
-                        {active && (
-                          <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                        {showBadge ? (
+                          <span
+                            className={cn(
+                              "ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+                              liveNow
+                                ? "bg-destructive text-destructive-foreground animate-pulse"
+                                : "bg-primary/20 text-primary"
+                            )}
+                          >
+                            {liveNow ? "Live" : "Soon"}
+                          </span>
+                        ) : (
+                          active && (
+                            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                          )
                         )}
                       </Link>
                     </li>
