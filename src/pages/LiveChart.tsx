@@ -11,7 +11,6 @@ import {
   Minimize2,
   GitCompare,
   Pencil,
-  Bell,
   Zap,
   X,
 } from "lucide-react";
@@ -27,7 +26,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
@@ -440,26 +439,7 @@ const LiveChart = () => {
             <LiveSharedSignals />
 
             {/* Smart Alerts — collapsible to save space */}
-            <Collapsible defaultOpen>
-              <div className="rounded-2xl border border-border/30 bg-card/60 overflow-hidden">
-                <CollapsibleTrigger className="group flex w-full items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-                      <Bell className="h-3.5 w-3.5" />
-                    </div>
-                    <span className="font-heading text-sm font-semibold text-foreground tracking-wide">
-                      Smart Alerts
-                    </span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="border-t border-border/30">
-                    <SmartAlerts />
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
+            <SmartAlerts collapsible defaultOpen />
           </aside>
         </div>
       </div>
