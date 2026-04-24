@@ -18,9 +18,11 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
-import infinoxLogo from "@/assets/infinox-logo-white.png";
+import infinoxLogoWhite from "@/assets/logo-new.png";
+import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 
