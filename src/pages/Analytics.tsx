@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface WeeklyReport {
   id: string;
@@ -19,6 +20,7 @@ interface WeeklyReport {
 
 const Analytics = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -45,10 +47,10 @@ const Analytics = () => {
         body: { userId: user.id },
       });
       if (error) throw error;
-      toast.success("Weekly report generated!");
+      toast.success(t("analytics.generated"));
       await loadReports();
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate report");
+      toast.error(e.message || t("analytics.generateFailed"));
     } finally {
       setGenerating(false);
     }
@@ -66,12 +68,12 @@ const Analytics = () => {
             <img src={infinoxLogo} alt="INFINOX" className="h-5" />
             <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
             <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-              My <span className="text-primary">Analytics</span>
+              {t("analytics.headerTitle1")} <span className="text-primary">{t("analytics.headerTitle2")}</span>
             </span>
           </Link>
           <Link to="/dashboard">
             <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-              <ArrowLeft className="h-4 w-4" /> Back
+              <ArrowLeft className="h-4 w-4" /> {t("common.back")}
             </Button>
           </Link>
         </div>
@@ -81,29 +83,29 @@ const Analytics = () => {
         <div className="flex items-end justify-between gap-4 flex-wrap">
           <div>
             <h1 className="font-heading text-2xl font-bold text-foreground uppercase tracking-tight">
-              My <span className="text-primary">Analytics</span>
+              {t("analytics.headerTitle1")} <span className="text-primary">{t("analytics.headerTitle2")}</span>
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Equity curve, drawdown and AI-generated weekly reports.
+              {t("analytics.subtitle")}
             </p>
           </div>
           <Button onClick={generateReport} disabled={generating} className="gap-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/80">
             {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {generating ? "Generating..." : "Generate weekly report"}
+            {generating ? t("analytics.generating") : t("analytics.generate")}
           </Button>
         </div>
 
         <PerformanceAnalytics />
 
         <section className="space-y-3">
-          <h2 className="font-heading text-lg font-semibold text-foreground">AI Weekly Reports</h2>
+          <h2 className="font-heading text-lg font-semibold text-foreground">{t("analytics.aiReports")}</h2>
           {loading ? (
             <div className="rounded-2xl border border-border/40 bg-card p-6 text-center text-sm text-muted-foreground">
-              Loading...
+              {t("analytics.loadingReports")}
             </div>
           ) : reports.length === 0 ? (
             <div className="rounded-2xl border border-border/40 bg-card p-6 text-center text-sm text-muted-foreground">
-              No reports yet. Generate your first weekly review above.
+              {t("analytics.noReports")}
             </div>
           ) : (
             <div className="space-y-3">
@@ -111,7 +113,7 @@ const Analytics = () => {
                 <article key={r.id} className="rounded-2xl border border-border/40 bg-card p-5">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Week of {new Date(r.week_start).toLocaleDateString()}
+                      {t("analytics.weekOfLabel")} {new Date(r.week_start).toLocaleDateString()}
                     </p>
                     {r.metrics?.pnl != null && (
                       <span className={`text-xs font-bold ${r.metrics.pnl >= 0 ? "text-emerald-500" : "text-destructive"}`}>
