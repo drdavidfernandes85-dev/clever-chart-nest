@@ -21,7 +21,7 @@ interface WeeklyReport {
 
 const Analytics = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
