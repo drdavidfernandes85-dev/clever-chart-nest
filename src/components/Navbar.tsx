@@ -58,10 +58,17 @@ const Navbar = () => {
       }`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <a href="#home" className="flex items-center gap-3">
-          <img src={infinoxLogo} alt="INFINOX" className="h-6" />
+        <a href="#home" className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center justify-center overflow-hidden h-8 sm:h-9 lg:h-10 w-auto shrink-0">
+            <img
+              src={infinoxLogo}
+              alt="INFINOX"
+              className="h-full w-auto object-contain object-center select-none"
+              draggable={false}
+            />
+          </div>
           <span className="hidden sm:inline text-[10px] text-muted-foreground/30 font-light">|</span>
-          <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
+          <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground truncate">
             Elite <span className="text-primary">Live Trading Room</span>
           </span>
         </a>
