@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  MARKET_UNIVERSE,
+  fetchMarketQuotes,
+  decimalsFor,
+  type MarketSymbol,
+} from "@/lib/markets";
 
 interface Ticker {
   pair: string;
@@ -8,61 +14,50 @@ interface Ticker {
   bias: "bullish" | "bearish" | "neutral";
 }
 
-const ForexTickerBar = () => {
+// Curated mix that scrolls in the top bar — two of each asset class
+// so users always see something familiar.
+const TICKER_LABELS = [
+  "BTC/USDT", "ETH/USDT",
+  "EUR/USD",  "GBP/USD",  "USD/JPY",
+  "S&P 500",  "Nasdaq 100",
+  "AAPL",     "NVDA",     "TSLA",
+];
+
+const TickerBar = () => {
   const [tickers, setTickers] = useState<Ticker[]>([]);
 
-  // Live crypto tickers from CoinGecko (free, no API key, CORS-enabled).
-  // Falls back to the legacy edge function only if the public API is blocked.
   useEffect(() => {
-    const PAIRS = [
-      { pair: "BTC/USDT",  id: "bitcoin"     },
-      { pair: "ETH/USDT",  id: "ethereum"    },
-      { pair: "SOL/USDT",  id: "solana"      },
-      { pair: "SUI/USDT",  id: "sui"         },
-      { pair: "TON/USDT",  id: "toncoin"     },
-      { pair: "PEPE/USDT", id: "pepe"        },
-      { pair: "WIF/USDT",  id: "dogwifcoin"  },
-      { pair: "HYPE/USDT", id: "hyperliquid" },
-      { pair: "XRP/USDT",  id: "ripple"      },
-    ];
-    const fmt = (n: number) =>
-      n >= 1000 ? n.toFixed(2) : n >= 1 ? n.toFixed(3) : n >= 0.01 ? n.toFixed(5) : n.toFixed(8);
+    const assets = TICKER_LABELS.map(
+      (l) => MARKET_UNIVERSE.find((m) => m.symbol === l)!,
+    ).filter(Boolean) as MarketSymbol[];
 
-    const fetchTickers = async () => {
-      try {
-        const ids = PAIRS.map((p) => p.id).join(",");
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
-          { cache: "no-store" }
-        );
-        if (!res.ok) throw new Error("price feed");
-        const json = await res.json();
-        setTickers(
-          PAIRS.map((p) => {
-            const row = json?.[p.id];
-            const price = Number(row?.usd ?? NaN);
-            const chg = Number(row?.usd_24h_change ?? 0);
-            return {
-              pair: p.pair,
-              price: Number.isFinite(price) ? fmt(price) : "--",
-              change: `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%`,
-              bias: chg > 0.05 ? "bullish" : chg < -0.05 ? "bearish" : "neutral",
-            } as Ticker;
-          })
-        );
-      } catch {
-        // Last-resort placeholder so the bar isn't empty
-        setTickers([
-          { pair: "BTC/USDT", price: "65,420.00", change: "+1.42%", bias: "bullish" },
-          { pair: "ETH/USDT", price: "3,180.00",  change: "+0.86%", bias: "bullish" },
-          { pair: "SOL/USDT", price: "152.40",    change: "-0.32%", bias: "bearish" },
-          { pair: "SUI/USDT", price: "1.81",      change: "+2.10%", bias: "bullish" },
-          { pair: "TON/USDT", price: "5.92",      change: "-0.45%", bias: "bearish" },
-        ]);
-      }
+    const fmt = (asset: MarketSymbol, n: number) => {
+      const d = decimalsFor(asset, n);
+      return n.toLocaleString("en-US", {
+        minimumFractionDigits: d,
+        maximumFractionDigits: d,
+      });
     };
-    fetchTickers();
-    const interval = setInterval(fetchTickers, 60000);
+
+    const refresh = async () => {
+      const quotes = await fetchMarketQuotes();
+      if (!quotes.length) return;
+      setTickers(
+        assets.map((a) => {
+          const q = quotes.find((qq) => qq.symbol === a.symbol);
+          const price = q?.price ?? null;
+          const chg = q?.changePct ?? 0;
+          return {
+            pair: a.symbol,
+            price: price != null && Number.isFinite(price) ? fmt(a, price) : "--",
+            change: `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%`,
+            bias: chg > 0.05 ? "bullish" : chg < -0.05 ? "bearish" : "neutral",
+          };
+        }),
+      );
+    };
+    refresh();
+    const interval = setInterval(refresh, 60_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -113,4 +108,4 @@ const ForexTickerBar = () => {
   );
 };
 
-export default ForexTickerBar;
+export default TickerBar;

@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Star, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  MARKET_UNIVERSE,
+  fetchMarketQuotes,
+  decimalsFor,
+} from "@/lib/markets";
 
 export interface WatchSymbol {
-  label: string; // "EUR/USD"
-  value: string; // "FX:EURUSD" — TradingView style
+  label: string; // pretty, e.g. "EUR/USD"
+  value: string; // TradingView symbol
 }
 
 interface Props {
@@ -18,41 +23,10 @@ interface Quote {
   open: number;
 }
 
-const decimalsFor = (label: string) =>
-  label.includes("JPY") ? 3 : label.includes("XAU") || label.includes("BTC") || label.includes("ETH") ? 2 : 5;
-
-const fetchQuote = async (label: string): Promise<number | null> => {
-  const [base, quote] = label.split("/");
-  if (!base || !quote) return null;
-  try {
-    if (base === "XAU" || quote === "XAU") {
-      const r = await fetch("https://api.gold-api.com/price/XAU", { cache: "no-store" });
-      const j = await r.json();
-      return Number(j?.price);
-    }
-    if (base === "BTC" || base === "ETH") {
-      const id = base === "BTC" ? "bitcoin" : "ethereum";
-      const r = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`,
-        { cache: "no-store" }
-      );
-      const j = await r.json();
-      return Number(j?.[id]?.usd);
-    }
-    const r = await fetch(
-      `https://api.frankfurter.dev/v1/latest?base=${base}&symbols=${quote}`,
-      { cache: "no-store" }
-    );
-    const j = await r.json();
-    return Number(j?.rates?.[quote]);
-  } catch {
-    return null;
-  }
-};
-
 /**
  * Compact horizontal watchlist that sits above the chart for one-click symbol
- * switching. Each tile shows live price + intraday % change.
+ * switching. Shows live price + intraday/24h % change for crypto, forex,
+ * indices and stocks via the shared `fetch-market-quotes` edge function.
  */
 const MiniWatchlist = ({ symbols, active, onSelect }: Props) => {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
@@ -60,24 +34,22 @@ const MiniWatchlist = ({ symbols, active, onSelect }: Props) => {
   useEffect(() => {
     let cancelled = false;
     const refresh = async () => {
-      const results = await Promise.all(
-        symbols.map(async (s) => ({ label: s.label, price: await fetchQuote(s.label) }))
-      );
+      const live = await fetchMarketQuotes();
       if (cancelled) return;
       setQuotes((prev) => {
         const next = { ...prev };
-        for (const r of results) {
-          if (r.price == null || !Number.isFinite(r.price)) continue;
-          const existing = next[r.label];
-          next[r.label] = existing
-            ? { price: r.price, open: existing.open }
-            : { price: r.price, open: r.price };
+        for (const s of symbols) {
+          const q = live.find((qq) => qq.symbol === s.label);
+          if (!q || q.price == null || !Number.isFinite(q.price)) continue;
+          const chg = q.changePct ?? 0;
+          const open = chg ? q.price / (1 + chg / 100) : next[s.label]?.open ?? q.price;
+          next[s.label] = { price: q.price, open };
         }
         return next;
       });
     };
     refresh();
-    const id = window.setInterval(refresh, 6000);
+    const id = window.setInterval(refresh, 20_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -93,12 +65,13 @@ const MiniWatchlist = ({ symbols, active, onSelect }: Props) => {
         </span>
       </div>
       {symbols.map((s) => {
+        const asset = MARKET_UNIVERSE.find((m) => m.symbol === s.label);
         const q = quotes[s.label];
         const isActive = active === s.value;
         const change = q ? q.price - q.open : 0;
         const changePct = q && q.open ? (change / q.open) * 100 : 0;
         const isUp = change >= 0;
-        const decimals = decimalsFor(s.label);
+        const decimals = asset ? decimalsFor(asset, q?.price ?? null) : 2;
         return (
           <motion.button
             key={s.value}
@@ -107,7 +80,7 @@ const MiniWatchlist = ({ symbols, active, onSelect }: Props) => {
             whileHover={{ y: -1 }}
             className={`group shrink-0 flex flex-col items-start gap-0.5 rounded-xl border px-3 py-1.5 transition-all ${
               isActive
-                ? "border-primary/60 bg-primary/10 shadow-[0_0_18px_-6px_hsl(48_100%_51%/0.5)]"
+                ? "border-primary/60 bg-primary/10 shadow-[0_0_18px_-6px_hsl(187_100%_50%/0.5)]"
                 : "border-border/40 bg-card/50 hover:border-primary/40 hover:bg-card/80"
             }`}
           >

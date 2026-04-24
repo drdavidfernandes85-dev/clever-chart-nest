@@ -2,103 +2,88 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap } from "lucide-react";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import {
+  MARKET_UNIVERSE,
+  fetchMarketQuotes,
+  decimalsFor,
+  type MarketSymbol,
+} from "@/lib/markets";
 
-interface WatchItem {
-  id: string;
-  symbol: string;
-  label: string;
-  /** CoinGecko id (used by /simple/price). */
-  cgId: string;
-}
-
-const DEFAULT_WATCHLIST: WatchItem[] = [
-  { id: "btc",  symbol: "BTC/USDT",  label: "BTC/USDT",  cgId: "bitcoin" },
-  { id: "eth",  symbol: "ETH/USDT",  label: "ETH/USDT",  cgId: "ethereum" },
-  { id: "sol",  symbol: "SOL/USDT",  label: "SOL/USDT",  cgId: "solana" },
-  { id: "sui",  symbol: "SUI/USDT",  label: "SUI/USDT",  cgId: "sui" },
-  { id: "ton",  symbol: "TON/USDT",  label: "TON/USDT",  cgId: "toncoin" },
-  { id: "pepe", symbol: "PEPE/USDT", label: "PEPE/USDT", cgId: "pepe" },
-  { id: "wif",  symbol: "WIF/USDT",  label: "WIF/USDT",  cgId: "dogwifcoin" },
-  { id: "hype", symbol: "HYPE/USDT", label: "HYPE/USDT", cgId: "hyperliquid" },
+// Default mix across all four asset classes — two of each.
+const DEFAULT_LABELS = [
+  "BTC/USDT", "ETH/USDT",
+  "EUR/USD",  "USD/JPY",
+  "S&P 500",  "Nasdaq 100",
+  "AAPL",     "NVDA",
 ];
 
 interface PriceState {
   price: number;
   prev: number;
-  history: number[]; // small history for sparkline
-  open: number; // session open for % change
+  history: number[];
+  /** Reference open used for intraday/24h % change. */
+  open: number;
 }
 
 const Watchlist = () => {
-  const [items, setItems] = useState<WatchItem[]>(DEFAULT_WATCHLIST);
+  const initial = useMemo(
+    () =>
+      DEFAULT_LABELS.map((l) => MARKET_UNIVERSE.find((m) => m.symbol === l)).filter(
+        Boolean,
+      ) as MarketSymbol[],
+    [],
+  );
+  const [items, setItems] = useState<MarketSymbol[]>(initial);
   const [prices, setPrices] = useState<Record<string, PriceState>>({});
   const dragId = useRef<string | null>(null);
   const { openTrade } = useQuickTrade();
 
-  // Restore order — versioned key so the old forex order is dropped automatically.
+  // Restore order — versioned key so old layouts are dropped automatically.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("eltr.watchlist.order.v2");
+      const saved = localStorage.getItem("eltr.watchlist.order.v3");
       if (saved) {
-        const ids: string[] = JSON.parse(saved);
-        const map = new Map(DEFAULT_WATCHLIST.map((i) => [i.id, i]));
-        const ordered = ids.map((id) => map.get(id)).filter(Boolean) as WatchItem[];
-        const missing = DEFAULT_WATCHLIST.filter((i) => !ids.includes(i.id));
-        if (ordered.length) setItems([...ordered, ...missing]);
+        const labels: string[] = JSON.parse(saved);
+        const map = new Map(MARKET_UNIVERSE.map((i) => [i.symbol, i]));
+        const ordered = labels.map((l) => map.get(l)).filter(Boolean) as MarketSymbol[];
+        if (ordered.length) setItems(ordered);
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, []);
 
-  // Persist order
   useEffect(() => {
     localStorage.setItem(
-      "eltr.watchlist.order.v2",
-      JSON.stringify(items.map((i) => i.id))
+      "eltr.watchlist.order.v3",
+      JSON.stringify(items.map((i) => i.symbol)),
     );
   }, [items]);
 
-  // Live polling — CoinGecko /simple/price (free, no key, CORS-enabled).
-  // One request fetches every symbol so we stay well under rate limits.
+  // Live polling — single edge function call returns every asset class.
   useEffect(() => {
     let cancelled = false;
-    const fetchAll = async () => {
-      try {
-        const ids = items.map((i) => i.cgId).join(",");
-        if (!ids) return;
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
-          { cache: "no-store" }
-        );
-        if (!res.ok) return;
-        const json = await res.json();
-        setPrices((prev) => {
-          const next: Record<string, PriceState> = { ...prev };
-          for (const item of items) {
-            const row = json?.[item.cgId];
-            if (!row) continue;
-            const p = Number(row.usd);
-            if (!Number.isFinite(p)) continue;
-            const existing = next[item.id];
-            const previous = existing?.price ?? p;
-            // 24h change: anchor "open" so percent matches CoinGecko's 24h
-            const chg = Number(row.usd_24h_change ?? 0);
-            const open = chg ? p / (1 + chg / 100) : existing?.open ?? p;
-            const history = existing
-              ? [...existing.history.slice(-23), p]
-              : [p];
-            next[item.id] = { price: p, prev: previous, history, open };
-          }
-          if (cancelled) return prev;
-          return next;
-        });
-      } catch {
-        /* swallow */
-      }
+    const refresh = async () => {
+      const quotes = await fetchMarketQuotes();
+      if (cancelled) return;
+      setPrices((prev) => {
+        const next: Record<string, PriceState> = { ...prev };
+        for (const item of items) {
+          const q = quotes.find((qq) => qq.symbol === item.symbol);
+          if (!q || q.price == null || !Number.isFinite(q.price)) continue;
+          const p = q.price;
+          const existing = next[item.symbol];
+          const previous = existing?.price ?? p;
+          const chg = q.changePct ?? 0;
+          const open = chg ? p / (1 + chg / 100) : existing?.open ?? p;
+          const history = existing
+            ? [...existing.history.slice(-23), p]
+            : [p];
+          next[item.symbol] = { price: p, prev: previous, history, open };
+        }
+        return next;
+      });
     };
-    fetchAll();
-    const id = window.setInterval(fetchAll, 15_000);
+    refresh();
+    const id = window.setInterval(refresh, 20_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -120,8 +105,8 @@ const Watchlist = () => {
     if (!sourceId || sourceId === targetId) return;
     setItems((prev) => {
       const next = [...prev];
-      const sIdx = next.findIndex((i) => i.id === sourceId);
-      const tIdx = next.findIndex((i) => i.id === targetId);
+      const sIdx = next.findIndex((i) => i.symbol === sourceId);
+      const tIdx = next.findIndex((i) => i.symbol === targetId);
       if (sIdx < 0 || tIdx < 0) return prev;
       const [moved] = next.splice(sIdx, 1);
       next.splice(tIdx, 0, moved);
@@ -130,8 +115,8 @@ const Watchlist = () => {
     dragId.current = null;
   };
 
-  const removeItem = (id: string) =>
-    setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.id !== id) : prev));
+  const removeItem = (label: string) =>
+    setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.symbol !== label) : prev));
 
   return (
     <motion.div
@@ -163,24 +148,20 @@ const Watchlist = () => {
       <ul className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
         <AnimatePresence initial={false}>
           {items.map((item) => {
-            const p = prices[item.id];
+            const p = prices[item.symbol];
             const up = p ? p.price >= p.prev : true;
-            const sessionPct = p ? ((p.price - p.open) / p.open) * 100 : 0;
+            const sessionPct = p && p.open ? ((p.price - p.open) / p.open) * 100 : 0;
             const sessionUp = sessionPct >= 0;
-            // For crypto we display a $ change instead of forex pips.
             const change = p ? p.price - p.prev : 0;
-            // Decimal precision tuned to typical price magnitude.
-            const decimals = p
-              ? p.price >= 1000 ? 2 : p.price >= 1 ? 3 : p.price >= 0.01 ? 5 : 8
-              : 2;
+            const decimals = decimalsFor(item, p?.price ?? null);
 
             return (
               <li
-                key={item.id}
+                key={item.symbol}
                 draggable
-                onDragStart={onDragStart(item.id)}
+                onDragStart={onDragStart(item.symbol)}
                 onDragOver={onDragOver}
-                onDrop={onDrop(item.id)}
+                onDrop={onDrop(item.symbol)}
                 className="group flex items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors cursor-grab active:cursor-grabbing"
               >
                 <GripVertical className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
@@ -188,7 +169,7 @@ const Watchlist = () => {
                 {/* Symbol info */}
                 <div className="min-w-0 w-[78px] shrink-0">
                   <div className="font-heading text-xs font-semibold text-foreground truncate">
-                    {item.label}
+                    {item.symbol}
                   </div>
                   <div
                     className={`flex items-center gap-0.5 font-mono text-[10px] font-semibold tabular-nums ${
@@ -239,15 +220,15 @@ const Watchlist = () => {
                 <button
                   onClick={() => openTrade({ symbol: item.symbol })}
                   className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 rounded-md bg-primary/10 hover:bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary ring-1 ring-primary/30 transition-all"
-                  title={`Trade ${item.label}`}
+                  title={`Trade ${item.symbol}`}
                 >
                   <Zap className="h-2.5 w-2.5" />
                   Trade
                 </button>
 
                 <button
-                  onClick={() => removeItem(item.id)}
-                  aria-label={`Remove ${item.label}`}
+                  onClick={() => removeItem(item.symbol)}
+                  aria-label={`Remove ${item.symbol}`}
                   className="opacity-0 group-hover:opacity-100 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:text-red-400 transition-all"
                 >
                   <X className="h-3 w-3" />

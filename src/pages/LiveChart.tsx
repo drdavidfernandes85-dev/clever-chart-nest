@@ -41,18 +41,29 @@ import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
+// Mixed-asset chart selector — crypto, forex, indices, main stocks.
 const SYMBOL_OPTIONS = [
-  { label: "BTC/USDT",  value: "BINANCE:BTCUSDT" },
-  { label: "ETH/USDT",  value: "BINANCE:ETHUSDT" },
-  { label: "SOL/USDT",  value: "BINANCE:SOLUSDT" },
-  { label: "SUI/USDT",  value: "BINANCE:SUIUSDT" },
-  { label: "TON/USDT",  value: "BINANCE:TONUSDT" },
-  { label: "PEPE/USDT", value: "BINANCE:PEPEUSDT" },
-  { label: "WIF/USDT",  value: "BINANCE:WIFUSDT" },
-  { label: "HYPE/USDT", value: "BINANCE:HYPEUSDT" },
-  { label: "XRP/USDT",  value: "BINANCE:XRPUSDT" },
-  { label: "DOGE/USDT", value: "BINANCE:DOGEUSDT" },
-  { label: "BNB/USDT",  value: "BINANCE:BNBUSDT" },
+  // Crypto
+  { label: "BTC/USDT",   value: "BINANCE:BTCUSDT" },
+  { label: "ETH/USDT",   value: "BINANCE:ETHUSDT" },
+  { label: "SOL/USDT",   value: "BINANCE:SOLUSDT" },
+  { label: "XRP/USDT",   value: "BINANCE:XRPUSDT" },
+  // Forex majors
+  { label: "EUR/USD",    value: "FX:EURUSD" },
+  { label: "GBP/USD",    value: "FX:GBPUSD" },
+  { label: "USD/JPY",    value: "FX:USDJPY" },
+  { label: "AUD/USD",    value: "FX:AUDUSD" },
+  // Indices
+  { label: "S&P 500",    value: "TVC:SPX" },
+  { label: "Nasdaq 100", value: "TVC:NDX" },
+  { label: "Dow Jones",  value: "TVC:DJI" },
+  { label: "DAX 40",     value: "TVC:DAX" },
+  // Major US stocks
+  { label: "AAPL",       value: "NASDAQ:AAPL" },
+  { label: "MSFT",       value: "NASDAQ:MSFT" },
+  { label: "NVDA",       value: "NASDAQ:NVDA" },
+  { label: "TSLA",       value: "NASDAQ:TSLA" },
+  { label: "META",       value: "NASDAQ:META" },
 ];
 
 const TIMEFRAMES: Array<{ label: string; value: string }> = [

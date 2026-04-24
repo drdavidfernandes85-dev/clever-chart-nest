@@ -1,34 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Activity, Loader2 } from "lucide-react";
+import {
+  MARKET_UNIVERSE,
+  fetchMarketQuotes,
+  decimalsFor,
+  type MarketSymbol,
+} from "@/lib/markets";
 
 interface Mover {
   symbol: string;
   price: number;
   changePct: number;
+  asset: MarketSymbol;
   volume?: string;
 }
-
-// Top crypto pairs we monitor for movers — all priced in USDT.
-// `id` is the CoinGecko id used by /simple/price (free, no API key, CORS).
-const PAIRS: Array<{ symbol: string; id: string; volume: string }> = [
-  { symbol: "BTC/USDT",  id: "bitcoin",      volume: "32B" },
-  { symbol: "ETH/USDT",  id: "ethereum",     volume: "18B" },
-  { symbol: "SOL/USDT",  id: "solana",       volume: "4.2B" },
-  { symbol: "SUI/USDT",  id: "sui",          volume: "1.8B" },
-  { symbol: "TON/USDT",  id: "toncoin",      volume: "0.9B" },
-  { symbol: "PEPE/USDT", id: "pepe",         volume: "1.4B" },
-  { symbol: "WIF/USDT",  id: "dogwifcoin",   volume: "0.6B" },
-  { symbol: "HYPE/USDT", id: "hyperliquid",  volume: "0.5B" },
-  { symbol: "XRP/USDT",  id: "ripple",       volume: "2.1B" },
-];
-
-const fmt = (n: number) => {
-  if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-  if (n >= 1) return n.toFixed(2);
-  if (n >= 0.01) return n.toFixed(4);
-  return n.toFixed(8);
-};
 
 const MoverList = ({
   title,
@@ -76,6 +62,7 @@ const MoverList = ({
         )}
         {rows.map((m) => {
           const up = m.changePct >= 0;
+          const decimals = decimalsFor(m.asset, m.price);
           return (
             <li
               key={m.symbol}
@@ -93,7 +80,10 @@ const MoverList = ({
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="font-mono text-[11px] tabular-nums text-foreground">
-                  {fmt(m.price)}
+                  {m.price.toLocaleString("en-US", {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals,
+                  })}
                 </span>
                 <span
                   className={`font-mono text-[10px] font-semibold tabular-nums ${
@@ -112,61 +102,71 @@ const MoverList = ({
   );
 };
 
+const ASSET_TABS = [
+  { key: "all",    label: "All"     },
+  { key: "crypto", label: "Crypto"  },
+  { key: "forex",  label: "Forex"   },
+  { key: "index",  label: "Indices" },
+  { key: "stock",  label: "Stocks"  },
+] as const;
+
+type TabKey = typeof ASSET_TABS[number]["key"];
+
 const MarketMovers = () => {
   const [data, setData] = useState<Mover[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<TabKey>("all");
 
-  // CoinGecko /simple/price returns spot + 24h % change in a single call.
+  // Single edge-function call returns crypto + forex + indices + stocks.
   useEffect(() => {
     let cancelled = false;
-
-    const fetchAll = async () => {
-      try {
-        const ids = PAIRS.map((p) => p.id).join(",");
-        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error("price feed");
-        const json = await res.json();
-        const next: Mover[] = PAIRS.map((p) => {
-          const row = json?.[p.id];
-          if (!row) return null;
-          const price = Number(row.usd);
-          const changePct = Number(row.usd_24h_change ?? 0);
-          if (!Number.isFinite(price)) return null;
-          return { symbol: p.symbol, price, changePct, volume: p.volume };
-        }).filter(Boolean) as Mover[];
-        if (!cancelled) {
-          setData(next);
-          setLoading(false);
-        }
-      } catch {
-        if (!cancelled) setLoading(false);
-      }
+    const refresh = async () => {
+      const quotes = await fetchMarketQuotes();
+      if (cancelled) return;
+      const next: Mover[] = quotes
+        .map((q) => {
+          const asset = MARKET_UNIVERSE.find((m) => m.symbol === q.symbol);
+          if (!asset || q.price == null || q.changePct == null) return null;
+          if (!Number.isFinite(q.price)) return null;
+          return {
+            symbol: q.symbol,
+            asset,
+            price: q.price,
+            changePct: q.changePct,
+            volume: q.volume,
+          };
+        })
+        .filter(Boolean) as Mover[];
+      setData(next);
+      setLoading(false);
     };
-
-    fetchAll();
-    // Polling every 60s — CoinGecko free tier allows ~30 calls/min.
-    const id = window.setInterval(fetchAll, 60_000);
+    refresh();
+    const id = window.setInterval(refresh, 60_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
   }, []);
 
+  const filtered = useMemo(
+    () => (tab === "all" ? data : data.filter((d) => d.asset.assetClass === tab)),
+    [data, tab],
+  );
+
   const gainers = useMemo(
-    () => [...data].sort((a, b) => b.changePct - a.changePct).slice(0, 4),
-    [data],
+    () => [...filtered].sort((a, b) => b.changePct - a.changePct).slice(0, 4),
+    [filtered],
   );
   const losers = useMemo(
-    () => [...data].sort((a, b) => a.changePct - b.changePct).slice(0, 4),
-    [data],
+    () => [...filtered].sort((a, b) => a.changePct - b.changePct).slice(0, 4),
+    [filtered],
   );
   const mostActive = useMemo(
     () =>
-      [...data]
+      [...filtered]
         .sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct))
         .slice(0, 4),
-    [data],
+    [filtered],
   );
 
   return (
@@ -176,17 +176,34 @@ const MarketMovers = () => {
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
       aria-labelledby="market-movers-heading"
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
         <h2
           id="market-movers-heading"
           className="font-heading text-sm font-semibold text-foreground tracking-wide"
         >
           Market Movers
         </h2>
-        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1">
-          {loading && <Loader2 className="h-3 w-3 animate-spin" />}
-          {loading ? "Loading…" : "Live · 24h"}
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-0.5 rounded-full border border-border/40 bg-muted/30 p-0.5">
+            {ASSET_TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`rounded-full px-2.5 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider transition-colors ${
+                  tab === t.key
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1">
+            {loading && <Loader2 className="h-3 w-3 animate-spin" />}
+            {loading ? "Loading…" : "Live · 24h"}
+          </span>
+        </div>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         <MoverList title="Top Gainers" rows={gainers} variant="gainers" />
