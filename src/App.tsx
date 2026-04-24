@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QuickTradeProvider } from "@/contexts/QuickTradeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import PageTransition from "@/components/PageTransition";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
