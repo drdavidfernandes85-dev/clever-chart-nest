@@ -52,6 +52,8 @@ const DashboardSidebar = () => {
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
   const { t } = useLanguage();
+  const { theme } = useTheme();
+  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
   // "starting soon" = within the next 30 minutes
   const startingSoon =
     !!upcoming &&
