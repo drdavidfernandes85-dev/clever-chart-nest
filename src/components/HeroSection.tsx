@@ -8,6 +8,7 @@ import FloatingCandles from "@/components/hero/FloatingCandles";
 import NetworkNodes from "@/components/hero/NetworkNodes";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
+import heroCryptoBg from "@/assets/hero-crypto-bg.jpg";
 
 // Next webinar config — update these as needed
 const NEXT_WEBINAR = {
