@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   MessageSquare,
@@ -7,6 +7,13 @@ import {
   ChevronDown,
   Settings2,
   Check,
+  Maximize2,
+  Minimize2,
+  GitCompare,
+  Pencil,
+  Bell,
+  Zap,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,15 +27,19 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
 
 import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
+import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
+import ChartHeaderStats from "@/components/livechart/ChartHeaderStats";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 const SYMBOL_OPTIONS = [
   { label: "EUR/USD", value: "FX:EURUSD" },
@@ -64,12 +75,39 @@ const INDICATORS: Array<{ id: string; label: string }> = [
   { id: "STD;ATR", label: "ATR" },
 ];
 
+// "FX:EURUSD" → "EUR/USD" for the QuickTradePanel context.
+const tvSymbolToPair = (tv: string) => {
+  const opt = SYMBOL_OPTIONS.find((o) => o.value === tv);
+  if (opt) return opt.label;
+  const clean = tv.replace(/^[A-Z]+:/, "");
+  if (clean.length >= 6) return `${clean.slice(0, 3)}/${clean.slice(3, 6)}`;
+  return clean;
+};
+
 const LiveChart = () => {
   const [symbol, setSymbol] = useState("FX:EURUSD");
   const [interval, setInterval] = useState("15");
   const [studies, setStudies] = useState<string[]>(["STD;RSI", "STD;MACD"]);
+  const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [tradePanelOpen, setTradePanelOpen] = useState(true);
+  const chartShellRef = useRef<HTMLElement>(null);
+  const { setSymbol: setCtxSymbol } = useQuickTrade();
 
   const currentLabel = SYMBOL_OPTIONS.find((s) => s.value === symbol)?.label ?? symbol;
+
+  // Keep the QuickTrade context symbol in sync with the chart symbol so
+  // one-click trading from the floating panel always targets what the user sees.
+  useEffect(() => {
+    setCtxSymbol(tvSymbolToPair(symbol));
+  }, [symbol, setCtxSymbol]);
+
+  // Track real fullscreen state (covers Esc key)
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
 
   const toggleStudy = (id: string) => {
     setStudies((prev) =>
@@ -77,11 +115,39 @@ const LiveChart = () => {
     );
   };
 
+  const toggleCompare = (val: string) => {
+    setCompareSymbols((prev) =>
+      prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val].slice(0, 3),
+    );
+  };
+
+  const toggleFullscreen = async () => {
+    const el = chartShellRef.current;
+    if (!el) return;
+    try {
+      if (!document.fullscreenElement) {
+        await el.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // Combine main + compare studies for the TradingView widget.
+  // TradingView's free widget only renders one symbol natively, so we add
+  // overlays via the "Compare" study when compareSymbols are set.
+  const effectiveStudies = [
+    ...studies,
+    ...compareSymbols.map((s) => `Compare@tv-basicstudies||${s}`),
+  ];
+
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <SEO
-        title="Live Chart | Elite Live Trading Room"
-        description="Pro multi-timeframe charts with timeframes, indicators and live signals."
+        title="Live Chart Terminal | Elite Live Trading Room"
+        description="High-end live trading terminal with real-time charts, quick trade execution and pro indicators."
         canonical="https://elitelivetradingroom.com/live-chart"
       />
 
@@ -97,7 +163,7 @@ const LiveChart = () => {
               </span>
             </Link>
             <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">
-              Live Chart
+              Live Terminal
             </Badge>
           </div>
 
@@ -126,14 +192,17 @@ const LiveChart = () => {
       </header>
 
       {/* Workspace */}
-      <div className="p-4">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          {/* Chart hero */}
-          <section className="flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[calc(100vh-6.5rem)] min-h-[640px]">
-            {/* Chart top toolbar */}
+      <div className="p-3 lg:p-4">
+        <div className="grid gap-3 lg:gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          {/* Chart hero — bigger, dominant */}
+          <section
+            ref={chartShellRef}
+            className="relative flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[calc(100vh-5.5rem)] min-h-[680px]"
+          >
+            {/* Top toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 px-4 py-2.5">
-              {/* Left: symbol selector */}
-              <div className="flex items-center gap-2">
+              {/* Left: symbol selector + indicator badges */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <BarChart3 className="h-4 w-4 text-primary" />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -165,10 +234,34 @@ const LiveChart = () => {
                 >
                   ● Live
                 </Badge>
+
+                {/* Compare chip(s) */}
+                {compareSymbols.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    {compareSymbols.map((cs) => {
+                      const lbl = SYMBOL_OPTIONS.find((o) => o.value === cs)?.label ?? cs;
+                      return (
+                        <span
+                          key={cs}
+                          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary"
+                        >
+                          {lbl}
+                          <button
+                            onClick={() => toggleCompare(cs)}
+                            className="hover:text-foreground"
+                            aria-label={`Remove ${lbl}`}
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {/* Right: timeframes + indicators */}
-              <div className="flex items-center gap-2">
+              {/* Right: tools */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-0.5 rounded-full border border-border/40 bg-muted/30 p-0.5">
                   {TIMEFRAMES.map((tf) => (
                     <button
@@ -185,6 +278,7 @@ const LiveChart = () => {
                   ))}
                 </div>
 
+                {/* Indicators */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors">
@@ -214,13 +308,87 @@ const LiveChart = () => {
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Compare */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors">
+                      <GitCompare className="h-3.5 w-3.5 text-primary" />
+                      Compare
+                      {compareSymbols.length > 0 && (
+                        <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-mono text-primary">
+                          {compareSymbols.length}
+                        </span>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Overlay symbol
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {SYMBOL_OPTIONS.filter((o) => o.value !== symbol).map((opt) => (
+                      <DropdownMenuCheckboxItem
+                        key={opt.value}
+                        checked={compareSymbols.includes(opt.value)}
+                        onCheckedChange={() => toggleCompare(opt.value)}
+                        className="text-sm"
+                      >
+                        {opt.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Drawing tools hint — TradingView side toolbar handles the actual tools */}
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors"
+                  title="Drawing tools are available on the chart's left toolbar"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-primary" />
+                  Draw
+                </button>
+
+                {/* Quick Trade toggle */}
+                <button
+                  type="button"
+                  onClick={() => setTradePanelOpen((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider transition-colors ${
+                    tradePanelOpen
+                      ? "border-primary/50 bg-primary/15 text-primary"
+                      : "border-border/40 bg-muted/30 text-foreground hover:bg-muted/50"
+                  }`}
+                  title="Toggle Quick Trade panel"
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  {tradePanelOpen ? "Hide Trade" : "Trade"}
+                </button>
+
+                {/* Fullscreen */}
+                <button
+                  type="button"
+                  onClick={toggleFullscreen}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors"
+                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <Maximize2 className="h-3.5 w-3.5 text-primary" />
+                  )}
+                  <span className="hidden lg:inline">{isFullscreen ? "Exit" : "Full"}</span>
+                </button>
               </div>
             </div>
 
+            {/* Premium price/stats header */}
+            <ChartHeaderStats symbol={symbol} displayLabel={currentLabel} />
+
             {/* Chart canvas — fills the rest */}
-            <div className="flex-1 min-h-0">
+            <div className="relative flex-1 min-h-0">
               <TradingViewAdvancedIframe
-                key={`${symbol}-${interval}-${studies.join(",")}`}
+                key={`${symbol}-${interval}-${studies.join(",")}-${compareSymbols.join(",")}`}
                 symbol={symbol}
                 interval={interval}
                 height="100%"
@@ -228,15 +396,58 @@ const LiveChart = () => {
                 hideSideToolbar={false}
                 withDateRanges={true}
                 saveImage={true}
-                studies={studies}
+                studies={effectiveStudies}
               />
+
+              {/* Floating Quick Trade panel — anchored top-right of chart */}
+              {tradePanelOpen && (
+                <div className="pointer-events-none absolute right-3 top-3 z-30 hidden xl:block w-[320px] max-h-[calc(100%-1.5rem)] overflow-y-auto">
+                  <div className="pointer-events-auto rounded-2xl border border-primary/30 bg-background/85 backdrop-blur-2xl shadow-[0_25px_70px_-20px_hsl(48_100%_51%/0.45)] relative">
+                    <button
+                      type="button"
+                      onClick={() => setTradePanelOpen(false)}
+                      className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="Close trade panel"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <QuickTradePanel compact />
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
           {/* Right rail */}
-          <aside className="flex flex-col gap-4 lg:h-[calc(100vh-6.5rem)] lg:min-h-[640px] lg:overflow-y-auto pr-1">
+          <aside className="flex flex-col gap-3 lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px] lg:overflow-y-auto pr-1">
+            {/* Quick Trade — visible on lg, hidden on xl where it floats over the chart */}
+            <div className="xl:hidden">
+              <QuickTradePanel compact />
+            </div>
+
             <LiveSharedSignals />
-            <SmartAlerts />
+
+            {/* Smart Alerts — collapsible to save space */}
+            <Collapsible defaultOpen>
+              <div className="rounded-2xl border border-border/30 bg-card/60 overflow-hidden">
+                <CollapsibleTrigger className="group flex w-full items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+                      <Bell className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="font-heading text-sm font-semibold text-foreground tracking-wide">
+                      Smart Alerts
+                    </span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="border-t border-border/30">
+                    <SmartAlerts />
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
           </aside>
         </div>
       </div>
