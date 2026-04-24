@@ -59,11 +59,11 @@ const Navbar = () => {
     >
       <div className="container flex h-16 items-center justify-between">
         <a href="#home" className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center justify-center overflow-hidden h-8 sm:h-9 lg:h-10 w-auto shrink-0">
+          <div className="flex items-center justify-start shrink-0">
             <img
               src={infinoxLogo}
               alt="INFINOX"
-              className="h-full w-auto object-contain object-center select-none"
+              className="w-[180px] sm:w-[200px] lg:w-[220px] h-auto object-contain select-none"
               draggable={false}
             />
           </div>
