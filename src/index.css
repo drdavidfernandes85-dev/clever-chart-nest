@@ -224,14 +224,14 @@
     font-weight: 600;
   }
   .neon-text-cyan {
-    color: hsl(187 95% 70%);
-    text-shadow: 0 0 8px hsl(187 100% 50% / 0.30);
+    color: hsl(48 100% 60%);
+    text-shadow: 0 0 10px hsl(48 100% 51% / 0.35);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
   .neon-text-purple {
-    color: hsl(271 70% 78%);
-    text-shadow: 0 0 8px hsl(271 91% 65% / 0.25);
+    color: hsl(48 100% 60%);
+    text-shadow: 0 0 10px hsl(48 100% 51% / 0.35);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
