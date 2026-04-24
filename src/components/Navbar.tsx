@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import infinoxLogoWhite from "@/assets/logo-new.png";
-import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
+import sidebarLogo from "@/assets/logo-sidebar.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
@@ -24,7 +23,7 @@ const Navbar = () => {
   const { user, profile, signOut } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
+  const infinoxLogo = sidebarLogo;
 
   const navLinks = [
     { label: t("nav.home"), href: "#home" },
@@ -73,7 +72,7 @@ const Navbar = () => {
                 const img = e.currentTarget;
                 if (!img.dataset.fallback) {
                   img.dataset.fallback = "1";
-                  img.src = infinoxLogoBlack;
+                  img.src = sidebarLogo;
                 }
               }}
             />
