@@ -477,6 +477,9 @@ const translations = {
     "perf.avgRR": "Avg R:R",
     "perf.sharpe": "Sharpe",
     "perf.empty": "Log your first closed trade in the journal to see your equity curve.",
+    // Weekly AI summary (server-side canned phrases mapped client-side)
+    "weekly.empty": "No closed trades this week. Consider reviewing your watchlist and setup criteria — discipline in waiting for high-quality setups is a skill.",
+    "weekly.unavailable": "Unable to generate summary.",
   },
   es: {
     "nav.home": "Inicio",
