@@ -11,7 +11,6 @@ import {
   Minimize2,
   GitCompare,
   Pencil,
-  Zap,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -91,7 +90,7 @@ const LiveChart = () => {
   const [studies, setStudies] = useState<string[]>([]);
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [tradePanelOpen, setTradePanelOpen] = useState(false);
+  
   const chartShellRef = useRef<HTMLElement>(null);
   const { setSymbol: setCtxSymbol } = useQuickTrade();
 
@@ -351,20 +350,7 @@ const LiveChart = () => {
                   Draw
                 </button>
 
-                {/* Quick Trade toggle */}
-                <button
-                  type="button"
-                  onClick={() => setTradePanelOpen((v) => !v)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider transition-colors ${
-                    tradePanelOpen
-                      ? "border-primary/50 bg-primary/15 text-primary"
-                      : "border-border/40 bg-muted/30 text-foreground hover:bg-muted/50"
-                  }`}
-                  title="Toggle Quick Trade panel"
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                  {tradePanelOpen ? "Hide Trade" : "Trade"}
-                </button>
+                {/* Quick Trade now lives in the right sidebar below Smart Alerts */}
 
                 {/* Fullscreen */}
                 <button
@@ -406,33 +392,11 @@ const LiveChart = () => {
                 saveImage={true}
                 studies={effectiveStudies}
               />
-
-              {/* Floating Quick Trade panel — anchored top-right of chart */}
-              {tradePanelOpen && (
-                <div className="pointer-events-none absolute right-3 top-3 z-30 hidden xl:block w-[320px] max-h-[calc(100%-1.5rem)] overflow-y-auto">
-                  <div className="pointer-events-auto rounded-2xl border border-primary/30 bg-background/85 backdrop-blur-2xl shadow-[0_25px_70px_-20px_hsl(48_100%_51%/0.45)] relative">
-                    <button
-                      type="button"
-                      onClick={() => setTradePanelOpen(false)}
-                      className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Close trade panel"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                    <QuickTradePanel compact />
-                  </div>
-                </div>
-              )}
             </div>
           </section>
 
           {/* Right rail */}
           <aside className="flex flex-col gap-3 lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px] lg:overflow-y-auto pr-1">
-            {/* Quick Trade — visible on lg, hidden on xl where it floats over the chart */}
-            <div className="xl:hidden">
-              <QuickTradePanel compact />
-            </div>
-
             {/* My positions for the active chart symbol — pulled from EA */}
             <SymbolPositions symbolLabel={currentLabel} />
 
@@ -440,6 +404,9 @@ const LiveChart = () => {
 
             {/* Smart Alerts — collapsible to save space */}
             <SmartAlerts collapsible defaultOpen />
+
+            {/* Quick Trade — placed right below Smart Alerts */}
+            <QuickTradePanel compact />
           </aside>
         </div>
       </div>

@@ -215,12 +215,9 @@ const Dashboard = () => {
               <PortfolioOverview />
             </motion.section>
 
-            {/* Right narrow sidebar — Risk → Quick Trade → Watchlist */}
+            {/* Right narrow sidebar — Risk → Watchlist */}
             <aside className="min-w-0 space-y-5 lg:sticky lg:top-20 self-start">
               <RiskMeter />
-              <div className="hidden lg:block">
-                <QuickTradePanel />
-              </div>
               <Watchlist />
             </aside>
           </div>
