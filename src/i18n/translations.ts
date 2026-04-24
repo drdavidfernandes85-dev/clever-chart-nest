@@ -477,6 +477,9 @@ const translations = {
     "perf.avgRR": "Avg R:R",
     "perf.sharpe": "Sharpe",
     "perf.empty": "Log your first closed trade in the journal to see your equity curve.",
+    // Weekly AI summary (server-side canned phrases mapped client-side)
+    "weekly.empty": "No closed trades this week. Consider reviewing your watchlist and setup criteria — discipline in waiting for high-quality setups is a skill.",
+    "weekly.unavailable": "Unable to generate summary.",
   },
   es: {
     "nav.home": "Inicio",
@@ -913,6 +916,8 @@ const translations = {
     "perf.avgRR": "R:R Promedio",
     "perf.sharpe": "Sharpe",
     "perf.empty": "Registra tu primera operación cerrada en el diario para ver tu curva de equity.",
+    "weekly.empty": "Sin operaciones cerradas esta semana. Aprovecha para revisar tu watchlist y tus criterios de entrada — la disciplina de esperar setups de calidad también es una habilidad.",
+    "weekly.unavailable": "No se pudo generar el resumen.",
   },
   pt: {
     "nav.home": "Início",
@@ -1349,6 +1354,8 @@ const translations = {
     "perf.avgRR": "R:R Médio",
     "perf.sharpe": "Sharpe",
     "perf.empty": "Registre sua primeira operação fechada no diário para ver sua curva de equity.",
+    "weekly.empty": "Sem operações fechadas esta semana. Aproveite para revisar sua watchlist e critérios de entrada — a disciplina de esperar setups de qualidade também é uma habilidade.",
+    "weekly.unavailable": "Não foi possível gerar o resumo.",
   },
 } as const;
 

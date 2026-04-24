@@ -9,6 +9,7 @@ import SEO from "@/components/SEO";
 import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { localizeWeeklySummary } from "@/i18n/summary";
 
 interface WeeklyReport {
   id: string;
@@ -20,7 +21,7 @@ interface WeeklyReport {
 
 const Analytics = () => {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -121,7 +122,7 @@ const Analytics = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{r.summary}</p>
+                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{localizeWeeklySummary(r.summary, locale)}</p>
                 </article>
               ))}
             </div>
