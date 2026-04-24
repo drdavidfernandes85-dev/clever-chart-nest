@@ -97,7 +97,7 @@ const LiveSharedSignals = () => {
                   </p>
                 </div>
               </div>
-              {!isPlaceholder && s.status === "active" && (
+              {(!isPlaceholder ? ["active", "open"].includes(s.status) : true) && (
                 <button
                   onClick={() =>
                     openTrade({
@@ -106,7 +106,7 @@ const LiveSharedSignals = () => {
                       lots: "0.10",
                       sl: s.stop_loss != null ? String(s.stop_loss) : undefined,
                       tp: s.take_profit != null ? String(s.take_profit) : undefined,
-                      signalId: s.id,
+                      signalId: isPlaceholder ? null : s.id,
                     })
                   }
                   className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors"
