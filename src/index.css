@@ -329,10 +329,7 @@
   }
 
   .bg-grid-pattern {
-    background-image:
-      linear-gradient(hsl(187 100% 50% / 0.18) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(187 100% 50% / 0.18) 1px, transparent 1px);
-    background-size: 60px 60px;
+    background-image: none;
   }
 
   .bg-radial-glow {
