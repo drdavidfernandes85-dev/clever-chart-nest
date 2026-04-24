@@ -39,9 +39,9 @@ export const MARKET_UNIVERSE: MarketSymbol[] = [
   { symbol: "S&P 500",     assetClass: "index", tv: "TVC:SPX"     },
   { symbol: "Nasdaq 100",  assetClass: "index", tv: "TVC:NDX"     },
   { symbol: "Dow Jones",   assetClass: "index", tv: "TVC:DJI"     },
-  { symbol: "Russell 2000",assetClass: "index", tv: "TVC:RUT"     },
-  { symbol: "VIX",         assetClass: "index", tv: "TVC:VIX"     },
   { symbol: "DAX 40",      assetClass: "index", tv: "TVC:DAX"     },
+  { symbol: "FTSE 100",    assetClass: "index", tv: "TVC:UKX"     },
+  { symbol: "Nikkei 225",  assetClass: "index", tv: "TVC:NI225"   },
 
   // Major US stocks
   { symbol: "AAPL",  assetClass: "stock", tv: "NASDAQ:AAPL"  },

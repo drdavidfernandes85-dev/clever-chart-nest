@@ -38,14 +38,14 @@ const FOREX = [
   "USD/CAD", "USD/CHF", "NZD/USD", "EUR/GBP",
 ];
 
-// Stooq symbols. Index codes vary — verified working list below.
+// Stooq symbols. Verified working list (RUT/VIX not on Stooq's free CSV).
 const INDICES: Array<{ stooq: string; label: string }> = [
   { stooq: "^spx",  label: "S&P 500" },
-  { stooq: "^ndq",  label: "Nasdaq 100" },
+  { stooq: "^ndx",  label: "Nasdaq 100" },
   { stooq: "^dji",  label: "Dow Jones" },
-  { stooq: "^rut",  label: "Russell 2000" },
-  { stooq: "^vix",  label: "VIX" },
   { stooq: "^dax",  label: "DAX 40" },
+  { stooq: "^ftm",  label: "FTSE 100" },
+  { stooq: "^n225", label: "Nikkei 225" },
 ];
 
 const STOCKS: Array<{ stooq: string; label: string }> = [
