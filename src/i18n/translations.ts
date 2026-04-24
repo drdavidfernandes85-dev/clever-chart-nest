@@ -1354,6 +1354,8 @@ const translations = {
     "perf.avgRR": "R:R Médio",
     "perf.sharpe": "Sharpe",
     "perf.empty": "Registre sua primeira operação fechada no diário para ver sua curva de equity.",
+    "weekly.empty": "Sem operações fechadas esta semana. Aproveite para revisar sua watchlist e critérios de entrada — a disciplina de esperar setups de qualidade também é uma habilidade.",
+    "weekly.unavailable": "Não foi possível gerar o resumo.",
   },
 } as const;
 
