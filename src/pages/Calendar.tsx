@@ -18,13 +18,12 @@ const CalendarPage = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <>
       <SEO
         title="Calendario | Elite Live Trading Room"
         description="Calendario económico y próximas sesiones en vivo."
         canonical="https://elitelivetradingroom.com/calendar"
       />
-      <DashboardSidebar />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
