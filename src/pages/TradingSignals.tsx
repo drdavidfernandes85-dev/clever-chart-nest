@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3 } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import NewSignalForm from "@/components/signals/NewSignalForm";
 import SEO from "@/components/SEO";
+import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 interface Signal {
   id: string;
