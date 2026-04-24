@@ -47,11 +47,12 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
 const PortfolioOverview = () => {
   const { account, positions: mtPositions, snapshots, syncing, sync, refresh } = useMTAccount();
   const { openTrade } = useQuickTrade();
+  const { t } = useLanguage();
   const isConnected = !!account && account.status === "connected";
 
   const handleDisconnect = async () => {
     if (!account) return;
-    if (!confirm("Disconnect this MetaTrader account? Your synced history will be removed.")) return;
+    if (!confirm(t("portfolio.confirmDisconnect"))) return;
     const { error } = await (supabase as any)
       .from("user_mt_accounts")
       .delete()
@@ -60,7 +61,7 @@ const PortfolioOverview = () => {
       toast.error(error.message);
       return;
     }
-    toast.success("Account disconnected");
+    toast.success(t("portfolio.disconnected"));
     refresh();
   };
 
