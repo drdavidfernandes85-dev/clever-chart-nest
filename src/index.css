@@ -702,6 +702,19 @@
     );
     animation: cyber-beam-drift 34s ease-in-out infinite;
   }
+  .cyber-beam-4 {
+    left: 36%;
+    width: 200px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      hsl(180 100% 50% / 0.06) 40%,
+      hsl(180 100% 50% / 0.10) 50%,
+      hsl(180 100% 50% / 0.06) 60%,
+      transparent 100%
+    );
+    animation: cyber-beam-drift 26s ease-in-out infinite;
+  }
 
   @keyframes cyber-beam-drift {
     0%, 100% { transform: skewX(-12deg) translateX(0); opacity: 0.5; }
