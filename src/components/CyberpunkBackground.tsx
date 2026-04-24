@@ -218,10 +218,12 @@ const CyberpunkBackground = () => {
               animationDuration: c.duration,
               writingMode: "vertical-rl",
               textOrientation: "upright",
-              color: i % 3 === 0 ? "hsl(271 91% 70%)" : "hsl(187 100% 65%)",
-              opacity: 0.13,
+              color: i % 4 === 0 ? "hsl(48 100% 60%)" : i % 3 === 0 ? "hsl(271 91% 70%)" : "hsl(187 100% 65%)",
+              opacity: 0.10,
               textShadow:
-                i % 3 === 0
+                i % 4 === 0
+                  ? "0 0 6px hsl(48 100% 51% / 0.7)"
+                  : i % 3 === 0
                   ? "0 0 6px hsl(271 91% 65% / 0.7)"
                   : "0 0 6px hsl(187 100% 50% / 0.7)",
             }}
