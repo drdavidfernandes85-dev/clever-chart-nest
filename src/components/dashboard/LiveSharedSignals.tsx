@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Radio, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
@@ -99,7 +100,7 @@ const LiveSharedSignals = () => {
               </div>
               {(!isPlaceholder ? ["active", "open"].includes(s.status) : true) && (
                 <button
-                  onClick={() =>
+                  onClick={() => {
                     openTrade({
                       symbol: s.pair,
                       side: isBuy ? "buy" : "sell",
@@ -107,8 +108,11 @@ const LiveSharedSignals = () => {
                       sl: s.stop_loss != null ? String(s.stop_loss) : undefined,
                       tp: s.take_profit != null ? String(s.take_profit) : undefined,
                       signalId: isPlaceholder ? null : s.id,
-                    })
-                  }
+                    });
+                    toast.success(`Signal loaded: ${isBuy ? "BUY" : "SELL"} ${s.pair}`, {
+                      description: "Review and confirm in Quick Trade →",
+                    });
+                  }}
                   className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors"
                 >
                   <Zap className="h-3 w-3" />
