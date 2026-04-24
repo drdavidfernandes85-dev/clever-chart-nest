@@ -784,7 +784,22 @@
     100% { transform: translateY(110vh); }
   }
 
+  /* Floating firefly particles for hero/landing background */
+  @keyframes float-particle {
+    0%   { transform: translate(0, 0) scale(1);   opacity: 0.2; }
+    25%  { opacity: 0.85; }
+    50%  { transform: translate(12px, -22px) scale(1.15); opacity: 1; }
+    75%  { opacity: 0.85; }
+    100% { transform: translate(0, 0) scale(1);   opacity: 0.2; }
+  }
+  .animate-float-particle {
+    animation-name: float-particle;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .cyber-beam, .cyber-rain { animation: none !important; }
+    .cyber-beam, .cyber-rain, .animate-float-particle { animation: none !important; }
   }
 }
