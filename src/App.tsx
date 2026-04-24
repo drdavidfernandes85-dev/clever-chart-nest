@@ -55,6 +55,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <QuickTradeProvider>
+            <CyberpunkBackground />
             <PageTransition>
               <Suspense fallback={<RouteFallback />}>
                 <Routes>
