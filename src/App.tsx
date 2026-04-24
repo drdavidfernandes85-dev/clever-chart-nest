@@ -18,25 +18,43 @@ import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
 import Index from "./pages/Index.tsx";
 
+// Retry dynamic imports once after a stale-chunk error (e.g. after a redeploy)
+// then force a hard reload so the browser fetches a fresh index.html.
+const lazyWithRetry = <T,>(factory: () => Promise<{ default: React.ComponentType<T> }>) =>
+  lazy(async () => {
+    const reloadKey = "lovable:chunk-reloaded";
+    try {
+      return await factory();
+    } catch (err) {
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, "1");
+        window.location.reload();
+        // Return a never-resolving promise while the page reloads
+        return new Promise(() => {}) as never;
+      }
+      throw err;
+    }
+  });
+
 // Code-split heavier authenticated routes
-const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
-const CommandDeck = lazy(() => import("./pages/CommandDeck.tsx"));
-const LiveChart = lazy(() => import("./pages/LiveChart.tsx"));
-const Chatroom = lazy(() => import("./pages/Chatroom.tsx"));
-const Login = lazy(() => import("./pages/Login.tsx"));
-const Register = lazy(() => import("./pages/Register.tsx"));
-const Profile = lazy(() => import("./pages/Profile.tsx"));
-const VideoLibrary = lazy(() => import("./pages/VideoLibrary.tsx"));
-const TradingSignals = lazy(() => import("./pages/TradingSignals.tsx"));
-const Leaderboard = lazy(() => import("./pages/Leaderboard.tsx"));
-const Admin = lazy(() => import("./pages/Admin.tsx"));
-const Analytics = lazy(() => import("./pages/Analytics.tsx"));
-const PublicProfile = lazy(() => import("./pages/PublicProfile.tsx"));
-const News = lazy(() => import("./pages/News.tsx"));
-const CalendarPage = lazy(() => import("./pages/Calendar.tsx"));
-const ConnectMT = lazy(() => import("./pages/ConnectMT.tsx"));
-const Webinars = lazy(() => import("./pages/Webinars.tsx"));
-const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Dashboard = lazyWithRetry(() => import("./pages/Dashboard.tsx"));
+const CommandDeck = lazyWithRetry(() => import("./pages/CommandDeck.tsx"));
+const LiveChart = lazyWithRetry(() => import("./pages/LiveChart.tsx"));
+const Chatroom = lazyWithRetry(() => import("./pages/Chatroom.tsx"));
+const Login = lazyWithRetry(() => import("./pages/Login.tsx"));
+const Register = lazyWithRetry(() => import("./pages/Register.tsx"));
+const Profile = lazyWithRetry(() => import("./pages/Profile.tsx"));
+const VideoLibrary = lazyWithRetry(() => import("./pages/VideoLibrary.tsx"));
+const TradingSignals = lazyWithRetry(() => import("./pages/TradingSignals.tsx"));
+const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard.tsx"));
+const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
+const Analytics = lazyWithRetry(() => import("./pages/Analytics.tsx"));
+const PublicProfile = lazyWithRetry(() => import("./pages/PublicProfile.tsx"));
+const News = lazyWithRetry(() => import("./pages/News.tsx"));
+const CalendarPage = lazyWithRetry(() => import("./pages/Calendar.tsx"));
+const ConnectMT = lazyWithRetry(() => import("./pages/ConnectMT.tsx"));
+const Webinars = lazyWithRetry(() => import("./pages/Webinars.tsx"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 
 const queryClient = new QueryClient();
 
