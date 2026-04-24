@@ -21,24 +21,26 @@ import { useWebinars } from "@/hooks/useWebinars";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
 /**
  * Premium left rail navigation. Collapsible on desktop, hidden on mobile
  * (mobile uses MobileBottomNav). Inspired by top-tier trading platforms.
  */
 
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/webinars", label: "Live Webinars", icon: Radio, flagship: true },
-  { to: "/live-chart", label: "Live Charts", icon: LineChart },
-  { to: "/signals", label: "Signals", icon: Radio },
-  { to: "/news", label: "News", icon: Newspaper },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/chatroom", label: "Chatroom", icon: MessageSquare },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/videos", label: "Video Library", icon: Video },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/profile", label: "Profile", icon: User },
+const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
+  { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
+  { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
+  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
+  { to: "/signals", labelKey: "sidebar.signals", icon: Radio },
+  { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
+  { to: "/calendar", labelKey: "sidebar.calendar", icon: CalendarDays },
+  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
+  { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
+  { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
+  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
+  { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
 
 const DashboardSidebar = () => {
