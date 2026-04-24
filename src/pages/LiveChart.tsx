@@ -75,17 +75,18 @@ const INDICATORS: Array<{ id: string; label: string }> = [
   { id: "STD;ATR", label: "ATR" },
 ];
 
-// "FX:EURUSD" → "EUR/USD" for the QuickTradePanel context.
+// "BINANCE:BTCUSDT" → "BTC/USDT" for the QuickTradePanel context.
 const tvSymbolToPair = (tv: string) => {
   const opt = SYMBOL_OPTIONS.find((o) => o.value === tv);
   if (opt) return opt.label;
   const clean = tv.replace(/^[A-Z]+:/, "");
+  if (clean.endsWith("USDT")) return `${clean.slice(0, -4)}/USDT`;
   if (clean.length >= 6) return `${clean.slice(0, 3)}/${clean.slice(3, 6)}`;
   return clean;
 };
 
 const LiveChart = () => {
-  const [symbol, setSymbol] = useState("FX:EURUSD");
+  const [symbol, setSymbol] = useState("BINANCE:BTCUSDT");
   const [interval, setInterval] = useState("15");
   const [studies, setStudies] = useState<string[]>([]);
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
