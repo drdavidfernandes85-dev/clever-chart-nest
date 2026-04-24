@@ -81,7 +81,7 @@ const LiveTradingViewChart = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: "easeOut" }}
-      className={`relative overflow-hidden rounded-2xl glass-panel ${className}`}
+      className={`relative overflow-hidden rounded-2xl glass-panel holo-scanline holo-shine ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-4 border-b border-border/40 px-5 py-3">
