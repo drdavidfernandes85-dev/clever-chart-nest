@@ -77,7 +77,7 @@ const RiskMeter = () => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: "easeOut" }}
-      className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.15)]"
+      className="rounded-2xl card-glass holo-scanline overflow-hidden"
     >
       <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
         <div className="flex items-center gap-2">
