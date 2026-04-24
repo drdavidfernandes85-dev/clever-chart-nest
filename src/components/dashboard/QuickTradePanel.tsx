@@ -212,6 +212,57 @@ const QuickTradePanel = ({ compact = false }: Props) => {
       toast.error("Limit order requires entry price");
       return;
     }
+
+    // --- Validate SL / TP relative to current price so MT5 doesn't reject with
+    //     retcode=10016 "Invalid stops". ---
+    const ref =
+      type === "limit" && parsed.data.entry ? parsed.data.entry : livePrice;
+    if (!ref || ref <= 0) {
+      toast.error("Live price not available yet", {
+        description: "Wait a couple of seconds for the price to load and try again.",
+      });
+      return;
+    }
+    // Sanity: SL/TP must be in the same order of magnitude as the live price
+    // (e.g. EURUSD ≈ 1.16 — an SL of 1640 is clearly wrong).
+    const outOfRange = (v?: number) =>
+      v != null && (v > ref * 5 || v < ref / 5);
+    if (outOfRange(slNum) || outOfRange(tpNum)) {
+      toast.error("Stop Loss / Take Profit look wrong", {
+        description: `Current ${symbol} price is ~${ref.toFixed(
+          symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5,
+        )}. Your SL/TP must be in the same range.`,
+      });
+      return;
+    }
+    if (isBuy) {
+      if (slNum && slNum >= ref) {
+        toast.error("Invalid Stop Loss", {
+          description: `For a BUY, SL must be BELOW current price (${ref.toFixed(5)}).`,
+        });
+        return;
+      }
+      if (tpNum && tpNum <= ref) {
+        toast.error("Invalid Take Profit", {
+          description: `For a BUY, TP must be ABOVE current price (${ref.toFixed(5)}).`,
+        });
+        return;
+      }
+    } else {
+      if (slNum && slNum <= ref) {
+        toast.error("Invalid Stop Loss", {
+          description: `For a SELL, SL must be ABOVE current price (${ref.toFixed(5)}).`,
+        });
+        return;
+      }
+      if (tpNum && tpNum >= ref) {
+        toast.error("Invalid Take Profit", {
+          description: `For a SELL, TP must be BELOW current price (${ref.toFixed(5)}).`,
+        });
+        return;
+      }
+    }
+
     setConfirming(true);
   };
 
