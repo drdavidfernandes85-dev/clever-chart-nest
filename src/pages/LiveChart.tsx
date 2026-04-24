@@ -90,7 +90,7 @@ const LiveChart = () => {
   const [studies, setStudies] = useState<string[]>([]);
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [tradePanelOpen, setTradePanelOpen] = useState(false);
+  
   const chartShellRef = useRef<HTMLElement>(null);
   const { setSymbol: setCtxSymbol } = useQuickTrade();
 
