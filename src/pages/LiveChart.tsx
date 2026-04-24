@@ -403,7 +403,7 @@ const LiveChart = () => {
             <LiveSharedSignals />
 
             {/* Smart Alerts — collapsible to save space */}
-            <SmartAlerts collapsible defaultOpen />
+            <SmartAlerts collapsible defaultOpen activeSymbol={currentLabel} />
 
             {/* Quick Trade — placed right below Smart Alerts */}
             <QuickTradePanel compact />
