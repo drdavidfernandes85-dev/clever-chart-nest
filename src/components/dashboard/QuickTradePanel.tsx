@@ -589,20 +589,31 @@ const QuickTradePanel = ({ compact = false }: Props) => {
                 <Button
                   variant="ghost"
                   onClick={() => setConfirming(false)}
+                  disabled={submitting}
                   className="flex-1 h-11"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={confirmTrade}
+                  disabled={submitting}
                   className={`flex-1 h-11 font-bold ${
                     isBuy
                       ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
                       : "bg-red-500 hover:bg-red-500/90 text-white"
                   }`}
                 >
-                  <Check className="h-4 w-4 mr-1.5" />
-                  Confirm
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      Sending to EA…
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-1.5" />
+                      PLACE TRADE
+                    </>
+                  )}
                 </Button>
               </div>
             </motion.div>
