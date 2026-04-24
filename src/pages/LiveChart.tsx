@@ -11,7 +11,6 @@ import {
   Minimize2,
   GitCompare,
   Pencil,
-  Zap,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
