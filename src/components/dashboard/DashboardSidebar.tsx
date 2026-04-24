@@ -73,17 +73,22 @@ const DashboardSidebar = () => {
       )}
     >
       {/* Brand */}
-      <div className="flex h-16 items-center justify-center border-b border-primary/10 px-3">
-        <Link to="/" className="flex items-center min-w-0 leading-none">
+      <div className="flex h-16 items-center justify-between border-b border-primary/10 px-3">
+        <Link to="/" className="flex items-center gap-2 min-w-0 leading-none">
           <img
             src={infinoxLogo}
-            alt="INFINOX"
-            className={cn(
-              "object-contain transition-all",
-              collapsed ? "h-8 w-8" : "h-8 w-auto"
-            )}
+            alt="INFINOX Elite Live Trading Room"
+            className="h-9 w-9 shrink-0 object-contain"
             draggable={false}
           />
+          {!collapsed && (
+            <>
+              <span className="h-5 w-px bg-border/50 shrink-0" aria-hidden="true" />
+              <span className="truncate font-heading text-[11px] font-semibold leading-tight text-foreground tracking-tight">
+                Elite <span className="text-primary">Live Trading Room</span>
+              </span>
+            </>
+          )}
         </Link>
       </div>
 
