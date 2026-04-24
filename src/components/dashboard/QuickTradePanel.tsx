@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
@@ -539,104 +540,108 @@ const QuickTradePanel = ({ compact = false }: Props) => {
       </motion.div>
 
       {/* Confirmation modal */}
-      <AnimatePresence>
-        {confirming && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setConfirming(false)}
-              className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              transition={{ type: "spring", damping: 22, stiffness: 280 }}
-              className="fixed left-1/2 top-1/2 z-[61] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden"
-            >
-              <div
-                className={`px-5 py-4 border-b border-border/40 ${
-                  isBuy ? "bg-emerald-500/10" : "bg-red-500/10"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <AlertTriangle
-                    className={`h-4 w-4 ${isBuy ? "text-emerald-400" : "text-red-400"}`}
-                  />
-                  <h4 className="font-heading text-sm font-bold text-foreground">
-                    Confirm {isBuy ? "Buy" : "Sell"} Order
-                  </h4>
-                </div>
-              </div>
-              <div className="px-5 py-4 space-y-2.5 text-xs">
-                <ConfirmRow label="Symbol" value={symbol} />
-                <ConfirmRow
-                  label="Side"
-                  value={isBuy ? "BUY (long)" : "SELL (short)"}
-                  valueClass={isBuy ? "text-emerald-400" : "text-red-400"}
-                />
-                <ConfirmRow label="Type" value={type.toUpperCase()} />
-                <ConfirmRow label="Size" value={`${lotsNum.toFixed(2)} lots`} />
-                {type === "limit" && entry && (
-                  <ConfirmRow label="Entry" value={entry} />
-                )}
-                {sl && <ConfirmRow label="Stop Loss" value={sl} valueClass="text-red-400" />}
-                {tp && <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />}
-                <ConfirmRow
-                  label="Est. Margin"
-                  value={`$${margin.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-                />
-                {slNum > 0 && (
-                  <ConfirmRow
-                    label="Risk"
-                    value={`${riskPct.toFixed(2)}% ($${projectedRiskUsd.toFixed(2)})`}
-                    valueClass={
-                      riskPct > 3
-                        ? "text-red-400"
-                        : riskPct > 1.5
-                        ? "text-primary"
-                        : "text-emerald-400"
-                    }
-                  />
-                )}
-              </div>
-              <div className="flex gap-2 px-5 py-4 border-t border-border/40 bg-muted/20">
-                <Button
-                  variant="ghost"
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {confirming && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   onClick={() => setConfirming(false)}
-                  disabled={submitting}
-                  className="flex-1 h-11"
+                  className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                  transition={{ type: "spring", damping: 22, stiffness: 280 }}
+                  className="fixed left-1/2 top-1/2 z-[101] w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={confirmTrade}
-                  disabled={submitting}
-                  className={`flex-1 h-11 font-bold ${
-                    isBuy
-                      ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
-                      : "bg-red-500 hover:bg-red-500/90 text-white"
-                  }`}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                      Sending to EA…
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4 mr-1.5" />
-                      PLACE TRADE
-                    </>
-                  )}
-                </Button>
-              </div>
-            </motion.div>
-          </>
+                  <div
+                    className={`px-5 py-4 border-b border-border/40 ${
+                      isBuy ? "bg-emerald-500/10" : "bg-red-500/10"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle
+                        className={`h-4 w-4 ${isBuy ? "text-emerald-400" : "text-red-400"}`}
+                      />
+                      <h4 className="font-heading text-sm font-bold text-foreground">
+                        Confirm {isBuy ? "Buy" : "Sell"} Order
+                      </h4>
+                    </div>
+                  </div>
+                  <div className="px-5 py-4 space-y-2.5 text-xs">
+                    <ConfirmRow label="Symbol" value={symbol} />
+                    <ConfirmRow
+                      label="Side"
+                      value={isBuy ? "BUY (long)" : "SELL (short)"}
+                      valueClass={isBuy ? "text-emerald-400" : "text-red-400"}
+                    />
+                    <ConfirmRow label="Type" value={type.toUpperCase()} />
+                    <ConfirmRow label="Size" value={`${lotsNum.toFixed(2)} lots`} />
+                    {type === "limit" && entry && (
+                      <ConfirmRow label="Entry" value={entry} />
+                    )}
+                    {sl && <ConfirmRow label="Stop Loss" value={sl} valueClass="text-red-400" />}
+                    {tp && <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />}
+                    <ConfirmRow
+                      label="Est. Margin"
+                      value={`$${margin.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                    />
+                    {slNum > 0 && (
+                      <ConfirmRow
+                        label="Risk"
+                        value={`${riskPct.toFixed(2)}% ($${projectedRiskUsd.toFixed(2)})`}
+                        valueClass={
+                          riskPct > 3
+                            ? "text-red-400"
+                            : riskPct > 1.5
+                            ? "text-primary"
+                            : "text-emerald-400"
+                        }
+                      />
+                    )}
+                  </div>
+                  <div className="flex gap-2 px-5 py-4 border-t border-border/40 bg-muted/20">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setConfirming(false)}
+                      disabled={submitting}
+                      className="flex-1 h-11"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={confirmTrade}
+                      disabled={submitting}
+                      className={`flex-1 h-11 font-bold ${
+                        isBuy
+                          ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
+                          : "bg-red-500 hover:bg-red-500/90 text-white"
+                      }`}
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          Sending to EA…
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-1.5" />
+                          PLACE TRADE
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body,
         )}
-      </AnimatePresence>
     </>
   );
 };
