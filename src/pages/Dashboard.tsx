@@ -67,14 +67,14 @@ const Dashboard = () => {
   }, [tradeOpen, mobileNavOpen]);
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-transparent">
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
       {/* Main shell */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top header */}
-        <header className="sticky top-0 z-40 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
+        <header className="sticky top-0 z-40 border-b border-primary/10 bg-background/60 backdrop-blur-2xl">
           <div className="flex h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-12">
             {/* Hamburger — mobile/tablet */}
             <button

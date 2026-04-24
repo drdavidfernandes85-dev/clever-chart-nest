@@ -128,14 +128,7 @@
   }
 
   html {
-    background-color: hsl(0 0% 2%);
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(48 100% 51% / 0.07), transparent 60%),
-      radial-gradient(ellipse 60% 40% at 90% 100%, hsl(180 100% 50% / 0.06), transparent 60%),
-      linear-gradient(hsl(48 100% 51% / 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(180 100% 50% / 0.04) 1px, transparent 1px),
-      linear-gradient(180deg, hsl(0 0% 2%) 0%, hsl(220 15% 3%) 100%);
-    background-size: auto, auto, 64px 64px, 64px 64px, auto;
+    background-color: #050505;
     background-attachment: fixed;
   }
   html.light {
@@ -639,5 +632,70 @@
     .animate-capital-rise {
       animation: none !important;
     }
+  }
+
+  /* ── Cyberpunk ambient background — light beams + digital rain ── */
+  .cyber-beam {
+    position: absolute;
+    top: -10%;
+    width: 220px;
+    height: 120%;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      hsl(48 100% 51% / 0.06) 35%,
+      hsl(48 100% 51% / 0.10) 50%,
+      hsl(48 100% 51% / 0.06) 65%,
+      transparent 100%
+    );
+    filter: blur(28px);
+    transform: skewX(-12deg);
+    mix-blend-mode: screen;
+    opacity: 0.6;
+  }
+  .cyber-beam-1 { left: 12%;  animation: cyber-beam-drift 22s ease-in-out infinite; }
+  .cyber-beam-2 {
+    left: 58%;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      hsl(180 100% 50% / 0.05) 35%,
+      hsl(180 100% 50% / 0.09) 50%,
+      hsl(180 100% 50% / 0.05) 65%,
+      transparent 100%
+    );
+    animation: cyber-beam-drift 28s ease-in-out infinite reverse;
+  }
+  .cyber-beam-3 {
+    left: 82%;
+    width: 160px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      hsl(48 100% 51% / 0.04) 50%,
+      transparent 100%
+    );
+    animation: cyber-beam-drift 34s ease-in-out infinite;
+  }
+
+  @keyframes cyber-beam-drift {
+    0%, 100% { transform: skewX(-12deg) translateX(0); opacity: 0.5; }
+    50%      { transform: skewX(-12deg) translateX(-30px); opacity: 0.85; }
+  }
+
+  .cyber-rain {
+    animation-name: cyber-rain-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    will-change: transform;
+  }
+  @keyframes cyber-rain-fall {
+    0%   { transform: translateY(-110%); }
+    100% { transform: translateY(110vh); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cyber-beam, .cyber-rain { animation: none !important; }
   }
 }
