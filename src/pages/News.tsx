@@ -92,7 +92,7 @@ const News = () => {
           </motion.div>
         </main>
       </div>
-    </div>
+    </>
   );
 };
 
