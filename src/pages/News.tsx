@@ -8,7 +8,7 @@ import { BarChart3, MessageSquare } from "lucide-react";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
-import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import SEO from "@/components/SEO";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -18,13 +18,12 @@ const News = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <>
       <SEO
         title="Noticias | Elite Live Trading Room"
         description="Flujo de noticias en tiempo real para traders profesionales."
         canonical="https://elitelivetradingroom.com/news"
       />
-      <DashboardSidebar />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
@@ -93,7 +92,7 @@ const News = () => {
           </motion.div>
         </main>
       </div>
-    </div>
+    </>
   );
 };
 
