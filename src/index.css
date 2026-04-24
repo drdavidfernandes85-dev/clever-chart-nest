@@ -170,17 +170,18 @@
 
   .card-glass {
     background:
-      linear-gradient(180deg, hsl(0 0% 8% / 0.55) 0%, hsl(0 0% 4% / 0.55) 100%);
-    backdrop-filter: blur(28px) saturate(160%);
-    -webkit-backdrop-filter: blur(28px) saturate(160%);
-    border: 1px solid hsl(48 100% 51% / 0.28);
+      linear-gradient(180deg, hsl(0 0% 7% / 0.55) 0%, hsl(0 0% 4% / 0.55) 100%);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1.5px solid hsl(48 100% 51% / 0.55);
     box-shadow:
-      inset 0 1px 0 hsl(0 0% 100% / 0.05),
-      inset 0 0 24px hsl(180 100% 50% / 0.04),
-      0 0 0 1px hsl(0 0% 0% / 0.5),
-      0 0 22px -2px hsl(48 100% 51% / 0.18),
-      0 0 36px -8px hsl(180 100% 50% / 0.10),
-      0 18px 40px -16px hsl(0 0% 0% / 0.85);
+      inset 0 1px 0 hsl(0 0% 100% / 0.06),
+      inset 0 0 32px hsl(180 100% 50% / 0.06),
+      0 0 0 1px hsl(0 0% 0% / 0.4),
+      0 0 24px -2px hsl(48 100% 51% / 0.40),
+      0 0 48px -8px hsl(48 100% 51% / 0.25),
+      0 0 36px -8px hsl(180 100% 50% / 0.18),
+      0 22px 48px -16px hsl(0 0% 0% / 0.85);
   }
 
   .light .card-glass {
@@ -193,14 +194,15 @@
   .card-glass-hover { @apply card-glass transition-all duration-500; }
 
   .card-glass-hover:hover {
-    border-color: hsl(48 100% 51% / 0.65);
+    border-color: hsl(48 100% 51% / 0.85);
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.08),
-      inset 0 0 36px hsl(180 100% 50% / 0.08),
-      0 0 0 1px hsl(48 100% 51% / 0.35),
-      0 0 32px -2px hsl(48 100% 51% / 0.45),
-      0 0 48px -6px hsl(180 100% 50% / 0.25),
-      0 18px 48px -12px hsl(0 0% 0% / 0.7);
+      inset 0 0 40px hsl(180 100% 50% / 0.10),
+      0 0 0 1px hsl(48 100% 51% / 0.55),
+      0 0 36px -2px hsl(48 100% 51% / 0.65),
+      0 0 64px -6px hsl(48 100% 51% / 0.40),
+      0 0 56px -6px hsl(180 100% 50% / 0.35),
+      0 22px 56px -12px hsl(0 0% 0% / 0.7);
     transform: translateY(-2px);
   }
 
