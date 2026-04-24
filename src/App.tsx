@@ -14,6 +14,7 @@ import PageTransition from "@/components/PageTransition";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
+import CyberpunkBackground from "@/components/CyberpunkBackground";
 import Index from "./pages/Index.tsx";
 
 // Code-split heavier authenticated routes
