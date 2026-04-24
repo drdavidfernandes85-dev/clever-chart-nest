@@ -244,6 +244,7 @@ const Dashboard = () => {
                 <RecentActivity />
                 <div className="min-w-0 space-y-6">
                   <LiveSharedSignals />
+                  <CopiedTradesHistory limit={6} compact />
                   <CommunityNest />
                 </div>
               </motion.aside>
