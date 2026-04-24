@@ -159,12 +159,12 @@ const CyberpunkBackground = () => {
         ))}
       </div>
 
-      {/* Vignette */}
+      {/* Vignette — lighter to keep grid visible */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 35%, hsl(0 0% 0% / 0.65) 100%)",
+            "radial-gradient(ellipse 90% 70% at 50% 50%, transparent 45%, hsl(0 0% 0% / 0.55) 100%)",
         }}
       />
     </div>
