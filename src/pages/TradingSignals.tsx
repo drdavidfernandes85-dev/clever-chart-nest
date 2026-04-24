@@ -397,6 +397,30 @@ const TradingSignals = () => {
                             month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
                           })}
                         </TableCell>
+                        <TableCell className="py-2 text-center">
+                          {signal.status === "active" && (
+                            <button
+                              onClick={() =>
+                                setRequest({
+                                  signalId: signal.id,
+                                  pair: signal.pair,
+                                  side: isBuy ? "buy" : "sell",
+                                  entry: Number(signal.entry_price),
+                                  sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
+                                  tp: signal.take_profit != null ? Number(signal.take_profit) : null,
+                                })
+                              }
+                              className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                                copied.has(signal.id)
+                                  ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
+                                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+                              }`}
+                            >
+                              {copied.has(signal.id) ? <CheckCircle2 className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+                              {copied.has(signal.id) ? "Copied" : "Copy"}
+                            </button>
+                          )}
+                        </TableCell>
                         {isAdmin && (
                           <TableCell className="py-2">
                             {signal.status === "active" && (
