@@ -11,7 +11,6 @@ import {
   Minimize2,
   GitCompare,
   Pencil,
-  Bell,
   Zap,
   X,
 } from "lucide-react";
@@ -27,7 +26,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import RiskCalculator from "@/components/trading/RiskCalculator";
