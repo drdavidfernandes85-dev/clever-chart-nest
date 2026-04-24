@@ -1,18 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, LineChart, Radio, Users, MoreHorizontal } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
-const items = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/live-chart", icon: LineChart, label: "Charts" },
-  { to: "/signals", icon: Radio, label: "Signals" },
-  { to: "/chatroom", icon: Users, label: "Community" },
-  { to: "/profile", icon: MoreHorizontal, label: "More" },
+const items: { to: string; icon: typeof LayoutDashboard; labelKey: TranslationKey }[] = [
+  { to: "/dashboard", icon: LayoutDashboard, labelKey: "sidebar.dashboard" },
+  { to: "/live-chart", icon: LineChart, labelKey: "sidebar.charts" },
+  { to: "/signals", icon: Radio, labelKey: "sidebar.signals" },
+  { to: "/chatroom", icon: Users, labelKey: "sidebar.community" },
+  { to: "/profile", icon: MoreHorizontal, labelKey: "sidebar.more" },
 ];
 
 const MobileBottomNav = () => {
   const { pathname } = useLocation();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   if (!user) return null;
   if (pathname.startsWith("/chatroom")) return null;
@@ -24,7 +27,7 @@ const MobileBottomNav = () => {
       aria-label="Primary mobile navigation"
     >
       <ul className="flex items-stretch justify-around">
-        {items.map(({ to, icon: Icon, label }) => {
+        {items.map(({ to, icon: Icon, labelKey }) => {
           const active = pathname === to || pathname.startsWith(to + "/");
           return (
             <li key={to} className="flex-1">
@@ -40,7 +43,7 @@ const MobileBottomNav = () => {
                 <Icon
                   className={`h-5 w-5 transition-transform ${active ? "scale-110" : ""}`}
                 />
-                <span>{label}</span>
+                <span>{t(labelKey)}</span>
               </Link>
             </li>
           );
