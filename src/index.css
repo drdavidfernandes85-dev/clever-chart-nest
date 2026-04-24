@@ -129,11 +129,12 @@
     font-weight: 400;
     position: relative;
     overflow-x: hidden;
-    background-color: transparent;
+    background: linear-gradient(180deg, hsl(0 0% 12%) 0%, hsl(60 3% 11%) 100%);
+    background-attachment: fixed;
   }
 
   html {
-    background-color: #020202;
+    background-color: hsl(60 3% 11%);
     background-attachment: fixed;
   }
   /* Selection in cyan to match primary */
