@@ -41,7 +41,8 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
 const TradingSignals = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { openTrade } = useQuickTrade();
+  const copied = useCopiedSignals();
+  const [request, setRequest] = useState<CopyTradeRequest | null>(null);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
