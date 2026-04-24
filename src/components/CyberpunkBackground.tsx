@@ -50,21 +50,39 @@ const CyberpunkBackground = () => {
         }}
       />
 
-      {/* TRON grid — yellow horizontals + cyan verticals, prominent with center bloom */}
+      {/* TRON grid — heavy yellow horizontals + cyan verticals, with bright center bloom */}
       <div
-        className="absolute inset-0 opacity-95"
+        className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(hsl(48 100% 51% / 0.28) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(180 100% 55% / 0.22) 1px, transparent 1px),
-            linear-gradient(hsl(48 100% 51% / 0.10) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(180 100% 55% / 0.08) 1px, transparent 1px)
+            linear-gradient(hsl(48 100% 51% / 0.55) 1.5px, transparent 1.5px),
+            linear-gradient(90deg, hsl(180 100% 55% / 0.45) 1.5px, transparent 1.5px),
+            linear-gradient(hsl(48 100% 51% / 0.18) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(180 100% 55% / 0.16) 1px, transparent 1px)
           `,
-          backgroundSize: "180px 180px, 180px 180px, 36px 36px, 36px 36px",
+          backgroundSize: "200px 200px, 200px 200px, 40px 40px, 40px 40px",
           maskImage:
-            "radial-gradient(ellipse 95% 80% at 50% 50%, black 30%, transparent 95%)",
+            "radial-gradient(ellipse 100% 90% at 50% 50%, black 25%, transparent 100%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse 95% 80% at 50% 50%, black 30%, transparent 95%)",
+            "radial-gradient(ellipse 100% 90% at 50% 50%, black 25%, transparent 100%)",
+          filter: "drop-shadow(0 0 1px hsl(48 100% 51% / 0.6))",
+        }}
+      />
+
+      {/* Secondary glow grid layer for bloom intensity */}
+      <div
+        className="absolute inset-0 opacity-60"
+        style={{
+          backgroundImage: `
+            linear-gradient(hsl(48 100% 51% / 0.3) 2px, transparent 2px),
+            linear-gradient(90deg, hsl(180 100% 55% / 0.25) 2px, transparent 2px)
+          `,
+          backgroundSize: "200px 200px, 200px 200px",
+          filter: "blur(3px)",
+          maskImage:
+            "radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 90%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 90%)",
         }}
       />
 
@@ -141,12 +159,12 @@ const CyberpunkBackground = () => {
         ))}
       </div>
 
-      {/* Vignette */}
+      {/* Vignette — lighter to keep grid visible */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 35%, hsl(0 0% 0% / 0.65) 100%)",
+            "radial-gradient(ellipse 90% 70% at 50% 50%, transparent 45%, hsl(0 0% 0% / 0.55) 100%)",
         }}
       />
     </div>
