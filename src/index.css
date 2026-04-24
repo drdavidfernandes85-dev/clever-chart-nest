@@ -11,52 +11,52 @@
 }
 
 @layer base {
-  /* ── Dark theme (default) — INFINOX official palette ── */
-  /* #1E1E1E charcoal base, #FFCD05 yellow accent, #FFFFFF text */
+  /* ── Dark theme (default) — Futuristic deep-black terminal ── */
+  /* #050505 base · #0f0f0f cards · #FFCD05 yellow used sparingly */
   :root,
   .dark {
-    --background: 0 0% 12%;          /* #1E1E1E IX Charcoal */
-    --foreground: 0 0% 100%;         /* #FFFFFF */
+    --background: 0 0% 2%;            /* #050505 near-black */
+    --foreground: 0 0% 98%;           /* crisp white */
 
-    --card: 0 0% 14%;                /* slightly lifted charcoal */
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 6%;                  /* #0f0f0f charcoal panel */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 48 100% 51%;          /* #FFCD05 IX Yellow */
-    --primary-foreground: 0 0% 12%;
+    --primary: 48 100% 51%;           /* #FFCD05 IX Yellow — high-impact only */
+    --primary-foreground: 0 0% 4%;
 
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 0 0% 78%;
+    --secondary: 0 0% 9%;
+    --secondary-foreground: 0 0% 82%;
 
-    --muted: 0 0% 17%;
-    --muted-foreground: 0 0% 62%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 58%;
 
     --accent: 48 100% 51%;
-    --accent-foreground: 0 0% 12%;
+    --accent-foreground: 0 0% 4%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 48 30% 22%;            /* faint warm border, hints at yellow */
-    --input: 0 0% 18%;
+    --border: 0 0% 14%;               /* neutral cool border */
+    --input: 0 0% 10%;
     --ring: 48 100% 51%;
 
     --radius: 0.75rem;
 
-    --hero-gradient: linear-gradient(180deg, hsl(0 0% 12%) 0%, hsl(48 5% 11%) 50%, hsl(0 0% 11%) 100%);
-    --card-gradient: linear-gradient(180deg, hsl(0 0% 14% / 0.92) 0%, hsl(0 0% 11% / 0.92) 100%);
-    --glow-primary: 0 0 0 transparent;
-    --glow-primary-strong: 0 0 0 transparent;
+    --hero-gradient: linear-gradient(180deg, hsl(0 0% 2%) 0%, hsl(220 15% 4%) 50%, hsl(0 0% 2%) 100%);
+    --card-gradient: linear-gradient(180deg, hsl(0 0% 7% / 0.92) 0%, hsl(0 0% 4% / 0.92) 100%);
+    --glow-primary: 0 0 24px -4px hsl(48 100% 51% / 0.35);
+    --glow-primary-strong: 0 0 36px -4px hsl(48 100% 51% / 0.55);
 
-    --sidebar-background: 0 0% 11%;
-    --sidebar-foreground: 0 0% 100%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 92%;
     --sidebar-primary: 48 100% 51%;
-    --sidebar-primary-foreground: 0 0% 12%;
-    --sidebar-accent: 0 0% 16%;
-    --sidebar-accent-foreground: 0 0% 78%;
-    --sidebar-border: 48 30% 22%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 12%;
     --sidebar-ring: 48 100% 51%;
   }
 
