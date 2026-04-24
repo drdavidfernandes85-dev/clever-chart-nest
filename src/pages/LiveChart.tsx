@@ -89,7 +89,7 @@ const tvSymbolToPair = (tv: string) => {
 const LiveChart = () => {
   const [symbol, setSymbol] = useState("FX:EURUSD");
   const [interval, setInterval] = useState("15");
-  const [studies, setStudies] = useState<string[]>(["STD;RSI", "STD;MACD"]);
+  const [studies, setStudies] = useState<string[]>([]);
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [tradePanelOpen, setTradePanelOpen] = useState(true);
