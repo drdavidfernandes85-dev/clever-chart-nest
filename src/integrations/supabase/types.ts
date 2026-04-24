@@ -255,6 +255,69 @@ export type Database = {
           },
         ]
       }
+      mt_pending_orders: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          ea_message: string | null
+          ea_ticket: string | null
+          entry_price: number | null
+          executed_at: string | null
+          fetched_at: string | null
+          id: string
+          order_type: string
+          side: string
+          signal_id: string | null
+          status: string
+          stop_loss: number | null
+          symbol: string
+          take_profit: number | null
+          updated_at: string
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          ea_message?: string | null
+          ea_ticket?: string | null
+          entry_price?: number | null
+          executed_at?: string | null
+          fetched_at?: string | null
+          id?: string
+          order_type?: string
+          side: string
+          signal_id?: string | null
+          status?: string
+          stop_loss?: number | null
+          symbol: string
+          take_profit?: number | null
+          updated_at?: string
+          user_id: string
+          volume: number
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          ea_message?: string | null
+          ea_ticket?: string | null
+          entry_price?: number | null
+          executed_at?: string | null
+          fetched_at?: string | null
+          id?: string
+          order_type?: string
+          side?: string
+          signal_id?: string | null
+          status?: string
+          stop_loss?: number | null
+          symbol?: string
+          take_profit?: number | null
+          updated_at?: string
+          user_id?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       mt_positions: {
         Row: {
           account_id: string

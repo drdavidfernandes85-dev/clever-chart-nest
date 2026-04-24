@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3 } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import NewSignalForm from "@/components/signals/NewSignalForm";
 import SEO from "@/components/SEO";
+import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 interface Signal {
   id: string;
@@ -38,6 +40,7 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
 const TradingSignals = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { openTrade } = useQuickTrade();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
@@ -540,10 +543,30 @@ const TradingSignals = () => {
                     </p>
                   )}
 
-                  <div className="mt-3 text-[10px] text-muted-foreground">
-                    {new Date(signal.created_at).toLocaleString("en-US", {
-                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                    })}
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="text-[10px] text-muted-foreground">
+                      {new Date(signal.created_at).toLocaleString("en-US", {
+                        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                      })}
+                    </div>
+                    {signal.status === "active" && (
+                      <button
+                        onClick={() =>
+                          openTrade({
+                            symbol: signal.pair,
+                            side: isBuy ? "buy" : "sell",
+                            lots: "0.10",
+                            sl: signal.stop_loss != null ? String(signal.stop_loss) : undefined,
+                            tp: signal.take_profit != null ? String(signal.take_profit) : undefined,
+                            signalId: signal.id,
+                          })
+                        }
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] transition-colors"
+                      >
+                        <Zap className="h-3 w-3" />
+                        Take This Signal
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -551,7 +574,27 @@ const TradingSignals = () => {
           </div>
         )}
       </div>
+      {/* Floating Quick Trade panel — only renders when openTrade() has been triggered */}
+      <SignalsQuickTradeMount />
     </div>
+  );
+};
+
+// Render QuickTradePanel as a floating modal whenever the global Quick Trade
+// context is open, so users on /signals can take signals without leaving the page.
+const SignalsQuickTradeMount = () => {
+  const { open, close } = useQuickTrade();
+  if (!open) return null;
+  return (
+    <>
+      <div
+        onClick={close}
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+      />
+      <div className="fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2">
+        <QuickTradePanel compact />
+      </div>
+    </>
   );
 };
 

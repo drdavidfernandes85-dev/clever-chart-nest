@@ -9,6 +9,7 @@ import {
   Minus,
   AlertTriangle,
   Check,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
 
@@ -48,8 +51,16 @@ interface Props {
 }
 
 const QuickTradePanel = ({ compact = false }: Props) => {
-  const { symbol: ctxSymbol, side: ctxSide, setSymbol: setCtxSymbol, setSide: setCtxSide } = useQuickTrade();
+  const {
+    symbol: ctxSymbol,
+    side: ctxSide,
+    setSymbol: setCtxSymbol,
+    setSide: setCtxSide,
+    prefill,
+    prefillNonce,
+  } = useQuickTrade();
   const { account } = useMTAccount();
+  const { user } = useAuth();
 
   // Live equity from MT account; fall back to 0 if not connected.
   const accountEquity =
@@ -64,16 +75,33 @@ const QuickTradePanel = ({ compact = false }: Props) => {
   const [tp, setTp] = useState("");
   const [openSymbols, setOpenSymbols] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+  const [signalId, setSignalId] = useState<string | null>(null);
 
   const symbol = ctxSymbol;
   const side = ctxSide;
 
-  // Reset SL/TP placeholders when symbol changes
+  // Apply prefill (lots, entry, SL, TP, signal_id) every time openTrade() is called.
   useEffect(() => {
-    setEntry("");
-    setSl("");
-    setTp("");
+    if (!prefill) return;
+    if (prefill.lots) setLots(prefill.lots);
+    if (prefill.entry) {
+      setEntry(prefill.entry);
+      setType("limit");
+    } else {
+      setType("market");
+      setEntry("");
+    }
+    setSl(prefill.sl ?? "");
+    setTp(prefill.tp ?? "");
+    setSignalId(prefill.signalId ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillNonce]);
+
+  // Reset SL/TP when user manually changes symbol (but not when prefilled).
+  useEffect(() => {
+    setEntry((prev) => prev);
   }, [symbol]);
 
   // Poll live price for the active symbol every 5s.
@@ -177,13 +205,48 @@ const QuickTradePanel = ({ compact = false }: Props) => {
     setConfirming(true);
   };
 
-  const confirmTrade = () => {
-    setConfirming(false);
-    toast.success(`${side.toUpperCase()} ${lotsNum} lots ${symbol}`, {
-      description: `${type.toUpperCase()}${
-        type === "limit" && entry ? ` @ ${entry}` : ""
-      }${slNum ? ` • SL ${slNum}` : ""}${tpNum ? ` • TP ${tpNum}` : ""}`,
-    });
+  // Convert "EUR/USD" → "EURUSD" so the EA can find the broker symbol.
+  const toBrokerSymbol = (s: string) => s.replace(/[^A-Za-z0-9]/g, "");
+
+  const confirmTrade = async () => {
+    if (!user) {
+      toast.error("Please sign in to place a trade");
+      return;
+    }
+    if (!account || account.status !== "connected") {
+      toast.error("MT account not connected", {
+        description: "Connect your MetaTrader EA from Connect MT first.",
+      });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("mt_pending_orders").insert({
+        user_id: user.id,
+        account_id: account.id,
+        signal_id: signalId,
+        symbol: toBrokerSymbol(symbol),
+        side,
+        order_type: type,
+        volume: Number(lotsNum.toFixed(2)),
+        entry_price: type === "limit" && entry ? parseFloat(entry) : null,
+        stop_loss: slNum || null,
+        take_profit: tpNum || null,
+      });
+      if (error) throw error;
+      setConfirming(false);
+      setSignalId(null);
+      toast.success(`Order queued: ${side.toUpperCase()} ${lotsNum.toFixed(2)} ${symbol}`, {
+        description:
+          "Sent to your EA. It will execute on the next poll (≤5 seconds).",
+      });
+    } catch (e: any) {
+      toast.error("Could not queue order", {
+        description: e?.message ?? "Try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isBuy = side === "buy";
@@ -526,20 +589,31 @@ const QuickTradePanel = ({ compact = false }: Props) => {
                 <Button
                   variant="ghost"
                   onClick={() => setConfirming(false)}
+                  disabled={submitting}
                   className="flex-1 h-11"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={confirmTrade}
+                  disabled={submitting}
                   className={`flex-1 h-11 font-bold ${
                     isBuy
                       ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
                       : "bg-red-500 hover:bg-red-500/90 text-white"
                   }`}
                 >
-                  <Check className="h-4 w-4 mr-1.5" />
-                  Confirm
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      Sending to EA…
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-1.5" />
+                      PLACE TRADE
+                    </>
+                  )}
                 </Button>
               </div>
             </motion.div>

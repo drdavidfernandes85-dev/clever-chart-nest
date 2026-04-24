@@ -2,9 +2,11 @@
 // Authenticated via a per-user secret token sent in the Authorization header.
 // Token is verified against the SHA-256 hash stored in `mt_webhook_tokens`.
 //
-// Accepted payloads:
-//  { type: "account",   user_id?, account, balance, equity, margin, free_margin, currency?, leverage?, broker?, server?, platform?, timestamp? }
-//  { type: "positions", user_id?, account, positions: [{ ticket, symbol, type, volume, entry, sl, tp, profit, time }] }
+// Accepted POST payloads:
+//  { type: "account",   account, balance, equity, margin, free_margin, ... }
+//  { type: "positions", account, positions: [...] }
+//  { type: "poll_orders", account }                             → returns pending orders to execute
+//  { type: "order_result", order_id, status, ticket?, message? } → EA reports back after execution
 //
 // `user_id` from the EA is informational only — the authenticated user is derived from the token.
 
@@ -96,41 +98,104 @@ Deno.serve(async (req) => {
 
   const type = body?.type;
   const accountLogin = String(body?.account ?? "").trim();
-  if (!accountLogin) {
+
+  // --- order_result: EA reporting back after attempting an order ---
+  // No account match required — the order_id is enough.
+  if (type === "order_result") {
+    const orderId = String(body?.order_id ?? "").trim();
+    if (!orderId) return json(400, { error: "Missing order_id" });
+
+    const status = String(body?.status ?? "executed").toLowerCase();
+    const safeStatus = ["executed", "failed"].includes(status) ? status : "failed";
+    const ticket = body?.ticket != null ? String(body.ticket) : null;
+    const message = body?.message != null ? String(body.message).slice(0, 500) : null;
+
+    const { error: updErr } = await supabase
+      .from("mt_pending_orders")
+      .update({
+        status: safeStatus,
+        ea_ticket: ticket,
+        ea_message: message,
+        executed_at: new Date().toISOString(),
+      })
+      .eq("id", orderId)
+      .eq("user_id", userId);
+
+    if (updErr) {
+      console.error("mt-webhook: order_result update error", updErr);
+      return json(500, { error: "Could not update order" });
+    }
+    return json(200, { ok: true, type: "order_result" });
+  }
+
+  if (!accountLogin && type !== "poll_orders") {
     return json(400, { error: "Missing `account` (MT login number)" });
   }
 
-  // Find or create the matching user_mt_accounts row
-  const { data: existingAcc } = await supabase
-    .from("user_mt_accounts")
-    .select("id, status")
-    .eq("user_id", userId)
-    .eq("login", accountLogin)
-    .maybeSingle();
-
-  let accountRowId = existingAcc?.id;
-  if (!accountRowId) {
-    const { data: created, error: createErr } = await supabase
+  // Find or create the matching user_mt_accounts row (when we have a login).
+  let accountRowId: string | undefined;
+  if (accountLogin) {
+    const { data: existingAcc } = await supabase
       .from("user_mt_accounts")
-      .insert({
-        user_id: userId,
-        login: accountLogin,
-        platform: body?.platform ?? "mt5",
-        broker_name: body?.broker ?? "Connected via EA",
-        server_name: body?.server ?? "EA Webhook",
-        account_type: "live",
-        status: "connected",
-        status_message: "Receiving live data from EA",
-        currency: body?.currency ?? "USD",
-        leverage: body?.leverage ?? null,
-      })
-      .select("id")
-      .single();
-    if (createErr) {
-      console.error("mt-webhook: create account error", createErr);
-      return json(500, { error: "Could not create account record" });
+      .select("id, status")
+      .eq("user_id", userId)
+      .eq("login", accountLogin)
+      .maybeSingle();
+
+    accountRowId = existingAcc?.id;
+    if (!accountRowId) {
+      const { data: created, error: createErr } = await supabase
+        .from("user_mt_accounts")
+        .insert({
+          user_id: userId,
+          login: accountLogin,
+          platform: body?.platform ?? "mt5",
+          broker_name: body?.broker ?? "Connected via EA",
+          server_name: body?.server ?? "EA Webhook",
+          account_type: "live",
+          status: "connected",
+          status_message: "Receiving live data from EA",
+          currency: body?.currency ?? "USD",
+          leverage: body?.leverage ?? null,
+        })
+        .select("id")
+        .single();
+      if (createErr) {
+        console.error("mt-webhook: create account error", createErr);
+        return json(500, { error: "Could not create account record" });
+      }
+      accountRowId = created.id;
     }
-    accountRowId = created.id;
+  }
+
+  // --- poll_orders: EA asks "do I have any trades to place right now?" ---
+  if (type === "poll_orders") {
+    const { data: pending, error: pendErr } = await supabase
+      .from("mt_pending_orders")
+      .select(
+        "id, symbol, side, order_type, volume, entry_price, stop_loss, take_profit",
+      )
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+      .limit(10);
+
+    if (pendErr) {
+      console.error("mt-webhook: poll_orders fetch error", pendErr);
+      return json(500, { error: "Could not fetch pending orders" });
+    }
+
+    const orders = pending ?? [];
+    if (orders.length > 0) {
+      // Mark them as "sent" so we don't deliver them twice.
+      const ids = orders.map((o) => o.id);
+      await supabase
+        .from("mt_pending_orders")
+        .update({ status: "sent", fetched_at: new Date().toISOString() })
+        .in("id", ids);
+    }
+
+    return json(200, { ok: true, type: "poll_orders", orders });
   }
 
   if (type === "account") {
