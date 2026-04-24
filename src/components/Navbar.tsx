@@ -72,7 +72,7 @@ const Navbar = () => {
                 const img = e.currentTarget;
                 if (!img.dataset.fallback) {
                   img.dataset.fallback = "1";
-                  img.src = infinoxLogoBlack;
+                  img.src = sidebarLogo;
                 }
               }}
             />
