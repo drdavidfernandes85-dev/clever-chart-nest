@@ -330,6 +330,7 @@ const TradingSignals = () => {
                     <TableHead className="h-9 text-right text-[10px] uppercase tracking-[0.15em] text-muted-foreground">R:R</TableHead>
                     <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Status</TableHead>
                     <TableHead className="h-9 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Time</TableHead>
+                    <TableHead className="h-9 w-28 text-center text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Action</TableHead>
                     {isAdmin && <TableHead className="h-9 w-10" />}
                   </TableRow>
                 </TableHeader>
