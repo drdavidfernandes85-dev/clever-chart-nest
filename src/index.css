@@ -763,9 +763,9 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(180 100% 50% / 0.06) 40%,
-      hsl(180 100% 50% / 0.10) 50%,
-      hsl(180 100% 50% / 0.06) 60%,
+      hsl(271 91% 65% / 0.07) 40%,
+      hsl(271 91% 65% / 0.11) 50%,
+      hsl(271 91% 65% / 0.07) 60%,
       transparent 100%
     );
     animation: cyber-beam-drift 26s ease-in-out infinite;
