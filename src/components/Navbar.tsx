@@ -23,7 +23,7 @@ const Navbar = () => {
   const { user, profile, signOut } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
+  const infinoxLogo = sidebarLogo;
 
   const navLinks = [
     { label: t("nav.home"), href: "#home" },
