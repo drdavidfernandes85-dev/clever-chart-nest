@@ -351,20 +351,7 @@ const LiveChart = () => {
                   Draw
                 </button>
 
-                {/* Quick Trade toggle */}
-                <button
-                  type="button"
-                  onClick={() => setTradePanelOpen((v) => !v)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider transition-colors ${
-                    tradePanelOpen
-                      ? "border-primary/50 bg-primary/15 text-primary"
-                      : "border-border/40 bg-muted/30 text-foreground hover:bg-muted/50"
-                  }`}
-                  title="Toggle Quick Trade panel"
-                >
-                  <Zap className="h-3.5 w-3.5" />
-                  {tradePanelOpen ? "Hide Trade" : "Trade"}
-                </button>
+                {/* Quick Trade now lives in the right sidebar below Smart Alerts */}
 
                 {/* Fullscreen */}
                 <button
