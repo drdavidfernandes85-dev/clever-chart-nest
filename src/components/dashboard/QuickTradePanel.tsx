@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap,
@@ -78,6 +78,8 @@ const QuickTradePanel = ({ compact = false }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
   const [signalId, setSignalId] = useState<string | null>(null);
+  const [flash, setFlash] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbol = ctxSymbol;
   const side = ctxSide;
