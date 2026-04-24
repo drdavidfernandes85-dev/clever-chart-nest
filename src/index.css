@@ -121,13 +121,12 @@
   }
 
   html {
-    background-color: hsl(0 0% 12%);
+    background-color: hsl(0 0% 2%);
     background-image:
-      linear-gradient(180deg, hsl(0 0% 12%) 0%, hsl(60 4% 11%) 100%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cdefs%3E%3Cpattern id='candles' patternUnits='userSpaceOnUse' width='220' height='220'%3E%3Crect x='20' y='80' width='12' height='60' rx='2' fill='none' stroke='%23FFCD05' stroke-width='3' opacity='0.18'/%3E%3Cline x1='26' y1='60' x2='26' y2='140' stroke='%23FFCD05' stroke-width='2' opacity='0.12'/%3E%3Crect x='55' y='45' width='12' height='75' rx='2' fill='%23FFCD05' fill-opacity='0.12' stroke='%23FFCD05' stroke-width='3' opacity='0.18'/%3E%3Cline x1='61' y1='30' x2='61' y2='120' stroke='%23FFCD05' stroke-width='2' opacity='0.12'/%3E%3Crect x='90' y='110' width='12' height='55' rx='2' fill='none' stroke='%23FFCD05' stroke-width='3' opacity='0.18'/%3E%3Cline x1='96' y1='95' x2='96' y2='165' stroke='%23FFCD05' stroke-width='2' opacity='0.12'/%3E%3Crect x='125' y='65' width='12' height='80' rx='2' fill='%23FFCD05' fill-opacity='0.12' stroke='%23FFCD05' stroke-width='3' opacity='0.18'/%3E%3Cline x1='131' y1='45' x2='131' y2='145' stroke='%23FFCD05' stroke-width='2' opacity='0.12'/%3E%3Ccircle cx='180' cy='80' r='4' fill='%23FFCD05' opacity='0.08'/%3E%3Ccircle cx='195' cy='120' r='4' fill='%23FFCD05' opacity='0.08'/%3E%3Ccircle cx='165' cy='150' r='4' fill='%23FFCD05' opacity='0.08'/%3E%3Cline x1='180' y1='80' x2='195' y2='120' stroke='%23FFCD05' stroke-width='1.5' opacity='0.07'/%3E%3Cline x1='195' y1='120' x2='165' y2='150' stroke='%23FFCD05' stroke-width='1.5' opacity='0.07'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='220' height='220' fill='url(%23candles)'/%3E%3C/svg%3E");
-    background-size: auto, 220px 220px;
-    background-attachment: fixed, fixed;
-    background-position: 0 0, 0 0;
+      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(48 100% 51% / 0.06), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 90% 100%, hsl(220 60% 30% / 0.08), transparent 60%),
+      linear-gradient(180deg, hsl(0 0% 2%) 0%, hsl(220 15% 3%) 100%);
+    background-attachment: fixed;
   }
   html.light {
     background-color: hsl(0 0% 100%);
