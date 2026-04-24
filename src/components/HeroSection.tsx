@@ -157,29 +157,29 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* RIGHT — laptop + BTC visual */}
+          {/* RIGHT — premium laptop trading terminal visual */}
           <div className="relative">
-            {/* Yellow brand bloom behind the visual */}
+            {/* Subtle yellow brand bloom */}
             <div
               className="pointer-events-none absolute inset-0 -z-[1]"
               style={{
                 background:
-                  "radial-gradient(ellipse 70% 60% at 50% 50%, hsl(48 100% 51% / 0.18), transparent 70%)",
-                filter: "blur(20px)",
+                  "radial-gradient(ellipse 60% 50% at 50% 55%, hsl(48 100% 51% / 0.12), transparent 70%)",
+                filter: "blur(28px)",
               }}
             />
             <div className="relative animate-float">
               <img
                 src={heroLaptopBtc}
-                alt="Premium crypto trading dashboard with floating Bitcoin"
+                alt="Professional dark trading terminal interface on a premium laptop"
                 width={1920}
                 height={1080}
-                className="relative z-[1] w-full select-none drop-shadow-[0_30px_80px_hsl(48_100%_51%/0.25)]"
+                className="relative z-[1] w-full select-none drop-shadow-[0_40px_90px_hsl(0_0%_0%/0.6)]"
                 style={{
                   maskImage:
-                    "radial-gradient(ellipse 95% 95% at 50% 50%, black 60%, transparent 100%)",
+                    "radial-gradient(ellipse 95% 95% at 50% 55%, black 65%, transparent 100%)",
                   WebkitMaskImage:
-                    "radial-gradient(ellipse 95% 95% at 50% 50%, black 60%, transparent 100%)",
+                    "radial-gradient(ellipse 95% 95% at 50% 55%, black 65%, transparent 100%)",
                 }}
               />
             </div>
