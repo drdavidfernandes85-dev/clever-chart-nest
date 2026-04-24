@@ -164,11 +164,21 @@ async function fetchStooq(
       try {
         const r = await fetch(
           `https://stooq.com/q/l/?s=${encodeURIComponent(s.stooq)}&f=sohlcv&h&e=csv`,
+          {
+            headers: {
+              "user-agent":
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+              accept: "text/csv,*/*",
+            },
+          },
         );
         const text = await r.text();
         const lines = text.trim().split(/\r?\n/);
-        const cols = (lines[1] ?? "").split(",");
-        // Symbol, Open, High, Low, Close, Volume
+        if (lines.length < 2) {
+          console.log(`stooq ${s.stooq}: ${text.slice(0, 120)}`);
+          return { symbol: s.label, assetClass, price: null, changePct: null } as Quote;
+        }
+        const cols = lines[1].split(",");
         const open = parseFloat(cols[1] ?? "");
         const close = parseFloat(cols[4] ?? "");
         const price = Number.isFinite(close) ? close : null;
@@ -177,8 +187,10 @@ async function fetchStooq(
           price != null && o != null && o !== 0
             ? ((price - o) / o) * 100
             : null;
+        if (price == null) console.log(`stooq ${s.stooq} parse fail: ${lines[1]}`);
         return { symbol: s.label, assetClass, price, changePct } as Quote;
-      } catch {
+      } catch (e) {
+        console.log(`stooq ${s.stooq} fetch err: ${(e as Error).message}`);
         return { symbol: s.label, assetClass, price: null, changePct: null } as Quote;
       }
     }),
