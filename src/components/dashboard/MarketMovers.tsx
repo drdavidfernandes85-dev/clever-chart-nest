@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Activity, Loader2 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 import {
   MARKET_UNIVERSE,
   fetchMarketQuotes,
@@ -27,6 +28,7 @@ const MoverList = ({
   variant: "gainers" | "losers" | "active";
   showVolume?: boolean;
 }) => {
+  const { t } = useLanguage();
   const Icon =
     variant === "gainers" ? TrendingUp : variant === "losers" ? TrendingDown : Activity;
   const accent =
@@ -57,7 +59,7 @@ const MoverList = ({
         {rows.length === 0 && (
           <li className="px-3.5 py-6 text-center text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
             <Loader2 className="inline h-3 w-3 animate-spin mr-1" />
-            Loading…
+            {t("movers.loading")}
           </li>
         )}
         {rows.map((m) => {
@@ -103,16 +105,17 @@ const MoverList = ({
 };
 
 const ASSET_TABS = [
-  { key: "all",    label: "All"     },
-  { key: "crypto", label: "Crypto"  },
-  { key: "forex",  label: "Forex"   },
-  { key: "index",  label: "Indices" },
-  { key: "stock",  label: "Stocks"  },
+  { key: "all",    labelKey: "movers.tab.all"    as const },
+  { key: "crypto", labelKey: "movers.tab.crypto" as const },
+  { key: "forex",  labelKey: "movers.tab.forex"  as const },
+  { key: "index",  labelKey: "movers.tab.index"  as const },
+  { key: "stock",  labelKey: "movers.tab.stock"  as const },
 ] as const;
 
 type TabKey = typeof ASSET_TABS[number]["key"];
 
 const MarketMovers = () => {
+  const { t } = useLanguage();
   const [data, setData] = useState<Mover[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>("all");
@@ -181,34 +184,34 @@ const MarketMovers = () => {
           id="market-movers-heading"
           className="font-heading text-sm font-semibold text-foreground tracking-wide"
         >
-          Market Movers
+          {t("movers.title")}
         </h2>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-0.5 rounded-full border border-border/40 bg-muted/30 p-0.5">
-            {ASSET_TABS.map((t) => (
+            {ASSET_TABS.map((tb) => (
               <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
+                key={tb.key}
+                onClick={() => setTab(tb.key)}
                 className={`rounded-full px-2.5 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider transition-colors ${
-                  tab === t.key
+                  tab === tb.key
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {t.label}
+                {t(tb.labelKey)}
               </button>
             ))}
           </div>
           <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground inline-flex items-center gap-1">
             {loading && <Loader2 className="h-3 w-3 animate-spin" />}
-            {loading ? "Loading…" : "Live · 24h"}
+            {loading ? t("movers.loading") : t("movers.live")}
           </span>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-3">
-        <MoverList title="Top Gainers" rows={gainers} variant="gainers" />
-        <MoverList title="Top Losers" rows={losers} variant="losers" />
-        <MoverList title="Most Active" rows={mostActive} variant="active" showVolume />
+        <MoverList title={t("movers.gainers")} rows={gainers} variant="gainers" />
+        <MoverList title={t("movers.losers")} rows={losers} variant="losers" />
+        <MoverList title={t("movers.active")} rows={mostActive} variant="active" showVolume />
       </div>
     </motion.section>
   );
