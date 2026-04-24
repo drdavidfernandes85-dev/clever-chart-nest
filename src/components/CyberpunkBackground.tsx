@@ -67,51 +67,52 @@ const CyberpunkBackground = () => {
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       style={{ backgroundColor: "#020202" }}
     >
-      {/* Atmospheric radial bloom */}
+      {/* Atmospheric radial bloom — cyan + yellow + soft purple */}
       <div
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(ellipse 70% 45% at 18% 8%, hsl(187 100% 50% / 0.15), transparent 60%),
-            radial-gradient(ellipse 60% 40% at 90% 92%, hsl(271 91% 65% / 0.14), transparent 60%),
-            radial-gradient(ellipse 40% 30% at 50% 50%, hsl(187 100% 50% / 0.05), transparent 70%)
+            radial-gradient(ellipse 70% 45% at 18% 8%, hsl(187 100% 50% / 0.13), transparent 60%),
+            radial-gradient(ellipse 60% 40% at 90% 92%, hsl(48 100% 51% / 0.10), transparent 60%),
+            radial-gradient(ellipse 50% 35% at 50% 100%, hsl(271 91% 65% / 0.08), transparent 65%),
+            radial-gradient(ellipse 40% 30% at 50% 50%, hsl(187 100% 50% / 0.04), transparent 70%)
           `,
         }}
       />
 
-      {/* Blockchain grid — cyan horizontals + purple verticals + fine sub-grid */}
+      {/* Blockchain grid — cyan, softened in the readable center */}
       <div
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(hsl(187 100% 50% / 0.32) 1.25px, transparent 1.25px),
-            linear-gradient(90deg, hsl(271 91% 65% / 0.28) 1.25px, transparent 1.25px),
-            linear-gradient(hsl(187 100% 50% / 0.10) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(271 91% 65% / 0.10) 1px, transparent 1px)
+            linear-gradient(hsl(187 100% 50% / 0.22) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(187 100% 50% / 0.20) 1px, transparent 1px),
+            linear-gradient(hsl(187 100% 50% / 0.07) 1px, transparent 1px),
+            linear-gradient(90deg, hsl(187 100% 50% / 0.07) 1px, transparent 1px)
           `,
-          backgroundSize: "180px 180px, 180px 180px, 36px 36px, 36px 36px",
+          backgroundSize: "200px 200px, 200px 200px, 40px 40px, 40px 40px",
           maskImage:
-            "radial-gradient(ellipse 100% 90% at 50% 50%, black 25%, transparent 100%)",
+            "radial-gradient(ellipse 110% 95% at 50% 50%, transparent 18%, black 55%, transparent 100%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse 100% 90% at 50% 50%, black 25%, transparent 100%)",
-          filter: "drop-shadow(0 0 1px hsl(187 100% 50% / 0.5))",
+            "radial-gradient(ellipse 110% 95% at 50% 50%, transparent 18%, black 55%, transparent 100%)",
+          filter: "drop-shadow(0 0 1px hsl(187 100% 50% / 0.4))",
         }}
       />
 
-      {/* Bloom layer */}
+      {/* Bloom layer — much more subtle */}
       <div
-        className="absolute inset-0 opacity-50"
+        className="absolute inset-0 opacity-30"
         style={{
           backgroundImage: `
-            linear-gradient(hsl(187 100% 50% / 0.20) 2px, transparent 2px),
-            linear-gradient(90deg, hsl(271 91% 65% / 0.18) 2px, transparent 2px)
+            linear-gradient(hsl(187 100% 50% / 0.14) 2px, transparent 2px),
+            linear-gradient(90deg, hsl(48 100% 51% / 0.10) 2px, transparent 2px)
           `,
-          backgroundSize: "180px 180px, 180px 180px",
-          filter: "blur(3px)",
+          backgroundSize: "200px 200px, 200px 200px",
+          filter: "blur(4px)",
           maskImage:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 90%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 10%, black 70%, transparent 100%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 90%)",
+            "radial-gradient(ellipse 80% 60% at 50% 50%, transparent 10%, black 70%, transparent 100%)",
         }}
       />
 
@@ -120,19 +121,19 @@ const CyberpunkBackground = () => {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 60% 40% at 50% 55%, hsl(187 100% 50% / 0.08), transparent 70%)",
+            "radial-gradient(ellipse 60% 40% at 50% 55%, hsl(48 100% 51% / 0.05), transparent 70%)",
         }}
       />
 
-      {/* Distant horizon neon lines */}
+      {/* Distant horizon neon lines — yellow + cyan */}
       <div
         className="absolute left-0 right-0 h-px"
         style={{
           top: "62%",
           background:
-            "linear-gradient(90deg, transparent 0%, hsl(187 100% 50% / 0.7) 50%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, hsl(48 100% 55% / 0.7) 50%, transparent 100%)",
           boxShadow:
-            "0 0 24px hsl(187 100% 50% / 0.6), 0 0 60px hsl(187 100% 50% / 0.35)",
+            "0 0 24px hsl(48 100% 51% / 0.55), 0 0 60px hsl(48 100% 51% / 0.30)",
         }}
       />
       <div
@@ -140,9 +141,9 @@ const CyberpunkBackground = () => {
         style={{
           top: "38%",
           background:
-            "linear-gradient(90deg, transparent 0%, hsl(271 91% 65% / 0.55) 50%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, hsl(187 100% 50% / 0.55) 50%, transparent 100%)",
           boxShadow:
-            "0 0 18px hsl(271 91% 65% / 0.5), 0 0 48px hsl(271 91% 65% / 0.28)",
+            "0 0 18px hsl(187 100% 50% / 0.5), 0 0 48px hsl(187 100% 50% / 0.28)",
         }}
       />
 
@@ -217,10 +218,12 @@ const CyberpunkBackground = () => {
               animationDuration: c.duration,
               writingMode: "vertical-rl",
               textOrientation: "upright",
-              color: i % 3 === 0 ? "hsl(271 91% 70%)" : "hsl(187 100% 65%)",
-              opacity: 0.13,
+              color: i % 4 === 0 ? "hsl(48 100% 60%)" : i % 3 === 0 ? "hsl(271 91% 70%)" : "hsl(187 100% 65%)",
+              opacity: 0.10,
               textShadow:
-                i % 3 === 0
+                i % 4 === 0
+                  ? "0 0 6px hsl(48 100% 51% / 0.7)"
+                  : i % 3 === 0
                   ? "0 0 6px hsl(271 91% 65% / 0.7)"
                   : "0 0 6px hsl(187 100% 50% / 0.7)",
             }}
@@ -235,7 +238,7 @@ const CyberpunkBackground = () => {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 90% 70% at 50% 50%, transparent 45%, hsl(0 0% 0% / 0.55) 100%)",
+            "radial-gradient(ellipse 95% 75% at 50% 50%, hsl(0 0% 0% / 0.30) 0%, transparent 45%, hsl(0 0% 0% / 0.65) 100%)",
         }}
       />
     </div>
