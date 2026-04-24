@@ -199,8 +199,8 @@ Deno.serve(async (req) => {
     const [crypto, forex, indices, stocks] = await Promise.all([
       fetchCrypto(),
       fetchForex(),
-      fetchYahoo(INDICES, "index"),
-      fetchYahoo(STOCKS, "stock"),
+      fetchStooq(INDICES, "index"),
+      fetchStooq(STOCKS, "stock"),
     ]);
     const quotes: Quote[] = [...crypto, ...forex, ...indices, ...stocks];
     return new Response(
