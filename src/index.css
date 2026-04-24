@@ -24,8 +24,8 @@
     --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary = electric cyan (data, charts, panel borders) */
-    --primary: 187 100% 50%;          /* #00f0ff electric cyan */
+    /* Primary = INFINOX yellow (CTAs, highlights, brand identity) */
+    --primary: 48 100% 51%;           /* #FFCD05 INFINOX yellow */
     --primary-foreground: 0 0% 4%;
 
     --secondary: 0 0% 9%;
@@ -34,16 +34,16 @@
     --muted: 0 0% 10%;
     --muted-foreground: 0 0% 60%;
 
-    /* Accent = electric purple */
-    --accent: 271 91% 65%;            /* #a855f7 purple */
-    --accent-foreground: 0 0% 100%;
+    /* Accent = electric cyan (data, charts, secondary glow) */
+    --accent: 187 100% 50%;           /* #00f0ff cyan */
+    --accent-foreground: 0 0% 4%;
 
     --destructive: 348 100% 60%;      /* neon magenta-red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 187 100% 50%;           /* cyan border (used at low alpha) */
+    --border: 48 100% 51%;            /* yellow border (used at low alpha) */
     --input: 0 0% 10%;
-    --ring: 187 100% 50%;
+    --ring: 48 100% 51%;
 
     --radius: 0.5rem;
 
