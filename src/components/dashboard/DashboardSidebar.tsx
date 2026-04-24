@@ -204,7 +204,7 @@ const DashboardSidebar = () => {
                 12,487
               </span>
               <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
-                online
+                {t("sidebar.online")}
               </span>
             </div>
           </div>
@@ -215,14 +215,14 @@ const DashboardSidebar = () => {
       {user && (
         <button
           onClick={handleSignOut}
-          title={collapsed ? "Sign out" : undefined}
+          title={collapsed ? t("sidebar.signOut") : undefined}
           className={cn(
             "flex items-center gap-2 border-t border-primary/10 px-3 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
             collapsed && "justify-center"
           )}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Sign out</span>}
+          {!collapsed && <span>{t("sidebar.signOut")}</span>}
         </button>
       )}
 
@@ -237,7 +237,7 @@ const DashboardSidebar = () => {
         ) : (
           <>
             <ChevronLeft className="h-4 w-4" />
-            <span>Collapse</span>
+            <span>{t("sidebar.collapse")}</span>
           </>
         )}
       </button>
