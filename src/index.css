@@ -261,16 +261,16 @@
 
   /* Pulsing neon glow for LIVE badges + key CTAs */
   @keyframes neon-pulse {
-    0%, 100% { box-shadow: 0 0 0 1px hsl(48 100% 51% / 0.4), 0 0 12px hsl(48 100% 51% / 0.35); }
-    50%      { box-shadow: 0 0 0 1px hsl(48 100% 51% / 0.7), 0 0 28px hsl(48 100% 51% / 0.6); }
+    0%, 100% { box-shadow: 0 0 0 1.5px hsl(48 100% 51% / 0.55), 0 0 14px hsl(48 100% 51% / 0.50), 0 0 28px hsl(48 100% 51% / 0.25); }
+    50%      { box-shadow: 0 0 0 2px   hsl(48 100% 51% / 0.95), 0 0 36px hsl(48 100% 51% / 0.85), 0 0 64px hsl(48 100% 51% / 0.50); }
   }
-  .neon-pulse { animation: neon-pulse 2.2s ease-in-out infinite; }
+  .neon-pulse { animation: neon-pulse 1.8s ease-in-out infinite; }
 
   @keyframes neon-pulse-red {
-    0%, 100% { box-shadow: 0 0 0 1px hsl(348 100% 60% / 0.5), 0 0 12px hsl(348 100% 60% / 0.4); }
-    50%      { box-shadow: 0 0 0 1px hsl(348 100% 60% / 0.85), 0 0 28px hsl(348 100% 60% / 0.7); }
+    0%, 100% { box-shadow: 0 0 0 1.5px hsl(348 100% 60% / 0.6), 0 0 14px hsl(348 100% 60% / 0.55), 0 0 28px hsl(348 100% 60% / 0.30); }
+    50%      { box-shadow: 0 0 0 2px   hsl(348 100% 60% / 0.95), 0 0 36px hsl(348 100% 60% / 0.90), 0 0 64px hsl(348 100% 60% / 0.55); }
   }
-  .neon-pulse-red { animation: neon-pulse-red 1.6s ease-in-out infinite; }
+  .neon-pulse-red { animation: neon-pulse-red 1.4s ease-in-out infinite; }
 
   .animate-float {
     animation: float 6s ease-in-out infinite;
