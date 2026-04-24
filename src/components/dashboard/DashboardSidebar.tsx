@@ -49,6 +49,7 @@ const DashboardSidebar = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
+  const { t } = useLanguage();
   // "starting soon" = within the next 30 minutes
   const startingSoon =
     !!upcoming &&
@@ -93,7 +94,7 @@ const DashboardSidebar = () => {
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  title={collapsed ? item.label : undefined}
+                  title={collapsed ? t(item.labelKey) : undefined}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
                     active
@@ -110,7 +111,7 @@ const DashboardSidebar = () => {
                       isWebinars && "text-primary"
                     )}
                   />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
                   {!collapsed && showBadge && (
                     <span
                       className={cn(
@@ -134,7 +135,7 @@ const DashboardSidebar = () => {
                           )}
                         />
                       </span>
-                      {liveNow ? "Live" : "Soon"}
+                      {liveNow ? t("sidebar.live") : t("sidebar.soon")}
                     </span>
                   )}
                   {/* Collapsed-state dot */}
@@ -161,17 +162,17 @@ const DashboardSidebar = () => {
               <div className="flex items-center gap-2 mb-1.5">
                 <Wrench className="h-3.5 w-3.5 text-primary" />
                 <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">
-                  Tools
+                  {t("sidebar.tools")}
                 </span>
               </div>
               <p className="text-[11px] leading-snug text-muted-foreground mb-2">
-                Risk calculator, journal & AI copilot.
+                {t("sidebar.toolsDesc")}
               </p>
               <Link
                 to="/command-deck"
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
               >
-                Open deck →
+                {t("sidebar.openDeck")}
               </Link>
             </div>
           </div>
