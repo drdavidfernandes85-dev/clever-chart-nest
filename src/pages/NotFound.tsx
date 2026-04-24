@@ -2,9 +2,11 @@ import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const NotFound = () => {
   const location = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
@@ -16,11 +18,11 @@ const NotFound = () => {
       <div className="absolute inset-0 bg-radial-glow opacity-30" />
       <div className="relative text-center space-y-6">
         <h1 className="font-heading text-8xl font-bold text-gradient uppercase">404</h1>
-        <p className="text-xl text-muted-foreground">Oops! Page not found</p>
+        <p className="text-xl text-muted-foreground">{t("notFound.title")}</p>
         <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/80 rounded-full h-11 px-6 font-semibold">
           <Link to="/">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Return to Home
+            {t("notFound.cta")}
           </Link>
         </Button>
       </div>

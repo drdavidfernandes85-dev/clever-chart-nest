@@ -21,24 +21,26 @@ import { useWebinars } from "@/hooks/useWebinars";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
 /**
  * Premium left rail navigation. Collapsible on desktop, hidden on mobile
  * (mobile uses MobileBottomNav). Inspired by top-tier trading platforms.
  */
 
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/webinars", label: "Live Webinars", icon: Radio, flagship: true },
-  { to: "/live-chart", label: "Live Charts", icon: LineChart },
-  { to: "/signals", label: "Signals", icon: Radio },
-  { to: "/news", label: "News", icon: Newspaper },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/chatroom", label: "Chatroom", icon: MessageSquare },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/videos", label: "Video Library", icon: Video },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/profile", label: "Profile", icon: User },
+const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
+  { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
+  { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
+  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
+  { to: "/signals", labelKey: "sidebar.signals", icon: Radio },
+  { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
+  { to: "/calendar", labelKey: "sidebar.calendar", icon: CalendarDays },
+  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
+  { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
+  { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
+  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
+  { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
 
 const DashboardSidebar = () => {
@@ -47,6 +49,7 @@ const DashboardSidebar = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
+  const { t } = useLanguage();
   // "starting soon" = within the next 30 minutes
   const startingSoon =
     !!upcoming &&
@@ -91,7 +94,7 @@ const DashboardSidebar = () => {
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  title={collapsed ? item.label : undefined}
+                  title={collapsed ? t(item.labelKey) : undefined}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
                     active
@@ -108,7 +111,7 @@ const DashboardSidebar = () => {
                       isWebinars && "text-primary"
                     )}
                   />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
                   {!collapsed && showBadge && (
                     <span
                       className={cn(
@@ -132,7 +135,7 @@ const DashboardSidebar = () => {
                           )}
                         />
                       </span>
-                      {liveNow ? "Live" : "Soon"}
+                      {liveNow ? t("sidebar.live") : t("sidebar.soon")}
                     </span>
                   )}
                   {/* Collapsed-state dot */}
@@ -159,17 +162,17 @@ const DashboardSidebar = () => {
               <div className="flex items-center gap-2 mb-1.5">
                 <Wrench className="h-3.5 w-3.5 text-primary" />
                 <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">
-                  Tools
+                  {t("sidebar.tools")}
                 </span>
               </div>
               <p className="text-[11px] leading-snug text-muted-foreground mb-2">
-                Risk calculator, journal & AI copilot.
+                {t("sidebar.toolsDesc")}
               </p>
               <Link
                 to="/command-deck"
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
               >
-                Open deck →
+                {t("sidebar.openDeck")}
               </Link>
             </div>
           </div>
@@ -201,7 +204,7 @@ const DashboardSidebar = () => {
                 12,487
               </span>
               <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
-                online
+                {t("sidebar.online")}
               </span>
             </div>
           </div>
@@ -212,14 +215,14 @@ const DashboardSidebar = () => {
       {user && (
         <button
           onClick={handleSignOut}
-          title={collapsed ? "Sign out" : undefined}
+          title={collapsed ? t("sidebar.signOut") : undefined}
           className={cn(
             "flex items-center gap-2 border-t border-primary/10 px-3 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
             collapsed && "justify-center"
           )}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Sign out</span>}
+          {!collapsed && <span>{t("sidebar.signOut")}</span>}
         </button>
       )}
 
@@ -234,7 +237,7 @@ const DashboardSidebar = () => {
         ) : (
           <>
             <ChevronLeft className="h-4 w-4" />
-            <span>Collapse</span>
+            <span>{t("sidebar.collapse")}</span>
           </>
         )}
       </button>
