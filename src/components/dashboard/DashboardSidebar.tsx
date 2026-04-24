@@ -8,7 +8,7 @@ import {
   Trophy,
   Video,
   BarChart3,
-  Wrench,
+  
   ChevronLeft,
   ChevronRight,
   User,
