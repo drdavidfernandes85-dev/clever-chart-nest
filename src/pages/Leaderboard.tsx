@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { toast } from "sonner";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type Period = "pnl_7d" | "pnl_30d" | "total_pnl";
 
@@ -77,13 +78,14 @@ const PODIUM_STYLES = [
 const initialsOf = (n: string) => n.split(/[\s.]+/).map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "?";
 
 const PodiumCard = ({ row, period, rank }: { row: DemoRow; period: Period; rank: number }) => {
+  const { t } = useLanguage();
   const style = PODIUM_STYLES[rank];
   const Icon = style.icon;
   const value = row[period] as number;
   const positive = value >= 0;
 
-  const handleFollow = () => toast.success(`Now following ${row.display_name}`);
-  const handleCopy = () => toast.success(`Copying trades from ${row.display_name}`);
+  const handleFollow = () => toast.success(`${t("leaderboard.nowFollowing")} ${row.display_name}`);
+  const handleCopy = () => toast.success(`${t("leaderboard.copyingFrom")} ${row.display_name}`);
 
   return (
     <div
@@ -125,15 +127,15 @@ const PodiumCard = ({ row, period, rank }: { row: DemoRow; period: Period; rank:
 
         <div className="mt-3 grid w-full grid-cols-3 gap-1.5 text-center">
           <div className="rounded-lg bg-background/40 px-1.5 py-1.5">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Win</p>
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("leaderboard.win")}</p>
             <p className="font-mono text-xs font-bold text-foreground">{row.win_rate}%</p>
           </div>
           <div className="rounded-lg bg-background/40 px-1.5 py-1.5">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">PF</p>
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("leaderboard.pf")}</p>
             <p className="font-mono text-xs font-bold text-foreground">{row.profit_factor.toFixed(1)}</p>
           </div>
           <div className="rounded-lg bg-background/40 px-1.5 py-1.5">
-            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">Streak</p>
+            <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("leaderboard.streak")}</p>
             <p className="flex items-center justify-center gap-0.5 font-mono text-xs font-bold text-primary">
               <Flame className="h-3 w-3" />
               {row.win_streak}
@@ -143,16 +145,16 @@ const PodiumCard = ({ row, period, rank }: { row: DemoRow; period: Period; rank:
 
         <div className="mt-3 flex items-center gap-1 text-[10px] text-muted-foreground">
           <Users className="h-3 w-3" />
-          {row.followers.toLocaleString()} followers
+          {row.followers.toLocaleString()} {t("leaderboard.followers")}
         </div>
 
         <div className="mt-3 flex w-full gap-1.5">
           <Button size="sm" className="flex-1 h-8 text-[11px] rounded-xl" onClick={handleFollow}>
-            Follow
+            {t("leaderboard.follow")}
           </Button>
           <Button size="sm" variant="outline" className="flex-1 h-8 text-[11px] rounded-xl gap-1" onClick={handleCopy}>
             <Copy className="h-3 w-3" />
-            Copy
+            {t("leaderboard.copy")}
           </Button>
         </div>
       </div>
@@ -161,9 +163,16 @@ const PodiumCard = ({ row, period, rank }: { row: DemoRow; period: Period; rank:
 };
 
 const Leaderboard = () => {
+  const { t } = useLanguage();
   const [rows, setRows] = useState<LeaderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>("pnl_30d");
+
+  const PERIOD_LABELS_T: Record<Period, string> = {
+    pnl_7d: t("leaderboard.last7"),
+    pnl_30d: t("leaderboard.last30"),
+    total_pnl: t("leaderboard.allTime"),
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -188,8 +197,8 @@ const Leaderboard = () => {
   const top3 = ranked.slice(0, 3);
   const rest = ranked.slice(3, 10);
 
-  const handleFollow = (n: string) => toast.success(`Now following ${n}`);
-  const handleCopy = (n: string) => toast.success(`Copying trades from ${n}`);
+  const handleFollow = (n: string) => toast.success(`${t("leaderboard.nowFollowing")} ${n}`);
+  const handleCopy = (n: string) => toast.success(`${t("leaderboard.copyingFrom")} ${n}`);
 
   return (
     <div className="min-h-screen pb-16 md:pb-0">
@@ -208,7 +217,7 @@ const Leaderboard = () => {
             </span>
           </Link>
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground gap-1.5">
-            <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> Back</Link>
+            <Link to="/dashboard"><ArrowLeft className="h-4 w-4" /> {t("common.back")}</Link>
           </Button>
         </div>
       </header>
@@ -218,13 +227,13 @@ const Leaderboard = () => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="h-5 w-5 text-primary" />
-              <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Community</span>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">{t("leaderboard.community")}</span>
             </div>
             <h1 className="font-heading text-3xl md:text-4xl font-bold text-foreground uppercase tracking-tight">
-              Trader <span className="text-gradient">Leaderboard</span>
+              {t("leaderboard.title1")} <span className="text-gradient">{t("leaderboard.title2")}</span>
             </h1>
             <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-              Ranked by realized P&L. Follow top performers or copy their trades to your journal automatically.
+              {t("leaderboard.subtitle")}
             </p>
           </div>
 
@@ -239,7 +248,7 @@ const Leaderboard = () => {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {PERIOD_LABELS[p]}
+                {PERIOD_LABELS_T[p]}
               </button>
             ))}
           </div>
@@ -263,14 +272,14 @@ const Leaderboard = () => {
             {/* Rest of top 10 */}
             <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
               <div className="hidden md:grid grid-cols-12 gap-2 border-b border-border/30 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                <div className="col-span-1">Rank</div>
-                <div className="col-span-3">Trader</div>
-                <div className="col-span-2 text-right">P&L</div>
-                <div className="col-span-1 text-right">Win %</div>
-                <div className="col-span-1 text-right">PF</div>
-                <div className="col-span-1 text-right">Streak</div>
-                <div className="col-span-1 text-right">Followers</div>
-                <div className="col-span-2 text-right">Actions</div>
+                <div className="col-span-1">{t("leaderboard.rank")}</div>
+                <div className="col-span-3">{t("leaderboard.trader")}</div>
+                <div className="col-span-2 text-right">{t("leaderboard.pnl")}</div>
+                <div className="col-span-1 text-right">{t("leaderboard.winPct")}</div>
+                <div className="col-span-1 text-right">{t("leaderboard.pf")}</div>
+                <div className="col-span-1 text-right">{t("leaderboard.streak")}</div>
+                <div className="col-span-1 text-right">{t("leaderboard.followers")}</div>
+                <div className="col-span-2 text-right">{t("leaderboard.actions")}</div>
               </div>
 
               <div className="divide-y divide-border/30">
@@ -301,7 +310,7 @@ const Leaderboard = () => {
                             )}
                           </div>
                           <p className="text-[10px] text-muted-foreground font-mono">
-                            {r.total_trades} trades · avg {r.avg_r.toFixed(1)}R
+                            {r.total_trades} {t("leaderboard.trades")} · avg {r.avg_r.toFixed(1)}R
                           </p>
                         </div>
                       </div>
@@ -330,11 +339,11 @@ const Leaderboard = () => {
 
                       <div className="hidden md:flex col-span-2 justify-end gap-1.5">
                         <Button size="sm" variant="outline" className="h-7 px-2.5 text-[10px] rounded-lg" onClick={() => handleFollow(r.display_name)}>
-                          Follow
+                          {t("leaderboard.follow")}
                         </Button>
                         <Button size="sm" className="h-7 px-2.5 text-[10px] rounded-lg gap-1" onClick={() => handleCopy(r.display_name)}>
                           <Copy className="h-3 w-3" />
-                          Copy
+                          {t("leaderboard.copy")}
                         </Button>
                       </div>
                     </div>
@@ -347,7 +356,7 @@ const Leaderboard = () => {
 
         {usingDemo && (
           <p className="mt-6 text-center text-xs text-muted-foreground/70">
-            Showing community sample data. Log a closed trade in your journal to appear here in real time.
+            {t("leaderboard.demoNotice")}
           </p>
         )}
       </div>

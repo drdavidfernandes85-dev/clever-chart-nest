@@ -11,9 +11,11 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import SEO from "@/components/SEO";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const CalendarPage = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -29,13 +31,13 @@ const CalendarPage = () => {
           <div className="flex h-16 items-center gap-4 px-6 lg:px-10">
             <h1 className="hidden xl:flex items-center gap-2 font-proxima text-sm font-semibold text-foreground shrink-0">
               <CalendarDays className="h-4 w-4 text-primary" />
-              <span className="text-primary">Calendario</span>
+              <span className="text-primary">{t("page.calendar")}</span>
             </h1>
 
             <div className="relative flex-1 max-w-lg ml-auto xl:ml-8">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Buscar evento, país, divisa…"
+                placeholder={t("page.searchEvent")}
                 className="h-9 pl-10 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40 rounded-xl"
               />
             </div>
@@ -50,7 +52,7 @@ const CalendarPage = () => {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                 </span>
-                Mercados
+                {t("page.markets")}
                 {tickerOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
               <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-primary">
