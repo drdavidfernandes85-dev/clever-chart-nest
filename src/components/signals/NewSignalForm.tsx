@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Plus, X, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 
-const PAIRS = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CHF", "NZD/USD", "USD/CAD", "XAU/USD", "GBP/JPY", "EUR/GBP"];
+const PAIRS = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "SUI/USDT", "TON/USDT", "PEPE/USDT", "WIF/USDT", "HYPE/USDT", "XRP/USDT", "DOGE/USDT"];
 
 const NewSignalForm = () => {
   const { user } = useAuth();
