@@ -17,6 +17,7 @@ import {
   Newspaper,
   CalendarDays,
 } from "lucide-react";
+import { useWebinars } from "@/hooks/useWebinars";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/webinars", label: "Live Webinars", icon: Radio, flagship: true },
   { to: "/live-chart", label: "Live Charts", icon: LineChart },
   { to: "/signals", label: "Signals", icon: Radio },
   { to: "/news", label: "News", icon: Newspaper },
@@ -44,6 +46,12 @@ const DashboardSidebar = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { liveNow, upcoming } = useWebinars();
+  // "starting soon" = within the next 30 minutes
+  const startingSoon =
+    !!upcoming &&
+    new Date(upcoming.scheduled_at).getTime() - Date.now() < 30 * 60 * 1000;
+  const showLiveBadge = !!liveNow || startingSoon;
 
   const handleSignOut = async () => {
     await signOut();
@@ -77,26 +85,66 @@ const DashboardSidebar = () => {
             const active =
               pathname === item.to ||
               (item.to !== "/dashboard" && pathname.startsWith(item.to));
+            const isWebinars = item.to === "/webinars";
+            const showBadge = isWebinars && showLiveBadge;
             return (
               <li key={item.to}>
                 <Link
                   to={item.to}
                   title={collapsed ? item.label : undefined}
                   className={cn(
-                    "group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
+                    "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
                     active
                       ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                      : "text-muted-foreground hover:bg-primary/5 hover:text-foreground",
+                    isWebinars &&
+                      "ring-1 ring-primary/20 hover:ring-primary/40"
                   )}
                 >
                   <Icon
                     className={cn(
                       "h-4 w-4 shrink-0",
-                      active ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                      active ? "text-primary" : "text-muted-foreground group-hover:text-primary",
+                      isWebinars && "text-primary"
                     )}
                   />
                   {!collapsed && <span className="truncate">{item.label}</span>}
-                  {!collapsed && active && (
+                  {!collapsed && showBadge && (
+                    <span
+                      className={cn(
+                        "ml-auto inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+                        liveNow
+                          ? "bg-destructive text-destructive-foreground animate-pulse"
+                          : "bg-primary/20 text-primary"
+                      )}
+                    >
+                      <span className="relative flex h-1 w-1">
+                        <span
+                          className={cn(
+                            "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                            liveNow ? "bg-destructive-foreground" : "bg-primary",
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "relative inline-flex h-1 w-1 rounded-full",
+                            liveNow ? "bg-destructive-foreground" : "bg-primary",
+                          )}
+                        />
+                      </span>
+                      {liveNow ? "Live" : "Soon"}
+                    </span>
+                  )}
+                  {/* Collapsed-state dot */}
+                  {collapsed && showBadge && (
+                    <span
+                      className={cn(
+                        "absolute top-1 right-1 h-2 w-2 rounded-full",
+                        liveNow ? "bg-destructive animate-pulse" : "bg-primary",
+                      )}
+                    />
+                  )}
+                  {!collapsed && active && !showBadge && (
                     <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
                   )}
                 </Link>
