@@ -35,10 +35,10 @@ const Watchlist = () => {
   const dragId = useRef<string | null>(null);
   const { openTrade } = useQuickTrade();
 
-  // Restore order
+  // Restore order — versioned key so the old forex order is dropped automatically.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("eltr.watchlist.order");
+      const saved = localStorage.getItem("eltr.watchlist.order.v2");
       if (saved) {
         const ids: string[] = JSON.parse(saved);
         const map = new Map(DEFAULT_WATCHLIST.map((i) => [i.id, i]));
@@ -54,7 +54,7 @@ const Watchlist = () => {
   // Persist order
   useEffect(() => {
     localStorage.setItem(
-      "eltr.watchlist.order",
+      "eltr.watchlist.order.v2",
       JSON.stringify(items.map((i) => i.id))
     );
   }, [items]);
