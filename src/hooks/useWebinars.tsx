@@ -45,14 +45,15 @@ export const useWebinars = () => {
     };
     load();
 
-    const channel = supabase
-      .channel("webinars-feed")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "webinars" },
-        () => load(),
-      )
-      .subscribe();
+    const channel = supabase.channel(
+      `webinars-feed-${Math.random().toString(36).slice(2)}`,
+    );
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "webinars" },
+      () => load(),
+    );
+    channel.subscribe();
 
     return () => {
       mounted = false;
