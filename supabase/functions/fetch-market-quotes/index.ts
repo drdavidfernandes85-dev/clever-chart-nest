@@ -38,10 +38,10 @@ const FOREX = [
   "USD/CAD", "USD/CHF", "NZD/USD", "EUR/GBP",
 ];
 
-// Stooq symbols. Indices use the ^ prefix; US stocks use lowercase + ".us".
+// Stooq symbols. Index codes vary — verified working list below.
 const INDICES: Array<{ stooq: string; label: string }> = [
   { stooq: "^spx",  label: "S&P 500" },
-  { stooq: "^ndx",  label: "Nasdaq 100" },
+  { stooq: "^ndq",  label: "Nasdaq 100" },
   { stooq: "^dji",  label: "Dow Jones" },
   { stooq: "^rut",  label: "Russell 2000" },
   { stooq: "^vix",  label: "VIX" },
