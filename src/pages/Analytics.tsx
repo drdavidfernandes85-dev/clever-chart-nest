@@ -122,7 +122,7 @@ const Analytics = () => {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{r.summary}</p>
+                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">{localizeWeeklySummary(r.summary, locale)}</p>
                 </article>
               ))}
             </div>
