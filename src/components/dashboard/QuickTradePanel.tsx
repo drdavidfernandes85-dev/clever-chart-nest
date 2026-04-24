@@ -205,13 +205,48 @@ const QuickTradePanel = ({ compact = false }: Props) => {
     setConfirming(true);
   };
 
-  const confirmTrade = () => {
-    setConfirming(false);
-    toast.success(`${side.toUpperCase()} ${lotsNum} lots ${symbol}`, {
-      description: `${type.toUpperCase()}${
-        type === "limit" && entry ? ` @ ${entry}` : ""
-      }${slNum ? ` • SL ${slNum}` : ""}${tpNum ? ` • TP ${tpNum}` : ""}`,
-    });
+  // Convert "EUR/USD" → "EURUSD" so the EA can find the broker symbol.
+  const toBrokerSymbol = (s: string) => s.replace(/[^A-Za-z0-9]/g, "");
+
+  const confirmTrade = async () => {
+    if (!user) {
+      toast.error("Please sign in to place a trade");
+      return;
+    }
+    if (!account || account.status !== "connected") {
+      toast.error("MT account not connected", {
+        description: "Connect your MetaTrader EA from Connect MT first.",
+      });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("mt_pending_orders").insert({
+        user_id: user.id,
+        account_id: account.id,
+        signal_id: signalId,
+        symbol: toBrokerSymbol(symbol),
+        side,
+        order_type: type,
+        volume: Number(lotsNum.toFixed(2)),
+        entry_price: type === "limit" && entry ? parseFloat(entry) : null,
+        stop_loss: slNum || null,
+        take_profit: tpNum || null,
+      });
+      if (error) throw error;
+      setConfirming(false);
+      setSignalId(null);
+      toast.success(`Order queued: ${side.toUpperCase()} ${lotsNum.toFixed(2)} ${symbol}`, {
+        description:
+          "Sent to your EA. It will execute on the next poll (≤5 seconds).",
+      });
+    } catch (e: any) {
+      toast.error("Could not queue order", {
+        description: e?.message ?? "Try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isBuy = side === "buy";
