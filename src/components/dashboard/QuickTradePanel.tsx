@@ -9,6 +9,7 @@ import {
   Minus,
   AlertTriangle,
   Check,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
 
