@@ -393,33 +393,11 @@ const LiveChart = () => {
                 saveImage={true}
                 studies={effectiveStudies}
               />
-
-              {/* Floating Quick Trade panel — anchored top-right of chart */}
-              {tradePanelOpen && (
-                <div className="pointer-events-none absolute right-3 top-3 z-30 hidden xl:block w-[320px] max-h-[calc(100%-1.5rem)] overflow-y-auto">
-                  <div className="pointer-events-auto rounded-2xl border border-primary/30 bg-background/85 backdrop-blur-2xl shadow-[0_25px_70px_-20px_hsl(48_100%_51%/0.45)] relative">
-                    <button
-                      type="button"
-                      onClick={() => setTradePanelOpen(false)}
-                      className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/80 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Close trade panel"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                    <QuickTradePanel compact />
-                  </div>
-                </div>
-              )}
             </div>
           </section>
 
           {/* Right rail */}
           <aside className="flex flex-col gap-3 lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px] lg:overflow-y-auto pr-1">
-            {/* Quick Trade — visible on lg, hidden on xl where it floats over the chart */}
-            <div className="xl:hidden">
-              <QuickTradePanel compact />
-            </div>
-
             {/* My positions for the active chart symbol — pulled from EA */}
             <SymbolPositions symbolLabel={currentLabel} />
 
@@ -427,6 +405,9 @@ const LiveChart = () => {
 
             {/* Smart Alerts — collapsible to save space */}
             <SmartAlerts collapsible defaultOpen />
+
+            {/* Quick Trade — placed right below Smart Alerts */}
+            <QuickTradePanel compact />
           </aside>
         </div>
       </div>
