@@ -20,6 +20,8 @@ type SharedSignal = {
   pair: string;
   direction: string;
   entry_price: number;
+  stop_loss: number | null;
+  take_profit: number | null;
   status: string;
   created_at: string;
 };
@@ -64,7 +66,7 @@ const CommunityNest = () => {
         supabase.from("profiles").select("user_id, display_name, avatar_url").limit(8),
         supabase
           .from("trading_signals")
-          .select("id, pair, direction, entry_price, status, created_at")
+          .select("id, pair, direction, entry_price, stop_loss, take_profit, status, created_at")
           .order("created_at", { ascending: false })
           .limit(4),
         supabase
@@ -277,7 +279,16 @@ const CommunityNest = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => openTrade({ symbol: s.pair, side: isBuy ? "buy" : "sell" })}
+                  onClick={() =>
+                    openTrade({
+                      symbol: s.pair,
+                      side: isBuy ? "buy" : "sell",
+                      lots: "0.10",
+                      sl: (s as any).stop_loss != null ? String((s as any).stop_loss) : undefined,
+                      tp: (s as any).take_profit != null ? String((s as any).take_profit) : undefined,
+                      signalId: s.id.startsWith("p") ? null : s.id,
+                    })
+                  }
                   className="mt-2 w-full flex items-center justify-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
                 >
                   <Zap className="h-3 w-3" />
