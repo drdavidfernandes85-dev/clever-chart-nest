@@ -64,12 +64,12 @@
 
     --sidebar-background: 0 0% 2%;
     --sidebar-foreground: 0 0% 92%;
-    --sidebar-primary: 187 100% 50%;
+    --sidebar-primary: 48 100% 51%;
     --sidebar-primary-foreground: 0 0% 4%;
     --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 92%;
-    --sidebar-border: 187 100% 50%;
-    --sidebar-ring: 187 100% 50%;
+    --sidebar-border: 48 100% 51%;
+    --sidebar-ring: 48 100% 51%;
   }
 
   /* ── Light theme ── */
