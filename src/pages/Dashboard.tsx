@@ -39,7 +39,6 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
   const { account } = useMTAccount();
   const { t } = useLanguage();
@@ -54,39 +53,25 @@ const Dashboard = () => {
     localStorage.setItem("eltr.rail.open", railOpen ? "1" : "0");
   }, [railOpen]);
 
-  // Lock body scroll only when an actual overlay is open on mobile.
-  // The desktop Quick Trade panel is inline, so `tradeOpen` alone must
-  // NOT lock scroll on desktop — only when the mobile bottom sheet is
-  // visible (viewport < lg / 1024px).
+  // Lock body scroll only when the desktop Quick Trade is opened on mobile
+  // (mobile bottom sheet). The shared layout handles drawer locking.
   useEffect(() => {
     const isMobile =
       typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
-    const lock = mobileNavOpen || (tradeOpen && isMobile);
+    const lock = tradeOpen && isMobile;
     document.body.style.overflow = lock ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [tradeOpen, mobileNavOpen]);
+  }, [tradeOpen]);
 
   return (
-    <div className="min-h-screen flex bg-transparent">
-      <DashboardSidebar />
-      <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
-
+    <>
       {/* Main shell */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top header */}
         <header className="sticky top-0 z-40 border-b border-primary/10 bg-background/60 backdrop-blur-2xl">
-          <div className="flex h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-12">
-            {/* Hamburger — mobile/tablet */}
-            <button
-              onClick={() => setMobileNavOpen(true)}
-              aria-label={t("dash.openMenu")}
-              className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-
+          <div className="flex h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-12 pl-14 lg:pl-6">
             <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground shrink-0">
               {t("dash.commandTitle1")} <span className="text-primary">{t("dash.commandTitle2")}</span>
             </h1>
