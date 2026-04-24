@@ -98,7 +98,10 @@ function getPrevBusinessDay(d: Date, skip = 1): string {
 async function fetchForex(): Promise<Quote[]> {
   try {
     const bases = [...new Set(FOREX.map((p) => p.split("/")[0]))];
-    const prev = getPrevBusinessDay(new Date());
+    // Use 1 and 2 business days back so we always have a non-zero delta even
+    // if "latest" coincides with the most recent business day already.
+    const prev1 = getPrevBusinessDay(new Date(), 1);
+    const prev2 = getPrevBusinessDay(new Date(), 2);
     const fetchSet = (endpoint: string) =>
       Promise.all(
         bases.map(async (b) => {
@@ -112,9 +115,10 @@ async function fetchForex(): Promise<Quote[]> {
           return { base: b, rates: j?.rates ?? {} };
         }),
       );
-    const [latest, prior] = await Promise.all([
+    const [latest, p1, p2] = await Promise.all([
       fetchSet("latest"),
-      fetchSet(prev),
+      fetchSet(prev1),
+      fetchSet(prev2),
     ]);
     const toMap = (set: Awaited<ReturnType<typeof fetchSet>>) => {
       const m: Record<string, Record<string, number>> = {};
@@ -122,15 +126,24 @@ async function fetchForex(): Promise<Quote[]> {
       return m;
     };
     const lm = toMap(latest);
-    const pm = toMap(prior);
+    const m1 = toMap(p1);
+    const m2 = toMap(p2);
     return FOREX.map((p) => {
       const [from, to] = p.split("/");
       const price = lm[from]?.[to] ?? null;
-      const prevPrice = pm[from]?.[to] ?? null;
+      // Pick the prev that actually differs from latest.
+      let prevPrice: number | null = null;
+      for (const m of [m1, m2]) {
+        const v = m[from]?.[to];
+        if (v != null && price != null && Math.abs(v - price) > 1e-9) {
+          prevPrice = v;
+          break;
+        }
+      }
       const changePct =
         price != null && prevPrice != null && prevPrice !== 0
           ? ((price - prevPrice) / prevPrice) * 100
-          : null;
+          : 0;
       return { symbol: p, assetClass: "forex" as const, price, changePct };
     });
   } catch {
@@ -140,30 +153,35 @@ async function fetchForex(): Promise<Quote[]> {
   }
 }
 
-async function fetchYahoo(
-  list: Array<{ yahoo: string; label: string }>,
+// Stooq returns CSV: "Symbol,Date,Time,Open,High,Low,Close,Volume"
+async function fetchStooq(
+  list: Array<{ stooq: string; label: string }>,
   assetClass: "index" | "stock",
 ): Promise<Quote[]> {
   try {
-    const symbols = list.map((s) => s.yahoo).join(",");
+    const symbols = list.map((s) => s.stooq).join(",");
     const r = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols)}`,
-      { headers: { "user-agent": "Mozilla/5.0 ELTR/1.0" } },
+      `https://stooq.com/q/l/?s=${encodeURIComponent(symbols)}&f=sohlcv&h&e=csv`,
     );
-    const j = await r.json();
-    const rows = (j?.quoteResponse?.result ?? []) as any[];
-    const byYahoo = new Map(rows.map((q) => [q.symbol, q]));
+    const text = await r.text();
+    const lines = text.trim().split(/\r?\n/);
+    // header: Symbol,Open,High,Low,Close,Volume
+    const rows = lines.slice(1).map((line) => {
+      const [sym, open, _h, _l, close] = line.split(",");
+      const o = parseFloat(open);
+      const c = parseFloat(close);
+      return { sym: sym?.toLowerCase(), open: o, close: c };
+    });
+    const bySym = new Map(rows.map((r) => [r.sym, r]));
     return list.map((s) => {
-      const q = byYahoo.get(s.yahoo);
-      return {
-        symbol: s.label,
-        assetClass,
-        price: q?.regularMarketPrice != null ? Number(q.regularMarketPrice) : null,
-        changePct:
-          q?.regularMarketChangePercent != null
-            ? Number(q.regularMarketChangePercent)
-            : null,
-      };
+      const row = bySym.get(s.stooq.toLowerCase());
+      const price = row && Number.isFinite(row.close) ? row.close : null;
+      const open = row && Number.isFinite(row.open) ? row.open : null;
+      const changePct =
+        price != null && open != null && open !== 0
+          ? ((price - open) / open) * 100
+          : null;
+      return { symbol: s.label, assetClass, price, changePct };
     });
   } catch {
     return list.map((s) => ({
