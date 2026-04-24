@@ -220,17 +220,19 @@ const QuickTradePanel = ({ compact = false }: Props) => {
   const confirmTrade = async () => {
     if (!user) {
       toast.error("Please sign in to place a trade");
+      setConfirming(false);
       return;
     }
     if (!account || account.status !== "connected") {
       toast.error("MT account not connected", {
         description: "Connect your MetaTrader EA from Connect MT first.",
       });
+      setConfirming(false);
       return;
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("mt_pending_orders").insert({
+      const payload = {
         user_id: user.id,
         account_id: account.id,
         signal_id: signalId,
@@ -241,8 +243,13 @@ const QuickTradePanel = ({ compact = false }: Props) => {
         entry_price: type === "limit" && entry ? parseFloat(entry) : null,
         stop_loss: slNum || null,
         take_profit: tpNum || null,
-      });
-      if (error) throw error;
+      };
+      console.log("[QuickTrade] inserting order:", payload);
+      const { error } = await supabase.from("mt_pending_orders").insert(payload);
+      if (error) {
+        console.error("[QuickTrade] insert error:", error);
+        throw error;
+      }
       setConfirming(false);
       setSignalId(null);
       toast.success(`Order queued: ${side.toUpperCase()} ${lotsNum.toFixed(2)} ${symbol}`, {
