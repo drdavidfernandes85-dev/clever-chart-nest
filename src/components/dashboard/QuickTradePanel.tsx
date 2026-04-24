@@ -213,8 +213,7 @@ const QuickTradePanel = ({ compact = false }: Props) => {
       return;
     }
 
-    // --- Validate SL / TP relative to current price so MT5 doesn't reject with
-    //     retcode=10016 "Invalid stops". ---
+    // --- Reference price (limit entry or live price) ---
     const ref =
       type === "limit" && parsed.data.entry ? parsed.data.entry : livePrice;
     if (!ref || ref <= 0) {
@@ -223,41 +222,56 @@ const QuickTradePanel = ({ compact = false }: Props) => {
       });
       return;
     }
-    // Sanity: SL/TP must be in the same order of magnitude as the live price
-    // (e.g. EURUSD ≈ 1.16 — an SL of 1640 is clearly wrong).
+
+    // --- Auto-fill SL/TP at 20 pips from entry if user left them empty ---
+    // 1 pip = 0.0001 for most pairs, 0.01 for JPY pairs, 0.1 for XAU.
+    const pipSize = symbol.includes("JPY") ? 0.01 : symbol.includes("XAU") ? 0.1 : 0.0001;
+    const distance = 20 * pipSize;
+    const decimals = symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5;
+
+    let finalSl = slNum;
+    let finalTp = tpNum;
+    if (!finalSl) {
+      finalSl = isBuy ? ref - distance : ref + distance;
+      setSl(finalSl.toFixed(decimals));
+    }
+    if (!finalTp) {
+      finalTp = isBuy ? ref + distance : ref - distance;
+      setTp(finalTp.toFixed(decimals));
+    }
+
+    // Sanity: SL/TP must be in the same order of magnitude as the live price.
     const outOfRange = (v?: number) =>
       v != null && (v > ref * 5 || v < ref / 5);
-    if (outOfRange(slNum) || outOfRange(tpNum)) {
+    if (outOfRange(finalSl) || outOfRange(finalTp)) {
       toast.error("Stop Loss / Take Profit look wrong", {
-        description: `Current ${symbol} price is ~${ref.toFixed(
-          symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5,
-        )}. Your SL/TP must be in the same range.`,
+        description: `Current ${symbol} price is ~${ref.toFixed(decimals)}. Your SL/TP must be in the same range.`,
       });
       return;
     }
     if (isBuy) {
-      if (slNum && slNum >= ref) {
+      if (finalSl >= ref) {
         toast.error("Invalid Stop Loss", {
-          description: `For a BUY, SL must be BELOW current price (${ref.toFixed(5)}).`,
+          description: `For a BUY, SL must be BELOW current price (${ref.toFixed(decimals)}).`,
         });
         return;
       }
-      if (tpNum && tpNum <= ref) {
+      if (finalTp <= ref) {
         toast.error("Invalid Take Profit", {
-          description: `For a BUY, TP must be ABOVE current price (${ref.toFixed(5)}).`,
+          description: `For a BUY, TP must be ABOVE current price (${ref.toFixed(decimals)}).`,
         });
         return;
       }
     } else {
-      if (slNum && slNum <= ref) {
+      if (finalSl <= ref) {
         toast.error("Invalid Stop Loss", {
-          description: `For a SELL, SL must be ABOVE current price (${ref.toFixed(5)}).`,
+          description: `For a SELL, SL must be ABOVE current price (${ref.toFixed(decimals)}).`,
         });
         return;
       }
-      if (tpNum && tpNum >= ref) {
+      if (finalTp >= ref) {
         toast.error("Invalid Take Profit", {
-          description: `For a SELL, TP must be BELOW current price (${ref.toFixed(5)}).`,
+          description: `For a SELL, TP must be BELOW current price (${ref.toFixed(decimals)}).`,
         });
         return;
       }
