@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Shield, AlertTriangle, Plug } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Exposure {
   symbol: string;
@@ -12,6 +13,7 @@ interface Exposure {
 
 const RiskMeter = () => {
   const { account, positions } = useMTAccount();
+  const { t } = useLanguage();
   const isConnected = !!account && account.status === "connected";
 
   const ACCOUNT_EQUITY = isConnected && account?.equity ? Number(account.equity) : 0;
@@ -55,7 +57,7 @@ const RiskMeter = () => {
       : "hsl(0 84% 60%)";
 
   const label =
-    level === "safe" ? "Conservative" : level === "moderate" ? "Moderate" : "High Risk";
+    level === "safe" ? t("risk.conservative") : level === "moderate" ? t("risk.moderate") : t("risk.high");
 
   // Gauge: 0..6% scale (more sensitive)
   const max = 6;
@@ -85,7 +87,7 @@ const RiskMeter = () => {
             <Shield className="h-3.5 w-3.5" />
           </div>
           <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
-            Risk Exposure
+            {t("risk.title")}
           </h3>
         </div>
         <span
@@ -141,7 +143,7 @@ const RiskMeter = () => {
           {/* Center value */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-              Total Risk
+              {t("risk.totalRisk")}
             </span>
             <span
               className="font-mono text-3xl font-bold tabular-nums leading-none mt-0.5"
@@ -153,7 +155,7 @@ const RiskMeter = () => {
               {total.toFixed(1)}%
             </span>
             <span className="text-[10px] font-mono text-muted-foreground mt-1">
-              ${totalUsd.toFixed(0)} max
+              ${totalUsd.toFixed(0)} {t("risk.max")}
             </span>
           </div>
         </div>
@@ -162,10 +164,10 @@ const RiskMeter = () => {
         <div className="flex-1 min-w-0 w-full space-y-2.5">
           <div className="flex items-baseline justify-between">
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              {POSITIONS_RISK.length} positions
+              {POSITIONS_RISK.length} {t("risk.positions")}
             </span>
             <span className="text-[10px] font-mono text-muted-foreground">
-              of ${ACCOUNT_EQUITY.toLocaleString()} equity
+              {t("risk.of")} ${ACCOUNT_EQUITY.toLocaleString()} {t("risk.equity")}
             </span>
           </div>
           <ul className="space-y-2">
@@ -227,10 +229,10 @@ const RiskMeter = () => {
               style={{ color }}
             >
               {level === "high"
-                ? "Above target — consider reducing exposure"
+                ? t("risk.statusHigh")
                 : level === "moderate"
-                ? "Within healthy range"
-                : "Well within risk budget"}
+                ? t("risk.statusModerate")
+                : t("risk.statusSafe")}
             </span>
           </div>
 
@@ -240,7 +242,7 @@ const RiskMeter = () => {
               className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
             >
               <Plug className="h-3 w-3" />
-              Connect MT4 / MT5 for real-time risk
+              {t("risk.connectCTA")}
             </Link>
           )}
         </div>
