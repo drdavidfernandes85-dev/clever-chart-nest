@@ -182,21 +182,16 @@
     background: var(--hero-gradient);
   }
 
-  /* ── Crypto glassmorphic panel — INFINOX yellow + cyan dual-glow ── */
+  /* ── Clean professional terminal panel — charcoal + soft yellow edge ── */
   .card-glass {
-    background:
-      linear-gradient(180deg, hsl(0 0% 8% / 0.62) 0%, hsl(0 0% 4% / 0.62) 100%);
-    backdrop-filter: blur(32px) saturate(190%);
-    -webkit-backdrop-filter: blur(32px) saturate(190%);
-    border: 1.5px solid hsl(48 100% 51% / 0.55);
+    background: linear-gradient(180deg, hsl(0 0% 7% / 0.92) 0%, hsl(0 0% 5% / 0.92) 100%);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid hsl(0 0% 100% / 0.06);
     box-shadow:
-      inset 0 1px 0 hsl(0 0% 100% / 0.09),
-      inset 0 0 44px hsl(48 100% 51% / 0.06),
-      0 0 0 1px hsl(0 0% 0% / 0.45),
-      0 0 30px -2px hsl(48 100% 51% / 0.40),
-      0 0 56px -8px hsl(187 100% 50% / 0.32),
-      0 0 44px -8px hsl(48 100% 51% / 0.28),
-      0 26px 60px -18px hsl(0 0% 0% / 0.9);
+      inset 0 1px 0 hsl(0 0% 100% / 0.04),
+      0 1px 0 hsl(0 0% 0% / 0.5),
+      0 12px 32px -12px hsl(0 0% 0% / 0.7);
   }
 
   .light .card-glass {
@@ -206,75 +201,54 @@
       0 8px 32px hsl(0 0% 0% / 0.06);
   }
 
-  .card-glass-hover { @apply card-glass transition-all duration-500; }
+  .card-glass-hover { @apply card-glass transition-all duration-300; }
 
   .card-glass-hover:hover {
-    border-color: hsl(48 100% 51% / 0.95);
+    border-color: hsl(48 100% 51% / 0.45);
     box-shadow:
-      inset 0 1px 0 hsl(0 0% 100% / 0.12),
-      inset 0 0 56px hsl(48 100% 51% / 0.12),
-      0 0 0 1px hsl(48 100% 51% / 0.85),
-      0 0 48px -2px hsl(48 100% 51% / 0.75),
-      0 0 80px -6px hsl(48 100% 51% / 0.45),
-      0 0 70px -6px hsl(187 100% 50% / 0.45),
-      0 24px 70px -12px hsl(0 0% 0% / 0.75);
-    transform: translateY(-2px);
+      inset 0 1px 0 hsl(0 0% 100% / 0.05),
+      0 0 0 1px hsl(48 100% 51% / 0.20),
+      0 0 24px -6px hsl(48 100% 51% / 0.30),
+      0 16px 40px -12px hsl(0 0% 0% / 0.7);
+    transform: translateY(-1px);
   }
 
-  .glow-border { box-shadow: var(--glow-primary); }
+  .glow-border { box-shadow: 0 0 0 1px hsl(48 100% 51% / 0.35); }
 
-  /* ── Neon data text — cyan is now the default for prices/numbers ── */
+  /* ── Data text — clean, high contrast, subtle yellow accent ── */
   .neon-text {
-    color: hsl(187 100% 70%);
-    text-shadow:
-      0 0 8px hsl(187 100% 50% / 0.85),
-      0 0 18px hsl(187 100% 50% / 0.55),
-      0 0 38px hsl(187 100% 50% / 0.35);
+    color: hsl(48 100% 60%);
+    text-shadow: 0 0 10px hsl(48 100% 51% / 0.35);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
   .neon-text-cyan {
-    color: hsl(187 100% 72%);
-    text-shadow:
-      0 0 8px hsl(187 100% 50% / 0.9),
-      0 0 18px hsl(187 100% 50% / 0.55),
-      0 0 38px hsl(187 100% 50% / 0.35);
+    color: hsl(187 95% 70%);
+    text-shadow: 0 0 8px hsl(187 100% 50% / 0.30);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
   .neon-text-purple {
-    color: hsl(271 91% 75%);
-    text-shadow:
-      0 0 8px hsl(271 91% 65% / 0.85),
-      0 0 18px hsl(271 91% 65% / 0.55),
-      0 0 38px hsl(271 91% 65% / 0.30);
+    color: hsl(271 70% 78%);
+    text-shadow: 0 0 8px hsl(271 91% 65% / 0.25);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
   .neon-text-yellow {
-    color: hsl(48 100% 65%);
-    text-shadow:
-      0 0 8px hsl(48 100% 51% / 0.85),
-      0 0 18px hsl(48 100% 51% / 0.55),
-      0 0 38px hsl(48 100% 51% / 0.35);
+    color: hsl(48 100% 60%);
+    text-shadow: 0 0 10px hsl(48 100% 51% / 0.35);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
   .neon-text-green {
-    color: hsl(145 100% 70%);
-    text-shadow:
-      0 0 8px hsl(145 100% 55% / 0.85),
-      0 0 18px hsl(145 100% 55% / 0.55),
-      0 0 38px hsl(145 100% 55% / 0.30);
+    color: hsl(145 75% 60%);
+    text-shadow: 0 0 8px hsl(145 100% 55% / 0.30);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
   .neon-text-red {
-    color: hsl(348 100% 72%);
-    text-shadow:
-      0 0 8px hsl(348 100% 60% / 0.85),
-      0 0 18px hsl(348 100% 60% / 0.55),
-      0 0 38px hsl(348 100% 60% / 0.30);
+    color: hsl(348 90% 65%);
+    text-shadow: 0 0 8px hsl(348 100% 60% / 0.30);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
