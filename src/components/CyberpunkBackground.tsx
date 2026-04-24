@@ -238,7 +238,7 @@ const CyberpunkBackground = () => {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 90% 70% at 50% 50%, transparent 45%, hsl(0 0% 0% / 0.55) 100%)",
+            "radial-gradient(ellipse 95% 75% at 50% 50%, hsl(0 0% 0% / 0.30) 0%, transparent 45%, hsl(0 0% 0% / 0.65) 100%)",
         }}
       />
     </div>
