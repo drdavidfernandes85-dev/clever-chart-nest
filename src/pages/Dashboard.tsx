@@ -293,7 +293,7 @@ const Dashboard = () => {
           </>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 };
 
