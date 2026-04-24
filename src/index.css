@@ -34,8 +34,8 @@
     --muted: 0 0% 10%;
     --muted-foreground: 0 0% 60%;
 
-    /* Accent = electric cyan (data, charts, secondary glow) */
-    --accent: 187 100% 50%;           /* #00f0ff cyan */
+    /* Accent = InfinoX yellow (unified brand accent) */
+    --accent: 48 100% 51%;            /* #FFCD05 InfinoX yellow */
     --accent-foreground: 0 0% 4%;
 
     --destructive: 348 100% 60%;      /* neon magenta-red */
