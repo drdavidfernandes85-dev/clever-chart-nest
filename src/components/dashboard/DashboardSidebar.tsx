@@ -8,7 +8,7 @@ import {
   Trophy,
   Video,
   BarChart3,
-  Wrench,
+  
   ChevronLeft,
   ChevronRight,
   User,
@@ -32,14 +32,14 @@ import type { TranslationKey } from "@/i18n/translations";
 const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
-  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
   { to: "/signals", labelKey: "sidebar.signals", icon: Radio },
+  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
+  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
   { to: "/calendar", labelKey: "sidebar.calendar", icon: CalendarDays },
-  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
+  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
   { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
-  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
 
@@ -156,27 +156,6 @@ const DashboardSidebar = () => {
           })}
         </ul>
 
-        {!collapsed && (
-          <div className="mt-6 px-2.5">
-            <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-transparent p-3">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Wrench className="h-3.5 w-3.5 text-primary" />
-                <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">
-                  {t("sidebar.tools")}
-                </span>
-              </div>
-              <p className="text-[11px] leading-snug text-muted-foreground mb-2">
-                {t("sidebar.toolsDesc")}
-              </p>
-              <Link
-                to="/command-deck"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-              >
-                {t("sidebar.openDeck")}
-              </Link>
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* Online traders counter */}

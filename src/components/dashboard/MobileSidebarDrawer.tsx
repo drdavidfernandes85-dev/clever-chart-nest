@@ -26,14 +26,14 @@ import type { TranslationKey } from "@/i18n/translations";
 const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
-  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
   { to: "/signals", labelKey: "sidebar.signals", icon: Radio },
+  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
+  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
   { to: "/calendar", labelKey: "sidebar.calendar", icon: CalendarDays },
-  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
+  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
   { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
-  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
 
