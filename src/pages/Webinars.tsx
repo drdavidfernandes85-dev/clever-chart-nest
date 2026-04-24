@@ -27,8 +27,10 @@ import {
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useWebinars, useCountdown, type Webinar } from "@/hooks/useWebinars";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const WebinarStatusPill = ({ w }: { w: Webinar }) => {
+  const { t } = useLanguage();
   const { label } = useCountdown(
     w.status === "scheduled" ? w.scheduled_at : null,
   );
@@ -39,7 +41,7 @@ const WebinarStatusPill = ({ w }: { w: Webinar }) => {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive-foreground opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-destructive-foreground" />
         </span>
-        Live now
+        {t("webinars.liveNow")}
       </span>
     );
   }
@@ -53,18 +55,19 @@ const WebinarStatusPill = ({ w }: { w: Webinar }) => {
   if (w.status === "ended") {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        <PlayCircle className="h-3 w-3" /> Recording
+        <PlayCircle className="h-3 w-3" /> {t("webinars.recording")}
       </span>
     );
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-destructive/40 bg-destructive/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-destructive">
-      Canceled
+      {t("webinars.canceled")}
     </span>
   );
 };
 
 const WebinarRow = ({ w }: { w: Webinar }) => {
+  const { t } = useLanguage();
   const isLive = w.status === "live";
   const isUpcoming = w.status === "scheduled";
   const isEnded = w.status === "ended";
@@ -76,10 +79,10 @@ const WebinarRow = ({ w }: { w: Webinar }) => {
       : `/webinars/${w.id}`;
 
   const ctaLabel = isLive
-    ? "Join Now"
+    ? t("webinars.joinNow")
     : isEnded
-      ? "Watch recording"
-      : "Set reminder";
+      ? t("webinars.watchRecording")
+      : t("webinars.setReminder");
 
   return (
     <Card className="group flex flex-col sm:flex-row gap-4 p-4 sm:p-5 hover:border-primary/40 transition-colors">
@@ -140,7 +143,7 @@ const WebinarRow = ({ w }: { w: Webinar }) => {
       <div className="sm:self-center shrink-0">
         {isEnded && !w.recording_url ? (
           <Button variant="outline" size="sm" disabled className="rounded-xl">
-            No recording yet
+            {t("webinars.noRecording")}
           </Button>
         ) : isLive ? (
           <a
@@ -177,6 +180,7 @@ const WebinarRow = ({ w }: { w: Webinar }) => {
 
 const Webinars = () => {
   const { items, liveNow, upcoming, past, loading } = useWebinars();
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all");
 
@@ -215,7 +219,7 @@ const Webinars = () => {
           </Link>
           <Button variant="ghost" size="sm" asChild>
             <Link to="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-1.5" /> Dashboard
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> {t("sidebar.dashboard")}
             </Link>
           </Button>
         </div>
@@ -225,11 +229,10 @@ const Webinars = () => {
         {/* Headline */}
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold text-foreground">
-            Live <span className="text-primary">Webinars</span>
+            {t("webinars.title1")} <span className="text-primary">{t("webinars.title2")}</span>
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground max-w-2xl">
-            Daily live trading rooms hosted by INFINOX mentors. Join live, set reminders,
-            or rewatch any past session.
+            {t("webinars.subtitle")}
           </p>
         </div>
 
@@ -257,7 +260,7 @@ const Webinars = () => {
                       liveNow ? "text-destructive" : "text-primary"
                     }`}
                   >
-                    {liveNow ? "Live now" : "Up next"}
+                    {liveNow ? t("webinars.liveNow") : t("webinars.upNext")}
                   </p>
                   <p className="font-heading text-base sm:text-lg font-bold text-foreground line-clamp-1">
                     {(liveNow ?? upcoming)!.title}
@@ -278,11 +281,11 @@ const Webinars = () => {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl bg-destructive px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-destructive-foreground shadow-[0_15px_35px_-12px_hsl(var(--destructive)/0.6)] hover:scale-[1.02] transition-transform"
                 >
-                  Join Live
+                  {t("webinars.joinLive")}
                 </a>
               ) : (
                 <span className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-primary">
-                  <Clock className="h-4 w-4" /> Reminder set
+                  <Clock className="h-4 w-4" /> {t("webinars.reminderSet")}
                 </span>
               )}
             </div>
@@ -296,7 +299,7 @@ const Webinars = () => {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by topic, mentor or performance tag…"
+              placeholder={t("webinars.searchPlaceholder")}
               className="pl-9 bg-background/50"
             />
           </div>
@@ -307,27 +310,27 @@ const Webinars = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All sessions</SelectItem>
-                <SelectItem value="upcoming">Upcoming & live</SelectItem>
-                <SelectItem value="past">Recordings</SelectItem>
+                <SelectItem value="all">{t("webinars.allSessions")}</SelectItem>
+                <SelectItem value="upcoming">{t("webinars.upcomingLive")}</SelectItem>
+                <SelectItem value="past">{t("webinars.recordings")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            {filtered.length} of {items.length}
+            {filtered.length} {t("webinars.countOf")} {items.length}
           </p>
         </Card>
 
         {/* List */}
         {loading ? (
-          <div className="text-center py-12 text-sm text-muted-foreground">Loading sessions…</div>
+          <div className="text-center py-12 text-sm text-muted-foreground">{t("webinars.loading")}</div>
         ) : filtered.length === 0 ? (
           <Card className="py-16 text-center">
             <Video className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-sm text-muted-foreground">
               {items.length === 0
-                ? "No webinars yet. Check back soon — sessions are added daily."
-                : "No sessions match your search."}
+                ? t("webinars.empty")
+                : t("webinars.emptySearch")}
             </p>
           </Card>
         ) : (
