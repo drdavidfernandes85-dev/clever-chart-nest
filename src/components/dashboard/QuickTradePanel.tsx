@@ -51,8 +51,16 @@ interface Props {
 }
 
 const QuickTradePanel = ({ compact = false }: Props) => {
-  const { symbol: ctxSymbol, side: ctxSide, setSymbol: setCtxSymbol, setSide: setCtxSide } = useQuickTrade();
+  const {
+    symbol: ctxSymbol,
+    side: ctxSide,
+    setSymbol: setCtxSymbol,
+    setSide: setCtxSide,
+    prefill,
+    prefillNonce,
+  } = useQuickTrade();
   const { account } = useMTAccount();
+  const { user } = useAuth();
 
   // Live equity from MT account; fall back to 0 if not connected.
   const accountEquity =
@@ -67,16 +75,33 @@ const QuickTradePanel = ({ compact = false }: Props) => {
   const [tp, setTp] = useState("");
   const [openSymbols, setOpenSymbols] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+  const [signalId, setSignalId] = useState<string | null>(null);
 
   const symbol = ctxSymbol;
   const side = ctxSide;
 
-  // Reset SL/TP placeholders when symbol changes
+  // Apply prefill (lots, entry, SL, TP, signal_id) every time openTrade() is called.
   useEffect(() => {
-    setEntry("");
-    setSl("");
-    setTp("");
+    if (!prefill) return;
+    if (prefill.lots) setLots(prefill.lots);
+    if (prefill.entry) {
+      setEntry(prefill.entry);
+      setType("limit");
+    } else {
+      setType("market");
+      setEntry("");
+    }
+    setSl(prefill.sl ?? "");
+    setTp(prefill.tp ?? "");
+    setSignalId(prefill.signalId ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillNonce]);
+
+  // Reset SL/TP when user manually changes symbol (but not when prefilled).
+  useEffect(() => {
+    setEntry((prev) => prev);
   }, [symbol]);
 
   // Poll live price for the active symbol every 5s.
