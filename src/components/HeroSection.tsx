@@ -8,6 +8,7 @@ import FloatingCandles from "@/components/hero/FloatingCandles";
 import NetworkNodes from "@/components/hero/NetworkNodes";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
+import heroCryptoBg from "@/assets/hero-crypto-bg.jpg";
 
 // Next webinar config — update these as needed
 const NEXT_WEBINAR = {
@@ -49,7 +50,31 @@ const HeroSection = () => {
   const { t } = useLanguage();
 
   return (
-    <section id="home" className="relative pt-16">
+    <section id="home" className="relative pt-16 overflow-hidden">
+      {/* Premium dramatic hero backdrop */}
+      <div className="pointer-events-none absolute inset-0 -z-[1]">
+        <img
+          src={heroCryptoBg}
+          alt=""
+          width={1920}
+          height={1080}
+          className="absolute inset-0 h-full w-full object-cover opacity-90"
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(0 0% 1% / 0.30) 0%, hsl(0 0% 1% / 0.55) 60%, hsl(0 0% 1% / 0.95) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 60% 40% at 50% 35%, hsl(48 100% 51% / 0.10), transparent 70%)",
+          }}
+        />
+      </div>
 
       {/* Live market ticker — same live feed as the dashboard */}
       <div className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-primary/30 bg-card/40 backdrop-blur-md">

@@ -24,8 +24,8 @@
     --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary = electric cyan (data, charts, panel borders) */
-    --primary: 187 100% 50%;          /* #00f0ff electric cyan */
+    /* Primary = INFINOX yellow (CTAs, highlights, brand identity) */
+    --primary: 48 100% 51%;           /* #FFCD05 INFINOX yellow */
     --primary-foreground: 0 0% 4%;
 
     --secondary: 0 0% 9%;
@@ -34,16 +34,16 @@
     --muted: 0 0% 10%;
     --muted-foreground: 0 0% 60%;
 
-    /* Accent = electric purple */
-    --accent: 271 91% 65%;            /* #a855f7 purple */
-    --accent-foreground: 0 0% 100%;
+    /* Accent = electric cyan (data, charts, secondary glow) */
+    --accent: 187 100% 50%;           /* #00f0ff cyan */
+    --accent-foreground: 0 0% 4%;
 
     --destructive: 348 100% 60%;      /* neon magenta-red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 187 100% 50%;           /* cyan border (used at low alpha) */
+    --border: 48 100% 51%;            /* yellow border (used at low alpha) */
     --input: 0 0% 10%;
-    --ring: 187 100% 50%;
+    --ring: 48 100% 51%;
 
     --radius: 0.5rem;
 
@@ -64,12 +64,12 @@
 
     --sidebar-background: 0 0% 2%;
     --sidebar-foreground: 0 0% 92%;
-    --sidebar-primary: 187 100% 50%;
+    --sidebar-primary: 48 100% 51%;
     --sidebar-primary-foreground: 0 0% 4%;
     --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 92%;
-    --sidebar-border: 187 100% 50%;
-    --sidebar-ring: 187 100% 50%;
+    --sidebar-border: 48 100% 51%;
+    --sidebar-ring: 48 100% 51%;
   }
 
   /* ── Light theme ── */
@@ -329,10 +329,7 @@
   }
 
   .bg-grid-pattern {
-    background-image:
-      linear-gradient(hsl(187 100% 50% / 0.18) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(187 100% 50% / 0.18) 1px, transparent 1px);
-    background-size: 60px 60px;
+    background-image: none;
   }
 
   .bg-radial-glow {
@@ -713,25 +710,25 @@
     }
   }
 
-  /* ── Crypto ambient background — cyan + purple beams + digital rain ── */
+  /* ── Premium ambient beams — yellow primary + cyan secondary ── */
   .cyber-beam {
     position: absolute;
     top: -10%;
-    width: 220px;
+    width: 240px;
     height: 120%;
     pointer-events: none;
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(187 100% 50% / 0.07) 35%,
-      hsl(187 100% 50% / 0.12) 50%,
-      hsl(187 100% 50% / 0.07) 65%,
+      hsl(48 100% 51% / 0.08) 35%,
+      hsl(48 100% 51% / 0.14) 50%,
+      hsl(48 100% 51% / 0.08) 65%,
       transparent 100%
     );
-    filter: blur(28px);
+    filter: blur(32px);
     transform: skewX(-12deg);
     mix-blend-mode: screen;
-    opacity: 0.6;
+    opacity: 0.65;
   }
   .cyber-beam-1 { left: 12%;  animation: cyber-beam-drift 22s ease-in-out infinite; }
   .cyber-beam-2 {
@@ -739,33 +736,33 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(271 91% 65% / 0.06) 35%,
-      hsl(271 91% 65% / 0.10) 50%,
-      hsl(271 91% 65% / 0.06) 65%,
+      hsl(187 100% 50% / 0.06) 35%,
+      hsl(187 100% 50% / 0.10) 50%,
+      hsl(187 100% 50% / 0.06) 65%,
       transparent 100%
     );
     animation: cyber-beam-drift 28s ease-in-out infinite reverse;
   }
   .cyber-beam-3 {
     left: 82%;
-    width: 160px;
+    width: 180px;
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(187 100% 50% / 0.05) 50%,
+      hsl(48 100% 51% / 0.06) 50%,
       transparent 100%
     );
     animation: cyber-beam-drift 34s ease-in-out infinite;
   }
   .cyber-beam-4 {
     left: 36%;
-    width: 200px;
+    width: 220px;
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(271 91% 65% / 0.07) 40%,
-      hsl(271 91% 65% / 0.11) 50%,
-      hsl(271 91% 65% / 0.07) 60%,
+      hsl(187 100% 50% / 0.07) 40%,
+      hsl(187 100% 50% / 0.11) 50%,
+      hsl(187 100% 50% / 0.07) 60%,
       transparent 100%
     );
     animation: cyber-beam-drift 26s ease-in-out infinite;
@@ -787,7 +784,22 @@
     100% { transform: translateY(110vh); }
   }
 
+  /* Floating firefly particles for hero/landing background */
+  @keyframes float-particle {
+    0%   { transform: translate(0, 0) scale(1);   opacity: 0.2; }
+    25%  { opacity: 0.85; }
+    50%  { transform: translate(12px, -22px) scale(1.15); opacity: 1; }
+    75%  { opacity: 0.85; }
+    100% { transform: translate(0, 0) scale(1);   opacity: 0.2; }
+  }
+  .animate-float-particle {
+    animation-name: float-particle;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+    will-change: transform, opacity;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .cyber-beam, .cyber-rain { animation: none !important; }
+    .cyber-beam, .cyber-rain, .animate-float-particle { animation: none !important; }
   }
 }

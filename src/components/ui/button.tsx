@@ -9,12 +9,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[hsl(48_100%_51%)] text-[hsl(0_0%_4%)] font-semibold shadow-[0_0_0_1px_hsl(48_100%_51%/0.55),0_0_20px_hsl(48_100%_51%/0.45),0_0_40px_hsl(48_100%_51%/0.20)] hover:bg-[hsl(48_100%_56%)] hover:shadow-[0_0_0_1px_hsl(48_100%_51%/0.9),0_0_32px_hsl(48_100%_51%/0.70),0_0_60px_hsl(48_100%_51%/0.40)] transition-shadow",
+        default: "bg-primary text-primary-foreground font-semibold shadow-[0_0_0_1px_hsl(var(--primary)/0.55),0_0_20px_hsl(var(--primary)/0.45),0_0_40px_hsl(var(--primary)/0.20)] hover:bg-primary/90 hover:shadow-[0_0_0_1px_hsl(var(--primary)/0.9),0_0_32px_hsl(var(--primary)/0.70),0_0_60px_hsl(var(--primary)/0.40)] transition-shadow",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-[hsl(48_100%_51%/0.55)] bg-transparent text-foreground hover:bg-[hsl(48_100%_51%/0.10)] hover:border-[hsl(48_100%_51%/0.9)] hover:shadow-[0_0_22px_hsl(48_100%_51%/0.40)] transition-all",
+        outline: "border border-primary/55 bg-transparent text-foreground hover:bg-primary/10 hover:border-primary hover:shadow-[0_0_22px_hsl(var(--primary)/0.40)] transition-all",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-[hsl(48_100%_60%)] underline-offset-4 hover:underline",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",
