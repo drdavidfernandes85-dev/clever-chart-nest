@@ -20,19 +20,21 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { useWebinars } from "@/hooks/useWebinars";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
-const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/webinars", label: "Live Webinars", icon: Radio, flagship: true },
-  { to: "/live-chart", label: "Live Charts", icon: LineChart },
-  { to: "/signals", label: "Signals", icon: Radio },
-  { to: "/news", label: "News", icon: Newspaper },
-  { to: "/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/chatroom", label: "Chatroom", icon: MessageSquare },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/videos", label: "Video Library", icon: Video },
-  { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/profile", label: "Profile", icon: User },
+const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
+  { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
+  { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
+  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
+  { to: "/signals", labelKey: "sidebar.signals", icon: Radio },
+  { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
+  { to: "/calendar", labelKey: "sidebar.calendar", icon: CalendarDays },
+  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
+  { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
+  { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
+  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
+  { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
 
 interface Props {
@@ -45,6 +47,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
+  const { t } = useLanguage();
   const startingSoon =
     !!upcoming &&
     new Date(upcoming.scheduled_at).getTime() - Date.now() < 30 * 60 * 1000;
@@ -91,7 +94,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
               </Link>
               <button
                 onClick={onClose}
-                aria-label="Close menu"
+                aria-label={t("dash.closeMenu")}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
               >
                 <X className="h-5 w-5" />
@@ -128,7 +131,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                             isWebinars && "text-primary"
                           )}
                         />
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate">{t(item.labelKey)}</span>
                         {showBadge ? (
                           <span
                             className={cn(
@@ -138,7 +141,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                                 : "bg-primary/20 text-primary"
                             )}
                           >
-                            {liveNow ? "Live" : "Soon"}
+                            {liveNow ? t("sidebar.live") : t("sidebar.soon")}
                           </span>
                         ) : (
                           active && (
@@ -165,7 +168,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                     12,487
                   </span>
                   <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
-                    online
+                    {t("sidebar.online")}
                   </span>
                 </div>
               </div>
@@ -178,7 +181,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                 className="flex items-center gap-2 border-t border-primary/10 px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
               >
                 <LogOut className="h-4 w-4 shrink-0" />
-                <span>Sign out</span>
+                <span>{t("sidebar.signOut")}</span>
               </button>
             )}
           </motion.aside>
