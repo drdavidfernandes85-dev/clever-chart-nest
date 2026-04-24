@@ -7,18 +7,19 @@ interface WatchItem {
   id: string;
   symbol: string;
   label: string;
-  base: string;
-  quote: string;
+  /** CoinGecko id (used by /simple/price). */
+  cgId: string;
 }
 
 const DEFAULT_WATCHLIST: WatchItem[] = [
-  { id: "eurusd", symbol: "EUR/USD", label: "EUR/USD", base: "EUR", quote: "USD" },
-  { id: "gbpusd", symbol: "GBP/USD", label: "GBP/USD", base: "GBP", quote: "USD" },
-  { id: "usdjpy", symbol: "USD/JPY", label: "USD/JPY", base: "USD", quote: "JPY" },
-  { id: "audusd", symbol: "AUD/USD", label: "AUD/USD", base: "AUD", quote: "USD" },
-  { id: "xauusd", symbol: "XAU/USD", label: "XAU/USD", base: "XAU", quote: "USD" },
-  { id: "usdcad", symbol: "USD/CAD", label: "USD/CAD", base: "USD", quote: "CAD" },
-  { id: "nzdusd", symbol: "NZD/USD", label: "NZD/USD", base: "NZD", quote: "USD" },
+  { id: "btc",  symbol: "BTC/USDT",  label: "BTC/USDT",  cgId: "bitcoin" },
+  { id: "eth",  symbol: "ETH/USDT",  label: "ETH/USDT",  cgId: "ethereum" },
+  { id: "sol",  symbol: "SOL/USDT",  label: "SOL/USDT",  cgId: "solana" },
+  { id: "sui",  symbol: "SUI/USDT",  label: "SUI/USDT",  cgId: "sui" },
+  { id: "ton",  symbol: "TON/USDT",  label: "TON/USDT",  cgId: "toncoin" },
+  { id: "pepe", symbol: "PEPE/USDT", label: "PEPE/USDT", cgId: "pepe" },
+  { id: "wif",  symbol: "WIF/USDT",  label: "WIF/USDT",  cgId: "dogwifcoin" },
+  { id: "hype", symbol: "HYPE/USDT", label: "HYPE/USDT", cgId: "hyperliquid" },
 ];
 
 interface PriceState {
@@ -58,39 +59,46 @@ const Watchlist = () => {
     );
   }, [items]);
 
-  // Live polling — exchangerate.host (free, no key)
+  // Live polling — CoinGecko /simple/price (free, no key, CORS-enabled).
+  // One request fetches every symbol so we stay well under rate limits.
   useEffect(() => {
     let cancelled = false;
     const fetchAll = async () => {
-      const next: Record<string, PriceState> = { ...prices };
-      await Promise.all(
-        items.map(async (item) => {
-          try {
-            const res = await fetch(
-              `https://api.exchangerate.host/latest?base=${item.base}&symbols=${item.quote}`,
-              { cache: "no-store" }
-            );
-            if (!res.ok) return;
-            const json = await res.json();
-            const p = json?.rates?.[item.quote];
-            if (typeof p === "number") {
-              const existing = next[item.id];
-              const prev = existing?.price ?? p;
-              const open = existing?.open ?? p;
-              const history = existing
-                ? [...existing.history.slice(-23), p]
-                : [p];
-              next[item.id] = { price: p, prev, history, open };
-            }
-          } catch {
-            /* swallow */
+      try {
+        const ids = items.map((i) => i.cgId).join(",");
+        if (!ids) return;
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        setPrices((prev) => {
+          const next: Record<string, PriceState> = { ...prev };
+          for (const item of items) {
+            const row = json?.[item.cgId];
+            if (!row) continue;
+            const p = Number(row.usd);
+            if (!Number.isFinite(p)) continue;
+            const existing = next[item.id];
+            const previous = existing?.price ?? p;
+            // 24h change: anchor "open" so percent matches CoinGecko's 24h
+            const chg = Number(row.usd_24h_change ?? 0);
+            const open = chg ? p / (1 + chg / 100) : existing?.open ?? p;
+            const history = existing
+              ? [...existing.history.slice(-23), p]
+              : [p];
+            next[item.id] = { price: p, prev: previous, history, open };
           }
-        })
-      );
-      if (!cancelled) setPrices(next);
+          if (cancelled) return prev;
+          return next;
+        });
+      } catch {
+        /* swallow */
+      }
     };
     fetchAll();
-    const id = window.setInterval(fetchAll, 8000);
+    const id = window.setInterval(fetchAll, 15_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
@@ -157,15 +165,14 @@ const Watchlist = () => {
           {items.map((item) => {
             const p = prices[item.id];
             const up = p ? p.price >= p.prev : true;
-            const change = p ? p.price - p.prev : 0;
-            const pipMul = item.symbol.includes("JPY")
-              ? 100
-              : item.symbol.includes("XAU")
-              ? 10
-              : 10000;
-            const pips = change * pipMul;
             const sessionPct = p ? ((p.price - p.open) / p.open) * 100 : 0;
             const sessionUp = sessionPct >= 0;
+            // For crypto we display a $ change instead of forex pips.
+            const change = p ? p.price - p.prev : 0;
+            // Decimal precision tuned to typical price magnitude.
+            const decimals = p
+              ? p.price >= 1000 ? 2 : p.price >= 1 ? 3 : p.price >= 0.01 ? 5 : 8
+              : 2;
 
             return (
               <li
@@ -179,7 +186,7 @@ const Watchlist = () => {
                 <GripVertical className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors shrink-0" />
 
                 {/* Symbol info */}
-                <div className="min-w-0 w-[68px] shrink-0">
+                <div className="min-w-0 w-[78px] shrink-0">
                   <div className="font-heading text-xs font-semibold text-foreground truncate">
                     {item.label}
                   </div>
@@ -211,15 +218,7 @@ const Watchlist = () => {
                       transition={{ duration: 0.18 }}
                       className="font-mono text-xs font-semibold tabular-nums text-foreground"
                     >
-                      {p
-                        ? p.price.toFixed(
-                            item.symbol.includes("JPY")
-                              ? 3
-                              : item.symbol.includes("XAU")
-                              ? 2
-                              : 5
-                          )
-                        : "—"}
+                      {p ? p.price.toFixed(decimals) : "—"}
                     </motion.div>
                   </AnimatePresence>
                   <div
@@ -232,7 +231,7 @@ const Watchlist = () => {
                     ) : (
                       <ArrowDown className="h-2 w-2" />
                     )}
-                    {p ? `${Math.abs(pips).toFixed(1)}p` : "—"}
+                    {p ? `${change >= 0 ? "+" : ""}${change.toFixed(decimals)}` : "—"}
                   </div>
                 </div>
 
