@@ -67,7 +67,7 @@ const Dashboard = () => {
   }, [tradeOpen, mobileNavOpen]);
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-transparent">
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
 
