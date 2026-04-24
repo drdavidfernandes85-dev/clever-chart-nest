@@ -153,15 +153,15 @@ const PortfolioOverview = () => {
             </span>
             <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
             <span className="text-[11px] font-mono text-foreground truncate">
-              <span className="font-bold text-emerald-400">Connected:</span>{" "}
+              <span className="font-bold text-emerald-400">{t("portfolio.connected")}</span>{" "}
               <span className="text-foreground">
                 {account.broker_name} • {account.server_name}
               </span>
               <span className="text-muted-foreground">
                 {" "}• #{account.login} •{" "}
                 {account.last_synced_at
-                  ? `Last synced ${formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })}`
-                  : "syncing…"}
+                  ? `${t("portfolio.lastSynced")} ${formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })}`
+                  : t("portfolio.syncing")}
               </span>
             </span>
           </div>
@@ -170,28 +170,28 @@ const PortfolioOverview = () => {
               onClick={() => sync()}
               disabled={syncing}
               className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors disabled:opacity-60"
-              title="Re-sync this account"
+              title={t("portfolio.syncNow")}
             >
               {syncing ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
                 <RefreshCw className="h-3 w-3" />
               )}
-              Sync now
+              {t("portfolio.syncNow")}
             </button>
             <Link
               to="/connect-mt"
               className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-card/60 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:border-border transition-colors"
             >
-              Manage
+              {t("portfolio.manage")}
             </Link>
             <button
               onClick={handleDisconnect}
               className="inline-flex items-center gap-1 rounded-md border border-red-500/30 bg-red-500/5 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/15 transition-colors"
-              title="Disconnect MT account"
+              title={t("portfolio.disconnect")}
             >
               <Trash2 className="h-3 w-3" />
-              Disconnect
+              {t("portfolio.disconnect")}
             </button>
           </div>
         </div>
@@ -205,14 +205,14 @@ const PortfolioOverview = () => {
               <Briefcase className="h-3.5 w-3.5" />
             </div>
             <h2 className="font-heading text-sm font-semibold text-foreground tracking-wide">
-              Portfolio Overview
+              {t("portfolio.title")}
             </h2>
             <span className="ml-1 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest text-primary">
               <span className="relative flex h-1 w-1">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-1 w-1 rounded-full bg-primary" />
               </span>
-              Live
+              {t("portfolio.live")}
             </span>
           </div>
           <div className="flex items-baseline gap-3">
@@ -236,7 +236,7 @@ const PortfolioOverview = () => {
               {isUp ? "▲" : "▼"} {Math.abs(totalPct).toFixed(2)}%
             </span>
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">
-              Open P&amp;L
+              {t("portfolio.openPnl")}
             </span>
           </div>
         </div>
@@ -245,13 +245,13 @@ const PortfolioOverview = () => {
         <div className="hidden md:flex items-end gap-3">
           <div className="text-right">
             <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              Equity 30D
+              {t("portfolio.equity30d")}
             </div>
             <div className="font-mono text-sm font-bold text-foreground">
               ${accountEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
             <div className="text-[10px] font-mono text-emerald-400 mt-0.5">
-              {isConnected ? (account?.account_type === "live" ? "Live MT" : "Demo MT") : "▲ +12.4%"}
+              {isConnected ? (account?.account_type === "live" ? t("portfolio.liveMT") : t("portfolio.demoMT")) : "▲ +12.4%"}
             </div>
           </div>
           <svg
@@ -301,14 +301,14 @@ const PortfolioOverview = () => {
       {/* Positions table */}
       <div className="px-2 py-2">
         <div className="grid grid-cols-[1.3fr_0.7fr_0.6fr_0.85fr_0.85fr_1fr_0.7fr_0.8fr_36px] gap-2 px-4 py-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-          <span>Symbol</span>
-          <span>Side</span>
-          <span className="text-right">Size</span>
-          <span className="text-right">Entry</span>
-          <span className="text-right">Current</span>
-          <span className="text-right">P&amp;L</span>
-          <span className="text-right">%</span>
-          <span className="text-right">% Equity</span>
+          <span>{t("portfolio.col.symbol")}</span>
+          <span>{t("portfolio.col.side")}</span>
+          <span className="text-right">{t("portfolio.col.size")}</span>
+          <span className="text-right">{t("portfolio.col.entry")}</span>
+          <span className="text-right">{t("portfolio.col.current")}</span>
+          <span className="text-right">{t("portfolio.col.pnl")}</span>
+          <span className="text-right">{t("portfolio.col.pct")}</span>
+          <span className="text-right">{t("portfolio.col.equityPct")}</span>
           <span />
         </div>
         <div className="divide-y divide-border/30">
@@ -370,9 +370,9 @@ const PortfolioOverview = () => {
                 </span>
                 <button
                   onClick={() => closePosition(p.symbol)}
-                  aria-label={`Close ${p.symbol} position`}
+                  aria-label={`${t("portfolio.closePosition")} ${p.symbol}`}
                   className="opacity-0 group-hover:opacity-100 inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 ring-1 ring-transparent hover:ring-red-500/30 transition-all"
-                  title="Close position"
+                  title={t("portfolio.closePosition")}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -385,12 +385,12 @@ const PortfolioOverview = () => {
                 <Briefcase className="h-5 w-5 text-primary" />
               </div>
               <p className="font-heading text-sm font-semibold text-foreground">
-                No open positions
+                {t("portfolio.empty")}
               </p>
               <p className="mt-1 max-w-sm text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
                 {isConnected
-                  ? "Your MT account is live. New trades will stream here in real time."
-                  : "Connect your MetaTrader account to stream positions in real time."}
+                  ? t("portfolio.emptyConnected")
+                  : t("portfolio.emptyDisconnected")}
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 <button
@@ -398,7 +398,7 @@ const PortfolioOverview = () => {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-primary-foreground shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] hover:bg-primary/90 transition-colors"
                 >
                   <Zap className="h-3.5 w-3.5" />
-                  Open Quick Trade
+                  {t("portfolio.openQuickTrade")}
                 </button>
                 {!isConnected && (
                   <Link
@@ -406,7 +406,7 @@ const PortfolioOverview = () => {
                     className="inline-flex items-center gap-1.5 rounded-lg border border-primary/40 bg-primary/5 px-3.5 py-2 text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
                   >
                     <Plug className="h-3.5 w-3.5" />
-                    Connect MT4/5
+                    {t("portfolio.connectMT")}
                   </Link>
                 )}
               </div>
@@ -420,10 +420,10 @@ const PortfolioOverview = () => {
         <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
           {isConnected ? (
             <>
-              <span className="text-emerald-400">●</span> MT live • {positions.length} open
+              <span className="text-emerald-400">●</span> {t("portfolio.mtLive")} • {positions.length} {t("portfolio.open")}
             </>
           ) : (
-            <>No MT account connected</>
+            <>{t("portfolio.noMT")}</>
           )}
         </span>
         <div className="flex items-center gap-3">
@@ -433,14 +433,14 @@ const PortfolioOverview = () => {
               className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:text-primary/80 transition-colors"
             >
               <Plug className="h-3 w-3" />
-              Connect MT4/5
+              {t("portfolio.connectMT")}
             </Link>
           )}
           <Link
             to="/analytics"
             className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
           >
-            View full analytics
+            {t("portfolio.viewFull")}
             <ArrowUpRight className="h-3 w-3" />
           </Link>
         </div>
