@@ -70,9 +70,9 @@ const Profile = () => {
         .from("chat-attachments")
         .getPublicUrl(path);
       setAvatarUrl(urlData.publicUrl);
-      toast.success("Avatar uploaded!");
+      toast.success(t("profile.avatarUploaded"));
     } catch (err: any) {
-      toast.error(err.message || "Upload failed");
+      toast.error(err.message || t("profile.uploadFailed"));
     } finally {
       setUploading(false);
     }
@@ -100,10 +100,10 @@ const Profile = () => {
         },
         { onConflict: "user_id" }
       );
-      toast.success("Profile updated!");
+      toast.success(t("profile.saved"));
       window.location.reload();
     } catch (err: any) {
-      toast.error(err.message || "Save failed");
+      toast.error(err.message || t("profile.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -130,7 +130,7 @@ const Profile = () => {
           <Link to="/dashboard">
             <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t("common.back")}
             </Button>
           </Link>
         </div>
@@ -139,9 +139,9 @@ const Profile = () => {
       <div className="mx-auto max-w-lg space-y-8 p-6">
         <div>
           <h1 className="font-heading text-2xl font-bold text-foreground uppercase tracking-tight">
-            Profile <span className="text-primary">Settings</span>
+            {t("profile.title1")} <span className="text-primary">{t("profile.title2")}</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Update your display name and avatar</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("profile.subtitle")}</p>
         </div>
 
         {/* Avatar */}
@@ -169,14 +169,14 @@ const Profile = () => {
             onChange={handleAvatarUpload}
           />
           <p className="text-xs text-muted-foreground">
-            {uploading ? "Uploading..." : "Click to change avatar"}
+            {uploading ? t("profile.uploading") : t("profile.clickAvatar")}
           </p>
         </div>
 
         {/* Form */}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm text-muted-foreground">Email</Label>
+            <Label htmlFor="email" className="text-sm text-muted-foreground">{t("profile.email")}</Label>
             <Input
               id="email"
               value={user?.email ?? ""}
@@ -186,12 +186,12 @@ const Profile = () => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="displayName" className="text-sm text-foreground">Display Name</Label>
+            <Label htmlFor="displayName" className="text-sm text-foreground">{t("profile.displayName")}</Label>
             <Input
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Your display name"
+              placeholder={t("profile.displayPlaceholder")}
               className="bg-card border-border/50"
             />
           </div>
@@ -205,9 +205,9 @@ const Profile = () => {
                 <Trophy className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">Show on leaderboard</p>
+                <p className="text-sm font-semibold text-foreground">{t("profile.showLeaderboard")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5 max-w-xs">
-                  Display your name, avatar and trade journal P&L on the public leaderboard.
+                  {t("profile.showLeaderboardDesc")}
                 </p>
               </div>
             </div>
@@ -226,9 +226,9 @@ const Profile = () => {
                 <Mail className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground">Weekly email digest</p>
+                <p className="text-sm font-semibold text-foreground">{t("profile.weeklyDigest")}</p>
                 <p className="text-xs text-muted-foreground mt-0.5 max-w-xs">
-                  Top signals, best traders and upcoming webinars — once a week.
+                  {t("profile.weeklyDigestDesc")}
                 </p>
               </div>
             </div>
@@ -250,17 +250,17 @@ const Profile = () => {
             }}
             className="rounded-xl gap-1.5"
           >
-            <RefreshCw className="h-4 w-4" /> Restart tour
+            <RefreshCw className="h-4 w-4" /> {t("profile.restartTour")}
           </Button>
           <Button variant="outline" asChild className="rounded-xl gap-1.5">
-            <Link to="/analytics"><BarChart3 className="h-4 w-4" /> My Analytics</Link>
+            <Link to="/analytics"><BarChart3 className="h-4 w-4" /> {t("profile.myAnalytics")}</Link>
           </Button>
           <Button asChild className="rounded-xl gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link to="/connect-mt"><Plug className="h-4 w-4" /> Connect MT4 / MT5</Link>
+            <Link to="/connect-mt"><Plug className="h-4 w-4" /> {t("profile.connectMT")}</Link>
           </Button>
           {isAdmin && (
             <Button variant="outline" asChild className="rounded-xl gap-1.5">
-              <Link to="/admin"><Shield className="h-4 w-4" /> Admin Console</Link>
+              <Link to="/admin"><Shield className="h-4 w-4" /> {t("profile.adminConsole")}</Link>
             </Button>
           )}
         </div>
@@ -271,7 +271,7 @@ const Profile = () => {
           className="w-full gap-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/80"
         >
           <Save className="h-4 w-4" />
-          {saving ? "Saving..." : "Save Changes"}
+          {saving ? t("profile.saving") : t("profile.save")}
         </Button>
       </div>
     </div>
