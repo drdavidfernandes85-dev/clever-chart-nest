@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap } from "lucide-react";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import {
   MARKET_UNIVERSE,
   fetchMarketQuotes,
@@ -26,6 +27,7 @@ interface PriceState {
 }
 
 const Watchlist = () => {
+  const { t } = useLanguage();
   const initial = useMemo(
     () =>
       DEFAULT_LABELS.map((l) => MARKET_UNIVERSE.find((m) => m.symbol === l)).filter(
@@ -131,14 +133,14 @@ const Watchlist = () => {
             <Eye className="h-3.5 w-3.5" />
           </div>
           <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
-            Watchlist
+            {t("watch.title")}
           </h3>
           <span className="ml-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
             {items.length}
           </span>
         </div>
         <button
-          aria-label="Add symbol"
+          aria-label={t("watch.add")}
           className="inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -220,15 +222,15 @@ const Watchlist = () => {
                 <button
                   onClick={() => openTrade({ symbol: item.symbol })}
                   className="opacity-0 group-hover:opacity-100 inline-flex items-center gap-1 rounded-md bg-primary/10 hover:bg-primary/20 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary ring-1 ring-primary/30 transition-all"
-                  title={`Trade ${item.symbol}`}
+                  title={`${t("watch.trade")} ${item.symbol}`}
                 >
                   <Zap className="h-2.5 w-2.5" />
-                  Trade
+                  {t("watch.trade")}
                 </button>
 
                 <button
                   onClick={() => removeItem(item.symbol)}
-                  aria-label={`Remove ${item.symbol}`}
+                  aria-label={`${t("watch.remove")} ${item.symbol}`}
                   className="opacity-0 group-hover:opacity-100 inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground hover:text-red-400 transition-all"
                 >
                   <X className="h-3 w-3" />
