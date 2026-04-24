@@ -10,6 +10,7 @@ import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
 import AICopilot from "@/components/ai/AICopilot";
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
+import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 interface Channel {
@@ -33,15 +34,18 @@ type UserRoleMap = Record<string, string>;
 const formatChannelName = (name: string) =>
   name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-const getDateLabel = (dateStr: string) => {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const diff = (today.getTime() - msgDay.getTime()) / 86400000;
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+const useDateLabel = () => {
+  const { t } = useLanguage();
+  return (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diff = (today.getTime() - msgDay.getTime()) / 86400000;
+    if (diff === 0) return t("chat.today");
+    if (diff === 1) return t("chat.yesterday");
+    return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  };
 };
 
 const FOCUS_KEY = "infinox.chatroom.focus";
@@ -49,6 +53,8 @@ const COPILOT_COLLAPSED_KEY = "infinox.chatroom.copilotCollapsed";
 
 const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
+  const { t } = useLanguage();
+  const getDateLabel = useDateLabel();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [activeChannelName, setActiveChannelName] = useState("general");
@@ -195,7 +201,7 @@ const Chatroom = () => {
         const parent = messages.find((m) => m.id === msg.reply_to_id);
         if (parent) {
           replyData = {
-            displayName: (parent.profiles as any)?.display_name ?? "Unknown",
+            displayName: (parent.profiles as any)?.display_name ?? t("chat.unknown"),
             content: parent.content.slice(0, 100),
           };
         }
@@ -253,13 +259,13 @@ const Chatroom = () => {
           <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${getColor(user?.id ?? "")} text-xs font-bold text-foreground`}>
             {getInitial(profile?.display_name ?? "U")}
           </div>
-          <span className="truncate text-xs font-medium text-foreground">{profile?.display_name ?? "User"}</span>
+          <span className="truncate text-xs font-medium text-foreground">{profile?.display_name ?? t("chat.user")}</span>
         </div>
         <div className="flex gap-2">
           <Link to="/dashboard" className="flex-1">
-            <Button variant="outline" size="sm" className="w-full text-xs rounded-xl">Dashboard</Button>
+            <Button variant="outline" size="sm" className="w-full text-xs rounded-xl">{t("chat.dashboard")}</Button>
           </Link>
-          <Button variant="outline" size="sm" className="text-xs rounded-xl" onClick={signOut}>Logout</Button>
+          <Button variant="outline" size="sm" className="text-xs rounded-xl" onClick={signOut}>{t("chat.logout")}</Button>
         </div>
       </div>
     </>
@@ -303,10 +309,10 @@ const Chatroom = () => {
               className={`h-8 px-2 gap-1.5 text-xs ${focusMode ? "text-primary" : ""}`}
               onClick={() => setFocusMode((v) => !v)}
               aria-pressed={focusMode}
-              title={focusMode ? "Exit focus mode" : "Enter focus mode"}
+              title={focusMode ? t("chat.exitFocusMode") : t("chat.enterFocusMode")}
             >
               {focusMode ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{focusMode ? "Exit Focus" : "Focus"}</span>
+              <span className="hidden sm:inline">{focusMode ? t("chat.exitFocus") : t("chat.focus")}</span>
             </Button>
           </div>
         </header>
@@ -321,8 +327,8 @@ const Chatroom = () => {
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
                   </div>
                   <p className="text-xs text-foreground/80">
-                    <span className="font-semibold text-primary">Welcome to #general.</span>{" "}
-                    Below is a preview of recent community activity. Drop your first message to join in.
+                    <span className="font-semibold text-primary">{t("chat.welcome")}</span>{" "}
+                    {t("chat.welcomeDesc")}
                   </p>
                 </div>
                 <SampleMessages />
@@ -330,7 +336,7 @@ const Chatroom = () => {
             )}
             {messages.length === 0 && activeChannelName !== "general" && (
               <p className="text-center text-sm text-muted-foreground py-12">
-                No messages in #{activeChannelName.replace(/_/g, " ")} yet. Be the first to post.
+                {t("chat.empty")}{activeChannelName.replace(/_/g, " ")} {t("chat.emptySuffix")}
               </p>
             )}
             {messageItems.map((item: any) => {
@@ -348,7 +354,7 @@ const Chatroom = () => {
                 <ChatMessage
                   key={msg.id}
                   id={msg.id}
-                  displayName={(msg.profiles as any)?.display_name ?? "Unknown"}
+                  displayName={(msg.profiles as any)?.display_name ?? t("chat.unknown")}
                   userId={msg.user_id}
                   content={msg.content}
                   createdAt={msg.created_at}
@@ -369,7 +375,7 @@ const Chatroom = () => {
               className="sticky bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-xl bg-card px-4 py-2 text-xs font-medium text-foreground border border-border/50 shadow-lg hover:bg-secondary transition-colors"
             >
               <ChevronDown className="h-3.5 w-3.5" />
-              New messages
+              {t("chat.newMessages")}
             </button>
           )}
         </div>
