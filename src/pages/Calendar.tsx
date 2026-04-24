@@ -93,7 +93,7 @@ const CalendarPage = () => {
           </motion.div>
         </main>
       </div>
-    </div>
+    </>
   );
 };
 
