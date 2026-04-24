@@ -18,13 +18,12 @@ const News = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <>
       <SEO
         title="Noticias | Elite Live Trading Room"
         description="Flujo de noticias en tiempo real para traders profesionales."
         canonical="https://elitelivetradingroom.com/news"
       />
-      <DashboardSidebar />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
