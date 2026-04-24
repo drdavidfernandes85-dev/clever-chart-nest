@@ -71,7 +71,7 @@ const SymbolPositions = ({ symbolLabel }: Props) => {
           </div>
           <div className="flex flex-col">
             <span className="font-heading text-sm font-semibold text-foreground tracking-wide">
-              My Positions
+              Open Crypto Positions
             </span>
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
               {symbolLabel} · {rows.length} open
@@ -105,13 +105,13 @@ const SymbolPositions = ({ symbolLabel }: Props) => {
         ) : !account ? (
           <div className="px-4 py-5 text-center">
             <p className="text-xs text-muted-foreground mb-2">
-              No MT account connected.
+              No exchange or wallet connected.
             </p>
             <Link
               to="/connect-mt"
               className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-heading font-semibold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
             >
-              Connect MT
+              Connect Wallet / Exchange
             </Link>
           </div>
         ) : rows.length === 0 ? (

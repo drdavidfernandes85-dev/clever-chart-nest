@@ -15,7 +15,7 @@
   /* #050505 base · #111111 panels · neon yellow #FFCD05 + neon cyan accents */
   :root,
   .dark {
-    --background: 0 0% 2%;            /* #050505 pure near-black */
+    --background: 0 0% 1%;            /* #020202 deep void */
     --foreground: 0 0% 98%;
 
     --card: 0 0% 6.5%;                /* #111111 panel */
@@ -24,7 +24,8 @@
     --popover: 0 0% 4%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 48 100% 51%;           /* #FFCD05 neon yellow */
+    /* Primary = electric cyan (data, charts, panel borders) */
+    --primary: 187 100% 50%;          /* #00f0ff electric cyan */
     --primary-foreground: 0 0% 4%;
 
     --secondary: 0 0% 9%;
@@ -33,38 +34,42 @@
     --muted: 0 0% 10%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 180 100% 50%;           /* neon cyan accent */
-    --accent-foreground: 0 0% 4%;
+    /* Accent = electric purple */
+    --accent: 271 91% 65%;            /* #a855f7 purple */
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 348 100% 60%;      /* neon magenta-red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 48 100% 51%;            /* yellow border token (used at low alpha) */
+    --border: 187 100% 50%;           /* cyan border (used at low alpha) */
     --input: 0 0% 10%;
-    --ring: 48 100% 51%;
+    --ring: 187 100% 50%;
 
     --radius: 0.5rem;
 
-    /* Neon system */
-    --neon-yellow: 48 100% 51%;
-    --neon-cyan: 180 100% 50%;
-    --neon-green: 145 100% 55%;
-    --neon-red: 348 100% 60%;
+    /* Crypto neon system */
+    --neon-yellow: 48 100% 51%;       /* CTA only */
+    --neon-cyan: 187 100% 50%;        /* primary data */
+    --neon-purple: 271 91% 65%;       /* secondary accent */
+    --neon-green: 145 100% 55%;       /* gains */
+    --neon-red: 348 100% 60%;         /* losses */
 
-    --hero-gradient: linear-gradient(180deg, hsl(0 0% 2%) 0%, hsl(220 20% 3%) 50%, hsl(0 0% 2%) 100%);
+    --hero-gradient: linear-gradient(180deg, hsl(0 0% 1%) 0%, hsl(260 30% 4%) 50%, hsl(0 0% 1%) 100%);
     --card-gradient: linear-gradient(180deg, hsl(0 0% 7% / 0.95) 0%, hsl(0 0% 5% / 0.95) 100%);
-    --glow-primary: 0 0 18px hsl(48 100% 51% / 0.45);
-    --glow-primary-strong: 0 0 32px hsl(48 100% 51% / 0.7);
-    --glow-cyan: 0 0 18px hsl(180 100% 50% / 0.5);
+    --glow-primary: 0 0 18px hsl(187 100% 50% / 0.45);
+    --glow-primary-strong: 0 0 32px hsl(187 100% 50% / 0.7);
+    --glow-cyan: 0 0 18px hsl(187 100% 50% / 0.5);
+    --glow-purple: 0 0 18px hsl(271 91% 65% / 0.5);
+    --glow-yellow: 0 0 18px hsl(48 100% 51% / 0.55);
 
-    --sidebar-background: 0 0% 3%;
+    --sidebar-background: 0 0% 2%;
     --sidebar-foreground: 0 0% 92%;
-    --sidebar-primary: 48 100% 51%;
+    --sidebar-primary: 187 100% 50%;
     --sidebar-primary-foreground: 0 0% 4%;
     --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 92%;
-    --sidebar-border: 48 100% 51%;
-    --sidebar-ring: 48 100% 51%;
+    --sidebar-border: 187 100% 50%;
+    --sidebar-ring: 187 100% 50%;
   }
 
   /* ── Light theme ── */
@@ -131,6 +136,11 @@
     background-color: #020202;
     background-attachment: fixed;
   }
+  /* Selection in cyan to match primary */
+  ::selection {
+    background: hsl(187 100% 50% / 0.35);
+    color: hsl(0 0% 100%);
+  }
   html.light {
     background-color: hsl(0 0% 100%);
     background-image: none;
@@ -156,7 +166,11 @@
 @layer utilities {
   .text-gradient {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(48 100% 55%), hsl(40 100% 45%));
+    background-image: linear-gradient(135deg, hsl(187 100% 60%), hsl(271 91% 70%));
+  }
+  .text-gradient-yellow {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(48 100% 60%), hsl(40 100% 50%));
   }
 
   .text-gradient-muted {
@@ -168,19 +182,20 @@
     background: var(--hero-gradient);
   }
 
+  /* ── Crypto glassmorphic panel — cyan border + purple inner halo ── */
   .card-glass {
     background:
       linear-gradient(180deg, hsl(0 0% 7% / 0.55) 0%, hsl(0 0% 4% / 0.55) 100%);
     backdrop-filter: blur(28px) saturate(180%);
     -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border: 2px solid hsl(48 100% 51% / 0.75);
+    border: 1.5px solid hsl(187 100% 50% / 0.55);
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.08),
-      inset 0 0 40px hsl(180 100% 50% / 0.10),
+      inset 0 0 40px hsl(271 91% 65% / 0.08),
       0 0 0 1px hsl(0 0% 0% / 0.4),
-      0 0 32px -2px hsl(48 100% 51% / 0.60),
-      0 0 64px -8px hsl(48 100% 51% / 0.40),
-      0 0 48px -8px hsl(180 100% 50% / 0.30),
+      0 0 28px -2px hsl(187 100% 50% / 0.45),
+      0 0 56px -8px hsl(187 100% 50% / 0.30),
+      0 0 44px -8px hsl(271 91% 65% / 0.25),
       0 22px 56px -16px hsl(0 0% 0% / 0.85);
   }
 
@@ -194,36 +209,54 @@
   .card-glass-hover { @apply card-glass transition-all duration-500; }
 
   .card-glass-hover:hover {
-    border-color: hsl(48 100% 51% / 1);
+    border-color: hsl(187 100% 50% / 1);
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.10),
-      inset 0 0 50px hsl(180 100% 50% / 0.14),
-      0 0 0 1px hsl(48 100% 51% / 0.7),
-      0 0 48px -2px hsl(48 100% 51% / 0.85),
-      0 0 80px -6px hsl(48 100% 51% / 0.55),
-      0 0 72px -6px hsl(180 100% 50% / 0.50),
+      inset 0 0 50px hsl(271 91% 65% / 0.14),
+      0 0 0 1px hsl(187 100% 50% / 0.7),
+      0 0 44px -2px hsl(187 100% 50% / 0.75),
+      0 0 78px -6px hsl(187 100% 50% / 0.45),
+      0 0 70px -6px hsl(271 91% 65% / 0.45),
       0 22px 64px -12px hsl(0 0% 0% / 0.7);
     transform: translateY(-2px);
   }
 
   .glow-border { box-shadow: var(--glow-primary); }
 
-  /* ── Neon data text ── */
+  /* ── Neon data text — cyan is now the default for prices/numbers ── */
   .neon-text {
+    color: hsl(187 100% 70%);
+    text-shadow:
+      0 0 8px hsl(187 100% 50% / 0.85),
+      0 0 18px hsl(187 100% 50% / 0.55),
+      0 0 38px hsl(187 100% 50% / 0.35);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .neon-text-cyan {
+    color: hsl(187 100% 72%);
+    text-shadow:
+      0 0 8px hsl(187 100% 50% / 0.9),
+      0 0 18px hsl(187 100% 50% / 0.55),
+      0 0 38px hsl(187 100% 50% / 0.35);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .neon-text-purple {
+    color: hsl(271 91% 75%);
+    text-shadow:
+      0 0 8px hsl(271 91% 65% / 0.85),
+      0 0 18px hsl(271 91% 65% / 0.55),
+      0 0 38px hsl(271 91% 65% / 0.30);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+  .neon-text-yellow {
     color: hsl(48 100% 65%);
     text-shadow:
       0 0 8px hsl(48 100% 51% / 0.85),
       0 0 18px hsl(48 100% 51% / 0.55),
       0 0 38px hsl(48 100% 51% / 0.35);
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-  }
-  .neon-text-cyan {
-    color: hsl(180 100% 70%);
-    text-shadow:
-      0 0 8px hsl(180 100% 50% / 0.85),
-      0 0 18px hsl(180 100% 50% / 0.55),
-      0 0 38px hsl(180 100% 50% / 0.35);
     font-variant-numeric: tabular-nums;
     font-weight: 600;
   }
@@ -247,11 +280,16 @@
   }
 
   /* Chart grid + neon stroke helpers */
-  .chart-grid line, .chart-grid path { stroke: hsl(180 100% 50% / 0.08); }
+  .chart-grid line, .chart-grid path { stroke: hsl(187 100% 50% / 0.10); }
   .chart-line-cyan {
-    stroke: hsl(180 100% 60%);
+    stroke: hsl(187 100% 65%);
     stroke-width: 2;
-    filter: drop-shadow(0 0 6px hsl(180 100% 50% / 0.9)) drop-shadow(0 0 18px hsl(180 100% 50% / 0.5));
+    filter: drop-shadow(0 0 6px hsl(187 100% 50% / 0.9)) drop-shadow(0 0 18px hsl(187 100% 50% / 0.5));
+  }
+  .chart-line-purple {
+    stroke: hsl(271 91% 70%);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 6px hsl(271 91% 65% / 0.9)) drop-shadow(0 0 18px hsl(271 91% 65% / 0.5));
   }
   .chart-line-yellow {
     stroke: hsl(48 100% 55%);
@@ -292,8 +330,8 @@
 
   .bg-grid-pattern {
     background-image:
-      linear-gradient(hsl(var(--border) / 0.4) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
+      linear-gradient(hsl(187 100% 50% / 0.18) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(187 100% 50% / 0.18) 1px, transparent 1px);
     background-size: 60px 60px;
   }
 
@@ -302,7 +340,7 @@
   }
 
   .cyber-line {
-    background: linear-gradient(90deg, transparent, hsl(48 100% 51% / 0.3), transparent);
+    background: linear-gradient(90deg, transparent, hsl(187 100% 50% / 0.45), transparent);
     height: 1px;
   }
 
@@ -316,24 +354,25 @@
     background: linear-gradient(180deg, hsl(0 0% 7% / 0.55) 0%, hsl(0 0% 4% / 0.55) 100%);
     backdrop-filter: blur(28px) saturate(180%);
     -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border: 2px solid hsl(48 100% 51% / 0.75);
+    border: 1.5px solid hsl(187 100% 50% / 0.55);
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.08),
-      inset 0 0 40px hsl(180 100% 50% / 0.10),
-      0 0 32px -2px hsl(48 100% 51% / 0.60),
-      0 0 64px -8px hsl(48 100% 51% / 0.40),
-      0 0 48px -8px hsl(180 100% 50% / 0.30),
+      inset 0 0 40px hsl(271 91% 65% / 0.10),
+      0 0 28px -2px hsl(187 100% 50% / 0.45),
+      0 0 56px -8px hsl(187 100% 50% / 0.30),
+      0 0 44px -8px hsl(271 91% 65% / 0.25),
       0 24px 60px -30px hsl(0 0% 0% / 0.9);
   }
 
   .gold-divider {
     height: 1px;
-    background: linear-gradient(90deg, transparent, hsl(48 100% 60% / 0.6), transparent);
+    background: linear-gradient(90deg, transparent, hsl(187 100% 60% / 0.6), transparent);
   }
 
+  /* CTA stays bright Infinox yellow — used sparingly on primary actions */
   .cta-button {
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    background: hsl(48 100% 51%);
+    color: hsl(0 0% 4%);
     font-weight: 600;
     box-shadow: 0 0 0 1px hsl(48 100% 51% / 0.5), 0 0 18px hsl(48 100% 51% / 0.35);
   }
@@ -517,37 +556,42 @@
     border: 1px solid rgba(255, 205, 5, 0.25);
   }
 
-  /* ── Bloomberg-style dense panel with INFINOX yellow glow ── */
+  /* ── Crypto-terminal dense panel with cyan glow + purple halo ── */
   .ix-panel {
     background: linear-gradient(180deg, hsl(0 0% 8% / 0.6) 0%, hsl(0 0% 4% / 0.6) 100%);
     backdrop-filter: blur(28px) saturate(160%);
     -webkit-backdrop-filter: blur(28px) saturate(160%);
-    border: 1.5px solid hsl(48 100% 51% / 0.55);
+    border: 1.5px solid hsl(187 100% 50% / 0.50);
     border-radius: 0.5rem;
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.06),
-      inset 0 0 32px hsl(180 100% 50% / 0.06),
+      inset 0 0 32px hsl(271 91% 65% / 0.06),
       0 0 0 1px hsl(0 0% 0% / 0.4),
-      0 0 24px -2px hsl(48 100% 51% / 0.40),
-      0 0 48px -8px hsl(48 100% 51% / 0.25),
-      0 0 36px -8px hsl(180 100% 50% / 0.18),
+      0 0 22px -2px hsl(187 100% 50% / 0.36),
+      0 0 44px -8px hsl(187 100% 50% / 0.22),
+      0 0 36px -8px hsl(271 91% 65% / 0.18),
       0 18px 36px -12px hsl(0 0% 0% / 0.85);
     transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
   }
   .ix-panel:hover {
-    border-color: hsl(48 100% 51% / 0.85);
+    border-color: hsl(187 100% 50% / 0.85);
     box-shadow:
       inset 0 1px 0 hsl(0 0% 100% / 0.08),
-      inset 0 0 40px hsl(180 100% 50% / 0.10),
-      0 0 0 1px hsl(48 100% 51% / 0.55),
-      0 0 36px -2px hsl(48 100% 51% / 0.65),
-      0 0 64px -6px hsl(48 100% 51% / 0.40),
-      0 0 56px -6px hsl(180 100% 50% / 0.35),
+      inset 0 0 40px hsl(271 91% 65% / 0.12),
+      0 0 0 1px hsl(187 100% 50% / 0.55),
+      0 0 32px -2px hsl(187 100% 50% / 0.60),
+      0 0 60px -6px hsl(187 100% 50% / 0.36),
+      0 0 56px -6px hsl(271 91% 65% / 0.40),
       0 22px 48px -12px hsl(0 0% 0% / 0.7);
   }
   .ix-panel-header {
-    border-bottom: 1px solid hsl(48 100% 51% / 0.22);
-    background: linear-gradient(180deg, hsl(48 100% 51% / 0.05) 0%, transparent 100%);
+    border-bottom: 1px solid hsl(187 100% 50% / 0.22);
+    background: linear-gradient(180deg, hsl(187 100% 50% / 0.05) 0%, transparent 100%);
+  }
+  .ix-glow-cyan {
+    box-shadow:
+      0 0 0 1px hsl(187 100% 50% / 0.5),
+      0 0 24px -2px hsl(187 100% 50% / 0.55);
   }
   .ix-glow-yellow {
     box-shadow:
@@ -608,24 +652,34 @@
     animation: holo-sweep 6s ease-in-out infinite;
   }
 
-  /* Holographic numeric text — chromatic offset + glow */
+  /* Holographic numeric text — chromatic offset + glow (cyan default) */
   .holo-text {
-    color: hsl(48 100% 65%);
+    color: hsl(187 100% 72%);
     text-shadow:
-      -1px 0 hsl(180 100% 55% / 0.45),
-       1px 0 hsl(348 100% 65% / 0.35),
-       0 0 8px hsl(48 100% 51% / 0.55),
-       0 0 22px hsl(48 100% 51% / 0.30);
+      -1px 0 hsl(271 91% 70% / 0.45),
+       1px 0 hsl(348 100% 65% / 0.30),
+       0 0 8px hsl(187 100% 50% / 0.60),
+       0 0 22px hsl(187 100% 50% / 0.32);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
   }
   .holo-text-cyan {
-    color: hsl(180 100% 70%);
+    color: hsl(187 100% 72%);
     text-shadow:
-      -1px 0 hsl(280 100% 70% / 0.4),
-       1px 0 hsl(48 100% 60% / 0.3),
-       0 0 8px hsl(180 100% 50% / 0.55),
-       0 0 22px hsl(180 100% 50% / 0.30);
+      -1px 0 hsl(271 91% 70% / 0.4),
+       1px 0 hsl(187 100% 60% / 0.3),
+       0 0 8px hsl(187 100% 50% / 0.6),
+       0 0 22px hsl(187 100% 50% / 0.30);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+  .holo-text-purple {
+    color: hsl(271 91% 78%);
+    text-shadow:
+      -1px 0 hsl(187 100% 60% / 0.35),
+       1px 0 hsl(348 100% 65% / 0.30),
+       0 0 8px hsl(271 91% 65% / 0.6),
+       0 0 22px hsl(271 91% 65% / 0.30);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.01em;
   }
@@ -634,11 +688,11 @@
   .holo-hover { transition: all .35s cubic-bezier(0.22, 1, 0.36, 1); }
   .holo-hover:hover {
     transform: translateY(-3px);
-    border-color: hsl(48 100% 51% / 0.7) !important;
+    border-color: hsl(187 100% 50% / 0.7) !important;
     box-shadow:
-      0 0 0 1px hsl(48 100% 51% / 0.4),
-      0 0 28px -2px hsl(48 100% 51% / 0.45),
-      0 0 56px -6px hsl(180 100% 50% / 0.35),
+      0 0 0 1px hsl(187 100% 50% / 0.4),
+      0 0 28px -2px hsl(187 100% 50% / 0.45),
+      0 0 56px -6px hsl(271 91% 65% / 0.35),
       0 22px 60px -16px hsl(0 0% 0% / 0.8) !important;
   }
 
@@ -659,7 +713,7 @@
     }
   }
 
-  /* ── Cyberpunk ambient background — light beams + digital rain ── */
+  /* ── Crypto ambient background — cyan + purple beams + digital rain ── */
   .cyber-beam {
     position: absolute;
     top: -10%;
@@ -669,9 +723,9 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(48 100% 51% / 0.06) 35%,
-      hsl(48 100% 51% / 0.10) 50%,
-      hsl(48 100% 51% / 0.06) 65%,
+      hsl(187 100% 50% / 0.07) 35%,
+      hsl(187 100% 50% / 0.12) 50%,
+      hsl(187 100% 50% / 0.07) 65%,
       transparent 100%
     );
     filter: blur(28px);
@@ -685,9 +739,9 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(180 100% 50% / 0.05) 35%,
-      hsl(180 100% 50% / 0.09) 50%,
-      hsl(180 100% 50% / 0.05) 65%,
+      hsl(271 91% 65% / 0.06) 35%,
+      hsl(271 91% 65% / 0.10) 50%,
+      hsl(271 91% 65% / 0.06) 65%,
       transparent 100%
     );
     animation: cyber-beam-drift 28s ease-in-out infinite reverse;
@@ -698,7 +752,7 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(48 100% 51% / 0.04) 50%,
+      hsl(187 100% 50% / 0.05) 50%,
       transparent 100%
     );
     animation: cyber-beam-drift 34s ease-in-out infinite;
@@ -709,9 +763,9 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      hsl(180 100% 50% / 0.06) 40%,
-      hsl(180 100% 50% / 0.10) 50%,
-      hsl(180 100% 50% / 0.06) 60%,
+      hsl(271 91% 65% / 0.07) 40%,
+      hsl(271 91% 65% / 0.11) 50%,
+      hsl(271 91% 65% / 0.07) 60%,
       transparent 100%
     );
     animation: cyber-beam-drift 26s ease-in-out infinite;

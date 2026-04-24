@@ -38,7 +38,7 @@ const AccountSnapshot = () => {
         className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
       >
         <Plug className="h-3.5 w-3.5" />
-        Connect MT4/5
+        Connect Wallet / Exchange
       </Link>
     );
   }

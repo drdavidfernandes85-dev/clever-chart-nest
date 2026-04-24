@@ -9,20 +9,26 @@ interface Mover {
   volume?: string;
 }
 
-// Pairs we monitor for movers — daily-volume rank (BIS Triennial) for "Most Active"
-const PAIRS: Array<{ symbol: string; base: string; quote: string; volume: string }> = [
-  { symbol: "EUR/USD", base: "EUR", quote: "USD", volume: "6.6T" },
-  { symbol: "USD/JPY", base: "USD", quote: "JPY", volume: "1.7T" },
-  { symbol: "GBP/USD", base: "GBP", quote: "USD", volume: "1.3T" },
-  { symbol: "AUD/USD", base: "AUD", quote: "USD", volume: "0.9T" },
-  { symbol: "USD/CAD", base: "USD", quote: "CAD", volume: "0.7T" },
-  { symbol: "USD/CHF", base: "USD", quote: "CHF", volume: "0.6T" },
-  { symbol: "NZD/USD", base: "NZD", quote: "USD", volume: "0.4T" },
-  { symbol: "XAU/USD", base: "XAU", quote: "USD", volume: "0.3T" },
-  { symbol: "GBP/JPY", base: "GBP", quote: "JPY", volume: "0.3T" },
+// Top crypto pairs we monitor for movers — all priced in USDT.
+// `id` is the CoinGecko id used by /simple/price (free, no API key, CORS).
+const PAIRS: Array<{ symbol: string; id: string; volume: string }> = [
+  { symbol: "BTC/USDT",  id: "bitcoin",      volume: "32B" },
+  { symbol: "ETH/USDT",  id: "ethereum",     volume: "18B" },
+  { symbol: "SOL/USDT",  id: "solana",       volume: "4.2B" },
+  { symbol: "SUI/USDT",  id: "sui",          volume: "1.8B" },
+  { symbol: "TON/USDT",  id: "toncoin",      volume: "0.9B" },
+  { symbol: "PEPE/USDT", id: "pepe",         volume: "1.4B" },
+  { symbol: "WIF/USDT",  id: "dogwifcoin",   volume: "0.6B" },
+  { symbol: "HYPE/USDT", id: "hyperliquid",  volume: "0.5B" },
+  { symbol: "XRP/USDT",  id: "ripple",       volume: "2.1B" },
 ];
 
-const fmt = (n: number) => (n > 100 ? n.toFixed(2) : n.toFixed(4));
+const fmt = (n: number) => {
+  if (n >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  if (n >= 1) return n.toFixed(2);
+  if (n >= 0.01) return n.toFixed(4);
+  return n.toFixed(8);
+};
 
 const MoverList = ({
   title,
@@ -110,62 +116,36 @@ const MarketMovers = () => {
   const [data, setData] = useState<Mover[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch live spot price + yesterday's close, derive 24h % change.
-  // Uses Frankfurter (free, no API key, CORS-enabled) for FX pairs.
-  // For XAU/USD we fall back to a metals endpoint.
+  // CoinGecko /simple/price returns spot + 24h % change in a single call.
   useEffect(() => {
     let cancelled = false;
 
-    const fetchPair = async (p: typeof PAIRS[number]): Promise<Mover | null> => {
-      try {
-        // XAU is not on Frankfurter — use a public metals proxy
-        if (p.base === "XAU" || p.quote === "XAU") {
-          const res = await fetch(
-            "https://api.gold-api.com/price/XAU",
-            { cache: "no-store" },
-          );
-          const json = await res.json();
-          const price = Number(json?.price);
-          const prev = Number(json?.prev_close_price ?? json?.previous_close ?? price);
-          if (!Number.isFinite(price)) return null;
-          const changePct = prev ? ((price - prev) / prev) * 100 : 0;
-          return { symbol: p.symbol, price, changePct, volume: p.volume };
-        }
-
-        // Frankfurter: latest + 24h ago in two calls
-        const yest = new Date(Date.now() - 24 * 60 * 60 * 1000)
-          .toISOString()
-          .slice(0, 10);
-        const [latestRes, histRes] = await Promise.all([
-          fetch(
-            `https://api.frankfurter.dev/v1/latest?base=${p.base}&symbols=${p.quote}`,
-            { cache: "no-store" },
-          ),
-          fetch(
-            `https://api.frankfurter.dev/v1/${yest}?base=${p.base}&symbols=${p.quote}`,
-            { cache: "no-store" },
-          ),
-        ]);
-        const latest = await latestRes.json();
-        const hist = await histRes.json();
-        const price = Number(latest?.rates?.[p.quote]);
-        const prev = Number(hist?.rates?.[p.quote] ?? price);
-        if (!Number.isFinite(price)) return null;
-        const changePct = prev ? ((price - prev) / prev) * 100 : 0;
-        return { symbol: p.symbol, price, changePct, volume: p.volume };
-      } catch {
-        return null;
-      }
-    };
-
     const fetchAll = async () => {
-      const next = await Promise.all(PAIRS.map(fetchPair));
-      if (!cancelled) {
-        setData(next.filter(Boolean) as Mover[]);
-        setLoading(false);
+      try {
+        const ids = PAIRS.map((p) => p.id).join(",");
+        const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error("price feed");
+        const json = await res.json();
+        const next: Mover[] = PAIRS.map((p) => {
+          const row = json?.[p.id];
+          if (!row) return null;
+          const price = Number(row.usd);
+          const changePct = Number(row.usd_24h_change ?? 0);
+          if (!Number.isFinite(price)) return null;
+          return { symbol: p.symbol, price, changePct, volume: p.volume };
+        }).filter(Boolean) as Mover[];
+        if (!cancelled) {
+          setData(next);
+          setLoading(false);
+        }
+      } catch {
+        if (!cancelled) setLoading(false);
       }
     };
+
     fetchAll();
+    // Polling every 60s — CoinGecko free tier allows ~30 calls/min.
     const id = window.setInterval(fetchAll, 60_000);
     return () => {
       cancelled = true;
