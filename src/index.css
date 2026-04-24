@@ -523,50 +523,38 @@
     border: 1px solid rgba(255, 205, 5, 0.25);
   }
 
-  /* ── Crypto-terminal dense panel with cyan glow + purple halo ── */
+  /* ── Pro terminal panel — clean charcoal, hairline border, soft yellow on hover ── */
   .ix-panel {
-    background: linear-gradient(180deg, hsl(0 0% 8% / 0.6) 0%, hsl(0 0% 4% / 0.6) 100%);
-    backdrop-filter: blur(28px) saturate(160%);
-    -webkit-backdrop-filter: blur(28px) saturate(160%);
-    border: 1.5px solid hsl(187 100% 50% / 0.50);
+    background: linear-gradient(180deg, hsl(0 0% 7% / 0.95) 0%, hsl(0 0% 5% / 0.95) 100%);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid hsl(0 0% 100% / 0.06);
     border-radius: 0.5rem;
     box-shadow:
-      inset 0 1px 0 hsl(0 0% 100% / 0.06),
-      inset 0 0 32px hsl(271 91% 65% / 0.06),
-      0 0 0 1px hsl(0 0% 0% / 0.4),
-      0 0 22px -2px hsl(187 100% 50% / 0.36),
-      0 0 44px -8px hsl(187 100% 50% / 0.22),
-      0 0 36px -8px hsl(271 91% 65% / 0.18),
-      0 18px 36px -12px hsl(0 0% 0% / 0.85);
-    transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+      inset 0 1px 0 hsl(0 0% 100% / 0.04),
+      0 12px 32px -14px hsl(0 0% 0% / 0.75);
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
   }
   .ix-panel:hover {
-    border-color: hsl(187 100% 50% / 0.85);
+    border-color: hsl(48 100% 51% / 0.40);
     box-shadow:
-      inset 0 1px 0 hsl(0 0% 100% / 0.08),
-      inset 0 0 40px hsl(271 91% 65% / 0.12),
-      0 0 0 1px hsl(187 100% 50% / 0.55),
-      0 0 32px -2px hsl(187 100% 50% / 0.60),
-      0 0 60px -6px hsl(187 100% 50% / 0.36),
-      0 0 56px -6px hsl(271 91% 65% / 0.40),
-      0 22px 48px -12px hsl(0 0% 0% / 0.7);
+      inset 0 1px 0 hsl(0 0% 100% / 0.05),
+      0 0 0 1px hsl(48 100% 51% / 0.18),
+      0 0 22px -8px hsl(48 100% 51% / 0.30),
+      0 16px 40px -14px hsl(0 0% 0% / 0.7);
   }
   .ix-panel-header {
-    border-bottom: 1px solid hsl(187 100% 50% / 0.22);
-    background: linear-gradient(180deg, hsl(187 100% 50% / 0.05) 0%, transparent 100%);
+    border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+    background: linear-gradient(180deg, hsl(48 100% 51% / 0.03) 0%, transparent 100%);
   }
   .ix-glow-cyan {
-    box-shadow:
-      0 0 0 1px hsl(187 100% 50% / 0.5),
-      0 0 24px -2px hsl(187 100% 50% / 0.55);
+    box-shadow: 0 0 0 1px hsl(187 100% 50% / 0.30), 0 0 18px -6px hsl(187 100% 50% / 0.35);
   }
   .ix-glow-yellow {
-    box-shadow:
-      0 0 0 1px hsl(48 100% 51% / 0.5),
-      0 0 24px -2px hsl(48 100% 51% / 0.55);
+    box-shadow: 0 0 0 1px hsl(48 100% 51% / 0.40), 0 0 22px -6px hsl(48 100% 51% / 0.45);
   }
-  .ix-text-bull { color: hsl(145 100% 65%); text-shadow: 0 0 8px hsl(145 100% 55% / 0.4); }
-  .ix-text-bear { color: hsl(348 100% 70%); text-shadow: 0 0 8px hsl(348 100% 60% / 0.4); }
+  .ix-text-bull { color: hsl(145 75% 60%); text-shadow: 0 0 8px hsl(145 100% 55% / 0.30); }
+  .ix-text-bear { color: hsl(348 90% 65%); text-shadow: 0 0 8px hsl(348 100% 60% / 0.30); }
 
   /* ── Holographic effects ── */
 
