@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import infinoxLogoWhite from "@/assets/logo-new.jpg";
+import infinoxLogoWhite from "@/assets/logo-new.png";
 import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
