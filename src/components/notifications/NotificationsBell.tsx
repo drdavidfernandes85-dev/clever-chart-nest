@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Bell, Check, Trash2, TrendingUp, AtSign, MessageSquare, Calendar, Video } from "lucide-react";
+import { Bell, Check, Trash2, TrendingUp, AtSign, MessageSquare, Calendar, Video, Radio } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 interface Notification {
   id: string;
-  kind: "signal" | "mention" | "reply" | "webinar" | "calendar";
+  kind: "signal" | "mention" | "reply" | "webinar" | "calendar" | "webinar_live";
   title: string;
   body: string | null;
   link: string | null;
@@ -28,6 +28,7 @@ const iconFor = (kind: Notification["kind"]) => {
     case "mention": return <AtSign className="h-3.5 w-3.5 text-primary" />;
     case "reply": return <MessageSquare className="h-3.5 w-3.5 text-primary" />;
     case "webinar": return <Video className="h-3.5 w-3.5 text-primary" />;
+    case "webinar_live": return <Radio className="h-3.5 w-3.5 text-destructive" />;
     case "calendar": return <Calendar className="h-3.5 w-3.5 text-primary" />;
   }
 };
