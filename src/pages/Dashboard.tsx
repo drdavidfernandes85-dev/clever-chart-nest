@@ -34,6 +34,7 @@ import MobileSidebarDrawer from "@/components/dashboard/MobileSidebarDrawer";
 import WebinarHeroBanner from "@/components/webinars/WebinarHeroBanner";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
@@ -41,6 +42,7 @@ const Dashboard = () => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
   const { account } = useMTAccount();
+  const { t } = useLanguage();
   const isConnected = !!account && account.status === "connected";
 
   // Persist rail state
@@ -79,21 +81,21 @@ const Dashboard = () => {
             {/* Hamburger — mobile/tablet */}
             <button
               onClick={() => setMobileNavOpen(true)}
-              aria-label="Open menu"
+              aria-label={t("dash.openMenu")}
               className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
             >
               <Menu className="h-5 w-5" />
             </button>
 
             <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground shrink-0">
-              Centro de <span className="text-primary">Comando</span>
+              {t("dash.commandTitle1")} <span className="text-primary">{t("dash.commandTitle2")}</span>
             </h1>
 
             {/* Global search */}
             <div className="relative flex-1 max-w-lg ml-auto xl:ml-8 min-w-0">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Buscar…"
+                placeholder={t("dash.search")}
                 className="h-9 pl-10 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40 rounded-xl"
               />
             </div>
@@ -126,7 +128,7 @@ const Dashboard = () => {
               >
                 <Link to="/live-chart" className="flex items-center gap-1.5">
                   <BarChart3 className="h-3.5 w-3.5" />
-                  Terminal
+                  {t("dash.terminal")}
                 </Link>
               </Button>
 
@@ -137,7 +139,7 @@ const Dashboard = () => {
                 className="hidden sm:inline-flex h-10 px-4 bg-primary text-primary-foreground hover:bg-primary font-bold text-xs uppercase tracking-[0.18em] rounded-lg shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.7)] hover:shadow-[0_14px_40px_-10px_hsl(48_100%_51%/0.9)] hover:-translate-y-px transition-all"
               >
                 <Zap className="h-4 w-4 mr-1.5" />
-                Trade
+                {t("dash.trade")}
               </Button>
 
               <button
@@ -150,7 +152,7 @@ const Dashboard = () => {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                 </span>
-                Mercados
+                {t("dash.markets")}
                 {tickerOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </button>
               <Button
@@ -289,11 +291,11 @@ const Dashboard = () => {
               <div className="sticky top-0 z-10 flex items-center justify-between bg-card/95 backdrop-blur-xl border-b border-border/30 px-4 py-3">
                 <div className="mx-auto h-1 w-10 rounded-full bg-muted-foreground/30 absolute left-1/2 -translate-x-1/2 top-1.5" />
                 <h3 className="font-heading text-sm font-bold text-foreground mt-1">
-                  Quick Trade
+                  {t("dash.quickTrade")}
                 </h3>
                 <button
                   onClick={closeTrade}
-                  aria-label="Close"
+                  aria-label={t("common.close")}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40 mt-1"
                 >
                   <X className="h-4 w-4" />
