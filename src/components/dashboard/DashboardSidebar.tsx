@@ -18,8 +18,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
-import infinoxLogoWhite from "@/assets/logo-new.png";
-import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
+import sidebarLogo from "@/assets/logo-sidebar.png";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -53,7 +52,7 @@ const DashboardSidebar = () => {
   const { liveNow, upcoming } = useWebinars();
   const { t } = useLanguage();
   const { theme } = useTheme();
-  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
+  const infinoxLogo = sidebarLogo;
   // "starting soon" = within the next 30 minutes
   const startingSoon =
     !!upcoming &&
