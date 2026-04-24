@@ -9,6 +9,7 @@ import SEO from "@/components/SEO";
 import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { localizeWeeklySummary } from "@/i18n/summary";
 
 interface WeeklyReport {
   id: string;
