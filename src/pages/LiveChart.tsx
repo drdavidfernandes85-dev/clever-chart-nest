@@ -28,7 +28,7 @@ import {
 
 
 import NotificationsBell from "@/components/notifications/NotificationsBell";
-import RiskCalculator from "@/components/trading/RiskCalculator";
+
 
 import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
@@ -422,8 +422,6 @@ const LiveChart = () => {
           </aside>
         </div>
       </div>
-
-      <RiskCalculator />
     </div>
   );
 };
