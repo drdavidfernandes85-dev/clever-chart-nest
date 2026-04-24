@@ -139,8 +139,8 @@
   }
   /* Selection in cyan to match primary */
   ::selection {
-    background: hsl(187 100% 50% / 0.35);
-    color: hsl(0 0% 100%);
+    background: hsl(48 100% 51% / 0.35);
+    color: hsl(0 0% 8%);
   }
   html.light {
     background-color: hsl(0 0% 100%);
