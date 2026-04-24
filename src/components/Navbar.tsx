@@ -57,18 +57,28 @@ const Navbar = () => {
           : "bg-transparent"
       }`}
     >
-      <div className="container flex h-16 items-center justify-between">
-        <a href="#home" className="flex items-center gap-3 min-w-0">
+      <div className="container flex h-16 sm:h-18 lg:h-20 items-center justify-between gap-4 px-4 sm:px-6">
+        <a href="#home" className="flex items-center gap-3 sm:gap-4 min-w-0 shrink">
           <div className="flex items-center justify-start shrink-0">
             <img
               src={infinoxLogo}
-              alt="INFINOX"
-              className="h-10 sm:h-12 lg:h-14 w-auto object-contain select-none"
+              alt="INFINOX Elite Live Trading Room"
+              width={220}
+              height={175}
+              className="h-10 sm:h-12 lg:h-14 w-auto object-contain select-none [image-rendering:auto]"
               draggable={false}
+              loading="eager"
+              decoding="async"
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (img.src !== window.location.origin + infinoxLogoBlack) {
+                  img.src = infinoxLogoBlack;
+                }
+              }}
             />
           </div>
-          <span className="hidden sm:inline text-[10px] text-muted-foreground/30 font-light">|</span>
-          <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground truncate">
+          <span className="hidden sm:inline-block h-6 w-px bg-border/40 shrink-0" aria-hidden="true" />
+          <span className="hidden sm:inline font-heading text-sm lg:text-base font-semibold text-foreground truncate leading-none">
             Elite <span className="text-primary">Live Trading Room</span>
           </span>
         </a>
