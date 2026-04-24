@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Radio, TrendingUp, TrendingDown, Zap } from "lucide-react";
-import { toast } from "sonner";
+import { Radio, TrendingUp, TrendingDown, Zap, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import CopyTradeModal, { CopyTradeRequest } from "@/components/copytrade/CopyTradeModal";
+import { useCopiedSignals } from "@/hooks/useCopiedSignals";
 
 type SharedSignal = {
   id: string;
@@ -25,7 +25,8 @@ const PLACEHOLDERS: SharedSignal[] = [
 
 const LiveSharedSignals = () => {
   const [signals, setSignals] = useState<SharedSignal[]>([]);
-  const { openTrade } = useQuickTrade();
+  const [request, setRequest] = useState<CopyTradeRequest | null>(null);
+  const copied = useCopiedSignals();
 
   useEffect(() => {
     let cancelled = false;
@@ -57,73 +58,88 @@ const LiveSharedSignals = () => {
   const rows = (signals.length ? signals : PLACEHOLDERS).slice(0, 6);
 
   return (
-    <div className="rounded-2xl border border-primary/25 bg-card/70 backdrop-blur-md overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Radio className="h-3.5 w-3.5 text-primary" />
-          <h3 className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-foreground">
-            Live Shared Signals
-          </h3>
+    <>
+      <div className="rounded-2xl border border-primary/25 bg-card/70 backdrop-blur-md overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Radio className="h-3.5 w-3.5 text-primary" />
+            <h3 className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-foreground">
+              Live Shared Signals
+            </h3>
+          </div>
+          <Link to="/signals" className="font-proxima text-[10px] font-semibold uppercase tracking-wider text-primary hover:underline">
+            All
+          </Link>
         </div>
-        <Link to="/signals" className="font-proxima text-[10px] font-semibold uppercase tracking-wider text-primary hover:underline">
-          All
-        </Link>
-      </div>
-      <ul className="divide-y divide-border/30">
-        {rows.map((s) => {
-          const isBuy = s.direction.toLowerCase() === "buy";
-          const isPlaceholder = s.id.startsWith("p");
-          return (
-            <li key={s.id} className="px-3 py-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  {isBuy ? (
-                    <TrendingUp className="h-4 w-4 text-[hsl(145_65%_50%)]" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 text-[hsl(0_70%_55%)]" />
-                  )}
-                  <div>
-                    <p className="font-mono text-xs font-bold text-foreground">{s.pair}</p>
-                    <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                      {s.direction}
+        <ul className="divide-y divide-border/30">
+          {rows.map((s) => {
+            const isBuy = s.direction.toLowerCase() === "buy";
+            const isPlaceholder = s.id.startsWith("p");
+            const wasCopied = !isPlaceholder && copied.has(s.id);
+            return (
+              <li key={s.id} className="px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    {isBuy ? (
+                      <TrendingUp className="h-4 w-4 text-[hsl(145_65%_50%)]" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-[hsl(0_70%_55%)]" />
+                    )}
+                    <div>
+                      <p className="font-mono text-xs font-bold text-foreground">{s.pair}</p>
+                      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {s.direction}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-xs tabular-nums text-foreground">
+                      {Number(s.entry_price).toFixed(s.pair.includes("JPY") ? 2 : 4)}
+                    </p>
+                    <p className="font-mono text-[9px] uppercase tracking-wider text-primary">
+                      {s.status.replace("_", " ")}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-mono text-xs tabular-nums text-foreground">
-                    {Number(s.entry_price).toFixed(s.pair.includes("JPY") ? 2 : 4)}
-                  </p>
-                  <p className="font-mono text-[9px] uppercase tracking-wider text-primary">
-                    {s.status.replace("_", " ")}
-                  </p>
-                </div>
-              </div>
-              {(!isPlaceholder ? ["active", "open"].includes(s.status) : true) && (
-                <button
-                  onClick={() => {
-                    openTrade({
-                      symbol: s.pair,
-                      side: isBuy ? "buy" : "sell",
-                      lots: "0.10",
-                      sl: s.stop_loss != null ? String(s.stop_loss) : undefined,
-                      tp: s.take_profit != null ? String(s.take_profit) : undefined,
-                      signalId: isPlaceholder ? null : s.id,
-                    });
-                    toast.success(`Signal loaded: ${isBuy ? "BUY" : "SELL"} ${s.pair}`, {
-                      description: "Review and confirm in Quick Trade →",
-                    });
-                  }}
-                  className="mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors"
-                >
-                  <Zap className="h-3 w-3" />
-                  Take This Signal
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+                {(!isPlaceholder ? ["active", "open"].includes(s.status) : true) && (
+                  <button
+                    onClick={() => {
+                      setRequest({
+                        signalId: isPlaceholder ? null : s.id,
+                        pair: s.pair,
+                        side: isBuy ? "buy" : "sell",
+                        entry: Number(s.entry_price),
+                        sl: s.stop_loss != null ? Number(s.stop_loss) : null,
+                        tp: s.take_profit != null ? Number(s.take_profit) : null,
+                      });
+                    }}
+                    className={`mt-2 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                      wasCopied
+                        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
+                        : "border-primary/40 bg-primary/10 hover:bg-primary/20 text-primary"
+                    }`}
+                  >
+                    {wasCopied ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        Copied · Take Again
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-3 w-3" />
+                        Take This Signal
+                      </>
+                    )}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <CopyTradeModal request={request} onClose={() => setRequest(null)} />
+    </>
   );
 };
 
