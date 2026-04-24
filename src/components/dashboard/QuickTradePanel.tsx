@@ -98,6 +98,13 @@ const QuickTradePanel = ({ compact = false }: Props) => {
     setSl(prefill.sl ?? "");
     setTp(prefill.tp ?? "");
     setSignalId(prefill.signalId ?? null);
+    // Visual confirmation: scroll the inline panel into view + flash it
+    if (typeof window !== "undefined") {
+      rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setFlash(true);
+      const t = window.setTimeout(() => setFlash(false), 1200);
+      return () => window.clearTimeout(t);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillNonce]);
 
@@ -259,12 +266,13 @@ const QuickTradePanel = ({ compact = false }: Props) => {
   return (
     <>
       <motion.div
+        ref={rootRef}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className={`rounded-2xl border bg-gradient-to-br ${sideAccent} backdrop-blur-sm overflow-hidden transition-colors ${
+        className={`rounded-2xl border bg-gradient-to-br ${sideAccent} backdrop-blur-sm overflow-hidden transition-all duration-500 ${
           compact ? "" : "shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.2)]"
-        }`}
+        } ${flash ? "ring-2 ring-primary shadow-[0_0_50px_-5px_hsl(48_100%_51%/0.6)] scale-[1.01]" : ""}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5 bg-card/60">
