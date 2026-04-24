@@ -210,35 +210,53 @@
 
   /* ── Neon data text ── */
   .neon-text {
-    color: hsl(48 100% 60%);
-    text-shadow: 0 0 6px hsl(48 100% 51% / 0.55), 0 0 18px hsl(48 100% 51% / 0.30);
+    color: hsl(48 100% 65%);
+    text-shadow:
+      0 0 8px hsl(48 100% 51% / 0.85),
+      0 0 18px hsl(48 100% 51% / 0.55),
+      0 0 38px hsl(48 100% 51% / 0.35);
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
   }
   .neon-text-cyan {
-    color: hsl(180 100% 65%);
-    text-shadow: 0 0 6px hsl(180 100% 50% / 0.55), 0 0 18px hsl(180 100% 50% / 0.30);
+    color: hsl(180 100% 70%);
+    text-shadow:
+      0 0 8px hsl(180 100% 50% / 0.85),
+      0 0 18px hsl(180 100% 50% / 0.55),
+      0 0 38px hsl(180 100% 50% / 0.35);
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
   }
   .neon-text-green {
-    color: hsl(145 100% 65%);
-    text-shadow: 0 0 6px hsl(145 100% 55% / 0.55), 0 0 18px hsl(145 100% 55% / 0.30);
+    color: hsl(145 100% 70%);
+    text-shadow:
+      0 0 8px hsl(145 100% 55% / 0.85),
+      0 0 18px hsl(145 100% 55% / 0.55),
+      0 0 38px hsl(145 100% 55% / 0.30);
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
   }
   .neon-text-red {
-    color: hsl(348 100% 70%);
-    text-shadow: 0 0 6px hsl(348 100% 60% / 0.55), 0 0 18px hsl(348 100% 60% / 0.30);
+    color: hsl(348 100% 72%);
+    text-shadow:
+      0 0 8px hsl(348 100% 60% / 0.85),
+      0 0 18px hsl(348 100% 60% / 0.55),
+      0 0 38px hsl(348 100% 60% / 0.30);
     font-variant-numeric: tabular-nums;
+    font-weight: 600;
   }
 
   /* Chart grid + neon stroke helpers */
-  .chart-grid line, .chart-grid path { stroke: hsl(0 0% 100% / 0.05); }
+  .chart-grid line, .chart-grid path { stroke: hsl(180 100% 50% / 0.08); }
   .chart-line-cyan {
-    stroke: hsl(180 100% 55%);
-    filter: drop-shadow(0 0 4px hsl(180 100% 50% / 0.6));
+    stroke: hsl(180 100% 60%);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 6px hsl(180 100% 50% / 0.9)) drop-shadow(0 0 18px hsl(180 100% 50% / 0.5));
   }
   .chart-line-yellow {
-    stroke: hsl(48 100% 51%);
-    filter: drop-shadow(0 0 4px hsl(48 100% 51% / 0.6));
+    stroke: hsl(48 100% 55%);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 6px hsl(48 100% 51% / 0.9)) drop-shadow(0 0 18px hsl(48 100% 51% / 0.5));
   }
 
   /* Pulsing neon glow for LIVE badges + key CTAs */
