@@ -40,6 +40,7 @@ const statusConfig: Record<string, { icon: React.ReactNode; label: string; color
 const TradingSignals = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { openTrade } = useQuickTrade();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
