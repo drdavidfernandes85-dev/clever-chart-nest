@@ -15,7 +15,7 @@ const NewSignalForm = () => {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    pair: "EUR/USD",
+    pair: "BTC/USDT",
     direction: "buy" as "buy" | "sell",
     entry_price: "",
     stop_loss: "",
@@ -55,7 +55,7 @@ const NewSignalForm = () => {
       console.error(error);
     } else {
       toast.success("Signal posted!");
-      setForm({ pair: "EUR/USD", direction: "buy", entry_price: "", stop_loss: "", take_profit: "", notes: "" });
+      setForm({ pair: "BTC/USDT", direction: "buy", entry_price: "", stop_loss: "", take_profit: "", notes: "" });
       setOpen(false);
     }
     setSubmitting(false);

@@ -42,17 +42,17 @@ import SymbolPositions from "@/components/livechart/SymbolPositions";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 const SYMBOL_OPTIONS = [
-  { label: "EUR/USD", value: "FX:EURUSD" },
-  { label: "GBP/USD", value: "FX:GBPUSD" },
-  { label: "USD/JPY", value: "FX:USDJPY" },
-  { label: "AUD/USD", value: "FX:AUDUSD" },
-  { label: "USD/CAD", value: "FX:USDCAD" },
-  { label: "USD/CHF", value: "FX:USDCHF" },
-  { label: "NZD/USD", value: "FX:NZDUSD" },
-  { label: "XAU/USD", value: "OANDA:XAUUSD" },
-  { label: "GBP/JPY", value: "FX:GBPJPY" },
-  { label: "BTC/USD", value: "BITSTAMP:BTCUSD" },
-  { label: "ETH/USD", value: "BITSTAMP:ETHUSD" },
+  { label: "BTC/USDT",  value: "BINANCE:BTCUSDT" },
+  { label: "ETH/USDT",  value: "BINANCE:ETHUSDT" },
+  { label: "SOL/USDT",  value: "BINANCE:SOLUSDT" },
+  { label: "SUI/USDT",  value: "BINANCE:SUIUSDT" },
+  { label: "TON/USDT",  value: "BINANCE:TONUSDT" },
+  { label: "PEPE/USDT", value: "BINANCE:PEPEUSDT" },
+  { label: "WIF/USDT",  value: "BINANCE:WIFUSDT" },
+  { label: "HYPE/USDT", value: "BINANCE:HYPEUSDT" },
+  { label: "XRP/USDT",  value: "BINANCE:XRPUSDT" },
+  { label: "DOGE/USDT", value: "BINANCE:DOGEUSDT" },
+  { label: "BNB/USDT",  value: "BINANCE:BNBUSDT" },
 ];
 
 const TIMEFRAMES: Array<{ label: string; value: string }> = [
