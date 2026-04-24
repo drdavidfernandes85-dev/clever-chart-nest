@@ -12,11 +12,13 @@ import SEO from "@/components/SEO";
 import XPBar from "@/components/gamification/XPBar";
 import BadgeShelf from "@/components/gamification/BadgeShelf";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
 const Profile = () => {
   const { user, profile } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { t } = useLanguage();
   const [displayName, setDisplayName] = useState(profile?.display_name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? "");
   const [leaderboardOptOut, setLeaderboardOptOut] = useState(false);
