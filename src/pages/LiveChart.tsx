@@ -387,6 +387,13 @@ const LiveChart = () => {
             {/* Premium price/stats header */}
             <ChartHeaderStats symbol={symbol} displayLabel={currentLabel} />
 
+            {/* Mini watchlist — fast switching between favorites */}
+            <MiniWatchlist
+              symbols={SYMBOL_OPTIONS}
+              active={symbol}
+              onSelect={setSymbol}
+            />
+
             {/* Chart canvas — fills the rest */}
             <div className="relative flex-1 min-h-0">
               <TradingViewAdvancedIframe
@@ -426,6 +433,9 @@ const LiveChart = () => {
             <div className="xl:hidden">
               <QuickTradePanel compact />
             </div>
+
+            {/* My positions for the active chart symbol — pulled from EA */}
+            <SymbolPositions symbolLabel={currentLabel} />
 
             <LiveSharedSignals />
 
