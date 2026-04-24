@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/i18n/LanguageContext";
 import { Card } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Target, Activity } from "lucide-react";
 import {
@@ -22,6 +23,7 @@ interface Trade {
 
 const PerformanceAnalytics = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -79,20 +81,20 @@ const PerformanceAnalytics = () => {
   }, [trades]);
 
   const cards = [
-    { label: "Total P&L", value: stats.totalPnl, icon: TrendingUp, format: (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}`, accent: stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400" },
-    { label: "Win Rate", value: stats.winRate, icon: Target, format: (v: number) => `${v.toFixed(1)}%`, accent: "text-primary" },
-    { label: "Avg R:R", value: stats.avgRR, icon: Activity, format: (v: number) => v.toFixed(2), accent: "text-foreground" },
-    { label: "Sharpe", value: stats.sharpe, icon: TrendingDown, format: (v: number) => v.toFixed(2), accent: "text-foreground" },
+    { label: t("perf.totalPnl"), value: stats.totalPnl, icon: TrendingUp, format: (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}`, accent: stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400" },
+    { label: t("perf.winRate"), value: stats.winRate, icon: Target, format: (v: number) => `${v.toFixed(1)}%`, accent: "text-primary" },
+    { label: t("perf.avgRR"), value: stats.avgRR, icon: Activity, format: (v: number) => v.toFixed(2), accent: "text-foreground" },
+    { label: t("perf.sharpe"), value: stats.sharpe, icon: TrendingDown, format: (v: number) => v.toFixed(2), accent: "text-foreground" },
   ];
 
   return (
     <Card className="card-glass p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-lg font-semibold text-foreground">Performance Analytics</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Live stats from your trade journal</p>
+          <h3 className="font-heading text-lg font-semibold text-foreground">{t("perf.title")}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">{t("perf.subtitle")}</p>
         </div>
-        <span className="text-xs text-muted-foreground font-mono">{trades.length} closed trades</span>
+        <span className="text-xs text-muted-foreground font-mono">{trades.length} {t("perf.closedTrades")}</span>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -117,7 +119,7 @@ const PerformanceAnalytics = () => {
           <div className="h-full w-full rounded-xl skeleton-shimmer" />
         ) : trades.length === 0 ? (
           <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-            Log your first closed trade in the journal to see your equity curve.
+            {t("perf.empty")}
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
