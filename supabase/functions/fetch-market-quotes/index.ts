@@ -153,41 +153,37 @@ async function fetchForex(): Promise<Quote[]> {
   }
 }
 
-// Stooq returns CSV: "Symbol,Date,Time,Open,High,Low,Close,Volume"
+// Stooq returns CSV: "Symbol,Open,High,Low,Close,Volume".
+// Multi-symbol calls return broken rows, so we fan out per symbol.
 async function fetchStooq(
   list: Array<{ stooq: string; label: string }>,
   assetClass: "index" | "stock",
 ): Promise<Quote[]> {
-  try {
-    const symbols = list.map((s) => s.stooq).join(",");
-    const r = await fetch(
-      `https://stooq.com/q/l/?s=${encodeURIComponent(symbols)}&f=sohlcv&h&e=csv`,
-    );
-    const text = await r.text();
-    const lines = text.trim().split(/\r?\n/);
-    // header: Symbol,Open,High,Low,Close,Volume
-    const rows = lines.slice(1).map((line) => {
-      const [sym, open, _h, _l, close] = line.split(",");
-      const o = parseFloat(open);
-      const c = parseFloat(close);
-      return { sym: sym?.toLowerCase(), open: o, close: c };
-    });
-    const bySym = new Map(rows.map((r) => [r.sym, r]));
-    return list.map((s) => {
-      const row = bySym.get(s.stooq.toLowerCase());
-      const price = row && Number.isFinite(row.close) ? row.close : null;
-      const open = row && Number.isFinite(row.open) ? row.open : null;
-      const changePct =
-        price != null && open != null && open !== 0
-          ? ((price - open) / open) * 100
-          : null;
-      return { symbol: s.label, assetClass, price, changePct };
-    });
-  } catch {
-    return list.map((s) => ({
-      symbol: s.label, assetClass, price: null, changePct: null,
-    }));
-  }
+  const results = await Promise.all(
+    list.map(async (s) => {
+      try {
+        const r = await fetch(
+          `https://stooq.com/q/l/?s=${encodeURIComponent(s.stooq)}&f=sohlcv&h&e=csv`,
+        );
+        const text = await r.text();
+        const lines = text.trim().split(/\r?\n/);
+        const cols = (lines[1] ?? "").split(",");
+        // Symbol, Open, High, Low, Close, Volume
+        const open = parseFloat(cols[1] ?? "");
+        const close = parseFloat(cols[4] ?? "");
+        const price = Number.isFinite(close) ? close : null;
+        const o = Number.isFinite(open) ? open : null;
+        const changePct =
+          price != null && o != null && o !== 0
+            ? ((price - o) / o) * 100
+            : null;
+        return { symbol: s.label, assetClass, price, changePct } as Quote;
+      } catch {
+        return { symbol: s.label, assetClass, price: null, changePct: null } as Quote;
+      }
+    }),
+  );
+  return results;
 }
 
 // ── Handler ──────────────────────────────────────────────────────────
