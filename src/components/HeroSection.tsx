@@ -7,6 +7,7 @@ import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
 import heroComet from "@/assets/hero-comet.png";
+import infinoxLogoRight from "@/assets/infinox-circle-logo-right.png";
 
 
 // Next webinar config
@@ -66,15 +67,28 @@ const HeroSection = () => {
           }}
         />
 
-        {/* Cinematic comet+logo image — full bleed cover, breathing animation */}
+        {/* Cinematic comet/flame plate — slightly muted so the official logo overlay stays exact */}
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover object-center select-none animate-breathe"
+          className="absolute inset-0 h-full w-full object-cover object-center select-none animate-breathe opacity-80"
           draggable={false}
           style={{
             filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
+          }}
+        />
+
+        {/* Official InfinoX logo, rotated to match the reference direction */}
+        <img
+          src={infinoxLogoRight}
+          alt=""
+          aria-hidden
+          className="absolute right-[8%] top-1/2 hidden h-[360px] w-auto -translate-y-1/2 select-none lg:block animate-breathe"
+          draggable={false}
+          style={{
+            filter:
+              "drop-shadow(0 0 14px hsl(0 0% 100% / 0.95)) drop-shadow(0 0 42px hsl(0 0% 100% / 0.45)) drop-shadow(0 0 70px hsl(45 100% 50% / 0.32))",
           }}
         />
 
