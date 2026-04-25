@@ -5,12 +5,14 @@ import {
   TrendingDown,
   Zap,
   CheckCircle2,
+  Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CopyTradeModal, { CopyTradeRequest } from "@/components/copytrade/CopyTradeModal";
 import { useCopiedSignals } from "@/hooks/useCopiedSignals";
 import { computeMentorTier, MentorTier } from "@/lib/mentor-tier";
 import MentorBadge from "@/components/social/MentorBadge";
+import AIScoreBadge, { AIScoreExplanation } from "@/components/ai/AIScoreBadge";
 
 type SharedSignal = {
   id: string;
@@ -25,15 +27,6 @@ type SharedSignal = {
   author_name: string;
   author_tier: MentorTier | null;
 };
-
-import { MENTOR_TIERS } from "@/lib/mentor-tier";
-
-const PLACEHOLDERS: SharedSignal[] = [
-  { id: "p1", pair: "EUR/USD", direction: "buy", entry_price: 1.1699, stop_loss: 1.165, take_profit: 1.18, status: "hit_tp", created_at: "", author_id: null, author_name: "IX_Mentor", author_tier: MENTOR_TIERS.mentor },
-  { id: "p2", pair: "GBP/JPY", direction: "sell", entry_price: 192.34, stop_loss: 193.0, take_profit: 191.0, status: "open", created_at: "", author_id: null, author_name: "EUR_King", author_tier: MENTOR_TIERS.verified_trader },
-  { id: "p3", pair: "XAU/USD", direction: "buy", entry_price: 2412.5, stop_loss: 2400, take_profit: 2440, status: "open", created_at: "", author_id: null, author_name: "df23fx", author_tier: MENTOR_TIERS.rising_star },
-  { id: "p4", pair: "USD/JPY", direction: "sell", entry_price: 154.82, stop_loss: 155.5, take_profit: 153.5, status: "open", created_at: "", author_id: null, author_name: "alpha-rat", author_tier: null },
-];
 
 const initialsOf = (n?: string | null) =>
   (n || "TR")
