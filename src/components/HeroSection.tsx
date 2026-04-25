@@ -43,19 +43,15 @@ const HeroSection = () => {
   return (
     <section
       id="home"
-      className="relative pt-16 overflow-hidden"
-      style={{
-        background:
-          "radial-gradient(ellipse 90% 70% at 70% 50%, #0a0a12 0%, #050509 60%, #000000 100%)",
-      }}
+      className="relative isolate overflow-hidden pt-16 bg-background"
     >
       {/* ── HERO COMET BACKGROUND IMAGE (reference) ──────────────── */}
-      <div className="pointer-events-none absolute inset-0 -z-[2]">
+      <div className="pointer-events-none absolute inset-0 z-0">
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute right-0 top-1/2 -translate-y-1/2 h-[120%] w-auto max-w-none object-contain select-none lg:right-[-4%]"
+          className="absolute right-0 top-1/2 -translate-y-1/2 h-full min-h-[420px] w-auto max-w-none scale-125 object-contain select-none md:h-[118%] lg:right-[-2%]"
           draggable={false}
         />
         {/* Soft left fade so text is readable over the flames */}
