@@ -312,56 +312,41 @@ const HeroSection = () => {
               ))}
             </div>
 
-            {/* ── The official InfinoX logo (animated) ── */}
+            {/* ── Official InfinoX logo asset, same as navbar (animated) ── */}
             <div className="relative animate-float">
               {/* Slow rotating outer halo */}
               <div
                 className="absolute -inset-8 rounded-full animate-spin-slow"
                 style={{
                   background:
-                    "conic-gradient(from 0deg, transparent 0deg, hsl(45 100% 55% / 0.45) 60deg, transparent 120deg, transparent 240deg, hsl(28 100% 55% / 0.35) 300deg, transparent 360deg)",
+                    "conic-gradient(from 0deg, transparent 0deg, hsl(var(--primary) / 0.45) 60deg, transparent 120deg, transparent 240deg, hsl(28 100% 55% / 0.35) 300deg, transparent 360deg)",
                   filter: "blur(22px)",
                 }}
               />
-              {/* Pulsing glow */}
+              {/* Pulsing glow that wraps the exact logo mark */}
               <div
                 className="absolute inset-0 rounded-full animate-pulse-glow"
                 style={{
                   boxShadow:
-                    "0 0 80px hsl(45 100% 55% / 0.8), 0 0 160px hsl(28 100% 55% / 0.55), 0 0 240px hsl(15 100% 55% / 0.35)",
+                    "0 0 80px hsl(var(--primary) / 0.8), 0 0 160px hsl(28 100% 55% / 0.55), 0 0 240px hsl(15 100% 55% / 0.35)",
                 }}
               />
 
-              {/* Breathing logo container */}
               <div className="relative h-64 w-64 md:h-80 md:w-80 lg:h-[22rem] lg:w-[22rem] animate-breathe">
-                <svg
-                  viewBox="0 0 200 200"
-                  className="absolute inset-0 h-full w-full"
+                <img
+                  src={infinoxLogo}
+                  alt="InfinoX"
+                  width={1024}
+                  height={1024}
+                  className="h-full w-full object-contain select-none"
+                  draggable={false}
+                  loading="eager"
+                  decoding="async"
                   style={{
                     filter:
-                      "drop-shadow(0 0 18px rgba(255,255,255,0.55)) drop-shadow(0 0 35px hsl(45 100% 55% / 0.55))",
+                      "drop-shadow(0 0 18px rgba(255,255,255,0.7)) drop-shadow(0 0 36px hsl(var(--primary) / 0.75)) drop-shadow(0 0 80px hsl(28 100% 55% / 0.45))",
                   }}
-                  aria-label="InfinoX"
-                >
-                  {/* Open white ring (with bottom gap, like the brand mark) */}
-                  <path
-                    d="M 100 12
-                       a 88 88 0 1 1 -38 8.6"
-                    fill="none"
-                    stroke="#FFFFFF"
-                    strokeWidth="14"
-                    strokeLinecap="round"
-                  />
-                  {/* Inner yellow upward triangle */}
-                  <polygon
-                    points="100,108 128,162 72,162"
-                    fill="#FFCD05"
-                    style={{
-                      filter:
-                        "drop-shadow(0 0 10px hsl(45 100% 50% / 0.95)) drop-shadow(0 0 22px hsl(28 100% 55% / 0.7))",
-                    }}
-                  />
-                </svg>
+                />
               </div>
             </div>
           </div>
