@@ -1,0 +1,68 @@
+/* ── react-grid-layout custom styling — fiery dark terminal ── */
+@import "react-grid-layout/css/styles.css";
+@import "react-resizable/css/styles.css";
+
+.react-grid-item.react-grid-placeholder {
+  background: hsl(48 100% 51% / 0.18) !important;
+  border: 1.5px dashed hsl(48 100% 51% / 0.6) !important;
+  border-radius: 1rem !important;
+  opacity: 1 !important;
+  transition-duration: 120ms !important;
+  box-shadow: 0 0 24px hsl(48 100% 51% / 0.25) !important;
+}
+
+.react-grid-item {
+  transition: all 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-property: left, top, width, height;
+}
+
+.react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.react-grid-item.resizing {
+  z-index: 30;
+  opacity: 0.92;
+}
+
+.react-grid-item.react-draggable-dragging {
+  z-index: 40;
+  opacity: 0.96;
+  cursor: grabbing !important;
+  filter: drop-shadow(0 18px 40px hsl(48 100% 51% / 0.30));
+}
+
+/* Resize handle — clean fiery corner triangle */
+.react-grid-item > .react-resizable-handle {
+  width: 22px;
+  height: 22px;
+  bottom: 4px;
+  right: 4px;
+  background: none;
+  cursor: se-resize;
+  z-index: 25;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid hsl(48 100% 51% / 0.5);
+  border-bottom: 2px solid hsl(48 100% 51% / 0.5);
+  border-radius: 0 0 3px 0;
+  transition: border-color 160ms ease;
+}
+
+.dashboard-grid-editing .react-grid-item > .react-resizable-handle::after {
+  border-right-color: hsl(48 100% 51% / 0.95);
+  border-bottom-color: hsl(48 100% 51% / 0.95);
+  box-shadow: 0 0 8px hsl(48 100% 51% / 0.6);
+}
+
+/* Hide resize handles when not editing */
+.dashboard-grid:not(.dashboard-grid-editing) .react-resizable-handle {
+  display: none;
+}
