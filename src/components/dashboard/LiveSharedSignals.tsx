@@ -132,9 +132,9 @@ const LiveSharedSignals = () => {
 
   return (
     <>
-      <div className="overflow-hidden">
+      <div className="min-h-0 overflow-hidden">
         <ul
-          className="max-h-[420px] overflow-y-auto divide-y divide-border/30 pr-1
+          className="max-h-[420px] overflow-y-auto divide-y divide-border/30 px-2 py-1.5 sm:px-2.5
                      [scrollbar-width:thin]
                      [&::-webkit-scrollbar]:w-1.5
                      [&::-webkit-scrollbar-track]:bg-transparent
@@ -161,10 +161,10 @@ const LiveSharedSignals = () => {
             return (
               <li
                 key={s.id}
-                className={`px-3 py-2.5 transition-colors hover:bg-primary/5 ${rowAccent}`}
+                className={`px-1 py-2 transition-colors hover:bg-primary/5 sm:px-1.5 ${rowAccent}`}
               >
                 {/* Trader header */}
-                <div className="mb-2 flex items-center gap-2">
+                <div className="mb-2 grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2">
                   <div
                     className={`relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-gradient-to-br text-[10px] font-bold ${colorFor(
                       avatarKey,
@@ -178,8 +178,8 @@ const LiveSharedSignals = () => {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <span className="truncate text-xs font-semibold text-foreground">
+                    <div className="flex min-w-0 items-center gap-1">
+                      <span className="min-w-0 truncate text-xs font-semibold text-foreground">
                         {s.author_name}
                       </span>
                       {isMentor && (
@@ -205,7 +205,7 @@ const LiveSharedSignals = () => {
                     </p>
                   </div>
                   <span
-                    className={`rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                    className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
                       isBuy
                         ? "bg-[hsl(145_65%_50%/0.15)] text-[hsl(145_65%_55%)] border border-[hsl(145_65%_50%/0.3)]"
                         : "bg-[hsl(0_70%_55%/0.15)] text-[hsl(0_70%_60%)] border border-[hsl(0_70%_55%/0.3)]"
@@ -221,14 +221,14 @@ const LiveSharedSignals = () => {
                 </div>
 
                 {/* Signal details */}
-                <div className="mb-2 flex items-center justify-between rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5">
-                  <div>
-                    <p className="font-mono text-sm font-bold text-foreground">{s.pair}</p>
+                <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-1.5">
+                  <div className="min-w-0">
+                    <p className="truncate font-mono text-sm font-bold text-foreground">{s.pair}</p>
                     <p className="font-mono text-[9px] uppercase tracking-wider text-primary">
                       {s.status.replace("_", " ")}
                     </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-right">
+                  <div className="grid shrink-0 grid-cols-3 gap-2 text-right">
                     <div>
                       <p className="font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground/70">
                         Entry
