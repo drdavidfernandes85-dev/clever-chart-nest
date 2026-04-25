@@ -221,7 +221,7 @@ const Dashboard = () => {
         </header>
 
         {/* Page body */}
-        <main className="relative z-10 flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-8 sm:space-y-10 lg:space-y-12 pb-28 lg:pb-12">
+        <main className="relative z-10 flex-1 px-3 sm:px-8 lg:px-14 py-8 sm:py-12 lg:py-14 space-y-10 sm:space-y-12 lg:space-y-14 pb-28 lg:pb-16">
           {/* Mentor tier banner — celebrates current rank, dismissible per-tier */}
           <MentorTierBanner tier={currentTier} userId={user?.id ?? null} />
           {/* 0. Flagship — Daily Live Webinar banner */}
