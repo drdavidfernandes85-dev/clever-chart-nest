@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -45,8 +45,12 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
 ];
 
 const DashboardSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
   const { pathname } = useLocation();
+  // Auto-collapse on the Chatroom route to maximize chat real estate
+  const [collapsed, setCollapsed] = useState(() => pathname === "/chatroom");
+  useEffect(() => {
+    if (pathname === "/chatroom") setCollapsed(true);
+  }, [pathname]);
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
