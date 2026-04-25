@@ -62,72 +62,29 @@ const make = (i: WidgetId, x: number, y: number, w: number, h: number): LayoutIt
   minH: WIDGET_MIN[i].h,
 });
 
-/** ── 5 professional presets ── */
+/**
+ * Default layout — ordered by trader workflow:
+ *  1. Portfolio Overview (hero) + Risk Exposure  → decision context
+ *  2. Quick Trade rail                            → always one click away
+ *  3. Watchlist + Market Movers                   → opportunity scan
+ *  4. Live Shared Signals + Recent Activity       → community & history
+ */
 export const PRESETS: Preset[] = [
   {
     id: "classic",
     name: "Classic Terminal",
-    description: "Balanced default — Portfolio hero, Risk + Quick Trade rail, Movers below",
+    description: "Logical trader workflow — context, action, opportunity, community",
     lg: [
-      make("portfolio", 0, 0, 8, 10),
-      make("risk", 8, 0, 4, 6),
-      make("quickTrade", 8, 6, 4, 9),
-      make("watchlist", 0, 10, 4, 7),
-      make("marketMovers", 4, 10, 4, 7),
-      make("liveSignals", 0, 17, 8, 6),
-      make("recentActivity", 8, 15, 4, 8),
-    ],
-  },
-  {
-    id: "chartFocused",
-    name: "Chart Focused",
-    description: "Maximum space for the chart — minimal Quick Trade + Risk rail",
-    lg: [
-      make("portfolio", 0, 0, 9, 14),
-      make("quickTrade", 9, 0, 3, 9),
-      make("risk", 9, 9, 3, 6),
-      make("watchlist", 0, 14, 6, 6),
-      make("marketMovers", 6, 14, 6, 6),
-      make("liveSignals", 0, 20, 8, 6),
-      make("recentActivity", 8, 20, 4, 6),
-    ],
-  },
-  {
-    id: "riskFirst",
-    name: "Risk-First",
-    description: "Risk Exposure leads — Portfolio beside it, Quick Trade tucked under",
-    lg: [
-      make("risk", 0, 0, 5, 8),
-      make("portfolio", 5, 0, 7, 10),
-      make("quickTrade", 0, 8, 5, 9),
-      make("watchlist", 5, 10, 4, 7),
-      make("marketMovers", 9, 10, 3, 7),
-      make("liveSignals", 0, 17, 7, 6),
-      make("recentActivity", 7, 17, 5, 6),
-    ],
-  },
-  {
-    id: "communityPulse",
-    name: "Community Pulse",
-    description: "Signals & Activity in the lead — social trading first",
-    lg: [
-      make("liveSignals", 0, 0, 8, 9),
-      make("recentActivity", 8, 0, 4, 9),
-      make("marketMovers", 0, 9, 8, 7),
-      make("portfolio", 0, 16, 7, 8),
-      make("risk", 7, 9, 5, 7),
-      make("watchlist", 7, 16, 5, 8),
-      make("quickTrade", 0, 24, 12, 8),
-    ],
-  },
-  {
-    id: "minimal",
-    name: "Minimal / Clean",
-    description: "Essentials only — Portfolio, Quick Trade, Watchlist with breathing room",
-    lg: [
-      make("portfolio", 0, 0, 8, 11),
-      make("quickTrade", 8, 0, 4, 9),
-      make("watchlist", 0, 11, 12, 7),
+      // Row 1 — context (Portfolio hero + Risk) + persistent Quick Trade rail
+      make("portfolio", 0, 0, 6, 9),
+      make("risk", 6, 0, 3, 9),
+      make("quickTrade", 9, 0, 3, 14),
+      // Row 2 — opportunity scan
+      make("watchlist", 0, 9, 4, 8),
+      make("marketMovers", 4, 9, 5, 8),
+      // Row 3 — community + history
+      make("liveSignals", 0, 17, 7, 7),
+      make("recentActivity", 7, 14, 5, 10),
     ],
   },
 ];
