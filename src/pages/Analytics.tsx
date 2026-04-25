@@ -100,6 +100,9 @@ const Analytics = () => {
 
         <PerformanceAnalytics />
 
+        {/* AI Performance Coach — personalized analysis */}
+        <PerformanceCoach />
+
         <section className="space-y-3">
           <h2 className="font-heading text-lg font-semibold text-foreground">{t("analytics.aiReports")}</h2>
           {loading ? (
