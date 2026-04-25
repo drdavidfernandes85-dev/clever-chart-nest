@@ -230,8 +230,8 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
           <button
             onClick={onToggleCollapsed}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
-            aria-label="Expand AI Co-pilot"
-            title="Expand AI Co-pilot"
+            aria-label="Expand AI Assistant"
+            title="Expand AI Assistant"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -240,7 +240,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
             className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground"
             style={{ writingMode: "vertical-rl" }}
           >
-            AI Co-pilot
+            AI Assistant
           </span>
         </aside>
       );
@@ -253,7 +253,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
               <Bot className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-heading text-xs font-semibold text-foreground">AI Co-pilot</h3>
+              <h3 className="font-heading text-xs font-semibold text-foreground">AI Assistant</h3>
               <p className="text-[10px] text-muted-foreground">Knows your trades, signals & news</p>
             </div>
           </div>
@@ -261,7 +261,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
             variant="ghost"
             size="icon"
             onClick={onToggleCollapsed}
-            aria-label="Collapse AI Co-pilot"
+            aria-label="Collapse AI Assistant"
             title="Collapse"
             className="h-8 w-8"
           >
@@ -300,7 +300,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
               <Bot className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-heading text-sm font-semibold text-foreground">AI Co-pilot</h3>
+              <h3 className="font-heading text-sm font-semibold text-foreground">AI Assistant</h3>
               <p className="text-[10px] text-muted-foreground">Knows your trades, signals & news</p>
             </div>
           </div>
