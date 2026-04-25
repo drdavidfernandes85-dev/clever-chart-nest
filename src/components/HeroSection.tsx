@@ -66,18 +66,16 @@ const HeroSection = () => {
           }}
         />
 
-        {/* The reference banner image — positioned so the logo+flames sit on the right side of the hero.
-            The banner is very wide; we crop it via object-position to show the left ~40% (where the logo/flames are). */}
+        {/* Cinematic comet+logo image — full bleed, anchored right, breathing animation */}
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute inset-y-0 right-0 h-full w-[75%] object-cover select-none animate-breathe"
+          className="absolute right-0 top-1/2 -translate-y-1/2 h-full min-h-[460px] w-auto max-w-none scale-110 object-contain select-none md:h-[120%] lg:right-[-2%] animate-breathe"
+          draggable={false}
           style={{
-            objectPosition: "0% center",
             filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
           }}
-          draggable={false}
         />
 
         {/* Soft left fade so text is readable */}
