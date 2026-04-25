@@ -211,7 +211,7 @@ const Dashboard = () => {
         </header>
 
         {/* Page body */}
-        <main className="flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-8 sm:space-y-10 lg:space-y-12 pb-28 lg:pb-12">
+        <main className="relative z-10 flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-8 sm:space-y-10 lg:space-y-12 pb-28 lg:pb-12">
           {/* 0. Flagship — Daily Live Webinar banner */}
           <WebinarHeroBanner />
 
