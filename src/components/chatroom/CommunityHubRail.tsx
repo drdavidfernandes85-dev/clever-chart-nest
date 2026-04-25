@@ -80,7 +80,7 @@ const CommunityHubRail = () => {
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
-      {/* Community stats */}
+      {/* Community Pulse — stats strip */}
       <div className="rounded-2xl border border-primary/25 bg-card/80 backdrop-blur-md p-3 shadow-[0_8px_30px_-12px_hsl(48_100%_51%/0.25)]">
         <div className="flex items-center gap-2 mb-2">
           <Activity className="h-3.5 w-3.5 text-primary" />
@@ -113,6 +113,19 @@ const CommunityHubRail = () => {
               Trades 24h
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Live Shared Signals — MOST PROMINENT, includes "Take This Signal" → Quick Trade */}
+      <div className="rounded-2xl border border-primary/40 bg-card/80 backdrop-blur-md overflow-hidden shadow-[0_10px_40px_-12px_hsl(48_100%_51%/0.4)]">
+        <div className="flex items-center gap-2 border-b border-primary/30 bg-primary/5 px-3 py-2">
+          <Radio className="h-3.5 w-3.5 text-primary animate-pulse" />
+          <span className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+            Live Shared Signals
+          </span>
+        </div>
+        <div className="p-1">
+          <LiveSharedSignals />
         </div>
       </div>
 
@@ -157,9 +170,6 @@ const CommunityHubRail = () => {
           ))}
         </ul>
       </div>
-
-      {/* Live Shared Signals — full component, includes "Take This Signal" → Quick Trade */}
-      <LiveSharedSignals />
 
       {/* Top Mentors */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
