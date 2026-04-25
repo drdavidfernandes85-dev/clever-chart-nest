@@ -114,6 +114,35 @@ export default {
           "0%, 100%": { opacity: "0.7", transform: "scale(1)" },
           "50%": { opacity: "1", transform: "scale(1.04)" },
         },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
+        breathe: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.025)" },
+        },
+        "flame-flicker": {
+          "0%, 100%": { transform: "scaleX(1) scaleY(1) translateX(0)", opacity: "0.85" },
+          "25%": { transform: "scaleX(1.08) scaleY(0.92) translateX(-4px)", opacity: "1" },
+          "50%": { transform: "scaleX(0.95) scaleY(1.06) translateX(2px)", opacity: "0.95" },
+          "75%": { transform: "scaleX(1.04) scaleY(0.97) translateX(-2px)", opacity: "1" },
+        },
+        "flame-stream": {
+          "0%": { transform: "translateX(-30%) scaleX(0.8)", opacity: "0" },
+          "15%": { opacity: "0.9" },
+          "85%": { opacity: "0.6" },
+          "100%": { transform: "translateX(40%) scaleX(1.2)", opacity: "0" },
+        },
+        "spark-rise": {
+          "0%": { transform: "translate(0,0) scale(1)", opacity: "0" },
+          "10%": { opacity: "1" },
+          "100%": { transform: "translate(var(--sx,60px), var(--sy,-180px)) scale(0.2)", opacity: "0" },
+        },
+        "particle-drift": {
+          "0%, 100%": { transform: "translate(0,0)", opacity: "0.3" },
+          "50%": { transform: "translate(var(--dx,30px), var(--dy,-40px))", opacity: "0.8" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -123,6 +152,12 @@ export default {
         ember: "ember 7s ease-out infinite",
         comet: "comet 3.5s ease-out infinite",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
+        "spin-slow": "spin-slow 40s linear infinite",
+        breathe: "breathe 5s ease-in-out infinite",
+        "flame-flicker": "flame-flicker 1.4s ease-in-out infinite",
+        "flame-stream": "flame-stream 2.8s ease-in-out infinite",
+        "spark-rise": "spark-rise 3.5s ease-out infinite",
+        "particle-drift": "particle-drift 8s ease-in-out infinite",
       },
     },
   },
