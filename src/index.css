@@ -125,15 +125,18 @@
   }
 
   /* ── Global fiery dark panel treatment ──
-     Every element using `bg-card` gets a warm yellow border for cohesion
-     with the hero. NO outer glow halo — keep panels clean and crisp. */
-  :root:not(.light) [class*="bg-card"]:not(body):not(html):not([class*="bg-card/0"]) {
-    border-color: hsl(48 100% 51% / 0.18);
+     Every element using `bg-card` gets a warm yellow border + soft inner
+     highlight for premium depth. NO outer halo — keep crisp & data-first. */
+  :root:not(.light) [class*="bg-card"]:not(body):not(html):not([class*="bg-card/0"]):not([class*="bg-card-foreground"]) {
+    border-color: hsl(48 100% 51% / 0.22);
+    box-shadow:
+      inset 0 1px 0 hsl(48 100% 60% / 0.05),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.012);
   }
 
   /* Stronger fiery border on any element using `border-border` token */
   :root:not(.light) [class*="border-border"] {
-    border-color: hsl(48 100% 51% / 0.18);
+    border-color: hsl(48 100% 51% / 0.22);
   }
 
   body {
@@ -201,17 +204,32 @@
     background: var(--hero-gradient);
   }
 
-  /* ── Glass panel — fiery dark trading deck (cohesive with hero comet) ── */
+  /* ── Glass panel — premium fiery dark trading deck ── */
   .card-glass {
-    background: linear-gradient(180deg, hsl(0 0% 7% / 0.88) 0%, hsl(0 0% 4% / 0.92) 100%);
-    backdrop-filter: blur(18px) saturate(150%);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    border: 1px solid hsl(48 100% 51% / 0.22);
+    background: linear-gradient(180deg, hsl(0 0% 7% / 0.92) 0%, hsl(0 0% 4% / 0.96) 100%);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid hsl(48 100% 51% / 0.28);
     box-shadow:
-      inset 0 1px 0 hsl(48 100% 60% / 0.06),
-      0 0 0 1px hsl(28 100% 50% / 0.05),
-      0 10px 30px -12px hsl(28 100% 45% / 0.22),
-      0 18px 48px -16px hsl(0 0% 0% / 0.85);
+      inset 0 1px 0 hsl(48 100% 60% / 0.08),
+      inset 0 0 24px -10px hsl(48 100% 51% / 0.10),
+      0 1px 0 hsl(0 0% 100% / 0.02),
+      0 24px 60px -28px hsl(0 0% 0% / 0.95);
+  }
+
+  /* Elevated hero panel — for Portfolio Overview & Risk Meter */
+  .card-glass-elevated {
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 0%, hsl(48 100% 51% / 0.06), transparent 60%),
+      linear-gradient(180deg, hsl(0 0% 8% / 0.94) 0%, hsl(0 0% 4% / 0.96) 100%);
+    backdrop-filter: blur(24px) saturate(170%);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    border: 1px solid hsl(48 100% 51% / 0.35);
+    box-shadow:
+      inset 0 1px 0 hsl(48 100% 60% / 0.12),
+      inset 0 0 32px -12px hsl(48 100% 51% / 0.14),
+      0 1px 0 hsl(0 0% 100% / 0.03),
+      0 30px 80px -32px hsl(0 0% 0% / 0.95);
   }
 
   .light .card-glass {

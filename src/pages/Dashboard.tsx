@@ -69,8 +69,27 @@ const Dashboard = () => {
     <>
       {/* Main shell */}
       <div className="relative flex-1 min-w-0 flex flex-col">
-        {/* Top header — clean fiery glass, no halo */}
-        <header className="relative z-40 sticky top-0 border-b border-primary/20 bg-black/70 backdrop-blur-2xl">
+        {/* Subtle ambient fiery particles — cohesive with hero, very low intensity */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+        >
+          <div
+            className="absolute -top-32 -left-24 h-[420px] w-[420px] rounded-full opacity-[0.18] blur-3xl animate-pulse-slow"
+            style={{ background: "radial-gradient(circle, hsl(28 100% 50% / 0.5), transparent 65%)" }}
+          />
+          <div
+            className="absolute top-[40%] -right-32 h-[520px] w-[520px] rounded-full opacity-[0.12] blur-3xl"
+            style={{ background: "radial-gradient(circle, hsl(48 100% 55% / 0.5), transparent 65%)" }}
+          />
+          <div
+            className="absolute bottom-0 left-[30%] h-[360px] w-[360px] rounded-full opacity-[0.10] blur-3xl"
+            style={{ background: "radial-gradient(circle, hsl(20 100% 50% / 0.5), transparent 70%)" }}
+          />
+        </div>
+
+        {/* Top header — premium fiery glass */}
+        <header className="relative z-40 sticky top-0 border-b border-primary/25 bg-black/75 backdrop-blur-2xl">
           <div className="flex h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-12 pl-14 lg:pl-6">
             <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground shrink-0">
               {t("dash.commandTitle1")} <span className="text-primary">{t("dash.commandTitle2")}</span>
@@ -196,19 +215,21 @@ const Dashboard = () => {
 
           {/* 2. Command Center — Portfolio (hero) + Right Sidebar */}
           <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_336px] items-start">
-            {/* Hero — Portfolio Overview with sparkline + open positions */}
+            {/* Hero — Portfolio Overview, elevated with stronger fiery border */}
             <motion.section
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="min-w-0"
+              className="min-w-0 rounded-2xl card-glass-elevated overflow-hidden ring-1 ring-primary/10"
             >
               <PortfolioOverview />
             </motion.section>
 
-            {/* Right narrow sidebar — Risk → Watchlist */}
-            <aside className="min-w-0 space-y-5 lg:sticky lg:top-20 self-start">
-              <RiskMeter />
+            {/* Right narrow sidebar — Risk (elevated) → Watchlist */}
+            <aside className="min-w-0 space-y-6 lg:sticky lg:top-20 self-start">
+              <div className="rounded-2xl card-glass-elevated overflow-hidden ring-1 ring-primary/10">
+                <RiskMeter />
+              </div>
               <Watchlist />
             </aside>
           </div>
