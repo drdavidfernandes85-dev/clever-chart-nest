@@ -76,16 +76,16 @@ export const PRESETS: Preset[] = [
     name: "Classic Terminal",
     description: "Logical trader workflow — context, action, opportunity, community",
     lg: [
-      // Row 1 — context: portfolio hero + risk + quickTrade rail (spans rows 1+2)
-      make("portfolio", 0, 0, 6, 10),
-      make("risk", 6, 0, 3, 10),
-      make("quickTrade", 9, 0, 3, 20),
+      // Row 1 — context: portfolio hero (tall) + risk + quickTrade rail (spans rows 1+2)
+      make("portfolio", 0, 0, 6, 13),
+      make("risk", 6, 0, 3, 13),
+      make("quickTrade", 9, 0, 3, 24),
       // Row 2 — opportunity scan: watchlist + market movers
-      make("watchlist", 0, 10, 4, 10),
-      make("marketMovers", 4, 10, 5, 10),
+      make("watchlist", 0, 13, 4, 11),
+      make("marketMovers", 4, 13, 5, 11),
       // Row 3 — community + history (full width split)
-      make("liveSignals", 0, 20, 7, 7),
-      make("recentActivity", 7, 20, 5, 7),
+      make("liveSignals", 0, 24, 7, 8),
+      make("recentActivity", 7, 24, 5, 8),
     ],
   },
 ];
