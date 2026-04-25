@@ -12,6 +12,8 @@ import {
   GitCompare,
   Pencil,
   X,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,15 +32,14 @@ import {
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 
 
-import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import ChartHeaderStats from "@/components/livechart/ChartHeaderStats";
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
+import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 // Mixed-asset chart selector — crypto, forex, indices, main stocks.
