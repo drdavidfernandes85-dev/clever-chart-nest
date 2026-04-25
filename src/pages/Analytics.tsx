@@ -131,6 +131,7 @@ const Analytics = () => {
           )}
         </section>
       </div>
+      <AICopilot />
     </div>
   );
 };
