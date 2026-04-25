@@ -129,18 +129,31 @@
      every tab) automatically gets the warm orange-glow border + shadow,
      so the entire app stays cohesive with the hero without per-page edits.
      Light theme is excluded. */
-  :root:not(.light) [class*="bg-card"]:not(body):not(html) {
-    border-color: hsl(48 100% 51% / 0.18);
+  :root:not(.light) [class*="bg-card"]:not(body):not(html):not([class*="bg-card/0"]) {
+    border-color: hsl(48 100% 51% / 0.22);
     box-shadow:
-      inset 0 1px 0 hsl(48 100% 60% / 0.04),
-      0 0 0 1px hsl(28 100% 50% / 0.04),
-      0 8px 24px -12px hsl(28 100% 45% / 0.18),
-      0 14px 40px -16px hsl(0 0% 0% / 0.7);
+      inset 0 1px 0 hsl(48 100% 60% / 0.06),
+      inset 0 0 0 1px hsl(0 0% 100% / 0.015),
+      0 0 0 1px hsl(28 100% 50% / 0.06),
+      0 10px 28px -14px hsl(28 100% 45% / 0.28),
+      0 20px 48px -20px hsl(0 0% 0% / 0.85);
+  }
+
+  /* Hover lift on any interactive bg-card panel */
+  :root:not(.light) a[class*="bg-card"]:hover,
+  :root:not(.light) button[class*="bg-card"]:hover {
+    border-color: hsl(48 100% 51% / 0.45);
+    box-shadow:
+      inset 0 1px 0 hsl(48 100% 60% / 0.10),
+      0 0 0 1px hsl(48 100% 51% / 0.30),
+      0 0 24px hsl(28 100% 50% / 0.30),
+      0 16px 36px -14px hsl(48 100% 51% / 0.40),
+      0 24px 56px -20px hsl(0 0% 0% / 0.85);
   }
 
   /* Stronger fiery border on any element using `border-border` token */
   :root:not(.light) [class*="border-border"] {
-    border-color: hsl(48 100% 51% / 0.18);
+    border-color: hsl(48 100% 51% / 0.20);
   }
 
   body {
