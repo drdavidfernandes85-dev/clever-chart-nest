@@ -17,7 +17,6 @@ import { Link } from "react-router-dom";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import KpiStrip from "@/components/dashboard/KpiStrip";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
-import CommunityNest from "@/components/dashboard/CommunityNest";
 
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
@@ -256,22 +255,17 @@ const Dashboard = () => {
             widgets={widgets}
           />
 
-          {/* Optional community rail — toggleable, kept out of main flow */}
-          <AnimatePresence initial={false}>
-            {railOpen && (
-              <motion.aside
-                key="rail"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.3 }}
-                className="hidden xl:grid gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_320px]"
-              >
-                <CopiedTradesHistory limit={6} compact />
-                <CommunityNest />
-              </motion.aside>
-            )}
-          </AnimatePresence>
+          {/* Personal copy-trade history — kept (no community widgets) */}
+          {railOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="hidden xl:block"
+            >
+              <CopiedTradesHistory limit={6} compact />
+            </motion.div>
+          )}
         </main>
       </div>
 
