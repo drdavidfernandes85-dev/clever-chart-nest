@@ -12,6 +12,8 @@ import {
   GitCompare,
   Pencil,
   X,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,15 +32,14 @@ import {
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 
 
-import SmartAlerts from "@/components/dashboard/SmartAlerts";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import ChartHeaderStats from "@/components/livechart/ChartHeaderStats";
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
+import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 // Mixed-asset chart selector — crypto, forex, indices, main stocks.
@@ -102,6 +103,7 @@ const LiveChart = () => {
   const [studies, setStudies] = useState<string[]>([]);
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [railOpen, setRailOpen] = useState(true);
   
   const chartShellRef = useRef<HTMLElement>(null);
   const { setSymbol: setCtxSymbol } = useQuickTrade();
@@ -120,6 +122,15 @@ const LiveChart = () => {
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
+
+  // Persist rail open/closed
+  useEffect(() => {
+    const saved = window.localStorage.getItem("eltr.liveChart.rail");
+    if (saved !== null) setRailOpen(saved === "1");
+  }, []);
+  useEffect(() => {
+    window.localStorage.setItem("eltr.liveChart.rail", railOpen ? "1" : "0");
+  }, [railOpen]);
 
   const toggleStudy = (id: string) => {
     setStudies((prev) =>
@@ -205,7 +216,13 @@ const LiveChart = () => {
 
       {/* Workspace */}
       <div className="p-3 lg:p-4">
-        <div className="grid gap-3 lg:gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div
+          className={`grid gap-3 lg:gap-4 ${
+            railOpen
+              ? "lg:grid-cols-[minmax(0,1fr)_340px]"
+              : "lg:grid-cols-[minmax(0,1fr)]"
+          }`}
+        >
           {/* Chart hero — bigger, dominant */}
           <section
             ref={chartShellRef}
@@ -364,6 +381,22 @@ const LiveChart = () => {
 
                 {/* Quick Trade now lives in the right sidebar below Smart Alerts */}
 
+                {/* Rail toggle */}
+                <button
+                  type="button"
+                  onClick={() => setRailOpen((v) => !v)}
+                  className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors"
+                  title={railOpen ? "Hide right panel" : "Show right panel"}
+                  aria-expanded={railOpen}
+                >
+                  {railOpen ? (
+                    <PanelRightClose className="h-3.5 w-3.5 text-primary" />
+                  ) : (
+                    <PanelRightOpen className="h-3.5 w-3.5 text-primary" />
+                  )}
+                  <span className="hidden xl:inline">{railOpen ? "Hide Panel" : "Show Panel"}</span>
+                </button>
+
                 {/* Fullscreen */}
                 <button
                   type="button"
@@ -408,20 +441,17 @@ const LiveChart = () => {
           </section>
 
           {/* Right rail */}
-          <aside className="flex flex-col gap-3 lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px] lg:overflow-y-auto pr-1">
-            {/* My positions for the active chart symbol — pulled from EA */}
-            <SymbolPositions symbolLabel={currentLabel} />
-
-            <LiveSharedSignals />
-
-            {/* Smart Alerts — collapsible to save space */}
-            <SmartAlerts collapsible defaultOpen activeSymbol={currentLabel} />
-
-            {/* Quick Trade — placed right below Smart Alerts */}
-            <QuickTradePanel compact />
-          </aside>
+          {railOpen && (
+            <aside className="flex flex-col gap-3 lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px] lg:overflow-y-auto pr-1">
+              {/* My positions for the active chart symbol — pulled from EA */}
+              <SymbolPositions symbolLabel={currentLabel} />
+              <LiveSharedSignals />
+            </aside>
+          )}
         </div>
       </div>
+      {/* Floating, draggable Quick Trade — minimized by default */}
+      <FloatingQuickTrade />
     </div>
   );
 };
