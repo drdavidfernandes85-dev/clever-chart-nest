@@ -1,10 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Zap, GripVertical, Minus, X } from "lucide-react";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import { useAuth } from "@/contexts/AuthContext";
 
-const STORAGE_PREFIX = "eltr.floatingQuickTrade.v2";
+const STORAGE_PREFIX = "eltr.floatingQuickTrade.v3";
+
+// Widget dimensions used for clamping & default placement.
+const PILL_W = 220;
+const PILL_H = 56;
+const PANEL_W = 360;
+// Tall enough to render the full QuickTradePanel without internal scrolling
+// on common laptop viewports. Capped to viewport via maxHeight at render time.
+const PANEL_H = 760;
 
 interface Pos {
   x: number;
@@ -12,21 +21,16 @@ interface Pos {
   open: boolean;
 }
 
+/** Default placement: bottom-left, just inside the right rail's left edge area. */
 const defaultPos = (): Pos => {
   if (typeof window === "undefined") return { x: 24, y: 120, open: false };
   return {
-    x: Math.max(16, window.innerWidth - 240),
-    y: Math.max(80, window.innerHeight - 120),
+    x: 24,
+    y: Math.max(80, window.innerHeight - PILL_H - 32),
     open: false,
   };
 };
 
-/**
- * A floating, draggable Quick Trade widget.
- * - Collapsed: a compact pill (drag from grip, click body to expand). Non-interactive otherwise.
- * - Expanded: full QuickTradePanel for opening/closing positions. Drag from header grip only.
- * Position and open state persist per-user in localStorage.
- */
 const FloatingQuickTrade = () => {
   const { user } = useAuth();
   const storageKey = useMemo(
@@ -36,10 +40,11 @@ const FloatingQuickTrade = () => {
 
   const [pos, setPos] = useState<Pos>(defaultPos);
   const [hydrated, setHydrated] = useState(false);
+  const [fsHost, setFsHost] = useState<Element | null>(null);
   const constraintsRef = useRef<HTMLDivElement | null>(null);
   const dragControls = useDragControls();
 
-  // Hydrate from localStorage when the user (and therefore the storage key) changes.
+  // Hydrate from localStorage when the user (storage key) changes.
   useEffect(() => {
     setHydrated(false);
     try {
@@ -76,21 +81,36 @@ const FloatingQuickTrade = () => {
       setPos((p) => ({
         ...p,
         x: Math.min(Math.max(8, p.x), window.innerWidth - 80),
-        y: Math.min(Math.max(64, p.y), window.innerHeight - 80),
+        y: Math.min(Math.max(8, p.y), window.innerHeight - 80),
       }));
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Re-portal into the fullscreen element when the chart goes fullscreen so
+  // the floating widget stays visible (fixed elements outside the FS host
+  // are hidden by the browser).
+  useEffect(() => {
+    const update = () => setFsHost(document.fullscreenElement);
+    update();
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
+  }, []);
+
   const setOpen = (open: boolean) => setPos((p) => ({ ...p, open }));
 
   const startDrag = (e: React.PointerEvent) => {
-    // Only start drag from the grip / header — never from interactive children.
     dragControls.start(e);
   };
 
-  return (
+  // Cap panel height to viewport so it never overflows / requires outer scroll.
+  const maxPanelHeight =
+    typeof window !== "undefined"
+      ? Math.min(PANEL_H, window.innerHeight - 32)
+      : PANEL_H;
+
+  const widget = (
     <>
       {/* Invisible drag bounds = the whole viewport */}
       <div
@@ -109,12 +129,12 @@ const FloatingQuickTrade = () => {
         animate={{ x: pos.x, y: pos.y }}
         transition={{ type: "spring", damping: 30, stiffness: 320 }}
         onDragEnd={(_, info) => {
-          const width = pos.open ? 340 : 200;
-          const height = pos.open ? 520 : 56;
+          const width = pos.open ? PANEL_W : PILL_W;
+          const height = pos.open ? maxPanelHeight : PILL_H;
           setPos((p) => ({
             ...p,
             x: Math.min(Math.max(8, p.x + info.offset.x), window.innerWidth - width),
-            y: Math.min(Math.max(64, p.y + info.offset.y), window.innerHeight - height),
+            y: Math.min(Math.max(8, p.y + info.offset.y), window.innerHeight - height),
           }));
         }}
         className="fixed left-0 top-0 z-[70] select-none"
@@ -128,12 +148,13 @@ const FloatingQuickTrade = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 4 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="w-[340px] overflow-hidden rounded-2xl border border-primary/30 bg-card/95 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85),0_0_50px_-12px_hsl(48_100%_51%/0.35)] backdrop-blur-2xl"
+              style={{ width: PANEL_W, maxHeight: maxPanelHeight }}
+              className="flex flex-col overflow-hidden rounded-2xl border border-primary/30 bg-card/95 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85),0_0_50px_-12px_hsl(48_100%_51%/0.35)] backdrop-blur-2xl"
             >
-              {/* Drag handle — ONLY this header starts a drag */}
+              {/* Drag handle — only header starts a drag */}
               <div
                 onPointerDown={startDrag}
-                className="flex items-center justify-between gap-2 border-b border-border/40 bg-card/80 px-3 py-2 backdrop-blur-xl cursor-grab active:cursor-grabbing touch-none"
+                className="flex shrink-0 items-center justify-between gap-2 border-b border-border/40 bg-card/80 px-3 py-2 backdrop-blur-xl cursor-grab active:cursor-grabbing touch-none"
               >
                 <div className="flex items-center gap-1.5 text-foreground pointer-events-none">
                   <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
@@ -163,8 +184,8 @@ const FloatingQuickTrade = () => {
                   </button>
                 </div>
               </div>
-              {/* Body — fully interactive; drag won't fire here because dragListener is false */}
-              <div className="max-h-[70vh] overflow-y-auto p-2">
+              {/* Body — naturally sized; no inner scroll unless viewport is tiny */}
+              <div className="flex-1 overflow-y-auto p-2">
                 <QuickTradePanel compact />
               </div>
             </motion.div>
@@ -177,7 +198,7 @@ const FloatingQuickTrade = () => {
               transition={{ duration: 0.16, ease: "easeOut" }}
               className="flex h-12 items-center rounded-full border border-primary/40 bg-card/90 backdrop-blur-2xl shadow-[0_15px_40px_-10px_hsl(48_100%_51%/0.6),0_0_30px_-8px_hsl(48_100%_51%/0.5)] hover:shadow-[0_20px_50px_-10px_hsl(48_100%_51%/0.85)] transition-shadow"
             >
-              {/* Drag handle on the left grip — does NOT toggle */}
+              {/* Drag handle */}
               <span
                 onPointerDown={startDrag}
                 aria-label="Drag Quick Trade"
@@ -205,6 +226,11 @@ const FloatingQuickTrade = () => {
       </motion.div>
     </>
   );
+
+  // When the chart is fullscreen, portal the widget into that element so it
+  // remains visible above the FS surface.
+  if (fsHost) return createPortal(widget, fsHost);
+  return widget;
 };
 
 export default FloatingQuickTrade;
