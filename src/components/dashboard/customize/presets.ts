@@ -28,13 +28,13 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
 
 /** Sensible per-widget min sizes (12-col grid). */
 export const WIDGET_MIN: Record<WidgetId, { w: number; h: number }> = {
-  portfolio: { w: 6, h: 8 },
-  risk: { w: 3, h: 6 },
-  watchlist: { w: 3, h: 6 },
-  marketMovers: { w: 6, h: 6 },
-  liveSignals: { w: 3, h: 6 },
-  quickTrade: { w: 3, h: 8 },
-  recentActivity: { w: 4, h: 5 },
+  portfolio: { w: 5, h: 6 },
+  risk: { w: 3, h: 5 },
+  watchlist: { w: 3, h: 5 },
+  marketMovers: { w: 4, h: 5 },
+  liveSignals: { w: 3, h: 4 },
+  quickTrade: { w: 3, h: 7 },
+  recentActivity: { w: 3, h: 4 },
 };
 
 export type PresetId =
@@ -76,16 +76,16 @@ export const PRESETS: Preset[] = [
     name: "Classic Terminal",
     description: "Logical trader workflow — context, action, opportunity, community",
     lg: [
-      // Row 1 — context
-      make("portfolio", 0, 0, 6, 9),
-      make("risk", 6, 0, 3, 9),
-      make("quickTrade", 9, 0, 3, 18),
-      // Row 2 — opportunity scan (aligned under Portfolio + Risk)
-      make("watchlist", 0, 9, 4, 9),
-      make("marketMovers", 4, 9, 5, 9),
-      // Row 3 — community + history (full width, equal split)
-      make("liveSignals", 0, 18, 7, 8),
-      make("recentActivity", 7, 18, 5, 8),
+      // Row 1 — context (h=7): portfolio hero + risk + quickTrade rail (spans rows 1+2)
+      make("portfolio", 0, 0, 6, 7),
+      make("risk", 6, 0, 3, 7),
+      make("quickTrade", 9, 0, 3, 14),
+      // Row 2 — opportunity scan (h=7): watchlist + market movers, aligned under portfolio+risk
+      make("watchlist", 0, 7, 4, 7),
+      make("marketMovers", 4, 7, 5, 7),
+      // Row 3 — community + history (h=5, full width split)
+      make("liveSignals", 0, 14, 7, 5),
+      make("recentActivity", 7, 14, 5, 5),
     ],
   },
 ];
