@@ -45,7 +45,7 @@ const initialsOf = (n: string) =>
     .join("")
     .toUpperCase() || "TR";
 
-const colorFor = (id: string) => {
+const colorFor = (id?: string | null) => {
   const palette = [
     "from-teal-500/40 to-teal-700/40 text-teal-200 border-teal-400/40",
     "from-blue-500/40 to-blue-700/40 text-blue-200 border-blue-400/40",
@@ -55,8 +55,9 @@ const colorFor = (id: string) => {
     "from-pink-500/40 to-pink-700/40 text-pink-200 border-pink-400/40",
     "from-cyan-500/40 to-cyan-700/40 text-cyan-200 border-cyan-400/40",
   ];
+  const safe = id || "trader";
   let h = 0;
-  for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
+  for (let i = 0; i < safe.length; i++) h = safe.charCodeAt(i) + ((h << 5) - h);
   return palette[Math.abs(h) % palette.length];
 };
 
