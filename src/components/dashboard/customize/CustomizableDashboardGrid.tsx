@@ -1,5 +1,5 @@
 import { ReactNode, useMemo, useState, useEffect } from "react";
-import { Responsive, WidthProvider } from "react-grid-layout";
+import { Responsive, WidthProvider } from "react-grid-layout/legacy";
 import WidgetFrame from "./WidgetFrame";
 import { WidgetId, WIDGET_LABELS } from "./presets";
 import type { Layouts } from "@/hooks/useDashboardLayout";
