@@ -6,7 +6,7 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
-import infinoxLogoRight from "@/assets/infinox-logo-comet.png";
+import heroComet from "@/assets/hero-comet.jpg";
 
 
 // Next webinar config
@@ -43,7 +43,7 @@ const HeroSection = () => {
   return (
     <section
       id="home"
-      className="relative isolate overflow-hidden pt-16 bg-background min-h-[820px] lg:min-h-[900px]"
+      className="relative isolate overflow-hidden pt-16 bg-background"
     >
       {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
       <div className="pointer-events-none absolute inset-0 z-0">
@@ -66,31 +66,18 @@ const HeroSection = () => {
           }}
         />
 
-        {/* Cinematic comet/flame video plate — auto-loop, muted */}
-        <video
-          src="/hero-comet.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden
-          className="absolute inset-0 h-full w-full object-cover object-center select-none"
-          style={{
-            filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
-          }}
-        />
-
-        {/* Official InfinoX logo riding the comet — triangle pointing right */}
+        {/* The reference banner image — positioned so the logo+flames sit on the right side of the hero.
+            The banner is very wide; we crop it via object-position to show the left ~40% (where the logo/flames are). */}
         <img
-          src={infinoxLogoRight}
+          src={heroComet}
           alt=""
           aria-hidden
-          className="absolute right-[6%] top-1/2 hidden h-[420px] w-auto -translate-y-1/2 select-none lg:block animate-breathe"
-          draggable={false}
+          className="absolute inset-y-0 right-0 h-full w-[75%] object-cover select-none animate-breathe"
           style={{
-            filter:
-              "drop-shadow(0 0 14px hsl(0 0% 100% / 0.95)) drop-shadow(0 0 42px hsl(0 0% 100% / 0.45)) drop-shadow(0 0 70px hsl(45 100% 50% / 0.32))",
+            objectPosition: "0% center",
+            filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
           }}
+          draggable={false}
         />
 
         {/* Soft left fade so text is readable */}
