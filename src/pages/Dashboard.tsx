@@ -41,6 +41,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useMentorTierProgress } from "@/hooks/useMentorTierProgress";
 import MentorTierBanner from "@/components/social/MentorTierBanner";
 import MentorTierCelebration from "@/components/social/MentorTierCelebration";
+import SmartInsights from "@/components/ai/SmartInsights";
+import AICopilot from "@/components/ai/AICopilot";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
@@ -229,6 +231,9 @@ const Dashboard = () => {
 
           {/* 1. Top KPI row — 4 clean cards */}
           <KpiStrip />
+
+          {/* 1b. AI Smart Insights — flagship intelligence card */}
+          <SmartInsights />
 
           {/* 2. Customization toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-3">
