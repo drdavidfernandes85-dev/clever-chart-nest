@@ -11,6 +11,7 @@ import AICopilot from "@/components/ai/AICopilot";
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
+import OnlineTraders from "@/components/chatroom/OnlineTraders";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
@@ -236,24 +237,38 @@ const Chatroom = () => {
       </div>
       <ScrollArea className="flex-1 px-2 py-2">
         {Object.entries(groupedChannels).map(([category, chs]) => (
-          <div key={category} className="mb-3">
-            <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{category}</p>
-            {chs.map((ch) => (
-              <button
-                key={ch.id}
-                onClick={() => { setActiveChannelId(ch.id); setActiveChannelName(ch.name); setSidebarOpen(false); }}
-                className={`flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-sm transition-colors ${
-                  activeChannelId === ch.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                }`}
-              >
-                <Hash className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{formatChannelName(ch.name)}</span>
-              </button>
-            ))}
+          <div key={category} className="mb-4">
+            <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+              {category}
+            </p>
+            {chs.map((ch) => {
+              const isActive = activeChannelId === ch.id;
+              return (
+                <button
+                  key={ch.id}
+                  onClick={() => { setActiveChannelId(ch.id); setActiveChannelName(ch.name); setSidebarOpen(false); }}
+                  className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-all ${
+                    isActive
+                      ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(48_100%_51%/0.35),0_4px_18px_-6px_hsl(48_100%_51%/0.5)]"
+                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                  }`}
+                >
+                  <Hash className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                  <span className="truncate font-medium">{formatChannelName(ch.name)}</span>
+                </button>
+              );
+            })}
           </div>
         ))}
+
+        {/* Online Traders panel */}
+        <div className="mt-2 border-t border-border/40 pt-3">
+          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80 flex items-center gap-1.5">
+            <Users className="h-3 w-3" />
+            Online Traders
+          </p>
+          <OnlineTraders />
+        </div>
       </ScrollArea>
       <div className="border-t border-border/50 p-3 space-y-2">
         <div className="flex items-center gap-2 px-1">
@@ -277,7 +292,7 @@ const Chatroom = () => {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-border/50 bg-card md:flex">
+      <aside className="hidden w-[280px] shrink-0 flex-col border-r border-border/50 bg-card md:flex">
         {sidebarContent}
       </aside>
 
