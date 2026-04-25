@@ -85,7 +85,7 @@ const HeroSection = () => {
           src={infinoxLogoRight}
           alt=""
           aria-hidden
-          className="absolute right-[8%] top-1/2 hidden h-[360px] w-auto -translate-y-1/2 select-none lg:block animate-breathe"
+          className="absolute right-[6%] top-1/2 hidden h-[420px] w-auto -translate-y-1/2 select-none lg:block animate-breathe"
           draggable={false}
           style={{
             filter:
