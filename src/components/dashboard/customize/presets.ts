@@ -1,4 +1,4 @@
-import type { Layout } from "react-grid-layout";
+import type { LayoutItem } from "react-grid-layout";
 
 /**
  * Widget IDs for the customizable dashboard.
@@ -49,10 +49,10 @@ export interface Preset {
   name: string;
   description: string;
   /** Layout for the lg (1200+) breakpoint. md/sm/xs derived automatically. */
-  lg: Layout[];
+  lg: LayoutItem[];
 }
 
-const make = (i: WidgetId, x: number, y: number, w: number, h: number): Layout => ({
+const make = (i: WidgetId, x: number, y: number, w: number, h: number): LayoutItem => ({
   i,
   x,
   y,
@@ -136,22 +136,22 @@ export const PRESETS: Preset[] = [
 export const DEFAULT_PRESET: PresetId = "classic";
 
 /** Derive layouts for md / sm / xs from the lg layout (responsive cascade). */
-export function buildResponsiveLayouts(lg: Layout[]) {
+export function buildResponsiveLayouts(lg: LayoutItem[]) {
   // md: 10 cols — proportional shrink
-  const md = lg.map((l) => ({
+  const md: LayoutItem[] = lg.map((l) => ({
     ...l,
     w: Math.max(l.minW || 3, Math.min(10, Math.round((l.w / 12) * 10))),
     x: Math.min(10 - 1, Math.round((l.x / 12) * 10)),
   }));
   // sm: 6 cols — half-width tiles
-  const sm = lg.map((l) => ({
+  const sm: LayoutItem[] = lg.map((l) => ({
     ...l,
     w: Math.min(6, Math.max(3, Math.ceil(l.w / 2))),
-    x: l.x < 6 ? 0 : 0, // re-flow handled by RGL compaction
+    x: l.x < 6 ? 0 : 0,
     y: l.y,
   }));
-  // xs: single column (mobile fallback — but we render stacked, this is just a backup)
-  const xs = lg.map((l) => ({ ...l, w: 4, x: 0, y: l.y }));
+  // xs: single column (mobile fallback)
+  const xs: LayoutItem[] = lg.map((l) => ({ ...l, w: 4, x: 0, y: l.y }));
   return { lg, md, sm, xs };
 }
 

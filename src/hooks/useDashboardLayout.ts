@@ -7,9 +7,14 @@ import {
   buildResponsiveLayouts,
   getPreset,
 } from "@/components/dashboard/customize/presets";
-import type { Layout } from "react-grid-layout";
+import type { LayoutItem } from "react-grid-layout";
 
-export type Layouts = { lg: Layout[]; md: Layout[]; sm: Layout[]; xs: Layout[] };
+export type Layouts = {
+  lg: LayoutItem[];
+  md: LayoutItem[];
+  sm: LayoutItem[];
+  xs: LayoutItem[];
+};
 
 const LS_KEY = "eltr.dashboard.layout.v1";
 
@@ -82,12 +87,20 @@ export function useDashboardLayout() {
   }, [user]);
 
   const onLayoutChange = useCallback(
-    (_current: Layout[], all: { lg?: Layout[]; md?: Layout[]; sm?: Layout[]; xs?: Layout[] }) => {
+    (
+      _current: readonly LayoutItem[],
+      all: {
+        lg?: readonly LayoutItem[];
+        md?: readonly LayoutItem[];
+        sm?: readonly LayoutItem[];
+        xs?: readonly LayoutItem[];
+      },
+    ) => {
       const next: Layouts = {
-        lg: all.lg ?? layouts.lg,
-        md: all.md ?? layouts.md,
-        sm: all.sm ?? layouts.sm,
-        xs: all.xs ?? layouts.xs,
+        lg: (all.lg as LayoutItem[]) ?? layouts.lg,
+        md: (all.md as LayoutItem[]) ?? layouts.md,
+        sm: (all.sm as LayoutItem[]) ?? layouts.sm,
+        xs: (all.xs as LayoutItem[]) ?? layouts.xs,
       };
       setLayouts(next);
       setDirty(true);
@@ -120,16 +133,15 @@ export function useDashboardLayout() {
   const save = useCallback(async () => {
     if (!user) return { ok: false, reason: "not-authenticated" as const };
     setSaving(true);
+    const payload = {
+      user_id: user.id,
+      preset,
+      layouts: layouts as unknown as Record<string, unknown>,
+    };
     const { error } = await supabase
       .from("user_dashboard_layouts")
-      .upsert(
-        {
-          user_id: user.id,
-          preset,
-          layouts: layouts as unknown as Record<string, unknown>,
-        },
-        { onConflict: "user_id" },
-      );
+      // upsert expects an array; cast keeps the generated types happy
+      .upsert([payload] as never, { onConflict: "user_id" });
     setSaving(false);
     if (error) return { ok: false, reason: error.message };
     setDirty(false);
