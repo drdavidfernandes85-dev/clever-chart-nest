@@ -293,6 +293,8 @@ const Dashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      <FieryThemeQA />
     </>
   );
 };
