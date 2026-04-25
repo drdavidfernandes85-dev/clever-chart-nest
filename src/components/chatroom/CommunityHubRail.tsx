@@ -12,15 +12,13 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
+import { useHotMentions, HotMention } from "@/hooks/useHotMentions";
 
-type Mover = { pair: string; mentions: number; change: string; up: boolean };
-
-const HOT_PAIRS_FALLBACK: Mover[] = [
-  { pair: "EUR/USD", mentions: 42, change: "+0.34%", up: true },
-  { pair: "XAU/USD", mentions: 31, change: "+1.12%", up: true },
-  { pair: "GBP/JPY", mentions: 24, change: "-0.42%", up: false },
-  { pair: "BTC/USD", mentions: 19, change: "+2.18%", up: true },
-  { pair: "USD/JPY", mentions: 14, change: "-0.18%", up: false },
+const HOT_FALLBACK: HotMention[] = [
+  { symbol: "EUR/USD", mentions: 0, price: null, changePct: null, up: true },
+  { symbol: "XAU/USD", mentions: 0, price: null, changePct: null, up: true },
+  { symbol: "GBP/JPY", mentions: 0, price: null, changePct: null, up: false },
+  { symbol: "BTC/USDT", mentions: 0, price: null, changePct: null, up: true },
 ];
 
 type Mentor = { name: string; pnl: string; winrate: string };
