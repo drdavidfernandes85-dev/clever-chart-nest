@@ -6,7 +6,7 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
-import infinoxLogoRight from "@/assets/infinox-circle-logo-triangle-right.png";
+import infinoxLogoRight from "@/assets/infinox-logo-comet.png";
 
 
 // Next webinar config
