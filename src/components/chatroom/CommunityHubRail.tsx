@@ -45,6 +45,8 @@ const CommunityHubRail = () => {
   const [onlineCount, setOnlineCount] = useState(184);
   const [activeSignals, setActiveSignals] = useState<number>(0);
   const [todayTrades, setTodayTrades] = useState<number>(0);
+  const { hot } = useHotMentions(8);
+  const hotRows = hot.length ? hot : HOT_FALLBACK;
 
   useEffect(() => {
     let cancelled = false;
@@ -141,31 +143,48 @@ const CommunityHubRail = () => {
           </span>
         </div>
         <ul className="divide-y divide-border/30">
-          {HOT_PAIRS_FALLBACK.map((h) => (
-            <li
-              key={h.pair}
-              className="flex items-center justify-between px-3 py-2 hover:bg-primary/5 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-foreground">{h.pair}</span>
-                <span className="rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-bold text-primary">
-                  {h.mentions}
-                </span>
-              </div>
-              <span
-                className={`font-mono text-[11px] font-semibold ${
-                  h.up ? "text-[hsl(145_65%_50%)]" : "text-[hsl(0_70%_55%)]"
-                }`}
+          {hotRows.map((h) => {
+            const hasPrice = h.price != null;
+            const hasChange = h.changePct != null;
+            return (
+              <li
+                key={h.symbol}
+                className="flex items-center justify-between px-3 py-2 hover:bg-primary/5 transition-colors"
               >
-                {h.up ? (
-                  <TrendingUp className="inline h-3 w-3 mr-0.5" />
-                ) : (
-                  <TrendingDown className="inline h-3 w-3 mr-0.5" />
-                )}
-                {h.change}
-              </span>
-            </li>
-          ))}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-mono text-xs font-bold text-foreground truncate">
+                    {h.symbol}
+                  </span>
+                  {h.mentions > 0 && (
+                    <span className="rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-bold text-primary">
+                      {h.mentions}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {hasPrice && (
+                    <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                      {h.price!.toLocaleString(undefined, {
+                        maximumFractionDigits: h.price! < 10 ? 4 : 2,
+                      })}
+                    </span>
+                  )}
+                  <span
+                    className={`font-mono text-[11px] font-semibold ${
+                      h.up ? "text-[hsl(145_65%_50%)]" : "text-[hsl(0_70%_55%)]"
+                    }`}
+                  >
+                    {h.up ? (
+                      <TrendingUp className="inline h-3 w-3 mr-0.5" />
+                    ) : (
+                      <TrendingDown className="inline h-3 w-3 mr-0.5" />
+                    )}
+                    {hasChange ? `${h.up ? "+" : ""}${h.changePct!.toFixed(2)}%` : "—"}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
