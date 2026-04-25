@@ -43,7 +43,7 @@ const HeroSection = () => {
   return (
     <section
       id="home"
-      className="relative isolate overflow-hidden pt-16 bg-background"
+      className="relative isolate overflow-hidden pt-16 bg-background min-h-[820px] lg:min-h-[900px]"
     >
       {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
       <div className="pointer-events-none absolute inset-0 z-0">
@@ -85,7 +85,7 @@ const HeroSection = () => {
           src={infinoxLogoRight}
           alt=""
           aria-hidden
-          className="absolute right-[8%] top-1/2 hidden h-[360px] w-auto -translate-y-1/2 select-none lg:block animate-breathe"
+          className="absolute right-[6%] top-1/2 hidden h-[420px] w-auto -translate-y-1/2 select-none lg:block animate-breathe"
           draggable={false}
           style={{
             filter:
