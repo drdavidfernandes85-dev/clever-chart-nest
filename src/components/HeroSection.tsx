@@ -257,7 +257,7 @@ const HeroSection = () => {
               />
             </div>
 
-            {/* The glowing IX ring */}
+            {/* The glowing official InfinoX circular logo */}
             <div className="relative animate-float">
               {/* Pulsing outer ring glow */}
               <div
@@ -267,22 +267,40 @@ const HeroSection = () => {
                     "0 0 80px hsl(45 100% 55% / 0.7), 0 0 160px hsl(28 100% 55% / 0.5), 0 0 240px hsl(15 100% 55% / 0.35)",
                 }}
               />
-              {/* White luminous ring */}
+              {/* White luminous ring with InfinoX IX mark */}
               <div className="relative h-64 w-64 rounded-full border-[14px] border-white shadow-[inset_0_0_40px_rgba(255,255,255,0.65),0_0_80px_rgba(255,255,255,0.55)] md:h-80 md:w-80 lg:h-[22rem] lg:w-[22rem]">
-                {/* Subtle inner dark backdrop so arrow pops */}
-                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-black/40 via-black/20 to-transparent" />
-                {/* Inner yellow play arrow */}
+                {/* Subtle inner dark backdrop so logo pops */}
+                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-black/50 via-black/25 to-transparent" />
+                {/* Inner InfinoX IX monogram (official mark) */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div
-                    className="ml-4 h-0 w-0"
+                  <svg
+                    viewBox="0 0 200 200"
+                    className="h-[58%] w-[58%]"
                     style={{
-                      borderTop: "62px solid transparent",
-                      borderBottom: "62px solid transparent",
-                      borderLeft: "94px solid #FFCD05",
                       filter:
-                        "drop-shadow(0 0 25px hsl(45 100% 50% / 0.95)) drop-shadow(0 0 50px hsl(28 100% 55% / 0.7))",
+                        "drop-shadow(0 0 22px hsl(45 100% 50% / 0.95)) drop-shadow(0 0 48px hsl(28 100% 55% / 0.65))",
                     }}
-                  />
+                    aria-label="InfinoX"
+                  >
+                    <defs>
+                      <linearGradient id="ixGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#FFE066" />
+                        <stop offset="55%" stopColor="#FFCD05" />
+                        <stop offset="100%" stopColor="#F5A623" />
+                      </linearGradient>
+                    </defs>
+                    {/* "I" bar */}
+                    <rect x="34" y="42" width="28" height="116" rx="3" fill="url(#ixGrad)" />
+                    {/* "X" formed by two crossed diamond strokes */}
+                    <polygon
+                      points="78,42 110,42 166,158 134,158"
+                      fill="url(#ixGrad)"
+                    />
+                    <polygon
+                      points="166,42 134,42 78,158 110,158"
+                      fill="url(#ixGrad)"
+                    />
+                  </svg>
                 </div>
               </div>
             </div>
