@@ -344,8 +344,8 @@ const QuickTradePanel = ({ compact = false }: Props) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
         className={`rounded-2xl border bg-gradient-to-br ${sideAccent} backdrop-blur-sm overflow-hidden transition-all duration-500 ${
-          compact ? "" : "shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.2)]"
-        } ${flash ? "ring-2 ring-primary shadow-[0_0_50px_-5px_hsl(48_100%_51%/0.6)] scale-[1.01]" : ""}`}
+          flash ? "ring-2 ring-primary scale-[1.01]" : ""
+        }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5 bg-card/60">

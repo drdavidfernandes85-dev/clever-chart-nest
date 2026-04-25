@@ -157,7 +157,7 @@ const KpiStrip = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: idx * 0.06, ease: "easeOut" }}
-            className="group relative overflow-hidden rounded-xl glass-panel p-3 transition-all duration-500 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_16px_40px_-25px_hsl(48_100%_51%/0.4)]"
+            className="group relative overflow-hidden rounded-xl glass-panel p-3 transition-all duration-500 hover:-translate-y-0.5 hover:border-primary/40"
           >
             {/* Accent edge */}
             <div

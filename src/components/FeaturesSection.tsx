@@ -41,7 +41,7 @@ const FeaturesSection = () => {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {featureKeys.map((f, i) => (
             <ScrollReveal key={f.title} delay={i * 80}>
-              <div className="shimmer-border group relative h-full overflow-hidden rounded-2xl glass-panel p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_60px_-20px_hsl(48_100%_51%/0.25)]">
+              <div className="shimmer-border group relative h-full overflow-hidden rounded-2xl glass-panel p-7 transition-all duration-500 hover:-translate-y-1 hover:border-primary/40">
                 {/* Subtle chart sparkline accent in the corner */}
                 <svg
                   viewBox="0 0 80 24"
@@ -58,7 +58,7 @@ const FeaturesSection = () => {
                 </svg>
 
                 <div className="relative z-[1]">
-                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.06)] transition-all duration-500 group-hover:bg-primary/20 group-hover:shadow-[0_0_24px_hsl(48_100%_51%/0.35)]">
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20 transition-all duration-500 group-hover:bg-primary/20 group-hover:ring-primary/40">
                     <f.icon className="h-5 w-5" />
                   </div>
                   <h3 className="mb-2.5 font-heading text-base font-semibold text-foreground uppercase tracking-wide">
