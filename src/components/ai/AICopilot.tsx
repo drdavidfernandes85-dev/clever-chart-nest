@@ -279,7 +279,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-14 items-center gap-2 rounded-full bg-primary px-5 text-primary-foreground shadow-2xl shadow-primary/40 transition-all hover:scale-105 hover:shadow-primary/60"
+          className="fixed bottom-24 right-6 z-50 flex h-14 items-center gap-2 rounded-full bg-primary px-5 text-primary-foreground shadow-2xl shadow-primary/40 transition-all hover:scale-105 hover:shadow-primary/60"
           aria-label="Open AI Co-pilot"
         >
           <Sparkles className="h-5 w-5" />
