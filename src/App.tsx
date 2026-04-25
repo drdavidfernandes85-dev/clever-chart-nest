@@ -55,6 +55,7 @@ const CalendarPage = lazyWithRetry(() => import("./pages/Calendar.tsx"));
 const ConnectMT = lazyWithRetry(() => import("./pages/ConnectMT.tsx"));
 const Webinars = lazyWithRetry(() => import("./pages/Webinars.tsx"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
+const HeroQA = lazyWithRetry(() => import("./pages/HeroQA.tsx"));
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,7 @@ const App = () => (
                   <Route path="/webinars" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/webinars/:id" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/u/:userId" element={<ProtectedRoute><DashboardLayout><PublicProfile /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/__qa/hero" element={<HeroQA />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
