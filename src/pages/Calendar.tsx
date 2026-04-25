@@ -20,7 +20,7 @@ const CalendarPage = () => {
   return (
     <>
       <SEO
-        title="Calendario | Elite Live Trading Room"
+        title="Calendario | IX Live Trading Room"
         description="Calendario económico y próximas sesiones en vivo."
         canonical="https://elitelivetradingroom.com/calendar"
       />

@@ -169,7 +169,7 @@ const LiveChart = () => {
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <SEO
-        title="Live Chart Terminal | Elite Live Trading Room"
+        title="Live Chart Terminal | IX Live Trading Room"
         description="High-end live trading terminal with real-time charts, quick trade execution and pro indicators."
         canonical="https://elitelivetradingroom.com/live-chart"
       />

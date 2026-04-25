@@ -55,7 +55,7 @@ const Footer = () => {
         </div>
         <div className="mt-12 cyber-line" />
         <div className="mt-6 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Elite Live Trading Room — Powered by INFINOX. {t("footer.rights")}
+          © {new Date().getFullYear()} IX Live Trading Room — Powered by INFINOX. {t("footer.rights")}
         </div>
       </div>
     </footer>

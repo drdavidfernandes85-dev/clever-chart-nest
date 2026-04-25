@@ -47,8 +47,8 @@ const Register = () => {
   return (
     <div className="relative flex min-h-screen overflow-hidden">
       <SEO
-        title="Create Account | Elite Live Trading Room"
-        description="Create your free account and join the Elite Live Trading Room — live forex analysis, signals and a pro community."
+        title="Create Account | IX Live Trading Room"
+        description="Create your free account and join the IX Live Trading Room — live forex analysis, signals and a pro community."
         canonical="https://elitelivetradingroom.com/register"
       />
       <div className="pointer-events-none absolute inset-0">

@@ -112,7 +112,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title="My Profile | Elite Live Trading Room"
+        title="My Profile | IX Live Trading Room"
         description="Manage your trader profile, avatar and leaderboard visibility."
         canonical="https://elitelivetradingroom.com/profile"
       />

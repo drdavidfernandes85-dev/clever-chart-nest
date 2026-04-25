@@ -86,8 +86,8 @@ const PublicProfile = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title={`${profile.display_name} | Elite Live Trading Room`}
-        description={`Trader profile for ${profile.display_name} on Elite Live Trading Room`}
+        title={`${profile.display_name} | IX Live Trading Room`}
+        description={`Trader profile for ${profile.display_name} on IX Live Trading Room`}
       />
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
