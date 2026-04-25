@@ -337,6 +337,9 @@ const Dashboard = () => {
 
       <FieryThemeQA />
 
+      {/* Floating AI Assistant — bottom-right glowing yellow */}
+      <AICopilot />
+
       {/* Tier-up celebration — only fires once per tier per user */}
       <MentorTierCelebration tier={newlyUnlocked} onClose={acknowledge} />
     </>
