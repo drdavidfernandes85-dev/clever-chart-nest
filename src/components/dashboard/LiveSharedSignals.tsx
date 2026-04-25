@@ -76,7 +76,7 @@ const LiveSharedSignals = () => {
         .from("trading_signals")
         .select("id, pair, direction, entry_price, stop_loss, take_profit, status, created_at, author_id")
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(30);
 
       if (cancelled || !rawSignals) return;
 
@@ -128,26 +128,13 @@ const LiveSharedSignals = () => {
     };
   }, []);
 
-  const rows = (signals.length ? signals : PLACEHOLDERS).slice(0, 6);
+  const rows = signals.length ? signals : PLACEHOLDERS;
 
   return (
     <>
-      <div className="rounded-2xl border border-primary/25 bg-card/70 backdrop-blur-md overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
-          <div className="flex items-center gap-2">
-            <Radio className="h-3.5 w-3.5 text-primary animate-pulse" />
-            <h3 className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-foreground">
-              Live Shared Signals
-            </h3>
-          </div>
-          <Link
-            to="/signals"
-            className="font-proxima text-[10px] font-semibold uppercase tracking-wider text-primary hover:underline"
-          >
-            All
-          </Link>
-        </div>
-        <ul className="divide-y divide-border/30">
+      <div className="overflow-hidden">
+        <ul className="max-h-[520px] overflow-y-auto divide-y divide-border/30 pr-1">
+
           {rows.map((s) => {
             const isBuy = s.direction.toLowerCase() === "buy";
             const isPlaceholder = s.id.startsWith("p");
