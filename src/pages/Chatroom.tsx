@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import ChatMessage from "@/components/chatroom/ChatMessage";
 import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
-import AICopilot from "@/components/ai/AICopilot";
+
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
@@ -414,9 +414,6 @@ const Chatroom = () => {
           </div>
         </aside>
       )}
-
-      {/* AI Copilot — floating launcher (still available, no longer embedded) */}
-      {!focusMode && <AICopilot />}
 
     </div>
   );
