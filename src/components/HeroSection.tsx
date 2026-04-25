@@ -88,64 +88,75 @@ const HeroSection = () => {
         ))}
       </div>
 
-      {/* Full-width fiery comet trail: left edge → logo on the right */}
+      {/* Full-width fiery comet trail: left edge → InfinoX logo on the right */}
       <svg
         viewBox="0 0 1600 720"
         className="pointer-events-none absolute inset-0 z-[2] h-full w-full mix-blend-screen"
-        preserveAspectRatio="none"
+        preserveAspectRatio="xMidYMid slice"
         aria-hidden
       >
         <defs>
-          <radialGradient id="heroFireBurst" cx="78%" cy="48%" r="28%">
-            <stop offset="0%" stopColor="hsl(48 100% 92%)" stopOpacity="1" />
-            <stop offset="28%" stopColor="hsl(var(--primary))" stopOpacity="0.92" />
-            <stop offset="62%" stopColor="hsl(28 100% 52%)" stopOpacity="0.58" />
-            <stop offset="100%" stopColor="hsl(12 100% 32%)" stopOpacity="0" />
+          {/* Burst hot-spot centered exactly on the logo (≈ 75% / 50%) */}
+          <radialGradient id="heroFireBurst" cx="75%" cy="50%" r="22%">
+            <stop offset="0%" stopColor="hsl(48 100% 95%)" stopOpacity="1" />
+            <stop offset="22%" stopColor="hsl(var(--primary))" stopOpacity="0.95" />
+            <stop offset="58%" stopColor="hsl(28 100% 52%)" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="hsl(12 100% 30%)" stopOpacity="0" />
           </radialGradient>
           <linearGradient id="heroCometTrail" x1="0" y1="0.5" x2="1" y2="0.5">
             <stop offset="0%" stopColor="transparent" />
-            <stop offset="18%" stopColor="hsl(25 100% 47%)" stopOpacity="0.38" />
-            <stop offset="48%" stopColor="hsl(35 100% 53%)" stopOpacity="0.78" />
-            <stop offset="72%" stopColor="hsl(var(--primary))" stopOpacity="1" />
-            <stop offset="90%" stopColor="hsl(48 100% 92%)" stopOpacity="0.92" />
+            <stop offset="18%" stopColor="hsl(22 100% 45%)" stopOpacity="0.35" />
+            <stop offset="46%" stopColor="hsl(32 100% 52%)" stopOpacity="0.78" />
+            <stop offset="70%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+            <stop offset="86%" stopColor="hsl(48 100% 95%)" stopOpacity="0.95" />
             <stop offset="100%" stopColor="transparent" />
           </linearGradient>
           <filter id="heroFireBlur" x="-20%" y="-60%" width="140%" height="220%">
-            <feGaussianBlur stdDeviation="24" />
+            <feGaussianBlur stdDeviation="26" />
           </filter>
           <filter id="heroFireSoft" x="-20%" y="-60%" width="140%" height="220%">
-            <feGaussianBlur stdDeviation="8" />
+            <feGaussianBlur stdDeviation="9" />
           </filter>
         </defs>
-        <g className="animate-flame-flicker" style={{ transformOrigin: "78% 48%" }}>
+
+        {/* Wide fiery cloud bending into the logo center */}
+        <g className="animate-flame-flicker" style={{ transformOrigin: "75% 50%" }}>
           <path
-            d="M -120 360 C 180 300, 390 300, 610 342 C 820 382, 1030 415, 1265 350 C 1360 323, 1455 305, 1640 330 L 1640 485 C 1410 450, 1280 456, 1110 410 C 835 335, 575 445, 330 396 C 135 357, 5 414, -120 445 Z"
+            d="M -160 380 C 220 320, 460 348, 720 360 C 920 369, 1090 366, 1240 360 C 1320 357, 1410 354, 1640 358 L 1640 470 C 1380 462, 1170 460, 980 432 C 740 400, 520 425, 320 408 C 140 392, 5 412, -160 440 Z"
             fill="url(#heroCometTrail)"
             filter="url(#heroFireBlur)"
-            opacity="0.86"
+            opacity="0.88"
           />
         </g>
-        <g className="animate-flame-stream" style={{ transformOrigin: "left center", animationDuration: "2.4s" }}>
+
+        {/* Two synced flowing streaks — same period as the flame flicker so the burst peaks together */}
+        <g className="animate-flame-stream" style={{ transformOrigin: "left center", animationDuration: "1.4s" }}>
           <path
-            d="M -60 365 C 260 330, 580 352, 850 370 C 1045 383, 1215 355, 1380 325"
+            d="M -80 362 C 280 348, 600 360, 880 360 C 1060 360, 1180 360, 1320 360"
             fill="none"
             stroke="url(#heroCometTrail)"
-            strokeWidth="62"
+            strokeWidth="58"
             strokeLinecap="round"
             filter="url(#heroFireSoft)"
             opacity="0.95"
           />
+        </g>
+        <g className="animate-flame-stream" style={{ transformOrigin: "left center", animationDuration: "1.4s", animationDelay: "0.15s" }}>
           <path
-            d="M 60 362 C 365 350, 610 367, 890 376 C 1085 382, 1212 356, 1398 320"
+            d="M 40 360 C 380 358, 660 362, 920 360 C 1100 359, 1220 360, 1360 360"
             fill="none"
-            stroke="hsl(48 100% 92%)"
-            strokeWidth="10"
+            stroke="hsl(48 100% 95%)"
+            strokeWidth="9"
             strokeLinecap="round"
             filter="url(#heroFireSoft)"
-            opacity="0.72"
+            opacity="0.78"
           />
         </g>
-        <ellipse cx="1270" cy="350" rx="300" ry="155" fill="url(#heroFireBurst)" filter="url(#heroFireBlur)" opacity="0.95" />
+
+        {/* Impact burst exactly on logo center, pulsing in sync */}
+        <g className="animate-pulse-glow" style={{ transformOrigin: "75% 50%", animationDuration: "1.4s" }}>
+          <ellipse cx="1200" cy="360" rx="320" ry="170" fill="url(#heroFireBurst)" filter="url(#heroFireBlur)" opacity="0.95" />
+        </g>
       </svg>
 
       {/* Live market ticker */}
