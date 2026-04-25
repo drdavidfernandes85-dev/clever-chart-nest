@@ -15,10 +15,10 @@
   /* #050505 base · #111111 panels · neon yellow #FFCD05 + neon cyan accents */
   :root,
   .dark {
-    --background: 0 0% 1%;            /* #020202 deep void */
+    --background: 0 0% 1.5%;          /* #040404 deep void */
     --foreground: 0 0% 98%;
 
-    --card: 0 0% 6.5%;                /* #111111 panel */
+    --card: 0 0% 5%;                  /* #0d0d0d fiery dark panel */
     --card-foreground: 0 0% 98%;
 
     --popover: 0 0% 4%;
@@ -28,11 +28,11 @@
     --primary: 48 100% 51%;           /* #FFCD05 INFINOX yellow */
     --primary-foreground: 0 0% 4%;
 
-    --secondary: 0 0% 9%;
+    --secondary: 0 0% 8%;
     --secondary-foreground: 0 0% 84%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 62%;
 
     /* Accent = InfinoX yellow (unified brand accent) */
     --accent: 48 100% 51%;            /* #FFCD05 InfinoX yellow */
@@ -41,7 +41,8 @@
     --destructive: 348 100% 60%;      /* neon magenta-red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 48 100% 51%;            /* yellow border (used at low alpha) */
+    /* Border = warm fiery yellow (used at low alpha across all panels) */
+    --border: 48 100% 51%;
     --input: 0 0% 10%;
     --ring: 48 100% 51%;
 
@@ -120,7 +121,26 @@
 
 @layer base {
   * {
-    border-color: hsl(0 0% 100% / 0.06);
+    border-color: hsl(48 100% 51% / 0.12);
+  }
+
+  /* ── Global fiery dark panel treatment ──
+     Every element using `bg-card` (every shadcn Card, every dashboard panel,
+     every tab) automatically gets the warm orange-glow border + shadow,
+     so the entire app stays cohesive with the hero without per-page edits.
+     Light theme is excluded. */
+  :root:not(.light) [class*="bg-card"]:not(body):not(html) {
+    border-color: hsl(48 100% 51% / 0.18);
+    box-shadow:
+      inset 0 1px 0 hsl(48 100% 60% / 0.04),
+      0 0 0 1px hsl(28 100% 50% / 0.04),
+      0 8px 24px -12px hsl(28 100% 45% / 0.18),
+      0 14px 40px -16px hsl(0 0% 0% / 0.7);
+  }
+
+  /* Stronger fiery border on any element using `border-border` token */
+  :root:not(.light) [class*="border-border"] {
+    border-color: hsl(48 100% 51% / 0.18);
   }
 
   body {
