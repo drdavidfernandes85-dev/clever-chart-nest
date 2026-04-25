@@ -138,7 +138,7 @@ const LiveSharedSignals = () => {
     };
   }, []);
 
-  const rows = signals.length ? signals : PLACEHOLDERS;
+  const rows = signals;
 
   return (
     <>
