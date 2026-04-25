@@ -47,55 +47,58 @@ const HeroSection = () => {
     >
       {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
       <div className="pointer-events-none absolute inset-0 z-0">
-        {/* Deep dark base gradient for depth */}
+        {/* Deep dark base for depth */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 90% 70% at 70% 50%, hsl(28 80% 8% / 0.55) 0%, hsl(0 0% 2%) 70%)",
+              "radial-gradient(ellipse 90% 70% at 65% 50%, hsl(28 80% 8% / 0.6) 0%, hsl(0 0% 2%) 75%)",
           }}
         />
 
-        {/* Soft pulsing halo behind where the logo sits in the image */}
+        {/* Soft pulsing yellow halo behind the logo zone */}
         <div
-          className="absolute top-1/2 right-[6%] -translate-y-1/2 h-[520px] w-[520px] rounded-full animate-pulse-glow"
+          className="absolute top-1/2 right-[14%] -translate-y-1/2 h-[460px] w-[460px] rounded-full animate-pulse-glow"
           style={{
             background:
               "radial-gradient(circle, hsl(45 100% 55% / 0.22) 0%, hsl(28 100% 50% / 0.12) 40%, transparent 70%)",
-            filter: "blur(20px)",
+            filter: "blur(24px)",
           }}
         />
 
+        {/* The reference banner image — positioned so the logo+flames sit on the right side of the hero.
+            The banner is very wide; we crop it via object-position to show the left ~40% (where the logo/flames are). */}
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute right-0 top-1/2 -translate-y-1/2 h-full min-h-[460px] w-auto max-w-none scale-110 object-contain select-none md:h-[120%] lg:right-[-2%] animate-breathe"
-          draggable={false}
+          className="absolute inset-y-0 right-0 h-full w-[75%] object-cover select-none animate-breathe"
           style={{
+            objectPosition: "0% center",
             filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
           }}
+          draggable={false}
         />
 
-        {/* Soft left fade so text is readable over the flames */}
+        {/* Soft left fade so text is readable */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.78) 26%, rgba(0,0,0,0.32) 52%, rgba(0,0,0,0) 75%)",
+              "linear-gradient(90deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.78) 22%, rgba(0,0,0,0.30) 48%, rgba(0,0,0,0) 72%)",
           }}
         />
-        {/* Bottom + top vignette */}
+        {/* Vignette */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 110% 85% at 60% 50%, transparent 42%, rgba(0,0,0,0.55) 82%, rgba(0,0,0,0.95) 100%)",
+              "radial-gradient(ellipse 110% 85% at 60% 50%, transparent 45%, rgba(0,0,0,0.55) 82%, rgba(0,0,0,0.95) 100%)",
           }}
         />
       </div>
 
-      {/* Floating embers + bright sparks for liveliness */}
+      {/* Floating embers + bright sparks */}
       <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
         {Array.from({ length: 26 }).map((_, i) => (
           <span
@@ -114,7 +117,6 @@ const HeroSection = () => {
             }}
           />
         ))}
-        {/* Bright spark streaks near the comet impact zone */}
         {Array.from({ length: 8 }).map((_, i) => (
           <span
             key={`sp-${i}`}
