@@ -265,12 +265,23 @@ const LiveSharedSignals = () => {
                   </div>
                 </div>
 
+                {/* AI explanation */}
+                <div className="mb-2 rounded-lg border border-primary/15 bg-primary/[0.04]">
+                  <AIScoreExplanation
+                    pair={s.pair}
+                    direction={s.direction}
+                    entry_price={Number(s.entry_price)}
+                    stop_loss={s.stop_loss != null ? Number(s.stop_loss) : null}
+                    take_profit={s.take_profit != null ? Number(s.take_profit) : null}
+                  />
+                </div>
+
                 {/* CTA */}
-                {(!isPlaceholder ? ["active", "open"].includes(s.status) : true) && (
+                {["active", "open"].includes(s.status) && (
                   <button
                     onClick={() => {
                       setRequest({
-                        signalId: isPlaceholder ? null : s.id,
+                        signalId: s.id,
                         pair: s.pair,
                         side: isBuy ? "buy" : "sell",
                         entry: Number(s.entry_price),
