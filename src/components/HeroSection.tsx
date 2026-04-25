@@ -6,7 +6,7 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
-import heroFlamesBg from "@/assets/hero-flames-bg.jpg";
+
 
 // Next webinar config
 const NEXT_WEBINAR = {
