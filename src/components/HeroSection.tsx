@@ -196,130 +196,172 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* RIGHT — fiery comet ring composition */}
+          {/* RIGHT — animated cinematic flame + InfinoX logo */}
           <div className="relative flex items-center justify-center min-h-[460px] lg:min-h-[600px]">
-            {/* Flame background photo, masked & positioned to flow INTO the ring */}
+            {/* Warm radial halo behind ring */}
             <div
-              className="pointer-events-none absolute inset-0 -z-[2]"
-              style={{
-                backgroundImage: `url(${heroFlamesBg})`,
-                backgroundSize: "180% auto",
-                backgroundPosition: "left center",
-                backgroundRepeat: "no-repeat",
-                maskImage:
-                  "radial-gradient(ellipse 80% 90% at 60% 50%, black 40%, transparent 80%)",
-                WebkitMaskImage:
-                  "radial-gradient(ellipse 80% 90% at 60% 50%, black 40%, transparent 80%)",
-                opacity: 0.95,
-                filter: "saturate(1.15) contrast(1.05)",
-              }}
-            />
-
-            {/* Extra warm halo behind ring */}
-            <div
-              className="absolute inset-0 -z-[1]"
+              className="absolute inset-0 -z-[1] animate-pulse-glow"
               style={{
                 background:
-                  "radial-gradient(circle at 60% 50%, hsl(45 100% 60% / 0.45), hsl(28 100% 50% / 0.2) 35%, transparent 65%)",
-                filter: "blur(30px)",
+                  "radial-gradient(circle at 62% 50%, hsl(45 100% 60% / 0.55), hsl(28 100% 50% / 0.25) 35%, transparent 65%)",
+                filter: "blur(40px)",
               }}
             />
 
-            {/* Animated comet streaks crashing into the ring */}
-            <div className="pointer-events-none absolute inset-y-0 left-0 right-[35%] -z-[1] overflow-hidden">
-              <div
-                className="absolute top-1/2 left-0 h-40 w-full -translate-y-1/2 animate-comet"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent 0%, hsl(45 100% 55% / 0.85) 35%, hsl(28 100% 55% / 0.95) 65%, hsl(15 100% 50% / 0.5) 90%, transparent 100%)",
-                  filter: "blur(22px)",
-                  borderRadius: "50%",
-                }}
-              />
-              <div
-                className="absolute top-1/2 left-0 h-20 w-full -translate-y-1/2 animate-comet"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent 0%, hsl(45 100% 75% / 0.95) 55%, hsl(45 100% 60% / 0.7) 85%, transparent 100%)",
-                  filter: "blur(10px)",
-                  borderRadius: "50%",
-                  animationDelay: "0.4s",
-                }}
-              />
-              <div
-                className="absolute top-1/2 left-0 h-3 w-full -translate-y-1/2 animate-comet"
-                style={{
-                  background:
-                    "linear-gradient(90deg, transparent 0%, hsl(48 100% 92% / 0.95) 70%, transparent 100%)",
-                  filter: "blur(2px)",
-                  animationDelay: "0.2s",
-                }}
-              />
+            {/* ── Living flame trail (SVG, continuously animated) ── */}
+            <svg
+              viewBox="0 0 800 600"
+              className="pointer-events-none absolute inset-0 -z-[1] h-full w-full"
+              preserveAspectRatio="xMidYMid slice"
+              aria-hidden
+            >
+              <defs>
+                <radialGradient id="flameCore" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#FFF6CC" stopOpacity="1" />
+                  <stop offset="35%" stopColor="#FFCD05" stopOpacity="0.95" />
+                  <stop offset="70%" stopColor="#FF6A00" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#7A1500" stopOpacity="0" />
+                </radialGradient>
+                <linearGradient id="flameStreak" x1="0" y1="0.5" x2="1" y2="0.5">
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="35%" stopColor="#FF8A1A" stopOpacity="0.85" />
+                  <stop offset="65%" stopColor="#FFCD05" stopOpacity="1" />
+                  <stop offset="90%" stopColor="#FFF1A8" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+                <filter id="flameBlur" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="14" />
+                </filter>
+                <filter id="flameSoft" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="6" />
+                </filter>
+              </defs>
+
+              {/* Outer fiery cloud */}
+              <g className="origin-center animate-flame-flicker" style={{ transformOrigin: "55% 50%" }}>
+                <ellipse cx="380" cy="300" rx="320" ry="120" fill="url(#flameCore)" filter="url(#flameBlur)" opacity="0.85" />
+              </g>
+              {/* Mid fire body */}
+              <g className="animate-flame-flicker" style={{ animationDelay: "0.3s", animationDuration: "1.1s", transformOrigin: "55% 50%" }}>
+                <ellipse cx="400" cy="300" rx="260" ry="80" fill="url(#flameCore)" filter="url(#flameSoft)" opacity="0.95" />
+              </g>
+              {/* Bright streak — flowing */}
+              <g>
+                <rect x="0" y="280" width="700" height="40" rx="20" fill="url(#flameStreak)" filter="url(#flameSoft)" className="animate-flame-stream" style={{ transformOrigin: "left center" }} />
+              </g>
+              <g>
+                <rect x="0" y="295" width="700" height="14" rx="7" fill="url(#flameStreak)" className="animate-flame-stream" style={{ animationDelay: "0.6s", animationDuration: "2.2s", transformOrigin: "left center" }} />
+              </g>
+              {/* Hot white core line */}
+              <g>
+                <rect x="100" y="298" width="500" height="6" rx="3" fill="#FFF8DC" filter="url(#flameSoft)" className="animate-flame-stream" style={{ animationDelay: "0.2s", animationDuration: "1.8s", transformOrigin: "left center", opacity: 0.9 }} />
+              </g>
+            </svg>
+
+            {/* ── Rising sparks ── */}
+            <div className="pointer-events-none absolute inset-0 -z-[1] overflow-hidden">
+              {Array.from({ length: 18 }).map((_, i) => {
+                const left = 8 + (i * 7) % 60;
+                const top = 35 + (i * 11) % 30;
+                const dx = -20 + ((i * 13) % 80);
+                const dy = -120 - ((i * 17) % 120);
+                const size = 2 + (i % 4);
+                return (
+                  <span
+                    key={i}
+                    className="absolute block rounded-full bg-[#FFE680] animate-spark-rise"
+                    style={{
+                      left: `${left}%`,
+                      top: `${top}%`,
+                      width: `${size}px`,
+                      height: `${size}px`,
+                      // @ts-ignore custom CSS vars
+                      "--sx": `${dx}px`,
+                      "--sy": `${dy}px`,
+                      animationDelay: `${(i * 0.27) % 3.5}s`,
+                      animationDuration: `${2.8 + (i % 5) * 0.4}s`,
+                      boxShadow:
+                        "0 0 10px hsl(45 100% 60% / 0.95), 0 0 22px hsl(28 100% 55% / 0.7)",
+                      filter: "blur(0.4px)",
+                    } as React.CSSProperties}
+                  />
+                );
+              })}
             </div>
 
-            {/* The glowing official InfinoX circular logo */}
+            {/* ── Drifting ambient particles ── */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              {Array.from({ length: 14 }).map((_, i) => (
+                <span
+                  key={i}
+                  className="absolute block rounded-full bg-primary/60 animate-particle-drift"
+                  style={{
+                    left: `${(i * 23) % 95}%`,
+                    top: `${(i * 17) % 90}%`,
+                    width: `${1.5 + (i % 3)}px`,
+                    height: `${1.5 + (i % 3)}px`,
+                    // @ts-ignore custom CSS vars
+                    "--dx": `${-30 + ((i * 11) % 60)}px`,
+                    "--dy": `${-20 - ((i * 9) % 40)}px`,
+                    animationDelay: `${(i * 0.5) % 8}s`,
+                    animationDuration: `${7 + (i % 5)}s`,
+                    boxShadow: "0 0 6px hsl(45 100% 60% / 0.9)",
+                  } as React.CSSProperties}
+                />
+              ))}
+            </div>
+
+            {/* ── The official InfinoX logo (animated) ── */}
             <div className="relative animate-float">
-              {/* Pulsing outer ring glow */}
+              {/* Slow rotating outer halo */}
+              <div
+                className="absolute -inset-8 rounded-full animate-spin-slow"
+                style={{
+                  background:
+                    "conic-gradient(from 0deg, transparent 0deg, hsl(45 100% 55% / 0.45) 60deg, transparent 120deg, transparent 240deg, hsl(28 100% 55% / 0.35) 300deg, transparent 360deg)",
+                  filter: "blur(22px)",
+                }}
+              />
+              {/* Pulsing glow */}
               <div
                 className="absolute inset-0 rounded-full animate-pulse-glow"
                 style={{
                   boxShadow:
-                    "0 0 80px hsl(45 100% 55% / 0.7), 0 0 160px hsl(28 100% 55% / 0.5), 0 0 240px hsl(15 100% 55% / 0.35)",
+                    "0 0 80px hsl(45 100% 55% / 0.8), 0 0 160px hsl(28 100% 55% / 0.55), 0 0 240px hsl(15 100% 55% / 0.35)",
                 }}
               />
-              {/* White luminous ring with InfinoX IX mark */}
-              <div className="relative h-64 w-64 rounded-full border-[14px] border-white shadow-[inset_0_0_40px_rgba(255,255,255,0.65),0_0_80px_rgba(255,255,255,0.55)] md:h-80 md:w-80 lg:h-[22rem] lg:w-[22rem]">
-                {/* Subtle inner dark backdrop so logo pops */}
-                <div className="absolute inset-2 rounded-full bg-gradient-to-br from-black/50 via-black/25 to-transparent" />
-                {/* Inner InfinoX IX monogram (official mark) */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <svg
-                    viewBox="0 0 200 200"
-                    className="h-[58%] w-[58%]"
+
+              {/* Breathing logo container */}
+              <div className="relative h-64 w-64 md:h-80 md:w-80 lg:h-[22rem] lg:w-[22rem] animate-breathe">
+                <svg
+                  viewBox="0 0 200 200"
+                  className="absolute inset-0 h-full w-full"
+                  style={{
+                    filter:
+                      "drop-shadow(0 0 18px rgba(255,255,255,0.55)) drop-shadow(0 0 35px hsl(45 100% 55% / 0.55))",
+                  }}
+                  aria-label="InfinoX"
+                >
+                  {/* Open white ring (with bottom gap, like the brand mark) */}
+                  <path
+                    d="M 100 12
+                       a 88 88 0 1 1 -38 8.6"
+                    fill="none"
+                    stroke="#FFFFFF"
+                    strokeWidth="14"
+                    strokeLinecap="round"
+                  />
+                  {/* Inner yellow upward triangle */}
+                  <polygon
+                    points="100,108 128,162 72,162"
+                    fill="#FFCD05"
                     style={{
                       filter:
-                        "drop-shadow(0 0 22px hsl(45 100% 50% / 0.95)) drop-shadow(0 0 48px hsl(28 100% 55% / 0.65))",
+                        "drop-shadow(0 0 10px hsl(45 100% 50% / 0.95)) drop-shadow(0 0 22px hsl(28 100% 55% / 0.7))",
                     }}
-                    aria-label="InfinoX"
-                  >
-                    <defs>
-                      <linearGradient id="ixGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#FFE066" />
-                        <stop offset="55%" stopColor="#FFCD05" />
-                        <stop offset="100%" stopColor="#F5A623" />
-                      </linearGradient>
-                    </defs>
-                    {/* "I" bar */}
-                    <rect x="34" y="42" width="28" height="116" rx="3" fill="url(#ixGrad)" />
-                    {/* "X" formed by two crossed diamond strokes */}
-                    <polygon
-                      points="78,42 110,42 166,158 134,158"
-                      fill="url(#ixGrad)"
-                    />
-                    <polygon
-                      points="166,42 134,42 78,158 110,158"
-                      fill="url(#ixGrad)"
-                    />
-                  </svg>
-                </div>
+                  />
+                </svg>
               </div>
-            </div>
-
-            {/* Floating sparks around the ring */}
-            <div className="pointer-events-none absolute inset-0">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="absolute h-1.5 w-1.5 rounded-full bg-primary animate-ember"
-                  style={{
-                    left: `${20 + (i * 13) % 65}%`,
-                    top: `${15 + (i * 19) % 70}%`,
-                    animationDelay: `${i * 0.4}s`,
-                    boxShadow:
-                      "0 0 12px hsl(45 100% 60% / 0.95), 0 0 24px hsl(28 100% 55% / 0.7)",
-                  }}
-                />
-              ))}
             </div>
           </div>
         </div>
