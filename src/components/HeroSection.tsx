@@ -353,6 +353,7 @@ const HeroSection = () => {
                   loading="eager"
                   decoding="async"
                   style={{
+                    transform: "rotate(90deg) scale(1.02)",
                     filter:
                       "drop-shadow(0 0 18px rgba(255,255,255,0.7)) drop-shadow(0 0 36px hsl(var(--primary) / 0.75)) drop-shadow(0 0 80px hsl(28 100% 55% / 0.45))",
                   }}
