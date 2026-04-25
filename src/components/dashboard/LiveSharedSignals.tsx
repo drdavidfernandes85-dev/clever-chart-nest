@@ -36,8 +36,8 @@ const PLACEHOLDERS: SharedSignal[] = [
   { id: "p4", pair: "USD/JPY", direction: "sell", entry_price: 154.82, stop_loss: 155.5, take_profit: 153.5, status: "open", created_at: "", author_id: null, author_name: "alpha-rat", author_role: null, author_winrate: 54 },
 ];
 
-const initialsOf = (n: string) =>
-  n
+const initialsOf = (n?: string | null) =>
+  (n || "TR")
     .split(/[\s._-]+/)
     .map((p) => p[0])
     .filter(Boolean)
