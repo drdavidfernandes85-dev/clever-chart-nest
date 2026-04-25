@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Radio,
   TrendingUp,
   TrendingDown,
   Zap,
   CheckCircle2,
-  ShieldCheck,
-  Crown,
-  Flame,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CopyTradeModal, { CopyTradeRequest } from "@/components/copytrade/CopyTradeModal";
 import { useCopiedSignals } from "@/hooks/useCopiedSignals";
+import { computeMentorTier, MentorTier } from "@/lib/mentor-tier";
+import MentorBadge from "@/components/social/MentorBadge";
 
 type SharedSignal = {
   id: string;
@@ -25,15 +23,16 @@ type SharedSignal = {
   created_at: string;
   author_id: string | null;
   author_name: string;
-  author_role: "admin" | "moderator" | null;
-  author_winrate: number | null;
+  author_tier: MentorTier | null;
 };
 
+import { MENTOR_TIERS } from "@/lib/mentor-tier";
+
 const PLACEHOLDERS: SharedSignal[] = [
-  { id: "p1", pair: "EUR/USD", direction: "buy", entry_price: 1.1699, stop_loss: 1.165, take_profit: 1.18, status: "hit_tp", created_at: "", author_id: null, author_name: "IX_Mentor", author_role: "admin", author_winrate: 72 },
-  { id: "p2", pair: "GBP/JPY", direction: "sell", entry_price: 192.34, stop_loss: 193.0, take_profit: 191.0, status: "open", created_at: "", author_id: null, author_name: "EUR_King", author_role: "moderator", author_winrate: 68 },
-  { id: "p3", pair: "XAU/USD", direction: "buy", entry_price: 2412.5, stop_loss: 2400, take_profit: 2440, status: "open", created_at: "", author_id: null, author_name: "df23fx", author_role: null, author_winrate: 61 },
-  { id: "p4", pair: "USD/JPY", direction: "sell", entry_price: 154.82, stop_loss: 155.5, take_profit: 153.5, status: "open", created_at: "", author_id: null, author_name: "alpha-rat", author_role: null, author_winrate: 54 },
+  { id: "p1", pair: "EUR/USD", direction: "buy", entry_price: 1.1699, stop_loss: 1.165, take_profit: 1.18, status: "hit_tp", created_at: "", author_id: null, author_name: "IX_Mentor", author_tier: MENTOR_TIERS.mentor },
+  { id: "p2", pair: "GBP/JPY", direction: "sell", entry_price: 192.34, stop_loss: 193.0, take_profit: 191.0, status: "open", created_at: "", author_id: null, author_name: "EUR_King", author_tier: MENTOR_TIERS.verified_trader },
+  { id: "p3", pair: "XAU/USD", direction: "buy", entry_price: 2412.5, stop_loss: 2400, take_profit: 2440, status: "open", created_at: "", author_id: null, author_name: "df23fx", author_tier: MENTOR_TIERS.rising_star },
+  { id: "p4", pair: "USD/JPY", direction: "sell", entry_price: 154.82, stop_loss: 155.5, take_profit: 153.5, status: "open", created_at: "", author_id: null, author_name: "alpha-rat", author_tier: null },
 ];
 
 const initialsOf = (n?: string | null) =>
@@ -84,29 +83,47 @@ const LiveSharedSignals = () => {
         new Set(rawSignals.map((s) => s.author_id).filter(Boolean) as string[]),
       );
 
-      const [profilesRes, rolesRes] = await Promise.all([
+      const [profilesRes, statsRes] = await Promise.all([
         authorIds.length
           ? supabase.from("profiles").select("user_id, display_name").in("user_id", authorIds)
           : Promise.resolve({ data: [] as { user_id: string; display_name: string }[] }),
         authorIds.length
-          ? supabase.from("user_roles").select("user_id, role").in("user_id", authorIds)
-          : Promise.resolve({ data: [] as { user_id: string; role: string }[] }),
+          ? supabase
+              .from("leaderboard_stats")
+              .select("user_id, total_trades, win_rate, total_pnl, pnl_30d")
+              .in("user_id", authorIds)
+          : Promise.resolve({
+              data: [] as Array<{
+                user_id: string;
+                total_trades: number | null;
+                win_rate: number | null;
+                total_pnl: number | null;
+                pnl_30d: number | null;
+              }>,
+            }),
       ]);
 
       const nameMap = new Map<string, string>();
       profilesRes.data?.forEach((p) => nameMap.set(p.user_id, p.display_name));
 
-      const roleMap = new Map<string, "admin" | "moderator">();
-      rolesRes.data?.forEach((r) => {
-        if (r.role === "admin" || r.role === "moderator")
-          roleMap.set(r.user_id, r.role);
+      const tierMap = new Map<string, MentorTier | null>();
+      statsRes.data?.forEach((row) => {
+        if (!row.user_id) return;
+        tierMap.set(
+          row.user_id,
+          computeMentorTier({
+            totalTrades: row.total_trades,
+            winRate: row.win_rate,
+            totalPnl: row.total_pnl,
+            pnl30d: row.pnl_30d,
+          }),
+        );
       });
 
       const enriched: SharedSignal[] = rawSignals.map((s) => ({
         ...s,
         author_name: (s.author_id && nameMap.get(s.author_id)) || "Trader",
-        author_role: (s.author_id && roleMap.get(s.author_id)) || null,
-        author_winrate: null,
+        author_tier: (s.author_id && tierMap.get(s.author_id)) || null,
       }));
 
       if (!cancelled) setSignals(enriched);
@@ -147,14 +164,12 @@ const LiveSharedSignals = () => {
             const isBuy = s.direction.toLowerCase() === "buy";
             const isPlaceholder = s.id.startsWith("p");
             const wasCopied = !isPlaceholder && copied.has(s.id);
-            const isMentor = s.author_role === "admin";
-            const isMod = s.author_role === "moderator";
-            const isVerified = isMentor || isMod;
-            const isTopPerformer = (s.author_winrate ?? 0) >= 70;
+            const tier = s.author_tier;
+            const isMentorTier = tier?.id === "mentor" || tier?.id === "elite_mentor";
             const avatarKey = s.author_id || s.author_name;
 
             // Highlight whole row if author is a verified mentor
-            const rowAccent = isMentor
+            const rowAccent = isMentorTier
               ? "bg-gradient-to-r from-primary/5 via-transparent to-transparent"
               : "";
 
@@ -171,9 +186,9 @@ const LiveSharedSignals = () => {
                     )}`}
                   >
                     {initialsOf(s.author_name)}
-                    {isVerified && (
-                      <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-primary text-background">
-                        <ShieldCheck className="h-2 w-2" strokeWidth={3} />
+                    {tier && (
+                      <span className="absolute -bottom-0.5 -right-0.5">
+                        <MentorBadge tier={tier} variant="icon" />
                       </span>
                     )}
                   </div>
@@ -182,26 +197,10 @@ const LiveSharedSignals = () => {
                       <span className="min-w-0 truncate text-xs font-semibold text-foreground">
                         {s.author_name}
                       </span>
-                      {isMentor && (
-                        <span className="inline-flex items-center gap-0.5 rounded-sm bg-primary/20 px-1 py-px font-mono text-[8px] font-bold uppercase tracking-wider text-primary">
-                          <Crown className="h-2 w-2" /> Mentor
-                        </span>
-                      )}
-                      {isMod && !isMentor && (
-                        <span className="rounded-sm bg-primary/15 px-1 py-px font-mono text-[8px] font-bold uppercase tracking-wider text-primary/80">
-                          MOD
-                        </span>
-                      )}
-                      {isTopPerformer && !isMentor && (
-                        <span className="inline-flex items-center gap-0.5 rounded-sm bg-orange-500/15 px-1 py-px font-mono text-[8px] font-bold uppercase tracking-wider text-orange-400">
-                          <Flame className="h-2 w-2" /> Top
-                        </span>
-                      )}
+                      {tier && <MentorBadge tier={tier} />}
                     </div>
                     <p className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/80">
-                      {s.author_winrate != null
-                        ? `WR ${s.author_winrate}%`
-                        : "Community trader"}
+                      {tier ? tier.label : "Community trader"}
                     </p>
                   </div>
                   <span
@@ -267,6 +266,8 @@ const LiveSharedSignals = () => {
                         entry: Number(s.entry_price),
                         sl: s.stop_loss != null ? Number(s.stop_loss) : null,
                         tp: s.take_profit != null ? Number(s.take_profit) : null,
+                        authorName: s.author_name,
+                        authorTierId: tier?.id ?? null,
                       });
                     }}
                     className={`group/btn relative w-full inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all overflow-hidden ${
