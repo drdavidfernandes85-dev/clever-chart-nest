@@ -47,53 +47,64 @@ const HeroSection = () => {
     >
       {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
       <div className="pointer-events-none absolute inset-0 z-0">
-        {/* Deep dark base for depth */}
+        {/* Deep dark base with subtle warm core for depth */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 90% 70% at 65% 50%, hsl(28 80% 8% / 0.6) 0%, hsl(0 0% 2%) 75%)",
+              "radial-gradient(ellipse 95% 75% at 70% 50%, hsl(28 85% 9% / 0.7) 0%, hsl(0 0% 2%) 70%)",
           }}
         />
 
-        {/* Soft pulsing yellow halo behind the logo zone */}
+        {/* Massive pulsing yellow halo behind the logo zone */}
         <div
-          className="absolute top-1/2 right-[14%] -translate-y-1/2 h-[460px] w-[460px] rounded-full animate-pulse-glow"
+          className="absolute top-1/2 right-[10%] -translate-y-1/2 h-[620px] w-[620px] rounded-full animate-pulse-glow"
           style={{
             background:
-              "radial-gradient(circle, hsl(45 100% 55% / 0.22) 0%, hsl(28 100% 50% / 0.12) 40%, transparent 70%)",
-            filter: "blur(24px)",
+              "radial-gradient(circle, hsl(45 100% 55% / 0.32) 0%, hsl(28 100% 50% / 0.16) 35%, transparent 68%)",
+            filter: "blur(28px)",
           }}
         />
 
-        {/* The reference banner image — positioned so the logo+flames sit on the right side of the hero.
-            The banner is very wide; we crop it via object-position to show the left ~40% (where the logo/flames are). */}
+        {/* Secondary inner glow — tighter and brighter on the ring impact */}
+        <div
+          className="absolute top-1/2 right-[14%] -translate-y-1/2 h-[300px] w-[300px] rounded-full animate-pulse-glow"
+          style={{
+            background:
+              "radial-gradient(circle, hsl(48 100% 65% / 0.45) 0%, transparent 70%)",
+            filter: "blur(18px)",
+            animationDelay: "0.6s",
+          }}
+        />
+
+        {/* The hero comet image — full bleed on the right */}
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute inset-y-0 right-0 h-full w-[75%] object-cover select-none animate-breathe"
+          className="absolute inset-y-0 right-0 h-full w-[82%] object-cover select-none animate-breathe"
           style={{
-            objectPosition: "0% center",
-            filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
+            objectPosition: "20% center",
+            filter:
+              "drop-shadow(0 0 70px hsl(28 100% 50% / 0.45)) saturate(1.15) contrast(1.08)",
           }}
           draggable={false}
         />
 
-        {/* Soft left fade so text is readable */}
+        {/* Strong left fade so text reads cleanly */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.78) 22%, rgba(0,0,0,0.30) 48%, rgba(0,0,0,0) 72%)",
+              "linear-gradient(90deg, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.85) 24%, rgba(0,0,0,0.40) 50%, rgba(0,0,0,0) 74%)",
           }}
         />
-        {/* Vignette */}
+        {/* Cinematic vignette */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 110% 85% at 60% 50%, transparent 45%, rgba(0,0,0,0.55) 82%, rgba(0,0,0,0.95) 100%)",
+              "radial-gradient(ellipse 115% 90% at 62% 50%, transparent 42%, rgba(0,0,0,0.60) 80%, rgba(0,0,0,0.98) 100%)",
           }}
         />
       </div>
