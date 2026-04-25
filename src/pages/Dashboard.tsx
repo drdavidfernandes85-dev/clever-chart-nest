@@ -42,10 +42,36 @@ import type { WidgetId } from "@/components/dashboard/customize/presets";
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
+  const [editingLayout, setEditingLayout] = useState(false);
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
   const { account } = useMTAccount();
   const { t } = useLanguage();
   const isConnected = !!account && account.status === "connected";
+
+  const {
+    preset,
+    layouts,
+    dirty,
+    saving,
+    onLayoutChange,
+    applyPreset,
+    resetDefault,
+    save,
+  } = useDashboardLayout();
+
+  // Map widget id → renderable node (memoized so RGL doesn't re-mount widgets)
+  const widgets = useMemo<Record<WidgetId, React.ReactNode>>(
+    () => ({
+      portfolio: <PortfolioOverview />,
+      risk: <RiskMeter />,
+      watchlist: <Watchlist />,
+      marketMovers: <MarketMovers />,
+      liveSignals: <LiveSharedSignals />,
+      quickTrade: <QuickTradePanel compact />,
+      recentActivity: <RecentActivity />,
+    }),
+    [],
+  );
 
   // Persist rail state
   useEffect(() => {
@@ -197,31 +223,38 @@ const Dashboard = () => {
           {/* 1. Top KPI row — 4 clean cards */}
           <KpiStrip />
 
-          {/* 2. Command Center — Portfolio (hero) + Right Sidebar */}
-          <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_336px] items-start">
-            {/* Hero — Portfolio Overview, elevated with stronger fiery border */}
-            <motion.section
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="min-w-0 rounded-2xl card-glass-elevated overflow-hidden ring-1 ring-primary/10"
-            >
-              <PortfolioOverview />
-            </motion.section>
-
-            {/* Right narrow sidebar — Risk (elevated) → Watchlist */}
-            <aside className="min-w-0 space-y-6 lg:sticky lg:top-20 self-start">
-              <div className="rounded-2xl card-glass-elevated overflow-hidden ring-1 ring-primary/10">
-                <RiskMeter />
-              </div>
-              <Watchlist />
-            </aside>
+          {/* 2. Customization toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="font-proxima text-base sm:text-lg font-bold text-foreground">
+                {t("dash.commandTitle1")}{" "}
+                <span className="text-primary">{t("dash.commandTitle2")}</span>
+              </h2>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {editingLayout
+                  ? "Drag widgets by their handle. Resize from the bottom-right corner."
+                  : "Customize your terminal — drag, resize, save your layout."}
+              </p>
+            </div>
+            <CustomizeToolbar
+              editing={editingLayout}
+              setEditing={setEditingLayout}
+              preset={preset}
+              applyPreset={applyPreset}
+              save={save}
+              resetDefault={resetDefault}
+              dirty={dirty}
+              saving={saving}
+            />
           </div>
 
-          {/* 3. Bottom — Market Movers (Top Gainers / Losers / Most Active) */}
-          <section>
-            <MarketMovers />
-          </section>
+          {/* 3. Customizable widget grid */}
+          <CustomizableDashboardGrid
+            editing={editingLayout}
+            layouts={layouts}
+            onLayoutChange={onLayoutChange}
+            widgets={widgets}
+          />
 
           {/* Optional community rail — toggleable, kept out of main flow */}
           <AnimatePresence initial={false}>
@@ -234,12 +267,8 @@ const Dashboard = () => {
                 transition={{ duration: 0.3 }}
                 className="hidden xl:grid gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_320px]"
               >
-                <RecentActivity />
-                <div className="min-w-0 space-y-6">
-                  <LiveSharedSignals />
-                  <CopiedTradesHistory limit={6} compact />
-                  <CommunityNest />
-                </div>
+                <CopiedTradesHistory limit={6} compact />
+                <CommunityNest />
               </motion.aside>
             )}
           </AnimatePresence>
