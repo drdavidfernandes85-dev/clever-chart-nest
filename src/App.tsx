@@ -55,6 +55,7 @@ const CalendarPage = lazyWithRetry(() => import("./pages/Calendar.tsx"));
 const ConnectMT = lazyWithRetry(() => import("./pages/ConnectMT.tsx"));
 const Webinars = lazyWithRetry(() => import("./pages/Webinars.tsx"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
+const HeroQA = lazyWithRetry(() => import("./pages/HeroQA.tsx"));
 
 const queryClient = new QueryClient();
 
