@@ -37,6 +37,10 @@ import { useDashboardLayout } from "@/hooks/useDashboardLayout";
 import CustomizableDashboardGrid from "@/components/dashboard/customize/CustomizableDashboardGrid";
 import CustomizeToolbar from "@/components/dashboard/customize/CustomizeToolbar";
 import type { WidgetId } from "@/components/dashboard/customize/presets";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMentorTierProgress } from "@/hooks/useMentorTierProgress";
+import MentorTierBanner from "@/components/social/MentorTierBanner";
+import MentorTierCelebration from "@/components/social/MentorTierCelebration";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
@@ -45,6 +49,8 @@ const Dashboard = () => {
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
   const { account } = useMTAccount();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { currentTier, newlyUnlocked, acknowledge } = useMentorTierProgress();
   const isConnected = !!account && account.status === "connected";
 
   const {
@@ -216,6 +222,8 @@ const Dashboard = () => {
 
         {/* Page body */}
         <main className="relative z-10 flex-1 px-3 sm:px-6 lg:px-12 py-6 sm:py-10 lg:py-12 space-y-8 sm:space-y-10 lg:space-y-12 pb-28 lg:pb-12">
+          {/* Mentor tier banner — celebrates current rank, dismissible per-tier */}
+          <MentorTierBanner tier={currentTier} userId={user?.id ?? null} />
           {/* 0. Flagship — Daily Live Webinar banner */}
           <WebinarHeroBanner />
 
@@ -323,6 +331,9 @@ const Dashboard = () => {
       </AnimatePresence>
 
       <FieryThemeQA />
+
+      {/* Tier-up celebration — only fires once per tier per user */}
+      <MentorTierCelebration tier={newlyUnlocked} onClose={acknowledge} />
     </>
   );
 };
