@@ -348,10 +348,10 @@ const QuickTradePanel = ({ compact = false }: Props) => {
         }`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5 bg-card/60">
+        <div className="flex items-center justify-between border-b border-border/40 px-4 py-2.5 bg-card/60">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-              <Zap className="h-3.5 w-3.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
+              <Zap className="h-3 w-3" />
             </div>
             <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
               Quick Trade
@@ -363,7 +363,7 @@ const QuickTradePanel = ({ compact = false }: Props) => {
           </span>
         </div>
 
-        <div className="p-5 space-y-4 bg-card/60">
+        <div className="p-3 space-y-2.5 bg-card/60">
           {/* Symbol selector */}
           <div className="relative">
             <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
