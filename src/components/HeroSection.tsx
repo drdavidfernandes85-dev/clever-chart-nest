@@ -69,8 +69,8 @@ const HeroSection = () => {
       />
 
       {/* Floating embers across whole hero */}
-      <div className="pointer-events-none absolute inset-0 -z-[1] overflow-hidden">
-        {Array.from({ length: 22 }).map((_, i) => (
+      <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+        {Array.from({ length: 26 }).map((_, i) => (
           <span
             key={i}
             className="absolute block rounded-full bg-primary/70 animate-ember"
@@ -82,11 +82,71 @@ const HeroSection = () => {
               animationDelay: `${(i * 0.6) % 7}s`,
               animationDuration: `${6 + (i % 5)}s`,
               filter: "blur(0.5px)",
-              boxShadow: "0 0 8px hsl(45 100% 55% / 0.9), 0 0 18px hsl(28 100% 55% / 0.6)",
+              boxShadow: "0 0 8px hsl(var(--primary) / 0.9), 0 0 18px hsl(28 100% 55% / 0.6)",
             }}
           />
         ))}
       </div>
+
+      {/* Full-width fiery comet trail: left edge → logo on the right */}
+      <svg
+        viewBox="0 0 1600 720"
+        className="pointer-events-none absolute inset-0 z-[2] h-full w-full mix-blend-screen"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          <radialGradient id="heroFireBurst" cx="78%" cy="48%" r="28%">
+            <stop offset="0%" stopColor="hsl(48 100% 92%)" stopOpacity="1" />
+            <stop offset="28%" stopColor="hsl(var(--primary))" stopOpacity="0.92" />
+            <stop offset="62%" stopColor="hsl(28 100% 52%)" stopOpacity="0.58" />
+            <stop offset="100%" stopColor="hsl(12 100% 32%)" stopOpacity="0" />
+          </radialGradient>
+          <linearGradient id="heroCometTrail" x1="0" y1="0.5" x2="1" y2="0.5">
+            <stop offset="0%" stopColor="transparent" />
+            <stop offset="18%" stopColor="hsl(25 100% 47%)" stopOpacity="0.38" />
+            <stop offset="48%" stopColor="hsl(35 100% 53%)" stopOpacity="0.78" />
+            <stop offset="72%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+            <stop offset="90%" stopColor="hsl(48 100% 92%)" stopOpacity="0.92" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+          <filter id="heroFireBlur" x="-20%" y="-60%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="24" />
+          </filter>
+          <filter id="heroFireSoft" x="-20%" y="-60%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="8" />
+          </filter>
+        </defs>
+        <g className="animate-flame-flicker" style={{ transformOrigin: "78% 48%" }}>
+          <path
+            d="M -120 360 C 180 300, 390 300, 610 342 C 820 382, 1030 415, 1265 350 C 1360 323, 1455 305, 1640 330 L 1640 485 C 1410 450, 1280 456, 1110 410 C 835 335, 575 445, 330 396 C 135 357, 5 414, -120 445 Z"
+            fill="url(#heroCometTrail)"
+            filter="url(#heroFireBlur)"
+            opacity="0.86"
+          />
+        </g>
+        <g className="animate-flame-stream" style={{ transformOrigin: "left center", animationDuration: "2.4s" }}>
+          <path
+            d="M -60 365 C 260 330, 580 352, 850 370 C 1045 383, 1215 355, 1380 325"
+            fill="none"
+            stroke="url(#heroCometTrail)"
+            strokeWidth="62"
+            strokeLinecap="round"
+            filter="url(#heroFireSoft)"
+            opacity="0.95"
+          />
+          <path
+            d="M 60 362 C 365 350, 610 367, 890 376 C 1085 382, 1212 356, 1398 320"
+            fill="none"
+            stroke="hsl(48 100% 92%)"
+            strokeWidth="10"
+            strokeLinecap="round"
+            filter="url(#heroFireSoft)"
+            opacity="0.72"
+          />
+        </g>
+        <ellipse cx="1270" cy="350" rx="300" ry="155" fill="url(#heroFireBurst)" filter="url(#heroFireBlur)" opacity="0.95" />
+      </svg>
 
       {/* Live market ticker */}
       <div className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-primary/40 bg-black/60 backdrop-blur-md">
