@@ -178,8 +178,9 @@ const MarketMovers = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
       aria-labelledby="market-movers-heading"
+      className="p-3"
     >
-      <div className="mb-3 flex items-center justify-between gap-3 flex-wrap">
+      <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
         <h2
           id="market-movers-heading"
           className="font-heading text-sm font-semibold text-foreground tracking-wide"
@@ -208,7 +209,7 @@ const MarketMovers = () => {
           </span>
         </div>
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-2 md:grid-cols-3">
         <MoverList title={t("movers.gainers")} rows={gainers} variant="gainers" />
         <MoverList title={t("movers.losers")} rows={losers} variant="losers" />
         <MoverList title={t("movers.active")} rows={mostActive} variant="active" showVolume />
