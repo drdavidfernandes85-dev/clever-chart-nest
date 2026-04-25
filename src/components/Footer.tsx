@@ -32,7 +32,7 @@ const Footer = () => {
               <img src={infinoxLogo} alt="INFINOX" className="h-6" />
             </a>
             <span className="mt-3 inline-block font-heading text-sm font-semibold text-foreground">
-              IX <span className="text-primary">Live Trading Room</span>
+              <span className="text-primary">IX</span> Live Trading Room
             </span>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}

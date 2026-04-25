@@ -79,7 +79,7 @@ const Navbar = () => {
           </div>
           <span className="hidden sm:inline-block h-5 lg:h-6 w-px bg-border/50 shrink-0" aria-hidden="true" />
           <span className="hidden sm:inline font-heading text-sm lg:text-base font-semibold text-foreground truncate leading-none tracking-tight">
-            IX <span className="text-primary">Live Trading Room</span>
+            <span className="text-primary">IX</span> Live Trading Room
           </span>
         </a>
 
