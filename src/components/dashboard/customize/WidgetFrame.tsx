@@ -55,7 +55,7 @@ const WidgetFrame = ({ children, editing, title }: Props) => {
         </div>
       )}
 
-      <div className="h-full w-full overflow-auto rounded-2xl">{children}</div>
+      <div className="h-full w-full overflow-auto rounded-2xl scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">{children}</div>
     </motion.div>
   );
 };
