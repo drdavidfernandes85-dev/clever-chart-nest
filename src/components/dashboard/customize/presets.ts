@@ -63,11 +63,12 @@ const make = (i: WidgetId, x: number, y: number, w: number, h: number): LayoutIt
 });
 
 /**
- * Default layout — ordered by trader workflow:
- *  1. Portfolio Overview (hero) + Risk Exposure  → decision context
- *  2. Quick Trade rail                            → always one click away
- *  3. Watchlist + Market Movers                   → opportunity scan
- *  4. Live Shared Signals + Recent Activity       → community & history
+ * Default layout — clean grid with no gaps, ordered by trader workflow:
+ *  Row 1 (h=9):  Portfolio (hero)        + Risk          + Quick Trade rail (spans 2 rows)
+ *  Row 2 (h=9):  Watchlist               + Market Movers + (Quick Trade continues)
+ *  Row 3 (h=8):  Live Shared Signals     + Recent Activity (full width)
+ *
+ * 12-col grid, every row aligns cleanly — no orphaned vertical gaps.
  */
 export const PRESETS: Preset[] = [
   {
@@ -75,16 +76,16 @@ export const PRESETS: Preset[] = [
     name: "Classic Terminal",
     description: "Logical trader workflow — context, action, opportunity, community",
     lg: [
-      // Row 1 — context (Portfolio hero + Risk) + persistent Quick Trade rail
+      // Row 1 — context
       make("portfolio", 0, 0, 6, 9),
       make("risk", 6, 0, 3, 9),
-      make("quickTrade", 9, 0, 3, 14),
-      // Row 2 — opportunity scan
-      make("watchlist", 0, 9, 4, 8),
-      make("marketMovers", 4, 9, 5, 8),
-      // Row 3 — community + history
-      make("liveSignals", 0, 17, 7, 7),
-      make("recentActivity", 7, 14, 5, 10),
+      make("quickTrade", 9, 0, 3, 18),
+      // Row 2 — opportunity scan (aligned under Portfolio + Risk)
+      make("watchlist", 0, 9, 4, 9),
+      make("marketMovers", 4, 9, 5, 9),
+      // Row 3 — community + history (full width, equal split)
+      make("liveSignals", 0, 18, 7, 8),
+      make("recentActivity", 7, 18, 5, 8),
     ],
   },
 ];
