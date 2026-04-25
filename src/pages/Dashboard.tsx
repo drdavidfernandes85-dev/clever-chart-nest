@@ -28,6 +28,7 @@ import CopiedTradesHistory from "@/components/copytrade/CopiedTradesHistory";
 import MarketMovers from "@/components/dashboard/MarketMovers";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import RiskMeter from "@/components/dashboard/RiskMeter";
+import FieryThemeQA from "@/components/dev/FieryThemeQA";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 
 import WebinarHeroBanner from "@/components/webinars/WebinarHeroBanner";
@@ -292,6 +293,8 @@ const Dashboard = () => {
           </>
         )}
       </AnimatePresence>
+
+      <FieryThemeQA />
     </>
   );
 };
