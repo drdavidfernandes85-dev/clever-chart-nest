@@ -41,7 +41,7 @@ const FeaturesSection = () => {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {featureKeys.map((f, i) => (
             <ScrollReveal key={f.title} delay={i * 80}>
-              <div className="shimmer-border group relative h-full overflow-hidden rounded-2xl glass-panel p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_24px_60px_-20px_hsl(48_100%_51%/0.25)]">
+              <div className="shimmer-border group relative h-full overflow-hidden rounded-2xl glass-panel p-7 transition-all duration-500 hover:-translate-y-1 hover:border-primary/40">
                 {/* Subtle chart sparkline accent in the corner */}
                 <svg
                   viewBox="0 0 80 24"
