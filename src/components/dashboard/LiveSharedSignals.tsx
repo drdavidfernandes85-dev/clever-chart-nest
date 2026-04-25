@@ -133,7 +133,15 @@ const LiveSharedSignals = () => {
   return (
     <>
       <div className="overflow-hidden">
-        <ul className="max-h-[520px] overflow-y-auto divide-y divide-border/30 pr-1">
+        <ul
+          className="h-[420px] overflow-y-scroll divide-y divide-border/30 pr-1
+                     [scrollbar-width:thin]
+                     [&::-webkit-scrollbar]:w-1.5
+                     [&::-webkit-scrollbar-track]:bg-transparent
+                     [&::-webkit-scrollbar-thumb]:bg-primary/40
+                     [&::-webkit-scrollbar-thumb]:rounded-full
+                     hover:[&::-webkit-scrollbar-thumb]:bg-primary/60"
+        >
 
           {rows.map((s) => {
             const isBuy = s.direction.toLowerCase() === "buy";
