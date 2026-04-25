@@ -28,13 +28,13 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
 
 /** Sensible per-widget min sizes (12-col grid). */
 export const WIDGET_MIN: Record<WidgetId, { w: number; h: number }> = {
-  portfolio: { w: 5, h: 6 },
-  risk: { w: 3, h: 5 },
-  watchlist: { w: 3, h: 5 },
-  marketMovers: { w: 4, h: 5 },
-  liveSignals: { w: 3, h: 4 },
-  quickTrade: { w: 3, h: 7 },
-  recentActivity: { w: 3, h: 4 },
+  portfolio: { w: 5, h: 9 },
+  risk: { w: 3, h: 7 },
+  watchlist: { w: 3, h: 9 },
+  marketMovers: { w: 4, h: 8 },
+  liveSignals: { w: 3, h: 6 },
+  quickTrade: { w: 3, h: 14 },
+  recentActivity: { w: 3, h: 6 },
 };
 
 export type PresetId =
@@ -63,12 +63,12 @@ const make = (i: WidgetId, x: number, y: number, w: number, h: number): LayoutIt
 });
 
 /**
- * Default layout — clean grid with no gaps, ordered by trader workflow:
- *  Row 1 (h=9):  Portfolio (hero)        + Risk          + Quick Trade rail (spans 2 rows)
- *  Row 2 (h=9):  Watchlist               + Market Movers + (Quick Trade continues)
- *  Row 3 (h=8):  Live Shared Signals     + Recent Activity (full width)
+ * Default layout — taller rows so content fits without internal scrolling.
+ *  Row 1 (h=10): Portfolio (hero, 6w) + Risk (3w) + Quick Trade rail (3w, spans rows 1+2 → h=20)
+ *  Row 2 (h=10): Watchlist (4w)       + Market Movers (5w)
+ *  Row 3 (h=7):  Live Shared Signals (7w) + Recent Activity (5w)
  *
- * 12-col grid, every row aligns cleanly — no orphaned vertical gaps.
+ * 12-col grid; rowHeight=56 → row 1 ≈ 560px, plenty for portfolio + open positions.
  */
 export const PRESETS: Preset[] = [
   {
@@ -76,16 +76,16 @@ export const PRESETS: Preset[] = [
     name: "Classic Terminal",
     description: "Logical trader workflow — context, action, opportunity, community",
     lg: [
-      // Row 1 — context (h=7): portfolio hero + risk + quickTrade rail (spans rows 1+2)
-      make("portfolio", 0, 0, 6, 7),
-      make("risk", 6, 0, 3, 7),
-      make("quickTrade", 9, 0, 3, 14),
-      // Row 2 — opportunity scan (h=7): watchlist + market movers, aligned under portfolio+risk
-      make("watchlist", 0, 7, 4, 7),
-      make("marketMovers", 4, 7, 5, 7),
-      // Row 3 — community + history (h=5, full width split)
-      make("liveSignals", 0, 14, 7, 5),
-      make("recentActivity", 7, 14, 5, 5),
+      // Row 1 — context: portfolio hero + risk + quickTrade rail (spans rows 1+2)
+      make("portfolio", 0, 0, 6, 10),
+      make("risk", 6, 0, 3, 10),
+      make("quickTrade", 9, 0, 3, 20),
+      // Row 2 — opportunity scan: watchlist + market movers
+      make("watchlist", 0, 10, 4, 10),
+      make("marketMovers", 4, 10, 5, 10),
+      // Row 3 — community + history (full width split)
+      make("liveSignals", 0, 20, 7, 7),
+      make("recentActivity", 7, 20, 5, 7),
     ],
   },
 ];
