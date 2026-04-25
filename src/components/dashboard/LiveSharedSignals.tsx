@@ -5,12 +5,14 @@ import {
   TrendingDown,
   Zap,
   CheckCircle2,
+  Inbox,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CopyTradeModal, { CopyTradeRequest } from "@/components/copytrade/CopyTradeModal";
 import { useCopiedSignals } from "@/hooks/useCopiedSignals";
 import { computeMentorTier, MentorTier } from "@/lib/mentor-tier";
 import MentorBadge from "@/components/social/MentorBadge";
+import AIScoreBadge, { AIScoreExplanation } from "@/components/ai/AIScoreBadge";
 
 type SharedSignal = {
   id: string;
@@ -25,15 +27,6 @@ type SharedSignal = {
   author_name: string;
   author_tier: MentorTier | null;
 };
-
-import { MENTOR_TIERS } from "@/lib/mentor-tier";
-
-const PLACEHOLDERS: SharedSignal[] = [
-  { id: "p1", pair: "EUR/USD", direction: "buy", entry_price: 1.1699, stop_loss: 1.165, take_profit: 1.18, status: "hit_tp", created_at: "", author_id: null, author_name: "IX_Mentor", author_tier: MENTOR_TIERS.mentor },
-  { id: "p2", pair: "GBP/JPY", direction: "sell", entry_price: 192.34, stop_loss: 193.0, take_profit: 191.0, status: "open", created_at: "", author_id: null, author_name: "EUR_King", author_tier: MENTOR_TIERS.verified_trader },
-  { id: "p3", pair: "XAU/USD", direction: "buy", entry_price: 2412.5, stop_loss: 2400, take_profit: 2440, status: "open", created_at: "", author_id: null, author_name: "df23fx", author_tier: MENTOR_TIERS.rising_star },
-  { id: "p4", pair: "USD/JPY", direction: "sell", entry_price: 154.82, stop_loss: 155.5, take_profit: 153.5, status: "open", created_at: "", author_id: null, author_name: "alpha-rat", author_tier: null },
-];
 
 const initialsOf = (n?: string | null) =>
   (n || "TR")
@@ -145,7 +138,7 @@ const LiveSharedSignals = () => {
     };
   }, []);
 
-  const rows = signals.length ? signals : PLACEHOLDERS;
+  const rows = signals;
 
   return (
     <>
@@ -160,10 +153,18 @@ const LiveSharedSignals = () => {
                      hover:[&::-webkit-scrollbar-thumb]:bg-primary/60"
         >
 
+          {rows.length === 0 && (
+            <li className="px-3 py-10 text-center">
+              <Inbox className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" />
+              <p className="text-xs font-semibold text-foreground">No live signals yet</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Mentor signals will appear here in real-time.
+              </p>
+            </li>
+          )}
           {rows.map((s) => {
             const isBuy = s.direction.toLowerCase() === "buy";
-            const isPlaceholder = s.id.startsWith("p");
-            const wasCopied = !isPlaceholder && copied.has(s.id);
+            const wasCopied = copied.has(s.id);
             const tier = s.author_tier;
             const isMentorTier = tier?.id === "mentor" || tier?.id === "elite_mentor";
             const avatarKey = s.author_id || s.author_name;
@@ -203,20 +204,29 @@ const LiveSharedSignals = () => {
                       {tier ? tier.label : "Community trader"}
                     </p>
                   </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
-                      isBuy
-                        ? "bg-[hsl(145_65%_50%/0.15)] text-[hsl(145_65%_55%)] border border-[hsl(145_65%_50%/0.3)]"
-                        : "bg-[hsl(0_70%_55%/0.15)] text-[hsl(0_70%_60%)] border border-[hsl(0_70%_55%/0.3)]"
-                    }`}
-                  >
-                    {isBuy ? (
-                      <TrendingUp className="inline h-2.5 w-2.5 mr-0.5" />
-                    ) : (
-                      <TrendingDown className="inline h-2.5 w-2.5 mr-0.5" />
-                    )}
-                    {s.direction.toUpperCase()}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <AIScoreBadge
+                      pair={s.pair}
+                      direction={s.direction}
+                      entry_price={Number(s.entry_price)}
+                      stop_loss={s.stop_loss != null ? Number(s.stop_loss) : null}
+                      take_profit={s.take_profit != null ? Number(s.take_profit) : null}
+                    />
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                        isBuy
+                          ? "bg-[hsl(145_65%_50%/0.15)] text-[hsl(145_65%_55%)] border border-[hsl(145_65%_50%/0.3)]"
+                          : "bg-[hsl(0_70%_55%/0.15)] text-[hsl(0_70%_60%)] border border-[hsl(0_70%_55%/0.3)]"
+                      }`}
+                    >
+                      {isBuy ? (
+                        <TrendingUp className="inline h-2.5 w-2.5 mr-0.5" />
+                      ) : (
+                        <TrendingDown className="inline h-2.5 w-2.5 mr-0.5" />
+                      )}
+                      {s.direction.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Signal details */}
@@ -255,12 +265,23 @@ const LiveSharedSignals = () => {
                   </div>
                 </div>
 
+                {/* AI explanation */}
+                <div className="mb-2 rounded-lg border border-primary/15 bg-primary/[0.04]">
+                  <AIScoreExplanation
+                    pair={s.pair}
+                    direction={s.direction}
+                    entry_price={Number(s.entry_price)}
+                    stop_loss={s.stop_loss != null ? Number(s.stop_loss) : null}
+                    take_profit={s.take_profit != null ? Number(s.take_profit) : null}
+                  />
+                </div>
+
                 {/* CTA */}
-                {(!isPlaceholder ? ["active", "open"].includes(s.status) : true) && (
+                {["active", "open"].includes(s.status) && (
                   <button
                     onClick={() => {
                       setRequest({
-                        signalId: isPlaceholder ? null : s.id,
+                        signalId: s.id,
                         pair: s.pair,
                         side: isBuy ? "buy" : "sell",
                         entry: Number(s.entry_price),

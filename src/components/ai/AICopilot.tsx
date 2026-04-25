@@ -230,8 +230,8 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
           <button
             onClick={onToggleCollapsed}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
-            aria-label="Expand AI Co-pilot"
-            title="Expand AI Co-pilot"
+            aria-label="Expand AI Assistant"
+            title="Expand AI Assistant"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -240,7 +240,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
             className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground"
             style={{ writingMode: "vertical-rl" }}
           >
-            AI Co-pilot
+            AI Assistant
           </span>
         </aside>
       );
@@ -253,7 +253,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
               <Bot className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-heading text-xs font-semibold text-foreground">AI Co-pilot</h3>
+              <h3 className="font-heading text-xs font-semibold text-foreground">AI Assistant</h3>
               <p className="text-[10px] text-muted-foreground">Knows your trades, signals & news</p>
             </div>
           </div>
@@ -261,7 +261,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
             variant="ghost"
             size="icon"
             onClick={onToggleCollapsed}
-            aria-label="Collapse AI Co-pilot"
+            aria-label="Collapse AI Assistant"
             title="Collapse"
             className="h-8 w-8"
           >
@@ -279,11 +279,12 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-24 right-6 z-50 flex h-14 items-center gap-2 rounded-full bg-primary px-5 text-primary-foreground shadow-2xl shadow-primary/40 transition-all hover:scale-105 hover:shadow-primary/60"
-          aria-label="Open AI Co-pilot"
+          className="group fixed bottom-24 right-6 z-50 flex h-14 items-center gap-2 rounded-full bg-gradient-to-br from-primary via-primary to-yellow-500 px-5 text-primary-foreground shadow-[0_0_40px_-5px_hsl(48_100%_51%/0.7)] ring-1 ring-primary/40 transition-all hover:scale-105 hover:shadow-[0_0_55px_-2px_hsl(48_100%_51%/0.95)]"
+          aria-label="Open AI Assistant"
         >
+          <span className="absolute inset-0 -z-10 rounded-full bg-primary/40 blur-xl animate-pulse" />
           <Sparkles className="h-5 w-5" />
-          <span className="font-semibold text-sm">AI Co-pilot</span>
+          <span className="font-bold text-sm tracking-wide">AI Assistant</span>
         </button>
       )}
 
@@ -299,7 +300,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
               <Bot className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-heading text-sm font-semibold text-foreground">AI Co-pilot</h3>
+              <h3 className="font-heading text-sm font-semibold text-foreground">AI Assistant</h3>
               <p className="text-[10px] text-muted-foreground">Knows your trades, signals & news</p>
             </div>
           </div>
