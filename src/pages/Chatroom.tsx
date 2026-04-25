@@ -396,13 +396,22 @@ const Chatroom = () => {
         />
       </div>
 
+      {/* Community Hub right rail — visible on xl+ */}
       {!focusMode && (
-        <AICopilot
-          embedded
-          collapsed={copilotCollapsed}
-          onToggleCollapsed={() => setCopilotCollapsed((v) => !v)}
-        />
+        <aside className="hidden xl:flex w-80 shrink-0 flex-col border-l border-border/50 bg-card/40 backdrop-blur-md">
+          <div className="flex h-14 items-center gap-2 border-b border-border/50 px-4">
+            <span className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-foreground">
+              Community <span className="text-primary">Hub</span>
+            </span>
+          </div>
+          <div className="flex-1 min-h-0">
+            <CommunityHubRail />
+          </div>
+        </aside>
       )}
+
+      {/* AI Copilot — floating launcher (still available, no longer embedded) */}
+      {!focusMode && <AICopilot />}
 
     </div>
   );
