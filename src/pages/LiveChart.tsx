@@ -217,10 +217,10 @@ const LiveChart = () => {
       {/* Workspace */}
       <div className="p-3 lg:p-4">
         <div
-          className={`grid gap-3 lg:gap-4 ${
+          className={`grid gap-3 lg:gap-4 transition-[grid-template-columns] duration-300 ease-out ${
             railOpen
               ? "lg:grid-cols-[minmax(0,1fr)_340px]"
-              : "lg:grid-cols-[minmax(0,1fr)]"
+              : "lg:grid-cols-[minmax(0,1fr)_0px]"
           }`}
         >
           {/* Chart hero — bigger, dominant */}
