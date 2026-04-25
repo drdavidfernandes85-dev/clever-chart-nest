@@ -98,6 +98,7 @@ const App = () => (
                   <Route path="/webinars" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/webinars/:id" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/u/:userId" element={<ProtectedRoute><DashboardLayout><PublicProfile /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/__qa/hero" element={<HeroQA />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>
