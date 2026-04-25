@@ -169,15 +169,13 @@ const HeroSection = () => {
             </div>
 
             <h1 className="font-heading text-5xl font-bold leading-[1.02] tracking-tight text-white md:text-6xl lg:text-7xl">
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.title1")}</span>{" "}
+              <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
+                IX
+              </span>{" "}
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">Live</span>{" "}
               <span className="text-primary drop-shadow-[0_0_28px_hsl(45_100%_50%/0.8)]">|</span>
               <br />
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.title2")}</span>{" "}
-              <span
-                className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]"
-              >
-                {t("hero.title3")}
-              </span>
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.title2")} {t("hero.title3")}</span>
             </h1>
 
             <p className="max-w-xl text-base leading-relaxed font-sans text-white/80 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
