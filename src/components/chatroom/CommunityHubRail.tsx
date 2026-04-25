@@ -79,7 +79,7 @@ const CommunityHubRail = () => {
   }, []);
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-3 pb-4">
+    <div className="flex h-full flex-col gap-2.5 overflow-y-auto p-2.5">
       {/* Community Pulse — stats strip */}
       <div className="rounded-2xl border border-primary/25 bg-card/80 backdrop-blur-md p-3 shadow-[0_8px_30px_-12px_hsl(48_100%_51%/0.25)]">
         <div className="flex items-center gap-2 mb-2">
@@ -131,7 +131,7 @@ const CommunityHubRail = () => {
 
       {/* Hot Right Now */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2.5">
+        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
           <div className="flex items-center gap-2">
             <Flame className="h-3.5 w-3.5 text-primary" />
             <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
@@ -149,7 +149,7 @@ const CommunityHubRail = () => {
             return (
               <li
                 key={h.symbol}
-                className="flex items-center justify-between px-3 py-2.5 hover:bg-primary/5 transition-colors"
+                className="flex items-center justify-between px-3 py-1.5 hover:bg-primary/5 transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-mono text-xs font-bold text-foreground truncate">
@@ -190,7 +190,7 @@ const CommunityHubRail = () => {
 
       {/* Top Mentors */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2.5">
+        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
           <div className="flex items-center gap-2">
             <Trophy className="h-3.5 w-3.5 text-primary" />
             <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
@@ -206,7 +206,7 @@ const CommunityHubRail = () => {
         </div>
         <ul className="divide-y divide-border/30">
           {MENTOR_FALLBACK.map((m, i) => (
-            <li key={m.name} className="flex items-center gap-2.5 px-3 py-2.5">
+            <li key={m.name} className="flex items-center gap-2.5 px-3 py-1.5">
               <span className="font-mono text-[10px] font-bold text-primary w-4 text-center">
                 {i + 1}
               </span>
@@ -230,17 +230,17 @@ const CommunityHubRail = () => {
         </ul>
         <Link
           to="/leaderboard"
-          className="block border-t border-border/40 bg-primary/5 px-3 py-2.5 text-center text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+          className="block border-t border-border/40 bg-primary/5 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
         >
           View leaderboard →
         </Link>
       </div>
 
       {/* Footer mini-tag */}
-      <div className="rounded-xl border border-border/30 bg-card/40 backdrop-blur-sm px-3 py-2.5 flex items-center gap-2">
+      <div className="rounded-xl border border-border/30 bg-card/40 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
         <Users className="h-3 w-3 text-primary shrink-0" />
         <span className="text-[10px] leading-tight text-muted-foreground">
-          Real-time community feed · Elite Live Trading Room
+          Real-time community feed
         </span>
       </div>
     </div>

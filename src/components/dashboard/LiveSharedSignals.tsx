@@ -134,7 +134,7 @@ const LiveSharedSignals = () => {
     <>
       <div className="overflow-hidden">
         <ul
-          className="h-[420px] overflow-y-scroll divide-y divide-border/30 pr-1
+          className="max-h-[420px] overflow-y-auto divide-y divide-border/30 pr-1
                      [scrollbar-width:thin]
                      [&::-webkit-scrollbar]:w-1.5
                      [&::-webkit-scrollbar-track]:bg-transparent
