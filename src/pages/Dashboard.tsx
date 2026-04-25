@@ -331,6 +331,9 @@ const Dashboard = () => {
       </AnimatePresence>
 
       <FieryThemeQA />
+
+      {/* Tier-up celebration — only fires once per tier per user */}
+      <MentorTierCelebration tier={newlyUnlocked} onClose={acknowledge} />
     </>
   );
 };
