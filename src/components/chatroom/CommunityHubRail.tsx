@@ -190,7 +190,7 @@ const CommunityHubRail = () => {
 
       {/* Top Mentors */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2.5">
+        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
           <div className="flex items-center gap-2">
             <Trophy className="h-3.5 w-3.5 text-primary" />
             <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
@@ -206,7 +206,7 @@ const CommunityHubRail = () => {
         </div>
         <ul className="divide-y divide-border/30">
           {MENTOR_FALLBACK.map((m, i) => (
-            <li key={m.name} className="flex items-center gap-2.5 px-3 py-2.5">
+            <li key={m.name} className="flex items-center gap-2.5 px-3 py-1.5">
               <span className="font-mono text-[10px] font-bold text-primary w-4 text-center">
                 {i + 1}
               </span>
