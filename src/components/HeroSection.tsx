@@ -66,19 +66,21 @@ const HeroSection = () => {
           }}
         />
 
-        {/* Cinematic comet/flame plate — slightly muted so the official logo overlay stays exact */}
-        <img
-          src={heroComet}
-          alt=""
+        {/* Cinematic comet/flame video plate — auto-loop, muted */}
+        <video
+          src="/hero-comet.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover object-center select-none animate-breathe opacity-80"
-          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover object-center select-none"
           style={{
             filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
           }}
         />
 
-        {/* Official InfinoX logo, rotated to match the reference direction */}
+        {/* Official InfinoX logo riding the comet — triangle pointing right */}
         <img
           src={infinoxLogoRight}
           alt=""
