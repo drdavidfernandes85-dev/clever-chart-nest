@@ -414,8 +414,7 @@ const LiveChart = () => {
               </div>
             </div>
 
-            {/* Premium price/stats header */}
-            <ChartHeaderStats symbol={symbol} displayLabel={currentLabel} />
+            {/* Premium price/stats header removed per request */}
 
             {/* Mini watchlist — fast switching between favorites */}
             <MiniWatchlist
