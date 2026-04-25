@@ -6,7 +6,6 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
-import heroComet from "@/assets/hero-comet.png";
 import infinoxLogoRight from "@/assets/infinox-circle-logo-triangle-right.png";
 
 
