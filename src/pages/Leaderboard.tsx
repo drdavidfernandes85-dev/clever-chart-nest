@@ -203,7 +203,7 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title="Trader Leaderboard | Elite Live Trading Room"
+        title="Trader Leaderboard | IX Live Trading Room"
         description="Live ranking of community traders by 7-day, 30-day and all-time P&L, win rate and average R."
         canonical="https://elitelivetradingroom.com/leaderboard"
       />

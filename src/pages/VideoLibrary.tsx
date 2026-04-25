@@ -56,8 +56,8 @@ const VideoLibrary = () => {
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <SEO
-        title="Video Library | Elite Live Trading Room"
-        description="On-demand webinars, tutorials and market analysis from Elite Live Trading Room mentors."
+        title="Video Library | IX Live Trading Room"
+        description="On-demand webinars, tutorials and market analysis from IX Live Trading Room mentors."
         canonical="https://elitelivetradingroom.com/videos"
       />
       <div className="container max-w-6xl py-24">

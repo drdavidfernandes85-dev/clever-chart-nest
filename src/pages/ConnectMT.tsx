@@ -54,7 +54,7 @@ const ConnectMT = () => {
   return (
     <div className="min-h-screen bg-background pb-16">
       <SEO
-        title="Connect MetaTrader Account | Elite Live Trading Room"
+        title="Connect MetaTrader Account | IX Live Trading Room"
         description="Securely link your MT4 or MT5 account using a free Custom EA Webhook to sync real balance, equity and trades in real-time."
         canonical="https://elitelivetradingroom.com/connect-mt"
       />

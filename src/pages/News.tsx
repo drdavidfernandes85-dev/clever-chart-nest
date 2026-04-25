@@ -20,7 +20,7 @@ const News = () => {
   return (
     <>
       <SEO
-        title="Noticias | Elite Live Trading Room"
+        title="Noticias | IX Live Trading Room"
         description="Flujo de noticias en tiempo real para traders profesionales."
         canonical="https://elitelivetradingroom.com/news"
       />

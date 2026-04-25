@@ -61,7 +61,7 @@ const Navbar = () => {
           <div className="relative flex items-center justify-center shrink-0 h-10 sm:h-12 lg:h-14 aspect-square">
             <img
               src={infinoxLogo}
-              alt="INFINOX Elite Live Trading Room"
+              alt="INFINOX IX Live Trading Room"
               width={220}
               height={220}
               className="h-full w-full object-contain object-center select-none block"

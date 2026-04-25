@@ -121,9 +121,9 @@ const translations = {
     // FAQ
     "faq.title1": "Frequently Asked",
     "faq.title2": "Questions",
-    "faq.desc": "Everything you need to know about the Elite Live Trading Room.",
-    "faq.q1": "What is the Elite Live Trading Room?",
-    "faq.a1": "The Elite Live Trading Room is a real-time trading environment where professional analysts share live market analysis, trading signals, and educational content across FX, commodities, indices, and crypto markets.",
+    "faq.desc": "Everything you need to know about the IX Live Trading Room.",
+    "faq.q1": "What is the IX Live Trading Room?",
+    "faq.a1": "The IX Live Trading Room is a real-time trading environment where professional analysts share live market analysis, trading signals, and educational content across FX, commodities, indices, and crypto markets.",
     "faq.q2": "Do I need trading experience to join?",
     "faq.a2": "No. Our room caters to all levels — from beginners learning the fundamentals to experienced traders refining their strategies. Our mentors provide guidance tailored to your skill level.",
     "faq.q3": "What markets are covered?",
@@ -167,7 +167,7 @@ const translations = {
     "cta.desc": "Join thousands of traders who are already using our platform to navigate the markets with confidence.",
     "cta.join": "Join Now",
     // Footer
-    "footer.desc": "The Elite Live Trading Room for the INFINOX LATAM community.",
+    "footer.desc": "The IX Live Trading Room for the INFINOX LATAM community.",
     "footer.quickLinks": "Quick Links",
     "footer.resources": "Resources",
     "footer.support": "Support",
