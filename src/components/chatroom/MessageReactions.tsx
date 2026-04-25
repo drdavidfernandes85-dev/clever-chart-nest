@@ -3,7 +3,7 @@ import { Smile } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
-const QUICK_EMOJIS = ["👍", "🔥", "🚀", "💯", "👀", "❤️"];
+const QUICK_EMOJIS = ["👍", "❤️", "🔥", "🚀", "💯", "👀"];
 
 interface ReactionRow {
   emoji: string;

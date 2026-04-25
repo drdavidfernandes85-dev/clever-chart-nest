@@ -11,7 +11,6 @@ import AICopilot from "@/components/ai/AICopilot";
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
-import OnlineTraders from "@/components/chatroom/OnlineTraders";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
@@ -260,15 +259,6 @@ const Chatroom = () => {
             })}
           </div>
         ))}
-
-        {/* Online Traders panel */}
-        <div className="mt-2 border-t border-border/40 pt-3">
-          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80 flex items-center gap-1.5">
-            <Users className="h-3 w-3" />
-            Online Traders
-          </p>
-          <OnlineTraders />
-        </div>
       </ScrollArea>
       <div className="border-t border-border/50 p-3 space-y-2">
         <div className="flex items-center gap-2 px-1">
