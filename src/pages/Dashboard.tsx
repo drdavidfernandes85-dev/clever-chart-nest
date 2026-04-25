@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
@@ -8,7 +8,6 @@ import {
   ChevronUp,
   PanelRightClose,
   PanelRightOpen,
-  ArrowUpRight,
   Zap,
   X,
 } from "lucide-react";
@@ -35,6 +34,10 @@ import WebinarHeroBanner from "@/components/webinars/WebinarHeroBanner";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useMTAccount } from "@/hooks/useMTAccount";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useDashboardLayout } from "@/hooks/useDashboardLayout";
+import CustomizableDashboardGrid from "@/components/dashboard/customize/CustomizableDashboardGrid";
+import CustomizeToolbar from "@/components/dashboard/customize/CustomizeToolbar";
+import type { WidgetId } from "@/components/dashboard/customize/presets";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
