@@ -215,19 +215,21 @@ const Dashboard = () => {
 
           {/* 2. Command Center — Portfolio (hero) + Right Sidebar */}
           <div className="grid gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_336px] items-start">
-            {/* Hero — Portfolio Overview with sparkline + open positions */}
+            {/* Hero — Portfolio Overview, elevated with stronger fiery border */}
             <motion.section
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="min-w-0"
+              className="min-w-0 rounded-2xl card-glass-elevated overflow-hidden ring-1 ring-primary/10"
             >
               <PortfolioOverview />
             </motion.section>
 
-            {/* Right narrow sidebar — Risk → Watchlist */}
-            <aside className="min-w-0 space-y-5 lg:sticky lg:top-20 self-start">
-              <RiskMeter />
+            {/* Right narrow sidebar — Risk (elevated) → Watchlist */}
+            <aside className="min-w-0 space-y-6 lg:sticky lg:top-20 self-start">
+              <div className="rounded-2xl card-glass-elevated overflow-hidden ring-1 ring-primary/10">
+                <RiskMeter />
+              </div>
               <Watchlist />
             </aside>
           </div>
