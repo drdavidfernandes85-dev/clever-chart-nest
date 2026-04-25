@@ -79,16 +79,16 @@ const CommunityHubRail = () => {
   }, []);
 
   return (
-    <div className="flex h-full flex-col gap-2.5 overflow-y-auto p-2.5">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-2 pb-3 sm:gap-2.5 sm:px-2.5 sm:py-2.5 lg:gap-3 lg:p-3">
       {/* Community Pulse — stats strip */}
-      <div className="rounded-2xl border border-primary/25 bg-card/80 backdrop-blur-md p-3 shadow-[0_8px_30px_-12px_hsl(48_100%_51%/0.25)]">
+      <div className="rounded-2xl border border-primary/25 bg-card/80 backdrop-blur-md p-2.5 shadow-[0_8px_30px_-12px_hsl(48_100%_51%/0.25)] sm:p-3">
         <div className="flex items-center gap-2 mb-2">
           <Activity className="h-3.5 w-3.5 text-primary" />
           <h3 className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-foreground">
             Community Pulse
           </h3>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
           <div className="rounded-lg border border-border/40 bg-background/40 px-2 py-2 text-center">
             <p className="font-mono text-base font-bold tabular-nums text-primary leading-none">
               {onlineCount}
@@ -124,14 +124,14 @@ const CommunityHubRail = () => {
             Live Shared Signals
           </span>
         </div>
-        <div className="p-1">
+        <div className="p-0">
           <LiveSharedSignals />
         </div>
       </div>
 
       {/* Hot Right Now */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
+        <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-2 sm:px-3">
           <div className="flex items-center gap-2">
             <Flame className="h-3.5 w-3.5 text-primary" />
             <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
@@ -149,28 +149,28 @@ const CommunityHubRail = () => {
             return (
               <li
                 key={h.symbol}
-                className="flex items-center justify-between px-3 py-1.5 hover:bg-primary/5 transition-colors"
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 transition-colors hover:bg-primary/5 sm:px-3"
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-mono text-xs font-bold text-foreground truncate">
+                <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+                  <span className="block min-w-0 truncate font-mono text-xs font-bold text-foreground">
                     {h.symbol}
                   </span>
                   {h.mentions > 0 && (
-                    <span className="rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-bold text-primary">
+                    <span className="shrink-0 rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-bold text-primary">
                       {h.mentions}
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
                   {hasPrice && (
-                    <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+                    <span className="w-[4.75rem] text-right font-mono text-[10px] tabular-nums text-muted-foreground">
                       {h.price!.toLocaleString(undefined, {
                         maximumFractionDigits: h.price! < 10 ? 4 : 2,
                       })}
                     </span>
                   )}
                   <span
-                    className={`font-mono text-[11px] font-semibold ${
+                    className={`inline-flex w-[4.5rem] items-center justify-end font-mono text-[11px] font-semibold ${
                       h.up ? "text-[hsl(145_65%_50%)]" : "text-[hsl(0_70%_55%)]"
                     }`}
                   >
@@ -190,7 +190,7 @@ const CommunityHubRail = () => {
 
       {/* Top Mentors */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
+        <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-2 sm:px-3">
           <div className="flex items-center gap-2">
             <Trophy className="h-3.5 w-3.5 text-primary" />
             <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
@@ -206,23 +206,23 @@ const CommunityHubRail = () => {
         </div>
         <ul className="divide-y divide-border/30">
           {MENTOR_FALLBACK.map((m, i) => (
-            <li key={m.name} className="flex items-center gap-2.5 px-3 py-1.5">
-              <span className="font-mono text-[10px] font-bold text-primary w-4 text-center">
+            <li key={m.name} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_4.25rem] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
+              <span className="w-4 text-center font-mono text-[10px] font-bold text-primary">
                 {i + 1}
               </span>
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary border border-primary/30">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-[10px] font-bold text-primary">
                 {initialsOf(m.name)}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1">
-                  <p className="truncate text-xs font-semibold text-foreground">{m.name}</p>
+                <div className="flex min-w-0 items-center gap-1">
+                  <p className="min-w-0 truncate text-xs font-semibold text-foreground">{m.name}</p>
                   <CheckCircle2 className="h-3 w-3 shrink-0 text-primary" />
                 </div>
                 <p className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground">
                   WR {m.winrate}
                 </p>
               </div>
-              <span className="font-mono text-[11px] font-bold text-[hsl(145_65%_50%)] tabular-nums">
+              <span className="text-right font-mono text-[11px] font-bold tabular-nums text-[hsl(145_65%_50%)]">
                 {m.pnl}
               </span>
             </li>
@@ -230,14 +230,14 @@ const CommunityHubRail = () => {
         </ul>
         <Link
           to="/leaderboard"
-          className="block border-t border-border/40 bg-primary/5 px-3 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors"
+          className="block border-t border-border/40 bg-primary/5 px-2.5 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10 sm:px-3"
         >
           View leaderboard →
         </Link>
       </div>
 
       {/* Footer mini-tag */}
-      <div className="rounded-xl border border-border/30 bg-card/40 backdrop-blur-sm px-3 py-2 flex items-center gap-2">
+      <div className="flex items-center gap-2 rounded-xl border border-border/30 bg-card/40 px-2.5 py-2 backdrop-blur-sm sm:px-3">
         <Users className="h-3 w-3 text-primary shrink-0" />
         <span className="text-[10px] leading-tight text-muted-foreground">
           Real-time community feed
