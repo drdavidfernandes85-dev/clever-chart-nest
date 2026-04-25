@@ -68,9 +68,33 @@ const Dashboard = () => {
   return (
     <>
       {/* Main shell */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Top header */}
-        <header className="sticky top-0 z-40 border-b border-primary/10 bg-background/60 backdrop-blur-2xl">
+      <div className="relative flex-1 min-w-0 flex flex-col">
+        {/* Fiery ambient — warm orange/yellow ember glow behind dashboard content */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-0 overflow-hidden"
+        >
+          <div
+            className="absolute -top-32 -left-32 h-[480px] w-[480px] rounded-full opacity-60 animate-pulse-glow"
+            style={{
+              background:
+                "radial-gradient(circle, hsl(28 100% 50% / 0.18) 0%, hsl(45 100% 50% / 0.08) 40%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
+          <div
+            className="absolute top-1/3 -right-40 h-[520px] w-[520px] rounded-full opacity-50 animate-pulse-glow"
+            style={{
+              background:
+                "radial-gradient(circle, hsl(45 100% 55% / 0.14) 0%, hsl(28 100% 50% / 0.06) 45%, transparent 72%)",
+              filter: "blur(50px)",
+              animationDelay: "1.4s",
+            }}
+          />
+        </div>
+
+        {/* Top header — fiery glass with warm bottom edge */}
+        <header className="relative z-40 sticky top-0 border-b border-primary/25 bg-black/70 backdrop-blur-2xl shadow-[0_8px_32px_-12px_hsl(28_100%_45%/0.35)]">
           <div className="flex h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-12 pl-14 lg:pl-6">
             <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground shrink-0">
               {t("dash.commandTitle1")} <span className="text-primary">{t("dash.commandTitle2")}</span>
