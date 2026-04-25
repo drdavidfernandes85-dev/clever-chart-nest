@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
+import PerformanceCoach from "@/components/ai/PerformanceCoach";
+import AICopilot from "@/components/ai/AICopilot";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { localizeWeeklySummary } from "@/i18n/summary";
