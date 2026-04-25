@@ -45,21 +45,44 @@ const HeroSection = () => {
       id="home"
       className="relative isolate overflow-hidden pt-16 bg-background"
     >
-      {/* ── HERO COMET BACKGROUND IMAGE (reference) ──────────────── */}
+      {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
       <div className="pointer-events-none absolute inset-0 z-0">
+        {/* Deep dark base gradient for depth */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 90% 70% at 70% 50%, hsl(28 80% 8% / 0.55) 0%, hsl(0 0% 2%) 70%)",
+          }}
+        />
+
+        {/* Soft pulsing halo behind where the logo sits in the image */}
+        <div
+          className="absolute top-1/2 right-[6%] -translate-y-1/2 h-[520px] w-[520px] rounded-full animate-pulse-glow"
+          style={{
+            background:
+              "radial-gradient(circle, hsl(45 100% 55% / 0.22) 0%, hsl(28 100% 50% / 0.12) 40%, transparent 70%)",
+            filter: "blur(20px)",
+          }}
+        />
+
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute right-0 top-1/2 -translate-y-1/2 h-full min-h-[420px] w-auto max-w-none scale-125 object-contain select-none md:h-[118%] lg:right-[-2%]"
+          className="absolute right-0 top-1/2 -translate-y-1/2 h-full min-h-[460px] w-auto max-w-none scale-110 object-contain select-none md:h-[120%] lg:right-[-2%] animate-breathe"
           draggable={false}
+          style={{
+            filter: "drop-shadow(0 0 60px hsl(28 100% 50% / 0.35))",
+          }}
         />
+
         {/* Soft left fade so text is readable over the flames */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(90deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.75) 28%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0) 78%)",
+              "linear-gradient(90deg, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.78) 26%, rgba(0,0,0,0.32) 52%, rgba(0,0,0,0) 75%)",
           }}
         />
         {/* Bottom + top vignette */}
@@ -67,26 +90,46 @@ const HeroSection = () => {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(ellipse 100% 80% at 60% 50%, transparent 40%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.92) 100%)",
+              "radial-gradient(ellipse 110% 85% at 60% 50%, transparent 42%, rgba(0,0,0,0.55) 82%, rgba(0,0,0,0.95) 100%)",
           }}
         />
       </div>
 
-      {/* Subtle floating embers for liveliness */}
+      {/* Floating embers + bright sparks for liveliness */}
       <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
-        {Array.from({ length: 18 }).map((_, i) => (
+        {Array.from({ length: 26 }).map((_, i) => (
           <span
             key={i}
-            className="absolute block rounded-full bg-primary/70 animate-ember"
+            className="absolute block rounded-full bg-primary/80 animate-ember"
             style={{
-              left: `${(i * 47) % 100}%`,
-              top: `${(i * 31) % 100}%`,
+              left: `${(i * 37) % 95}%`,
+              top: `${30 + ((i * 19) % 60)}%`,
               width: `${2 + (i % 4)}px`,
               height: `${2 + (i % 4)}px`,
-              animationDelay: `${(i * 0.6) % 7}s`,
-              animationDuration: `${6 + (i % 5)}s`,
+              animationDelay: `${(i * 0.4) % 7}s`,
+              animationDuration: `${5 + (i % 5)}s`,
               filter: "blur(0.5px)",
-              boxShadow: "0 0 8px hsl(var(--primary) / 0.9), 0 0 18px hsl(28 100% 55% / 0.6)",
+              boxShadow:
+                "0 0 8px hsl(var(--primary) / 0.95), 0 0 18px hsl(28 100% 55% / 0.7)",
+            }}
+          />
+        ))}
+        {/* Bright spark streaks near the comet impact zone */}
+        {Array.from({ length: 8 }).map((_, i) => (
+          <span
+            key={`sp-${i}`}
+            className="absolute block rounded-full animate-spark-rise"
+            style={{
+              left: `${55 + ((i * 5) % 20)}%`,
+              top: `${45 + ((i * 7) % 20)}%`,
+              width: "3px",
+              height: "3px",
+              background: "hsl(48 100% 70%)",
+              boxShadow:
+                "0 0 10px hsl(45 100% 60% / 1), 0 0 22px hsl(28 100% 55% / 0.9)",
+              animationDelay: `${(i * 0.5) % 4}s`,
+              ["--sx" as any]: `${-30 + i * 12}px`,
+              ["--sy" as any]: `${-160 - (i % 3) * 30}px`,
             }}
           />
         ))}
