@@ -10,6 +10,7 @@ import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
 import AICopilot from "@/components/ai/AICopilot";
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
+import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
