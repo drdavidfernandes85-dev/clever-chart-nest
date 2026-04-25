@@ -6,7 +6,7 @@ import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
-import infinoxLogo from "@/assets/logo-sidebar.png";
+import heroComet from "@/assets/hero-comet.png";
 
 
 // Next webinar config
@@ -49,28 +49,36 @@ const HeroSection = () => {
           "radial-gradient(ellipse 90% 70% at 70% 50%, #0a0a12 0%, #050509 60%, #000000 100%)",
       }}
     >
-      {/* ── DEEP BACKGROUND GRADIENT LAYERS ─────────────────────── */}
-      {/* Subtle ambient warm glow on the far left */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-[3]"
-        style={{
-          background:
-            "radial-gradient(ellipse 45% 60% at 5% 50%, hsl(28 100% 45% / 0.18), transparent 70%)",
-        }}
-      />
+      {/* ── HERO COMET BACKGROUND IMAGE (reference) ──────────────── */}
+      <div className="pointer-events-none absolute inset-0 -z-[2]">
+        <img
+          src={heroComet}
+          alt=""
+          aria-hidden
+          className="absolute right-0 top-1/2 -translate-y-1/2 h-[120%] w-auto max-w-none object-contain select-none lg:right-[-4%]"
+          draggable={false}
+        />
+        {/* Soft left fade so text is readable over the flames */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.75) 28%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0) 78%)",
+          }}
+        />
+        {/* Bottom + top vignette */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 100% 80% at 60% 50%, transparent 40%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.92) 100%)",
+          }}
+        />
+      </div>
 
-      {/* Vignette to deepen edges */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-[2]"
-        style={{
-          background:
-            "radial-gradient(ellipse 90% 80% at 60% 50%, transparent 30%, rgba(0,0,0,0.6) 75%, rgba(0,0,0,0.95) 100%)",
-        }}
-      />
-
-      {/* Floating embers across whole hero */}
+      {/* Subtle floating embers for liveliness */}
       <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
-        {Array.from({ length: 26 }).map((_, i) => (
+        {Array.from({ length: 18 }).map((_, i) => (
           <span
             key={i}
             className="absolute block rounded-full bg-primary/70 animate-ember"
@@ -87,77 +95,6 @@ const HeroSection = () => {
           />
         ))}
       </div>
-
-      {/* Full-width fiery comet trail: left edge → InfinoX logo on the right */}
-      <svg
-        viewBox="0 0 1600 720"
-        className="pointer-events-none absolute inset-0 z-[2] h-full w-full mix-blend-screen"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden
-      >
-        <defs>
-          {/* Burst hot-spot centered exactly on the logo (≈ 75% / 50%) */}
-          <radialGradient id="heroFireBurst" cx="75%" cy="50%" r="22%">
-            <stop offset="0%" stopColor="hsl(48 100% 95%)" stopOpacity="1" />
-            <stop offset="22%" stopColor="hsl(var(--primary))" stopOpacity="0.95" />
-            <stop offset="58%" stopColor="hsl(28 100% 52%)" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="hsl(12 100% 30%)" stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id="heroCometTrail" x1="0" y1="0.5" x2="1" y2="0.5">
-            <stop offset="0%" stopColor="transparent" />
-            <stop offset="18%" stopColor="hsl(22 100% 45%)" stopOpacity="0.35" />
-            <stop offset="46%" stopColor="hsl(32 100% 52%)" stopOpacity="0.78" />
-            <stop offset="70%" stopColor="hsl(var(--primary))" stopOpacity="1" />
-            <stop offset="86%" stopColor="hsl(48 100% 95%)" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-          <filter id="heroFireBlur" x="-20%" y="-60%" width="140%" height="220%">
-            <feGaussianBlur stdDeviation="26" />
-          </filter>
-          <filter id="heroFireSoft" x="-20%" y="-60%" width="140%" height="220%">
-            <feGaussianBlur stdDeviation="9" />
-          </filter>
-        </defs>
-
-        {/* Wide fiery cloud bending into the logo center */}
-        <g className="animate-flame-flicker" style={{ transformOrigin: "75% 50%" }}>
-          <path
-            d="M -160 380 C 220 320, 460 348, 720 360 C 920 369, 1090 366, 1240 360 C 1320 357, 1410 354, 1640 358 L 1640 470 C 1380 462, 1170 460, 980 432 C 740 400, 520 425, 320 408 C 140 392, 5 412, -160 440 Z"
-            fill="url(#heroCometTrail)"
-            filter="url(#heroFireBlur)"
-            opacity="0.88"
-          />
-        </g>
-
-        {/* Two synced flowing streaks — same period as the flame flicker so the burst peaks together */}
-        <g className="animate-flame-stream" style={{ transformOrigin: "left center", animationDuration: "1.4s" }}>
-          <path
-            d="M -80 362 C 280 348, 600 360, 880 360 C 1060 360, 1180 360, 1320 360"
-            fill="none"
-            stroke="url(#heroCometTrail)"
-            strokeWidth="58"
-            strokeLinecap="round"
-            filter="url(#heroFireSoft)"
-            opacity="0.95"
-          />
-        </g>
-        <g className="animate-flame-stream" style={{ transformOrigin: "left center", animationDuration: "1.4s", animationDelay: "0.15s" }}>
-          <path
-            d="M 40 360 C 380 358, 660 362, 920 360 C 1100 359, 1220 360, 1360 360"
-            fill="none"
-            stroke="hsl(48 100% 95%)"
-            strokeWidth="9"
-            strokeLinecap="round"
-            filter="url(#heroFireSoft)"
-            opacity="0.78"
-          />
-        </g>
-
-        {/* Impact burst exactly on logo center, pulsing in sync */}
-        <g className="animate-pulse-glow" style={{ transformOrigin: "75% 50%", animationDuration: "1.4s" }}>
-          <ellipse cx="1200" cy="360" rx="320" ry="170" fill="url(#heroFireBurst)" filter="url(#heroFireBlur)" opacity="0.95" />
-        </g>
-      </svg>
 
       {/* Live market ticker */}
       <div className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-primary/40 bg-black/60 backdrop-blur-md">
@@ -268,109 +205,8 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* RIGHT — official InfinoX logo hit by the left-to-right comet trail */}
-          <div className="relative z-10 flex items-center justify-center min-h-[460px] lg:min-h-[600px]">
-            {/* Warm radial halo behind ring */}
-            <div
-              className="absolute inset-0 -z-[1] animate-pulse-glow"
-              style={{
-                background:
-                  "radial-gradient(circle at 62% 50%, hsl(var(--primary) / 0.58), hsl(28 100% 50% / 0.27) 35%, transparent 68%)",
-                filter: "blur(42px)",
-              }}
-            />
-
-            {/* Impact sparks around the exact logo */}
-            <div className="pointer-events-none absolute inset-0 -z-[1] overflow-hidden">
-              {Array.from({ length: 24 }).map((_, i) => {
-                const left = 18 + (i * 7) % 70;
-                const top = 22 + (i * 13) % 58;
-                const dx = 35 + ((i * 17) % 115);
-                const dy = -150 + ((i * 19) % 220);
-                const size = 2 + (i % 4);
-                return (
-                  <span
-                    key={i}
-                    className="absolute block rounded-full bg-primary animate-spark-rise"
-                    style={{
-                      left: `${left}%`,
-                      top: `${top}%`,
-                      width: `${size}px`,
-                      height: `${size}px`,
-                      // @ts-ignore custom CSS vars
-                      "--sx": `${dx}px`,
-                      "--sy": `${dy}px`,
-                      animationDelay: `${(i * 0.18) % 3.4}s`,
-                      animationDuration: `${2.5 + (i % 5) * 0.38}s`,
-                      boxShadow:
-                        "0 0 10px hsl(var(--primary) / 0.95), 0 0 24px hsl(28 100% 55% / 0.76)",
-                      filter: "blur(0.25px)",
-                    } as React.CSSProperties}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Drifting ambient particles */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <span
-                  key={i}
-                  className="absolute block rounded-full bg-primary/60 animate-particle-drift"
-                  style={{
-                    left: `${(i * 23) % 95}%`,
-                    top: `${(i * 17) % 90}%`,
-                    width: `${1.5 + (i % 3)}px`,
-                    height: `${1.5 + (i % 3)}px`,
-                    // @ts-ignore custom CSS vars
-                    "--dx": `${-30 + ((i * 11) % 60)}px`,
-                    "--dy": `${-20 - ((i * 9) % 40)}px`,
-                    animationDelay: `${(i * 0.5) % 8}s`,
-                    animationDuration: `${7 + (i % 5)}s`,
-                    boxShadow: "0 0 6px hsl(var(--primary) / 0.9)",
-                  } as React.CSSProperties}
-                />
-              ))}
-            </div>
-
-            {/* ── Official InfinoX logo asset, same as navbar (animated) ── */}
-            <div className="relative animate-float">
-              {/* Slow rotating outer halo */}
-              <div
-                className="absolute -inset-8 rounded-full animate-spin-slow"
-                style={{
-                  background:
-                    "conic-gradient(from 0deg, transparent 0deg, hsl(var(--primary) / 0.45) 60deg, transparent 120deg, transparent 240deg, hsl(28 100% 55% / 0.35) 300deg, transparent 360deg)",
-                  filter: "blur(22px)",
-                }}
-              />
-              {/* Pulsing glow that wraps the exact logo mark */}
-              <div
-                className="absolute inset-0 rounded-full animate-pulse-glow"
-                style={{
-                  boxShadow:
-                    "0 0 80px hsl(var(--primary) / 0.8), 0 0 160px hsl(28 100% 55% / 0.55), 0 0 240px hsl(15 100% 55% / 0.35)",
-                }}
-              />
-
-              <div className="relative h-64 w-64 md:h-80 md:w-80 lg:h-[22rem] lg:w-[22rem] animate-breathe">
-                <img
-                  src={infinoxLogo}
-                  alt="InfinoX"
-                  width={1024}
-                  height={1024}
-                  className="h-full w-full object-contain select-none"
-                  draggable={false}
-                  loading="eager"
-                  decoding="async"
-                  style={{
-                    filter:
-                      "drop-shadow(0 0 18px rgba(255,255,255,0.7)) drop-shadow(0 0 36px hsl(var(--primary) / 0.75)) drop-shadow(0 0 80px hsl(28 100% 55% / 0.45))",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+          {/* RIGHT — empty spacer; the comet+logo is the section background image */}
+          <div className="relative hidden lg:block min-h-[600px]" aria-hidden />
         </div>
       </div>
 
