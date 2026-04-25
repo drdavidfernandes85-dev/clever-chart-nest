@@ -62,7 +62,7 @@ const Register = () => {
             <Link to="/" className="inline-flex items-center gap-2">
               <TrendingUp className="h-10 w-10 text-primary" />
               <span className="font-heading text-2xl font-bold text-foreground uppercase">
-                Elite<span className="text-primary">LTR</span>
+                IX<span className="text-primary">LTR</span>
               </span>
             </Link>
             <div className="mx-auto mt-4 h-0.5 w-8 bg-primary" />
@@ -120,7 +120,7 @@ const Register = () => {
               <div className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="text-[10px] font-bold text-foreground">Elite <span className="text-primary">Live Trading Room</span></span>
+                  <span className="text-[10px] font-bold text-foreground">IX <span className="text-primary">Live Trading Room</span></span>
                 </div>
               </div>
               {["EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD", "USD/CAD"].map((pair, i) => (

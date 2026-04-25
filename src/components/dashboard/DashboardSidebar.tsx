@@ -88,7 +88,7 @@ const DashboardSidebar = () => {
             <>
               <span className="h-5 w-px bg-border/50 shrink-0" aria-hidden="true" />
               <span className="truncate font-heading text-[11px] font-semibold leading-tight text-foreground tracking-tight">
-                Elite <span className="text-primary">Live Trading Room</span>
+                IX <span className="text-primary">Live Trading Room</span>
               </span>
             </>
           )}

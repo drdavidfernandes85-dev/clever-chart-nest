@@ -123,7 +123,7 @@ const Profile = () => {
               <img src={infinoxLogo} alt="INFINOX" className="h-5" />
               <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
               <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-                Elite <span className="text-primary">Live Trading Room</span>
+                IX <span className="text-primary">Live Trading Room</span>
               </span>
             </Link>
           </div>

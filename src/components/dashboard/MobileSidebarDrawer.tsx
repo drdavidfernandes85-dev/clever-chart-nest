@@ -89,7 +89,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
               <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2 min-w-0">
                 <img src={infinoxLogo} alt="INFINOX" className="h-5 shrink-0" />
                 <span className="truncate font-proxima text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  Elite Room
+                  IX Room
                 </span>
               </Link>
               <button

@@ -222,7 +222,7 @@ const Chatroom = () => {
           <img src={infinoxLogo} alt="INFINOX" className="h-4" />
           <span className="hidden sm:inline text-xs text-muted-foreground/40">|</span>
           <span className="font-heading text-xs font-semibold text-foreground tracking-tight">
-            Elite <span className="text-primary">Live Trading Room</span>
+            IX <span className="text-primary">Live Trading Room</span>
           </span>
         </Link>
         <button className="ml-auto md:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
