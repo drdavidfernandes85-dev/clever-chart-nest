@@ -153,10 +153,18 @@ const LiveSharedSignals = () => {
                      hover:[&::-webkit-scrollbar-thumb]:bg-primary/60"
         >
 
+          {rows.length === 0 && (
+            <li className="px-3 py-10 text-center">
+              <Inbox className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" />
+              <p className="text-xs font-semibold text-foreground">No live signals yet</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Mentor signals will appear here in real-time.
+              </p>
+            </li>
+          )}
           {rows.map((s) => {
             const isBuy = s.direction.toLowerCase() === "buy";
-            const isPlaceholder = s.id.startsWith("p");
-            const wasCopied = !isPlaceholder && copied.has(s.id);
+            const wasCopied = copied.has(s.id);
             const tier = s.author_tier;
             const isMentorTier = tier?.id === "mentor" || tier?.id === "elite_mentor";
             const avatarKey = s.author_id || s.author_name;
@@ -196,20 +204,29 @@ const LiveSharedSignals = () => {
                       {tier ? tier.label : "Community trader"}
                     </p>
                   </div>
-                  <span
-                    className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
-                      isBuy
-                        ? "bg-[hsl(145_65%_50%/0.15)] text-[hsl(145_65%_55%)] border border-[hsl(145_65%_50%/0.3)]"
-                        : "bg-[hsl(0_70%_55%/0.15)] text-[hsl(0_70%_60%)] border border-[hsl(0_70%_55%/0.3)]"
-                    }`}
-                  >
-                    {isBuy ? (
-                      <TrendingUp className="inline h-2.5 w-2.5 mr-0.5" />
-                    ) : (
-                      <TrendingDown className="inline h-2.5 w-2.5 mr-0.5" />
-                    )}
-                    {s.direction.toUpperCase()}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <AIScoreBadge
+                      pair={s.pair}
+                      direction={s.direction}
+                      entry_price={Number(s.entry_price)}
+                      stop_loss={s.stop_loss != null ? Number(s.stop_loss) : null}
+                      take_profit={s.take_profit != null ? Number(s.take_profit) : null}
+                    />
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+                        isBuy
+                          ? "bg-[hsl(145_65%_50%/0.15)] text-[hsl(145_65%_55%)] border border-[hsl(145_65%_50%/0.3)]"
+                          : "bg-[hsl(0_70%_55%/0.15)] text-[hsl(0_70%_60%)] border border-[hsl(0_70%_55%/0.3)]"
+                      }`}
+                    >
+                      {isBuy ? (
+                        <TrendingUp className="inline h-2.5 w-2.5 mr-0.5" />
+                      ) : (
+                        <TrendingDown className="inline h-2.5 w-2.5 mr-0.5" />
+                      )}
+                      {s.direction.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Signal details */}
