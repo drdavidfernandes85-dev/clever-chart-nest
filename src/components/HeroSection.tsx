@@ -69,8 +69,8 @@ const HeroSection = () => {
       />
 
       {/* Floating embers across whole hero */}
-      <div className="pointer-events-none absolute inset-0 -z-[1] overflow-hidden">
-        {Array.from({ length: 22 }).map((_, i) => (
+      <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+        {Array.from({ length: 26 }).map((_, i) => (
           <span
             key={i}
             className="absolute block rounded-full bg-primary/70 animate-ember"
@@ -82,11 +82,71 @@ const HeroSection = () => {
               animationDelay: `${(i * 0.6) % 7}s`,
               animationDuration: `${6 + (i % 5)}s`,
               filter: "blur(0.5px)",
-              boxShadow: "0 0 8px hsl(45 100% 55% / 0.9), 0 0 18px hsl(28 100% 55% / 0.6)",
+              boxShadow: "0 0 8px hsl(var(--primary) / 0.9), 0 0 18px hsl(28 100% 55% / 0.6)",
             }}
           />
         ))}
       </div>
+
+      {/* Full-width fiery comet trail: left edge → logo on the right */}
+      <svg
+        viewBox="0 0 1600 720"
+        className="pointer-events-none absolute inset-0 z-[2] h-full w-full mix-blend-screen"
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        <defs>
+          <radialGradient id="heroFireBurst" cx="78%" cy="48%" r="28%">
+            <stop offset="0%" stopColor="hsl(48 100% 92%)" stopOpacity="1" />
+            <stop offset="28%" stopColor="hsl(var(--primary))" stopOpacity="0.92" />
+            <stop offset="62%" stopColor="hsl(28 100% 52%)" stopOpacity="0.58" />
+            <stop offset="100%" stopColor="hsl(12 100% 32%)" stopOpacity="0" />
+          </radialGradient>
+          <linearGradient id="heroCometTrail" x1="0" y1="0.5" x2="1" y2="0.5">
+            <stop offset="0%" stopColor="transparent" />
+            <stop offset="18%" stopColor="hsl(25 100% 47%)" stopOpacity="0.38" />
+            <stop offset="48%" stopColor="hsl(35 100% 53%)" stopOpacity="0.78" />
+            <stop offset="72%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+            <stop offset="90%" stopColor="hsl(48 100% 92%)" stopOpacity="0.92" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+          <filter id="heroFireBlur" x="-20%" y="-60%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="24" />
+          </filter>
+          <filter id="heroFireSoft" x="-20%" y="-60%" width="140%" height="220%">
+            <feGaussianBlur stdDeviation="8" />
+          </filter>
+        </defs>
+        <g className="animate-flame-flicker" style={{ transformOrigin: "78% 48%" }}>
+          <path
+            d="M -120 360 C 180 300, 390 300, 610 342 C 820 382, 1030 415, 1265 350 C 1360 323, 1455 305, 1640 330 L 1640 485 C 1410 450, 1280 456, 1110 410 C 835 335, 575 445, 330 396 C 135 357, 5 414, -120 445 Z"
+            fill="url(#heroCometTrail)"
+            filter="url(#heroFireBlur)"
+            opacity="0.86"
+          />
+        </g>
+        <g className="animate-flame-stream" style={{ transformOrigin: "left center", animationDuration: "2.4s" }}>
+          <path
+            d="M -60 365 C 260 330, 580 352, 850 370 C 1045 383, 1215 355, 1380 325"
+            fill="none"
+            stroke="url(#heroCometTrail)"
+            strokeWidth="62"
+            strokeLinecap="round"
+            filter="url(#heroFireSoft)"
+            opacity="0.95"
+          />
+          <path
+            d="M 60 362 C 365 350, 610 367, 890 376 C 1085 382, 1212 356, 1398 320"
+            fill="none"
+            stroke="hsl(48 100% 92%)"
+            strokeWidth="10"
+            strokeLinecap="round"
+            filter="url(#heroFireSoft)"
+            opacity="0.72"
+          />
+        </g>
+        <ellipse cx="1270" cy="350" rx="300" ry="155" fill="url(#heroFireBurst)" filter="url(#heroFireBlur)" opacity="0.95" />
+      </svg>
 
       {/* Live market ticker */}
       <div className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-primary/40 bg-black/60 backdrop-blur-md">
@@ -197,80 +257,30 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* RIGHT — animated cinematic flame + InfinoX logo */}
-          <div className="relative flex items-center justify-center min-h-[460px] lg:min-h-[600px]">
+          {/* RIGHT — official InfinoX logo hit by the left-to-right comet trail */}
+          <div className="relative z-10 flex items-center justify-center min-h-[460px] lg:min-h-[600px]">
             {/* Warm radial halo behind ring */}
             <div
               className="absolute inset-0 -z-[1] animate-pulse-glow"
               style={{
                 background:
-                  "radial-gradient(circle at 62% 50%, hsl(45 100% 60% / 0.55), hsl(28 100% 50% / 0.25) 35%, transparent 65%)",
-                filter: "blur(40px)",
+                  "radial-gradient(circle at 62% 50%, hsl(var(--primary) / 0.58), hsl(28 100% 50% / 0.27) 35%, transparent 68%)",
+                filter: "blur(42px)",
               }}
             />
 
-            {/* ── Living flame trail (SVG, continuously animated) ── */}
-            <svg
-              viewBox="0 0 800 600"
-              className="pointer-events-none absolute inset-0 -z-[1] h-full w-full"
-              preserveAspectRatio="xMidYMid slice"
-              aria-hidden
-            >
-              <defs>
-                <radialGradient id="flameCore" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#FFF6CC" stopOpacity="1" />
-                  <stop offset="35%" stopColor="#FFCD05" stopOpacity="0.95" />
-                  <stop offset="70%" stopColor="#FF6A00" stopOpacity="0.7" />
-                  <stop offset="100%" stopColor="#7A1500" stopOpacity="0" />
-                </radialGradient>
-                <linearGradient id="flameStreak" x1="0" y1="0.5" x2="1" y2="0.5">
-                  <stop offset="0%" stopColor="transparent" />
-                  <stop offset="35%" stopColor="#FF8A1A" stopOpacity="0.85" />
-                  <stop offset="65%" stopColor="#FFCD05" stopOpacity="1" />
-                  <stop offset="90%" stopColor="#FFF1A8" stopOpacity="0.95" />
-                  <stop offset="100%" stopColor="transparent" />
-                </linearGradient>
-                <filter id="flameBlur" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="14" />
-                </filter>
-                <filter id="flameSoft" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="6" />
-                </filter>
-              </defs>
-
-              {/* Outer fiery cloud */}
-              <g className="origin-center animate-flame-flicker" style={{ transformOrigin: "55% 50%" }}>
-                <ellipse cx="380" cy="300" rx="320" ry="120" fill="url(#flameCore)" filter="url(#flameBlur)" opacity="0.85" />
-              </g>
-              {/* Mid fire body */}
-              <g className="animate-flame-flicker" style={{ animationDelay: "0.3s", animationDuration: "1.1s", transformOrigin: "55% 50%" }}>
-                <ellipse cx="400" cy="300" rx="260" ry="80" fill="url(#flameCore)" filter="url(#flameSoft)" opacity="0.95" />
-              </g>
-              {/* Bright streak — flowing */}
-              <g>
-                <rect x="0" y="280" width="700" height="40" rx="20" fill="url(#flameStreak)" filter="url(#flameSoft)" className="animate-flame-stream" style={{ transformOrigin: "left center" }} />
-              </g>
-              <g>
-                <rect x="0" y="295" width="700" height="14" rx="7" fill="url(#flameStreak)" className="animate-flame-stream" style={{ animationDelay: "0.6s", animationDuration: "2.2s", transformOrigin: "left center" }} />
-              </g>
-              {/* Hot white core line */}
-              <g>
-                <rect x="100" y="298" width="500" height="6" rx="3" fill="#FFF8DC" filter="url(#flameSoft)" className="animate-flame-stream" style={{ animationDelay: "0.2s", animationDuration: "1.8s", transformOrigin: "left center", opacity: 0.9 }} />
-              </g>
-            </svg>
-
-            {/* ── Rising sparks ── */}
+            {/* Impact sparks around the exact logo */}
             <div className="pointer-events-none absolute inset-0 -z-[1] overflow-hidden">
-              {Array.from({ length: 18 }).map((_, i) => {
-                const left = 8 + (i * 7) % 60;
-                const top = 35 + (i * 11) % 30;
-                const dx = -20 + ((i * 13) % 80);
-                const dy = -120 - ((i * 17) % 120);
+              {Array.from({ length: 24 }).map((_, i) => {
+                const left = 18 + (i * 7) % 70;
+                const top = 22 + (i * 13) % 58;
+                const dx = 35 + ((i * 17) % 115);
+                const dy = -150 + ((i * 19) % 220);
                 const size = 2 + (i % 4);
                 return (
                   <span
                     key={i}
-                    className="absolute block rounded-full bg-[#FFE680] animate-spark-rise"
+                    className="absolute block rounded-full bg-primary animate-spark-rise"
                     style={{
                       left: `${left}%`,
                       top: `${top}%`,
@@ -279,20 +289,20 @@ const HeroSection = () => {
                       // @ts-ignore custom CSS vars
                       "--sx": `${dx}px`,
                       "--sy": `${dy}px`,
-                      animationDelay: `${(i * 0.27) % 3.5}s`,
-                      animationDuration: `${2.8 + (i % 5) * 0.4}s`,
+                      animationDelay: `${(i * 0.18) % 3.4}s`,
+                      animationDuration: `${2.5 + (i % 5) * 0.38}s`,
                       boxShadow:
-                        "0 0 10px hsl(45 100% 60% / 0.95), 0 0 22px hsl(28 100% 55% / 0.7)",
-                      filter: "blur(0.4px)",
+                        "0 0 10px hsl(var(--primary) / 0.95), 0 0 24px hsl(28 100% 55% / 0.76)",
+                      filter: "blur(0.25px)",
                     } as React.CSSProperties}
                   />
                 );
               })}
             </div>
 
-            {/* ── Drifting ambient particles ── */}
+            {/* Drifting ambient particles */}
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
-              {Array.from({ length: 14 }).map((_, i) => (
+              {Array.from({ length: 16 }).map((_, i) => (
                 <span
                   key={i}
                   className="absolute block rounded-full bg-primary/60 animate-particle-drift"
@@ -306,7 +316,7 @@ const HeroSection = () => {
                     "--dy": `${-20 - ((i * 9) % 40)}px`,
                     animationDelay: `${(i * 0.5) % 8}s`,
                     animationDuration: `${7 + (i % 5)}s`,
-                    boxShadow: "0 0 6px hsl(45 100% 60% / 0.9)",
+                    boxShadow: "0 0 6px hsl(var(--primary) / 0.9)",
                   } as React.CSSProperties}
                 />
               ))}
@@ -343,6 +353,7 @@ const HeroSection = () => {
                   loading="eager"
                   decoding="async"
                   style={{
+                    transform: "rotate(90deg) scale(1.02)",
                     filter:
                       "drop-shadow(0 0 18px rgba(255,255,255,0.7)) drop-shadow(0 0 36px hsl(var(--primary) / 0.75)) drop-shadow(0 0 80px hsl(28 100% 55% / 0.45))",
                   }}
