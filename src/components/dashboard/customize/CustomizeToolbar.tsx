@@ -1,5 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, Save, Settings2, X, Loader2 } from "lucide-react";
+import { RotateCcw, Save, Settings2, X, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PresetId } from "./presets";
 
@@ -72,31 +71,23 @@ const CustomizeToolbar = ({
         Reset
       </Button>
 
-      {/* Save Layout */}
-      <AnimatePresence>
-        {(editing || dirty) && (
-          <motion.div
-            initial={{ opacity: 0, x: 8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 8 }}
-            transition={{ duration: 0.18 }}
-          >
-            <Button
-              size="sm"
-              onClick={onSave}
-              disabled={saving || !dirty}
-              className="h-9 px-3.5 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-xs font-bold uppercase tracking-wider rounded-lg shadow-[0_8px_24px_-8px_hsl(48_100%_51%/0.6)]"
-            >
-              {saving ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Save className="h-3.5 w-3.5 mr-1.5" />
-              )}
-              {dirty ? "Save Layout" : "Saved"}
-            </Button>
-          </motion.div>
+      {/* Save Layout — always visible, disabled until dirty */}
+      <Button
+        size="sm"
+        onClick={onSave}
+        disabled={saving || !dirty}
+        className="h-9 px-3.5 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold uppercase tracking-wider rounded-lg shadow-[0_8px_24px_-8px_hsl(48_100%_51%/0.6)] hover:shadow-[0_12px_32px_-8px_hsl(48_100%_51%/0.8)] transition-all"
+        title={dirty ? "Save your layout" : "No changes to save"}
+      >
+        {saving ? (
+          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+        ) : dirty ? (
+          <Save className="h-3.5 w-3.5 mr-1.5" />
+        ) : (
+          <Check className="h-3.5 w-3.5 mr-1.5" />
         )}
-      </AnimatePresence>
+        {saving ? "Saving…" : dirty ? "Save Layout" : "Saved"}
+      </Button>
     </div>
   );
 };
