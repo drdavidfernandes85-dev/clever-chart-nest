@@ -76,7 +76,7 @@ const LiveSharedSignals = () => {
         .from("trading_signals")
         .select("id, pair, direction, entry_price, stop_loss, take_profit, status, created_at, author_id")
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(30);
 
       if (cancelled || !rawSignals) return;
 
