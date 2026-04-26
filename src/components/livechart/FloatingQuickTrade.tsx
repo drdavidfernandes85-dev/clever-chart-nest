@@ -146,12 +146,13 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
         animate={{ x: pos.x, y: pos.y }}
         transition={{ type: "spring", damping: 30, stiffness: 320 }}
         onDragEnd={(_, info) => {
-          const width = pos.open ? PANEL_W : PILL_W;
+          const width = pos.open ? panelWidth : PILL_W;
           const height = pos.open ? maxPanelHeight : PILL_H;
+          const bottomInset = isMobile ? MOBILE_BOTTOM_INSET : 8;
           setPos((p) => ({
             ...p,
             x: Math.min(Math.max(8, p.x + info.offset.x), window.innerWidth - width),
-            y: Math.min(Math.max(8, p.y + info.offset.y), window.innerHeight - height),
+            y: Math.min(Math.max(8, p.y + info.offset.y), window.innerHeight - height - bottomInset),
           }));
         }}
         className="fixed left-0 top-0 z-[70] select-none"
