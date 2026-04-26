@@ -460,7 +460,6 @@ const LiveChart = () => {
         }}
       />
     </div>
-    </div>
   );
 };
 
