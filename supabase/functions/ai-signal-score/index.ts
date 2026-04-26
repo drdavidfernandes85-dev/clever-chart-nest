@@ -6,11 +6,16 @@ const corsHeaders = {
 };
 
 interface Body {
-  pair: string;
-  direction: "buy" | "sell" | string;
-  entry_price: number;
+  symbol?: string;
+  pair?: string;
+  direction?: "buy" | "sell" | string;
+  entry?: number;
+  entry_price?: number;
+  sl?: number | null;
   stop_loss?: number | null;
+  tp?: number | null;
   take_profit?: number | null;
+  author?: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -21,8 +26,15 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const body = (await req.json()) as Body;
-    if (!body?.pair || !body?.direction || body.entry_price == null) {
-      return new Response(JSON.stringify({ error: "pair, direction, entry_price required" }), {
+    const symbol = String(body?.symbol || body?.pair || "").trim().toUpperCase();
+    const direction = String(body?.direction || "").trim().toLowerCase();
+    const entry = Number(body?.entry ?? body?.entry_price);
+    const sl = body?.sl ?? body?.stop_loss ?? null;
+    const tp = body?.tp ?? body?.take_profit ?? null;
+    const author = body?.author ? String(body.author).trim().slice(0, 80) : "Community trader";
+
+    if (!symbol || !["buy", "sell"].includes(direction) || !Number.isFinite(entry)) {
+      return new Response(JSON.stringify({ error: "symbol, direction, and entry are required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
