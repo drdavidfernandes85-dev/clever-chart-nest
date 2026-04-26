@@ -172,31 +172,31 @@ const LiveChart = () => {
 
       {/* App header */}
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-3">
-              <img src={infinoxLogo} alt="INFINOX" className="h-5" />
+        <div className="flex h-14 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <img src={infinoxLogo} alt="INFINOX" className="h-5 shrink-0" />
               <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
-              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
+              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground truncate">
                 <span className="text-primary">IX</span> Live Trading Room
               </span>
             </Link>
-            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">
+            <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] uppercase tracking-wider rounded-full">
               Live Terminal
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
               <Link to="/dashboard">
                 <LayoutDashboard className="h-4 w-4" />
-                <span className="ml-1.5 hidden sm:inline">Dashboard</span>
+                <span className="ml-1.5 hidden md:inline">Dashboard</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
               <Link to="/chatroom">
                 <MessageSquare className="h-4 w-4" />
-                <span className="ml-1.5 hidden sm:inline">Chatroom</span>
+                <span className="ml-1.5 hidden md:inline">Chatroom</span>
               </Link>
             </Button>
             <NotificationsBell />
