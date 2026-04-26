@@ -366,7 +366,7 @@ const LiveChart = () => {
             {/* Chart canvas — fills the rest */}
             <div className="relative flex-1 min-h-0">
               <TradingViewAdvancedIframe
-                key={`${symbol}-${interval}-${studies.join(",")}-${compareSymbols.join(",")}`}
+                key={`${symbol}-${interval}-${studies.join(",")}`}
                 symbol={symbol}
                 interval={interval}
                 height="100%"
@@ -375,7 +375,6 @@ const LiveChart = () => {
                 withDateRanges={true}
                 saveImage={true}
                 studies={studies}
-                compareSymbols={compareForTV}
               />
             </div>
           </section>
