@@ -10,7 +10,6 @@ import {
   Maximize2,
   Minimize2,
   GitCompare,
-  Pencil,
   X,
   PanelRightClose,
   PanelRightOpen,
