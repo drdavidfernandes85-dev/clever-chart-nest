@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
+  signalId?: string;
   pair: string;
   direction: string;
   entry_price: number;
   stop_loss?: number | null;
   take_profit?: number | null;
+  author?: string | null;
   /** Trigger lazy load (e.g. when row enters viewport). Defaults to true. */
   enabled?: boolean;
   /** Visual size of the badge */
@@ -16,84 +18,195 @@ interface Props {
 
 interface Score {
   score: number;
-  rating: "weak" | "fair" | "good" | "strong" | "elite";
+  rating?: "weak" | "fair" | "good" | "strong" | "elite" | string;
   rationale: string;
-  risk_reward?: number;
+  risk_reward?: number | null;
+  generatedAt?: string;
 }
 
-const colorFor = (s: number) => {
-  if (s >= 80)
+type ScoreTheme = {
+  badge: string;
+  panel: string;
+  text: string;
+  border: string;
+  glow: string;
+  label: string;
+  labelClass: string;
+};
+
+const scoreThemeFor = (score: number): ScoreTheme => {
+  if (score >= 80) {
     return {
-      ring: "ring-emerald-400/70",
-      text: "text-emerald-300",
-      bg: "bg-gradient-to-br from-emerald-500/30 to-emerald-700/20",
-      glow: "shadow-[0_0_24px_-4px_hsl(145_70%_50%/0.6)]",
+      badge: "bg-[hsl(var(--score-strong)/0.92)]",
+      panel: "bg-[hsl(var(--score-strong)/0.10)]",
+      text: "text-[hsl(var(--score-strong-foreground))]",
+      border: "border-[hsl(var(--score-strong)/0.55)] ring-[hsl(var(--score-strong)/0.45)]",
+      glow: "shadow-[0_0_28px_-6px_hsl(var(--score-strong)/0.68)]",
       label: "STRONG",
-      labelClass: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40",
+      labelClass: "border-[hsl(var(--score-strong)/0.45)] bg-[hsl(var(--score-strong)/0.14)] text-[hsl(var(--score-strong-foreground))]",
     };
-  if (s >= 60)
+  }
+
+  if (score >= 60) {
     return {
-      ring: "ring-primary/70",
-      text: "text-primary",
-      bg: "bg-gradient-to-br from-primary/30 to-primary/10",
-      glow: "shadow-[0_0_24px_-4px_hsl(48_100%_51%/0.55)]",
+      badge: "bg-primary",
+      panel: "bg-primary/10",
+      text: "text-primary-foreground",
+      border: "border-primary/60 ring-primary/45",
+      glow: "shadow-[0_0_28px_-6px_hsl(var(--primary)/0.75)]",
       label: "FAIR",
-      labelClass: "bg-primary/20 text-primary border-primary/40",
+      labelClass: "border-primary/45 bg-primary/14 text-primary",
     };
+  }
+
   return {
-    ring: "ring-red-400/70",
-    text: "text-red-300",
-    bg: "bg-gradient-to-br from-red-500/30 to-red-700/20",
-    glow: "shadow-[0_0_24px_-4px_hsl(0_70%_55%/0.55)]",
+    badge: "bg-[hsl(var(--score-weak)/0.92)]",
+    panel: "bg-[hsl(var(--score-weak)/0.10)]",
+    text: "text-[hsl(var(--score-weak-foreground))]",
+    border: "border-[hsl(var(--score-weak)/0.55)] ring-[hsl(var(--score-weak)/0.45)]",
+    glow: "shadow-[0_0_28px_-6px_hsl(var(--score-weak)/0.68)]",
     label: "WEAK",
-    labelClass: "bg-red-500/20 text-red-300 border-red-400/40",
+    labelClass: "border-[hsl(var(--score-weak)/0.45)] bg-[hsl(var(--score-weak)/0.14)] text-[hsl(var(--score-weak-foreground))]",
   };
 };
 
-const cache = new Map<string, Score>();
+const scoreCache = new Map<string, Score>();
+const requestCache = new Map<string, Promise<Score>>();
 
-const sizeMap = {
-  sm: { box: "h-7 w-7", text: "text-[10px]", icon: "h-3 w-3" },
-  md: { box: "h-10 w-10", text: "text-sm", icon: "h-4 w-4" },
-  lg: { box: "h-14 w-14", text: "text-lg", icon: "h-5 w-5" },
-} as const;
+const clampScore = (value: unknown) => Math.max(0, Math.min(100, Math.round(Number(value))));
 
-const AIScoreBadge = ({
+const normalizeScore = (data: unknown): Score => {
+  const raw = data as Partial<Score> | null;
+  const score = clampScore(raw?.score);
+
+  if (!Number.isFinite(score) || !raw?.rationale || typeof raw.rationale !== "string") {
+    throw new Error("AI score response was incomplete");
+  }
+
+  return {
+    score,
+    rating: raw.rating,
+    rationale: raw.rationale,
+    risk_reward: raw.risk_reward == null ? null : Number(raw.risk_reward),
+    generatedAt: raw.generatedAt,
+  };
+};
+
+const createScoreKey = ({
+  signalId,
   pair,
   direction,
   entry_price,
   stop_loss,
   take_profit,
-  enabled = true,
-  size = "sm",
-}: Props) => {
-  const key = `${pair}|${direction}|${entry_price}|${stop_loss}|${take_profit}`;
-  const [score, setScore] = useState<Score | null>(() => cache.get(key) ?? null);
-  const [loading, setLoading] = useState(false);
-  const tried = useRef(false);
-  const dims = sizeMap[size];
+  author,
+}: Props) =>
+  [signalId || pair, direction, entry_price, stop_loss ?? "", take_profit ?? "", author ?? ""].join("|");
+
+const requestSignalScore = (key: string, props: Props) => {
+  const cached = scoreCache.get(key);
+  if (cached) return Promise.resolve(cached);
+
+  const existingRequest = requestCache.get(key);
+  if (existingRequest) return existingRequest;
+
+  const request = supabase.functions
+    .invoke("ai-signal-score", {
+      body: {
+        symbol: props.pair,
+        pair: props.pair,
+        direction: props.direction,
+        entry: props.entry_price,
+        entry_price: props.entry_price,
+        sl: props.stop_loss ?? null,
+        stop_loss: props.stop_loss ?? null,
+        tp: props.take_profit ?? null,
+        take_profit: props.take_profit ?? null,
+        author: props.author ?? null,
+      },
+    })
+    .then(({ data, error }) => {
+      if (error) throw new Error(error.message || "AI signal scoring failed");
+      const normalized = normalizeScore(data);
+      scoreCache.set(key, normalized);
+      return normalized;
+    })
+    .finally(() => requestCache.delete(key));
+
+  requestCache.set(key, request);
+  return request;
+};
+
+const useSignalScore = (props: Props) => {
+  const key = useMemo(() => createScoreKey(props), [
+    props.signalId,
+    props.pair,
+    props.direction,
+    props.entry_price,
+    props.stop_loss,
+    props.take_profit,
+    props.author,
+  ]);
+  const [score, setScore] = useState<Score | null>(() => scoreCache.get(key) ?? null);
+  const [loading, setLoading] = useState(!score && props.enabled !== false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled || score || loading || tried.current) return;
-    tried.current = true;
+    let cancelled = false;
+
+    if (props.enabled === false) {
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const cached = scoreCache.get(key);
+    if (cached) {
+      setScore(cached);
+      setLoading(false);
+      setError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     setLoading(true);
-    supabase.functions
-      .invoke("ai-signal-score", {
-        body: { pair, direction, entry_price, stop_loss, take_profit },
+    setError(null);
+
+    requestSignalScore(key, props)
+      .then((result) => {
+        if (!cancelled) setScore(result);
       })
-      .then(({ data, error }) => {
-        if (!error && data?.score != null) {
-          cache.set(key, data);
-          setScore(data);
-        }
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "AI analysis unavailable");
       })
-      .finally(() => setLoading(false));
-  }, [enabled, key, pair, direction, entry_price, stop_loss, take_profit, score, loading]);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [key, props.enabled, props.pair, props.direction, props.entry_price, props.stop_loss, props.take_profit, props.author]);
+
+  return { score, loading, error };
+};
+
+const sizeMap = {
+  sm: { box: "h-8 min-w-10 px-2", text: "text-xs", icon: "h-3 w-3" },
+  md: { box: "h-11 min-w-14 px-3", text: "text-base", icon: "h-4 w-4" },
+  lg: { box: "h-14 min-w-16 px-4", text: "text-xl", icon: "h-5 w-5" },
+} as const;
+
+const AIScoreBadge = (props: Props) => {
+  const { score, loading } = useSignalScore(props);
+  const dims = sizeMap[props.size ?? "sm"];
 
   if (loading && !score) {
     return (
       <span
-        className={`inline-flex ${dims.box} items-center justify-center rounded-full bg-muted/40 ring-1 ring-border/40`}
+        className={`inline-flex ${dims.box} items-center justify-center rounded-full border border-primary/30 bg-primary/10 ring-1 ring-primary/25`}
         title="Scoring with AI…"
       >
         <Loader2 className={`${dims.icon} animate-spin text-primary`} />
@@ -104,7 +217,7 @@ const AIScoreBadge = ({
   if (!score) {
     return (
       <span
-        className={`inline-flex ${dims.box} items-center justify-center rounded-full bg-muted/30 ring-1 ring-border/30 text-muted-foreground`}
+        className={`inline-flex ${dims.box} items-center justify-center rounded-full border border-border/40 bg-muted/30 text-muted-foreground ring-1 ring-border/30`}
         title="AI score unavailable"
       >
         <Sparkles className={dims.icon} />
@@ -112,90 +225,90 @@ const AIScoreBadge = ({
     );
   }
 
-  const c = colorFor(score.score);
+  const theme = scoreThemeFor(score.score);
   return (
     <span
-      className={`inline-flex ${dims.box} items-center justify-center rounded-full ${c.bg} ring-2 ${c.ring} ${c.glow} font-mono font-extrabold tabular-nums ${c.text} ${dims.text}`}
-      title={`AI Score · ${score.rating.toUpperCase()} · ${score.rationale}`}
+      className={`inline-flex ${dims.box} items-center justify-center rounded-full border ${theme.badge} ${theme.border} ${theme.glow} font-mono font-extrabold tabular-nums ${theme.text} ${dims.text}`}
+      title={`AI Score · ${theme.label} · ${score.rationale}`}
     >
       {score.score}
     </span>
   );
 };
 
-/**
- * Score + rationale block — reads from the same cache the badge populates.
- * Use inside the signal card body for the prominent AI section.
- */
-export const AIScorePanel = ({
-  pair,
-  direction,
-  entry_price,
-  stop_loss,
-  take_profit,
-}: Props) => {
-  const key = `${pair}|${direction}|${entry_price}|${stop_loss}|${take_profit}`;
-  const [score, setScore] = useState<Score | null>(() => cache.get(key) ?? null);
+export const AIScorePanel = (props: Props) => {
+  const { score, loading, error } = useSignalScore(props);
 
-  useEffect(() => {
-    if (score) return;
-    const id = setInterval(() => {
-      const c = cache.get(key);
-      if (c) {
-        setScore(c);
-        clearInterval(id);
-      }
-    }, 500);
-    return () => clearInterval(id);
-  }, [key, score]);
-
-  if (!score) {
+  if (loading && !score) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] to-transparent px-3 py-2.5">
-        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/30">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+      <div className="flex items-center gap-3 rounded-lg border border-primary/25 bg-card/80 px-3 py-3 shadow-ix-card">
+        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-primary/35 bg-primary/10 ring-1 ring-primary/25">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
         </span>
         <div className="min-w-0">
-          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-primary/80">
+          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-primary/85">
             AI Analysis
           </p>
-          <p className="text-[11px] text-muted-foreground">Analyzing setup with AI…</p>
+          <p className="text-xs text-muted-foreground">Analyzing setup with AI…</p>
         </div>
       </div>
     );
   }
 
-  const c = colorFor(score.score);
-  return (
-    <div className="flex items-stretch gap-3 rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-background/40 to-transparent p-2.5">
-      {/* Big score circle */}
-      <div className="flex shrink-0 flex-col items-center justify-center gap-1">
-        <span
-          className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${c.bg} ring-2 ${c.ring} ${c.glow} font-mono text-base font-extrabold tabular-nums ${c.text}`}
-        >
-          {score.score}
+  if (!score) {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-destructive/35 bg-destructive/10 px-3 py-3">
+        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-destructive/35 bg-destructive/15">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
         </span>
-        <span
-          className={`rounded-full border px-1.5 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider ${c.labelClass}`}
-        >
-          {c.label}
-        </span>
-      </div>
-
-      {/* Rationale */}
-      <div className="flex min-w-0 flex-1 flex-col justify-center">
-        <div className="mb-1 flex items-center gap-1.5">
-          <Sparkles className="h-3 w-3 text-primary" />
-          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-primary/90">
+        <div className="min-w-0">
+          <p className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-destructive">
             AI Analysis
-            {score.risk_reward != null && (
-              <span className="ml-1.5 text-muted-foreground/70">
-                · R:R {score.risk_reward.toFixed(2)}
+          </p>
+          <p className="text-xs text-foreground/80">{error || "AI analysis unavailable"}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const theme = scoreThemeFor(score.score);
+
+  return (
+    <div className={`rounded-lg border ${theme.panel} ${theme.border} p-3 shadow-ix-card`}>
+      <div className="flex items-start gap-3">
+        <div className="flex shrink-0 flex-col items-center gap-1.5">
+          <span
+            className={`inline-flex h-16 w-16 items-center justify-center rounded-full border ${theme.badge} ${theme.border} ${theme.glow} font-mono text-2xl font-extrabold tabular-nums ${theme.text}`}
+            aria-label={`AI score ${score.score} out of 100`}
+          >
+            {score.score}
+          </span>
+          <span
+            className={`rounded-full border px-2 py-0.5 font-mono text-[8px] font-bold uppercase tracking-wider ${theme.labelClass}`}
+          >
+            AI Score
+          </span>
+        </div>
+
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className={`rounded-full border px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.14em] ${theme.labelClass}`}>
+              {theme.label}
+            </span>
+            {score.risk_reward != null && Number.isFinite(score.risk_reward) && (
+              <span className="rounded-full border border-border/45 bg-background/55 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                R:R {Number(score.risk_reward).toFixed(2)}
               </span>
             )}
-          </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <p className="font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-primary/90">
+              AI Analysis
+            </p>
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-foreground/90">{score.rationale}</p>
         </div>
-        <p className="text-[11px] leading-snug text-foreground/85">{score.rationale}</p>
       </div>
     </div>
   );
