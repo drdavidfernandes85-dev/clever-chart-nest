@@ -12,7 +12,7 @@ import CopyTradeModal, { CopyTradeRequest } from "@/components/copytrade/CopyTra
 import { useCopiedSignals } from "@/hooks/useCopiedSignals";
 import { computeMentorTier, MentorTier } from "@/lib/mentor-tier";
 import MentorBadge from "@/components/social/MentorBadge";
-import AIScoreBadge, { AIScoreExplanation } from "@/components/ai/AIScoreBadge";
+import { AIScorePanel } from "@/components/ai/AIScoreBadge";
 
 type SharedSignal = {
   id: string;
@@ -205,13 +205,6 @@ const LiveSharedSignals = () => {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
-                    <AIScoreBadge
-                      pair={s.pair}
-                      direction={s.direction}
-                      entry_price={Number(s.entry_price)}
-                      stop_loss={s.stop_loss != null ? Number(s.stop_loss) : null}
-                      take_profit={s.take_profit != null ? Number(s.take_profit) : null}
-                    />
                     <span
                       className={`inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
                         isBuy
@@ -265,9 +258,9 @@ const LiveSharedSignals = () => {
                   </div>
                 </div>
 
-                {/* AI explanation */}
-                <div className="mb-2 rounded-lg border border-primary/15 bg-primary/[0.04]">
-                  <AIScoreExplanation
+                {/* AI Analysis */}
+                <div className="mb-2">
+                  <AIScorePanel
                     pair={s.pair}
                     direction={s.direction}
                     entry_price={Number(s.entry_price)}
