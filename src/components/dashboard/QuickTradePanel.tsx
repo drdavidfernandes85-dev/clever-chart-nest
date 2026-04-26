@@ -50,9 +50,14 @@ const pipValuePerLot = (sym: string) => (sym.includes("XAU") ? 10 : 10);
 
 interface Props {
   compact?: boolean;
+  /** List of symbol labels (e.g. "BTC/USDT", "EUR/USD") shown in the symbol picker. */
+  symbols?: string[];
+  /** Called when the user picks a symbol from the picker — lets parents sync the chart. */
+  onSymbolChange?: (label: string) => void;
 }
 
-const QuickTradePanel = ({ compact = false }: Props) => {
+const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange }: Props) => {
+  const SYMBOLS = symbolsProp && symbolsProp.length > 0 ? symbolsProp : DEFAULT_SYMBOLS;
   const {
     symbol: ctxSymbol,
     side: ctxSide,
