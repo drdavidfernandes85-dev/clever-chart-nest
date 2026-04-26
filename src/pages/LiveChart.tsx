@@ -266,29 +266,6 @@ const LiveChart = () => {
                   ● Live
                 </Badge>
 
-                {/* Compare chip(s) */}
-                {compareSymbols.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    {compareSymbols.map((cs) => {
-                      const lbl = SYMBOL_OPTIONS.find((o) => o.value === cs)?.label ?? cs;
-                      return (
-                        <span
-                          key={cs}
-                          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary"
-                        >
-                          {lbl}
-                          <button
-                            onClick={() => toggleCompare(cs)}
-                            className="hover:text-foreground"
-                            aria-label={`Remove ${lbl}`}
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Right: tools */}
