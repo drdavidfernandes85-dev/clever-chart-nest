@@ -40,7 +40,7 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
 import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 // Mixed-asset chart selector — crypto, forex, indices, main stocks.
@@ -449,8 +449,6 @@ const LiveChart = () => {
                 : "pointer-events-none opacity-0 hidden lg:flex lg:invisible"
             }`}
           >
-            {/* Quick Trade — primary execution panel for the active chart symbol */}
-            <QuickTradePanel compact />
             {/* My positions for the active chart symbol — pulled from EA */}
             <SymbolPositions symbolLabel={currentLabel} />
             <LiveSharedSignals />
