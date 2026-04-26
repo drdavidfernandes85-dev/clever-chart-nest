@@ -449,8 +449,6 @@ const LiveChart = () => {
                 : "pointer-events-none opacity-0 hidden lg:flex lg:invisible"
             }`}
           >
-            {/* Quick Trade — primary execution panel for the active chart symbol */}
-            <QuickTradePanel compact />
             {/* My positions for the active chart symbol — pulled from EA */}
             <SymbolPositions symbolLabel={currentLabel} />
             <LiveSharedSignals />
