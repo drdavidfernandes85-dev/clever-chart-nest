@@ -258,9 +258,9 @@ const LiveSharedSignals = () => {
                   </div>
                 </div>
 
-                {/* AI explanation */}
-                <div className="mb-2 rounded-lg border border-primary/15 bg-primary/[0.04]">
-                  <AIScoreExplanation
+                {/* AI Analysis */}
+                <div className="mb-2">
+                  <AIScorePanel
                     pair={s.pair}
                     direction={s.direction}
                     entry_price={Number(s.entry_price)}
