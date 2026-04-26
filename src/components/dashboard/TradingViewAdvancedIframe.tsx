@@ -1,5 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+interface CompareSymbol {
+  symbol: string;
+  position?: "SameScale" | "NewPriceScale";
+}
+
 interface Props {
   symbol?: string;
   interval?: string;
@@ -12,6 +17,8 @@ interface Props {
   details?: boolean;
   hotlist?: boolean;
   studies?: string[];
+  /** Overlay symbols to compare against the main symbol. */
+  compareSymbols?: CompareSymbol[];
   className?: string;
 }
 
@@ -67,11 +74,16 @@ const TradingViewAdvancedIframe = ({
   withDateRanges = true,
   saveImage = true,
   studies = [],
+  compareSymbols = [],
   className = "",
 }: Props) => {
   const containerId = useId().replace(/:/g, "");
   const hostRef = useRef<HTMLDivElement>(null);
   const [hasError, setHasError] = useState(false);
+
+  // Stable string keys so changing the array reference doesn't re-init unless content changes.
+  const compareKey = compareSymbols.map((c) => `${c.symbol}|${c.position ?? "SameScale"}`).join(",");
+  const studiesKey = studies.join(",");
 
   const widgetConfig = useMemo(
     () => ({
@@ -88,6 +100,14 @@ const TradingViewAdvancedIframe = ({
       withdateranges: withDateRanges,
       save_image: saveImage,
       studies,
+      ...(compareSymbols.length > 0
+        ? {
+            compare_symbols: compareSymbols.map((c) => ({
+              symbol: c.symbol,
+              position: c.position ?? "SameScale",
+            })),
+          }
+        : {}),
       container_id: containerId,
       toolbar_bg: "#0b0b0b",
       hide_top_toolbar: false,
@@ -99,11 +119,12 @@ const TradingViewAdvancedIframe = ({
     }),
     [
       allowSymbolChange,
+      compareKey,
       containerId,
       hideSideToolbar,
       interval,
       saveImage,
-      studies,
+      studiesKey,
       symbol,
       withDateRanges,
     ]
