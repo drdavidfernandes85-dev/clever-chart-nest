@@ -166,7 +166,7 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 4 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              style={{ width: PANEL_W, maxHeight: maxPanelHeight }}
+              style={{ width: panelWidth, maxHeight: maxPanelHeight }}
               className="flex flex-col overflow-hidden rounded-2xl border border-primary/30 bg-card/95 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85),0_0_50px_-12px_hsl(48_100%_51%/0.35)] backdrop-blur-2xl"
             >
               {/* Drag handle — only header starts a drag */}
