@@ -1,11 +1,14 @@
 //+------------------------------------------------------------------+
-//|                     InfinoX_Sync_EA v2.00 (MT5)                  |
+//| IX_Sync_EA v2.03 (MT5)                                           |
+//| Copyright © IX Live Trading Room | IX LTR                        |
+//+------------------------------------------------------------------+
 //|  - Pushes account & open positions every 8s                      |
 //|  - Polls dashboard every 5s for "Take This Signal" orders        |
 //|  - Executes received orders automatically                        |
+//|  - Auto-translates web symbols (BTC/USDT -> BTCUSD, etc.)        |
 //+------------------------------------------------------------------+
-#property copyright "InfinoX Elite Live Trading Room"
-#property version   "2.00"
+#property copyright "IX Live Trading Room | IX LTR"
+#property version   "2.03"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -22,11 +25,39 @@ datetime lastSend = 0;
 datetime lastPoll = 0;
 
 //+------------------------------------------------------------------+
+//| Automatic symbol translator (web -> broker)                      |
+//+------------------------------------------------------------------+
+string NormalizeSymbol(string webSymbol)
+{
+   if(webSymbol == "") return "";
+
+   string s = webSymbol;
+   StringReplace(s, "/", "");
+   StringReplace(s, "-", "");
+   StringReplace(s, "USDT", "USD");
+   StringReplace(s, "USDC", "USD");
+   StringReplace(s, "USDt", "USD");
+
+   if(s == "BTCUSD")   return "BTCUSD";
+   if(s == "ETHUSD")   return "ETHUSD";
+   if(s == "SOLUSD")   return "SOLUSD";
+   if(s == "XRPUSD")   return "XRPUSD";
+   if(s == "XAUUSD")   return "XAUUSD";
+   if(s == "EURUSD")   return "EURUSD";
+   if(s == "GBPUSD")   return "GBPUSD";
+   if(s == "AUDUSD")   return "AUDUSD";
+   if(s == "USDJPY")   return "USDJPY";
+   if(s == "NZDUSD")   return "NZDUSD";
+   if(s == "USDCAD")   return "USDCAD";
+   return s;
+}
+
+//+------------------------------------------------------------------+
 int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(MaxSlippagePoints);
-   PrintFormat("✅ InfinoX EA v2.00 (MT5) loaded. Webhook: %s", WebhookURL);
+   PrintFormat("✅ IX_Sync_EA v2.03 (MT5) | IX LTR loaded. Webhook: %s", WebhookURL);
    if(StringLen(SecretToken) < 16)
       Print("⚠️ WARNING: SecretToken looks empty/short. Re-download EA from your dashboard.");
    return(INIT_SUCCEEDED);
@@ -146,11 +177,8 @@ double ExtractNumber(const string src, const string key)
    int colon = StringFind(src, ":", k);
    if(colon < 0) return 0.0;
    int start = colon + 1;
-   // skip spaces
    while(start < StringLen(src) && StringGetCharacter(src, start) == ' ') start++;
-   // detect null
    if(StringSubstr(src, start, 4) == "null") return 0.0;
-   // collect digits / . / -
    int end = start;
    while(end < StringLen(src))
    {
@@ -166,14 +194,15 @@ double ExtractNumber(const string src, const string key)
 //+------------------------------------------------------------------+
 void ProcessOrder(const string obj)
 {
-   string id     = ExtractString(obj, "id");
-   string symbol = ExtractString(obj, "symbol");
-   string side   = ExtractString(obj, "side");
-   string otype  = ExtractString(obj, "order_type");
-   double vol    = ExtractNumber(obj, "volume");
-   double entry  = ExtractNumber(obj, "entry_price");
-   double sl     = ExtractNumber(obj, "stop_loss");
-   double tp     = ExtractNumber(obj, "take_profit");
+   string id        = ExtractString(obj, "id");
+   string rawSymbol = ExtractString(obj, "symbol");
+   string symbol    = NormalizeSymbol(rawSymbol);
+   string side      = ExtractString(obj, "side");
+   string otype     = ExtractString(obj, "order_type");
+   double vol       = ExtractNumber(obj, "volume");
+   double entry     = ExtractNumber(obj, "entry_price");
+   double sl        = ExtractNumber(obj, "stop_loss");
+   double tp        = ExtractNumber(obj, "take_profit");
 
    if(StringLen(id) == 0 || StringLen(symbol) == 0 || vol <= 0)
    {
@@ -195,27 +224,27 @@ void ProcessOrder(const string obj)
    {
       ENUM_ORDER_TYPE ot = isBuy ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT;
       ok = trade.OrderOpen(symbol, ot, vol, 0, entry, sl, tp, ORDER_TIME_GTC, 0,
-                           "InfinoX " + id);
+                           "IX " + id);
    }
    else
    {
       double price = isBuy ? SymbolInfoDouble(symbol, SYMBOL_ASK)
                            : SymbolInfoDouble(symbol, SYMBOL_BID);
       ok = isBuy
-         ? trade.Buy(vol, symbol, price, sl, tp, "InfinoX " + id)
-         : trade.Sell(vol, symbol, price, sl, tp, "InfinoX " + id);
+         ? trade.Buy(vol, symbol, price, sl, tp, "IX " + id)
+         : trade.Sell(vol, symbol, price, sl, tp, "IX " + id);
    }
 
    if(ok)
    {
       ulong ticket = trade.ResultOrder();
-      PrintFormat("✅ InfinoX order %s placed. Ticket=%I64u", id, ticket);
+      PrintFormat("✅ IX order %s placed. Ticket=%I64u", id, ticket);
       ReportResult(id, "executed", (long)ticket, "OK");
    }
    else
    {
       err = StringFormat("retcode=%u %s", trade.ResultRetcode(), trade.ResultComment());
-      PrintFormat("❌ InfinoX order %s failed: %s", id, err);
+      PrintFormat("❌ IX order %s failed: %s", id, err);
       ReportResult(id, "failed", 0, err);
    }
 }

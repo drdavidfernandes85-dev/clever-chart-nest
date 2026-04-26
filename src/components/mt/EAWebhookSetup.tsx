@@ -51,7 +51,7 @@ async function downloadEA(
   platform: "mt4" | "mt5",
   token: string,
 ) {
-  const url = platform === "mt5" ? "/ea/InfinoX_EA_MT5.mq5" : "/ea/InfinoX_EA_MT4.mq4";
+  const url = platform === "mt5" ? "/ea/IX_Sync_EA.mq5" : "/ea/InfinoX_EA_MT4.mq4";
   const res = await fetch(url);
   const tpl = await res.text();
   const filled = tpl
@@ -60,7 +60,7 @@ async function downloadEA(
   const blob = new Blob([filled], { type: "text/plain" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `InfinoX_EA_${platform.toUpperCase()}.${platform === "mt5" ? "mq5" : "mq4"}`;
+  a.download = platform === "mt5" ? "IX_Sync_EA.mq5" : `InfinoX_EA_${platform.toUpperCase()}.mq4`;
   document.body.appendChild(a);
   a.click();
   a.remove();
