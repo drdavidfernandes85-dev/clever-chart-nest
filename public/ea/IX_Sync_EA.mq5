@@ -54,7 +54,7 @@ int OnInit()
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(MaxSlippagePoints);
 
-   Print("✅ IX_Sync_EA v2.03 (MT5) | IX LTR cargado correctamente");
+   Print("✅ IX_Sync_EA v2.03 (MT5) cargado correctamente");
    Print("   Webhook URL: ", WebhookURL);
 
    if(StringLen(SecretToken) < 20)
@@ -65,7 +65,7 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
-   Print("IX_Sync_EA v2.03 (MT5) detenido.");
+   Print("IX_Sync_EA v2.03 detenido.");
 }
 
 //+------------------------------------------------------------------+
@@ -188,21 +188,24 @@ void ProcessOrder(const string obj)
 
    double price = isBuy ? SymbolInfoDouble(mt5Symbol, SYMBOL_ASK) : SymbolInfoDouble(mt5Symbol, SYMBOL_BID);
 
+   // Neutral comment - no platform reference
+   string comment = "Signal-" + id;
+
    if(otype == "limit" && entry > 0)
    {
       ENUM_ORDER_TYPE ot = isBuy ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT;
-      ok = trade.OrderOpen(mt5Symbol, ot, vol, 0, entry, sl, tp, ORDER_TIME_GTC, 0, "IX LTR " + id);
+      ok = trade.OrderOpen(mt5Symbol, ot, vol, 0, entry, sl, tp, ORDER_TIME_GTC, 0, comment);
    }
    else
    {
-      ok = isBuy ? trade.Buy(vol, mt5Symbol, price, sl, tp, "IX LTR " + id)
-                 : trade.Sell(vol, mt5Symbol, price, sl, tp, "IX LTR " + id);
+      ok = isBuy ? trade.Buy(vol, mt5Symbol, price, sl, tp, comment)
+                 : trade.Sell(vol, mt5Symbol, price, sl, tp, comment);
    }
 
    if(ok)
    {
       ulong ticket = trade.ResultOrder();
-      PrintFormat("✅ ORDER EXECUTED | ID: %s | %s %s | Ticket: %I64u", id, isBuy?"BUY":"SELL", mt5Symbol, ticket);
+      PrintFormat("✅ ORDER EXECUTED | ID: %s | %s %s | Ticket: %I64u | Comment: %s", id, isBuy?"BUY":"SELL", mt5Symbol, ticket, comment);
       ReportResult(id, "executed", (long)ticket, "OK");
    }
    else
