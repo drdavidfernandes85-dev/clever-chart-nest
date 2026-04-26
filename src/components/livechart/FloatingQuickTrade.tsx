@@ -14,6 +14,8 @@ const PANEL_W = 360;
 // Tall enough to render the full QuickTradePanel without internal scrolling
 // on common laptop viewports. Capped to viewport via maxHeight at render time.
 const PANEL_H = 760;
+// Reserve space for the mobile bottom navigation (h-16 + safe-area).
+const MOBILE_BOTTOM_INSET = 88;
 
 interface Pos {
   x: number;
@@ -21,12 +23,14 @@ interface Pos {
   open: boolean;
 }
 
-/** Default placement: bottom-left, just inside the right rail's left edge area. */
+/** Default placement: bottom-left, just above the mobile bottom nav. */
 const defaultPos = (): Pos => {
   if (typeof window === "undefined") return { x: 24, y: 120, open: false };
+  const isMobile = window.innerWidth < 1024;
+  const bottomInset = isMobile ? MOBILE_BOTTOM_INSET : 32;
   return {
-    x: 24,
-    y: Math.max(80, window.innerHeight - PILL_H - 32),
+    x: isMobile ? 12 : 24,
+    y: Math.max(80, window.innerHeight - PILL_H - bottomInset),
     open: false,
   };
 };
@@ -111,10 +115,16 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
     dragControls.start(e);
   };
 
-  // Cap panel height to viewport so it never overflows / requires outer scroll.
+  // Cap panel size to viewport so it never overflows on small screens.
+  const isMobile =
+    typeof window !== "undefined" && window.innerWidth < 1024;
+  const panelWidth =
+    typeof window !== "undefined"
+      ? Math.min(PANEL_W, window.innerWidth - 24)
+      : PANEL_W;
   const maxPanelHeight =
     typeof window !== "undefined"
-      ? Math.min(PANEL_H, window.innerHeight - 32)
+      ? Math.min(PANEL_H, window.innerHeight - (isMobile ? MOBILE_BOTTOM_INSET + 24 : 32))
       : PANEL_H;
 
   const widget = (
@@ -136,12 +146,13 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
         animate={{ x: pos.x, y: pos.y }}
         transition={{ type: "spring", damping: 30, stiffness: 320 }}
         onDragEnd={(_, info) => {
-          const width = pos.open ? PANEL_W : PILL_W;
+          const width = pos.open ? panelWidth : PILL_W;
           const height = pos.open ? maxPanelHeight : PILL_H;
+          const bottomInset = isMobile ? MOBILE_BOTTOM_INSET : 8;
           setPos((p) => ({
             ...p,
             x: Math.min(Math.max(8, p.x + info.offset.x), window.innerWidth - width),
-            y: Math.min(Math.max(8, p.y + info.offset.y), window.innerHeight - height),
+            y: Math.min(Math.max(8, p.y + info.offset.y), window.innerHeight - height - bottomInset),
           }));
         }}
         className="fixed left-0 top-0 z-[70] select-none"
@@ -155,7 +166,7 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 4 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              style={{ width: PANEL_W, maxHeight: maxPanelHeight }}
+              style={{ width: panelWidth, maxHeight: maxPanelHeight }}
               className="flex flex-col overflow-hidden rounded-2xl border border-primary/30 bg-card/95 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85),0_0_50px_-12px_hsl(48_100%_51%/0.35)] backdrop-blur-2xl"
             >
               {/* Drag handle — only header starts a drag */}

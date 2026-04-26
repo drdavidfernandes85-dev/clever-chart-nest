@@ -172,31 +172,31 @@ const LiveChart = () => {
 
       {/* App header */}
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-3">
-              <img src={infinoxLogo} alt="INFINOX" className="h-5" />
+        <div className="flex h-14 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <img src={infinoxLogo} alt="INFINOX" className="h-5 shrink-0" />
               <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
-              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
+              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground truncate">
                 <span className="text-primary">IX</span> Live Trading Room
               </span>
             </Link>
-            <Badge variant="secondary" className="text-[10px] uppercase tracking-wider rounded-full">
+            <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] uppercase tracking-wider rounded-full">
               Live Terminal
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
               <Link to="/dashboard">
                 <LayoutDashboard className="h-4 w-4" />
-                <span className="ml-1.5 hidden sm:inline">Dashboard</span>
+                <span className="ml-1.5 hidden md:inline">Dashboard</span>
               </Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex text-muted-foreground hover:text-foreground">
               <Link to="/chatroom">
                 <MessageSquare className="h-4 w-4" />
-                <span className="ml-1.5 hidden sm:inline">Chatroom</span>
+                <span className="ml-1.5 hidden md:inline">Chatroom</span>
               </Link>
             </Button>
             <NotificationsBell />
@@ -211,7 +211,7 @@ const LiveChart = () => {
       </header>
 
       {/* Workspace */}
-      <div className="p-3 lg:p-4">
+      <div className="p-3 pb-24 lg:p-4 lg:pb-4">
         <div
           className={`grid gap-3 lg:gap-4 transition-[grid-template-columns] duration-300 ease-out ${
             railOpen
@@ -222,7 +222,7 @@ const LiveChart = () => {
           {/* Chart hero — bigger, dominant */}
           <section
             ref={chartShellRef}
-            className="relative flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[calc(100vh-5.5rem)] min-h-[680px]"
+            className="relative flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[calc(70vh)] min-h-[420px] lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px]"
           >
             {/* Top toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 px-4 py-2.5">
@@ -428,13 +428,13 @@ const LiveChart = () => {
             </div>
           </section>
 
-          {/* Right rail — kept mounted so the grid column animates smoothly */}
+          {/* Right rail — desktop pinned aside; mobile renders stacked below the chart */}
           <aside
             aria-hidden={!railOpen}
             className={`flex flex-col gap-3 lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px] lg:overflow-y-auto pr-1 transition-opacity duration-200 ${
               railOpen
                 ? "opacity-100"
-                : "pointer-events-none opacity-0 hidden lg:flex lg:invisible"
+                : "pointer-events-none opacity-0 lg:flex lg:invisible"
             }`}
           >
             {/* My positions for the active chart symbol — pulled from EA */}
