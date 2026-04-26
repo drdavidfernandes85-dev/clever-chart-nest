@@ -9,8 +9,6 @@ import {
   Check,
   Maximize2,
   Minimize2,
-  GitCompare,
-  X,
   PanelRightClose,
   PanelRightOpen,
 } from "lucide-react";
