@@ -369,15 +369,7 @@ const LiveChart = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Drawing tools hint — TradingView side toolbar handles the actual tools */}
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors"
-                  title="Drawing tools are available on the chart's left toolbar"
-                >
-                  <Pencil className="h-3.5 w-3.5 text-primary" />
-                  Draw
-                </button>
+                {/* Draw button removed — use the chart's left-side toolbar */}
 
                 {/* Quick Trade now lives in the right sidebar below Smart Alerts */}
 
