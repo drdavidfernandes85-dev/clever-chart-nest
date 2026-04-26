@@ -39,6 +39,7 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
 import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
+import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
@@ -106,7 +107,7 @@ const LiveChart = () => {
   const [railOpen, setRailOpen] = useState(true);
   
   const chartShellRef = useRef<HTMLElement>(null);
-  const { setSymbol: setCtxSymbol } = useQuickTrade();
+  const { setSymbol: setCtxSymbol, prefillNonce } = useQuickTrade();
 
   const currentLabel = SYMBOL_OPTIONS.find((s) => s.value === symbol)?.label ?? symbol;
 
@@ -131,6 +132,12 @@ const LiveChart = () => {
   useEffect(() => {
     window.localStorage.setItem("eltr.liveChart.rail", railOpen ? "1" : "0");
   }, [railOpen]);
+
+  // Whenever something calls openTrade() (e.g. "Take this signal"), make sure
+  // the right rail is visible so the prefilled Quick Trade panel is in view.
+  useEffect(() => {
+    if (prefillNonce > 0) setRailOpen(true);
+  }, [prefillNonce]);
 
   const toggleStudy = (id: string) => {
     setStudies((prev) =>
@@ -437,6 +444,14 @@ const LiveChart = () => {
                 : "pointer-events-none opacity-0 lg:flex lg:invisible"
             }`}
           >
+            {/* Quick Trade — primary action panel, prefilled by "Take this signal" */}
+            <QuickTradePanel
+              symbols={SYMBOL_OPTIONS.map((o) => o.label)}
+              onSymbolChange={(label) => {
+                const match = SYMBOL_OPTIONS.find((o) => o.label === label);
+                if (match) setSymbol(match.value);
+              }}
+            />
             {/* My positions for the active chart symbol — pulled from EA */}
             <SymbolPositions symbolLabel={currentLabel} />
             <LiveSharedSignals />

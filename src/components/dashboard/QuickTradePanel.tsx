@@ -632,7 +632,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                 : "bg-red-500 hover:bg-red-500 text-white shadow-[0_10px_30px_-10px_hsl(0_84%_60%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(0_84%_60%/0.9)]"
             }`}
           >
-            PLACE {isBuy ? "BUY" : "SELL"} TRADE
+            CONFIRM & PLACE {isBuy ? "BUY" : "SELL"} TRADE
           </Button>
         </div>
       </motion.div>
