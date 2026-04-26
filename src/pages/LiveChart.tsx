@@ -211,7 +211,7 @@ const LiveChart = () => {
       </header>
 
       {/* Workspace */}
-      <div className="p-3 lg:p-4">
+      <div className="p-3 pb-24 lg:p-4 lg:pb-4">
         <div
           className={`grid gap-3 lg:gap-4 transition-[grid-template-columns] duration-300 ease-out ${
             railOpen
