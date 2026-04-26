@@ -121,28 +121,38 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
   }, [symbol]);
 
   // Poll live price for the active symbol every 5s.
+  // Forex/XAU use direct public APIs (low latency); other classes use the
+  // shared market-quotes edge function which covers crypto, indices, stocks.
   useEffect(() => {
     let cancelled = false;
+    const asset = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
+    const isForex = asset?.assetClass === "forex" || (!asset && symbol.includes("/") && !symbol.includes("USDT"));
+    const isXau = symbol.includes("XAU");
+
     const fetchPrice = async () => {
       try {
-        const { base, quote } = splitPair(symbol);
-        if (!base || !quote) return;
-
         let p: number | null = null;
 
-        if (base === "XAU" || quote === "XAU") {
+        if (isXau) {
           const res = await fetch("https://api.gold-api.com/price/XAU", {
             cache: "no-store",
           });
           const json = await res.json();
           p = Number(json?.price);
-        } else {
+        } else if (isForex) {
+          const { base, quote } = splitPair(symbol);
+          if (!base || !quote) return;
           const res = await fetch(
             `https://api.frankfurter.dev/v1/latest?base=${base}&symbols=${quote}`,
             { cache: "no-store" },
           );
           const json = await res.json();
           p = Number(json?.rates?.[quote]);
+        } else {
+          // Crypto / indices / stocks via the shared edge function.
+          const quotes = await fetchMarketQuotes();
+          const q = quotes.find((qq) => qq.symbol === symbol);
+          if (q?.price != null && Number.isFinite(q.price)) p = q.price;
         }
 
         if (Number.isFinite(p) && !cancelled) {
