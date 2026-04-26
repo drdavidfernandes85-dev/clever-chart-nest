@@ -14,6 +14,8 @@ const PANEL_W = 360;
 // Tall enough to render the full QuickTradePanel without internal scrolling
 // on common laptop viewports. Capped to viewport via maxHeight at render time.
 const PANEL_H = 760;
+// Reserve space for the mobile bottom navigation (h-16 + safe-area).
+const MOBILE_BOTTOM_INSET = 88;
 
 interface Pos {
   x: number;
@@ -21,12 +23,14 @@ interface Pos {
   open: boolean;
 }
 
-/** Default placement: bottom-left, just inside the right rail's left edge area. */
+/** Default placement: bottom-left, just above the mobile bottom nav. */
 const defaultPos = (): Pos => {
   if (typeof window === "undefined") return { x: 24, y: 120, open: false };
+  const isMobile = window.innerWidth < 1024;
+  const bottomInset = isMobile ? MOBILE_BOTTOM_INSET : 32;
   return {
-    x: 24,
-    y: Math.max(80, window.innerHeight - PILL_H - 32),
+    x: isMobile ? 12 : 24,
+    y: Math.max(80, window.innerHeight - PILL_H - bottomInset),
     open: false,
   };
 };
