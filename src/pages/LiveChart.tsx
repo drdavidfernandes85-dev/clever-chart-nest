@@ -101,7 +101,7 @@ const LiveChart = () => {
   const [symbol, setSymbol] = useState("BINANCE:BTCUSDT");
   const [interval, setInterval] = useState("15");
   const [studies, setStudies] = useState<string[]>([]);
-  const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
+  
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
   
