@@ -38,7 +38,6 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
-import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
@@ -222,7 +221,7 @@ const LiveChart = () => {
         <div
           className={`grid gap-3 lg:gap-4 transition-[grid-template-columns] duration-300 ease-out ${
             railOpen
-              ? "lg:grid-cols-[minmax(0,1fr)_380px]"
+              ? "lg:grid-cols-[minmax(0,1fr)_440px]"
               : "lg:grid-cols-[minmax(0,1fr)_0px]"
           }`}
         >
@@ -458,16 +457,6 @@ const LiveChart = () => {
           </aside>
         </div>
       </div>
-      {/* Floating, draggable Quick Trade — minimized by default. The picker
-          mirrors the chart's watchlist so users can switch instruments
-          directly from the panel and have the chart follow. */}
-      <FloatingQuickTrade
-        symbols={SYMBOL_OPTIONS.map((o) => o.label)}
-        onSymbolChange={(label) => {
-          const match = SYMBOL_OPTIONS.find((o) => o.label === label);
-          if (match) setSymbol(match.value);
-        }}
-      />
     </div>
   );
 };

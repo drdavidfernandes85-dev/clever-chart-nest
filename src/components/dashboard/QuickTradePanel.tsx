@@ -359,19 +359,24 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className={`rounded-2xl border bg-gradient-to-br ${sideAccent} backdrop-blur-sm overflow-hidden transition-all duration-500 ${
+        className={`rounded-2xl border bg-gradient-to-br ${sideAccent} backdrop-blur-xl overflow-hidden transition-all duration-500 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.6),0_0_40px_-12px_hsl(48_100%_51%/0.25)] ${
           flash ? "ring-2 ring-primary scale-[1.01]" : ""
         }`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border/40 px-4 py-2.5 bg-card/60">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-              <Zap className="h-3 w-3" />
+        {/* Header — premium, prominent */}
+        <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-card/70 backdrop-blur-xl">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-background ring-1 ring-primary/40 shadow-[0_0_18px_-4px_hsl(48_100%_51%/0.7)]">
+              <Zap className="h-4 w-4" />
             </div>
-            <h3 className="font-heading text-sm font-semibold text-foreground tracking-wide">
-              Quick Trade
-            </h3>
+            <div className="flex flex-col">
+              <h3 className="font-heading text-sm font-bold uppercase tracking-widest text-foreground leading-none">
+                Quick Trade
+              </h3>
+              <span className="mt-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+                One-click execution
+              </span>
+            </div>
           </div>
           <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400 flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -379,7 +384,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
           </span>
         </div>
 
-        <div className="p-3 space-y-2.5 bg-card/60">
+        <div className="p-4 space-y-3.5 bg-card/60">
           {/* Symbol selector */}
           <div className="relative">
             <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
