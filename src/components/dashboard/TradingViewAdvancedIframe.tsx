@@ -1,5 +1,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
+interface CompareSymbol {
+  symbol: string;
+  position?: "SameScale" | "NewPriceScale";
+}
+
 interface Props {
   symbol?: string;
   interval?: string;
@@ -12,6 +17,8 @@ interface Props {
   details?: boolean;
   hotlist?: boolean;
   studies?: string[];
+  /** Overlay symbols to compare against the main symbol. */
+  compareSymbols?: CompareSymbol[];
   className?: string;
 }
 
