@@ -222,7 +222,7 @@ const LiveChart = () => {
           {/* Chart hero — bigger, dominant */}
           <section
             ref={chartShellRef}
-            className="relative flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[calc(100vh-5.5rem)] min-h-[680px]"
+            className="relative flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[calc(70vh)] min-h-[420px] lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px]"
           >
             {/* Top toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/30 px-4 py-2.5">
