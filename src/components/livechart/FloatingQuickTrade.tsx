@@ -31,7 +31,14 @@ const defaultPos = (): Pos => {
   };
 };
 
-const FloatingQuickTrade = () => {
+interface FloatingQuickTradeProps {
+  /** Optional list of symbol labels (e.g. "BTC/USDT") shown in the panel's picker. */
+  symbols?: string[];
+  /** Called when the user picks a symbol — lets the parent sync the chart. */
+  onSymbolChange?: (label: string) => void;
+}
+
+const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps = {}) => {
   const { user } = useAuth();
   const storageKey = useMemo(
     () => `${STORAGE_PREFIX}:${user?.id ?? "guest"}`,
