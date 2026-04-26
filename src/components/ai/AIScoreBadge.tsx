@@ -20,9 +20,8 @@ interface Score {
 }
 
 const colorFor = (s: number) => {
-  if (s >= 80) return { ring: "ring-emerald-400/60", text: "text-emerald-400", bg: "bg-emerald-500/15" };
-  if (s >= 65) return { ring: "ring-primary/60", text: "text-primary", bg: "bg-primary/15" };
-  if (s >= 45) return { ring: "ring-orange-400/60", text: "text-orange-400", bg: "bg-orange-500/15" };
+  if (s > 80) return { ring: "ring-emerald-400/60", text: "text-emerald-400", bg: "bg-emerald-500/15" };
+  if (s >= 60) return { ring: "ring-primary/60", text: "text-primary", bg: "bg-primary/15" };
   return { ring: "ring-red-400/60", text: "text-red-400", bg: "bg-red-500/15" };
 };
 
