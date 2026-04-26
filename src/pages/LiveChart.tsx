@@ -9,8 +9,6 @@ import {
   Check,
   Maximize2,
   Minimize2,
-  GitCompare,
-  X,
   PanelRightClose,
   PanelRightOpen,
 } from "lucide-react";
@@ -101,7 +99,7 @@ const LiveChart = () => {
   const [symbol, setSymbol] = useState("BINANCE:BTCUSDT");
   const [interval, setInterval] = useState("15");
   const [studies, setStudies] = useState<string[]>([]);
-  const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
+  
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
   
@@ -144,11 +142,6 @@ const LiveChart = () => {
     );
   };
 
-  const toggleCompare = (val: string) => {
-    setCompareSymbols((prev) =>
-      prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val].slice(0, 3),
-    );
-  };
 
   const toggleFullscreen = async () => {
     const el = chartShellRef.current;
@@ -163,10 +156,6 @@ const LiveChart = () => {
       /* ignore */
     }
   };
-
-  // TradingView's widget supports overlays via `compare_symbols`. We map our
-  // selected compare symbols to that format with a shared price scale.
-  const compareForTV = compareSymbols.map((s) => ({ symbol: s, position: "SameScale" as const }));
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
@@ -266,29 +255,6 @@ const LiveChart = () => {
                   ● Live
                 </Badge>
 
-                {/* Compare chip(s) */}
-                {compareSymbols.length > 0 && (
-                  <div className="flex items-center gap-1">
-                    {compareSymbols.map((cs) => {
-                      const lbl = SYMBOL_OPTIONS.find((o) => o.value === cs)?.label ?? cs;
-                      return (
-                        <span
-                          key={cs}
-                          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary"
-                        >
-                          {lbl}
-                          <button
-                            onClick={() => toggleCompare(cs)}
-                            className="hover:text-foreground"
-                            aria-label={`Remove ${lbl}`}
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </button>
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Right: tools */}
@@ -335,37 +301,6 @@ const LiveChart = () => {
                         className="text-sm"
                       >
                         {ind.label}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Compare */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors">
-                      <GitCompare className="h-3.5 w-3.5 text-primary" />
-                      Compare
-                      {compareSymbols.length > 0 && (
-                        <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-mono text-primary">
-                          {compareSymbols.length}
-                        </span>
-                      )}
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Overlay symbol
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {SYMBOL_OPTIONS.filter((o) => o.value !== symbol).map((opt) => (
-                      <DropdownMenuCheckboxItem
-                        key={opt.value}
-                        checked={compareSymbols.includes(opt.value)}
-                        onCheckedChange={() => toggleCompare(opt.value)}
-                        className="text-sm"
-                      >
-                        {opt.label}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
@@ -420,7 +355,7 @@ const LiveChart = () => {
             {/* Chart canvas — fills the rest */}
             <div className="relative flex-1 min-h-0">
               <TradingViewAdvancedIframe
-                key={`${symbol}-${interval}-${studies.join(",")}-${compareSymbols.join(",")}`}
+                key={`${symbol}-${interval}-${studies.join(",")}`}
                 symbol={symbol}
                 interval={interval}
                 height="100%"
@@ -429,7 +364,6 @@ const LiveChart = () => {
                 withDateRanges={true}
                 saveImage={true}
                 studies={studies}
-                compareSymbols={compareForTV}
               />
             </div>
           </section>
