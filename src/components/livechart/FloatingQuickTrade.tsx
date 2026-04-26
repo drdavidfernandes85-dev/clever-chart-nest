@@ -115,10 +115,16 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
     dragControls.start(e);
   };
 
-  // Cap panel height to viewport so it never overflows / requires outer scroll.
+  // Cap panel size to viewport so it never overflows on small screens.
+  const isMobile =
+    typeof window !== "undefined" && window.innerWidth < 1024;
+  const panelWidth =
+    typeof window !== "undefined"
+      ? Math.min(PANEL_W, window.innerWidth - 24)
+      : PANEL_W;
   const maxPanelHeight =
     typeof window !== "undefined"
-      ? Math.min(PANEL_H, window.innerHeight - 32)
+      ? Math.min(PANEL_H, window.innerHeight - (isMobile ? MOBILE_BOTTOM_INSET + 24 : 32))
       : PANEL_H;
 
   const widget = (
