@@ -422,7 +422,8 @@ const LiveChart = () => {
                 hideSideToolbar={false}
                 withDateRanges={true}
                 saveImage={true}
-                studies={effectiveStudies}
+                studies={studies}
+                compareSymbols={compareForTV}
               />
             </div>
           </section>
