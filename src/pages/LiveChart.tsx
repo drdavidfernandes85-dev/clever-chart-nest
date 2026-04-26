@@ -158,13 +158,9 @@ const LiveChart = () => {
     }
   };
 
-  // Combine main + compare studies for the TradingView widget.
-  // TradingView's free widget only renders one symbol natively, so we add
-  // overlays via the "Compare" study when compareSymbols are set.
-  const effectiveStudies = [
-    ...studies,
-    ...compareSymbols.map((s) => `Compare@tv-basicstudies||${s}`),
-  ];
+  // TradingView's widget supports overlays via `compare_symbols`. We map our
+  // selected compare symbols to that format with a shared price scale.
+  const compareForTV = compareSymbols.map((s) => ({ symbol: s, position: "SameScale" as const }));
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
