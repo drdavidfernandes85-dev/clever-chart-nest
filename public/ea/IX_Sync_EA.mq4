@@ -217,7 +217,8 @@ void ProcessOrder(const string obj)
 
    bool isBuy = (side == "buy");
    int  ticket = -1;
-   string comment = "IX " + id;
+   // Neutral comment - no platform reference
+   string comment = "Signal-" + id;
    color clr = isBuy ? clrDodgerBlue : clrTomato;
 
    if(otype == "limit" && entry > 0)
