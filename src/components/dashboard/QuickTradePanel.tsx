@@ -21,8 +21,9 @@ import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useMTAccount } from "@/hooks/useMTAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { MARKET_UNIVERSE, fetchMarketQuotes, decimalsFor } from "@/lib/markets";
 
-const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
+const DEFAULT_SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
 
 const LEVERAGE = 30;
 
