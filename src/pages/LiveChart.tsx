@@ -340,37 +340,6 @@ const LiveChart = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Compare */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-muted/30 px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-foreground hover:bg-muted/50 transition-colors">
-                      <GitCompare className="h-3.5 w-3.5 text-primary" />
-                      Compare
-                      {compareSymbols.length > 0 && (
-                        <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary/20 px-1 text-[9px] font-mono text-primary">
-                          {compareSymbols.length}
-                        </span>
-                      )}
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      Overlay symbol
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {SYMBOL_OPTIONS.filter((o) => o.value !== symbol).map((opt) => (
-                      <DropdownMenuCheckboxItem
-                        key={opt.value}
-                        checked={compareSymbols.includes(opt.value)}
-                        onCheckedChange={() => toggleCompare(opt.value)}
-                        className="text-sm"
-                      >
-                        {opt.label}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
                 {/* Draw button removed — use the chart's left-side toolbar */}
 
                 {/* Quick Trade now lives in the right sidebar below Smart Alerts */}
