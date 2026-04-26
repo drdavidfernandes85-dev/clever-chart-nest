@@ -92,13 +92,14 @@ Deno.serve(async (req) => {
           },
           {
             role: "user",
-            content: `Score this signal.
+             content: `Score this signal.
 
-Pair: ${body.pair}
-Direction: ${String(body.direction).toUpperCase()}
-Entry: ${body.entry_price}
-Stop loss: ${body.stop_loss ?? "n/a"}
-Take profit: ${body.take_profit ?? "n/a"}
+Symbol: ${symbol}
+Direction: ${direction.toUpperCase()}
+Entry: ${entry}
+Stop loss: ${sl ?? "n/a"}
+Take profit: ${tp ?? "n/a"}
+Author: ${author}
 
 ## Fresh headlines
 ${newsBlock}`,

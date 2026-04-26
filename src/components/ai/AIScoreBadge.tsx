@@ -55,7 +55,7 @@ const scoreThemeFor = (score: number): ScoreTheme => {
       border: "border-primary/60 ring-primary/45",
       glow: "shadow-[0_0_28px_-6px_hsl(var(--primary)/0.75)]",
       label: "FAIR",
-      labelClass: "border-primary/45 bg-primary/14 text-primary",
+      labelClass: "border-primary/45 bg-primary/15 text-primary",
     };
   }
 
