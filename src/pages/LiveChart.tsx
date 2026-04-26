@@ -40,6 +40,7 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
 import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
+import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 // Mixed-asset chart selector — crypto, forex, indices, main stocks.
@@ -219,7 +220,7 @@ const LiveChart = () => {
         <div
           className={`grid gap-3 lg:gap-4 transition-[grid-template-columns] duration-300 ease-out ${
             railOpen
-              ? "lg:grid-cols-[minmax(0,1fr)_340px]"
+              ? "lg:grid-cols-[minmax(0,1fr)_380px]"
               : "lg:grid-cols-[minmax(0,1fr)_0px]"
           }`}
         >
@@ -448,6 +449,8 @@ const LiveChart = () => {
                 : "pointer-events-none opacity-0 hidden lg:flex lg:invisible"
             }`}
           >
+            {/* Quick Trade — primary execution panel for the active chart symbol */}
+            <QuickTradePanel compact />
             {/* My positions for the active chart symbol — pulled from EA */}
             <SymbolPositions symbolLabel={currentLabel} />
             <LiveSharedSignals />
