@@ -455,8 +455,16 @@ const LiveChart = () => {
           </aside>
         </div>
       </div>
-      {/* Floating, draggable Quick Trade — minimized by default */}
-      <FloatingQuickTrade />
+      {/* Floating, draggable Quick Trade — minimized by default. The picker
+          mirrors the chart's watchlist so users can switch instruments
+          directly from the panel and have the chart follow. */}
+      <FloatingQuickTrade
+        symbols={SYMBOL_OPTIONS.map((o) => o.label)}
+        onSymbolChange={(label) => {
+          const match = SYMBOL_OPTIONS.find((o) => o.label === label);
+          if (match) setSymbol(match.value);
+        }}
+      />
     </div>
   );
 };

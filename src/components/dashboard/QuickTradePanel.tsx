@@ -21,8 +21,9 @@ import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useMTAccount } from "@/hooks/useMTAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { MARKET_UNIVERSE, fetchMarketQuotes, decimalsFor } from "@/lib/markets";
 
-const SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
+const DEFAULT_SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
 
 const LEVERAGE = 30;
 
@@ -49,9 +50,14 @@ const pipValuePerLot = (sym: string) => (sym.includes("XAU") ? 10 : 10);
 
 interface Props {
   compact?: boolean;
+  /** List of symbol labels (e.g. "BTC/USDT", "EUR/USD") shown in the symbol picker. */
+  symbols?: string[];
+  /** Called when the user picks a symbol from the picker — lets parents sync the chart. */
+  onSymbolChange?: (label: string) => void;
 }
 
-const QuickTradePanel = ({ compact = false }: Props) => {
+const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange }: Props) => {
+  const SYMBOLS = symbolsProp && symbolsProp.length > 0 ? symbolsProp : DEFAULT_SYMBOLS;
   const {
     symbol: ctxSymbol,
     side: ctxSide,
@@ -115,28 +121,38 @@ const QuickTradePanel = ({ compact = false }: Props) => {
   }, [symbol]);
 
   // Poll live price for the active symbol every 5s.
+  // Forex/XAU use direct public APIs (low latency); other classes use the
+  // shared market-quotes edge function which covers crypto, indices, stocks.
   useEffect(() => {
     let cancelled = false;
+    const asset = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
+    const isForex = asset?.assetClass === "forex" || (!asset && symbol.includes("/") && !symbol.includes("USDT"));
+    const isXau = symbol.includes("XAU");
+
     const fetchPrice = async () => {
       try {
-        const { base, quote } = splitPair(symbol);
-        if (!base || !quote) return;
-
         let p: number | null = null;
 
-        if (base === "XAU" || quote === "XAU") {
+        if (isXau) {
           const res = await fetch("https://api.gold-api.com/price/XAU", {
             cache: "no-store",
           });
           const json = await res.json();
           p = Number(json?.price);
-        } else {
+        } else if (isForex) {
+          const { base, quote } = splitPair(symbol);
+          if (!base || !quote) return;
           const res = await fetch(
             `https://api.frankfurter.dev/v1/latest?base=${base}&symbols=${quote}`,
             { cache: "no-store" },
           );
           const json = await res.json();
           p = Number(json?.rates?.[quote]);
+        } else {
+          // Crypto / indices / stocks via the shared edge function.
+          const quotes = await fetchMarketQuotes();
+          const q = quotes.find((qq) => qq.symbol === symbol);
+          if (q?.price != null && Number.isFinite(q.price)) p = q.price;
         }
 
         if (Number.isFinite(p) && !cancelled) {
@@ -379,7 +395,14 @@ const QuickTradePanel = ({ compact = false }: Props) => {
                   {symbol}
                 </span>
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                  {livePrice.toFixed(symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5)}
+                  {(() => {
+                    const a = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
+                    return a
+                      ? livePrice
+                        ? livePrice.toFixed(decimalsFor(a, livePrice))
+                        : "—"
+                      : livePrice.toFixed(symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5);
+                  })()}
                 </span>
               </div>
               <ChevronDown
@@ -389,26 +412,36 @@ const QuickTradePanel = ({ compact = false }: Props) => {
               />
             </button>
             {openSymbols && (
-              <ul className="absolute left-0 right-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
-                {SYMBOLS.map((s) => (
-                  <li key={s}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCtxSymbol(s);
-                        setOpenSymbols(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
-                        s === symbol ? "text-primary bg-primary/5" : "text-foreground"
-                      }`}
-                    >
-                      <span>{s}</span>
-                      <span className="font-mono tabular-nums text-muted-foreground">
-                        {(livePrices[s] ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
+              <ul className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
+                {SYMBOLS.map((s) => {
+                  const a = MARKET_UNIVERSE.find((m) => m.symbol === s);
+                  const px = livePrices[s];
+                  const display = a
+                    ? px != null && Number.isFinite(px)
+                      ? px.toFixed(decimalsFor(a, px))
+                      : "—"
+                    : (px ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5);
+                  return (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCtxSymbol(s);
+                          onSymbolChange?.(s);
+                          setOpenSymbols(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
+                          s === symbol ? "text-primary bg-primary/5" : "text-foreground"
+                        }`}
+                      >
+                        <span>{s}</span>
+                        <span className="font-mono tabular-nums text-muted-foreground">
+                          {display}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
