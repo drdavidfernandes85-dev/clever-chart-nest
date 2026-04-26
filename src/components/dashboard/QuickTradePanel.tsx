@@ -395,7 +395,14 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                   {symbol}
                 </span>
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                  {livePrice.toFixed(symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5)}
+                  {(() => {
+                    const a = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
+                    return a
+                      ? livePrice
+                        ? livePrice.toFixed(decimalsFor(a, livePrice))
+                        : "—"
+                      : livePrice.toFixed(symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5);
+                  })()}
                 </span>
               </div>
               <ChevronDown
@@ -405,26 +412,36 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
               />
             </button>
             {openSymbols && (
-              <ul className="absolute left-0 right-0 z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
-                {SYMBOLS.map((s) => (
-                  <li key={s}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCtxSymbol(s);
-                        setOpenSymbols(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
-                        s === symbol ? "text-primary bg-primary/5" : "text-foreground"
-                      }`}
-                    >
-                      <span>{s}</span>
-                      <span className="font-mono tabular-nums text-muted-foreground">
-                        {(livePrices[s] ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5)}
-                      </span>
-                    </button>
-                  </li>
-                ))}
+              <ul className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
+                {SYMBOLS.map((s) => {
+                  const a = MARKET_UNIVERSE.find((m) => m.symbol === s);
+                  const px = livePrices[s];
+                  const display = a
+                    ? px != null && Number.isFinite(px)
+                      ? px.toFixed(decimalsFor(a, px))
+                      : "—"
+                    : (px ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5);
+                  return (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCtxSymbol(s);
+                          onSymbolChange?.(s);
+                          setOpenSymbols(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
+                          s === symbol ? "text-primary bg-primary/5" : "text-foreground"
+                        }`}
+                      >
+                        <span>{s}</span>
+                        <span className="font-mono tabular-nums text-muted-foreground">
+                          {display}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
