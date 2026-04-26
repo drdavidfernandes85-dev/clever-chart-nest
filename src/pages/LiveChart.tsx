@@ -428,13 +428,13 @@ const LiveChart = () => {
             </div>
           </section>
 
-          {/* Right rail — kept mounted so the grid column animates smoothly */}
+          {/* Right rail — desktop pinned aside; mobile renders stacked below the chart */}
           <aside
             aria-hidden={!railOpen}
             className={`flex flex-col gap-3 lg:h-[calc(100vh-5.5rem)] lg:min-h-[680px] lg:overflow-y-auto pr-1 transition-opacity duration-200 ${
               railOpen
                 ? "opacity-100"
-                : "pointer-events-none opacity-0 hidden lg:flex lg:invisible"
+                : "pointer-events-none opacity-0 lg:flex lg:invisible"
             }`}
           >
             {/* My positions for the active chart symbol — pulled from EA */}
