@@ -2,30 +2,25 @@
 //| IX_Sync_EA v2.03 (MT5)                                           |
 //| Copyright © IX Live Trading Room | IX LTR                        |
 //+------------------------------------------------------------------+
-//|  - Pushes account & open positions every 8s                      |
-//|  - Polls dashboard every 5s for "Take This Signal" orders        |
-//|  - Executes received orders automatically                        |
-//|  - Auto-translates web symbols (BTC/USDT -> BTCUSD, etc.)        |
-//+------------------------------------------------------------------+
 #property copyright "IX Live Trading Room | IX LTR"
 #property version   "2.03"
 #property strict
 
 #include <Trade/Trade.mqh>
 
-input string  WebhookURL          = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
-input string  SecretToken         = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
-input int     SendIntervalSeconds = 8;                   // Account/positions push interval
-input int     PollIntervalSeconds = 5;                   // Pending orders poll interval
-input int     MagicNumber         = 88008800;            // Identifies trades placed by this EA
-input int     MaxSlippagePoints   = 30;                  // Max acceptable slippage for market orders
+input string WebhookURL          = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
+input string SecretToken         = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
+input int    SendIntervalSeconds = 8;
+input int    PollIntervalSeconds = 5;
+input int    MagicNumber         = 88008800;
+input int    MaxSlippagePoints   = 30;
 
 CTrade trade;
 datetime lastSend = 0;
 datetime lastPoll = 0;
 
 //+------------------------------------------------------------------+
-//| Automatic symbol translator (web -> broker)                      |
+//| Traductor automático de símbolos                                 |
 //+------------------------------------------------------------------+
 string NormalizeSymbol(string webSymbol)
 {
@@ -49,6 +44,7 @@ string NormalizeSymbol(string webSymbol)
    if(s == "USDJPY")   return "USDJPY";
    if(s == "NZDUSD")   return "NZDUSD";
    if(s == "USDCAD")   return "USDCAD";
+   if(s == "EURJPY")   return "EURJPY";
    return s;
 }
 
@@ -57,22 +53,33 @@ int OnInit()
 {
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(MaxSlippagePoints);
-   PrintFormat("✅ IX_Sync_EA v2.03 (MT5) | IX LTR loaded. Webhook: %s", WebhookURL);
-   if(StringLen(SecretToken) < 16)
-      Print("⚠️ WARNING: SecretToken looks empty/short. Re-download EA from your dashboard.");
+
+   Print("✅ IX_Sync_EA v2.03 (MT5) | IX LTR cargado correctamente");
+   Print("   Webhook URL: ", WebhookURL);
+
+   if(StringLen(SecretToken) < 20)
+      Print("⚠️ AVISO: SecretToken parece incompleto.");
+
    return(INIT_SUCCEEDED);
+}
+
+void OnDeinit(const int reason)
+{
+   Print("IX_Sync_EA v2.03 (MT5) detenido.");
 }
 
 //+------------------------------------------------------------------+
 void OnTick()
 {
    datetime now = TimeCurrent();
+
    if(now - lastSend >= SendIntervalSeconds)
    {
       lastSend = now;
       SendAccountInfo();
       SendOpenPositions();
    }
+
    if(now - lastPoll >= PollIntervalSeconds)
    {
       lastPoll = now;
@@ -90,7 +97,9 @@ void SendAccountInfo()
                   AccountInfoDouble(ACCOUNT_MARGIN),
                   AccountInfoDouble(ACCOUNT_MARGIN_FREE),
                   TimeCurrent());
-   string resp; PostToWebhook(json, resp);
+
+   string resp;
+   PostToWebhook(json, resp);
 }
 
 //+------------------------------------------------------------------+
@@ -116,12 +125,10 @@ void SendOpenPositions()
 
    string json = StringFormat("{\"type\":\"positions\",\"platform\":\"mt5\",\"account\":%I64d,\"positions\":%s}",
                   AccountInfoInteger(ACCOUNT_LOGIN), positions);
-   string resp; PostToWebhook(json, resp);
+   string resp;
+   PostToWebhook(json, resp);
 }
 
-//+------------------------------------------------------------------+
-//| Ask the dashboard for any pending "Take This Signal" orders.      |
-//| If any are returned, execute them and report back.                |
 //+------------------------------------------------------------------+
 void PollPendingOrders()
 {
@@ -131,13 +138,11 @@ void PollPendingOrders()
    int code = PostToWebhook(body, resp);
    if(code != 200) return;
 
-   // Find the "orders":[ ... ] array.
    int idx = StringFind(resp, "\"orders\"");
    if(idx < 0) return;
    int arrStart = StringFind(resp, "[", idx);
    if(arrStart < 0) return;
 
-   // Iterate through {} blocks inside the array.
    int searchFrom = arrStart + 1;
    while(true)
    {
@@ -153,7 +158,61 @@ void PollPendingOrders()
 }
 
 //+------------------------------------------------------------------+
-//| Lightweight JSON helpers (good enough for our flat payloads).     |
+void ProcessOrder(const string obj)
+{
+   string id     = ExtractString(obj, "id");
+   string symbol = ExtractString(obj, "symbol");
+   string side   = ExtractString(obj, "side");
+   string otype  = ExtractString(obj, "order_type");
+   double vol    = ExtractNumber(obj, "volume");
+   double entry  = ExtractNumber(obj, "entry_price");
+   double sl     = ExtractNumber(obj, "stop_loss");
+   double tp     = ExtractNumber(obj, "take_profit");
+
+   if(StringLen(id) == 0 || StringLen(symbol) == 0 || vol <= 0)
+   {
+      ReportResult(id, "failed", 0, "Invalid order payload");
+      return;
+   }
+
+   string mt5Symbol = NormalizeSymbol(symbol);
+   if(!SymbolSelect(mt5Symbol, true))
+   {
+      ReportResult(id, "failed", 0, "Symbol not available: " + mt5Symbol);
+      return;
+   }
+
+   bool isBuy = (side == "buy");
+   bool ok = false;
+   string err = "";
+
+   double price = isBuy ? SymbolInfoDouble(mt5Symbol, SYMBOL_ASK) : SymbolInfoDouble(mt5Symbol, SYMBOL_BID);
+
+   if(otype == "limit" && entry > 0)
+   {
+      ENUM_ORDER_TYPE ot = isBuy ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT;
+      ok = trade.OrderOpen(mt5Symbol, ot, vol, 0, entry, sl, tp, ORDER_TIME_GTC, 0, "IX LTR " + id);
+   }
+   else
+   {
+      ok = isBuy ? trade.Buy(vol, mt5Symbol, price, sl, tp, "IX LTR " + id)
+                 : trade.Sell(vol, mt5Symbol, price, sl, tp, "IX LTR " + id);
+   }
+
+   if(ok)
+   {
+      ulong ticket = trade.ResultOrder();
+      PrintFormat("✅ ORDER EXECUTED | ID: %s | %s %s | Ticket: %I64u", id, isBuy?"BUY":"SELL", mt5Symbol, ticket);
+      ReportResult(id, "executed", (long)ticket, "OK");
+   }
+   else
+   {
+      err = StringFormat("retcode=%u %s", trade.ResultRetcode(), trade.ResultComment());
+      PrintFormat("❌ ORDER FAILED | ID: %s | Error: %s", id, err);
+      ReportResult(id, "failed", 0, err);
+   }
+}
+
 //+------------------------------------------------------------------+
 string ExtractString(const string src, const string key)
 {
@@ -179,6 +238,7 @@ double ExtractNumber(const string src, const string key)
    int start = colon + 1;
    while(start < StringLen(src) && StringGetCharacter(src, start) == ' ') start++;
    if(StringSubstr(src, start, 4) == "null") return 0.0;
+
    int end = start;
    while(end < StringLen(src))
    {
@@ -192,73 +252,17 @@ double ExtractNumber(const string src, const string key)
 }
 
 //+------------------------------------------------------------------+
-void ProcessOrder(const string obj)
-{
-   string id        = ExtractString(obj, "id");
-   string rawSymbol = ExtractString(obj, "symbol");
-   string symbol    = NormalizeSymbol(rawSymbol);
-   string side      = ExtractString(obj, "side");
-   string otype     = ExtractString(obj, "order_type");
-   double vol       = ExtractNumber(obj, "volume");
-   double entry     = ExtractNumber(obj, "entry_price");
-   double sl        = ExtractNumber(obj, "stop_loss");
-   double tp        = ExtractNumber(obj, "take_profit");
-
-   if(StringLen(id) == 0 || StringLen(symbol) == 0 || vol <= 0)
-   {
-      ReportResult(id, "failed", 0, "Invalid order payload");
-      return;
-   }
-
-   if(!SymbolSelect(symbol, true))
-   {
-      ReportResult(id, "failed", 0, "Symbol not available: " + symbol);
-      return;
-   }
-
-   bool isBuy = (side == "buy");
-   bool ok = false;
-   string err = "";
-
-   if(otype == "limit" && entry > 0)
-   {
-      ENUM_ORDER_TYPE ot = isBuy ? ORDER_TYPE_BUY_LIMIT : ORDER_TYPE_SELL_LIMIT;
-      ok = trade.OrderOpen(symbol, ot, vol, 0, entry, sl, tp, ORDER_TIME_GTC, 0,
-                           "IX " + id);
-   }
-   else
-   {
-      double price = isBuy ? SymbolInfoDouble(symbol, SYMBOL_ASK)
-                           : SymbolInfoDouble(symbol, SYMBOL_BID);
-      ok = isBuy
-         ? trade.Buy(vol, symbol, price, sl, tp, "IX " + id)
-         : trade.Sell(vol, symbol, price, sl, tp, "IX " + id);
-   }
-
-   if(ok)
-   {
-      ulong ticket = trade.ResultOrder();
-      PrintFormat("✅ IX order %s placed. Ticket=%I64u", id, ticket);
-      ReportResult(id, "executed", (long)ticket, "OK");
-   }
-   else
-   {
-      err = StringFormat("retcode=%u %s", trade.ResultRetcode(), trade.ResultComment());
-      PrintFormat("❌ IX order %s failed: %s", id, err);
-      ReportResult(id, "failed", 0, err);
-   }
-}
-
-//+------------------------------------------------------------------+
 void ReportResult(string orderId, string status, long ticket, string message)
 {
    if(StringLen(orderId) == 0) return;
    string safeMsg = message;
    StringReplace(safeMsg, "\\", "\\\\");
    StringReplace(safeMsg, "\"", "\\\"");
+
    string body = StringFormat("{\"type\":\"order_result\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":\"%I64d\",\"message\":\"%s\"}",
                               orderId, status, ticket, safeMsg);
-   string resp; PostToWebhook(body, resp);
+   string resp;
+   PostToWebhook(body, resp);
 }
 
 //+------------------------------------------------------------------+
@@ -266,23 +270,26 @@ int PostToWebhook(string body, string &response)
 {
    char postData[];
    StringToCharArray(body, postData, 0, StringLen(body));
-
    string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + SecretToken;
+
    char result[];
    string responseHeaders;
-
    ResetLastError();
+
    int res = WebRequest("POST", WebhookURL, headers, 30000, postData, result, responseHeaders);
 
    if(res == -1)
    {
-      PrintFormat("❌ WebRequest failed. Error %d — add %s to Tools > Options > Expert Advisors > Allow WebRequest.",
-                  GetLastError(), WebhookURL);
+      int err = GetLastError();
+      PrintFormat("❌ WebRequest failed. Error %d — Añade %s en Herramientas > Opciones > Expert Advisors > Allow WebRequest.", err, WebhookURL);
       response = "";
       return -1;
    }
+
    response = CharArrayToString(result);
    if(res != 200)
-      PrintFormat("⚠️ Webhook HTTP %d: %s", res, response);
+      PrintFormat("⚠️ Webhook returned HTTP %d", res);
+
    return res;
 }
+//+------------------------------------------------------------------+
