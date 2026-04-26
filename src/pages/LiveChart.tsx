@@ -144,11 +144,6 @@ const LiveChart = () => {
     );
   };
 
-  const toggleCompare = (val: string) => {
-    setCompareSymbols((prev) =>
-      prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val].slice(0, 3),
-    );
-  };
 
   const toggleFullscreen = async () => {
     const el = chartShellRef.current;
