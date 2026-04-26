@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Zap, GripVertical, Minus, X } from "lucide-react";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
 const STORAGE_PREFIX = "eltr.floatingQuickTrade.v3";
 
@@ -108,6 +109,12 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
     document.addEventListener("fullscreenchange", update);
     return () => document.removeEventListener("fullscreenchange", update);
   }, []);
+
+  // Auto-expand whenever something calls openTrade() (e.g. "Take this signal")
+  const { prefillNonce } = useQuickTrade();
+  useEffect(() => {
+    if (prefillNonce > 0) setPos((p) => ({ ...p, open: true }));
+  }, [prefillNonce]);
 
   const setOpen = (open: boolean) => setPos((p) => ({ ...p, open }));
 

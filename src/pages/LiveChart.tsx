@@ -38,7 +38,7 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
@@ -221,7 +221,7 @@ const LiveChart = () => {
         <div
           className={`grid gap-3 lg:gap-4 transition-[grid-template-columns] duration-300 ease-out ${
             railOpen
-              ? "lg:grid-cols-[minmax(0,1fr)_440px]"
+              ? "lg:grid-cols-[minmax(0,1fr)_360px]"
               : "lg:grid-cols-[minmax(0,1fr)_0px]"
           }`}
         >
@@ -443,20 +443,23 @@ const LiveChart = () => {
                 : "pointer-events-none opacity-0 lg:flex lg:invisible"
             }`}
           >
-            {/* Quick Trade — primary action panel, prefilled by "Take this signal" */}
-            <QuickTradePanel
-              symbols={SYMBOL_OPTIONS.map((o) => o.label)}
-              onSymbolChange={(label) => {
-                const match = SYMBOL_OPTIONS.find((o) => o.label === label);
-                if (match) setSymbol(match.value);
-              }}
-            />
             {/* My positions for the active chart symbol — pulled from EA */}
             <SymbolPositions symbolLabel={currentLabel} />
             <LiveSharedSignals />
           </aside>
         </div>
       </div>
+
+      {/* Compact, draggable Quick Trade widget — auto-opens prefilled when
+          "Take This Signal" is clicked from Live Shared Signals / Community Hub. */}
+      <FloatingQuickTrade
+        symbols={SYMBOL_OPTIONS.map((o) => o.label)}
+        onSymbolChange={(label) => {
+          const match = SYMBOL_OPTIONS.find((o) => o.label === label);
+          if (match) setSymbol(match.value);
+        }}
+      />
+    </div>
     </div>
   );
 };
