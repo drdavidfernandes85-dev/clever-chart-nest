@@ -1,6 +1,0 @@
-/* App-level styles — keep #root full-width so sections control their own layout */
-#root {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
