@@ -1,44 +1,38 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Clock, Play, LayoutDashboard } from "lucide-react";
+import { ArrowRight, Users, Play, MessageSquare, LineChart, GraduationCap, ShieldCheck, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
-import AnimatedCounter from "@/components/AnimatedCounter";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
-import { useLanguage } from "@/i18n/LanguageContext";
 import heroComet from "@/assets/hero-comet.jpg";
 
-
-// Next webinar config
-const NEXT_WEBINAR = {
-  dateUTC: (() => {
-    const now = new Date();
-    const target = new Date(now);
-    target.setUTCHours(14, 0, 0, 0);
-    if (target <= now) target.setUTCDate(target.getUTCDate() + 1);
-    while (target.getUTCDay() === 0 || target.getUTCDay() === 6) {
-      target.setUTCDate(target.getUTCDate() + 1);
-    }
-    return target;
-  })(),
-};
-
-function useCountdown(target: Date) {
-  const [diff, setDiff] = useState(() => Math.max(0, target.getTime() - Date.now()));
+// Simulated live online counter (gentle drift around a base)
+function useOnlineCounter(base = 1247) {
+  const [count, setCount] = useState(base);
   useEffect(() => {
-    const id = setInterval(() => setDiff(Math.max(0, target.getTime() - Date.now())), 1000);
+    const id = setInterval(() => {
+      setCount((c) => {
+        const drift = Math.floor(Math.random() * 9) - 4; // -4..+4
+        const next = c + drift;
+        if (next < base - 30) return base - 30;
+        if (next > base + 60) return base + 60;
+        return next;
+      });
+    }, 3500);
     return () => clearInterval(id);
-  }, [target]);
-  const totalSec = Math.floor(diff / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  return { h, m, s, isLive: diff === 0 };
+  }, [base]);
+  return count;
 }
 
+const KEY_POINTS = [
+  { icon: GraduationCap, text: "Educational community environment" },
+  { icon: LineChart, text: "Real-time chart analysis and discussion" },
+  { icon: MessageSquare, text: "Access to daily live webinars" },
+  { icon: ShieldCheck, text: "Portfolio overview and risk tools after connecting your account" },
+];
+
 const HeroSection = () => {
-  const { h, m, s, isLive } = useCountdown(NEXT_WEBINAR.dateUTC);
-  const { t } = useLanguage();
+  const onlineCount = useOnlineCounter(1247);
 
   return (
     <section
@@ -47,7 +41,6 @@ const HeroSection = () => {
     >
       {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
       <div className="pointer-events-none absolute inset-0 z-0">
-        {/* Deep dark base with subtle warm core for depth */}
         <div
           className="absolute inset-0"
           style={{
@@ -56,7 +49,6 @@ const HeroSection = () => {
           }}
         />
 
-        {/* The hero comet image — full height with soft top/bottom fades */}
         <img
           src={heroComet}
           alt=""
@@ -72,7 +64,6 @@ const HeroSection = () => {
           draggable={false}
         />
 
-        {/* Strong left fade so text reads cleanly */}
         <div
           className="absolute inset-0"
           style={{
@@ -80,7 +71,6 @@ const HeroSection = () => {
               "linear-gradient(90deg, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.85) 24%, rgba(0,0,0,0.40) 50%, rgba(0,0,0,0) 74%)",
           }}
         />
-        {/* Cinematic vignette */}
         <div
           className="absolute inset-0"
           style={{
@@ -137,41 +127,72 @@ const HeroSection = () => {
       </div>
 
       {/* ── HERO CONTENT ───────────────────────────────────────── */}
-      <div className="container relative z-10 py-20 lg:py-28">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:grid-cols-[1.05fr_1fr] xl:gap-20 2xl:grid-cols-[1.1fr_1fr] 2xl:gap-24">
-          {/* LEFT — copy (aligned with comet center on xl+) */}
-          <div className="relative flex flex-col items-start gap-7 text-left lg:pl-4 xl:pl-2 2xl:pl-0">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/50 bg-primary/10 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-primary backdrop-blur-sm shadow-[0_0_30px_hsl(45_100%_50%/0.25)]">
+      <div className="container relative z-10 py-16 lg:py-24">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:grid-cols-[1.1fr_1fr] xl:gap-20">
+          {/* LEFT — copy */}
+          <div className="relative flex flex-col items-start gap-6 text-left lg:pl-4 xl:pl-2 2xl:pl-0">
+            {/* Live online counter pill */}
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/50 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary backdrop-blur-sm shadow-[0_0_30px_hsl(45_100%_50%/0.25)]">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
-              {t("hero.powered")}
+              <span className="tabular-nums text-white">{onlineCount.toLocaleString()}</span>
+              <span className="text-primary/90">traders online right now</span>
             </div>
 
-            <h1 className="font-heading text-5xl font-bold leading-[1.02] tracking-tight text-white md:text-6xl lg:text-7xl">
+            {/* Headline */}
+            <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">Join the</span>{" "}
               <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
-                IX
-              </span>{" "}
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">Live</span>{" "}
-              <span className="text-primary drop-shadow-[0_0_28px_hsl(45_100%_50%/0.8)]">|</span>
+                IX Live
+              </span>
               <br />
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.title2")} {t("hero.title3")}</span>
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">Trading Room</span>
             </h1>
 
-            <p className="max-w-xl text-base leading-relaxed font-sans text-white/80 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-              {t("hero.desc")}
+            {/* Sub-headline */}
+            <p className="max-w-xl text-base md:text-lg leading-relaxed font-sans text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+              A professional community where traders connect, share ideas, discuss market setups, and learn together. Powered by real-time tools and AI insights.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 pt-1">
+            {/* Key points */}
+            <ul className="grid w-full max-w-xl gap-2.5 sm:grid-cols-2">
+              {KEY_POINTS.map(({ icon: Icon, text }) => (
+                <li
+                  key={text}
+                  className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 backdrop-blur-md"
+                >
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span className="text-sm leading-snug text-white/85">{text}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Eligibility note */}
+            <div
+              role="note"
+              className="w-full max-w-xl rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4 backdrop-blur-md shadow-[0_0_30px_hsl(45_100%_50%/0.18)]"
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <p className="text-sm leading-relaxed text-white/90">
+                  <span className="font-semibold text-primary">Eligibility:</span>{" "}
+                  Full access requires a verified live Infinox account with a minimum net balance of <span className="font-semibold text-white">$100 USD</span>. All content is for educational purposes only.
+                </p>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <MagneticButton strength={0.25}>
                 <Button
                   size="lg"
-                  className="h-14 gap-2 rounded-full px-10 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
+                  className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
                   asChild
                 >
-                  <Link to="/register">
-                    {t("hero.cta")} <ArrowRight className="h-4 w-4" />
+                  <Link to="/connect-mt">
+                    Connect My MT5 Account <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
               </MagneticButton>
@@ -179,74 +200,31 @@ const HeroSection = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-14 gap-2 rounded-full px-8 text-sm font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
+                  className="h-14 gap-2 rounded-full px-7 text-sm font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
                   asChild
                 >
-                  <Link to="/dashboard">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Go to Dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </MagneticButton>
-              <MagneticButton strength={0.2}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-14 gap-2 rounded-full px-8 text-sm border-white/30 bg-white/5 text-white hover:bg-white/10 hover:border-primary/70 backdrop-blur-md"
-                  asChild
-                >
-                  <Link to="/login">
+                  <Link to="/webinars">
                     <Play className="h-4 w-4 fill-current" />
-                    {t("hero.demo")}
+                    Watch Free Live Webinar
                   </Link>
                 </Button>
               </MagneticButton>
             </div>
 
-            {/* Social proof + countdown */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            {/* Trust strip */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
               <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
                 <Users className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-white">1,200+</span>
-                <span className="text-xs text-white/60">{t("hero.traders")}</span>
-              </div>
-
-              <div className="flex items-center gap-2 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]">
-                <Clock className="h-4 w-4 text-primary" />
-                {isLive ? (
-                  <span className="text-sm font-bold text-primary animate-pulse">{t("hero.live")}</span>
-                ) : (
-                  <>
-                    <span className="text-xs text-white/70 mr-1">{t("hero.next")}</span>
-                    <div className="flex items-center gap-1 font-mono text-sm font-bold text-white">
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(h).padStart(2, "0")}h</span>
-                      <span className="text-white/50">:</span>
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(m).padStart(2, "0")}m</span>
-                      <span className="text-white/50">:</span>
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(s).padStart(2, "0")}s</span>
-                    </div>
-                  </>
-                )}
+                <span className="text-sm text-white/85">Community of active traders &amp; mentors</span>
               </div>
             </div>
 
-            {/* Stats row */}
-            <div className="mt-3 flex flex-wrap gap-x-10 gap-y-4">
-              {[
-                { value: "75%", label: t("hero.winrate") },
-                { value: "99.8%", label: t("hero.uptime") },
-                { value: "5K+", label: t("hero.tradersLabel") },
-              ].map((stat) => (
-                <div key={stat.label} className="text-left">
-                  <div className="font-display text-4xl font-semibold tabular-nums text-white drop-shadow-[0_0_20px_hsl(45_100%_50%/0.3)]">
-                    <AnimatedCounter value={stat.value} />
-                  </div>
-                  <div className="mt-1 text-xs uppercase tracking-wider text-white/55">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
+            {/* Risk disclaimer */}
+            <div className="mt-2 flex w-full max-w-xl items-start gap-2 rounded-lg border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/60" />
+              <p className="text-xs leading-relaxed text-white/65">
+                Trading involves significant risk. Past performance is not indicative of future results.
+              </p>
             </div>
           </div>
 

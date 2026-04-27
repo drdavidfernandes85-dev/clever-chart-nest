@@ -95,6 +95,30 @@ export type Database = {
         }
         Relationships: []
       }
+      education_modules_completed: {
+        Row: {
+          completed_at: string
+          id: string
+          module_slug: string
+          user_id: string
+          xp_awarded: number
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          module_slug: string
+          user_id: string
+          xp_awarded?: number
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          module_slug?: string
+          user_id?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -1177,11 +1201,19 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      complete_education_module: {
+        Args: { _module_slug: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      uncomplete_education_module: {
+        Args: { _module_slug: string }
         Returns: boolean
       }
     }
