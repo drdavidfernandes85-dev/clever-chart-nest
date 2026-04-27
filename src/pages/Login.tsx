@@ -55,6 +55,7 @@ const Login = () => {
       setLoading(false);
       return;
     }
+    track("login", { method: "password" });
     toast.success("Welcome back!");
     // Navigation handled by the useEffect above once ready+user are true.
     // Keep loading=true so the button stays disabled during the handoff.
