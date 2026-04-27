@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle, Clock, LayoutDashboard, MessageSquare } from "lucide-react";
+import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
