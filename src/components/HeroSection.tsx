@@ -191,6 +191,10 @@ const HeroSection = () => {
               </MagneticButton>
             </div>
 
+            {/* Eligibility note — subtle */}
+            <p className="max-w-2xl text-xs leading-relaxed text-white/55">
+              Full access requires a verified live Infinox account with a minimum net balance of $100 USD. All content is for educational purposes only.
+            </p>
 
             {/* Trust strip — Active traders, Next session countdown, Community */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
