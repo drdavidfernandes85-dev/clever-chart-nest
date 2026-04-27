@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { markNavigationEnd, markNavigationStart } from "@/lib/route-metrics";
+import { trackPageView } from "@/lib/analytics";
 
 /**
  * Non-blocking page transition.
@@ -21,11 +22,12 @@ const PageTransition = ({ children }: { children: ReactNode }) => {
     if (prevPathRef.current === location.pathname) return;
     prevPathRef.current = location.pathname;
     markNavigationStart(location.pathname);
+    trackPageView(location.pathname + location.search);
     // Bump the animation key only on real path changes, then mark end
     setAnimKey((k) => k + 1);
     const id = requestAnimationFrame(() => markNavigationEnd());
     return () => cancelAnimationFrame(id);
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   return (
     <div key={animKey} className="animate-hero-blur-in">
