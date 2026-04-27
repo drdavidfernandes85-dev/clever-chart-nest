@@ -21,11 +21,12 @@ const HOT_FALLBACK: HotMention[] = [
   { symbol: "BTC/USDT", mentions: 0, price: null, changePct: null, up: true },
 ];
 
-type Mentor = { name: string; pnl: string; winrate: string };
-const MENTOR_FALLBACK: Mentor[] = [
-  { name: "IX_Mentor", pnl: "+18.4%", winrate: "72%" },
-  { name: "EUR_King", pnl: "+12.1%", winrate: "68%" },
-  { name: "alpha-rat", pnl: "+9.8%", winrate: "61%" },
+// Activity-based community contributors — NO performance claims (regulation compliant).
+type Contributor = { name: string; ideas: number; role: string };
+const CONTRIBUTOR_FALLBACK: Contributor[] = [
+  { name: "IX_Mentor",  ideas: 42, role: "Lead Mentor" },
+  { name: "EUR_King",   ideas: 31, role: "Senior Trader" },
+  { name: "alpha-rat",  ideas: 24, role: "Active Member" },
 ];
 
 const initialsOf = (n: string) =>
@@ -39,31 +40,32 @@ const initialsOf = (n: string) =>
 
 /**
  * Right-rail content for the Community Hub (Chatroom page).
- * Combines: Community Stats · Hot Right Now · Live Shared Signals · Top Mentors.
+ * Combines: Community Pulse · Shared Market Ideas · Hot Right Now · Top Contributors.
+ * Regulation-compliant: no signals language, no performance claims.
  */
 const CommunityHubRail = () => {
   const [onlineCount, setOnlineCount] = useState(184);
-  const [activeSignals, setActiveSignals] = useState<number>(0);
-  const [todayTrades, setTodayTrades] = useState<number>(0);
+  const [activeIdeas, setActiveIdeas] = useState<number>(0);
+  const [ideasShared24h, setIdeasShared24h] = useState<number>(0);
   const { hot } = useHotMentions(8);
   const hotRows = hot.length ? hot : HOT_FALLBACK;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ count: sigs }, { count: trades }] = await Promise.all([
+      const [{ count: ideas }, { count: recent }] = await Promise.all([
         supabase
           .from("trading_signals")
           .select("id", { count: "exact", head: true })
           .in("status", ["open", "active"]),
         supabase
-          .from("mt_pending_orders")
+          .from("trading_signals")
           .select("id", { count: "exact", head: true })
           .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
       ]);
       if (cancelled) return;
-      setActiveSignals(sigs ?? 0);
-      setTodayTrades(trades ?? 0);
+      setActiveIdeas(ideas ?? 0);
+      setIdeasShared24h(recent ?? 0);
     })();
 
     const tick = setInterval(() => {
