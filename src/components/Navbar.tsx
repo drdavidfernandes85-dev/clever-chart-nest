@@ -108,7 +108,7 @@ const Navbar = () => {
           >
             <Link to="/connect-mt">
               <Plug className="h-3.5 w-3.5" />
-              Connect MT5
+              Connect MT4 / MT5
             </Link>
           </Button>
 
@@ -189,7 +189,7 @@ const Navbar = () => {
             <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
               <Link to="/connect-mt" onClick={() => setMobileOpen(false)}>
                 <Plug className="h-3.5 w-3.5" />
-                Connect MT5
+                Connect MT4 / MT5
               </Link>
             </Button>
 
