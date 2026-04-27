@@ -132,6 +132,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const authListenerMountedRef = useRef(false);
 
   const applySession = (s: Session | null) => {
+    const current = sessionRef.current;
+    if (current?.access_token === s?.access_token && current?.user?.id === s?.user?.id) return;
     sessionRef.current = s;
     setSession(s);
     setUser(s?.user ?? null);
@@ -298,8 +300,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Mark loading false on first event too (covers cases where getSession is slow)
-      if (loading) setLoading(false);
-      if (!ready) setReady(true);
+      setLoading(false);
+      setReady(true);
     });
 
     // 2) Then restore the existing session from storage
