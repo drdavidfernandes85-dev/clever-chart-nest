@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TrendingUp, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ const Login = () => {
   const location = useLocation();
   const { t } = useLanguage();
   const { user, ready, isRefreshing } = useAuth();
+  const isRedirectingRef = useRef(false);
 
   const requestedPath = (location.state as { from?: string } | null)?.from;
   const fromPath = requestedPath && requestedPath !== "/login" ? requestedPath : "/dashboard";
@@ -24,7 +25,13 @@ const Login = () => {
   // Only redirect once auth is ready AND a user is confirmed.
   // This prevents bouncing while session is still being restored.
   useEffect(() => {
+    if (ready && isRefreshing) {
+      console.log("Redirect prevented during refresh", { path: "/login" });
+      return;
+    }
     if (ready && !isRefreshing && user) {
+      if (isRedirectingRef.current) return;
+      isRedirectingRef.current = true;
       navigate(fromPath, { replace: true });
     }
   }, [ready, isRefreshing, user, fromPath, navigate]);
