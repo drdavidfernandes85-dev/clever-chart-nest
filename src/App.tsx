@@ -54,7 +54,7 @@ const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
 const Analytics = lazyWithRetry(() => import("./pages/Analytics.tsx"));
 const PublicProfile = lazyWithRetry(() => import("./pages/PublicProfile.tsx"));
 const News = lazyWithRetry(() => import("./pages/News.tsx"));
-const CalendarPage = lazyWithRetry(() => import("./pages/Calendar.tsx"));
+// CalendarPage merged into News (single combined page)
 const ConnectMT = lazyWithRetry(() => import("./pages/ConnectMT.tsx"));
 const Webinars = lazyWithRetry(() => import("./pages/Webinars.tsx"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
@@ -94,7 +94,7 @@ const App = () => (
                   <Route path="/admin" element={<AdminRoute><DashboardLayout><Admin /></DashboardLayout></AdminRoute>} />
                   <Route path="/analytics" element={<ProtectedRoute><DashboardLayout><Analytics /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/news" element={<ProtectedRoute><DashboardLayout><News /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/calendar" element={<ProtectedRoute><DashboardLayout><CalendarPage /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/calendar" element={<ProtectedRoute><DashboardLayout><News /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/connect-mt" element={<ProtectedRoute><DashboardLayout><ConnectMT /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/webinars" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/webinars/:id" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
