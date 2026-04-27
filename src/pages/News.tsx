@@ -27,7 +27,7 @@ const News = () => {
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
-          <div className="flex h-16 items-center gap-4 px-6 lg:px-10">
+          <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-10">
             <h1 className="hidden xl:flex items-center gap-2 font-proxima text-sm font-semibold text-foreground shrink-0">
               <Newspaper className="h-4 w-4 text-primary" />
               <span className="text-primary">
