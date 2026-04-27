@@ -63,7 +63,32 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
     localStorage.setItem("locale", l);
+    // Reflect on <html lang> for accessibility / SEO
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = l;
+    }
   }, []);
+
+  // Keep <html lang> in sync with current locale on mount/changes.
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = locale;
+    }
+  }, [locale]);
+
+  // Cross-tab sync: if the user changes language in another tab/window,
+  // mirror it here so the app stays consistent across the whole session.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== "locale" || !e.newValue) return;
+      if (translations[e.newValue as Locale] && e.newValue !== locale) {
+        setLocaleState(e.newValue as Locale);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [locale]);
 
   const t = useCallback(
     (key: TranslationKey): string => {
