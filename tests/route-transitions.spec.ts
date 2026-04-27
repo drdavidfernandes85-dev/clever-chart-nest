@@ -1,14 +1,14 @@
 import { test, expect } from "../playwright-fixture";
 
 /**
- * Smoke test: navigate through the public pages and assert that the page
+ * Smoke test: navigate through the public pages and assert the page
  * never goes fully black/blank during transitions.
  *
  * For each navigation we:
- *   1. Click the in-app link
- *   2. Immediately sample the document a few times during the transition
+ *   1. Trigger a client-side navigation
+ *   2. Sample the document multiple times across the transition window
  *   3. Verify visible text exists at every sample
- *   4. Capture the route-metrics counters from window.__routeMetrics
+ *   4. Capture window.__routeMetrics for inspection
  */
 
 const PUBLIC_PATHS = ["/", "/login", "/register"] as const;
@@ -30,7 +30,7 @@ test.describe("Route transitions", () => {
       }, target);
 
       // Sample the DOM 5 times across the next ~600ms — none of them
-      // should reveal a fully empty / fully black document.
+      // should reveal a fully empty document.
       for (let s = 0; s < 5; s++) {
         const visibleText = await page.evaluate(() => {
           const root = document.getElementById("root");
@@ -43,16 +43,12 @@ test.describe("Route transitions", () => {
         await page.waitForTimeout(120);
       }
 
-      // Pull instrumentation snapshot for the report
       const metrics = await page.evaluate(
         () => (window as any).__routeMetrics ?? null,
       );
       navMetrics.push({ from, to: target, metrics });
     }
 
-    console.log(
-      "[route-metrics report]",
-      JSON.stringify(navMetrics, null, 2),
-    );
+    console.log("[route-metrics report]", JSON.stringify(navMetrics, null, 2));
   });
 });
