@@ -120,6 +120,8 @@ const CommunityNest = () => {
 
   return (
     <aside className="space-y-3">
+      {/* Social-proof trust bar — regulation-compliant. */}
+      <CommunityTrustBar compact />
       {/* Header */}
       <div className="rounded-2xl border border-primary/25 bg-card/80 backdrop-blur-md p-4">
         <div className="flex items-center justify-between">
