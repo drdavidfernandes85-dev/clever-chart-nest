@@ -246,19 +246,6 @@ const HeroSection = () => {
                   </Link>
                 </Button>
               </MagneticButton>
-              <MagneticButton strength={0.18}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-12 gap-2 rounded-full px-6 text-sm border-white/30 bg-white/5 text-white hover:bg-white/10 hover:border-primary/70 backdrop-blur-md"
-                  asChild
-                >
-                  <Link to="/login">
-                    <Play className="h-4 w-4 fill-current" />
-                    {t("hero.demo")}
-                  </Link>
-                </Button>
-              </MagneticButton>
             </div>
 
             {/* Trust strip — Active traders, Next session countdown, Community */}
