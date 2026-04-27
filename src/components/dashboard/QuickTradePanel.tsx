@@ -239,11 +239,32 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
       return;
     }
 
-    // --- Auto-fill SL/TP at 20 pips from entry if user left them empty ---
-    // 1 pip = 0.0001 for most pairs, 0.01 for JPY pairs, 0.1 for XAU.
-    const pipSize = symbol.includes("JPY") ? 0.01 : symbol.includes("XAU") ? 0.1 : 0.0001;
-    const distance = 20 * pipSize;
-    const decimals = symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5;
+    // --- Auto-fill SL/TP if user left them empty ---
+    // Use an asset-aware distance generous enough to clear broker minimum
+    // stop levels (which are often 30-100 pips on FX, larger on crypto).
+    const asset = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
+    const isCrypto = asset?.assetClass === "crypto" || symbol.includes("USDT");
+    const isIndex = asset?.assetClass === "index";
+    const isStock = asset?.assetClass === "stock";
+    const isJpy = symbol.includes("JPY");
+    const isXau = symbol.includes("XAU");
+
+    let distance: number;
+    let decimals: number;
+    if (isCrypto || isIndex || isStock) {
+      // 0.5% of price — safely outside broker freeze/stop levels for these classes.
+      distance = ref * 0.005;
+      decimals = ref >= 1000 ? 2 : ref >= 1 ? 3 : 5;
+    } else if (isXau) {
+      distance = 5;        // ~$5 on gold
+      decimals = 2;
+    } else if (isJpy) {
+      distance = 0.5;      // 50 pips on JPY pairs
+      decimals = 3;
+    } else {
+      distance = 0.005;    // 50 pips on standard FX pairs
+      decimals = 5;
+    }
 
     let finalSl = slNum;
     let finalTp = tpNum;
@@ -291,6 +312,18 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
         });
         return;
       }
+    }
+
+    // Brokers reject orders whose SL/TP are inside their stop/freeze level.
+    // Reject anything closer than ~30% of our auto-distance to give a buffer.
+    const minDistance = distance * 0.3;
+    const slGap = Math.abs(ref - finalSl);
+    const tpGap = Math.abs(ref - finalTp);
+    if (slGap < minDistance || tpGap < minDistance) {
+      toast.error("SL/TP too close to price", {
+        description: `Move them at least ${distance.toFixed(decimals)} away from ${ref.toFixed(decimals)} so your broker accepts the order.`,
+      });
+      return;
     }
 
     setConfirming(true);
