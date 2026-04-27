@@ -190,13 +190,13 @@ const CommunityHubRail = () => {
         </ul>
       </div>
 
-      {/* Top Mentors */}
+      {/* Top Community Contributors — activity-based, NO performance data. */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
         <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-2 sm:px-3">
           <div className="flex items-center gap-2">
             <Trophy className="h-3.5 w-3.5 text-primary" />
             <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
-              Top Mentors
+              Top Contributors
             </span>
           </div>
           <Link
@@ -207,8 +207,8 @@ const CommunityHubRail = () => {
           </Link>
         </div>
         <ul className="divide-y divide-border/30">
-          {MENTOR_FALLBACK.map((m, i) => (
-            <li key={m.name} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_4.25rem] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
+          {CONTRIBUTOR_FALLBACK.map((m, i) => (
+            <li key={m.name} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
               <span className="w-4 text-center font-mono text-[10px] font-bold text-primary">
                 {i + 1}
               </span>
@@ -221,11 +221,11 @@ const CommunityHubRail = () => {
                   <CheckCircle2 className="h-3 w-3 shrink-0 text-primary" />
                 </div>
                 <p className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground">
-                  WR {m.winrate}
+                  {m.role}
                 </p>
               </div>
-              <span className="text-right font-mono text-[11px] font-bold tabular-nums text-[hsl(145_65%_50%)]">
-                {m.pnl}
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-right font-mono text-[10px] font-bold tabular-nums text-primary">
+                {m.ideas} ideas
               </span>
             </li>
           ))}
