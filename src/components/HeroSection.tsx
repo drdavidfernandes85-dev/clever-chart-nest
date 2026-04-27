@@ -191,12 +191,24 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Primary CTA — compliant lead action */}
+            {/* CTAs — single primary + supporting secondary */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <MagneticButton strength={0.25}>
                 <Button
                   size="lg"
                   className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
+                  asChild
+                >
+                  <Link to="/register">
+                    {t("hero.cta")} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </MagneticButton>
+              <MagneticButton strength={0.22}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 gap-2 rounded-full px-7 text-base font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
                   asChild
                 >
                   <Link to="/webinars">
@@ -205,49 +217,8 @@ const HeroSection = () => {
                   </Link>
                 </Button>
               </MagneticButton>
-              <MagneticButton strength={0.2}>
-                <Button
-                  size="lg"
-                  className="h-14 gap-2 rounded-full px-7 text-sm font-semibold bg-[#FFCD05] text-black hover:bg-[#FFE066] shadow-[0_0_25px_hsl(45_100%_50%/0.45)]"
-                  asChild
-                >
-                  <Link to="/register">
-                    {t("hero.cta")} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </MagneticButton>
             </div>
 
-            {/* Secondary CTAs — community actions side-by-side */}
-            <div className="flex flex-wrap items-center gap-3">
-              <MagneticButton strength={0.22}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-12 gap-2 rounded-full px-6 text-sm font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
-                  asChild
-                >
-                  <Link to="/chatroom">
-                    <MessageSquare className="h-4 w-4" />
-                    Join the Chatroom
-                  </Link>
-                </Button>
-              </MagneticButton>
-              <MagneticButton strength={0.18}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-12 gap-2 rounded-full px-6 text-sm font-semibold border-white/30 bg-white/5 text-white hover:bg-white/10 hover:border-primary/70 backdrop-blur-md"
-                  asChild
-                >
-                  <Link to="/dashboard">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Go to Dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </MagneticButton>
-            </div>
 
             {/* Trust strip — Active traders, Next session countdown, Community */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
