@@ -1,29 +1,17 @@
-import { GraduationCap, LineChart, Video, ShieldCheck } from "lucide-react";
+import { GraduationCap, LineChart, Video, ShieldCheck, MessageSquare, BarChart3, Globe } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { TranslationKey } from "@/i18n/translations";
 
-const featurePoints: { icon: typeof LineChart; title: string; desc: string }[] = [
-  {
-    icon: GraduationCap,
-    title: "Educational Community Environment",
-    desc: "A professional space where traders connect, share ideas and grow together — built for learning, not hype.",
-  },
-  {
-    icon: LineChart,
-    title: "Real-Time Chart Analysis & Discussion",
-    desc: "Live market breakdowns and open discussion of setups across FX, indices, commodities and crypto.",
-  },
-  {
-    icon: Video,
-    title: "Access to Daily Live Webinars",
-    desc: "Daily sessions hosted by seasoned mentors with live market analysis, walkthroughs and Q&A.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Portfolio Overview & Risk Tools",
-    desc: "After connecting your account, monitor your portfolio and use built-in risk tools to trade with discipline.",
-  },
+const featureKeys: { icon: typeof LineChart; title: TranslationKey; desc: TranslationKey }[] = [
+  { icon: GraduationCap, title: "features.community", desc: "features.community.desc" },
+  { icon: LineChart, title: "features.realtime", desc: "features.realtime.desc" },
+  { icon: Video, title: "features.webinars", desc: "features.webinars.desc" },
+  { icon: ShieldCheck, title: "features.education", desc: "features.education.desc" },
+  { icon: BarChart3, title: "features.charts", desc: "features.charts.desc" },
+  { icon: MessageSquare, title: "features.chatroom", desc: "features.chatroom.desc" },
+  { icon: Globe, title: "features.coverage", desc: "features.coverage.desc" },
 ];
 
 const FeaturesSection = () => {
@@ -50,8 +38,8 @@ const FeaturesSection = () => {
             </p>
           </div>
         </ScrollReveal>
-        <div className="grid gap-5 sm:grid-cols-2">
-          {featurePoints.map((f, i) => (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {featureKeys.map((f, i) => (
             <ScrollReveal key={f.title} delay={i * 80}>
               <div className="shimmer-border group relative h-full overflow-hidden rounded-2xl glass-panel p-7 transition-all duration-500 hover:-translate-y-1 hover:border-primary/40">
                 {/* Subtle chart sparkline accent in the corner */}
@@ -74,9 +62,9 @@ const FeaturesSection = () => {
                     <f.icon className="h-5 w-5" />
                   </div>
                   <h3 className="mb-2.5 font-heading text-base font-semibold text-foreground uppercase tracking-wide">
-                    {f.title}
+                    {t(f.title)}
                   </h3>
-                  <p className="text-sm leading-relaxed text-secondary-foreground">{f.desc}</p>
+                  <p className="text-sm leading-relaxed text-secondary-foreground">{t(f.desc)}</p>
                 </div>
               </div>
             </ScrollReveal>
