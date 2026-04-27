@@ -908,7 +908,7 @@ const Education = () => {
                 id="chart-patterns"
                 tag="Module 04 · Chart Patterns"
                 title="Chart Patterns: Recurring Footprints of the Market"
-                read="10 min read"
+                read="13 min read"
               >
                 <P>
                   Chart patterns are the visible signature of crowd psychology. They form
@@ -918,36 +918,109 @@ const Education = () => {
                 </P>
 
                 <H2>1. Continuation Patterns</H2>
-                <P>The trend pauses, then resumes. These are the highest-probability setups in trending markets.</P>
-                <UL>
-                  <LI><strong>Bull flag / Bear flag</strong> — sharp move, tight pullback, breakout</LI>
-                  <LI><strong>Pennant</strong> — a flag with converging trendlines</LI>
-                  <LI><strong>Ascending / Descending triangle</strong> — pressure building against a flat level</LI>
-                </UL>
+                <P>
+                  The trend pauses, then resumes. These are the highest-probability setups in
+                  trending markets.
+                </P>
+
+                <H3>Flag</H3>
+                <P>
+                  A short, sloping rectangle bounded by two parallel trendlines —
+                  consolidation after a strong impulsive move (the "pole"). The flag itself
+                  must retrace less than 50% of the pole; if it exceeds that, you're looking
+                  at a channel, not a flag. Breakout typically resumes the prior trend with
+                  similar magnitude.
+                </P>
+
+                <H3>Pennant</H3>
+                <P>
+                  An initial large move followed by consolidation between converging
+                  trendlines (a small symmetrical triangle). Followed by a breakout in the
+                  direction of the existing strong trend.
+                </P>
+
+                <H3>Bullish / Bearish Wedge</H3>
+                <P>
+                  Both trendlines converge into a triangular shape. A <strong>bullish
+                  wedge</strong> shows consistent highs with higher lows. A <strong>bearish
+                  wedge</strong> shows consistent lows with lower highs.
+                </P>
+
+                <H3>Ascending / Descending Triangle</H3>
+                <P>
+                  Pressure builds against a flat horizontal level. Ascending = flat top with
+                  rising lows (bullish bias). Descending = flat bottom with lower highs
+                  (bearish bias).
+                </P>
+
+                <H3>Channel</H3>
+                <P>
+                  Bounded by two parallel trendlines with at least 4 contact points (S and R).
+                  Can be rising, falling, or horizontal. Channels often evolve into triangles
+                  as traders compress within the range.
+                </P>
 
                 <ImageHint>
-                  "Bull flag breakout on NAS100 with measured-move target overlay"
+                  "Continuation pattern cheat sheet — flag, pennant, wedge, ascending triangle"
                 </ImageHint>
 
                 <H2>2. Reversal Patterns</H2>
                 <P>The trend exhausts and flips. Powerful — but only valid at meaningful structure.</P>
+
+                <H3>Ascending / Descending Wedge (Reversal)</H3>
+                <P>
+                  Also called a rising or falling wedge. Price loses momentum within the
+                  wedge, leading to an explosive break and counter-trend move. Minimum
+                  measured target: <strong>38.2% retracement</strong> of the previous trend.
+                </P>
+
+                <H3>Double Top / Double Bottom</H3>
+                <P>
+                  Two distinct, well-defined peaks (or troughs) at approximately the same
+                  price level. Failed continuation — the second test fails to break, signalling
+                  reversal.
+                </P>
+
+                <H3>Triple Top / Triple Bottom</H3>
+                <P>
+                  Three distinct peaks (or troughs) at the same level. Less common than
+                  doubles but more reliable when they form — three failed attempts strongly
+                  suggest reversal.
+                </P>
+
+                <H3>Head &amp; Shoulders (Regular &amp; Inverse)</H3>
+                <P>
+                  Three peaks: a higher middle peak (the "head") flanked by two lower peaks
+                  (the "shoulders"). The textbook top reversal. Inverse H&amp;S is the mirror
+                  for downtrends.
+                </P>
                 <UL>
-                  <LI><strong>Head &amp; Shoulders</strong> — the textbook top reversal</LI>
-                  <LI><strong>Double Top / Double Bottom</strong> — failed continuation, often at key S/R</LI>
-                  <LI><strong>Inverse Head &amp; Shoulders</strong> — the bottom-fisher's classic</LI>
-                  <LI><strong>Rounded bottom</strong> — slow accumulation by smart money</LI>
+                  <LI><strong>Entry:</strong> just below (or above) the neckline</LI>
+                  <LI><strong>Stop:</strong> above (or below) the right shoulder</LI>
+                  <LI><strong>Target:</strong> the distance from the head to the neckline, projected from the breakout</LI>
                 </UL>
 
                 <ImageHint>
                   "Head &amp; Shoulders on Gold (XAU/USD) with neckline break and target projection"
                 </ImageHint>
 
+                <H3>Cup and Handle</H3>
+                <P>
+                  Cup-shaped accumulation followed by a smaller "handle" pullback before the
+                  breakout. The handle is always on the right side. Breakout past the neckline
+                  is powerful because it triggers stops from counter-trend traders.
+                </P>
+                <UL>
+                  <LI><strong>Entry:</strong> just beyond the neckline</LI>
+                  <LI><strong>Target:</strong> distance from the extreme of the cup to the neckline (not the handle)</LI>
+                </UL>
+
                 <H2>3. Bilateral Patterns</H2>
                 <P>Direction is unclear until breakout — wait for confirmation before entering.</P>
                 <UL>
-                  <LI><strong>Symmetrical triangle</strong> — coiling price, explosive release</LI>
+                  <LI><strong>Symmetrical Triangle</strong> — coiling price, explosive release</LI>
                   <LI><strong>Wedge (rising / falling)</strong> — often reversal, sometimes continuation</LI>
-                  <LI><strong>Rectangle / range</strong> — trade the edges, not the middle</LI>
+                  <LI><strong>Rectangle / Range</strong> — trade the edges, not the middle</LI>
                 </UL>
 
                 <H2>4. How to Trade a Pattern Correctly</H2>
@@ -957,6 +1030,7 @@ const Education = () => {
                   <LI>Look for a retest of the broken level for a low-risk entry</LI>
                   <LI>Measure the pattern's height to project a realistic target</LI>
                   <LI>Place the stop on the opposite side of the pattern, not just below the candle</LI>
+                  <LI>Confirm with volume — a real breakout shows expanding participation</LI>
                 </UL>
 
                 <ImageHint>"Anatomy of a textbook breakout: structure → break → retest → run"</ImageHint>
