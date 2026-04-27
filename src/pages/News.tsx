@@ -20,14 +20,14 @@ const News = () => {
   return (
     <>
       <SEO
-        title="Noticias y Calendario | IX Live Trading Room"
-        description="Flujo de noticias en tiempo real y calendario económico para traders profesionales."
+        title="News & Economic Calendar | Elite Live Trading Room"
+        description="Real-time financial news flow and the live economic calendar — every market-moving event, in one place for serious traders."
         canonical="https://elitelivetradingroom.com/news"
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
-          <div className="flex h-16 items-center gap-4 px-6 lg:px-10">
+          <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-10">
             <h1 className="hidden xl:flex items-center gap-2 font-proxima text-sm font-semibold text-foreground shrink-0">
               <Newspaper className="h-4 w-4 text-primary" />
               <span className="text-primary">
@@ -83,34 +83,38 @@ const News = () => {
           </AnimatePresence>
         </header>
 
-        <main className="flex-1 px-6 py-8 lg:px-10 lg:py-10">
+        <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="mx-auto max-w-7xl space-y-10"
+            className="mx-auto max-w-7xl"
           >
-            {/* News + Calendar side by side on large screens, stacked on smaller */}
-            <section className="grid gap-8 lg:grid-cols-2">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+            {/* News + Calendar — stacked on mobile, side-by-side on desktop */}
+            <section className="grid gap-6 md:gap-8 lg:grid-cols-2 lg:items-start">
+              <article className="flex flex-col gap-3 min-w-0">
+                <header className="flex items-center gap-2">
                   <Newspaper className="h-4 w-4 text-primary" />
                   <h2 className="font-proxima text-sm font-semibold uppercase tracking-wider text-foreground">
                     {t("page.news")}
                   </h2>
+                </header>
+                <div className="min-h-[600px] lg:h-[680px] overflow-hidden rounded-2xl">
+                  <NewsFlowWidget />
                 </div>
-                <NewsFlowWidget />
-              </div>
+              </article>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+              <article className="flex flex-col gap-3 min-w-0">
+                <header className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4 text-primary" />
                   <h2 className="font-proxima text-sm font-semibold uppercase tracking-wider text-foreground">
                     {t("page.calendar")}
                   </h2>
+                </header>
+                <div className="min-h-[600px] lg:h-[680px] overflow-hidden rounded-2xl">
+                  <EconomicCalendarWidget />
                 </div>
-                <EconomicCalendarWidget />
-              </div>
+              </article>
             </section>
           </motion.div>
         </main>

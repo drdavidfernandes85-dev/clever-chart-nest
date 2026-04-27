@@ -11,7 +11,6 @@ import {
   User,
   LogOut,
   Newspaper,
-  CalendarDays,
   X,
   Users,
 } from "lucide-react";
@@ -30,7 +29,6 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
   { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
-  { to: "/calendar", labelKey: "sidebar.calendar", icon: CalendarDays },
   { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
   { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
