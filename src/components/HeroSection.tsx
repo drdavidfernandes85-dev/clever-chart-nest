@@ -33,7 +33,7 @@ function useCountdown(target: Date) {
 }
 
 const HeroSection = () => {
-  const onlineCount = useOnlineCounter(1247);
+  
   const { h, m, s, isLive } = useCountdown(NEXT_WEBINAR_TARGET);
   const { t } = useLanguage();
 
