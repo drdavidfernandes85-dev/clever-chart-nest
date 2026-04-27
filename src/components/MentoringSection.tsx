@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GraduationCap, ArrowLeft, Send, CheckCircle } from "lucide-react";
+import { GraduationCap, ArrowLeft, Send, CheckCircle, Play } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -55,13 +56,26 @@ const MentoringSection = () => {
                 <p className="mt-5 text-base text-secondary-foreground">
                   {t("mentoring.desc")}
                 </p>
-                <Button
-                  size="lg"
-                  className="mt-10 bg-primary text-primary-foreground hover:bg-primary/80 h-12 px-8 text-sm font-semibold rounded-full"
-                  onClick={() => setShowForm(true)}
-                >
-                  {t("mentoring.book")}
-                </Button>
+                <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    size="lg"
+                    className="bg-primary text-primary-foreground hover:bg-primary/80 h-12 px-8 text-sm font-semibold rounded-full"
+                    onClick={() => setShowForm(true)}
+                  >
+                    {t("mentoring.book")}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-12 gap-2 rounded-full px-7 text-sm font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md"
+                    asChild
+                  >
+                    <Link to="/webinars">
+                      <Play className="h-4 w-4 fill-current" />
+                      Watch Free Live Webinar
+                    </Link>
+                  </Button>
+                </div>
               </>
             )}
 
