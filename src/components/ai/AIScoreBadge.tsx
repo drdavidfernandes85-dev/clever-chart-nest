@@ -104,10 +104,10 @@ const createScoreKey = ({
   stop_loss,
   take_profit,
   author,
-}: Props) =>
-  [signalId || pair, direction, entry_price, stop_loss ?? "", take_profit ?? "", author ?? ""].join("|");
+}: Props, locale: string) =>
+  [signalId || pair, direction, entry_price, stop_loss ?? "", take_profit ?? "", author ?? "", locale].join("|");
 
-const requestSignalScore = (key: string, props: Props) => {
+const requestSignalScore = (key: string, props: Props, locale: Locale) => {
   const cached = scoreCache.get(key);
   if (cached) return Promise.resolve(cached);
 
@@ -127,6 +127,7 @@ const requestSignalScore = (key: string, props: Props) => {
         tp: props.take_profit ?? null,
         take_profit: props.take_profit ?? null,
         author: props.author ?? null,
+        locale,
       },
     })
     .then(({ data, error }) => {
@@ -142,7 +143,9 @@ const requestSignalScore = (key: string, props: Props) => {
 };
 
 const useSignalScore = (props: Props) => {
-  const key = useMemo(() => createScoreKey(props), [
+  const { locale } = useLanguage();
+  const key = useMemo(() => createScoreKey(props, locale), [
+    locale,
     props.signalId,
     props.pair,
     props.direction,
@@ -178,7 +181,7 @@ const useSignalScore = (props: Props) => {
     setLoading(true);
     setError(null);
 
-    requestSignalScore(key, props)
+    requestSignalScore(key, props, locale)
       .then((result) => {
         if (!cancelled) setScore(result);
       })
@@ -192,7 +195,7 @@ const useSignalScore = (props: Props) => {
     return () => {
       cancelled = true;
     };
-  }, [key, props.enabled, props.pair, props.direction, props.entry_price, props.stop_loss, props.take_profit, props.author]);
+  }, [key, locale, props.enabled, props.pair, props.direction, props.entry_price, props.stop_loss, props.take_profit, props.author]);
 
   return { score, loading, error };
 };
