@@ -13,6 +13,7 @@ import {
   Flame,
   Star,
   ChevronRight,
+  Info,
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { cn } from "@/lib/utils";
@@ -161,6 +162,16 @@ const Education = () => {
             </div>
           </div>
         </header>
+
+        {/* Educational disclaimer — subtle, regulation compliant. */}
+        <div className="mx-auto w-full max-w-7xl px-4 pt-6 sm:px-6 lg:px-10">
+          <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 backdrop-blur-md">
+            <Info className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-xs">
+              All content is for <span className="font-semibold text-foreground">educational purposes only</span> and does not constitute financial advice. Trading involves risk; always do your own research.
+            </p>
+          </div>
+        </div>
 
         {/* MODULE GRID */}
         <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-10 lg:py-14">
