@@ -43,7 +43,7 @@ const DashboardLayout = ({ children }: Props) => {
         <Menu className="h-5 w-5" />
       </button>
 
-      <div className="flex-1 min-w-0 flex flex-col pb-20 md:pb-0" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>{children}</div>
+      <div className="flex-1 min-w-0 flex flex-col pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
     </div>
   );
 };
