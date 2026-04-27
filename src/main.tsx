@@ -1,6 +1,11 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { supabase } from "@/integrations/supabase/client";
+
+// Disable eager SDK auto-refresh before React mounts; AuthProvider performs
+// single-flight scheduled refreshes with 429 backoff to prevent token storms.
+supabase.auth.stopAutoRefresh();
 
 // Remove stale PWA caches globally so production users receive the latest auth code.
 if ("serviceWorker" in navigator) {
