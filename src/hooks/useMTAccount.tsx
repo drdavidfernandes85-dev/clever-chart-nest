@@ -62,7 +62,7 @@ export interface MTSnapshot {
  * - Polls every 15s while status === "syncing" (provisioning / deploy)
  */
 export function useMTAccount() {
-  const { user } = useAuth();
+  const { user, ready, isRefreshing } = useAuth();
   const [account, setAccount] = useState<MTAccount | null>(null);
   const [positions, setPositions] = useState<MTPosition[]>([]);
   const [snapshots, setSnapshots] = useState<MTSnapshot[]>([]);
@@ -72,6 +72,7 @@ export function useMTAccount() {
   const realtimeInstanceRef = useRef(Math.random().toString(36).slice(2));
 
   const refresh = useCallback(async () => {
+    if (!ready || isRefreshing) return;
     if (!user) {
       setAccount(null);
       setPositions([]);
@@ -115,7 +116,7 @@ export function useMTAccount() {
     setPositions((posRes.data ?? []) as MTPosition[]);
     setSnapshots((snapRes.data ?? []) as MTSnapshot[]);
     setLoading(false);
-  }, [user]);
+  }, [ready, isRefreshing, user]);
 
   useEffect(() => {
     refresh();
@@ -154,7 +155,7 @@ export function useMTAccount() {
   // so the UI reacts instantly when new data arrives.
   // MetaApi accounts trigger sync-mt-account every 30s for cloud pulls.
   useEffect(() => {
-    if (!account) return;
+    if (!account || isRefreshing) return;
     const isEAWebhook =
       account.broker_name === "Connected via EA" ||
       account.server_name === "EA Webhook" ||
@@ -186,7 +187,7 @@ export function useMTAccount() {
       cancelled = true;
       clearInterval(handle);
     };
-  }, [account, sync, refresh]);
+  }, [account, isRefreshing, sync, refresh]);
 
   // ---- Realtime subscription ----
   // Push-based updates so the dashboard reflects EA data within ~1 second.
@@ -199,7 +200,7 @@ export function useMTAccount() {
   }, [refresh]);
 
   useEffect(() => {
-    if (!user || !accountId) return;
+    if (!ready || isRefreshing || !user || !accountId) return;
     const channelName = `mt-live-${accountId}-${realtimeInstanceRef.current}`;
     const channel = (supabase as any)
       .channel(channelName)
@@ -222,7 +223,7 @@ export function useMTAccount() {
     return () => {
       (supabase as any).removeChannel(channel);
     };
-  }, [user, accountId]);
+  }, [ready, isRefreshing, user, accountId]);
 
   return { account, positions, snapshots, loading, syncing, sync, refresh };
 }
