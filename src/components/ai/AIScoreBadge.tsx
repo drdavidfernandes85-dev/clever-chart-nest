@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { Locale } from "@/i18n/translations";
 
 interface Props {
   signalId?: string;
