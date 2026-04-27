@@ -123,7 +123,7 @@ const CopiedTradesHistory = ({ signalsOnly = true, limit = 8, compact = false }:
           <History className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
           <p className="text-xs text-muted-foreground">
             {signalsOnly
-              ? "No signals copied yet. Tap 'Take This Signal' to start."
+              ? "No trade ideas copied yet. Tap 'Take This Trade' to start."
               : "No trades placed yet."}
           </p>
         </div>

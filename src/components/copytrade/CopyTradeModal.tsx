@@ -250,7 +250,7 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
                 <Zap className="h-3.5 w-3.5" />
               </div>
               <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-foreground">
-                {phase === "review" && "Copy Signal"}
+                {phase === "review" && "Copy Trade"}
                 {phase === "sending" && "Sending to MT5…"}
                 {phase === "executed" && "Trade Executed"}
                 {phase === "failed" && "Trade Failed"}

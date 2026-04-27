@@ -63,7 +63,7 @@ const NewSignalForm = () => {
       toast.error("Failed to post signal. Make sure you have admin/moderator permissions.");
       console.error(error);
     } else {
-      toast.success("Signal posted!");
+      toast.success("Trade idea posted!");
       setForm({ pair: "BTC/USDT", direction: "buy", entry_price: "", stop_loss: "", take_profit: "", notes: "" });
       setOpen(false);
     }
@@ -180,7 +180,7 @@ const NewSignalForm = () => {
         </div>
 
         <Button type="submit" disabled={submitting} className="w-full rounded-full font-semibold">
-          {submitting ? "Posting…" : "Post Signal"}
+          {submitting ? "Posting…" : "Post Trade Idea"}
         </Button>
       </form>
     </div>

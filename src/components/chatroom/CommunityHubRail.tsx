@@ -121,7 +121,7 @@ const CommunityHubRail = () => {
         <div className="flex items-center gap-2 border-b border-primary/30 bg-primary/5 px-3 py-2">
           <Radio className="h-3.5 w-3.5 text-primary animate-pulse" />
           <span className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-            Live Shared Signals
+            Live Trade Ideas
           </span>
         </div>
         <div className="p-0">

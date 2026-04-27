@@ -340,7 +340,7 @@ const CommandDeck = () => {
           {/* LEFT column — Live Forex Signals + Mini Chart */}
           <div className="col-span-12 flex flex-col gap-3 lg:col-span-3">
             <Panel
-              title="Live Forex Signals"
+              title="Live Trade Ideas"
               icon={Activity}
               action={
                 <button className="text-muted-foreground hover:text-primary">
@@ -465,7 +465,7 @@ const CommandDeck = () => {
                   { label: "Members", value: "5,184" },
                   { label: "Online", value: "412" },
                   { label: "Win Rate", value: "75%" },
-                  { label: "Signals 24h", value: "38" },
+                  { label: "Ideas 24h", value: "38" },
                   { label: "Avg R:R", value: "1.9" },
                   { label: "Trades 24h", value: "624" },
                 ].map((kpi) => (

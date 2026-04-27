@@ -29,8 +29,8 @@ const STEPS: Step[] = [
   },
   {
     route: "/signals",
-    title: "Trading Signals",
-    body: "Live and historical signals from the moderators with full entry/SL/TP context.",
+    title: "Trade Ideas",
+    body: "Live and historical trade ideas from the moderators with full entry/SL/TP context.",
   },
   {
     route: "/leaderboard",

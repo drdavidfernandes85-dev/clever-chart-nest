@@ -21,7 +21,7 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   risk: "Risk Exposure",
   watchlist: "Watchlist",
   marketMovers: "Market Movers",
-  liveSignals: "Live Shared Signals",
+  liveSignals: "Live Trade Ideas",
   quickTrade: "Quick Trade",
   recentActivity: "Recent Activity",
 };
