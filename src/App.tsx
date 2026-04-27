@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { QuickTradeProvider } from "@/contexts/QuickTradeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import EligibilityGate from "@/components/EligibilityGate";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import PageTransition from "@/components/PageTransition";
 import RouteOverlayLoader from "@/components/RouteOverlayLoader";
