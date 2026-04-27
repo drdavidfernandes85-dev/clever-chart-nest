@@ -482,9 +482,9 @@ const Education = () => {
                 <P>
                   Two consecutive negative QoQ readings = a <strong>recession</strong>.
                 </P>
-                <P className="italic">
+                <p className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 font-mono text-[13px] italic text-foreground/85">
                   GDP = Consumption + Investment + Government Spending + (Exports − Imports)
-                </P>
+                </p>
 
                 <H3>Unemployment Rate</H3>
                 <P>
