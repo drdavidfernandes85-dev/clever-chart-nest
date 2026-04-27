@@ -26,13 +26,15 @@ interface Score {
   generatedAt?: string;
 }
 
+type ScoreTier = "strong" | "fair" | "weak";
+
 type ScoreTheme = {
   badge: string;
   panel: string;
   text: string;
   border: string;
   glow: string;
-  label: string;
+  tier: ScoreTier;
   labelClass: string;
 };
 
@@ -44,7 +46,7 @@ const scoreThemeFor = (score: number): ScoreTheme => {
       text: "text-[hsl(var(--score-strong-foreground))]",
       border: "border-[hsl(var(--score-strong)/0.55)] ring-[hsl(var(--score-strong)/0.45)]",
       glow: "shadow-[0_0_28px_-6px_hsl(var(--score-strong)/0.68)]",
-      label: "STRONG",
+      tier: "strong",
       labelClass: "border-[hsl(var(--score-strong)/0.45)] bg-[hsl(var(--score-strong)/0.14)] text-[hsl(var(--score-strong-foreground))]",
     };
   }
@@ -56,7 +58,7 @@ const scoreThemeFor = (score: number): ScoreTheme => {
       text: "text-primary-foreground",
       border: "border-primary/60 ring-primary/45",
       glow: "shadow-[0_0_28px_-6px_hsl(var(--primary)/0.75)]",
-      label: "FAIR",
+      tier: "fair",
       labelClass: "border-primary/45 bg-primary/15 text-primary",
     };
   }
@@ -67,7 +69,7 @@ const scoreThemeFor = (score: number): ScoreTheme => {
     text: "text-[hsl(var(--score-weak-foreground))]",
     border: "border-[hsl(var(--score-weak)/0.55)] ring-[hsl(var(--score-weak)/0.45)]",
     glow: "shadow-[0_0_28px_-6px_hsl(var(--score-weak)/0.68)]",
-    label: "WEAK",
+    tier: "weak",
     labelClass: "border-[hsl(var(--score-weak)/0.45)] bg-[hsl(var(--score-weak)/0.14)] text-[hsl(var(--score-weak-foreground))]",
   };
 };
