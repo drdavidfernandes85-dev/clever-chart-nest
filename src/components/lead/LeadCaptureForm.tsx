@@ -4,6 +4,7 @@ import { Mail, User as UserIcon, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80, "Name too long"),
@@ -60,6 +61,8 @@ const LeadCaptureForm = ({
       localStorage.setItem("ixltr.lead.captured", "1");
       await new Promise((r) => setTimeout(r, 350));
       setDone(true);
+      track("lead_capture", { source });
+      if (/webinar/i.test(source)) track("webinar_signup", { source });
       toast.success("You're in! Check your email for the invite.");
       onSuccess?.({ name: parsed.data.name as string, email: parsed.data.email as string });
     } catch {

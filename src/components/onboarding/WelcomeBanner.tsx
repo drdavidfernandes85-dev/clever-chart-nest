@@ -56,7 +56,7 @@ const WelcomeBanner = () => {
           <Button
             asChild
             size="sm"
-            className="h-9 flex-1 gap-1.5 rounded-full bg-[#FFCD05] px-4 font-semibold text-black hover:bg-[#FFE066] shadow-[0_0_20px_hsl(45_100%_50%/0.4)] sm:flex-none"
+            className="h-9 flex-1 gap-1.5 rounded-full bg-[#FFCD05] px-4 font-semibold text-black hover:bg-[#FFE066] cta-pulse shadow-[0_0_20px_hsl(45_100%_50%/0.4)] sm:flex-none"
           >
             <Link to="/connect-mt">
               <Plug className="h-3.5 w-3.5" />

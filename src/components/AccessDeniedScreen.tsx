@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Lock, ExternalLink, PlayCircle, Link2, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LeadCaptureForm from "@/components/lead/LeadCaptureForm";
+import { track } from "@/lib/analytics";
 
 interface Props {
   reason?:
@@ -66,9 +67,14 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
             <Button
               asChild
               size="lg"
-              className="group relative w-full overflow-hidden bg-[hsl(45,100%,50%)] font-semibold text-black hover:bg-[hsl(45,100%,55%)] sm:w-auto"
+              className="group relative w-full overflow-hidden bg-[hsl(45,100%,50%)] font-semibold text-black hover:bg-[hsl(45,100%,55%)] cta-pulse sm:w-auto"
             >
-              <a href={DEPOSIT_URL} target="_blank" rel="noopener noreferrer">
+              <a
+                href={DEPOSIT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track("deposit_click", { reason })}
+              >
                 Deposit Funds Now
                 <ExternalLink className="ml-2 h-4 w-4" />
               </a>

@@ -9,6 +9,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
 import OnlineNowPill from "@/components/social/OnlineNowPill";
+import { track } from "@/lib/analytics";
 import SEO from "@/components/SEO";
 
 const Login = () => {
@@ -54,6 +55,7 @@ const Login = () => {
       setLoading(false);
       return;
     }
+    track("login", { method: "password" });
     toast.success("Welcome back!");
     // Navigation handled by the useEffect above once ready+user are true.
     // Keep loading=true so the button stays disabled during the handoff.
