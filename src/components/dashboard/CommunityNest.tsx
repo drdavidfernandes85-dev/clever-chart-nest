@@ -241,7 +241,7 @@ const CommunityNest = () => {
           <div className="flex items-center gap-2">
             <Radio className="h-3 w-3 text-primary" />
             <span className="font-proxima text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Live shared signals
+              Live trade ideas
             </span>
           </div>
           <Link to="/signals" className="text-[10px] text-primary hover:underline">
