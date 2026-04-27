@@ -61,7 +61,7 @@ const LeadCaptureForm = ({
       await new Promise((r) => setTimeout(r, 350));
       setDone(true);
       toast.success("You're in! Check your email for the invite.");
-      onSuccess?.(parsed.data);
+      onSuccess?.({ name: parsed.data.name as string, email: parsed.data.email as string });
     } catch {
       toast.error("Something went wrong, please try again.");
     } finally {
