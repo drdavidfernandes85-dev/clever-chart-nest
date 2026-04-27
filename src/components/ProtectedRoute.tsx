@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useLocation } from "react-router-dom";
 
@@ -17,12 +17,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, ready, isRefreshing, refreshAttempted, authError, ensureFreshSession } = useAuth();
   const location = useLocation();
   const [graceElapsed, setGraceElapsed] = useState(false);
+  const isRedirectingRef = useRef(false);
 
   useEffect(() => {
     if (ready && !user && !isRefreshing && !refreshAttempted) {
       ensureFreshSession(`protected:${location.pathname}`);
     }
   }, [ready, user, isRefreshing, refreshAttempted, ensureFreshSession, location.pathname]);
+
+  useEffect(() => {
+    if (user) isRedirectingRef.current = false;
+  }, [user]);
 
   useEffect(() => {
     if (ready && !user && refreshAttempted && !isRefreshing) {
@@ -33,6 +38,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }, [ready, user, refreshAttempted, isRefreshing]);
 
   if (loading || !ready || isRefreshing || (ready && !user && !refreshAttempted)) {
+    if (isRefreshing && !user) console.log("Redirect prevented during refresh", { path: location.pathname });
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
@@ -54,6 +60,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         </div>
       );
     }
+    if (isRedirectingRef.current) {
+      return (
+        <div className="flex h-screen items-center justify-center bg-background">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[hsl(45,100%,50%)] border-t-transparent" />
+        </div>
+      );
+    }
+    isRedirectingRef.current = true;
     // Redirect once with origin in state — Login will return the user here
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
