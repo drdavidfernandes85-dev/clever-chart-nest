@@ -77,19 +77,19 @@ const HeroSection = () => {
           }}
         />
 
-        {/* The hero comet image — scaled down with soft top/bottom fades */}
+        {/* The hero comet image — full height with soft top/bottom fades */}
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute right-0 top-1/2 -translate-y-1/2 h-[78%] w-[70%] object-contain object-right select-none animate-breathe"
+          className="absolute inset-y-0 right-0 h-full w-[82%] object-contain object-right select-none animate-breathe"
           style={{
             filter:
               "drop-shadow(0 0 70px hsl(28 100% 50% / 0.45)) saturate(1.15) contrast(1.08)",
             WebkitMaskImage:
-              "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
+              "linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)",
             maskImage:
-              "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)",
+              "linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)",
           }}
           draggable={false}
         />
