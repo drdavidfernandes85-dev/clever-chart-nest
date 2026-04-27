@@ -13,6 +13,7 @@ import {
   Newspaper,
   X,
   Users,
+  GraduationCap,
 } from "lucide-react";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
   { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
+  { to: "/education", labelKey: "sidebar.education", icon: GraduationCap },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
 

@@ -16,6 +16,7 @@ import {
   Users,
   Newspaper,
   CalendarDays,
+  GraduationCap,
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
 import sidebarLogo from "@/assets/logo-sidebar.png";
@@ -47,6 +48,7 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
   { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
+  { to: "/education", labelKey: "sidebar.education", icon: GraduationCap },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
 
