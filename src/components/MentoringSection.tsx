@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GraduationCap, ArrowLeft, Send, CheckCircle } from "lucide-react";
+import { GraduationCap, ArrowLeft, Send, CheckCircle, Play } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ScrollReveal from "@/components/ScrollReveal";
