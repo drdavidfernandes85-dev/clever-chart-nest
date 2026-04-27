@@ -51,7 +51,7 @@ const Dashboard = () => {
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
   const { account } = useMTAccount();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, session, ready, isRefreshing } = useAuth();
   const { currentTier, newlyUnlocked, acknowledge } = useMentorTierProgress();
   const isConnected = !!account && account.status === "connected";
 
@@ -85,6 +85,15 @@ const Dashboard = () => {
     const saved = localStorage.getItem("eltr.rail.open");
     if (saved !== null) setRailOpen(saved === "1");
   }, []);
+  useEffect(() => {
+    console.log("Current session state on dashboard load", {
+      ready,
+      isRefreshing,
+      hasUser: !!user,
+      hasSession: !!session,
+      expiresAt: session?.expires_at ?? null,
+    });
+  }, [ready, isRefreshing, user, session]);
   useEffect(() => {
     localStorage.setItem("eltr.rail.open", railOpen ? "1" : "0");
   }, [railOpen]);

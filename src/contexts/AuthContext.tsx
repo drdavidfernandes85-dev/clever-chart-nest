@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -18,6 +18,12 @@ interface AuthContextType {
   loading: boolean;
   /** True once the initial getSession() resolved (success OR null). Use this to gate redirects. */
   ready: boolean;
+  /** True while a single-flight refresh/recovery attempt is running. */
+  isRefreshing: boolean;
+  /** True after we have attempted to recover/refresh the session at least once. */
+  refreshAttempted: boolean;
+  authError: string | null;
+  ensureFreshSession: (reason?: string) => Promise<Session | null>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -28,6 +34,10 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   ready: false,
+  isRefreshing: false,
+  refreshAttempted: false,
+  authError: null,
+  ensureFreshSession: async () => null,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -40,6 +50,28 @@ const log = (...args: unknown[]) => {
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const REFRESH_MARGIN_MS = 90_000;
+const RATE_LIMIT_BACKOFF_MS = 7_500;
+const REFRESH_LOCK_NAME = "ixltr-auth-refresh";
+
+const isRateLimitError = (error: unknown) => {
+  const e = error as { message?: string; status?: number; code?: string } | null;
+  const text = `${e?.message ?? ""} ${e?.status ?? ""} ${e?.code ?? ""}`;
+  return /429|too many|rate.?limit/i.test(text);
+};
+
+const isFreshEnough = (s: Session | null, marginMs = REFRESH_MARGIN_MS) => {
+  if (!s?.expires_at) return !!s;
+  return s.expires_at * 1000 - Date.now() > marginMs;
+};
+
+const withRefreshLock = async <T,>(fn: () => Promise<T>): Promise<T> => {
+  const locks = typeof navigator !== "undefined" ? (navigator as any).locks : null;
+  if (locks?.request) {
+    return locks.request(REFRESH_LOCK_NAME, { mode: "exclusive" }, fn);
+  }
+  return fn();
+};
 
 /**
  * Fetch a single row with graceful 429 backoff + abort on auth errors.
@@ -47,16 +79,16 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  */
 async function fetchProfileSafe(userId: string, signal: { aborted: boolean }): Promise<Profile | null> {
   const maxAttempts = 3;
-  let delay = 600;
+  let delay = RATE_LIMIT_BACKOFF_MS;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (signal.aborted) return null;
     const { data, error, status } = await supabase
       .from("profiles")
       .select("id, user_id, display_name, avatar_url")
       .eq("user_id", userId)
-      .maybeSingle();
+      .limit(1);
 
-    if (!error) return (data as Profile | null) ?? null;
+    if (!error) return ((data as Profile[] | null)?.[0] as Profile | undefined) ?? null;
 
     // 401/403: session not yet valid — bail (do not loop)
     if (status === 401 || status === 403) {
@@ -65,7 +97,7 @@ async function fetchProfileSafe(userId: string, signal: { aborted: boolean }): P
     }
     // 429: backoff
     if (status === 429 && attempt < maxAttempts) {
-      log(`profile fetch 429 — backoff ${delay}ms (attempt ${attempt}/${maxAttempts})`);
+      console.log("Refresh failed with 429 - backing off", { source: "profile", delay });
       await sleep(delay);
       delay *= 2;
       continue;
@@ -82,17 +114,95 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [ready, setReady] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshAttempted, setRefreshAttempted] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Refs prevent stale closures and duplicate work
   const profileInflight = useRef<string | null>(null);
+  const sessionRef = useRef<Session | null>(null);
+  const refreshPromiseRef = useRef<Promise<Session | null> | null>(null);
+  const lastRefreshAtRef = useRef(0);
+  const userInitiatedSignOut = useRef(false);
   const refreshFailures = useRef(0);
   const expiredToastShown = useRef(false);
 
   const applySession = (s: Session | null) => {
+    sessionRef.current = s;
     setSession(s);
     setUser(s?.user ?? null);
     if (!s?.user) setProfile(null);
   };
+
+  const ensureFreshSession = useCallback(async (reason = "manual") => {
+    if (refreshPromiseRef.current) return refreshPromiseRef.current;
+
+    const run = async () => {
+      setRefreshAttempted(true);
+      const current = sessionRef.current;
+      if (isFreshEnough(current)) return current;
+
+      setIsRefreshing(true);
+      setAuthError(null);
+
+      try {
+        const sinceLastRefresh = Date.now() - lastRefreshAtRef.current;
+        if (sinceLastRefresh < 2_500) await sleep(2_500 - sinceLastRefresh);
+
+        return await withRefreshLock(async () => {
+          const { data: initial, error: getSessionError } = await supabase.auth.getSession();
+          if (getSessionError) log("getSession before refresh error:", getSessionError.message);
+          if (isFreshEnough(initial.session)) {
+            applySession(initial.session);
+            return initial.session;
+          }
+          if (!initial.session) return null;
+
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            const { data, error } = await supabase.auth.refreshSession(initial.session);
+            if (!error) {
+              console.log("Session refreshed successfully", { reason, attempt });
+              refreshFailures.current = 0;
+              applySession(data.session);
+              return data.session;
+            }
+
+            if (isRateLimitError(error)) {
+              console.log("Refresh failed with 429 - backing off", { reason, attempt, delay: RATE_LIMIT_BACKOFF_MS });
+              if (!expiredToastShown.current) {
+                expiredToastShown.current = true;
+                toast.info("Session is reconnecting. Please wait a moment…");
+              }
+              await sleep(RATE_LIMIT_BACKOFF_MS);
+              continue;
+            }
+
+            setAuthError(error.message);
+            log("refreshSession error:", error.message);
+            return null;
+          }
+
+          setAuthError("Session refresh is rate limited. Please wait a moment and try again.");
+          return sessionRef.current;
+        });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Unable to refresh session";
+        if (isRateLimitError(e)) {
+          console.log("Refresh failed with 429 - backing off", { reason, delay: RATE_LIMIT_BACKOFF_MS });
+          await sleep(RATE_LIMIT_BACKOFF_MS);
+        }
+        setAuthError(message);
+        return sessionRef.current;
+      } finally {
+        lastRefreshAtRef.current = Date.now();
+        setIsRefreshing(false);
+        refreshPromiseRef.current = null;
+      }
+    };
+
+    refreshPromiseRef.current = run();
+    return refreshPromiseRef.current;
+  }, []);
 
   const loadProfile = async (userId: string) => {
     if (profileInflight.current === userId) return; // dedupe
@@ -113,6 +223,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    supabase.auth.stopAutoRefresh();
 
     // 1) Subscribe FIRST so we never miss a transition during initial load
     const {
@@ -120,20 +231,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mounted) return;
       log("event:", event, "hasSession:", !!s);
+      console.log("Current session state on dashboard load", {
+        event,
+        hasSession: !!s,
+        expiresAt: s?.expires_at ?? null,
+      });
 
       // Reset failure counter on successful refresh / sign-in
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
         refreshFailures.current = 0;
         expiredToastShown.current = false;
+        setAuthError(null);
+        setRefreshAttempted(true);
+        if (event === "TOKEN_REFRESHED") console.log("Session refreshed successfully", { source: "auth-event" });
       }
 
       // Detect repeated refresh failures (Supabase emits SIGNED_OUT when refresh fails)
-      if (event === "SIGNED_OUT" && session) {
+      if (event === "SIGNED_OUT" && sessionRef.current && !userInitiatedSignOut.current) {
         refreshFailures.current += 1;
         if (refreshFailures.current >= 3 && !expiredToastShown.current) {
           expiredToastShown.current = true;
           toast.error("Session expired. Please log in again.");
         }
+        setLoading(false);
+        setReady(true);
+        setRefreshAttempted(false);
+        setTimeout(() => {
+          if (mounted) {
+            ensureFreshSession("signed-out-recovery").then((recovered) => {
+              if (mounted && !recovered) applySession(null);
+            });
+          }
+        }, RATE_LIMIT_BACKOFF_MS);
+        return;
       }
 
       applySession(s);
@@ -174,17 +304,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ensureFreshSession]);
+
+  useEffect(() => {
+    if (!ready || !session) return;
+    const tick = () => {
+      const current = sessionRef.current;
+      if (current && !isFreshEnough(current)) ensureFreshSession("scheduled-refresh");
+    };
+    tick();
+    const handle = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(handle);
+  }, [ready, session, ensureFreshSession]);
 
   const signOut = async () => {
+    userInitiatedSignOut.current = true;
     await supabase.auth.signOut();
     setProfile(null);
     refreshFailures.current = 0;
+    setRefreshAttempted(false);
+    userInitiatedSignOut.current = false;
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, ready, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, ready, isRefreshing, refreshAttempted, authError, ensureFreshSession, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

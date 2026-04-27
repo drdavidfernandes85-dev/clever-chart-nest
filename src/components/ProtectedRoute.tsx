@@ -14,24 +14,33 @@ import { Navigate, useLocation } from "react-router-dom";
 const GRACE_MS = 800;
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, ready } = useAuth();
+  const { user, loading, ready, isRefreshing, refreshAttempted, authError, ensureFreshSession } = useAuth();
   const location = useLocation();
   const [graceElapsed, setGraceElapsed] = useState(false);
 
   useEffect(() => {
-    if (ready && !user) {
+    if (ready && !user && !isRefreshing && !refreshAttempted) {
+      ensureFreshSession(`protected:${location.pathname}`);
+    }
+  }, [ready, user, isRefreshing, refreshAttempted, ensureFreshSession, location.pathname]);
+
+  useEffect(() => {
+    if (ready && !user && refreshAttempted && !isRefreshing) {
       const t = setTimeout(() => setGraceElapsed(true), GRACE_MS);
       return () => clearTimeout(t);
     }
     setGraceElapsed(false);
-  }, [ready, user]);
+  }, [ready, user, refreshAttempted, isRefreshing]);
 
-  if (loading || !ready) {
+  if (loading || !ready || isRefreshing || (ready && !user && !refreshAttempted)) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[hsl(45,100%,50%)] border-t-transparent" />
-          <p className="text-xs text-muted-foreground">Restoring your session…</p>
+          <p className="text-xs text-muted-foreground">
+            {isRefreshing ? "Reconnecting your session…" : "Restoring your session…"}
+          </p>
+          {authError && <p className="max-w-xs text-center text-[11px] text-muted-foreground/80">{authError}</p>}
         </div>
       </div>
     );
