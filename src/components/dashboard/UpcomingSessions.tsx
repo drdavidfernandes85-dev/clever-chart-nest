@@ -71,7 +71,7 @@ const SessionStatusPill = ({ s }: { s: Session }) => {
   }
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
-      <Clock className="h-3 w-3" /> {t("sessions.upcoming") ?? "Upcoming"}
+      <Clock className="h-3 w-3" /> {t("sessions.upcoming")}
     </span>
   );
 };
@@ -195,7 +195,7 @@ const UpcomingSessions = () => {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("sessions.searchPlaceholder") ?? "Search sessions, mentor, topic…"}
+            placeholder={t("sessions.searchPlaceholder")}
             className="pl-9 bg-background/50"
           />
         </div>
@@ -210,7 +210,7 @@ const UpcomingSessions = () => {
               )}
             >
               <CalendarIcon className="h-3.5 w-3.5" />
-              {date ? format(date, "PPP") : (t("sessions.pickDate") ?? "Pick a date")}
+              {date ? format(date, "PPP") : (t("sessions.pickDate"))}
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-auto p-0">
@@ -229,7 +229,7 @@ const UpcomingSessions = () => {
                   className="w-full text-xs"
                   onClick={() => setDate(undefined)}
                 >
-                  {t("sessions.clearDate") ?? "Clear date"}
+                  {t("sessions.clearDate")}
                 </Button>
               </div>
             )}
@@ -244,7 +244,7 @@ const UpcomingSessions = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("webinars.allSessions")}</SelectItem>
-              <SelectItem value="today">{t("sessions.today") ?? "Today"}</SelectItem>
+              <SelectItem value="today">{t("sessions.today")}</SelectItem>
               <SelectItem value="live">{t("webinars.liveNow")}</SelectItem>
             </SelectContent>
           </Select>
@@ -256,7 +256,7 @@ const UpcomingSessions = () => {
         <Card className="py-12 text-center">
           <Video className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-sm text-muted-foreground">
-            {t("sessions.empty") ?? "No sessions match your filters."}
+            {t("sessions.empty")}
           </p>
         </Card>
       ) : (
