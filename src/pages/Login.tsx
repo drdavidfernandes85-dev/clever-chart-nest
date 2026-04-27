@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { TrendingUp, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 
 const Login = () => {
@@ -14,6 +15,14 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user, loading: authLoading } = useAuth();
+
+  // Redirect once the auth context confirms a session exists
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,11 +37,11 @@ const Login = () => {
     });
     if (error) {
       toast.error(error.message);
-    } else {
-      toast.success("Welcome back!");
-      navigate("/dashboard");
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+    toast.success("Welcome back!");
+    // Navigation handled by the useEffect above once the session propagates
   };
 
   return (
