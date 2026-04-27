@@ -213,6 +213,50 @@ const DashboardSidebar = () => {
         )}
       </div>
 
+      {/* Language switcher */}
+      <div className="border-t border-primary/10 px-3 py-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              title={collapsed ? LOCALE_LABELS[locale] : undefined}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-lg border border-border/50 bg-secondary/40 px-2.5 py-1.5 text-[12px] font-medium text-foreground hover:bg-secondary transition-colors",
+                collapsed && "justify-center px-0"
+              )}
+              aria-label="Change language"
+            >
+              {collapsed ? (
+                <span className="text-base leading-none">{LOCALE_FLAGS[locale]}</span>
+              ) : (
+                <>
+                  <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-base leading-none">{LOCALE_FLAGS[locale]}</span>
+                  <span className="font-mono text-[11px] uppercase tracking-wider">{locale}</span>
+                  <span className="ml-auto truncate text-[10px] text-muted-foreground">
+                    {LOCALE_LABELS[locale]}
+                  </span>
+                </>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[140px]">
+            {localeOrder.map((l) => (
+              <DropdownMenuItem
+                key={l}
+                onClick={() => setLocale(l)}
+                className={cn(
+                  "flex items-center gap-2 text-sm",
+                  locale === l && "text-primary font-semibold"
+                )}
+              >
+                <span>{LOCALE_FLAGS[l]}</span>
+                <span>{LOCALE_LABELS[l]}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {/* Sign out */}
       {user && (
         <button
