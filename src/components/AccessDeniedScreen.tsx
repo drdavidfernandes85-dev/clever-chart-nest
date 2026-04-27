@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Lock, ExternalLink, PlayCircle, Link2 } from "lucide-react";
+import { Lock, ExternalLink, PlayCircle, Link2, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import LeadCaptureForm from "@/components/lead/LeadCaptureForm";
 
 interface Props {
   reason?:
@@ -97,6 +98,24 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
               </Link>
             </div>
           )}
+
+          {/* Email capture — get notified + free webinar invites */}
+          <div className="mx-auto mt-8 max-w-md rounded-2xl border border-primary/25 bg-primary/[0.04] p-5 text-left backdrop-blur-md">
+            <div className="mb-2 flex items-center gap-2">
+              <Bell className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold text-foreground">
+                Stay in the loop
+              </p>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Get notified when you reach the $100 balance + receive free webinar invites and educational content.
+            </p>
+            <LeadCaptureForm
+              source="access_denied"
+              ctaLabel="Notify Me + Send Free Invites"
+              compact
+            />
+          </div>
 
           <p className="mx-auto mt-8 max-w-lg text-[11px] leading-relaxed text-muted-foreground/80">
             <span className="font-semibold text-foreground/70">Disclaimer:</span>{" "}

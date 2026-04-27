@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, AlertTriangle, Clock, LayoutDashboard } from "lucide-react";
+import { ArrowRight, Users, AlertTriangle, Clock, LayoutDashboard, PlayCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
+import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
+import OnlineNowPill from "@/components/social/OnlineNowPill";
 import { useLanguage } from "@/i18n/LanguageContext";
 import heroComet from "@/assets/hero-comet.jpg";
 
@@ -163,19 +165,22 @@ const HeroSection = () => {
                 </Button>
               </MagneticButton>
               <MagneticButton strength={0.22}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-14 gap-2 rounded-full px-7 text-base font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
-                  asChild
-                >
-                  <Link to="/dashboard">
-                    <LayoutDashboard className="h-4 w-4" />
-                    Go to Dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
+                <FreeWebinarTrigger
+                  source="hero"
+                  className="h-14 gap-2 rounded-full bg-[#FFCD05]/15 border border-primary/60 px-7 text-base font-bold text-primary hover:bg-primary/25 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
+                />
               </MagneticButton>
+              <Button
+                size="lg"
+                variant="ghost"
+                className="h-14 gap-2 rounded-full px-5 text-sm font-medium text-white/70 hover:text-primary hover:bg-white/5"
+                asChild
+              >
+                <Link to="/dashboard">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Go to Dashboard
+                </Link>
+              </Button>
             </div>
 
             {/* Eligibility note — subtle */}
@@ -209,6 +214,7 @@ const HeroSection = () => {
                 )}
               </div>
 
+              <OnlineNowPill />
               <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
                 <Users className="h-4 w-4 text-primary" />
                 <span className="text-sm text-white/85">Community of active traders &amp; mentors</span>

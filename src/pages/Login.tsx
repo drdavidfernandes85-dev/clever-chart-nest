@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
+import OnlineNowPill from "@/components/social/OnlineNowPill";
 import SEO from "@/components/SEO";
 
 const Login = () => {
@@ -112,6 +114,20 @@ const Login = () => {
             <Link to="/" className="text-primary hover:underline">{t("login.backHome")}</Link>
             <Link to="/register" className="text-primary hover:underline">{t("login.signup")}</Link>
             <Link to="/forgot-password" className="text-primary hover:underline">{t("login.forgot")}</Link>
+          </div>
+
+          {/* Lead magnet — free webinar */}
+          <div className="space-y-3 rounded-2xl border border-primary/20 bg-primary/[0.04] p-4 text-center backdrop-blur-md">
+            <p className="text-xs text-muted-foreground">
+              Not a member yet? Get a taste of the room first —
+            </p>
+            <FreeWebinarTrigger
+              source="login_page"
+              className="h-11 w-full gap-2 rounded-full bg-[#FFCD05] px-6 text-sm font-bold text-black hover:bg-[#FFE066] shadow-[0_0_25px_hsl(45_100%_50%/0.4)]"
+            />
+            <div className="flex justify-center pt-1">
+              <OnlineNowPill />
+            </div>
           </div>
         </div>
       </div>
