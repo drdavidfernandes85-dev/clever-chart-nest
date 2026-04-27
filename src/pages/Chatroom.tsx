@@ -12,6 +12,7 @@ import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
 import CommunityTrustBar from "@/components/social/CommunityTrustBar";
+import AICopilot from "@/components/ai/AICopilot";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
@@ -423,6 +424,8 @@ const Chatroom = () => {
         </aside>
       )}
 
+      {/* AI Trading Assistant — floating bubble for educational Q&A. */}
+      <AICopilot />
     </div>
   );
 };

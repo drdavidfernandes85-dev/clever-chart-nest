@@ -37,6 +37,7 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 import MiniWatchlist from "@/components/livechart/MiniWatchlist";
 import SymbolPositions from "@/components/livechart/SymbolPositions";
 import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
+import AICopilot from "@/components/ai/AICopilot";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
@@ -393,6 +394,9 @@ const LiveChart = () => {
           if (match) setSymbol(match.value);
         }}
       />
+
+      {/* AI Trading Assistant — floating, educational only. */}
+      <AICopilot />
     </div>
   );
 };
