@@ -149,20 +149,6 @@ const HeroSection = () => {
               A professional community where traders connect, share ideas, discuss market setups, and learn together. Powered by real-time tools and AI insights.
             </p>
 
-            {/* Eligibility note */}
-            <div
-              role="note"
-              className="w-full max-w-xl rounded-2xl border border-primary/40 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4 backdrop-blur-md shadow-[0_0_30px_hsl(45_100%_50%/0.18)]"
-            >
-              <div className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                <p className="text-sm leading-relaxed text-white/90">
-                  <span className="font-semibold text-primary">Eligibility:</span>{" "}
-                  Full access requires a verified live Infinox account with a minimum net balance of <span className="font-semibold text-white">$100 USD</span>. All content is for educational purposes only.
-                </p>
-              </div>
-            </div>
-
             {/* CTAs — single primary + supporting secondary */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <MagneticButton strength={0.25}>
