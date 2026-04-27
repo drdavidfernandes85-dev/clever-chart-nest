@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { MessageSquare, Radio, TrendingUp, TrendingDown, Users, Zap, Flame, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import CommunityTrustBar from "@/components/social/CommunityTrustBar";
 
 /**
  * Community Nest — right-sidebar showing online traders, live shared signals,
