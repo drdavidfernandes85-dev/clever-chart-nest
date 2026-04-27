@@ -40,29 +40,43 @@ const STEPS: Step[] = [
 ];
 
 const OnboardingTour = () => {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const location = useLocation();
   const [step, setStep] = useState(0);
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await (supabase.from as any)("user_settings")
-        .select("onboarding_completed")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (!data) {
-        await (supabase.from as any)("user_settings").insert({
-          user_id: user.id,
-          onboarding_completed: false,
-        });
-        setActive(true);
-      } else if (!data.onboarding_completed) {
-        setActive(true);
+    // Only query once auth context is fully ready AND a user exists.
+    // Prevents 401/406 storms during session restore that triggered token-refresh 429s.
+    if (!ready || !user) return;
+    let cancelled = false;
+    // Small delay so we don't pile on with the rest of the dashboard's first paint.
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error, status } = await (supabase.from as any)("user_settings")
+          .select("onboarding_completed")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error && (status === 401 || status === 403 || status === 429)) return; // give up silently
+        if (!data) {
+          await (supabase.from as any)("user_settings").insert({
+            user_id: user.id,
+            onboarding_completed: false,
+          });
+          if (!cancelled) setActive(true);
+        } else if (!data.onboarding_completed) {
+          if (!cancelled) setActive(true);
+        }
+      } catch {
+        /* swallow — non-critical */
       }
-    })();
-  }, [user]);
+    }, 1500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [ready, user]);
 
   // Listen for manual restart
   useEffect(() => {
