@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
+import WelcomeBanner from "@/components/onboarding/WelcomeBanner";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Props {
@@ -43,7 +44,12 @@ const DashboardLayout = ({ children }: Props) => {
         <Menu className="h-5 w-5" />
       </button>
 
-      <div className="flex-1 min-w-0 flex flex-col pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">{children}</div>
+      <div className="flex-1 min-w-0 flex flex-col pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="px-3 pt-3 sm:px-4 sm:pt-4 lg:px-6 lg:pt-5">
+          <WelcomeBanner />
+        </div>
+        {children}
+      </div>
     </div>
   );
 };

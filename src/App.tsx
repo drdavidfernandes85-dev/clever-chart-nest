@@ -18,6 +18,8 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
+import ExitIntentPopup from "@/components/lead/ExitIntentPopup";
+import FloatingMobileCTA from "@/components/lead/FloatingMobileCTA";
 import Admin from "./pages/Admin.tsx";
 import Analytics from "./pages/Analytics.tsx";
 import Chatroom from "./pages/Chatroom.tsx";
@@ -95,6 +97,8 @@ const App = () => (
             <OnboardingTour />
             <MobileBottomNav />
             <FloatingJoinLive />
+            <FloatingMobileCTA />
+            <ExitIntentPopup />
             </QuickTradeProvider>
           </AuthProvider>
         </BrowserRouter>
