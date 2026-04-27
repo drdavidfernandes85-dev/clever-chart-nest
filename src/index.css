@@ -787,3 +787,24 @@
     .cyber-beam, .cyber-rain, .animate-float-particle { animation: none !important; }
   }
 }
+
+/* ── Phase 8: CTA micro-animation utilities ─────────────────────── */
+@layer utilities {
+  /* Subtle pulsing yellow halo for primary CTAs (Connect MT, Deposit, etc.) */
+  @keyframes cta-pulse-ring {
+    0%   { box-shadow: 0 0 0 0   hsl(var(--primary) / 0.55), 0 0 22px hsl(var(--primary) / 0.35); }
+    70%  { box-shadow: 0 0 0 12px hsl(var(--primary) / 0),    0 0 28px hsl(var(--primary) / 0.45); }
+    100% { box-shadow: 0 0 0 0   hsl(var(--primary) / 0),    0 0 22px hsl(var(--primary) / 0.35); }
+  }
+  .cta-pulse {
+    animation: cta-pulse-ring 2.6s ease-in-out infinite;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .cta-pulse:hover {
+    transform: translateY(-1px);
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cta-pulse { animation: none !important; }
+  }
+}
