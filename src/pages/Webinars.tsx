@@ -204,8 +204,8 @@ const Webinars = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title="Live Webinars & Recordings | IX Live Trading Room"
-        description="Join the daily live webinars hosted by INFINOX mentors and rewatch every past session — searchable by date, topic and mentor."
+        title="Live Webinars & Upcoming Sessions | Elite Live Trading Room"
+        description="Daily live webinars hosted by INFINOX mentors plus all upcoming sessions and recordings — searchable by date, topic and mentor."
         canonical="https://elitelivetradingroom.com/webinars"
       />
 
