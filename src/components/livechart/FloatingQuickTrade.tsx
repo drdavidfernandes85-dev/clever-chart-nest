@@ -6,7 +6,7 @@ import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
-const STORAGE_PREFIX = "eltr.floatingQuickTrade.v3";
+const STORAGE_PREFIX = "eltr.floatingQuickTrade.v4";
 
 // Widget dimensions used for clamping & default placement.
 const PILL_W = 220;
