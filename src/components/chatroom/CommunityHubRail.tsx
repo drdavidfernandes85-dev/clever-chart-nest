@@ -21,11 +21,12 @@ const HOT_FALLBACK: HotMention[] = [
   { symbol: "BTC/USDT", mentions: 0, price: null, changePct: null, up: true },
 ];
 
-type Mentor = { name: string; pnl: string; winrate: string };
-const MENTOR_FALLBACK: Mentor[] = [
-  { name: "IX_Mentor", pnl: "+18.4%", winrate: "72%" },
-  { name: "EUR_King", pnl: "+12.1%", winrate: "68%" },
-  { name: "alpha-rat", pnl: "+9.8%", winrate: "61%" },
+// Activity-based community contributors — NO performance claims (regulation compliant).
+type Contributor = { name: string; ideas: number; role: string };
+const CONTRIBUTOR_FALLBACK: Contributor[] = [
+  { name: "IX_Mentor",  ideas: 42, role: "Lead Mentor" },
+  { name: "EUR_King",   ideas: 31, role: "Senior Trader" },
+  { name: "alpha-rat",  ideas: 24, role: "Active Member" },
 ];
 
 const initialsOf = (n: string) =>
@@ -39,31 +40,32 @@ const initialsOf = (n: string) =>
 
 /**
  * Right-rail content for the Community Hub (Chatroom page).
- * Combines: Community Stats · Hot Right Now · Live Shared Signals · Top Mentors.
+ * Combines: Community Pulse · Shared Market Ideas · Hot Right Now · Top Contributors.
+ * Regulation-compliant: no signals language, no performance claims.
  */
 const CommunityHubRail = () => {
   const [onlineCount, setOnlineCount] = useState(184);
-  const [activeSignals, setActiveSignals] = useState<number>(0);
-  const [todayTrades, setTodayTrades] = useState<number>(0);
+  const [activeIdeas, setActiveIdeas] = useState<number>(0);
+  const [ideasShared24h, setIdeasShared24h] = useState<number>(0);
   const { hot } = useHotMentions(8);
   const hotRows = hot.length ? hot : HOT_FALLBACK;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ count: sigs }, { count: trades }] = await Promise.all([
+      const [{ count: ideas }, { count: recent }] = await Promise.all([
         supabase
           .from("trading_signals")
           .select("id", { count: "exact", head: true })
           .in("status", ["open", "active"]),
         supabase
-          .from("mt_pending_orders")
+          .from("trading_signals")
           .select("id", { count: "exact", head: true })
           .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
       ]);
       if (cancelled) return;
-      setActiveSignals(sigs ?? 0);
-      setTodayTrades(trades ?? 0);
+      setActiveIdeas(ideas ?? 0);
+      setIdeasShared24h(recent ?? 0);
     })();
 
     const tick = setInterval(() => {
@@ -99,29 +101,29 @@ const CommunityHubRail = () => {
           </div>
           <div className="rounded-lg border border-border/40 bg-background/40 px-2 py-2 text-center">
             <p className="font-mono text-base font-bold tabular-nums text-foreground leading-none">
-              {activeSignals}
+              {activeIdeas}
             </p>
             <p className="mt-1 font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">
-              Signals
+              Active Ideas
             </p>
           </div>
           <div className="rounded-lg border border-border/40 bg-background/40 px-2 py-2 text-center">
             <p className="font-mono text-base font-bold tabular-nums text-foreground leading-none">
-              {todayTrades}
+              {ideasShared24h}
             </p>
             <p className="mt-1 font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">
-              Trades 24h
+              Shared 24h
             </p>
           </div>
         </div>
       </div>
 
-      {/* Live Shared Signals — MOST PROMINENT, includes "Take This Signal" → Quick Trade */}
+      {/* Shared Market Ideas — community trade ideas (educational, no execution language). */}
       <div className="rounded-2xl border border-primary/40 bg-card/80 backdrop-blur-md overflow-hidden shadow-[0_10px_40px_-12px_hsl(48_100%_51%/0.4)]">
         <div className="flex items-center gap-2 border-b border-primary/30 bg-primary/5 px-3 py-2">
           <Radio className="h-3.5 w-3.5 text-primary animate-pulse" />
           <span className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-            Live Trade Ideas
+            Shared Market Ideas
           </span>
         </div>
         <div className="p-0">
@@ -188,13 +190,13 @@ const CommunityHubRail = () => {
         </ul>
       </div>
 
-      {/* Top Mentors */}
+      {/* Top Community Contributors — activity-based, NO performance data. */}
       <div className="rounded-2xl border border-border/50 bg-card/70 backdrop-blur-md overflow-hidden">
         <div className="flex items-center justify-between border-b border-border/40 px-2.5 py-2 sm:px-3">
           <div className="flex items-center gap-2">
             <Trophy className="h-3.5 w-3.5 text-primary" />
             <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
-              Top Mentors
+              Top Contributors
             </span>
           </div>
           <Link
@@ -205,8 +207,8 @@ const CommunityHubRail = () => {
           </Link>
         </div>
         <ul className="divide-y divide-border/30">
-          {MENTOR_FALLBACK.map((m, i) => (
-            <li key={m.name} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_4.25rem] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
+          {CONTRIBUTOR_FALLBACK.map((m, i) => (
+            <li key={m.name} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
               <span className="w-4 text-center font-mono text-[10px] font-bold text-primary">
                 {i + 1}
               </span>
@@ -219,11 +221,11 @@ const CommunityHubRail = () => {
                   <CheckCircle2 className="h-3 w-3 shrink-0 text-primary" />
                 </div>
                 <p className="font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground">
-                  WR {m.winrate}
+                  {m.role}
                 </p>
               </div>
-              <span className="text-right font-mono text-[11px] font-bold tabular-nums text-[hsl(145_65%_50%)]">
-                {m.pnl}
+              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-right font-mono text-[10px] font-bold tabular-nums text-primary">
+                {m.ideas} ideas
               </span>
             </li>
           ))}
