@@ -123,6 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sessionRef = useRef<Session | null>(null);
   const refreshPromiseRef = useRef<Promise<Session | null> | null>(null);
   const lastRefreshAtRef = useRef(0);
+  const userInitiatedSignOut = useRef(false);
   const refreshFailures = useRef(0);
   const expiredToastShown = useRef(false);
 
@@ -245,12 +246,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Detect repeated refresh failures (Supabase emits SIGNED_OUT when refresh fails)
-      if (event === "SIGNED_OUT" && session) {
+      if (event === "SIGNED_OUT" && sessionRef.current && !userInitiatedSignOut.current) {
         refreshFailures.current += 1;
         if (refreshFailures.current >= 3 && !expiredToastShown.current) {
           expiredToastShown.current = true;
           toast.error("Session expired. Please log in again.");
         }
+        setLoading(false);
+        setReady(true);
+        setRefreshAttempted(false);
+        setTimeout(() => {
+          if (mounted) {
+            ensureFreshSession("signed-out-recovery").then((recovered) => {
+              if (mounted && !recovered) applySession(null);
+            });
+          }
+        }, RATE_LIMIT_BACKOFF_MS);
+        return;
       }
 
       applySession(s);
@@ -295,10 +307,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
+    userInitiatedSignOut.current = true;
     await supabase.auth.signOut();
     setProfile(null);
     refreshFailures.current = 0;
     setRefreshAttempted(false);
+    userInitiatedSignOut.current = false;
   };
 
   return (
