@@ -54,7 +54,10 @@ const Footer = () => {
           ))}
         </div>
         <div className="mt-12 cyber-line" />
-        <div className="mt-6 text-center text-xs text-muted-foreground">
+        <div className="mt-6 mx-auto max-w-4xl text-center text-[11px] leading-relaxed text-muted-foreground/80">
+          <span className="font-semibold text-foreground/70">Risk Disclaimer:</span> Trading involves significant risk of loss. Past performance is not indicative of future results. All content is for educational purposes only.
+        </div>
+        <div className="mt-4 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} IX Live Trading Room — Powered by INFINOX. {t("footer.rights")}
         </div>
       </div>
