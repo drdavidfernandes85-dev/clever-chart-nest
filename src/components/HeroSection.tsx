@@ -156,7 +156,7 @@ const HeroSection = () => {
               <MagneticButton strength={0.25}>
                 <Button
                   size="lg"
-                  className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
+                  className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] cta-pulse shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
                   asChild
                 >
                   <Link to="/register">
