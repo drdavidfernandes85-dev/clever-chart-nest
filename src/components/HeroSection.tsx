@@ -156,19 +156,6 @@ const HeroSection = () => {
               A professional community where traders connect, share ideas, discuss market setups, and learn together. Powered by real-time tools and AI insights.
             </p>
 
-            {/* Key points */}
-            <ul className="grid w-full max-w-xl gap-2.5 sm:grid-cols-2">
-              {KEY_POINTS.map(({ icon: Icon, text }) => (
-                <li
-                  key={text}
-                  className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 backdrop-blur-md"
-                >
-                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span className="text-sm leading-snug text-white/85">{text}</span>
-                </li>
-              ))}
-            </ul>
-
             {/* Eligibility note */}
             <div
               role="note"
