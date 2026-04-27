@@ -643,71 +643,263 @@ const Education = () => {
                 id="technical-analysis"
                 tag="Module 03 · Technical Analysis"
                 title="Technical Analysis: The Language of Price"
-                read="11 min read"
+                read="18 min read"
               >
                 <P>
-                  Technical analysis is the study of price action — what the market has done,
-                  is doing, and is most likely to do next. It's not magic. It's pattern
-                  recognition built on decades of human behavior repeating itself.
+                  Technical analysis began with Japanese rice traders in the 17th century and
+                  was formalised in the West by Charles Dow around 1900. Different origins —
+                  same core principles:
+                </P>
+                <UL>
+                  <LI>The <strong>"what"</strong> (price action) matters more than the <strong>"why"</strong> (news, earnings)</LI>
+                  <LI>All known information is already reflected in the price</LI>
+                  <LI>Buyers and sellers move markets through expectation, fear, and greed</LI>
+                  <LI>Markets fluctuate — and the actual price may not reflect underlying value</LI>
+                </UL>
+                <P>
+                  Technical analysis is, at its core, a study of supply and demand. The
+                  presence of a pattern doesn't <em>guarantee</em> success — it skews the
+                  probability slightly in your favour. Trading is a game of probabilities and
+                  risk management; technical analysis is the tool that gives you the edge.
                 </P>
 
-                <H2>1. The Three Foundations</H2>
+                <H2>1. Market Regimes</H2>
+                <H3>Trending Market</H3>
+                <P>
+                  Moves consistently in one direction over time. An <strong>uptrend</strong>{" "}
+                  is a succession of higher highs and higher lows. A <strong>downtrend</strong>{" "}
+                  is a succession of lower highs and lower lows.
+                </P>
+                <H3>Ranging Market</H3>
+                <P>
+                  Sideways action that repeatedly tests the same highs and lows. Support and
+                  resistance levels tend to hold with high probability — and traders fade the
+                  edges accordingly.
+                </P>
+
+                <ImageHint>"Side-by-side comparison: trending market vs ranging market"</ImageHint>
+
+                <H2>2. Support, Resistance &amp; Confluence</H2>
                 <UL>
-                  <LI><strong>Price discounts everything</strong> — every news event, every order, every emotion is already in the candle.</LI>
-                  <LI><strong>Price moves in trends</strong> — uptrend, downtrend, or range. Identify the regime first.</LI>
-                  <LI><strong>History repeats</strong> — because human psychology is the one constant.</LI>
+                  <LI>
+                    <strong>Support</strong> — a price area where buying interest is expected
+                    to emerge. Can be a trendline, a Fibonacci level, or a horizontal zone.
+                    Increased volume strengthens the level.
+                  </LI>
+                  <LI>
+                    <strong>Resistance</strong> — a price area where selling interest is
+                    expected to emerge. Same dynamics in reverse.
+                  </LI>
+                  <LI>
+                    <strong>Confluence Zone</strong> — when several key levels (S/R,
+                    Fibonacci, trendline) cluster in close proximity. The probability of a
+                    reaction increases dramatically. <em>Confluence is where the pros wait.</em>
+                  </LI>
                 </UL>
 
-                <H2>2. Reading Candlesticks</H2>
+                <H2>3. Fibonacci Retracements &amp; Extensions</H2>
                 <P>
-                  A candlestick is a snapshot of a battle between buyers and sellers in a fixed
-                  window of time. Body = open vs close. Wicks = the extremes of the fight.
+                  Mathematical ratios used to derive support, resistance, and projection
+                  targets. They power most modern technical analysis — including Harmonic
+                  patterns and Elliott Wave theory.
                 </P>
                 <UL>
-                  <LI><strong>Bullish engulfing</strong> at support → momentum shift up</LI>
-                  <LI><strong>Pin bar / hammer</strong> → rejection of a level</LI>
-                  <LI><strong>Doji</strong> → indecision, often a turning point at extremes</LI>
+                  <LI><strong>Retracement levels:</strong> 0%, 23.6%, 38.2%, 50%, 61.8%, 100%</LI>
+                  <LI><strong>The 61.8% level</strong> is the most-watched of all</LI>
+                  <LI>
+                    <strong>Extensions</strong> project a move forward — used for measured
+                    moves (AB = CD) and Elliott Wave projections (Wave 5 as 61.8% or 100% of
+                    Wave 1)
+                  </LI>
+                </UL>
+
+                <ImageHint>"Fibonacci retracement tool drawn on a clean swing on EUR/USD daily"</ImageHint>
+
+                <H2>4. Channels &amp; Gaps</H2>
+                <P>
+                  A <strong>channel</strong> is a structure bounded by two parallel
+                  trendlines — rising, falling, or horizontal. They define dynamic S/R and
+                  let you trade the edges with discipline.
+                </P>
+                <P>
+                  A <strong>gap</strong> is an area on the chart with no trades — usually
+                  caused by news released while markets were closed, or violent intraday
+                  repricing. Price often returns to "fill the gap," making them powerful
+                  reference points.
+                </P>
+                <UL>
+                  <LI>
+                    <strong>Runaway gaps</strong> — strong continuation gaps, often on heavy
+                    volume, signalling a real fundamental shift
+                  </LI>
+                  <LI>
+                    <strong>Exhaustion gaps</strong> — appear at the end of prolonged moves
+                    and frequently mark a reversal (peak euphoria or capitulation)
+                  </LI>
+                </UL>
+
+                <H2>5. Reading Candlesticks</H2>
+                <P>
+                  A candlestick is a snapshot of the battle between buyers and sellers in a
+                  fixed time window. The <strong>body</strong> is the open vs close; the{" "}
+                  <strong>wicks</strong> mark the extremes of the fight. Green/white = close
+                  above open. Red/black = close below open.
+                </P>
+
+                <ImageHint>
+                  "Annotated candlestick anatomy — body, wicks, bullish vs bearish examples"
+                </ImageHint>
+
+                <H3>Single-Candle Signals</H3>
+                <UL>
+                  <LI>
+                    <strong>Marubozu (white / black)</strong> — no wicks at all. Open = low
+                    and close = high (or vice versa). The strongest single-candle bullish or
+                    bearish signal.
+                  </LI>
+                  <LI>
+                    <strong>Hammer</strong> — small body at the top, long lower wick (body{" "}
+                    &lt; 50% of wick). Bullish reversal at the bottom of a downtrend.
+                  </LI>
+                  <LI>
+                    <strong>Shooting Star</strong> — small body at the bottom, long upper
+                    wick. Bearish reversal at the top of an uptrend.
+                  </LI>
+                  <LI>
+                    <strong>Hanging Man / Inverted Hammer</strong> — visually identical to
+                    hammer/shooting star but in the opposite trend context. <em>Statistically
+                    less reliable</em> than tradition suggests — confirm before acting.
+                  </LI>
+                  <LI>
+                    <strong>Doji</strong> — open = close, forming a cross. Indecision; can
+                    signal reversal at extremes. Variations: <em>Dragonfly</em> (long lower
+                    wick, bullish bias), <em>Gravestone</em> (long upper wick, bearish bias).
+                  </LI>
+                  <LI>
+                    <strong>Spinning Top</strong> — small body, wicks on both sides. Pure
+                    indecision; reversal candidate at structure.
+                  </LI>
+                </UL>
+
+                <H3>Two-Candle Patterns</H3>
+                <UL>
+                  <LI>
+                    <strong>Bullish Engulfing</strong> — a bullish candle fully engulfs the
+                    prior bearish one. Strong reversal signal at support.
+                  </LI>
+                  <LI>
+                    <strong>Bearish Engulfing</strong> — the mirror at resistance.
+                  </LI>
+                  <LI>
+                    <strong>Bullish Harami</strong> — a small bullish candle inside the body
+                    of a large prior bearish candle. Reversal formation.
+                  </LI>
+                  <LI>
+                    <strong>Bearish Harami</strong> — the mirror at the top of an uptrend.
+                  </LI>
+                  <LI>
+                    <strong>Piercing Line</strong> — bearish candle followed by a bullish one
+                    that gaps down and closes above the 50% retracement of the first. Strong
+                    bullish reversal.
+                  </LI>
+                  <LI>
+                    <strong>Dark Cloud Cover</strong> — bullish candle followed by a bearish
+                    one that gaps up and closes below the 50% retracement. Strong bearish
+                    reversal.
+                  </LI>
+                  <LI>
+                    <strong>Tweezer Top / Bottom</strong> — two candles that test the same
+                    extreme. Reversal candidate, but less reliable than the textbooks claim —
+                    use as confirmation, not standalone trigger.
+                  </LI>
+                  <LI>
+                    <strong>Inside / Outside Candle</strong> — when one candle's range fully
+                    contains (or fully covers) the prior candle's range. Colour is irrelevant.
+                  </LI>
+                </UL>
+
+                <H3>Three-Candle Patterns</H3>
+                <UL>
+                  <LI>
+                    <strong>Morning Star</strong> — large bearish → small indecision → large
+                    bullish closing above the midpoint of the first. One of the most reliable
+                    bullish reversal signals.
+                  </LI>
+                  <LI>
+                    <strong>Evening Star</strong> — large bullish → small indecision → large
+                    bearish closing below the midpoint of the first. The bearish mirror.
+                  </LI>
                 </UL>
 
                 <ImageHint>
-                  "Annotated candlestick anatomy — body, wick, bullish vs bearish examples"
+                  "Cheat sheet — top 12 candlestick patterns with example chart context"
                 </ImageHint>
 
-                <H2>3. Support, Resistance &amp; Structure</H2>
+                <H2>6. Trend &amp; Moving Averages</H2>
                 <P>
-                  Markets respect levels. A prior high becomes resistance. A prior low becomes
-                  support. When broken, they often flip roles — old resistance becomes new
-                  support. This is the backbone of every clean technical setup.
+                  Moving averages smooth out short-term noise so you can see the bigger
+                  picture. Each point is the average of the previous N periods.
                 </P>
-
-                <ImageHint>
-                  "EUR/USD daily chart with horizontal S/R levels and break-and-retest zones"
-                </ImageHint>
-
-                <H2>4. Trend &amp; Moving Averages</H2>
                 <UL>
-                  <LI><strong>EMA 20:</strong> short-term momentum</LI>
-                  <LI><strong>EMA 50:</strong> medium-term trend filter</LI>
-                  <LI><strong>EMA 200:</strong> the line institutions watch — bull or bear regime</LI>
+                  <LI><strong>Simple MA (SMA)</strong> — equal weight to every data point</LI>
+                  <LI><strong>Exponential MA (EMA)</strong> — more weight to recent data</LI>
+                  <LI><strong>50-day &amp; 200-day SMAs</strong> — the most-watched MAs in the world; institutional benchmarks</LI>
+                  <LI>
+                    <strong>Golden Cross</strong> — short-term MA crosses above long-term MA
+                    (e.g. 50 above 200). Major bullish regime signal.
+                  </LI>
+                  <LI>
+                    <strong>Death Cross</strong> — the reverse. A major bearish regime signal.
+                  </LI>
                 </UL>
 
-                <H2>5. Indicators That Actually Help</H2>
-                <UL>
-                  <LI><strong>RSI (14):</strong> momentum and divergence</LI>
-                  <LI><strong>MACD:</strong> trend confirmation + crossovers</LI>
-                  <LI><strong>VWAP:</strong> the institutional mean — pullbacks to VWAP are tradable</LI>
-                  <LI><strong>Volume profile:</strong> where price has spent the most time</LI>
-                </UL>
-
-                <H2>6. Multi-Timeframe Analysis</H2>
+                <H2>7. Indicators That Actually Help</H2>
+                <H3>RSI (Relative Strength Index)</H3>
                 <P>
-                  The pros zoom out before they zoom in. Use the higher timeframe (Daily / 4H)
-                  to define the trend. Use the lower timeframe (15M / 5M) to time the entry.
+                  Measures the magnitude and speed of recent moves on a 0–100 scale.
+                </P>
+                <p className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 font-mono text-[13px] italic text-foreground/85">
+                  RSI = 100 − 100 / (1 + RS), where RS = average gains / average losses
+                </p>
+                <UL>
+                  <LI><strong>Below 30</strong> — oversold, potential bounce</LI>
+                  <LI><strong>Above 70</strong> — overbought, potential pullback</LI>
+                  <LI>
+                    <strong>Divergence</strong> — when price and RSI move in opposite
+                    directions. Often leads the next big move (e.g. higher highs in price but
+                    lower highs in RSI = warning).
+                  </LI>
+                </UL>
+
+                <H3>Volume</H3>
+                <P>
+                  An overlooked but critical indicator. A real move is confirmed by rising
+                  volume; a low-volume rally has a higher probability of failing.
+                </P>
+                <UL>
+                  <LI>Sharp moves on high volume + short duration near extremes = exhaustion</LI>
+                  <LI>Breakouts without volume = traps</LI>
+                  <LI>Divergence between price and volume = early warning</LI>
+                </UL>
+
+                <H3>Other Workhorses</H3>
+                <UL>
+                  <LI><strong>MACD</strong> — trend confirmation via crossovers and histogram</LI>
+                  <LI><strong>VWAP</strong> — the institutional mean; pullbacks to VWAP are tradable</LI>
+                  <LI><strong>Volume Profile</strong> — where price has spent the most time (true value)</LI>
+                </UL>
+
+                <H2>8. Multi-Timeframe Analysis</H2>
+                <P>
+                  The pros zoom out before they zoom in. Define the trend on the higher
+                  timeframe (Daily / 4H), then time the entry on the lower (15M / 5M).
+                  Higher-timeframe context filters out 80% of bad setups.
                 </P>
 
                 <KeyTakeaway>
-                  Less is more. A clean chart with structure, one moving average, and a single
-                  momentum tool will outperform a screen full of noise — every time.
+                  Less is more. A clean chart with structure, one moving average, one
+                  momentum tool, and a trained eye for candlesticks will outperform a screen
+                  full of noise — every single time.
                 </KeyTakeaway>
               </ArticleCard>
 
