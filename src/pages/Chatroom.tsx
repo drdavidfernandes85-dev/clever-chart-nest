@@ -11,6 +11,7 @@ import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
+import CommunityTrustBar from "@/components/social/CommunityTrustBar";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 
@@ -322,6 +323,13 @@ const Chatroom = () => {
             </Button>
           </div>
         </header>
+
+        {/* Community trust bar — social proof + tagline (regulation compliant). */}
+        {!focusMode && (
+          <div className="border-b border-border/30 bg-background/60 px-3 py-2 sm:px-4">
+            <CommunityTrustBar compact />
+          </div>
+        )}
 
         <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 bg-background">
           <div className="space-y-0">
