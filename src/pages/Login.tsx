@@ -98,7 +98,7 @@ const Login = () => {
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm">
             <Link to="/" className="text-primary hover:underline">{t("login.backHome")}</Link>
             <Link to="/register" className="text-primary hover:underline">{t("login.signup")}</Link>
-            <span className="cursor-pointer text-primary hover:underline">{t("login.forgot")}</span>
+            <Link to="/forgot-password" className="text-primary hover:underline">{t("login.forgot")}</Link>
           </div>
         </div>
       </div>

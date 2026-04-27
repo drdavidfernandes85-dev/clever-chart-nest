@@ -44,6 +44,8 @@ const LiveChart = lazyWithRetry(() => import("./pages/LiveChart.tsx"));
 const Chatroom = lazyWithRetry(() => import("./pages/Chatroom.tsx"));
 const Login = lazyWithRetry(() => import("./pages/Login.tsx"));
 const Register = lazyWithRetry(() => import("./pages/Register.tsx"));
+const ForgotPassword = lazyWithRetry(() => import("./pages/ForgotPassword.tsx"));
+const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword.tsx"));
 const Profile = lazyWithRetry(() => import("./pages/Profile.tsx"));
 const VideoLibrary = lazyWithRetry(() => import("./pages/VideoLibrary.tsx"));
 const TradingSignals = lazyWithRetry(() => import("./pages/TradingSignals.tsx"));
@@ -79,6 +81,8 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/command" element={<ProtectedRoute><DashboardLayout><CommandDeck /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/live-chart" element={<ProtectedRoute><DashboardLayout><LiveChart /></DashboardLayout></ProtectedRoute>} />

@@ -14,6 +14,7 @@ import BadgeShelf from "@/components/gamification/BadgeShelf";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import ChangePasswordCard from "@/components/ChangePasswordCard";
 
 const Profile = () => {
   const { user, profile } = useAuth();
@@ -273,6 +274,8 @@ const Profile = () => {
           <Save className="h-4 w-4" />
           {saving ? t("profile.saving") : t("profile.save")}
         </Button>
+
+        <ChangePasswordCard />
       </div>
     </div>
   );
