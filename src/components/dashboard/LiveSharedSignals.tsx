@@ -156,9 +156,9 @@ const LiveSharedSignals = () => {
           {rows.length === 0 && (
             <li className="px-3 py-10 text-center">
               <Inbox className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" />
-              <p className="text-xs font-semibold text-foreground">No live signals yet</p>
+              <p className="text-xs font-semibold text-foreground">No live trade ideas yet</p>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Mentor signals will appear here in real-time.
+                Mentor trade ideas will appear here in real-time.
               </p>
             </li>
           )}
@@ -300,7 +300,7 @@ const LiveSharedSignals = () => {
                     ) : (
                       <>
                         <Zap className="h-3.5 w-3.5" />
-                        Take This Signal
+                        Take This Trade
                       </>
                     )}
                   </button>
