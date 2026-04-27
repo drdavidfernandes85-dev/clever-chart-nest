@@ -18,6 +18,12 @@ interface AuthContextType {
   loading: boolean;
   /** True once the initial getSession() resolved (success OR null). Use this to gate redirects. */
   ready: boolean;
+  /** True while a single-flight refresh/recovery attempt is running. */
+  isRefreshing: boolean;
+  /** True after we have attempted to recover/refresh the session at least once. */
+  refreshAttempted: boolean;
+  authError: string | null;
+  ensureFreshSession: (reason?: string) => Promise<Session | null>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -28,6 +34,10 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   ready: false,
+  isRefreshing: false,
+  refreshAttempted: false,
+  authError: null,
+  ensureFreshSession: async () => null,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -40,6 +50,28 @@ const log = (...args: unknown[]) => {
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const REFRESH_MARGIN_MS = 90_000;
+const RATE_LIMIT_BACKOFF_MS = 7_500;
+const REFRESH_LOCK_NAME = "ixltr-auth-refresh";
+
+const isRateLimitError = (error: unknown) => {
+  const e = error as { message?: string; status?: number; code?: string } | null;
+  const text = `${e?.message ?? ""} ${e?.status ?? ""} ${e?.code ?? ""}`;
+  return /429|too many|rate.?limit/i.test(text);
+};
+
+const isFreshEnough = (s: Session | null, marginMs = REFRESH_MARGIN_MS) => {
+  if (!s?.expires_at) return !!s;
+  return s.expires_at * 1000 - Date.now() > marginMs;
+};
+
+const withRefreshLock = async <T,>(fn: () => Promise<T>): Promise<T> => {
+  const locks = typeof navigator !== "undefined" ? (navigator as any).locks : null;
+  if (locks?.request) {
+    return locks.request(REFRESH_LOCK_NAME, { mode: "exclusive" }, fn);
+  }
+  return fn();
+};
 
 /**
  * Fetch a single row with graceful 429 backoff + abort on auth errors.
@@ -47,16 +79,16 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  */
 async function fetchProfileSafe(userId: string, signal: { aborted: boolean }): Promise<Profile | null> {
   const maxAttempts = 3;
-  let delay = 600;
+  let delay = RATE_LIMIT_BACKOFF_MS;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (signal.aborted) return null;
     const { data, error, status } = await supabase
       .from("profiles")
       .select("id, user_id, display_name, avatar_url")
       .eq("user_id", userId)
-      .maybeSingle();
+      .limit(1);
 
-    if (!error) return (data as Profile | null) ?? null;
+    if (!error) return ((data as Profile[] | null)?.[0] as Profile | undefined) ?? null;
 
     // 401/403: session not yet valid — bail (do not loop)
     if (status === 401 || status === 403) {
@@ -65,7 +97,7 @@ async function fetchProfileSafe(userId: string, signal: { aborted: boolean }): P
     }
     // 429: backoff
     if (status === 429 && attempt < maxAttempts) {
-      log(`profile fetch 429 — backoff ${delay}ms (attempt ${attempt}/${maxAttempts})`);
+      console.log("Refresh failed with 429 - backing off", { source: "profile", delay });
       await sleep(delay);
       delay *= 2;
       continue;
