@@ -142,7 +142,7 @@ const TradingSignals = () => {
       .update({ status: newStatus })
       .eq("id", signalId);
     if (error) {
-      toast.error("Failed to update signal status");
+      toast.error("Failed to update trade idea status");
     } else {
       toast.success(`Signal marked as ${statusConfig[newStatus]?.label || newStatus}`);
     }

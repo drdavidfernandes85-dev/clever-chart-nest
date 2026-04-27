@@ -121,7 +121,7 @@ const buildConsensusAlerts = (signals: RawSignal[]): SmartAlert[] => {
     out.push({
       id: `consensus-${latest.id}`,
       kind: "consensus",
-      title: "High-conviction signal",
+      title: "High-conviction trade idea",
       body: `${pair} ${side.toUpperCase()} · ${count} mentor${count > 1 ? "s" : ""} aligned`,
       tag: `${conviction}%`,
       symbol: pair,
