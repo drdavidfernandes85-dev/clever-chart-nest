@@ -1,0 +1,787 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  GraduationCap,
+  Rocket,
+  Globe,
+  CandlestickChart,
+  Activity,
+  ShieldCheck,
+  Target,
+  Sparkles,
+  Video,
+  ChevronRight,
+  Image as ImageIcon,
+  BookOpen,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import SEO from "@/components/SEO";
+import { cn } from "@/lib/utils";
+
+/* ------------------------------------------------------------------ */
+/*  Section meta                                                       */
+/* ------------------------------------------------------------------ */
+
+type SectionId =
+  | "getting-started"
+  | "macro-analysis"
+  | "technical-analysis"
+  | "chart-patterns"
+  | "risk-psychology"
+  | "trading-strategies"
+  | "advanced-topics"
+  | "video-library";
+
+const SECTIONS: {
+  id: SectionId;
+  label: string;
+  icon: typeof Rocket;
+  tag: string;
+}[] = [
+  { id: "getting-started",     label: "Getting Started",                       icon: Rocket,           tag: "Module 01" },
+  { id: "macro-analysis",      label: "Macro Analysis",                         icon: Globe,            tag: "Module 02" },
+  { id: "technical-analysis",  label: "Technical Analysis",                     icon: CandlestickChart, tag: "Module 03" },
+  { id: "chart-patterns",      label: "Chart Patterns",                         icon: Activity,         tag: "Module 04" },
+  { id: "risk-psychology",     label: "Risk Management & Trading Psychology",   icon: ShieldCheck,      tag: "Module 05" },
+  { id: "trading-strategies",  label: "Trading Strategies",                     icon: Target,           tag: "Module 06" },
+  { id: "advanced-topics",     label: "Advanced Topics",                        icon: Sparkles,         tag: "Module 07" },
+  { id: "video-library",       label: "Webinars & Video Library (Free)",        icon: Video,            tag: "Bonus" },
+];
+
+/* ------------------------------------------------------------------ */
+/*  Reusable atoms                                                     */
+/* ------------------------------------------------------------------ */
+
+const H2 = ({ children, id }: { children: React.ReactNode; id?: string }) => (
+  <h2
+    id={id}
+    className="font-heading text-2xl md:text-3xl font-bold text-foreground tracking-tight scroll-mt-28"
+  >
+    {children}
+  </h2>
+);
+
+const H3 = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="font-heading text-lg md:text-xl font-semibold text-foreground mt-6 mb-2">
+    {children}
+  </h3>
+);
+
+const P = ({ children }: { children: React.ReactNode }) => (
+  <p className="text-[15px] leading-relaxed text-muted-foreground">{children}</p>
+);
+
+const UL = ({ children }: { children: React.ReactNode }) => (
+  <ul className="space-y-1.5 text-[15px] leading-relaxed text-muted-foreground list-none pl-0">
+    {children}
+  </ul>
+);
+
+const LI = ({ children }: { children: React.ReactNode }) => (
+  <li className="flex gap-2">
+    <ChevronRight className="h-4 w-4 mt-1 text-primary shrink-0" />
+    <span>{children}</span>
+  </li>
+);
+
+const ImageHint = ({ children }: { children: React.ReactNode }) => (
+  <div className="my-5 flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-4 py-3">
+    <ImageIcon className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+    <p className="text-[13px] leading-relaxed text-foreground/80">
+      <span className="font-semibold text-primary">Suggested image:</span> {children}
+    </p>
+  </div>
+);
+
+const KeyTakeaway = ({ children }: { children: React.ReactNode }) => (
+  <div className="mt-6 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/[0.10] via-primary/[0.04] to-transparent p-5">
+    <div className="flex items-center gap-2 mb-2">
+      <Sparkles className="h-4 w-4 text-primary" />
+      <span className="font-proxima text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+        Key Takeaway
+      </span>
+    </div>
+    <p className="text-[15px] leading-relaxed text-foreground/90">{children}</p>
+  </div>
+);
+
+const ArticleCard = ({
+  id,
+  tag,
+  title,
+  read,
+  children,
+}: {
+  id: SectionId;
+  tag: string;
+  title: string;
+  read: string;
+  children: React.ReactNode;
+}) => (
+  <motion.article
+    id={id}
+    initial={{ opacity: 0, y: 18 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-80px" }}
+    transition={{ duration: 0.5, ease: "easeOut" }}
+    className="relative overflow-hidden rounded-3xl border border-primary/15 bg-card/50 backdrop-blur-2xl shadow-[0_20px_60px_-30px_hsl(48_100%_51%/0.25)] scroll-mt-24"
+  >
+    {/* fiery glow */}
+    <div className="pointer-events-none absolute inset-0 opacity-60">
+      <div className="absolute -top-32 -left-24 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
+      <div className="absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
+    </div>
+    <div className="relative px-6 py-8 md:px-10 md:py-12">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-proxima text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
+          {tag}
+        </span>
+        <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+          {read}
+        </span>
+      </div>
+      <h2 className="font-heading text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+        {title}
+      </h2>
+      <div className="mt-6 space-y-4 max-w-3xl">{children}</div>
+    </div>
+  </motion.article>
+);
+
+/* ------------------------------------------------------------------ */
+/*  Page                                                               */
+/* ------------------------------------------------------------------ */
+
+const Education = () => {
+  const [active, setActive] = useState<SectionId>("getting-started");
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Scroll-spy active section
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible?.target?.id) setActive(visible.target.id as SectionId);
+      },
+      { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+    SECTIONS.forEach((s) => {
+      const el = document.getElementById(s.id);
+      if (el) obs.observe(el);
+    });
+    observerRef.current = obs;
+    return () => obs.disconnect();
+  }, []);
+
+  const scrollTo = (id: SectionId) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const jsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "Course",
+      name: "IX Education Center",
+      description:
+        "Professional-grade trading education covering macro, technicals, patterns, risk, psychology, and advanced strategies.",
+      provider: {
+        "@type": "Organization",
+        name: "IX Live Trading Room",
+      },
+    }),
+    []
+  );
+
+  return (
+    <>
+      <SEO
+        title="Education Center | IX Live Trading Room"
+        description="Master the markets with structured, professional-grade trading education — macro, technicals, risk, psychology, strategies, and free webinars."
+        canonical="https://www.salatradingelite.com/education"
+        type="article"
+        jsonLd={jsonLd}
+      />
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* HERO */}
+        <header className="relative overflow-hidden border-b border-primary/15">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -top-40 left-1/3 h-[480px] w-[480px] rounded-full bg-primary/15 blur-[120px]" />
+            <div className="absolute -bottom-40 -right-20 h-[420px] w-[420px] rounded-full bg-orange-500/10 blur-[120px]" />
+            <div
+              className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(hsl(var(--primary)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)",
+                backgroundSize: "48px 48px",
+              }}
+            />
+          </div>
+
+          <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-10 lg:py-20">
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="max-w-3xl"
+            >
+              <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-proxima text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
+                <GraduationCap className="h-3.5 w-3.5" />
+                Education Center
+              </span>
+              <h1 className="mt-4 font-heading text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
+                Master the markets with{" "}
+                <span className="bg-gradient-to-br from-primary via-primary to-orange-400 bg-clip-text text-transparent">
+                  professional-grade
+                </span>{" "}
+                education.
+              </h1>
+              <p className="mt-5 max-w-2xl text-base md:text-lg leading-relaxed text-muted-foreground">
+                Whether you're a beginner or an experienced trader, our structured learning
+                path will help you build a consistent, profitable trading career.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <button
+                  onClick={() => scrollTo("getting-started")}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-proxima text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.6)] hover:brightness-110 transition"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Start Learning
+                </button>
+                <Link
+                  to="/webinars"
+                  className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-card/40 px-5 py-2.5 font-proxima text-sm font-bold uppercase tracking-wider text-foreground hover:border-primary/60 hover:bg-primary/10 transition"
+                >
+                  <Video className="h-4 w-4" />
+                  Watch Live
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </header>
+
+        {/* MAIN — sidebar + articles */}
+        <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-10 lg:py-14">
+          <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+            {/* SIDEBAR (sticky) */}
+            <aside className="lg:sticky lg:top-6 lg:self-start">
+              <div className="rounded-2xl border border-primary/15 bg-card/40 backdrop-blur-2xl p-3">
+                <div className="px-2 pb-2 pt-1">
+                  <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                    Curriculum
+                  </span>
+                </div>
+                <ul className="space-y-0.5">
+                  {SECTIONS.map((s) => {
+                    const Icon = s.icon;
+                    const isActive = active === s.id;
+                    return (
+                      <li key={s.id}>
+                        <button
+                          onClick={() => scrollTo(s.id)}
+                          className={cn(
+                            "group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition-colors",
+                            isActive
+                              ? "bg-primary/15 text-primary"
+                              : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+                            )}
+                          />
+                          <span className="truncate">{s.label}</span>
+                          {isActive && (
+                            <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_hsl(48_100%_51%)]" />
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </aside>
+
+            {/* ARTICLES */}
+            <div className="space-y-10 min-w-0">
+              {/* 1 — GETTING STARTED */}
+              <ArticleCard
+                id="getting-started"
+                tag="Module 01 · Getting Started"
+                title="Getting Started: Your First Steps as a Trader"
+                read="6 min read"
+              >
+                <P>
+                  Trading is a craft. Before you risk a single dollar, you need a clear roadmap,
+                  the right tools, and realistic expectations. This module gives you the
+                  foundation every successful trader builds on.
+                </P>
+
+                <H3>What you'll learn</H3>
+                <UL>
+                  <LI>How global markets work — Forex, indices, commodities, crypto</LI>
+                  <LI>The difference between brokers, exchanges, and liquidity providers</LI>
+                  <LI>How to read a price chart and understand bid/ask, spread, and pip value</LI>
+                  <LI>How to set up your trading platform (MT4 / MT5 / TradingView)</LI>
+                </UL>
+
+                <ImageHint>"Trader's workstation with MT5 and TradingView side-by-side"</ImageHint>
+
+                <H3>Build your trading toolkit</H3>
+                <UL>
+                  <LI>A stable broker with regulated execution (e.g. Infinox)</LI>
+                  <LI>A charting platform with real-time data</LI>
+                  <LI>An economic calendar to track high-impact events</LI>
+                  <LI>A trading journal — every trade, win or loss, gets logged</LI>
+                </UL>
+
+                <KeyTakeaway>
+                  You don't need 20 indicators or three monitors to start. You need a clean
+                  chart, a written plan, and the discipline to follow it.
+                </KeyTakeaway>
+              </ArticleCard>
+
+              {/* 2 — MACRO ANALYSIS */}
+              <ArticleCard
+                id="macro-analysis"
+                tag="Module 02 · Macro Analysis"
+                title="Macro Analysis: Reading the Global Economic Engine"
+                read="9 min read"
+              >
+                <P>
+                  Every chart you trade is the visible tip of a much larger story —
+                  interest rates, inflation, employment, central bank policy, and geopolitics.
+                  Macro analysis tells you <em>why</em> price moves, so you can position
+                  yourself <em>before</em> the move, not after.
+                </P>
+
+                <H2>1. The Pillars of Macro</H2>
+                <H3>Interest Rates &amp; Central Banks</H3>
+                <P>
+                  Central banks (the Fed, ECB, BoE, BoJ) set the cost of money. When rates rise,
+                  currencies generally strengthen and risk assets cool. When rates fall, capital
+                  flows into equities, commodities, and high-yield currencies.
+                </P>
+                <UL>
+                  <LI>Hawkish surprises → currency up, stocks down</LI>
+                  <LI>Dovish surprises → currency down, stocks up</LI>
+                  <LI>Forward guidance often matters more than the actual decision</LI>
+                </UL>
+
+                <ImageHint>
+                  "Heatmap of major central bank rates with arrows showing recent direction"
+                </ImageHint>
+
+                <H3>Inflation</H3>
+                <P>
+                  CPI, PCE, and PPI tell you how fast prices are rising. Persistent inflation
+                  forces central banks to tighten — which moves every market on the planet.
+                </P>
+
+                <H3>Employment &amp; Growth</H3>
+                <UL>
+                  <LI>Non-Farm Payrolls (NFP) — the most-watched jobs print on Earth</LI>
+                  <LI>GDP — the heartbeat of the economy</LI>
+                  <LI>PMI &amp; ISM surveys — leading indicators of expansion or contraction</LI>
+                </UL>
+
+                <H2>2. The Risk-On / Risk-Off Lens</H2>
+                <P>
+                  Markets oscillate between two regimes. Knowing which one you're in tells you
+                  which assets to favor.
+                </P>
+                <UL>
+                  <LI><strong>Risk-on:</strong> stocks, AUD, NZD, EM currencies, crypto rally</LI>
+                  <LI><strong>Risk-off:</strong> USD, JPY, CHF, gold, bonds catch a bid</LI>
+                </UL>
+
+                <ImageHint>"Risk-on vs risk-off asset map (Forex pairs, indices, metals)"</ImageHint>
+
+                <H2>3. Building Your Macro Bias</H2>
+                <UL>
+                  <LI>Check the economic calendar each Sunday for the week ahead</LI>
+                  <LI>Identify the 1–2 highest-impact events</LI>
+                  <LI>Define your scenarios: "If CPI &gt; expected → long USD/JPY"</LI>
+                  <LI>Let the technicals confirm your entry</LI>
+                </UL>
+
+                <KeyTakeaway>
+                  Technicals tell you <strong>where</strong> to act. Macro tells you{" "}
+                  <strong>why</strong> the market is moving. The pros use both.
+                </KeyTakeaway>
+              </ArticleCard>
+
+              {/* 3 — TECHNICAL ANALYSIS */}
+              <ArticleCard
+                id="technical-analysis"
+                tag="Module 03 · Technical Analysis"
+                title="Technical Analysis: The Language of Price"
+                read="11 min read"
+              >
+                <P>
+                  Technical analysis is the study of price action — what the market has done,
+                  is doing, and is most likely to do next. It's not magic. It's pattern
+                  recognition built on decades of human behavior repeating itself.
+                </P>
+
+                <H2>1. The Three Foundations</H2>
+                <UL>
+                  <LI><strong>Price discounts everything</strong> — every news event, every order, every emotion is already in the candle.</LI>
+                  <LI><strong>Price moves in trends</strong> — uptrend, downtrend, or range. Identify the regime first.</LI>
+                  <LI><strong>History repeats</strong> — because human psychology is the one constant.</LI>
+                </UL>
+
+                <H2>2. Reading Candlesticks</H2>
+                <P>
+                  A candlestick is a snapshot of a battle between buyers and sellers in a fixed
+                  window of time. Body = open vs close. Wicks = the extremes of the fight.
+                </P>
+                <UL>
+                  <LI><strong>Bullish engulfing</strong> at support → momentum shift up</LI>
+                  <LI><strong>Pin bar / hammer</strong> → rejection of a level</LI>
+                  <LI><strong>Doji</strong> → indecision, often a turning point at extremes</LI>
+                </UL>
+
+                <ImageHint>
+                  "Annotated candlestick anatomy — body, wick, bullish vs bearish examples"
+                </ImageHint>
+
+                <H2>3. Support, Resistance &amp; Structure</H2>
+                <P>
+                  Markets respect levels. A prior high becomes resistance. A prior low becomes
+                  support. When broken, they often flip roles — old resistance becomes new
+                  support. This is the backbone of every clean technical setup.
+                </P>
+
+                <ImageHint>
+                  "EUR/USD daily chart with horizontal S/R levels and break-and-retest zones"
+                </ImageHint>
+
+                <H2>4. Trend &amp; Moving Averages</H2>
+                <UL>
+                  <LI><strong>EMA 20:</strong> short-term momentum</LI>
+                  <LI><strong>EMA 50:</strong> medium-term trend filter</LI>
+                  <LI><strong>EMA 200:</strong> the line institutions watch — bull or bear regime</LI>
+                </UL>
+
+                <H2>5. Indicators That Actually Help</H2>
+                <UL>
+                  <LI><strong>RSI (14):</strong> momentum and divergence</LI>
+                  <LI><strong>MACD:</strong> trend confirmation + crossovers</LI>
+                  <LI><strong>VWAP:</strong> the institutional mean — pullbacks to VWAP are tradable</LI>
+                  <LI><strong>Volume profile:</strong> where price has spent the most time</LI>
+                </UL>
+
+                <H2>6. Multi-Timeframe Analysis</H2>
+                <P>
+                  The pros zoom out before they zoom in. Use the higher timeframe (Daily / 4H)
+                  to define the trend. Use the lower timeframe (15M / 5M) to time the entry.
+                </P>
+
+                <KeyTakeaway>
+                  Less is more. A clean chart with structure, one moving average, and a single
+                  momentum tool will outperform a screen full of noise — every time.
+                </KeyTakeaway>
+              </ArticleCard>
+
+              {/* 4 — CHART PATTERNS */}
+              <ArticleCard
+                id="chart-patterns"
+                tag="Module 04 · Chart Patterns"
+                title="Chart Patterns: Recurring Footprints of the Market"
+                read="10 min read"
+              >
+                <P>
+                  Chart patterns are the visible signature of crowd psychology. They form
+                  because traders react the same way to the same conditions, generation after
+                  generation. Spot them early and you trade with the institutions, not against
+                  them.
+                </P>
+
+                <H2>1. Continuation Patterns</H2>
+                <P>The trend pauses, then resumes. These are the highest-probability setups in trending markets.</P>
+                <UL>
+                  <LI><strong>Bull flag / Bear flag</strong> — sharp move, tight pullback, breakout</LI>
+                  <LI><strong>Pennant</strong> — a flag with converging trendlines</LI>
+                  <LI><strong>Ascending / Descending triangle</strong> — pressure building against a flat level</LI>
+                </UL>
+
+                <ImageHint>
+                  "Bull flag breakout on NAS100 with measured-move target overlay"
+                </ImageHint>
+
+                <H2>2. Reversal Patterns</H2>
+                <P>The trend exhausts and flips. Powerful — but only valid at meaningful structure.</P>
+                <UL>
+                  <LI><strong>Head &amp; Shoulders</strong> — the textbook top reversal</LI>
+                  <LI><strong>Double Top / Double Bottom</strong> — failed continuation, often at key S/R</LI>
+                  <LI><strong>Inverse Head &amp; Shoulders</strong> — the bottom-fisher's classic</LI>
+                  <LI><strong>Rounded bottom</strong> — slow accumulation by smart money</LI>
+                </UL>
+
+                <ImageHint>
+                  "Head &amp; Shoulders on Gold (XAU/USD) with neckline break and target projection"
+                </ImageHint>
+
+                <H2>3. Bilateral Patterns</H2>
+                <P>Direction is unclear until breakout — wait for confirmation before entering.</P>
+                <UL>
+                  <LI><strong>Symmetrical triangle</strong> — coiling price, explosive release</LI>
+                  <LI><strong>Wedge (rising / falling)</strong> — often reversal, sometimes continuation</LI>
+                  <LI><strong>Rectangle / range</strong> — trade the edges, not the middle</LI>
+                </UL>
+
+                <H2>4. How to Trade a Pattern Correctly</H2>
+                <UL>
+                  <LI>Identify the pattern <em>before</em> the breakout — not after</LI>
+                  <LI>Wait for a clean break + close beyond the level</LI>
+                  <LI>Look for a retest of the broken level for a low-risk entry</LI>
+                  <LI>Measure the pattern's height to project a realistic target</LI>
+                  <LI>Place the stop on the opposite side of the pattern, not just below the candle</LI>
+                </UL>
+
+                <ImageHint>"Anatomy of a textbook breakout: structure → break → retest → run"</ImageHint>
+
+                <KeyTakeaway>
+                  Patterns don't predict — they prepare. They give you a framework for{" "}
+                  <em>where</em> to act and <em>where</em> you're wrong. The edge is in
+                  execution, not in the pattern itself.
+                </KeyTakeaway>
+              </ArticleCard>
+
+              {/* 5 — RISK & PSYCHOLOGY */}
+              <ArticleCard
+                id="risk-psychology"
+                tag="Module 05 · Risk &amp; Psychology"
+                title="Risk Management & Trading Psychology"
+                read="12 min read"
+              >
+                <P>
+                  Strategy gets you into the game. Risk management keeps you in it.
+                  Psychology decides whether you ever become consistent. This is the module
+                  that separates traders from gamblers.
+                </P>
+
+                <H2>1. The First Rule: Protect Your Capital</H2>
+                <P>
+                  You cannot trade tomorrow if you blow up today. Capital preservation is not
+                  defensive — it's the offensive weapon that lets compounding do its job.
+                </P>
+                <UL>
+                  <LI>Risk no more than <strong>0.5% – 1%</strong> of your account per trade</LI>
+                  <LI>Cap your daily loss at <strong>2% – 3%</strong>. Hit it? Stop trading.</LI>
+                  <LI>Cap your weekly loss at <strong>5%</strong>. Reset your mindset before resuming.</LI>
+                </UL>
+
+                <ImageHint>
+                  "Risk-Reward Ratio Diagram — 1R risk vs 2R, 3R, 5R targets"
+                </ImageHint>
+
+                <H2>2. Position Sizing — The Math That Saves You</H2>
+                <P>
+                  Position size = (Account × Risk %) ÷ (Stop distance × Pip value). Use a
+                  calculator every single trade. Never eyeball it.
+                </P>
+
+                <H2>3. The Risk-Reward Ratio</H2>
+                <UL>
+                  <LI>Minimum target: <strong>1:2 R:R</strong></LI>
+                  <LI>With a 40% win rate at 1:2 R:R you are still profitable</LI>
+                  <LI>Skip any setup that doesn't offer at least 1:2 — there's always another bus</LI>
+                </UL>
+
+                <H2>4. The Psychology Stack</H2>
+                <H3>Fear</H3>
+                <P>
+                  Fear cuts winners early and prevents you from pulling the trigger on valid
+                  setups. The cure is a written plan and small enough size that the outcome
+                  doesn't threaten you.
+                </P>
+                <H3>Greed</H3>
+                <P>
+                  Greed makes you oversize, chase, and remove stops. The cure is fixed,
+                  pre-defined risk per trade — non-negotiable.
+                </P>
+                <H3>Revenge Trading</H3>
+                <P>
+                  The single most expensive habit in trading. Lose a trade → close the
+                  platform for 30 minutes. Always.
+                </P>
+                <H3>FOMO</H3>
+                <P>
+                  The market opens 5 days a week, 24 hours a day. There is no last bus. If you
+                  missed the entry, you missed it.
+                </P>
+
+                <ImageHint>
+                  "Trader's emotional cycle — euphoria, denial, capitulation, hope, recovery"
+                </ImageHint>
+
+                <H2>5. The Trading Journal — Your Mirror</H2>
+                <UL>
+                  <LI>Log every trade: setup, entry, stop, target, emotion, outcome</LI>
+                  <LI>Review weekly — patterns of mistakes always emerge</LI>
+                  <LI>Patterns you can <em>see</em> are patterns you can <em>fix</em></LI>
+                </UL>
+
+                <H2>6. The Process Mindset</H2>
+                <P>
+                  Stop grading yourself by P&amp;L. Grade yourself by execution: did you follow
+                  the plan? Yes? Good trade — even if it lost. Process is the only thing you
+                  control. Outcome will follow.
+                </P>
+
+                <KeyTakeaway>
+                  Amateurs focus on entries. Professionals focus on risk. Masters focus on
+                  themselves.
+                </KeyTakeaway>
+              </ArticleCard>
+
+              {/* 6 — STRATEGIES */}
+              <ArticleCard
+                id="trading-strategies"
+                tag="Module 06 · Strategies"
+                title="Trading Strategies: Frameworks That Actually Work"
+                read="8 min read"
+              >
+                <P>
+                  A strategy is a repeatable set of rules with a measurable edge. You don't
+                  need many — you need one you trust and can execute on autopilot.
+                </P>
+
+                <H3>Trend Following</H3>
+                <UL>
+                  <LI>Higher highs, higher lows on Daily / 4H</LI>
+                  <LI>Buy pullbacks to EMA 20 / 50 in the direction of trend</LI>
+                  <LI>Stop below the swing low. Target the prior high. Trail aggressively.</LI>
+                </UL>
+
+                <H3>Breakout Trading</H3>
+                <UL>
+                  <LI>Identify a clean range or compression on the higher timeframe</LI>
+                  <LI>Wait for a candle close beyond the level on increased volume</LI>
+                  <LI>Enter on retest. Stop inside the range. Target = range height.</LI>
+                </UL>
+
+                <H3>Mean Reversion</H3>
+                <UL>
+                  <LI>Best in ranging markets and near key S/R</LI>
+                  <LI>RSI extremes + reversal candle at structure</LI>
+                  <LI>Quick targets — mean reversion fades fast</LI>
+                </UL>
+
+                <H3>News &amp; Macro Plays</H3>
+                <UL>
+                  <LI>Define scenarios <em>before</em> the release</LI>
+                  <LI>Wait for the dust to settle — never trade the first 60 seconds</LI>
+                  <LI>Combine the macro bias with a clean technical entry</LI>
+                </UL>
+
+                <KeyTakeaway>
+                  Don't collect strategies — master one. A boring strategy executed flawlessly
+                  beats a brilliant strategy executed sometimes.
+                </KeyTakeaway>
+              </ArticleCard>
+
+              {/* 7 — ADVANCED */}
+              <ArticleCard
+                id="advanced-topics"
+                tag="Module 07 · Advanced"
+                title="Advanced Topics: Where Edge Compounds"
+                read="9 min read"
+              >
+                <P>
+                  Once your foundation is solid, these are the levers that take you from
+                  consistent to elite.
+                </P>
+
+                <H3>Order Flow &amp; Liquidity</H3>
+                <UL>
+                  <LI>Where are stops sitting? Above prior highs and below prior lows</LI>
+                  <LI>Smart money hunts liquidity before reversing — learn to spot the sweep</LI>
+                  <LI>Use volume profile and footprint charts to read intent</LI>
+                </UL>
+
+                <H3>Intermarket Analysis</H3>
+                <UL>
+                  <LI>DXY ↑ → most pairs lower, gold pressured</LI>
+                  <LI>US10Y ↑ → growth stocks compressed, JPY weaker</LI>
+                  <LI>Oil ↑ → CAD strength, inflation pressure</LI>
+                </UL>
+
+                <H3>Correlation &amp; Portfolio Risk</H3>
+                <P>
+                  Three "different" trades that are all short USD is one trade with triple
+                  size. Always sum your <em>true</em> exposure across positions.
+                </P>
+
+                <H3>Algorithmic &amp; Systematic Edges</H3>
+                <UL>
+                  <LI>Backtest before you trade — Pine Script, Python, or TradingView Strategy Tester</LI>
+                  <LI>Forward-test on demo for at least 30 trades</LI>
+                  <LI>Track expectancy, max drawdown, and Sharpe — not just win rate</LI>
+                </UL>
+
+                <KeyTakeaway>
+                  Advanced edge isn't a secret indicator. It's reading what others can't see —
+                  liquidity, correlation, and your own behavior.
+                </KeyTakeaway>
+              </ArticleCard>
+
+              {/* 8 — VIDEO LIBRARY */}
+              <ArticleCard
+                id="video-library"
+                tag="Bonus · Free"
+                title="Webinars & Video Library"
+                read="Always-on"
+              >
+                <P>
+                  Theory becomes intuition when you watch real traders execute in real markets.
+                  Our live webinars and on-demand video library are <strong>free for every
+                  member</strong> of the IX Live Trading Room.
+                </P>
+
+                <UL>
+                  <LI>Daily live sessions — London &amp; New York opens, with Q&amp;A</LI>
+                  <LI>Recorded archive — every webinar, indexed by topic and instrument</LI>
+                  <LI>Trade-of-the-day breakdowns from our senior analysts</LI>
+                  <LI>Member workshops on journaling, risk, and psychology</LI>
+                </UL>
+
+                <ImageHint>
+                  "Grid of recent webinar thumbnails with play overlays and live badges"
+                </ImageHint>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    to="/webinars"
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-proxima text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.6)] hover:brightness-110 transition"
+                  >
+                    <Video className="h-4 w-4" />
+                    Join Live Webinars
+                  </Link>
+                  <Link
+                    to="/videos"
+                    className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-card/40 px-5 py-2.5 font-proxima text-sm font-bold uppercase tracking-wider text-foreground hover:border-primary/60 hover:bg-primary/10 transition"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Open Video Library
+                  </Link>
+                </div>
+              </ArticleCard>
+            </div>
+          </div>
+        </main>
+      </div>
+    </>
+  );
+};
+
+export default Education;
