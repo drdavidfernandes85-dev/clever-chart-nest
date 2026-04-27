@@ -7,24 +7,6 @@ import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { useLanguage } from "@/i18n/LanguageContext";
 import heroComet from "@/assets/hero-comet.jpg";
 
-// Simulated live online counter (gentle drift around a base)
-function useOnlineCounter(base = 1247) {
-  const [count, setCount] = useState(base);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCount((c) => {
-        const drift = Math.floor(Math.random() * 9) - 4; // -4..+4
-        const next = c + drift;
-        if (next < base - 30) return base - 30;
-        if (next > base + 60) return base + 60;
-        return next;
-      });
-    }, 3500);
-    return () => clearInterval(id);
-  }, [base]);
-  return count;
-}
-
 // Next webinar — next weekday at 14:00 UTC
 const NEXT_WEBINAR_TARGET = (() => {
   const now = new Date();
