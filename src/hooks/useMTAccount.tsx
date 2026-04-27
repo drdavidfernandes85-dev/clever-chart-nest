@@ -70,6 +70,7 @@ export function useMTAccount() {
   const [syncing, setSyncing] = useState(false);
   const lastSyncRef = useRef<number>(0);
   const realtimeInstanceRef = useRef(Math.random().toString(36).slice(2));
+  const hasLoadedRef = useRef(false);
 
   const refresh = useCallback(async () => {
     if (!ready || isRefreshing) return;
@@ -80,7 +81,7 @@ export function useMTAccount() {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!hasLoadedRef.current) setLoading(true);
 
     const { data: acc } = await (supabase as any)
       .from("user_mt_accounts_safe")
@@ -94,6 +95,7 @@ export function useMTAccount() {
       setAccount(null);
       setPositions([]);
       setSnapshots([]);
+      hasLoadedRef.current = true;
       setLoading(false);
       return;
     }
@@ -115,6 +117,7 @@ export function useMTAccount() {
 
     setPositions((posRes.data ?? []) as MTPosition[]);
     setSnapshots((snapRes.data ?? []) as MTSnapshot[]);
+    hasLoadedRef.current = true;
     setLoading(false);
   }, [ready, isRefreshing, user]);
 
