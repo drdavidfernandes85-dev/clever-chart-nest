@@ -250,7 +250,7 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
                 <Zap className="h-3.5 w-3.5" />
               </div>
               <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-foreground">
-                {phase === "review" && "Copy Trade"}
+                {phase === "review" && "Use This Trade Idea"}
                 {phase === "sending" && "Sending to MT5…"}
                 {phase === "executed" && "Trade Executed"}
                 {phase === "failed" && "Trade Failed"}
@@ -271,7 +271,7 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
           {request.authorName && (
             <div className="relative flex items-center gap-2 border-b border-border/30 bg-background/40 px-5 py-2.5 backdrop-blur-xl">
               <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                Signal by
+                Trade idea by
               </span>
               <span className="font-heading text-sm font-bold text-foreground">
                 {request.authorName}
