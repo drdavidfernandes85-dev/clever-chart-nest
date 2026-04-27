@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle, Clock, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
+import { useLanguage } from "@/i18n/LanguageContext";
 import heroComet from "@/assets/hero-comet.jpg";
 
 // Simulated live online counter (gentle drift around a base)
@@ -24,10 +25,35 @@ function useOnlineCounter(base = 1247) {
   return count;
 }
 
+// Next webinar — next weekday at 14:00 UTC
+const NEXT_WEBINAR_TARGET = (() => {
+  const now = new Date();
+  const target = new Date(now);
+  target.setUTCHours(14, 0, 0, 0);
+  if (target <= now) target.setUTCDate(target.getUTCDate() + 1);
+  while (target.getUTCDay() === 0 || target.getUTCDay() === 6) {
+    target.setUTCDate(target.getUTCDate() + 1);
+  }
+  return target;
+})();
 
+function useCountdown(target: Date) {
+  const [diff, setDiff] = useState(() => Math.max(0, target.getTime() - Date.now()));
+  useEffect(() => {
+    const id = setInterval(() => setDiff(Math.max(0, target.getTime() - Date.now())), 1000);
+    return () => clearInterval(id);
+  }, [target]);
+  const totalSec = Math.floor(diff / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return { h, m, s, isLive: diff === 0 };
+}
 
 const HeroSection = () => {
   const onlineCount = useOnlineCounter(1247);
+  const { h, m, s, isLive } = useCountdown(NEXT_WEBINAR_TARGET);
+  const { t } = useLanguage();
 
   return (
     <section
