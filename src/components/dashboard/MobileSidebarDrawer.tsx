@@ -47,7 +47,8 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
-  const { t } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
+  const localeOrder: Locale[] = ["en", "es", "pt"];
   const startingSoon =
     !!upcoming &&
     new Date(upcoming.scheduled_at).getTime() - Date.now() < 30 * 60 * 1000;
