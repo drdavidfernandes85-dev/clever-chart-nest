@@ -23,7 +23,14 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/i18n/LanguageContext";
-import type { TranslationKey } from "@/i18n/translations";
+import { LOCALE_FLAGS, LOCALE_LABELS, type Locale, type TranslationKey } from "@/i18n/translations";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Globe } from "lucide-react";
 
 /**
  * Premium left rail navigation. Collapsible on desktop, hidden on mobile
