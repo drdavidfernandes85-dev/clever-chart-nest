@@ -56,27 +56,6 @@ const HeroSection = () => {
           }}
         />
 
-        {/* Massive pulsing yellow halo behind the logo zone */}
-        <div
-          className="absolute top-1/2 right-[10%] -translate-y-1/2 h-[620px] w-[620px] rounded-full animate-pulse-glow"
-          style={{
-            background:
-              "radial-gradient(circle, hsl(45 100% 55% / 0.32) 0%, hsl(28 100% 50% / 0.16) 35%, transparent 68%)",
-            filter: "blur(28px)",
-          }}
-        />
-
-        {/* Secondary inner glow — tighter and brighter on the ring impact */}
-        <div
-          className="absolute top-1/2 right-[14%] -translate-y-1/2 h-[300px] w-[300px] rounded-full animate-pulse-glow"
-          style={{
-            background:
-              "radial-gradient(circle, hsl(48 100% 65% / 0.45) 0%, transparent 70%)",
-            filter: "blur(18px)",
-            animationDelay: "0.6s",
-          }}
-        />
-
         {/* The hero comet image — full height with soft top/bottom fades */}
         <img
           src={heroComet}
@@ -84,8 +63,7 @@ const HeroSection = () => {
           aria-hidden
           className="absolute inset-y-0 right-0 h-full w-[82%] object-contain object-right select-none animate-breathe"
           style={{
-            filter:
-              "drop-shadow(0 0 70px hsl(28 100% 50% / 0.45)) saturate(1.15) contrast(1.08)",
+            filter: "saturate(1.15) contrast(1.08)",
             WebkitMaskImage:
               "linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)",
             maskImage:
