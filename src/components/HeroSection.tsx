@@ -56,40 +56,42 @@ const HeroSection = () => {
           }}
         />
 
-        {/* Massive pulsing yellow halo behind the logo zone */}
-        <div
-          className="absolute top-1/2 right-[10%] -translate-y-1/2 h-[620px] w-[620px] rounded-full animate-pulse-glow"
-          style={{
-            background:
-              "radial-gradient(circle, hsl(45 100% 55% / 0.32) 0%, hsl(28 100% 50% / 0.16) 35%, transparent 68%)",
-            filter: "blur(28px)",
-          }}
-        />
+        {/* Centered container — keeps comet + glows within the site's content border */}
+        <div className="container relative h-full">
+          {/* Massive pulsing yellow halo behind the logo zone */}
+          <div
+            className="absolute top-1/2 right-[6%] -translate-y-1/2 h-[620px] w-[620px] rounded-full animate-pulse-glow"
+            style={{
+              background:
+                "radial-gradient(circle, hsl(45 100% 55% / 0.32) 0%, hsl(28 100% 50% / 0.16) 35%, transparent 68%)",
+              filter: "blur(28px)",
+            }}
+          />
 
-        {/* Secondary inner glow — tighter and brighter on the ring impact */}
-        <div
-          className="absolute top-1/2 right-[14%] -translate-y-1/2 h-[300px] w-[300px] rounded-full animate-pulse-glow"
-          style={{
-            background:
-              "radial-gradient(circle, hsl(48 100% 65% / 0.45) 0%, transparent 70%)",
-            filter: "blur(18px)",
-            animationDelay: "0.6s",
-          }}
-        />
+          {/* Secondary inner glow — tighter and brighter on the ring impact */}
+          <div
+            className="absolute top-1/2 right-[10%] -translate-y-1/2 h-[300px] w-[300px] rounded-full animate-pulse-glow"
+            style={{
+              background:
+                "radial-gradient(circle, hsl(48 100% 65% / 0.45) 0%, transparent 70%)",
+              filter: "blur(18px)",
+              animationDelay: "0.6s",
+            }}
+          />
 
-        {/* The hero comet image — full bleed on the right */}
-        <img
-          src={heroComet}
-          alt=""
-          aria-hidden
-          className="absolute inset-y-0 right-0 h-full w-[82%] object-cover select-none animate-breathe"
-          style={{
-            objectPosition: "20% center",
-            filter:
-              "drop-shadow(0 0 70px hsl(28 100% 50% / 0.45)) saturate(1.15) contrast(1.08)",
-          }}
-          draggable={false}
-        />
+          {/* The hero comet image — anchored to the right edge of the centered container */}
+          <img
+            src={heroComet}
+            alt=""
+            aria-hidden
+            className="absolute inset-y-0 right-0 h-full w-[58%] object-contain object-right select-none animate-breathe"
+            style={{
+              filter:
+                "drop-shadow(0 0 70px hsl(28 100% 50% / 0.45)) saturate(1.15) contrast(1.08)",
+            }}
+            draggable={false}
+          />
+        </div>
 
         {/* Strong left fade so text reads cleanly */}
         <div
