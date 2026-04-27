@@ -28,6 +28,7 @@ import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useWebinars, useCountdown, type Webinar } from "@/hooks/useWebinars";
 import { useLanguage } from "@/i18n/LanguageContext";
+import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
 
 const WebinarStatusPill = ({ w }: { w: Webinar }) => {
   const { t } = useLanguage();
@@ -291,6 +292,9 @@ const Webinars = () => {
             </div>
           </Card>
         )}
+
+        {/* Next sessions (quick join) */}
+        <UpcomingSessions />
 
         {/* Filters */}
         <Card className="p-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
