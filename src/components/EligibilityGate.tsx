@@ -29,7 +29,7 @@ const EligibilityGate = ({ children }: Props) => {
   const { account, loading } = useMTAccount();
   const { isAdmin, loading: adminLoading } = useIsAdmin();
 
-  if (loading || adminLoading) return <Spinner />;
+  if ((loading && !account) || adminLoading) return <Spinner />;
 
   if (isAdmin) return <>{children}</>;
 
