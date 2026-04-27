@@ -1,17 +1,29 @@
-import { BarChart3, LineChart, Users, MessageSquare, Globe, Video, GraduationCap } from "lucide-react";
+import { GraduationCap, LineChart, Video, ShieldCheck } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { TranslationKey } from "@/i18n/translations";
 
-const featureKeys: { icon: typeof LineChart; title: TranslationKey; desc: TranslationKey }[] = [
-  { icon: LineChart, title: "features.realtime", desc: "features.realtime.desc" },
-  { icon: Users, title: "features.community", desc: "features.community.desc" },
-  { icon: BarChart3, title: "features.charts", desc: "features.charts.desc" },
-  { icon: MessageSquare, title: "features.chatroom", desc: "features.chatroom.desc" },
-  { icon: Video, title: "features.webinars", desc: "features.webinars.desc" },
-  { icon: Globe, title: "features.coverage", desc: "features.coverage.desc" },
-  { icon: GraduationCap, title: "features.education", desc: "features.education.desc" },
+const featurePoints: { icon: typeof LineChart; title: string; desc: string }[] = [
+  {
+    icon: GraduationCap,
+    title: "Educational Community Environment",
+    desc: "A professional space where traders connect, share ideas and grow together — built for learning, not hype.",
+  },
+  {
+    icon: LineChart,
+    title: "Real-Time Chart Analysis & Discussion",
+    desc: "Live market breakdowns and open discussion of setups across FX, indices, commodities and crypto.",
+  },
+  {
+    icon: Video,
+    title: "Access to Daily Live Webinars",
+    desc: "Daily sessions hosted by seasoned mentors with live market analysis, walkthroughs and Q&A.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Portfolio Overview & Risk Tools",
+    desc: "After connecting your account, monitor your portfolio and use built-in risk tools to trade with discipline.",
+  },
 ];
 
 const FeaturesSection = () => {
