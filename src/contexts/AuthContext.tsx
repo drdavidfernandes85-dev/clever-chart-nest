@@ -50,8 +50,9 @@ const log = (...args: unknown[]) => {
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const REFRESH_MARGIN_MS = 90_000;
-const RATE_LIMIT_BACKOFF_MS = 7_500;
+const REFRESH_MARGIN_MS = 60_000;
+const RATE_LIMIT_BACKOFF_MS = 10_000;
+const MAX_RATE_LIMIT_BACKOFF_MS = 60_000;
 const REFRESH_LOCK_NAME = "ixltr-auth-refresh";
 
 const isRateLimitError = (error: unknown) => {
@@ -123,9 +124,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const sessionRef = useRef<Session | null>(null);
   const refreshPromiseRef = useRef<Promise<Session | null> | null>(null);
   const lastRefreshAtRef = useRef(0);
+  const nextRefreshAllowedAtRef = useRef(0);
+  const refreshBackoffMsRef = useRef(RATE_LIMIT_BACKOFF_MS);
   const userInitiatedSignOut = useRef(false);
   const refreshFailures = useRef(0);
   const expiredToastShown = useRef(false);
+  const authListenerMountedRef = useRef(false);
 
   const applySession = (s: Session | null) => {
     sessionRef.current = s;
@@ -142,8 +146,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const current = sessionRef.current;
       if (isFreshEnough(current)) return current;
 
+      const cooldownRemaining = nextRefreshAllowedAtRef.current - Date.now();
+      if (cooldownRemaining > 0) {
+        console.log("Refresh failed with 429 - backing off", { reason, delay: cooldownRemaining });
+        return current;
+      }
+
       setIsRefreshing(true);
       setAuthError(null);
+      console.log("Session refresh started", { reason });
 
       try {
         const sinceLastRefresh = Date.now() - lastRefreshAtRef.current;
@@ -163,17 +174,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (!error) {
               console.log("Session refreshed successfully", { reason, attempt });
               refreshFailures.current = 0;
+              refreshBackoffMsRef.current = RATE_LIMIT_BACKOFF_MS;
+              nextRefreshAllowedAtRef.current = 0;
               applySession(data.session);
               return data.session;
             }
 
             if (isRateLimitError(error)) {
-              console.log("Refresh failed with 429 - backing off", { reason, attempt, delay: RATE_LIMIT_BACKOFF_MS });
+              const delay = refreshBackoffMsRef.current;
+              console.log("Refresh failed with 429 - backing off", { reason, attempt, delay });
+              nextRefreshAllowedAtRef.current = Date.now() + delay;
+              refreshBackoffMsRef.current = Math.min(delay * 2, MAX_RATE_LIMIT_BACKOFF_MS);
               if (!expiredToastShown.current) {
                 expiredToastShown.current = true;
                 toast.info("Session is reconnecting. Please wait a moment…");
               }
-              await sleep(RATE_LIMIT_BACKOFF_MS);
+              await sleep(delay);
               continue;
             }
 
@@ -188,8 +204,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (e) {
         const message = e instanceof Error ? e.message : "Unable to refresh session";
         if (isRateLimitError(e)) {
-          console.log("Refresh failed with 429 - backing off", { reason, delay: RATE_LIMIT_BACKOFF_MS });
-          await sleep(RATE_LIMIT_BACKOFF_MS);
+          const delay = refreshBackoffMsRef.current;
+          console.log("Refresh failed with 429 - backing off", { reason, delay });
+          nextRefreshAllowedAtRef.current = Date.now() + delay;
+          refreshBackoffMsRef.current = Math.min(delay * 2, MAX_RATE_LIMIT_BACKOFF_MS);
+          await sleep(delay);
         }
         setAuthError(message);
         return sessionRef.current;
