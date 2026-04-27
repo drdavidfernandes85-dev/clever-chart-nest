@@ -223,6 +223,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    supabase.auth.stopAutoRefresh();
 
     // 1) Subscribe FIRST so we never miss a transition during initial load
     const {
@@ -303,8 +304,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ensureFreshSession]);
+
+  useEffect(() => {
+    if (!ready || !session) return;
+    const tick = () => {
+      const current = sessionRef.current;
+      if (current && !isFreshEnough(current)) ensureFreshSession("scheduled-refresh");
+    };
+    tick();
+    const handle = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(handle);
+  }, [ready, session, ensureFreshSession]);
 
   const signOut = async () => {
     userInitiatedSignOut.current = true;
