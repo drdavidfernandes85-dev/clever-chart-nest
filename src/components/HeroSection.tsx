@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle, Clock, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
+import { useLanguage } from "@/i18n/LanguageContext";
 import heroComet from "@/assets/hero-comet.jpg";
 
 // Simulated live online counter (gentle drift around a base)
@@ -24,10 +25,35 @@ function useOnlineCounter(base = 1247) {
   return count;
 }
 
+// Next webinar — next weekday at 14:00 UTC
+const NEXT_WEBINAR_TARGET = (() => {
+  const now = new Date();
+  const target = new Date(now);
+  target.setUTCHours(14, 0, 0, 0);
+  if (target <= now) target.setUTCDate(target.getUTCDate() + 1);
+  while (target.getUTCDay() === 0 || target.getUTCDay() === 6) {
+    target.setUTCDate(target.getUTCDate() + 1);
+  }
+  return target;
+})();
 
+function useCountdown(target: Date) {
+  const [diff, setDiff] = useState(() => Math.max(0, target.getTime() - Date.now()));
+  useEffect(() => {
+    const id = setInterval(() => setDiff(Math.max(0, target.getTime() - Date.now())), 1000);
+    return () => clearInterval(id);
+  }, [target]);
+  const totalSec = Math.floor(diff / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return { h, m, s, isLive: diff === 0 };
+}
 
 const HeroSection = () => {
   const onlineCount = useOnlineCounter(1247);
+  const { h, m, s, isLive } = useCountdown(NEXT_WEBINAR_TARGET);
+  const { t } = useLanguage();
 
   return (
     <section
@@ -193,8 +219,74 @@ const HeroSection = () => {
               </MagneticButton>
             </div>
 
-            {/* Trust strip */}
+            {/* Secondary CTAs — for returning / exploring users */}
+            <div className="flex flex-wrap items-center gap-3">
+              <MagneticButton strength={0.2}>
+                <Button
+                  size="lg"
+                  className="h-12 gap-2 rounded-full px-7 text-sm font-semibold bg-[#FFCD05] text-black hover:bg-[#FFE066] shadow-[0_0_25px_hsl(45_100%_50%/0.45)]"
+                  asChild
+                >
+                  <Link to="/register">
+                    {t("hero.cta")} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </MagneticButton>
+              <MagneticButton strength={0.18}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 gap-2 rounded-full px-6 text-sm font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md"
+                  asChild
+                >
+                  <Link to="/dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Go to Dashboard
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </MagneticButton>
+              <MagneticButton strength={0.18}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 gap-2 rounded-full px-6 text-sm border-white/30 bg-white/5 text-white hover:bg-white/10 hover:border-primary/70 backdrop-blur-md"
+                  asChild
+                >
+                  <Link to="/login">
+                    <Play className="h-4 w-4 fill-current" />
+                    {t("hero.demo")}
+                  </Link>
+                </Button>
+              </MagneticButton>
+            </div>
+
+            {/* Trust strip — Active traders, Next session countdown, Community */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
+              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
+                <Users className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-white">1,200+</span>
+                <span className="text-xs text-white/60">{t("hero.traders")}</span>
+              </div>
+
+              <div className="flex items-center gap-2 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]">
+                <Clock className="h-4 w-4 text-primary" />
+                {isLive ? (
+                  <span className="text-sm font-bold text-primary animate-pulse">{t("hero.live")}</span>
+                ) : (
+                  <>
+                    <span className="text-xs text-white/70 mr-1">{t("hero.next")}</span>
+                    <div className="flex items-center gap-1 font-mono text-sm font-bold text-white">
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(h).padStart(2, "0")}h</span>
+                      <span className="text-white/50">:</span>
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(m).padStart(2, "0")}m</span>
+                      <span className="text-white/50">:</span>
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(s).padStart(2, "0")}s</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
                 <Users className="h-4 w-4 text-primary" />
                 <span className="text-sm text-white/85">Community of active traders &amp; mentors</span>
