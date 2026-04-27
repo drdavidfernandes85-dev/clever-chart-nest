@@ -99,6 +99,9 @@ const Navbar = () => {
             <Link to="/leaderboard">{t("nav.leaderboard")}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
+            <Link to="/education">{t("nav.education")}</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
           <Button
@@ -182,6 +185,9 @@ const Navbar = () => {
             </Button>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/leaderboard" onClick={() => setMobileOpen(false)}>{t("nav.leaderboard")}</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/education" onClick={() => setMobileOpen(false)}>{t("nav.education")}</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
