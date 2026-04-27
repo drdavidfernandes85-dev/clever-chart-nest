@@ -77,14 +77,13 @@ const HeroSection = () => {
           }}
         />
 
-        {/* The hero comet image — full bleed on the right */}
+        {/* The hero comet image — anchored on the right half, ring fully visible */}
         <img
           src={heroComet}
           alt=""
           aria-hidden
-          className="absolute inset-y-0 right-0 h-full w-[82%] object-cover select-none animate-breathe"
+          className="absolute inset-y-0 right-0 h-full w-[60%] object-contain object-right select-none animate-breathe"
           style={{
-            objectPosition: "20% center",
             filter:
               "drop-shadow(0 0 70px hsl(28 100% 50% / 0.45)) saturate(1.15) contrast(1.08)",
           }}
