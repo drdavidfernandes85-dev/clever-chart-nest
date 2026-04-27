@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Lock, ExternalLink, PlayCircle, Link2, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LeadCaptureForm from "@/components/lead/LeadCaptureForm";
+import { track } from "@/lib/analytics";
 
 interface Props {
   reason?:
