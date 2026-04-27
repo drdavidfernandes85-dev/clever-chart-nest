@@ -9,6 +9,7 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { track } from "@/lib/analytics";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,9 +108,9 @@ const Navbar = () => {
           <Button
             size="sm"
             asChild
-            className="gap-1.5 rounded-full bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_hsl(45_100%_50%/0.35)]"
+            className="gap-1.5 rounded-full bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_hsl(45_100%_50%/0.35)] cta-pulse"
           >
-            <Link to="/connect-mt">
+            <Link to="/connect-mt" onClick={() => track("connect_mt_click", { location: "navbar" })}>
               <Plug className="h-3.5 w-3.5" />
               Connect MT4 / MT5
             </Link>
@@ -193,7 +194,7 @@ const Navbar = () => {
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
             </Button>
             <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
-              <Link to="/connect-mt" onClick={() => setMobileOpen(false)}>
+              <Link to="/connect-mt" onClick={() => { setMobileOpen(false); track("connect_mt_click", { location: "navbar_mobile" }); }}>
                 <Plug className="h-3.5 w-3.5" />
                 Connect MT4 / MT5
               </Link>
