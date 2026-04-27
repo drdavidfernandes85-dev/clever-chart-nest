@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap } from "lucide-react";
+import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap, Search } from "lucide-react";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import {
@@ -8,7 +8,13 @@ import {
   fetchMarketQuotes,
   decimalsFor,
   type MarketSymbol,
+  type AssetClass,
 } from "@/lib/markets";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Default mix across all four asset classes — two of each.
 const DEFAULT_LABELS = [
@@ -120,6 +126,31 @@ const Watchlist = () => {
   const removeItem = (label: string) =>
     setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.symbol !== label) : prev));
 
+  const [addOpen, setAddOpen] = useState(false);
+  const [addQuery, setAddQuery] = useState("");
+
+  const addItem = (sym: MarketSymbol) => {
+    setItems((prev) => (prev.find((i) => i.symbol === sym.symbol) ? prev : [...prev, sym]));
+    setAddQuery("");
+    setAddOpen(false);
+  };
+
+  const available = useMemo(() => {
+    const owned = new Set(items.map((i) => i.symbol));
+    const q = addQuery.trim().toLowerCase();
+    return MARKET_UNIVERSE.filter((m) => !owned.has(m.symbol)).filter((m) =>
+      q ? m.symbol.toLowerCase().includes(q) || m.assetClass.toLowerCase().includes(q) : true,
+    );
+  }, [items, addQuery]);
+
+  const grouped = useMemo(() => {
+    const groups: Record<AssetClass, MarketSymbol[]> = {
+      crypto: [], forex: [], index: [], stock: [],
+    };
+    for (const m of available) groups[m.assetClass].push(m);
+    return groups;
+  }, [available]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -139,12 +170,57 @@ const Watchlist = () => {
             {items.length}
           </span>
         </div>
-        <button
-          aria-label={t("watch.add")}
-          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+        <Popover open={addOpen} onOpenChange={setAddOpen}>
+          <PopoverTrigger asChild>
+            <button
+              aria-label={t("watch.add")}
+              title={t("watch.add")}
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-72 p-0 overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-border/40 px-3 py-2">
+              <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <input
+                autoFocus
+                value={addQuery}
+                onChange={(e) => setAddQuery(e.target.value)}
+                placeholder={t("watch.add")}
+                className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto py-1">
+              {available.length === 0 ? (
+                <div className="px-3 py-6 text-center text-[11px] text-muted-foreground">
+                  No matches
+                </div>
+              ) : (
+                (["crypto", "forex", "index", "stock"] as AssetClass[]).map((cls) =>
+                  grouped[cls].length === 0 ? null : (
+                    <div key={cls} className="py-1">
+                      <div className="px-3 pb-1 pt-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground/70">
+                        {cls}
+                      </div>
+                      {grouped[cls].map((m) => (
+                        <button
+                          key={m.symbol}
+                          type="button"
+                          onClick={() => addItem(m)}
+                          className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-xs text-foreground hover:bg-primary/10 transition-colors"
+                        >
+                          <span className="font-heading font-semibold">{m.symbol}</span>
+                          <Plus className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      ))}
+                    </div>
+                  ),
+                )
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <ul className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">

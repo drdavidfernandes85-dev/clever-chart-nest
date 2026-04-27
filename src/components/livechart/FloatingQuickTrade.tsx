@@ -6,7 +6,7 @@ import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
-const STORAGE_PREFIX = "eltr.floatingQuickTrade.v3";
+const STORAGE_PREFIX = "eltr.floatingQuickTrade.v4";
 
 // Widget dimensions used for clamping & default placement.
 const PILL_W = 220;
@@ -24,15 +24,17 @@ interface Pos {
   open: boolean;
 }
 
-/** Default placement: bottom-left, just above the mobile bottom nav. */
+/** Default placement: open panel near the bottom-right of the viewport. */
 const defaultPos = (): Pos => {
-  if (typeof window === "undefined") return { x: 24, y: 120, open: false };
+  if (typeof window === "undefined") return { x: 24, y: 120, open: true };
   const isMobile = window.innerWidth < 1024;
   const bottomInset = isMobile ? MOBILE_BOTTOM_INSET : 32;
+  const width = isMobile ? Math.min(PANEL_W, window.innerWidth - 24) : PANEL_W;
+  const height = Math.min(PANEL_H, window.innerHeight - bottomInset - 24);
   return {
-    x: isMobile ? 12 : 24,
-    y: Math.max(80, window.innerHeight - PILL_H - bottomInset),
-    open: false,
+    x: isMobile ? 12 : Math.max(24, window.innerWidth - width - 24),
+    y: Math.max(80, window.innerHeight - height - bottomInset),
+    open: true,
   };
 };
 
