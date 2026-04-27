@@ -203,7 +203,7 @@ const HeroSection = () => {
                 >
                   <Link to="/dashboard">
                     <LayoutDashboard className="h-4 w-4" />
-                    {t("hero.goToDashboard") || "Go to Dashboard"}
+                    Go to Dashboard
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
