@@ -24,12 +24,7 @@ function useOnlineCounter(base = 1247) {
   return count;
 }
 
-const KEY_POINTS = [
-  { icon: GraduationCap, text: "Educational community environment" },
-  { icon: LineChart, text: "Real-time chart analysis and discussion" },
-  { icon: MessageSquare, text: "Access to daily live webinars" },
-  { icon: ShieldCheck, text: "Portfolio overview and risk tools after connecting your account" },
-];
+
 
 const HeroSection = () => {
   const onlineCount = useOnlineCounter(1247);
