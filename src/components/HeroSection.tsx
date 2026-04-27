@@ -157,9 +157,9 @@ const HeroSection = () => {
 
       {/* ── HERO CONTENT ───────────────────────────────────────── */}
       <div className="container relative z-10 py-20 lg:py-28">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          {/* LEFT — copy */}
-          <div className="relative flex flex-col items-start gap-7 text-left lg:pl-8 xl:pl-12 2xl:pl-16">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:grid-cols-[1.05fr_1fr] xl:gap-20 2xl:grid-cols-[1.1fr_1fr] 2xl:gap-24">
+          {/* LEFT — copy (aligned with comet center on xl+) */}
+          <div className="relative flex flex-col items-start gap-7 text-left lg:pl-4 xl:pl-2 2xl:pl-0">
             <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/50 bg-primary/10 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-primary backdrop-blur-sm shadow-[0_0_30px_hsl(45_100%_50%/0.25)]">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
