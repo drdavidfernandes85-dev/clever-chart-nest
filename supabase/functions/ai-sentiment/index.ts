@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You analyze financial markets. Score sentiment 0-100 (Fear & Greed style) based on news tone and signal direction balance.",
+              `You analyze financial markets. Score sentiment 0-100 (Fear & Greed style) based on news tone and signal direction balance. Always write the "reasoning" field in ${LANG_NAME[locale]}. The "label" field must remain in English (one of: Extreme Fear, Fear, Neutral, Greed, Extreme Greed).`,
           },
           {
             role: "user",
@@ -123,18 +123,30 @@ Deno.serve(async (req) => {
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     const args = toolCall ? JSON.parse(toolCall.function.arguments) : null;
 
+    // Map English canonical label → localized display label
+    const localizeLabel = (rawLabel: string): string => {
+      const key = String(rawLabel || "").toLowerCase().replace(/\s+/g, "_");
+      return SENTIMENT_LABELS[locale]?.[key] || SENTIMENT_LABELS.en[key] || rawLabel;
+    };
+
     if (!args) {
-      return new Response(JSON.stringify({ score: 50, label: "Neutral", reasoning: "Insufficient data." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          score: 50,
+          label: localizeLabel("Neutral"),
+          reasoning:
+            locale === "es" ? "Datos insuficientes." : locale === "pt" ? "Dados insuficientes." : "Insufficient data.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     return new Response(
       JSON.stringify({
         score: Math.max(0, Math.min(100, args.score)),
-        label: args.label,
+        label: localizeLabel(args.label),
         reasoning: args.reasoning,
-        meta: { longs, shorts, newsCount: news.length },
+        meta: { longs, shorts, newsCount: news.length, locale },
         generatedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
