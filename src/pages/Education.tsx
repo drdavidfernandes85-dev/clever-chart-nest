@@ -1181,11 +1181,13 @@ const Education = () => {
                 id="advanced-topics"
                 tag="Module 07 · Advanced"
                 title="Advanced Topics: Where Edge Compounds"
-                read="9 min read"
+                read="20 min read"
               >
                 <P>
                   Once your foundation is solid, these are the levers that take you from
-                  consistent to elite.
+                  consistent to elite — including two of the most powerful (and most
+                  misunderstood) frameworks in technical analysis: <strong>Harmonic
+                  Patterns</strong> and <strong>Elliott Wave Theory</strong>.
                 </P>
 
                 <H3>Order Flow &amp; Liquidity</H3>
@@ -1215,9 +1217,190 @@ const Education = () => {
                   <LI>Track expectancy, max drawdown, and Sharpe — not just win rate</LI>
                 </UL>
 
+                <H2>Harmonic Patterns</H2>
+                <P>
+                  Harmonic patterns are geometric price structures that use Fibonacci ratios
+                  to define precise reversal zones. Unlike most methods, harmonics attempt to
+                  predict <em>where</em> price will turn — and <em>how long</em> the move
+                  will last. The first pattern was discovered by H.M. Gartley in 1935;
+                  modern harmonics come from the work of Bryce Gilmore and Scott Carney, who
+                  ascribed precise mathematical ratios to each structure.
+                </P>
+
+                <ImageHint>"Harmonic pattern XABCD framework with Fibonacci levels overlaid"</ImageHint>
+
+                <H3>The ABCD Pattern (Foundation)</H3>
+                <P>
+                  The building block of every harmonic. AB and CD are the legs; BC is the
+                  retracement. In an ideal ABCD, the two legs are equal in distance and time.
+                </P>
+                <UL>
+                  <LI>C retraces to <strong>0.618</strong> → D projects to <strong>1.618</strong> of BC</LI>
+                  <LI>C retraces to <strong>0.786</strong> → D projects to <strong>1.27</strong> of BC</LI>
+                  <LI>
+                    <strong>Alternate ABCD</strong> — CD ≠ AB but maintains a Fibonacci
+                    relationship. Used to validate higher patterns (Bat, Crab).
+                  </LI>
+                </UL>
+
+                <H3>The 5-0 Pattern</H3>
+                <P>
+                  Trend continuation pattern that triggers <em>after</em> a major reversal.
+                  BC extends 1.618–2.24 of AB, then CD retraces 50% of BC and equals AB in
+                  length. The completion of CD is the entry.
+                </P>
+
+                <H3>Gartley Pattern</H3>
+                <P>
+                  The original. A trend continuation pattern with strict Fibonacci ratios:
+                </P>
+                <UL>
+                  <LI>Clear ABCD structure</LI>
+                  <LI>Point B at <strong>0.618</strong> of XA</LI>
+                  <LI>Point D at <strong>0.786</strong> of XA</LI>
+                  <LI>D = 1.272 or 1.618 projection of BC</LI>
+                </UL>
+
+                <H3>Bat Pattern (and Alternate Bat)</H3>
+                <P>
+                  Strong XA leg, then a two-wave correction that terminates at the{" "}
+                  <strong>0.886</strong> retracement of XA. B retraces only to 0.382–0.50
+                  (must be &lt; 0.618). CD typically extends to 1.27 of AB. Bats often retrace
+                  hard from D — tight stops required.
+                </P>
+                <P>
+                  The <strong>Alternate Bat</strong> uses a 0.382 B point and a 1.13
+                  extension of XA at D — point D is at least 2.0 (up to 3.16) of BC.
+                </P>
+
+                <H3>Butterfly Pattern</H3>
+                <P>
+                  Strong XA leg, B retraces to <strong>0.786</strong>, BC bounce, then CD
+                  extends <em>beyond</em> the X start point — usually to 1.27 of XA (sometimes
+                  1.618). CD is normally 1.618 of AB. Failed Gartleys often morph into
+                  Butterflies before reversing.
+                </P>
+
+                <H3>Crab &amp; Deep Crab</H3>
+                <UL>
+                  <LI>
+                    <strong>Crab</strong> — B retraces 0.382–0.618. D extends to{" "}
+                    <strong>1.618 of XA</strong> and 2.24–3.16 of AB. Tight reversal zone =
+                    smaller stop loss.
+                  </LI>
+                  <LI>
+                    <strong>Deep Crab</strong> — uses 0.886 at B (instead of 0.382–0.618),
+                    same 1.618 XA extension at D. Volatile reversal zone, very tight stops.
+                  </LI>
+                </UL>
+
+                <H3>Shark Pattern</H3>
+                <P>
+                  A trend-change pattern (not a retracement entry) that follows a failed
+                  impulse AB wave. Similar to a 5-0 but without the D leg. Entry at point C
+                  reversal zone (0.886 or 1.13 of the 0-X leg). First target = 50% retrace
+                  of BC.
+                </P>
+
+                <H3>Three Drives Pattern</H3>
+                <P>
+                  An ABCD with an extra leg. Each leg starts at a Fibonacci retracement of
+                  the previous and completes at a precise projection (1.13, 1.27, or 1.618).
+                  Time and price symmetry across legs is essential.
+                </P>
+
+                <H2>Elliott Wave Theory</H2>
+                <P>
+                  The Elliott Wave Principle describes how mass psychology swings between
+                  pessimism and optimism in <em>repeating, measurable patterns</em>. If you
+                  can identify the pattern and your position within it, you can anticipate
+                  the most likely next move — and just as importantly, what the market{" "}
+                  <em>won't</em> do next.
+                </P>
+
+                <ImageHint>"Elliott Wave 5-3 cycle with motive and corrective sub-waves labelled"</ImageHint>
+
+                <H3>The Core Pattern: 5 + 3</H3>
+                <UL>
+                  <LI>
+                    <strong>Motive waves</strong> — five sub-waves moving with the larger
+                    trend (1, 2, 3, 4, 5)
+                  </LI>
+                  <LI>
+                    <strong>Corrective waves</strong> — three sub-waves moving against the
+                    larger trend (A, B, C)
+                  </LI>
+                </UL>
+                <P>
+                  Within a correction, A and C are themselves smaller five-wave impulses; B
+                  is a three-wave correction.
+                </P>
+
+                <H3>Impulse Wave — The Rules</H3>
+                <UL>
+                  <LI>Wave 1 must be an impulse or leading diagonal</LI>
+                  <LI>Wave 2 may be any correction except a triangle; cannot retrace &gt; 100% of Wave 1</LI>
+                  <LI>Wave 3 must be an impulse and longer than Wave 2</LI>
+                  <LI>Wave 4 may be any correction; must NOT trade into Wave 1 territory</LI>
+                  <LI>Wave 5 must be an impulse or ending diagonal</LI>
+                  <LI><strong>Wave 3 is never the shortest</strong> when compared to 1 and 5</LI>
+                </UL>
+                <P>
+                  Most impulses contain an <strong>extension</strong> in one (and only one)
+                  of the three actionary sub-waves — most commonly Wave 3. If Waves 1 and 3
+                  are roughly equal, expect Wave 5 to extend. If Wave 3 extends, Wave 5 will
+                  resemble Wave 1.
+                </P>
+
+                <H3>Diagonal Triangles</H3>
+                <P>
+                  Five-wave motive patterns within converging trendlines (wedge shape).
+                  Wave 4 always trades into Wave 1 territory.
+                </P>
+                <UL>
+                  <LI>
+                    <strong>Ending Diagonal</strong> (3-3-3-3-3) — exhaustion at the end of a
+                    larger move. Appears in 5th wave, C wave of A-B-C, or final C of double/triple threes.
+                  </LI>
+                  <LI>
+                    <strong>Leading Diagonal</strong> (5-3-5-3-5) — appears in Wave 1 of an
+                    impulse or A of a zigzag.
+                  </LI>
+                </UL>
+
+                <H3>Corrective Patterns</H3>
+                <UL>
+                  <LI>
+                    <strong>Zig-zag (5-3-5)</strong> — sharp 3-wave correction labelled A-B-C.
+                    A is motive, B is corrective and shorter than A, C is motive. The most
+                    common corrective pattern.
+                  </LI>
+                  <LI>
+                    <strong>Regular Flat (3-3-5)</strong> — B ends near start of A; C ends
+                    slightly past end of A.
+                  </LI>
+                  <LI>
+                    <strong>Expanded Flat (3-3-5)</strong> — B exceeds start of A; C ends
+                    well beyond end of A.
+                  </LI>
+                  <LI>
+                    <strong>Running Flat (3-3-5)</strong> — B exceeds start of A; C falls
+                    short of A's ending level.
+                  </LI>
+                  <LI>
+                    <strong>Triangle (3-3-3-3-3)</strong> — five-wave A-B-C-D-E counter-trend
+                    pattern, contracting or expanding.
+                  </LI>
+                  <LI>
+                    <strong>Combinations (Double / Triple Threes)</strong> — sideways
+                    combinations of zig-zags, flats, and triangles, labelled W-X-Y(-X-Z).
+                  </LI>
+                </UL>
+
                 <KeyTakeaway>
                   Advanced edge isn't a secret indicator. It's reading what others can't see —
-                  liquidity, correlation, and your own behavior.
+                  liquidity, correlation, harmonic geometry, the wave structure beneath the
+                  noise, and your own behaviour.
                 </KeyTakeaway>
               </ArticleCard>
 
