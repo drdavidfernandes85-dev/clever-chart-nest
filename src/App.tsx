@@ -58,6 +58,7 @@ const News = lazyWithRetry(() => import("./pages/News.tsx"));
 const ConnectMT = lazyWithRetry(() => import("./pages/ConnectMT.tsx"));
 const Webinars = lazyWithRetry(() => import("./pages/Webinars.tsx"));
 const Education = lazyWithRetry(() => import("./pages/Education.tsx"));
+const EducationModule = lazyWithRetry(() => import("./pages/EducationModule.tsx"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const HeroQA = lazyWithRetry(() => import("./pages/HeroQA.tsx"));
 
@@ -100,6 +101,7 @@ const App = () => (
                   <Route path="/webinars" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/webinars/:id" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/education" element={<ProtectedRoute><DashboardLayout><Education /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/education/:slug" element={<ProtectedRoute><DashboardLayout><EducationModule /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/u/:userId" element={<ProtectedRoute><DashboardLayout><PublicProfile /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/__qa/hero" element={<HeroQA />} />
                   <Route path="*" element={<NotFound />} />
