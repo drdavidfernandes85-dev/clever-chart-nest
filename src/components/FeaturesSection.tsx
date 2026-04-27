@@ -50,8 +50,8 @@ const FeaturesSection = () => {
             </p>
           </div>
         </ScrollReveal>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {featureKeys.map((f, i) => (
+        <div className="grid gap-5 sm:grid-cols-2">
+          {featurePoints.map((f, i) => (
             <ScrollReveal key={f.title} delay={i * 80}>
               <div className="shimmer-border group relative h-full overflow-hidden rounded-2xl glass-panel p-7 transition-all duration-500 hover:-translate-y-1 hover:border-primary/40">
                 {/* Subtle chart sparkline accent in the corner */}
@@ -74,9 +74,9 @@ const FeaturesSection = () => {
                     <f.icon className="h-5 w-5" />
                   </div>
                   <h3 className="mb-2.5 font-heading text-base font-semibold text-foreground uppercase tracking-wide">
-                    {t(f.title)}
+                    {f.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-secondary-foreground">{t(f.desc)}</p>
+                  <p className="text-sm leading-relaxed text-secondary-foreground">{f.desc}</p>
                 </div>
               </div>
             </ScrollReveal>
