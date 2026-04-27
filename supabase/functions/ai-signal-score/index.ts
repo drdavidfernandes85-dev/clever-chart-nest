@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are a senior trading desk risk officer. You score signals on technical structure, R:R quality, and macro alignment with current news. Be honest — most signals score 40-70.",
+              `You are a senior trading desk risk officer. You score signals on technical structure, R:R quality, and macro alignment with current news. Be honest — most signals score 40-70. Write the "rationale" field in ${LANG_NAME[locale]}. The "rating" enum (weak/fair/good/strong/elite) MUST stay in English. Keep ticker symbols in their original form.`,
           },
           {
             role: "user",
