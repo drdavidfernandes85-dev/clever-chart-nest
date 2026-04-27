@@ -7,8 +7,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const LANG_NAME: Record<string, string> = {
+  en: "English",
+  es: "Spanish (Español)",
+  pt: "Brazilian Portuguese (Português do Brasil)",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Parse optional locale from POST body or query string
+  let locale = "en";
+  try {
+    if (req.method === "POST") {
+      const body = await req.clone().json().catch(() => ({}));
+      if (body?.locale && LANG_NAME[body.locale]) locale = body.locale;
+    } else {
+      const url = new URL(req.url);
+      const q = url.searchParams.get("locale");
+      if (q && LANG_NAME[q]) locale = q;
+    }
+  } catch { /* ignore */ }
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -47,6 +66,8 @@ Structure:
 
 Tone: professional, confident, no fluff. No financial advice.
 
+IMPORTANT: Write the entire briefing in ${LANG_NAME[locale]}. Keep ticker symbols (EUR/USD, XAU/USD, NAS100, etc.) in their original form.
+
 ## News
 ${newsBlock}
 
@@ -62,7 +83,7 @@ ${calBlock}`;
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are a senior market strategist for elite traders." },
+          { role: "system", content: `You are a senior market strategist for elite traders. You always write in ${LANG_NAME[locale]}.` },
           { role: "user", content: prompt },
         ],
       }),
