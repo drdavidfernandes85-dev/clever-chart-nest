@@ -86,22 +86,22 @@ const App = () => (
                   <Route path="/register" element={<Register />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/command" element={<ProtectedRoute><DashboardLayout><CommandDeck /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/live-chart" element={<ProtectedRoute><DashboardLayout><LiveChart /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/chatroom" element={<ProtectedRoute><DashboardLayout><Chatroom /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Dashboard /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/command" element={<ProtectedRoute><EligibilityGate><DashboardLayout><CommandDeck /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/live-chart" element={<ProtectedRoute><EligibilityGate><DashboardLayout><LiveChart /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/chatroom" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Chatroom /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><DashboardLayout><Profile /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/videos" element={<ProtectedRoute><DashboardLayout><VideoLibrary /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/signals" element={<ProtectedRoute><DashboardLayout><TradingSignals /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/leaderboard" element={<ProtectedRoute><DashboardLayout><Leaderboard /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/videos" element={<ProtectedRoute><EligibilityGate><DashboardLayout><VideoLibrary /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/signals" element={<ProtectedRoute><EligibilityGate><DashboardLayout><TradingSignals /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/leaderboard" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Leaderboard /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
                   <Route path="/admin" element={<AdminRoute><DashboardLayout><Admin /></DashboardLayout></AdminRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><DashboardLayout><Analytics /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/news" element={<ProtectedRoute><DashboardLayout><News /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/analytics" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Analytics /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/news" element={<ProtectedRoute><EligibilityGate><DashboardLayout><News /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
                   <Route path="/calendar" element={<Navigate to="/news" replace />} />
                   <Route path="/connect-mt" element={<ProtectedRoute><DashboardLayout><ConnectMT /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/webinars" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/webinars/:id" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/education" element={<ProtectedRoute><DashboardLayout><Education /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/education" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Education /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
                   <Route path="/education/:slug" element={<ProtectedRoute><DashboardLayout><EducationModule /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/u/:userId" element={<ProtectedRoute><DashboardLayout><PublicProfile /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/__qa/hero" element={<HeroQA />} />
