@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { TrendingUp, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,15 +14,19 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
-  const { user, loading: authLoading } = useAuth();
+  const { user, ready } = useAuth();
 
-  // Redirect once the auth context confirms a session exists
+  const fromPath = (location.state as { from?: string } | null)?.from || "/dashboard";
+
+  // Only redirect once auth is ready AND a user is confirmed.
+  // This prevents bouncing while session is still being restored.
   useEffect(() => {
-    if (!authLoading && user) {
-      navigate("/dashboard", { replace: true });
+    if (ready && user) {
+      navigate(fromPath, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [ready, user, fromPath, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +45,8 @@ const Login = () => {
       return;
     }
     toast.success("Welcome back!");
-    // Navigation handled by the useEffect above once the session propagates
+    // Navigation handled by the useEffect above once ready+user are true.
+    // Keep loading=true so the button stays disabled during the handoff.
   };
 
   return (
