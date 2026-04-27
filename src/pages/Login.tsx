@@ -16,17 +16,18 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useLanguage();
-  const { user, ready } = useAuth();
+  const { user, ready, isRefreshing } = useAuth();
 
-  const fromPath = (location.state as { from?: string } | null)?.from || "/dashboard";
+  const requestedPath = (location.state as { from?: string } | null)?.from;
+  const fromPath = requestedPath && requestedPath !== "/login" ? requestedPath : "/dashboard";
 
   // Only redirect once auth is ready AND a user is confirmed.
   // This prevents bouncing while session is still being restored.
   useEffect(() => {
-    if (ready && user) {
+    if (ready && !isRefreshing && user) {
       navigate(fromPath, { replace: true });
     }
-  }, [ready, user, fromPath, navigate]);
+  }, [ready, isRefreshing, user, fromPath, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
