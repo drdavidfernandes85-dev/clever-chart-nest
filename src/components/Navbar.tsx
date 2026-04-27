@@ -4,7 +4,7 @@ import { Menu, X, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import sidebarLogo from "@/assets/logo-sidebar.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import ThemeToggle from "@/components/ThemeToggle";
+
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -134,7 +134,6 @@ const Navbar = () => {
               </Button>
             </>
           )}
-          <ThemeToggle />
           <LanguageSwitcher />
         </div>
 
@@ -160,7 +159,6 @@ const Navbar = () => {
           ))}
           <div className="mt-3 flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               <LanguageSwitcher />
             </div>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
