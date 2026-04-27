@@ -243,14 +243,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
     supabase.auth.stopAutoRefresh();
+    if (authListenerMountedRef.current) return;
+    authListenerMountedRef.current = true;
 
     // 1) Subscribe FIRST so we never miss a transition during initial load
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, s) => {
       if (!mounted) return;
-      log("event:", event, "hasSession:", !!s);
-      console.log("Current session state on dashboard load", {
+      console.log("Auth state changed", {
         event,
         hasSession: !!s,
         expiresAt: s?.expires_at ?? null,
@@ -268,17 +269,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Detect repeated refresh failures (Supabase emits SIGNED_OUT when refresh fails)
       if (event === "SIGNED_OUT" && sessionRef.current && !userInitiatedSignOut.current) {
         refreshFailures.current += 1;
-        if (refreshFailures.current >= 3 && !expiredToastShown.current) {
-          expiredToastShown.current = true;
-          toast.error("Session expired. Please log in again.");
-        }
         setLoading(false);
         setReady(true);
-        setRefreshAttempted(false);
+        setRefreshAttempted(true);
         setTimeout(() => {
           if (mounted) {
             ensureFreshSession("signed-out-recovery").then((recovered) => {
-              if (mounted && !recovered) applySession(null);
+              if (mounted && !recovered && refreshFailures.current >= 3) {
+                if (!expiredToastShown.current) {
+                  expiredToastShown.current = true;
+                  toast.error("Session expired. Please log in again.");
+                }
+                applySession(null);
+              }
             });
           }
         }, RATE_LIMIT_BACKOFF_MS);
@@ -321,6 +324,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted = false;
+      authListenerMountedRef.current = false;
       subscription.unsubscribe();
     };
   }, [ensureFreshSession]);
@@ -332,7 +336,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (current && !isFreshEnough(current)) ensureFreshSession("scheduled-refresh");
     };
     tick();
-    const handle = window.setInterval(tick, 30_000);
+    const handle = window.setInterval(tick, 120_000);
     return () => window.clearInterval(handle);
   }, [ready, session, ensureFreshSession]);
 
