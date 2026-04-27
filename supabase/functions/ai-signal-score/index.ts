@@ -18,6 +18,12 @@ interface Body {
   author?: string | null;
 }
 
+const LANG_NAME: Record<string, string> = {
+  en: "English",
+  es: "Spanish (Español)",
+  pt: "Brazilian Portuguese (Português do Brasil)",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -25,7 +31,8 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const body = (await req.json()) as Body;
+    const body = (await req.json()) as Body & { locale?: string };
+    const locale = body?.locale && LANG_NAME[body.locale] ? body.locale : "en";
     const symbol = String(body?.symbol || body?.pair || "").trim().toUpperCase();
     const direction = String(body?.direction || "").trim().toLowerCase();
     const entry = Number(body?.entry ?? body?.entry_price);
