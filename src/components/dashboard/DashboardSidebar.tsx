@@ -61,7 +61,8 @@ const DashboardSidebar = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
-  const { t } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
+  const localeOrder: Locale[] = ["en", "es", "pt"];
   const { theme } = useTheme();
   const infinoxLogo = sidebarLogo;
   // "starting soon" = within the next 30 minutes
