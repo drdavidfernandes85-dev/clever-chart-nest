@@ -33,6 +33,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const applySession = (session: Session | null) => {
+    setSession(session);
+    setUser(session?.user ?? null);
+    if (!session?.user) setProfile(null);
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
@@ -45,33 +51,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // 1. Set up listener FIRST so we don't miss any auth events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
+      applySession(session);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
         if (!mounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
+        applySession(session);
         if (session?.user) {
           // Defer Supabase calls to avoid deadlocks inside the callback
           setTimeout(() => {
             if (mounted) fetchProfile(session.user.id);
           }, 0);
-        } else {
-          setProfile(null);
         }
         setLoading(false);
-      }
-    );
-
-    // 2. THEN check for an existing session (restores from storage)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
     });
 
     return () => {
