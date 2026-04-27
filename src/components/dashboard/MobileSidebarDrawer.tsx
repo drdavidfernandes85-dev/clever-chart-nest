@@ -11,7 +11,6 @@ import {
   User,
   LogOut,
   Newspaper,
-  CalendarDays,
   X,
   Users,
 } from "lucide-react";
