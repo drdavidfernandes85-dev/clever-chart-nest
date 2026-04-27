@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronDown, ChevronUp, Newspaper, CalendarDays, BarChart3, MessageSquare } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import NewsFlowWidget from "@/components/dashboard/NewsFlowWidget";
 import EconomicCalendarWidget from "@/components/dashboard/EconomicCalendarWidget";
-import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
@@ -18,51 +16,29 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const News = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
   const { t } = useLanguage();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  // Default to "calendar" tab when arriving via /calendar route
-  const initialTab = location.pathname.startsWith("/calendar") ? "calendar" : "news";
-  const [tab, setTab] = useState<"news" | "calendar">(initialTab);
-
-  const handleTabChange = (v: string) => {
-    const next = (v as "news" | "calendar") ?? "news";
-    setTab(next);
-    // Keep URL in sync (without full navigation) for shareability
-    const targetPath = next === "calendar" ? "/calendar" : "/news";
-    if (location.pathname !== targetPath) {
-      navigate(targetPath, { replace: true });
-    }
-  };
-
-  const isCalendar = tab === "calendar";
 
   return (
     <>
       <SEO
-        title={isCalendar ? "Calendario | IX Live Trading Room" : "Noticias | IX Live Trading Room"}
+        title="Noticias y Calendario | IX Live Trading Room"
         description="Flujo de noticias en tiempo real y calendario económico para traders profesionales."
-        canonical={`https://elitelivetradingroom.com${isCalendar ? "/calendar" : "/news"}`}
+        canonical="https://elitelivetradingroom.com/news"
       />
 
       <div className="flex-1 min-w-0 flex flex-col">
         <header className="sticky top-0 z-50 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
           <div className="flex h-16 items-center gap-4 px-6 lg:px-10">
             <h1 className="hidden xl:flex items-center gap-2 font-proxima text-sm font-semibold text-foreground shrink-0">
-              {isCalendar ? (
-                <CalendarDays className="h-4 w-4 text-primary" />
-              ) : (
-                <Newspaper className="h-4 w-4 text-primary" />
-              )}
+              <Newspaper className="h-4 w-4 text-primary" />
               <span className="text-primary">
-                {isCalendar ? t("page.calendar") : t("page.news")}
+                {t("page.news")} & {t("page.calendar")}
               </span>
             </h1>
 
             <div className="relative flex-1 max-w-lg ml-auto xl:ml-8">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder={isCalendar ? t("page.searchEvent") : t("page.searchNews")}
+                placeholder={t("page.searchNews")}
                 className="h-9 pl-10 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40 rounded-xl"
               />
             </div>
@@ -112,33 +88,30 @@ const News = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="mx-auto max-w-6xl"
+            className="mx-auto max-w-7xl space-y-10"
           >
-            <Tabs value={tab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="mb-6 grid w-full max-w-sm grid-cols-2 rounded-xl bg-card/60 border border-border/40">
-                <TabsTrigger value="news" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <Newspaper className="h-3.5 w-3.5" />
-                  {t("page.news")}
-                </TabsTrigger>
-                <TabsTrigger value="calendar" className="rounded-lg gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {t("page.calendar")}
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="news" className="mt-0">
-                <div className="mx-auto max-w-4xl">
-                  <NewsFlowWidget />
+            {/* News + Calendar side by side on large screens, stacked on smaller */}
+            <section className="grid gap-8 lg:grid-cols-2">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Newspaper className="h-4 w-4 text-primary" />
+                  <h2 className="font-proxima text-sm font-semibold uppercase tracking-wider text-foreground">
+                    {t("page.news")}
+                  </h2>
                 </div>
-              </TabsContent>
+                <NewsFlowWidget />
+              </div>
 
-              <TabsContent value="calendar" className="mt-0">
-                <div className="grid gap-8 lg:grid-cols-2">
-                  <EconomicCalendarWidget />
-                  <UpcomingSessions />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-primary" />
+                  <h2 className="font-proxima text-sm font-semibold uppercase tracking-wider text-foreground">
+                    {t("page.calendar")}
+                  </h2>
                 </div>
-              </TabsContent>
-            </Tabs>
+                <EconomicCalendarWidget />
+              </div>
+            </section>
           </motion.div>
         </main>
       </div>
