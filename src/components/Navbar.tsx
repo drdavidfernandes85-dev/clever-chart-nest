@@ -186,6 +186,12 @@ const Navbar = () => {
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
             </Button>
+            <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+              <Link to="/connect-mt" onClick={() => setMobileOpen(false)}>
+                <Plug className="h-3.5 w-3.5" />
+                Connect MT5
+              </Link>
+            </Button>
 
             {user ? (
               <div className="flex items-center gap-2 mt-1">
