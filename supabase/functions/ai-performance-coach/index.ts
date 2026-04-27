@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           empty: true,
-          message: "No closed trades yet. Log at least 5 trades in your journal so the coach can analyze your edge.",
+          message: EMPTY_MSG[locale] || EMPTY_MSG.en,
           generatedAt: new Date().toISOString(),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are an elite trading performance coach. You read a trader's recent log and return honest, specific, actionable feedback — never generic platitudes. Cite the trader's own pairs and setups.",
+              `You are an elite trading performance coach. You read a trader's recent log and return honest, specific, actionable feedback — never generic platitudes. Cite the trader's own pairs and setups. Write all output fields (headline, strengths, weaknesses, action_items.title, action_items.detail) in ${LANG_NAME[locale]}. Keep ticker symbols (EUR/USD, XAU/USD, etc.) in their original form.`,
           },
           {
             role: "user",
