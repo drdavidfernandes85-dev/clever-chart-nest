@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import PageTransition from "@/components/PageTransition";
+import RouteOverlayLoader from "@/components/RouteOverlayLoader";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
@@ -59,11 +60,7 @@ const HeroQA = lazyWithRetry(() => import("./pages/HeroQA.tsx"));
 
 const queryClient = new QueryClient();
 
-const RouteFallback = () => (
-  <div className="flex min-h-[40vh] items-center justify-center">
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-  </div>
-);
+const RouteFallback = () => <RouteOverlayLoader />;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
