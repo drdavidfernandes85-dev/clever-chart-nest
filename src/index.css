@@ -417,13 +417,13 @@
     letter-spacing: -0.02em;
   }
 
-  /* Cinematic page transition */
+  /* Page transition — gentle fade only, no long black flash */
   @keyframes hero-blur-in {
-    0% { opacity: 0; filter: blur(12px); transform: translateY(8px); }
-    100% { opacity: 1; filter: blur(0); transform: translateY(0); }
+    0% { opacity: 0.85; }
+    100% { opacity: 1; }
   }
   .animate-hero-blur-in {
-    animation: hero-blur-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: hero-blur-in 0.25s ease-out both;
   }
 
   /* Shimmer skeleton */
