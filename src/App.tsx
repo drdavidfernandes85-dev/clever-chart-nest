@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,58 +18,29 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
+import Admin from "./pages/Admin.tsx";
+import Analytics from "./pages/Analytics.tsx";
+import Chatroom from "./pages/Chatroom.tsx";
+import CommandDeck from "./pages/CommandDeck.tsx";
+import ConnectMT from "./pages/ConnectMT.tsx";
+import Dashboard from "./pages/Dashboard.tsx";
+import Education from "./pages/Education.tsx";
+import EducationModule from "./pages/EducationModule.tsx";
+import ForgotPassword from "./pages/ForgotPassword.tsx";
+import HeroQA from "./pages/HeroQA.tsx";
 import Index from "./pages/Index.tsx";
-
-// Retry dynamic imports with backoff before giving up. Handles stale Vite
-// transform URLs (?t=...) and post-deploy chunk misses without nuking session.
-const lazyWithRetry = <T,>(factory: () => Promise<{ default: React.ComponentType<T> }>) =>
-  lazy(async () => {
-    const reloadKey = "lovable:chunk-reloaded";
-    const attempt = async (n: number): Promise<{ default: React.ComponentType<T> }> => {
-      try {
-        const mod = await factory();
-        sessionStorage.removeItem(reloadKey);
-        return mod;
-      } catch (err) {
-        if (n < 3) {
-          await new Promise((r) => setTimeout(r, 250 * (n + 1)));
-          return attempt(n + 1);
-        }
-        if (!sessionStorage.getItem(reloadKey)) {
-          sessionStorage.setItem(reloadKey, "1");
-          window.location.reload();
-          return new Promise(() => {}) as never;
-        }
-        throw err;
-      }
-    };
-    return attempt(0);
-  });
-
-// Code-split heavier authenticated routes
-const Dashboard = lazyWithRetry(() => import("./pages/Dashboard.tsx"));
-const CommandDeck = lazyWithRetry(() => import("./pages/CommandDeck.tsx"));
-const LiveChart = lazyWithRetry(() => import("./pages/LiveChart.tsx"));
-const Chatroom = lazyWithRetry(() => import("./pages/Chatroom.tsx"));
-const Login = lazyWithRetry(() => import("./pages/Login.tsx"));
-const Register = lazyWithRetry(() => import("./pages/Register.tsx"));
-const ForgotPassword = lazyWithRetry(() => import("./pages/ForgotPassword.tsx"));
-const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword.tsx"));
-const Profile = lazyWithRetry(() => import("./pages/Profile.tsx"));
-const VideoLibrary = lazyWithRetry(() => import("./pages/VideoLibrary.tsx"));
-const TradingSignals = lazyWithRetry(() => import("./pages/TradingSignals.tsx"));
-const Leaderboard = lazyWithRetry(() => import("./pages/Leaderboard.tsx"));
-const Admin = lazyWithRetry(() => import("./pages/Admin.tsx"));
-const Analytics = lazyWithRetry(() => import("./pages/Analytics.tsx"));
-const PublicProfile = lazyWithRetry(() => import("./pages/PublicProfile.tsx"));
-const News = lazyWithRetry(() => import("./pages/News.tsx"));
-// CalendarPage merged into News (single combined page)
-const ConnectMT = lazyWithRetry(() => import("./pages/ConnectMT.tsx"));
-const Webinars = lazyWithRetry(() => import("./pages/Webinars.tsx"));
-const Education = lazyWithRetry(() => import("./pages/Education.tsx"));
-const EducationModule = lazyWithRetry(() => import("./pages/EducationModule.tsx"));
-const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
-const HeroQA = lazyWithRetry(() => import("./pages/HeroQA.tsx"));
+import Leaderboard from "./pages/Leaderboard.tsx";
+import LiveChart from "./pages/LiveChart.tsx";
+import Login from "./pages/Login.tsx";
+import News from "./pages/News.tsx";
+import NotFound from "./pages/NotFound.tsx";
+import Profile from "./pages/Profile.tsx";
+import PublicProfile from "./pages/PublicProfile.tsx";
+import Register from "./pages/Register.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
+import TradingSignals from "./pages/TradingSignals.tsx";
+import VideoLibrary from "./pages/VideoLibrary.tsx";
+import Webinars from "./pages/Webinars.tsx";
 
 const queryClient = new QueryClient();
 
