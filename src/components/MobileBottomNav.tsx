@@ -9,7 +9,7 @@ const items: { to: string; icon: typeof LayoutDashboard; labelKey: TranslationKe
   { to: "/live-chart", icon: LineChart, labelKey: "sidebar.charts" },
   { to: "/chatroom", icon: Users, labelKey: "sidebar.community" },
   { to: "/education", icon: GraduationCap, labelKey: "sidebar.education" },
-  { to: "/webinars", icon: Video, labelKey: "sidebar.webinars" },
+  { to: "/webinars", icon: Video, labelKey: "sidebar.liveWebinars" },
 ];
 
 const MobileBottomNav = () => {
