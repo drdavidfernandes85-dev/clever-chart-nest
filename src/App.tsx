@@ -20,22 +20,30 @@ import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
 import Index from "./pages/Index.tsx";
 
-// Retry dynamic imports once after a stale-chunk error (e.g. after a redeploy)
-// then force a hard reload so the browser fetches a fresh index.html.
+// Retry dynamic imports with backoff before giving up. Handles stale Vite
+// transform URLs (?t=...) and post-deploy chunk misses without nuking session.
 const lazyWithRetry = <T,>(factory: () => Promise<{ default: React.ComponentType<T> }>) =>
   lazy(async () => {
     const reloadKey = "lovable:chunk-reloaded";
-    try {
-      return await factory();
-    } catch (err) {
-      if (!sessionStorage.getItem(reloadKey)) {
-        sessionStorage.setItem(reloadKey, "1");
-        window.location.reload();
-        // Return a never-resolving promise while the page reloads
-        return new Promise(() => {}) as never;
+    const attempt = async (n: number): Promise<{ default: React.ComponentType<T> }> => {
+      try {
+        const mod = await factory();
+        sessionStorage.removeItem(reloadKey);
+        return mod;
+      } catch (err) {
+        if (n < 3) {
+          await new Promise((r) => setTimeout(r, 250 * (n + 1)));
+          return attempt(n + 1);
+        }
+        if (!sessionStorage.getItem(reloadKey)) {
+          sessionStorage.setItem(reloadKey, "1");
+          window.location.reload();
+          return new Promise(() => {}) as never;
+        }
+        throw err;
       }
-      throw err;
-    }
+    };
+    return attempt(0);
   });
 
 // Code-split heavier authenticated routes
