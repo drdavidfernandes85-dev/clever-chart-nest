@@ -4,15 +4,20 @@ import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-const STORAGE_KEY = "infinox-daily-briefing";
+const STORAGE_KEY_BASE = "infinox-daily-briefing";
 
 interface Briefing {
   briefing: string;
   generatedAt: string;
 }
 
+const SPEECH_LANG: Record<string, string> = { en: "en-US", es: "es-ES", pt: "pt-BR" };
+
 const DailyBriefing = () => {
+  const { locale, t } = useLanguage();
+  const storageKey = `${STORAGE_KEY_BASE}.${locale}`;
   const [data, setData] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -21,7 +26,7 @@ const DailyBriefing = () => {
   const load = async (force = false) => {
     if (!force) {
       try {
-        const cached = localStorage.getItem(STORAGE_KEY);
+        const cached = localStorage.getItem(storageKey);
         if (cached) {
           const parsed: Briefing = JSON.parse(cached);
           const ageHours = (Date.now() - new Date(parsed.generatedAt).getTime()) / 36e5;
@@ -34,22 +39,27 @@ const DailyBriefing = () => {
     }
     setLoading(true);
     try {
-      const { data: result, error } = await supabase.functions.invoke("ai-daily-briefing");
+      const { data: result, error } = await supabase.functions.invoke("ai-daily-briefing", {
+        body: { locale },
+      });
       if (error) throw error;
       if (result?.briefing) {
         setData(result);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+        localStorage.setItem(storageKey, JSON.stringify(result));
       }
     } catch (e: any) {
-      toast({ title: "Briefing unavailable", description: e?.message || "Try again later.", variant: "destructive" });
+      toast({ title: t("ai.briefingError"), description: e?.message || t("ai.tryAgain"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
+  // Refetch / read cache whenever the user's locale changes
   useEffect(() => {
+    setData(null);
     load(false);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
 
   const speak = () => {
     if (!data?.briefing) return;
@@ -60,6 +70,7 @@ const DailyBriefing = () => {
     }
     const cleaned = data.briefing.replace(/[#*_`>-]/g, " ").replace(/\s+/g, " ").trim();
     const utter = new SpeechSynthesisUtterance(cleaned);
+    utter.lang = SPEECH_LANG[locale] || "en-US";
     utter.rate = 1.05;
     utter.pitch = 1;
     utter.onend = () => setSpeaking(false);
@@ -76,19 +87,19 @@ const DailyBriefing = () => {
             <Sunrise className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h3 className="font-heading text-sm font-semibold text-foreground">Daily AI Briefing</h3>
+            <h3 className="font-heading text-sm font-semibold text-foreground">{t("ai.dailyBriefing")}</h3>
             <p className="text-[10px] text-muted-foreground">
               {data?.generatedAt
-                ? `Updated ${new Date(data.generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                : "Powered by AI"}
+                ? `${t("ai.updated")} ${new Date(data.generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                : t("ai.poweredBy")}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={speak} disabled={!data || loading} aria-label="Read aloud">
+          <Button variant="ghost" size="icon" onClick={speak} disabled={!data || loading} aria-label={t("ai.readAloud")}>
             {speaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={loading} aria-label="Refresh">
+          <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={loading} aria-label={t("ai.refresh")}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
@@ -97,14 +108,14 @@ const DailyBriefing = () => {
       {loading && !data ? (
         <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Generating today's briefing…
+          {t("ai.generating")}
         </div>
       ) : data ? (
         <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-ul:my-1.5 prose-strong:text-primary prose-headings:text-foreground">
           <ReactMarkdown>{data.briefing}</ReactMarkdown>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No briefing available.</p>
+        <p className="text-sm text-muted-foreground">{t("ai.briefingUnavailable")}</p>
       )}
     </div>
   );
