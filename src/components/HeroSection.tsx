@@ -63,8 +63,7 @@ const HeroSection = () => {
           aria-hidden
           className="absolute inset-y-0 right-0 h-full w-[82%] object-contain object-right select-none animate-breathe"
           style={{
-            filter:
-              "drop-shadow(0 0 70px hsl(28 100% 50% / 0.45)) saturate(1.15) contrast(1.08)",
+            filter: "saturate(1.15) contrast(1.08)",
             WebkitMaskImage:
               "linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)",
             maskImage:
