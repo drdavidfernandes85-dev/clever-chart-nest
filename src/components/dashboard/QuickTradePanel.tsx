@@ -314,6 +314,18 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
       }
     }
 
+    // Brokers reject orders whose SL/TP are inside their stop/freeze level.
+    // Reject anything closer than ~30% of our auto-distance to give a buffer.
+    const minDistance = distance * 0.3;
+    const slGap = Math.abs(ref - finalSl);
+    const tpGap = Math.abs(ref - finalTp);
+    if (slGap < minDistance || tpGap < minDistance) {
+      toast.error("SL/TP too close to price", {
+        description: `Move them at least ${distance.toFixed(decimals)} away from ${ref.toFixed(decimals)} so your broker accepts the order.`,
+      });
+      return;
+    }
+
     setConfirming(true);
   };
 
