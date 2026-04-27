@@ -43,7 +43,7 @@ const HeroSection = () => {
   return (
     <section
       id="home"
-      className="relative isolate overflow-hidden pt-16 bg-background"
+      className="relative isolate mx-auto w-full max-w-[1400px] overflow-hidden pt-16 bg-background"
     >
       {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
       <div className="pointer-events-none absolute inset-0 z-0">
