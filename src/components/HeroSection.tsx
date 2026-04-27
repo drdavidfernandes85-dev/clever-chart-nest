@@ -152,16 +152,6 @@ const HeroSection = () => {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:grid-cols-[1.1fr_1fr] xl:gap-20">
           {/* LEFT — copy */}
           <div className="relative flex flex-col items-start gap-6 text-left lg:pl-4 xl:pl-2 2xl:pl-0">
-            {/* Live online counter pill */}
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-primary/50 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-primary backdrop-blur-sm shadow-[0_0_30px_hsl(45_100%_50%/0.25)]">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-              </span>
-              <span className="tabular-nums text-white">{onlineCount.toLocaleString()}</span>
-              <span className="text-primary/90">traders online right now</span>
-            </div>
-
             {/* Headline */}
             <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
               <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">Join the</span>{" "}
