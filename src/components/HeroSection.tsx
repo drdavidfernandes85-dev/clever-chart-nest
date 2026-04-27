@@ -214,6 +214,7 @@ const HeroSection = () => {
                 )}
               </div>
 
+              <OnlineNowPill />
               <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
                 <Users className="h-4 w-4 text-primary" />
                 <span className="text-sm text-white/85">Community of active traders &amp; mentors</span>
