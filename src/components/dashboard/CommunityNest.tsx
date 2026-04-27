@@ -292,7 +292,7 @@ const CommunityNest = () => {
                   className="mt-2 w-full flex items-center justify-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
                 >
                   <Zap className="h-3 w-3" />
-                  Take This Signal
+                  Take This Trade
                 </button>
               </li>
             );
