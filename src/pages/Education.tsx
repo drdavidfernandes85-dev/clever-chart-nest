@@ -353,68 +353,288 @@ const Education = () => {
                 id="macro-analysis"
                 tag="Module 02 · Macro Analysis"
                 title="Macro Analysis: Reading the Global Economic Engine"
-                read="9 min read"
+                read="14 min read"
               >
                 <P>
-                  Every chart you trade is the visible tip of a much larger story —
-                  interest rates, inflation, employment, central bank policy, and geopolitics.
-                  Macro analysis tells you <em>why</em> price moves, so you can position
-                  yourself <em>before</em> the move, not after.
+                  Macro analysis looks at the behaviour of an economy as a whole over the
+                  medium term, taking into account every force that drives its performance.
+                  Each economy has its own characteristics and dynamics — shaped by monetary
+                  &amp; fiscal policy, politics, technology, and law — but every economy is
+                  measured with the same standardised toolkit of economic data.
                 </P>
-
-                <H2>1. The Pillars of Macro</H2>
-                <H3>Interest Rates &amp; Central Banks</H3>
                 <P>
-                  Central banks (the Fed, ECB, BoE, BoJ) set the cost of money. When rates rise,
-                  currencies generally strengthen and risk assets cool. When rates fall, capital
-                  flows into equities, commodities, and high-yield currencies.
+                  When you analyse a currency pair, you're really comparing the macro
+                  outlook of two countries. The same logic applies to equities, indices,
+                  precious metals, and commodities — each is anchored to an underlying
+                  economic story. The combination of <strong>macro analysis</strong> for
+                  trade direction and <strong>technical analysis</strong> for entry &amp;
+                  exit is one of the most powerful weapons in a trader's arsenal.
                 </P>
-                <UL>
-                  <LI>Hawkish surprises → currency up, stocks down</LI>
-                  <LI>Dovish surprises → currency down, stocks up</LI>
-                  <LI>Forward guidance often matters more than the actual decision</LI>
-                </UL>
 
                 <ImageHint>
-                  "Heatmap of major central bank rates with arrows showing recent direction"
+                  "Global macro dashboard — central bank rates, inflation, GDP, and risk
+                  sentiment in one view"
                 </ImageHint>
+
+                <H2>1. Leading Indicators</H2>
+                <P>
+                  Leading indicators move <em>before</em> the broader economy does. They
+                  give early warning of expansion or contraction — and that's where the
+                  edge lives.
+                </P>
+
+                <H3>Payroll Data (e.g. US Non-Farm Payrolls)</H3>
+                <P>
+                  Collected monthly by national statistics agencies (in the US, the BLS
+                  samples 400,000+ businesses to produce the headline NFP number). It's the
+                  most-watched gauge of labour market health and reacts quickly to changing
+                  conditions. <strong>200K+</strong> is typical of expansion; readings near
+                  zero — or negative spikes — signal contraction.
+                </P>
+
+                <H3>Production Indicators</H3>
+                <UL>
+                  <LI>
+                    <strong>Manufacturing Production</strong> — % change in inflation-adjusted
+                    output by manufacturers. Positive = expansion, negative = contraction.
+                  </LI>
+                  <LI>
+                    <strong>Industrial Production</strong> — same idea but covers the entire
+                    industrial sector (manufacturers, mines, utilities).
+                  </LI>
+                  <LI>
+                    <strong>Inventory Levels</strong> — rising inventories signal weak consumer
+                    demand and a softening economy.
+                  </LI>
+                </UL>
+                <P>
+                  Production figures are highly sensitive to interest rates and consumer
+                  demand, making them a useful forecast for future GDP growth and inflation.
+                </P>
+
+                <H3>Retail Sales</H3>
+                <P>
+                  The most reliable gauge of consumer spending — which accounts for{" "}
+                  <strong>60–70% of GDP</strong> in most western economies. Few releases
+                  give you a cleaner read on the real-time pulse of the economy.
+                </P>
+
+                <H3>Jobless Claims (Initial &amp; Continuing)</H3>
+                <UL>
+                  <LI>
+                    <strong>Initial Claims</strong> — first-time filings for unemployment
+                    insurance (weekly).
+                  </LI>
+                  <LI>
+                    <strong>Continuing Claims</strong> — total ongoing recipients.
+                  </LI>
+                </UL>
+                <P>
+                  Rising claims signal a deteriorating labour force and a weakening economy.
+                </P>
+
+                <H3>Building Permits / Housing Starts</H3>
+                <P>
+                  Building permits track the rate of change of permits issued; housing
+                  starts track new constructions underway. Construction is typically one of
+                  the first sectors to enter recession when conditions deteriorate, so these
+                  two are powerful early-warning indicators.
+                </P>
+
+                <H3>Purchasing Managers' Index (PMI / ISM)</H3>
+                <P>
+                  Purchasing managers have early access to company performance data — so
+                  their activity leads the broader economy. PMIs cover Manufacturing,
+                  Construction, and Services. The US ISM index is the benchmark, surveying
+                  hundreds of firms across employment, production, inventories, new orders,
+                  and deliveries.
+                </P>
+                <UL>
+                  <LI><strong>50</strong> = flat</LI>
+                  <LI><strong>&gt; 50</strong> = expansion</LI>
+                  <LI><strong>&lt; 50</strong> = contraction</LI>
+                </UL>
+
+                <H3>House Price Index</H3>
+                <P>
+                  Tracks the rate of change of average home selling prices. Rising prices
+                  reflect strong housing demand and broader economic strength.
+                </P>
+
+                <ImageHint>
+                  "Leading indicators dashboard — NFP, PMI, Retail Sales, Jobless Claims
+                  trend lines"
+                </ImageHint>
+
+                <H2>2. Lagging Indicators</H2>
+                <P>
+                  Lagging indicators confirm what leading indicators have already hinted at.
+                  They don't predict — they verify. But they move markets all the same,
+                  because central banks act on them.
+                </P>
+
+                <H3>Gross Domestic Product (GDP)</H3>
+                <P>
+                  GDP measures total inflation-adjusted output of goods and services. The
+                  most-watched figure is the Quarter-on-Quarter change. Higher-than-expected
+                  GDP is bullish for a country's currency; lower is bearish.
+                </P>
+                <P>
+                  Two consecutive negative QoQ readings = a <strong>recession</strong>.
+                </P>
+                <p className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-3 font-mono text-[13px] italic text-foreground/85">
+                  GDP = Consumption + Investment + Government Spending + (Exports − Imports)
+                </p>
+
+                <H3>Unemployment Rate</H3>
+                <P>
+                  The percentage of the workforce actively looking for employment. Three
+                  forms to know:
+                </P>
+                <UL>
+                  <LI>
+                    <strong>Frictional</strong> — the natural floor caused by workers and
+                    employers transitioning.
+                  </LI>
+                  <LI>
+                    <strong>Structural</strong> — longer-lasting, driven by technology,
+                    competition, or policy shifts.
+                  </LI>
+                  <LI>
+                    <strong>Seasonal</strong> — driven by predictable seasonal demand swings.
+                  </LI>
+                </UL>
+                <P>
+                  Pair it with the <strong>Labour Force Participation Rate (LFPR)</strong> —
+                  a healthy economy has a low unemployment rate <em>and</em> elevated LFPR.
+                  A falling unemployment rate driven by a falling LFPR is a hollow win.
+                </P>
 
                 <H3>Inflation</H3>
                 <P>
-                  CPI, PCE, and PPI tell you how fast prices are rising. Persistent inflation
-                  forces central banks to tighten — which moves every market on the planet.
+                  The rate of change of the general level of prices for goods and services.
+                  Watch the three primary measures:
                 </P>
-
-                <H3>Employment &amp; Growth</H3>
                 <UL>
-                  <LI>Non-Farm Payrolls (NFP) — the most-watched jobs print on Earth</LI>
-                  <LI>GDP — the heartbeat of the economy</LI>
-                  <LI>PMI &amp; ISM surveys — leading indicators of expansion or contraction</LI>
+                  <LI>
+                    <strong>CPI (Consumer Price Index)</strong> — the global default,
+                    measured from the consumer's perspective.
+                  </LI>
+                  <LI>
+                    <strong>HICP (Harmonised Index of Consumer Prices)</strong> — the
+                    European standard, tracking a common basket of goods.
+                  </LI>
+                  <LI>
+                    <strong>PCE (Personal Consumption Expenditures)</strong> — the Federal
+                    Reserve's preferred measure.
+                  </LI>
                 </UL>
 
-                <H2>2. The Risk-On / Risk-Off Lens</H2>
+                <H3>Wage Growth</H3>
                 <P>
-                  Markets oscillate between two regimes. Knowing which one you're in tells you
-                  which assets to favor.
+                  Tracked both nominal and inflation-adjusted. Wages drive disposable
+                  income — and according to the Phillips curve, they're the number-one
+                  cause of inflation. Critical for gauging future central bank moves.
+                </P>
+
+                <H3>Interest Rates</H3>
+                <P>
+                  The central bank's primary tool — the rate at which it lends to domestic
+                  banks (Fed Funds Rate in the US, Base Rate in the UK, Refi Rate in the
+                  Eurozone).
                 </P>
                 <UL>
-                  <LI><strong>Risk-on:</strong> stocks, AUD, NZD, EM currencies, crypto rally</LI>
-                  <LI><strong>Risk-off:</strong> USD, JPY, CHF, gold, bonds catch a bid</LI>
+                  <LI>
+                    <strong>Cuts</strong> reduce incentive to save → encourage spending and
+                    risk-taking → stimulate the economy.
+                  </LI>
+                  <LI>
+                    <strong>Hikes</strong> raise the cost of borrowing → reduce risk-taking →
+                    cool the economy.
+                  </LI>
+                </UL>
+                <P>
+                  Central bank rate decisions are the most-watched events on the global
+                  calendar — and forward guidance often matters more than the decision itself.
+                </P>
+
+                <H3>Consumer Confidence Index</H3>
+                <P>
+                  A survey-based measure of how consumers feel about economic prospects.
+                  High readings = increased propensity to spend; low readings = pulling back.
+                  An excellent leading signal of future consumption.
+                </P>
+
+                <H3>Durable Goods Orders</H3>
+                <P>
+                  New orders for goods built to last 3+ years — cars, electronics, furniture,
+                  appliances. Released monthly in two parts (advance and shipments). A leading
+                  indicator of business and consumer confidence in long-term commitments.
+                </P>
+
+                <H3>Government Balances</H3>
+                <UL>
+                  <LI>
+                    <strong>Budget Balance</strong> — revenue minus expenditures. Persistent
+                    deficits drive up government debt.
+                  </LI>
+                  <LI>
+                    <strong>Current Account Balance</strong> — Trade Balance + Income from
+                    Abroad + Net Current Transfers. A surplus = net lender to the world; a
+                    deficit = net borrower.
+                  </LI>
+                  <LI>
+                    <strong>Trade Balance</strong> — exports minus imports. A surplus signals
+                    strength and independence; a deficit signals dependence and creates
+                    outflows of domestic currency.
+                  </LI>
+                  <LI>
+                    <strong>Balance of Payments (BoP)</strong> — quarterly net flow of
+                    payments in and out of the country. A persistent BoP deficit shrinks
+                    international reserves and forces currency devaluation. A surplus does
+                    the opposite.
+                  </LI>
                 </UL>
 
-                <ImageHint>"Risk-on vs risk-off asset map (Forex pairs, indices, metals)"</ImageHint>
+                <ImageHint>
+                  "Balance of Payments effect on currency supply &amp; demand curve"
+                </ImageHint>
 
-                <H2>3. Building Your Macro Bias</H2>
+                <H2>3. The Risk-On / Risk-Off Lens</H2>
+                <P>
+                  Macro data shifts the global mood between two regimes. Knowing which one
+                  you're in tells you which assets to favour.
+                </P>
                 <UL>
-                  <LI>Check the economic calendar each Sunday for the week ahead</LI>
-                  <LI>Identify the 1–2 highest-impact events</LI>
-                  <LI>Define your scenarios: "If CPI &gt; expected → long USD/JPY"</LI>
-                  <LI>Let the technicals confirm your entry</LI>
+                  <LI>
+                    <strong>Risk-on:</strong> stocks, AUD, NZD, EM currencies, crypto rally
+                  </LI>
+                  <LI>
+                    <strong>Risk-off:</strong> USD, JPY, CHF, gold, and bonds catch a bid
+                  </LI>
+                </UL>
+
+                <ImageHint>
+                  "Risk-on vs risk-off asset map across Forex, indices, and metals"
+                </ImageHint>
+
+                <H2>4. Building Your Macro Bias — A Weekly Process</H2>
+                <UL>
+                  <LI>Every Sunday, scan the economic calendar for the week ahead</LI>
+                  <LI>Identify the 1–2 highest-impact events (rate decisions, CPI, NFP, GDP)</LI>
+                  <LI>
+                    Map your scenarios: <em>"If CPI &gt; consensus → long USD/JPY,
+                    short Gold"</em>
+                  </LI>
+                  <LI>Compare the macro outlook of <em>both</em> currencies in any pair</LI>
+                  <LI>Wait for technicals to confirm your entry — never trade macro blind</LI>
                 </UL>
 
                 <KeyTakeaway>
                   Technicals tell you <strong>where</strong> to act. Macro tells you{" "}
-                  <strong>why</strong> the market is moving. The pros use both.
+                  <strong>why</strong> the market is moving. The pros use both — leading
+                  indicators for the heads-up, lagging indicators for the confirmation, and
+                  the chart for the trigger.
                 </KeyTakeaway>
               </ArticleCard>
 
