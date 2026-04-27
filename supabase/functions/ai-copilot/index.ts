@@ -14,7 +14,13 @@ interface ChatMessage {
   content: string;
 }
 
-async function fetchContext(supabase: ReturnType<typeof createClient>, userId: string | null) {
+const LANG_NAME: Record<string, string> = {
+  en: "English",
+  es: "Spanish (Español)",
+  pt: "Brazilian Portuguese (Português do Brasil)",
+};
+
+async function fetchContext(supabase: ReturnType<typeof createClient>, userId: string | null, locale: string = "en") {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const projectRef = supabaseUrl.split("//")[1].split(".")[0];
 
@@ -66,7 +72,7 @@ async function fetchContext(supabase: ReturnType<typeof createClient>, userId: s
     }
   }
 
-  return { news, calendar, signals: signals || [], trades, stats };
+  return { news, calendar, signals: signals || [], trades, stats, language: LANG_NAME[locale] || LANG_NAME.en };
 }
 
 function buildSystemPrompt(ctx: Awaited<ReturnType<typeof fetchContext>>) {
@@ -105,6 +111,8 @@ Your job: answer questions about markets, signals, the user's performance, news,
 Be concise, professional, and data-driven. Use markdown formatting (lists, bold, tables when useful).
 Never give financial advice — frame insights as analysis or education.
 
+LANGUAGE: Always respond in ${ctx.language}. Keep ticker symbols (EUR/USD, XAU/USD, NAS100, BTC/USD, etc.) in their original form. If the user writes in a different language, still reply in ${ctx.language} unless they explicitly ask otherwise.
+
 ## Live Context (refreshed each conversation)
 
 ### Top news headlines
@@ -133,7 +141,9 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { messages } = (await req.json()) as { messages: ChatMessage[] };
+    const reqBody = (await req.json()) as { messages: ChatMessage[]; locale?: string };
+    const { messages } = reqBody;
+    const locale = reqBody?.locale && LANG_NAME[reqBody.locale] ? reqBody.locale : "en";
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "messages array required" }), {
         status: 400,
@@ -154,13 +164,13 @@ Deno.serve(async (req) => {
         const authedClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
           global: { headers: { Authorization: authHeader } },
         });
-        const ctx = await fetchContext(authedClient, userId);
+        const ctx = await fetchContext(authedClient, userId, locale);
         const systemPrompt = buildSystemPrompt(ctx);
         return await callAI(systemPrompt, messages, LOVABLE_API_KEY);
       }
     }
 
-    const ctx = await fetchContext(supabase, null);
+    const ctx = await fetchContext(supabase, null, locale);
     const systemPrompt = buildSystemPrompt(ctx);
     return await callAI(systemPrompt, messages, LOVABLE_API_KEY);
   } catch (e) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Gauge, RefreshCw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Sentiment {
   score: number;
@@ -10,7 +11,7 @@ interface Sentiment {
   generatedAt: string;
 }
 
-const STORAGE_KEY = "infinox-sentiment";
+const STORAGE_KEY_BASE = "infinox-sentiment";
 
 const labelColor = (score: number) => {
   if (score < 25) return "text-red-500";
@@ -21,13 +22,15 @@ const labelColor = (score: number) => {
 };
 
 const SentimentGauge = () => {
+  const { locale, t } = useLanguage();
+  const storageKey = `${STORAGE_KEY_BASE}.${locale}`;
   const [data, setData] = useState<Sentiment | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = async (force = false) => {
     if (!force) {
       try {
-        const cached = localStorage.getItem(STORAGE_KEY);
+        const cached = localStorage.getItem(storageKey);
         if (cached) {
           const parsed: Sentiment = JSON.parse(cached);
           const ageMin = (Date.now() - new Date(parsed.generatedAt).getTime()) / 60000;
@@ -40,10 +43,12 @@ const SentimentGauge = () => {
     }
     setLoading(true);
     try {
-      const { data: result } = await supabase.functions.invoke("ai-sentiment");
+      const { data: result } = await supabase.functions.invoke("ai-sentiment", {
+        body: { locale },
+      });
       if (result?.score != null) {
         setData(result);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
+        localStorage.setItem(storageKey, JSON.stringify(result));
       }
     } catch (e) {
       console.error(e);
@@ -53,8 +58,10 @@ const SentimentGauge = () => {
   };
 
   useEffect(() => {
+    setData(null);
     load(false);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale]);
 
   // Semicircle gauge: 180° arc
   const score = data?.score ?? 50;
@@ -67,9 +74,9 @@ const SentimentGauge = () => {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15">
             <Gauge className="h-4 w-4 text-primary" />
           </div>
-          <h3 className="font-heading text-sm font-semibold text-foreground">Market Sentiment</h3>
+          <h3 className="font-heading text-sm font-semibold text-foreground">{t("ai.sentiment")}</h3>
         </div>
-        <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={loading} aria-label="Refresh">
+        <Button variant="ghost" size="icon" onClick={() => load(true)} disabled={loading} aria-label={t("ai.refresh")}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
         </Button>
       </div>
@@ -115,7 +122,7 @@ const SentimentGauge = () => {
         {loading && !data ? (
           <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
-            Analyzing…
+            {t("ai.analyzingShort")}
           </div>
         ) : data ? (
           <>
@@ -124,7 +131,7 @@ const SentimentGauge = () => {
             <p className="mt-2 text-[11px] text-muted-foreground/80 leading-snug px-2">{data.reasoning}</p>
           </>
         ) : (
-          <p className="text-xs text-muted-foreground">No data.</p>
+          <p className="text-xs text-muted-foreground">{t("ai.sentimentNoData")}</p>
         )}
       </div>
     </div>

@@ -8,8 +8,28 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const LANG_NAME: Record<string, string> = {
+  en: "English",
+  es: "Spanish (Español)",
+  pt: "Brazilian Portuguese (Português do Brasil)",
+};
+
+const EMPTY_MSG: Record<string, string> = {
+  en: "No closed trades yet. Log at least 5 trades in your journal so the coach can analyze your edge.",
+  es: "Aún no hay operaciones cerradas. Registra al menos 5 operaciones en tu diario para que el coach pueda analizar tu edge.",
+  pt: "Ainda sem operações fechadas. Registre pelo menos 5 operações em seu diário para que o coach possa analisar seu edge.",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  let locale = "en";
+  try {
+    if (req.method === "POST") {
+      const body = await req.clone().json().catch(() => ({}));
+      if (body?.locale && LANG_NAME[body.locale]) locale = body.locale;
+    }
+  } catch { /* ignore */ }
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -44,7 +64,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           empty: true,
-          message: "No closed trades yet. Log at least 5 trades in your journal so the coach can analyze your edge.",
+          message: EMPTY_MSG[locale] || EMPTY_MSG.en,
           generatedAt: new Date().toISOString(),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -104,7 +124,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are an elite trading performance coach. You read a trader's recent log and return honest, specific, actionable feedback — never generic platitudes. Cite the trader's own pairs and setups.",
+              `You are an elite trading performance coach. You read a trader's recent log and return honest, specific, actionable feedback — never generic platitudes. Cite the trader's own pairs and setups. Write all output fields (headline, strengths, weaknesses, action_items.title, action_items.detail) in ${LANG_NAME[locale]}. Keep ticker symbols (EUR/USD, XAU/USD, etc.) in their original form.`,
           },
           {
             role: "user",

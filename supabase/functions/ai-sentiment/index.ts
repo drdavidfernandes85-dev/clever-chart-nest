@@ -7,8 +7,28 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const LANG_NAME: Record<string, string> = {
+  en: "English",
+  es: "Spanish (Español)",
+  pt: "Brazilian Portuguese (Português do Brasil)",
+};
+
+const SENTIMENT_LABELS: Record<string, Record<string, string>> = {
+  en: { extreme_fear: "Extreme Fear", fear: "Fear", neutral: "Neutral", greed: "Greed", extreme_greed: "Extreme Greed" },
+  es: { extreme_fear: "Miedo Extremo", fear: "Miedo", neutral: "Neutral", greed: "Codicia", extreme_greed: "Codicia Extrema" },
+  pt: { extreme_fear: "Medo Extremo", fear: "Medo", neutral: "Neutro", greed: "Ganância", extreme_greed: "Ganância Extrema" },
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  let locale = "en";
+  try {
+    if (req.method === "POST") {
+      const body = await req.clone().json().catch(() => ({}));
+      if (body?.locale && LANG_NAME[body.locale]) locale = body.locale;
+    }
+  } catch { /* ignore */ }
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -73,7 +93,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You analyze financial markets. Score sentiment 0-100 (Fear & Greed style) based on news tone and signal direction balance.",
+              `You analyze financial markets. Score sentiment 0-100 (Fear & Greed style) based on news tone and signal direction balance. Always write the "reasoning" field in ${LANG_NAME[locale]}. The "label" field must remain in English (one of: Extreme Fear, Fear, Neutral, Greed, Extreme Greed).`,
           },
           {
             role: "user",
@@ -103,18 +123,30 @@ Deno.serve(async (req) => {
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     const args = toolCall ? JSON.parse(toolCall.function.arguments) : null;
 
+    // Map English canonical label → localized display label
+    const localizeLabel = (rawLabel: string): string => {
+      const key = String(rawLabel || "").toLowerCase().replace(/\s+/g, "_");
+      return SENTIMENT_LABELS[locale]?.[key] || SENTIMENT_LABELS.en[key] || rawLabel;
+    };
+
     if (!args) {
-      return new Response(JSON.stringify({ score: 50, label: "Neutral", reasoning: "Insufficient data." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          score: 50,
+          label: localizeLabel("Neutral"),
+          reasoning:
+            locale === "es" ? "Datos insuficientes." : locale === "pt" ? "Dados insuficientes." : "Insufficient data.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     return new Response(
       JSON.stringify({
         score: Math.max(0, Math.min(100, args.score)),
-        label: args.label,
+        label: localizeLabel(args.label),
         reasoning: args.reasoning,
-        meta: { longs, shorts, newsCount: news.length },
+        meta: { longs, shorts, newsCount: news.length, locale },
         generatedAt: new Date().toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },

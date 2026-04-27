@@ -6,8 +6,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const LANG_NAME: Record<string, string> = {
+  en: "English",
+  es: "Spanish (Español)",
+  pt: "Brazilian Portuguese (Português do Brasil)",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  let locale = "en";
+  try {
+    if (req.method === "POST") {
+      const body = await req.clone().json().catch(() => ({}));
+      if (body?.locale && LANG_NAME[body.locale]) locale = body.locale;
+    }
+  } catch { /* ignore */ }
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -97,7 +111,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "You are an institutional macro strategist. You read live news + calendar and return tight, actionable insights for active FX/metals traders. Never give financial advice; speak in probabilistic terms.",
+              `You are an institutional macro strategist. You read live news + calendar and return tight, actionable insights for active FX/metals traders. Never give financial advice; speak in probabilistic terms. Write all natural-language fields (market_summary, rationale, title, detail) in ${LANG_NAME[locale]}. The "bias" enum (bullish/bearish/neutral) and "severity" enum (low/medium/high) MUST stay in English. Keep ticker symbols (EUR/USD, XAU/USD, NAS100, BTC/USD, etc.) in their original form.`,
           },
           {
             role: "user",
