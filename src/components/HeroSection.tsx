@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { ArrowRight, Users, Play, CheckCircle2, AlertTriangle, Clock, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import MagneticButton from "@/components/MagneticButton";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
@@ -201,6 +201,20 @@ const HeroSection = () => {
                 >
                   <Link to="/register">
                     {t("hero.cta")} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </MagneticButton>
+              <MagneticButton strength={0.22}>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 gap-2 rounded-full px-7 text-base font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
+                  asChild
+                >
+                  <Link to="/dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Go to Dashboard
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
               </MagneticButton>
