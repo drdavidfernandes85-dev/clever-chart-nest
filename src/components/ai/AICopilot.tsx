@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Send, Sparkles, X, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -7,20 +7,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const SUGGESTIONS = [
-  "Explain the current EUR/USD move",
-  "What's driving XAU/USD right now?",
-  "Any high-impact events in the next 4h?",
-  "Review my last 5 trades",
-  "Suggest a setup for today's London session",
-  "Summarize today's room signals",
-];
-
 const OPEN_KEY = "infinox.copilot.open";
-const COLLAPSED_KEY = "infinox.copilot.collapsed";
 
 interface AICopilotProps {
   /** Render inline as a side panel instead of a floating launcher. */
@@ -31,6 +22,7 @@ interface AICopilotProps {
 }
 
 const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: AICopilotProps) => {
+  const { locale, t } = useLanguage();
   const [open, setOpen] = useState<boolean>(() => {
     if (embedded || typeof window === "undefined") return false;
     return localStorage.getItem(OPEN_KEY) === "1";
@@ -40,6 +32,24 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const SUGGESTIONS = useMemo(
+    () => [
+      t("ai.suggest.eurusd"),
+      t("ai.suggest.xauusd"),
+      t("ai.suggest.events"),
+      t("ai.suggest.review"),
+      t("ai.suggest.london"),
+      t("ai.suggest.signals"),
+    ],
+    [t],
+  );
+
+  // When the user changes language mid-session, reset the chat so it
+  // doesn't display a mix of two languages.
+  useEffect(() => {
+    setMessages([]);
+  }, [locale]);
 
   useEffect(() => {
     if (embedded || typeof window === "undefined") return;
@@ -83,18 +93,18 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
       const resp = await fetch(url, {
         method: "POST",
         headers,
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, locale }),
       });
 
       if (resp.status === 429) {
-        toast({ title: "Rate limited", description: "Try again in a moment.", variant: "destructive" });
+        toast({ title: t("ai.copilotRateLimited"), description: t("ai.copilotRateLimitedDesc"), variant: "destructive" });
         setLoading(false);
         return;
       }
       if (resp.status === 402) {
         toast({
-          title: "AI credits exhausted",
-          description: "Add credits in Workspace settings.",
+          title: t("ai.creditsExhausted"),
+          description: t("ai.creditsExhaustedDesc"),
           variant: "destructive",
         });
         setLoading(false);
@@ -135,7 +145,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
       }
     } catch (e) {
       console.error(e);
-      toast({ title: "AI error", description: "Could not reach the co-pilot.", variant: "destructive" });
+      toast({ title: t("ai.copilotError"), description: t("ai.copilotErrorDesc"), variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -147,7 +157,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
         <div ref={scrollRef} className="space-y-4 py-4">
           {messages.length === 0 && (
             <div className="space-y-3 py-4">
-              <p className="text-sm text-muted-foreground">Try asking:</p>
+              <p className="text-sm text-muted-foreground">{t("ai.copilotTryAsking")}</p>
               <div className="flex flex-col gap-2">
                 {SUGGESTIONS.map((s) => (
                   <button
@@ -185,7 +195,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
             <div className="flex justify-start">
               <div className="flex items-center gap-2 rounded-2xl bg-muted/50 px-3 py-2">
                 <Loader2 className="h-3 w-3 animate-spin text-primary" />
-                <span className="text-xs text-muted-foreground">Thinking…</span>
+                <span className="text-xs text-muted-foreground">{t("ai.thinking")}</span>
               </div>
             </div>
           )}
@@ -209,7 +219,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
                 send(input);
               }
             }}
-            placeholder="Ask about markets, signals, your trades…"
+            placeholder={t("ai.copilotPlaceholder")}
             rows={1}
             className="min-h-[40px] max-h-32 resize-none rounded-xl bg-background/50 text-sm"
             disabled={loading}
@@ -230,8 +240,8 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
           <button
             onClick={onToggleCollapsed}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary hover:bg-primary/25 transition-colors"
-            aria-label="Expand AI Assistant"
-            title="Expand AI Assistant"
+            aria-label={t("ai.copilotExpand")}
+            title={t("ai.copilotExpand")}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -240,7 +250,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
             className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground"
             style={{ writingMode: "vertical-rl" }}
           >
-            AI Assistant
+            {t("ai.copilot")}
           </span>
         </aside>
       );
@@ -253,16 +263,16 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
               <Bot className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-heading text-xs font-semibold text-foreground">AI Assistant</h3>
-              <p className="text-[10px] text-muted-foreground">Knows your trades, signals & news</p>
+              <h3 className="font-heading text-xs font-semibold text-foreground">{t("ai.copilot")}</h3>
+              <p className="text-[10px] text-muted-foreground">{t("ai.copilotSubtitle")}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleCollapsed}
-            aria-label="Collapse AI Assistant"
-            title="Collapse"
+            aria-label={t("ai.copilotCollapse")}
+            title={t("ai.copilotCollapse")}
             className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
@@ -280,11 +290,11 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
         <button
           onClick={() => setOpen(true)}
           className="group fixed bottom-24 right-6 z-50 flex h-14 items-center gap-2 rounded-full bg-gradient-to-br from-primary via-primary to-yellow-500 px-5 text-primary-foreground shadow-[0_0_40px_-5px_hsl(48_100%_51%/0.7)] ring-1 ring-primary/40 transition-all hover:scale-105 hover:shadow-[0_0_55px_-2px_hsl(48_100%_51%/0.95)]"
-          aria-label="Open AI Assistant"
+          aria-label={t("ai.copilotOpen")}
         >
           <span className="absolute inset-0 -z-10 rounded-full bg-primary/40 blur-xl animate-pulse" />
           <Sparkles className="h-5 w-5" />
-          <span className="font-bold text-sm tracking-wide">AI Assistant</span>
+          <span className="font-bold text-sm tracking-wide">{t("ai.copilot")}</span>
         </button>
       )}
 
@@ -300,11 +310,11 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
               <Bot className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-heading text-sm font-semibold text-foreground">AI Assistant</h3>
-              <p className="text-[10px] text-muted-foreground">Knows your trades, signals & news</p>
+              <h3 className="font-heading text-sm font-semibold text-foreground">{t("ai.copilot")}</h3>
+              <p className="text-[10px] text-muted-foreground">{t("ai.copilotSubtitle")}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close">
+          <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label={t("ai.copilotClose")}>
             <X className="h-4 w-4" />
           </Button>
         </header>
