@@ -87,7 +87,7 @@ const App = () => (
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   {/* Open to all logged-in users (no eligibility required) */}
-                  <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout><Dashboard /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Dashboard /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
                   <Route path="/command" element={<ProtectedRoute><DashboardLayout><CommandDeck /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/profile" element={<ProtectedRoute><DashboardLayout><Profile /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/videos" element={<ProtectedRoute><DashboardLayout><VideoLibrary /></DashboardLayout></ProtectedRoute>} />
