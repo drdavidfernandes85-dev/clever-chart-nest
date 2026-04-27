@@ -175,6 +175,28 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
               </div>
             </div>
 
+            {/* Language */}
+            <div className="border-t border-primary/10 px-3 py-2.5">
+              <div className="grid grid-cols-3 gap-1.5">
+                {localeOrder.map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLocale(l)}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors",
+                      locale === l
+                        ? "border-primary/50 bg-primary/15 text-primary"
+                        : "border-border/50 bg-secondary/40 text-muted-foreground hover:bg-secondary"
+                    )}
+                    aria-label={`Switch to ${LOCALE_LABELS[l]}`}
+                  >
+                    <span className="text-base leading-none">{LOCALE_FLAGS[l]}</span>
+                    <span className="font-mono text-[10px] uppercase tracking-wider">{l}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Sign out */}
             {user && (
               <button
