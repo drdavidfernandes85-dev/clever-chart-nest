@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, Plug } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import sidebarLogo from "@/assets/logo-sidebar.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -101,6 +101,16 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
+          <Button
+            size="sm"
+            asChild
+            className="gap-1.5 rounded-full bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_hsl(45_100%_50%/0.35)]"
+          >
+            <Link to="/connect-mt">
+              <Plug className="h-3.5 w-3.5" />
+              Connect MT5
+            </Link>
+          </Button>
 
           {user ? (
             <>
@@ -175,6 +185,12 @@ const Navbar = () => {
             </Button>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
+            </Button>
+            <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+              <Link to="/connect-mt" onClick={() => setMobileOpen(false)}>
+                <Plug className="h-3.5 w-3.5" />
+                Connect MT5
+              </Link>
             </Button>
 
             {user ? (
