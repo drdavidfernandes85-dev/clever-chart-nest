@@ -14,6 +14,10 @@ interface Ticker {
   bias: "bullish" | "bearish" | "neutral";
 }
 
+interface TickerBarProps {
+  live?: boolean;
+}
+
 // Curated mix that scrolls in the top bar — two of each asset class
 // so users always see something familiar.
 const TICKER_LABELS = [
@@ -32,10 +36,11 @@ const FALLBACK_TICKERS: Ticker[] = [
   { pair: "S&P 500", price: "--", change: "+0.00%", bias: "neutral" },
 ];
 
-const TickerBar = () => {
+const TickerBar = ({ live = true }: TickerBarProps) => {
   const [tickers, setTickers] = useState<Ticker[]>(FALLBACK_TICKERS);
 
   useEffect(() => {
+    if (!live) return;
     const assets = TICKER_LABELS.map(
       (l) => MARKET_UNIVERSE.find((m) => m.symbol === l)!,
     ).filter(Boolean) as MarketSymbol[];
@@ -71,7 +76,7 @@ const TickerBar = () => {
       window.clearTimeout(start);
       clearInterval(interval);
     };
-  }, []);
+  }, [live]);
 
   return (
     <div className="overflow-hidden border-y border-primary/20 bg-card/60 backdrop-blur-md">
