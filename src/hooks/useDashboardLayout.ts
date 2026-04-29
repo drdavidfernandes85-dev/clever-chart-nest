@@ -62,7 +62,7 @@ export function useDashboardLayout() {
           const parsed = JSON.parse(raw) as StoredLayout;
           if (parsed?.layouts && parsed?.preset) {
             setPresetState(parsed.preset);
-            setLayouts(parsed.layouts);
+            setLayouts(sanitizeLayouts(parsed.layouts));
           }
         }
       } catch {
@@ -81,7 +81,7 @@ export function useDashboardLayout() {
           const remote = data.layouts as unknown as Layouts;
           if (remote.lg && Array.isArray(remote.lg)) {
             setPresetState((data.preset as PresetId) ?? DEFAULT_PRESET);
-            setLayouts(remote);
+            setLayouts(sanitizeLayouts(remote));
           }
         }
       }
