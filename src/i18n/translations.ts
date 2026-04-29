@@ -906,6 +906,8 @@ const translations = {
     "dash.related.communityDesc": "Chat en vivo, webinars diarios y análisis de mercado compartidos por traders activos.",
     "dash.related.webinars": "Webinars en Vivo",
     "dash.related.webinarsDesc": "Webinars de trading en vivo gratis con nuestros analistas — análisis técnico real en tiempo real.",
+    // Common
+    "common.close": "Cerrar",
     "common.back": "Atrás",
     "common.loading": "Cargando…",
     "common.save": "Guardar",
@@ -1498,6 +1500,8 @@ const translations = {
     "dash.related.communityDesc": "Chat ao vivo, webinars diários e análise de mercado compartilhada por traders ativos.",
     "dash.related.webinars": "Webinars ao Vivo",
     "dash.related.webinarsDesc": "Webinars de trading ao vivo grátis com nossos analistas — análise técnica real em tempo real.",
+    // Common
+    "common.close": "Fechar",
     "common.back": "Voltar",
     "common.loading": "Carregando…",
     "common.save": "Salvar",
