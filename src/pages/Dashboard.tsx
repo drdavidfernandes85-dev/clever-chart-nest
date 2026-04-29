@@ -113,8 +113,29 @@ const Dashboard = () => {
     };
   }, [tradeOpen]);
 
+  const jsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: t("dash.seo.title"),
+      description: t("dash.seo.desc"),
+      applicationCategory: "FinanceApplication",
+      operatingSystem: "Web",
+      inLanguage: locale === "pt" ? "pt-BR" : locale,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    }),
+    [t, locale],
+  );
+
   return (
     <>
+      <SEO
+        title={t("dash.seo.title")}
+        description={t("dash.seo.desc")}
+        canonical="https://www.salatradingelite.com/dashboard"
+        type="website"
+        jsonLd={jsonLd}
+      />
       {/* Main shell */}
       <div className="relative flex-1 min-w-0 flex flex-col">
         {/* Top header — clean fiery glass, no halo */}
