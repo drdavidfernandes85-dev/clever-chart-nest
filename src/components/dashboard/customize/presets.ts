@@ -9,8 +9,6 @@ export const WIDGET_IDS = [
   "risk",
   "watchlist",
   "marketMovers",
-  "liveSignals",
-  "quickTrade",
   "recentActivity",
 ] as const;
 
@@ -21,8 +19,6 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   risk: "Risk Exposure",
   watchlist: "Watchlist",
   marketMovers: "Market Movers",
-  liveSignals: "Live Trade Ideas",
-  quickTrade: "Quick Trade",
   recentActivity: "Recent Activity",
 };
 
@@ -32,8 +28,6 @@ export const WIDGET_MIN: Record<WidgetId, { w: number; h: number }> = {
   risk: { w: 3, h: 7 },
   watchlist: { w: 3, h: 9 },
   marketMovers: { w: 4, h: 8 },
-  liveSignals: { w: 3, h: 6 },
-  quickTrade: { w: 3, h: 14 },
   recentActivity: { w: 3, h: 6 },
 };
 
