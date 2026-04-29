@@ -10,7 +10,11 @@ import {
   PanelRightOpen,
   Zap,
   X,
+  GraduationCap,
+  Users,
+  Video,
 } from "lucide-react";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -51,7 +55,7 @@ const Dashboard = () => {
   const [editingLayout, setEditingLayout] = useState(false);
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
   const { account } = useMTAccount();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user, session, ready, isRefreshing } = useAuth();
   const { currentTier, newlyUnlocked, acknowledge } = useMentorTierProgress();
   const isConnected = !!account && account.status === "connected";
@@ -109,8 +113,29 @@ const Dashboard = () => {
     };
   }, [tradeOpen]);
 
+  const jsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: t("dash.seo.title"),
+      description: t("dash.seo.desc"),
+      applicationCategory: "FinanceApplication",
+      operatingSystem: "Web",
+      inLanguage: locale === "pt" ? "pt-BR" : locale,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    }),
+    [t, locale],
+  );
+
   return (
     <>
+      <SEO
+        title={t("dash.seo.title")}
+        description={t("dash.seo.desc")}
+        canonical="https://www.salatradingelite.com/dashboard"
+        type="website"
+        jsonLd={jsonLd}
+      />
       {/* Main shell */}
       <div className="relative flex-1 min-w-0 flex flex-col">
         {/* Top header — clean fiery glass, no halo */}
@@ -232,6 +257,12 @@ const Dashboard = () => {
 
         {/* Page body */}
         <main className="relative z-10 flex-1 px-3 sm:px-8 lg:px-14 py-8 sm:py-12 lg:py-14 space-y-10 sm:space-y-12 lg:space-y-14 pb-28 lg:pb-16">
+          {/* SEO H1 — visually subtle but semantically primary */}
+          <header className="sr-only">
+            <h1>{t("dash.h1")}</h1>
+            <p>{t("dash.intro")}</p>
+          </header>
+
           {/* Mentor tier banner — celebrates current rank, dismissible per-tier */}
           <MentorTierBanner tier={currentTier} userId={user?.id ?? null} />
           {/* 0. Flagship — Daily Live Webinar banner */}
@@ -248,9 +279,7 @@ const Dashboard = () => {
                 <span className="text-primary">{t("dash.commandTitle2")}</span>
               </h2>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                {editingLayout
-                  ? "Drag widgets by their handle. Resize from the bottom-right corner."
-                  : "Customize your terminal — drag, resize, save your layout."}
+                {editingLayout ? t("dash.editor.editing") : t("dash.editor.idle")}
               </p>
             </div>
             <CustomizeToolbar
@@ -275,6 +304,74 @@ const Dashboard = () => {
             onLayoutChange={onLayoutChange}
             widgets={widgets}
           />
+
+          {/* 4. Related — internal-link block (SEO + UX) */}
+          <section
+            aria-labelledby="dash-related-title"
+            className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card/40 to-transparent backdrop-blur-2xl p-6 md:p-8"
+          >
+            <div className="mb-5">
+              <h2
+                id="dash-related-title"
+                className="font-heading text-xl md:text-2xl font-bold text-foreground"
+              >
+                {t("dash.related.title")}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {t("dash.related.desc")}
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Link
+                to="/education"
+                className="group flex items-start gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 hover:border-primary/40 hover:bg-primary/5 transition"
+              >
+                <div className="rounded-xl bg-primary/15 p-2.5 shrink-0">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-proxima text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                    {t("dash.related.education")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {t("dash.related.educationDesc")}
+                  </p>
+                </div>
+              </Link>
+              <Link
+                to="/chatroom"
+                className="group flex items-start gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 hover:border-primary/40 hover:bg-primary/5 transition"
+              >
+                <div className="rounded-xl bg-primary/15 p-2.5 shrink-0">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-proxima text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                    {t("dash.related.community")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {t("dash.related.communityDesc")}
+                  </p>
+                </div>
+              </Link>
+              <Link
+                to="/webinars"
+                className="group flex items-start gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 hover:border-primary/40 hover:bg-primary/5 transition"
+              >
+                <div className="rounded-xl bg-primary/15 p-2.5 shrink-0">
+                  <Video className="h-5 w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-proxima text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                    {t("dash.related.webinars")}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {t("dash.related.webinarsDesc")}
+                  </p>
+                </div>
+              </Link>
+            </div>
+          </section>
 
         </main>
       </div>
