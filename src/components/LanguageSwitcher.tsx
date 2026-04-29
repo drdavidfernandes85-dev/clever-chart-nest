@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LOCALE_FLAGS, LOCALE_LABELS, Locale } from "@/i18n/translations";
 import {
@@ -10,13 +11,13 @@ import { ChevronDown } from "lucide-react";
 
 const locales: Locale[] = ["en", "es", "pt"];
 
-const LanguageSwitcher = () => {
+const LanguageSwitcher = forwardRef<HTMLButtonElement>((_, ref) => {
   const { locale, setLocale } = useLanguage();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 rounded-full border border-border/50 bg-secondary/50 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary">
+        <button ref={ref} className="flex items-center gap-1.5 rounded-full border border-border/50 bg-secondary/50 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary">
           <span>{LOCALE_FLAGS[locale]}</span>
           <span>{locale.toUpperCase()}</span>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
@@ -38,6 +39,8 @@ const LanguageSwitcher = () => {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});
+
+LanguageSwitcher.displayName = "LanguageSwitcher";
 
 export default LanguageSwitcher;

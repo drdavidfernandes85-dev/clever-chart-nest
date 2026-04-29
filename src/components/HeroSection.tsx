@@ -58,6 +58,9 @@ const HeroSection = () => {
           src={heroComet}
           alt=""
           aria-hidden
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
           className="absolute inset-y-0 right-0 h-full w-[82%] object-contain object-right select-none animate-breathe"
           style={{
             filter: "saturate(1.15) contrast(1.08)",
@@ -128,7 +131,7 @@ const HeroSection = () => {
       <div className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-primary/40 bg-black/60 backdrop-blur-md">
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/90 to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/90 to-transparent z-10" />
-        <ForexTickerBar />
+        <ForexTickerBar live={false} />
       </div>
 
       {/* ── HERO CONTENT ───────────────────────────────────────── */}

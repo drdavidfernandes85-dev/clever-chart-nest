@@ -14,6 +14,10 @@ interface Ticker {
   bias: "bullish" | "bearish" | "neutral";
 }
 
+interface TickerBarProps {
+  live?: boolean;
+}
+
 // Curated mix that scrolls in the top bar — two of each asset class
 // so users always see something familiar.
 const TICKER_LABELS = [
@@ -23,10 +27,20 @@ const TICKER_LABELS = [
   "AAPL",     "NVDA",     "TSLA",
 ];
 
-const TickerBar = () => {
-  const [tickers, setTickers] = useState<Ticker[]>([]);
+const FALLBACK_TICKERS: Ticker[] = [
+  { pair: "BTC/USDT", price: "--", change: "+0.00%", bias: "neutral" },
+  { pair: "ETH/USDT", price: "--", change: "+0.00%", bias: "neutral" },
+  { pair: "EUR/USD", price: "--", change: "+0.00%", bias: "neutral" },
+  { pair: "GBP/USD", price: "--", change: "+0.00%", bias: "neutral" },
+  { pair: "USD/JPY", price: "--", change: "+0.00%", bias: "neutral" },
+  { pair: "S&P 500", price: "--", change: "+0.00%", bias: "neutral" },
+];
+
+const TickerBar = ({ live = true }: TickerBarProps) => {
+  const [tickers, setTickers] = useState<Ticker[]>(FALLBACK_TICKERS);
 
   useEffect(() => {
+    if (!live) return;
     const assets = TICKER_LABELS.map(
       (l) => MARKET_UNIVERSE.find((m) => m.symbol === l)!,
     ).filter(Boolean) as MarketSymbol[];
@@ -56,27 +70,13 @@ const TickerBar = () => {
         }),
       );
     };
-    refresh();
+    const start = window.setTimeout(refresh, 1_500);
     const interval = setInterval(refresh, 60_000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (tickers.length === 0) {
-    return (
-      <div className="overflow-hidden border-b border-border/30 bg-card/50">
-        <div className="flex gap-8 px-4 py-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <div className="h-3 w-14 rounded bg-muted animate-pulse" />
-              <div className="h-3 w-12 rounded bg-muted animate-pulse" />
-              <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
-              <div className="h-3 w-10 rounded bg-muted animate-pulse" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+    return () => {
+      window.clearTimeout(start);
+      clearInterval(interval);
+    };
+  }, [live]);
 
   return (
     <div className="overflow-hidden border-y border-primary/20 bg-card/60 backdrop-blur-md">
