@@ -67,16 +67,18 @@ const Index = () => {
       />
       <Navbar />
       <HeroSection />
-      <DeferredSection minHeight={260}><ScrollReveal><SponsorsSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={520}><ScrollReveal delay={100}><FeaturesSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={520}><ScrollReveal delay={100}><TeamSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={520}><ScrollReveal delay={100}><MentoringSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={320}><ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={620}><ScrollReveal delay={100}><FAQSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={320}><ScrollReveal><CTASection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={560}><ScrollReveal><ContactSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={360}><ScrollReveal><NewsletterSection /></ScrollReveal></DeferredSection>
-      <DeferredSection minHeight={420}><Footer /></DeferredSection>
+      <Suspense fallback={null}>
+        <DeferredSection minHeight={260}><ScrollReveal><SponsorsSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={520}><ScrollReveal delay={100}><FeaturesSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={520}><ScrollReveal delay={100}><TeamSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={520}><ScrollReveal delay={100}><MentoringSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={320}><ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={620}><ScrollReveal delay={100}><FAQSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={320}><ScrollReveal><CTASection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={560}><ScrollReveal><ContactSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={360}><ScrollReveal><NewsletterSection /></ScrollReveal></DeferredSection>
+        <DeferredSection minHeight={420}><Footer /></DeferredSection>
+      </Suspense>
     </div>
   );
 };
