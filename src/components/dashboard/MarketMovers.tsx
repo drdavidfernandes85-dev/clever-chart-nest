@@ -218,7 +218,7 @@ const MarketMovers = () => {
               const rows = filtered.map((d) => ({
                 symbol: d.symbol,
                 asset_class: d.asset.assetClass,
-                price: d.price.toFixed(decimalsFor(d.asset)),
+                price: d.price.toFixed(decimalsFor(d.asset, d.price)),
                 change_pct: d.changePct.toFixed(2),
                 volume: d.volume ?? "",
               }));
