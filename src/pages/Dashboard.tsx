@@ -275,17 +275,6 @@ const Dashboard = () => {
             widgets={widgets}
           />
 
-          {/* Personal copy-trade history — kept (no community widgets) */}
-          {railOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="hidden xl:block"
-            >
-              <CopiedTradesHistory limit={6} compact />
-            </motion.div>
-          )}
         </main>
       </div>
 
