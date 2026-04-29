@@ -237,9 +237,6 @@ const Dashboard = () => {
           {/* 0. Flagship — Daily Live Webinar banner */}
           <WebinarHeroBanner />
 
-          {/* 1. Top KPI row — 4 clean cards */}
-          <KpiStrip />
-
           {/* 1b. AI Smart Insights — flagship intelligence card */}
           <SmartInsights />
 
@@ -267,6 +264,9 @@ const Dashboard = () => {
               saving={saving}
             />
           </div>
+
+          {/* 2b. Top KPI row — first item under Command Center */}
+          <KpiStrip />
 
           {/* 3. Customizable widget grid */}
           <CustomizableDashboardGrid
