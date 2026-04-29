@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import infinoxLogoWhite from "@/assets/infinox-logo-white.png";
 import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -12,15 +13,30 @@ const Footer = () => {
   const columns = [
     {
       title: t("footer.quickLinks"),
-      links: [t("footer.features"), t("footer.pricing"), t("footer.webinars"), t("footer.blog")],
+      links: [
+        { label: t("footer.anchor.dashboard"), to: "/dashboard" },
+        { label: t("footer.anchor.community"), to: "/chatroom" },
+        { label: t("footer.anchor.webinars"), to: "/webinars" },
+        { label: t("footer.anchor.pricing"), to: "/#pricing" },
+      ],
     },
     {
       title: t("footer.resources"),
-      links: [t("footer.trading"), t("footer.education"), t("footer.community"), t("footer.faq")],
+      links: [
+        { label: t("footer.anchor.education"), to: "/education" },
+        { label: t("footer.anchor.analysis"), to: "/signals" },
+        { label: t("footer.anchor.risk"), to: "/dashboard" },
+        { label: t("footer.anchor.connect"), to: "/connect-mt" },
+      ],
     },
     {
       title: t("footer.support"),
-      links: [t("footer.contactUs"), t("footer.privacy"), t("footer.terms"), t("footer.sitemap")],
+      links: [
+        { label: t("footer.anchor.faq"), to: "/#faq" },
+        { label: t("footer.anchor.contact"), to: "/#contact" },
+        { label: t("footer.privacy"), to: "/#" },
+        { label: t("footer.terms"), to: "/#" },
+      ],
     },
   ];
 
@@ -29,9 +45,9 @@ const Footer = () => {
       <div className="container">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <a href="#home" className="flex items-center gap-3">
-              <img src={infinoxLogo} alt="INFINOX" className="h-6" />
-            </a>
+            <Link to="/" className="flex items-center gap-3" aria-label="IX Live Trading Room — Home">
+              <img src={infinoxLogo} alt="INFINOX — Online Trading Broker" className="h-6" />
+            </Link>
             <span className="mt-3 inline-block font-heading text-sm font-semibold text-foreground">
               <span className="text-primary">IX</span> Live Trading Room
             </span>
@@ -40,18 +56,22 @@ const Footer = () => {
             </p>
           </div>
           {columns.map((col) => (
-            <div key={col.title}>
+            <nav key={col.title} aria-label={col.title}>
               <h4 className="mb-4 font-heading text-xs font-semibold text-foreground uppercase tracking-wider">{col.title}</h4>
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
-                  <li key={link}>
-                    <a href="#" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-                      {link}
-                    </a>
+                  <li key={link.label}>
+                    <Link
+                      to={link.to}
+                      title={link.label}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
           ))}
         </div>
         <div className="mt-12 cyber-line" />
