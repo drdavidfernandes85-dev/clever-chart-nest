@@ -30,14 +30,9 @@ const BREAKPOINTS = { lg: 1280, md: 1024, sm: 768, xs: 480, xxs: 0 };
 const ROW_HEIGHT = 56;
 const MARGIN_Y = 16;
 
-/** Widgets that should auto-fit their height to content. */
-const AUTOFIT_WIDGETS: WidgetId[] = [
-  "portfolio",
-  "risk",
-  "watchlist",
-  "marketMovers",
-  "recentActivity",
-];
+/** Convert measured content pixel height → grid row units. */
+const pxToRows = (px: number, minH = 2) =>
+  Math.max(minH, Math.ceil((px + MARGIN_Y) / (ROW_HEIGHT + MARGIN_Y)));
 
 const CustomizableDashboardGrid = ({
   editing,
@@ -47,6 +42,10 @@ const CustomizableDashboardGrid = ({
 }: Props) => {
   const [isMobile, setIsMobile] = useState(false);
   const measureRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const layoutsRef = useRef(layouts);
+  layoutsRef.current = layouts;
+  const onChangeRef = useRef(onLayoutChange);
+  onChangeRef.current = onLayoutChange;
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -56,62 +55,90 @@ const CustomizableDashboardGrid = ({
     return () => mq.removeEventListener("change", update);
   }, []);
 
-  /**
-   * Auto-fit: measure intrinsic content height of marked widgets and
-   * adjust their `h` so the frame hugs the content (no internal scroll, no empty space).
-   */
-  const runAutofit = useCallback(() => {
-    const lg = layouts.lg;
-    if (!lg?.length) return;
-    let changed = false;
-    const next = lg.map((l) => {
-      if (!AUTOFIT_WIDGETS.includes(l.i as WidgetId)) return l;
-      const el = measureRefs.current[l.i];
-      if (!el) return l;
-      const contentH = el.scrollHeight;
-      if (contentH <= 0) return l;
-      // Convert px → grid rows. Each row = ROW_HEIGHT + MARGIN_Y vertical gap.
-      const rows = Math.max(
-        l.minH ?? 4,
-        Math.ceil((contentH + MARGIN_Y) / (ROW_HEIGHT + MARGIN_Y)),
-      );
-      if (rows !== l.h) {
-        changed = true;
-        return { ...l, h: rows };
-      }
-      return l;
-    });
-    if (!changed) return;
-    onLayoutChange(next, { lg: next, md: layouts.md, sm: layouts.sm, xs: layouts.xs });
-  }, [layouts, onLayoutChange]);
-
-  // Re-run auto-fit when layout (preset) changes or window resizes
-  useEffect(() => {
-    const id = window.setTimeout(runAutofit, 80);
-    const onResize = () => runAutofit();
-    window.addEventListener("resize", onResize);
-    return () => {
-      window.clearTimeout(id);
-      window.removeEventListener("resize", onResize);
+  /** Apply heights from measured content to every breakpoint of the layout. */
+  const applyHeights = useCallback((heights: Record<string, number>) => {
+    const cur = layoutsRef.current;
+    const fit = (items: LayoutItem[] | undefined): { items: LayoutItem[]; changed: boolean } => {
+      if (!items?.length) return { items: items ?? [], changed: false };
+      let changed = false;
+      const next = items.map((l) => {
+        const h = heights[l.i];
+        if (!h) return l;
+        const rows = pxToRows(h, l.minH ?? 2);
+        if (rows !== l.h) {
+          changed = true;
+          return { ...l, h: rows };
+        }
+        return l;
+      });
+      return { items: next, changed };
     };
+
+    const lgRes = fit(cur.lg);
+    const mdRes = fit(cur.md);
+    const smRes = fit(cur.sm);
+    const xsRes = fit(cur.xs);
+
+    if (!lgRes.changed && !mdRes.changed && !smRes.changed && !xsRes.changed) return;
+
+    onChangeRef.current(lgRes.items, {
+      lg: lgRes.items,
+      md: mdRes.items,
+      sm: smRes.items,
+      xs: xsRes.items,
+    });
+  }, []);
+
+  /** Continuously observe each widget's content height. */
+  useEffect(() => {
+    if (isMobile) return;
+    const heights: Record<string, number> = {};
+    let raf = 0;
+    const schedule = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        applyHeights({ ...heights });
+      });
+    };
+
+    const observers: ResizeObserver[] = [];
+    Object.entries(measureRefs.current).forEach(([id, el]) => {
+      if (!el) return;
+      const ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const h = (entry.target as HTMLElement).scrollHeight;
+          if (h > 0 && heights[id] !== h) {
+            heights[id] = h;
+            schedule();
+          }
+        }
+      });
+      ro.observe(el);
+      observers.push(ro);
+      // Initial measurement
+      heights[id] = el.scrollHeight;
+    });
+    schedule();
+
+    return () => {
+      observers.forEach((o) => o.disconnect());
+      if (raf) cancelAnimationFrame(raf);
+    };
+    // Re-bind observers when widget ids change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layouts.lg.map((l) => l.i).join(",")]);
+  }, [layouts.lg.map((l) => l.i).join(","), isMobile, applyHeights]);
 
   const items = useMemo(
     () =>
       layouts.lg.map((l) => {
         const id = l.i as WidgetId;
-        const isAutofit = AUTOFIT_WIDGETS.includes(id);
         return (
           <div key={l.i} data-widget-id={l.i}>
             <WidgetFrame editing={editing} title={WIDGET_LABELS[id]}>
-              {isAutofit ? (
-                <div ref={(el) => (measureRefs.current[l.i] = el)}>
-                  {widgets[id]}
-                </div>
-              ) : (
-                widgets[id]
-              )}
+              <div ref={(el) => (measureRefs.current[l.i] = el)}>
+                {widgets[id]}
+              </div>
             </WidgetFrame>
           </div>
         );
