@@ -12,8 +12,9 @@ import { useWebinars } from "@/hooks/useWebinars";
  */
 const FloatingJoinLive = () => {
   const { user } = useAuth();
-  const { liveNow } = useWebinars();
   const { pathname } = useLocation();
+  const shouldCheckLive = !!user && pathname !== "/" && pathname !== "/login" && pathname !== "/register" && !pathname.startsWith("/webinars");
+  const { liveNow } = useWebinars(shouldCheckLive);
   const [dismissed, setDismissed] = useState(false);
 
   // Reset dismissal when the live session changes
