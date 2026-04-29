@@ -22,13 +22,13 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   recentActivity: "Recent Activity",
 };
 
-/** Sensible per-widget min sizes (12-col grid). */
+/** Sensible per-widget min sizes (12-col grid). Heights are minimums — autofit will grow as needed. */
 export const WIDGET_MIN: Record<WidgetId, { w: number; h: number }> = {
-  portfolio: { w: 5, h: 9 },
-  risk: { w: 3, h: 7 },
-  watchlist: { w: 3, h: 9 },
-  marketMovers: { w: 4, h: 8 },
-  recentActivity: { w: 3, h: 6 },
+  portfolio: { w: 5, h: 4 },
+  risk: { w: 3, h: 4 },
+  watchlist: { w: 3, h: 4 },
+  marketMovers: { w: 4, h: 4 },
+  recentActivity: { w: 3, h: 4 },
 };
 
 export type PresetId =
