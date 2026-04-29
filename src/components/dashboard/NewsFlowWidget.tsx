@@ -42,20 +42,77 @@ function formatTime(dateStr: string): string {
   }
 }
 
-const squawkItems = [
-  { time: "17:52:30", priority: "high" as const, category: "CENTRAL BANKS", headline: "FED'S WALLER: LABOR MARKET REMAINS SOLID, INFLATION PROGRESS HAS STALLED", impact: "USD", direction: "bullish" as const },
-  { time: "17:48:12", priority: "breaking" as const, category: "GEOPOLITICS", headline: "BREAKING: US TREASURY SECRETARY SAYS NEW TARIFF FRAMEWORK TO BE ANNOUNCED NEXT WEEK", impact: "MULTI", direction: "neutral" as const },
-  { time: "17:45:05", priority: "medium" as const, category: "DATA", headline: "US ISM SERVICES PMI 52.7 VS 51.4 EXPECTED — EXPANSION ACCELERATES", impact: "USD", direction: "bullish" as const },
-  { time: "17:40:22", priority: "low" as const, category: "ENERGY", headline: "OPEC+ DELEGATES SAY NO EMERGENCY MEETING PLANNED DESPITE OIL PRICE DROP", impact: "OIL", direction: "bearish" as const },
-  { time: "17:35:18", priority: "high" as const, category: "CENTRAL BANKS", headline: "ECB'S LAGARDE: WE ARE NOT PRE-COMMITTING TO ANY PARTICULAR RATE PATH", impact: "EUR", direction: "neutral" as const },
-  { time: "17:30:44", priority: "medium" as const, category: "FIXED INCOME", headline: "US 10-YEAR YIELD RISES TO 4.38%, HIGHEST SINCE NOVEMBER", impact: "BONDS", direction: "bearish" as const },
-  { time: "17:25:10", priority: "low" as const, category: "EQUITIES", headline: "NVIDIA SHARES UP 3.2% IN PRE-MARKET ON AI CHIP DEMAND FORECAST UPGRADE", impact: "NVDA", direction: "bullish" as const },
-  { time: "17:20:55", priority: "medium" as const, category: "FX", headline: "USD/JPY BREAKS ABOVE 150.00 — BOJ INTERVENTION WATCH INTENSIFIES", impact: "JPY", direction: "bearish" as const },
-  { time: "17:15:33", priority: "high" as const, category: "DATA", headline: "UK GDP M/M 0.1% VS 0.2% EXPECTED — ECONOMY BARELY GROWING", impact: "GBP", direction: "bearish" as const },
-  { time: "17:10:08", priority: "low" as const, category: "COMMODITIES", headline: "GOLD CONSOLIDATES NEAR $2,340 AHEAD OF US CPI DATA TOMORROW", impact: "XAU", direction: "neutral" as const },
-  { time: "17:05:42", priority: "breaking" as const, category: "GEOPOLITICS", headline: "REPORTS: CHINA TO IMPOSE RETALIATORY TARIFFS ON US AGRICULTURAL PRODUCTS", impact: "CNH", direction: "bearish" as const },
-  { time: "17:00:15", priority: "medium" as const, category: "CENTRAL BANKS", headline: "BOC HOLDS RATES AT 5.0% AS EXPECTED — SIGNALS CUTS POSSIBLE IN H2", impact: "CAD", direction: "bearish" as const },
+type SquawkPriority = "breaking" | "high" | "medium" | "low";
+type SquawkDirection = "bullish" | "bearish" | "neutral";
+
+interface SquawkItem {
+  time: string;
+  priority: SquawkPriority;
+  category: string;
+  headline: string;
+  impact: string;
+  direction: SquawkDirection;
+  link: string;
+  pubDate: string;
+}
+
+const BREAKING_KEYWORDS = ["breaking", "alert", "urgent", "just in", "flash"];
+const HIGH_KEYWORDS = ["fed", "ecb", "boe", "boj", "rate", "cpi", "inflation", "gdp", "nfp", "payrolls", "fomc", "powell", "lagarde"];
+const BEARISH_KEYWORDS = ["fall", "drop", "down", "decline", "slump", "loss", "miss", "weak", "cut", "bear", "sell", "tumble", "plunge"];
+const BULLISH_KEYWORDS = ["rise", "gain", "up", "rally", "jump", "beat", "strong", "hike", "bull", "buy", "surge", "soar", "growth"];
+
+const CATEGORY_KEYWORDS: Array<{ keywords: string[]; category: string; impact: string }> = [
+  { keywords: ["fed", "ecb", "boe", "boj", "rate", "central bank", "fomc"], category: "CENTRAL BANKS", impact: "RATES" },
+  { keywords: ["cpi", "inflation", "gdp", "pmi", "ism", "payrolls", "unemployment", "retail sales"], category: "DATA", impact: "MACRO" },
+  { keywords: ["eur/usd", "usd/jpy", "gbp/usd", "forex", "fx", "dollar", "euro", "yen", "sterling"], category: "FX", impact: "FX" },
+  { keywords: ["oil", "crude", "wti", "brent", "opec", "natural gas"], category: "ENERGY", impact: "OIL" },
+  { keywords: ["gold", "silver", "copper", "commodity", "commodities"], category: "COMMODITIES", impact: "XAU" },
+  { keywords: ["china", "russia", "ukraine", "war", "tariff", "sanctions", "geopolit", "election"], category: "GEOPOLITICS", impact: "MULTI" },
+  { keywords: ["bitcoin", "btc", "ethereum", "crypto"], category: "CRYPTO", impact: "BTC" },
 ];
+
+function classifyNews(item: RssNewsItem): SquawkItem {
+  const text = `${item.title} ${item.description || ""}`.toLowerCase();
+
+  let priority: SquawkPriority = "low";
+  if (BREAKING_KEYWORDS.some((k) => text.includes(k))) priority = "breaking";
+  else if (HIGH_KEYWORDS.some((k) => text.includes(k))) priority = "high";
+  else if (item.category?.toUpperCase().includes("MARKETS") || item.category?.toUpperCase().includes("TOP")) priority = "medium";
+
+  let direction: SquawkDirection = "neutral";
+  const bullScore = BULLISH_KEYWORDS.filter((k) => text.includes(k)).length;
+  const bearScore = BEARISH_KEYWORDS.filter((k) => text.includes(k)).length;
+  if (bullScore > bearScore) direction = "bullish";
+  else if (bearScore > bullScore) direction = "bearish";
+
+  let category = item.category?.toUpperCase() || "MARKETS";
+  let impact = "MULTI";
+  for (const c of CATEGORY_KEYWORDS) {
+    if (c.keywords.some((k) => text.includes(k))) {
+      category = c.category;
+      impact = c.impact;
+      break;
+    }
+  }
+
+  let time = "";
+  try {
+    time = new Date(item.pubDate).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  } catch {
+    time = "--:--:--";
+  }
+
+  return {
+    time,
+    priority,
+    category,
+    headline: item.title.toUpperCase(),
+    impact,
+    direction,
+    link: item.link,
+    pubDate: item.pubDate,
+  };
+}
 
 const priorityStyles = {
   breaking: "border-l-red-500 bg-red-500/5",
@@ -88,13 +145,34 @@ const SQUAWK_FILTERS = ["ALL", "BREAKING", "CENTRAL BANKS", "DATA", "FX", "GEOPO
 const LiveSquawkFeed = () => {
   const [pulse, setPulse] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [items, setItems] = useState<SquawkItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const interval = setInterval(() => setPulse((p) => !p), 1500);
-    return () => clearInterval(interval);
+  const fetchSquawk = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
+      if (!error && data?.data) {
+        const classified = (data.data as RssNewsItem[]).map(classifyNews);
+        setItems(classified);
+      }
+    } catch (e) {
+      console.error("Failed to fetch squawk:", e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const filteredItems = squawkItems.filter((item) => {
+  useEffect(() => {
+    fetchSquawk();
+    const refresh = setInterval(fetchSquawk, 60_000);
+    const blink = setInterval(() => setPulse((p) => !p), 1500);
+    return () => {
+      clearInterval(refresh);
+      clearInterval(blink);
+    };
+  }, [fetchSquawk]);
+
+  const filteredItems = items.filter((item) => {
     if (activeFilter === "ALL") return true;
     if (activeFilter === "BREAKING") return item.priority === "breaking";
     return item.category === activeFilter;
@@ -110,7 +188,9 @@ const LiveSquawkFeed = () => {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-muted-foreground">Auto-refresh: ON</span>
-          <RefreshCw className="h-3.5 w-3.5 text-muted-foreground cursor-pointer hover:text-foreground" />
+          <button onClick={fetchSquawk} className="text-muted-foreground hover:text-foreground" aria-label="Refresh squawk">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 
@@ -127,13 +207,24 @@ const LiveSquawkFeed = () => {
       </div>
 
       <div className="max-h-[400px] overflow-y-auto divide-y divide-border/20">
-        {filteredItems.length === 0 ? (
+        {loading && items.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading live squawk…
+          </div>
+        ) : filteredItems.length === 0 ? (
           <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
             No items for this filter
           </div>
         ) : (
           filteredItems.map((item, i) => (
-            <div key={i} className={`border-l-2 px-4 py-2.5 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}>
+            <a
+              key={`${item.link}-${i}`}
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`block border-l-2 px-4 py-2.5 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}
+            >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono text-muted-foreground">{item.time}</span>
@@ -160,7 +251,7 @@ const LiveSquawkFeed = () => {
               <p className={`text-xs font-medium leading-snug ${item.priority === "breaking" ? "text-red-300" : "text-foreground"}`}>
                 {item.headline}
               </p>
-            </div>
+            </a>
           ))
         )}
       </div>
