@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -44,6 +44,20 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary"));
 const Webinars = lazy(() => import("./pages/Webinars"));
+
+const DashboardShell = ({ children }: { children: ReactNode }) => (
+  <ProtectedRoute>
+    <DashboardLayout>{children}</DashboardLayout>
+  </ProtectedRoute>
+);
+
+const GatedDashboardShell = ({ children }: { children: ReactNode }) => (
+  <ProtectedRoute>
+    <EligibilityGate>
+      <DashboardLayout>{children}</DashboardLayout>
+    </EligibilityGate>
+  </ProtectedRoute>
+);
 
 const queryClient = new QueryClient();
 
