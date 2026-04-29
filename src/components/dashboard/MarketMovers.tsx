@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Activity, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, Loader2, Download } from "lucide-react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import {
   MARKET_UNIVERSE,
@@ -8,6 +8,8 @@ import {
   decimalsFor,
   type MarketSymbol,
 } from "@/lib/markets";
+import { toCSV, downloadCSV } from "@/lib/csv";
+import { toast } from "sonner";
 
 interface Mover {
   symbol: string;
