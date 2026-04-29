@@ -66,7 +66,8 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
         setPos((prev) => ({
           x: typeof saved.x === "number" ? saved.x : prev.x,
           y: typeof saved.y === "number" ? saved.y : prev.y,
-          open: !!saved.open,
+          // Always start minimized — the panel must be opened explicitly each visit.
+          open: false,
         }));
       } else {
         setPos(defaultPos());
