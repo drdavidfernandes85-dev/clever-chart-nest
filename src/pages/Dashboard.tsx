@@ -26,6 +26,7 @@ import Watchlist from "@/components/dashboard/Watchlist";
 import MarketMovers from "@/components/dashboard/MarketMovers";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import RiskMeter from "@/components/dashboard/RiskMeter";
+import RecentActivity from "@/components/dashboard/RecentActivity";
 
 
 
@@ -73,6 +74,7 @@ const Dashboard = () => {
       risk: <RiskMeter />,
       watchlist: <Watchlist />,
       marketMovers: <MarketMovers />,
+      recentActivity: <RecentActivity />,
     }),
     [],
   );

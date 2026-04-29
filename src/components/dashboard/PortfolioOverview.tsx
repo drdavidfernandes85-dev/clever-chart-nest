@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import RecentActivity from "./RecentActivity";
 import {
   Briefcase,
   TrendingUp,
@@ -414,11 +413,6 @@ const PortfolioOverview = () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Embedded Recent Activity */}
-      <div className="border-t border-border/40">
-        <RecentActivity />
       </div>
 
       {/* Footer link */}
