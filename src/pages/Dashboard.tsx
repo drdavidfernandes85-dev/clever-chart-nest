@@ -73,8 +73,6 @@ const Dashboard = () => {
       risk: <RiskMeter />,
       watchlist: <Watchlist />,
       marketMovers: <MarketMovers />,
-      liveSignals: <LiveSharedSignals />,
-      quickTrade: <QuickTradePanel compact />,
       recentActivity: <RecentActivity />,
     }),
     [],
