@@ -24,17 +24,15 @@ interface Pos {
   open: boolean;
 }
 
-/** Default placement: open panel near the bottom-right of the viewport. */
+/** Default placement: minimized pill near the bottom-right of the viewport. */
 const defaultPos = (): Pos => {
-  if (typeof window === "undefined") return { x: 24, y: 120, open: true };
+  if (typeof window === "undefined") return { x: 24, y: 120, open: false };
   const isMobile = window.innerWidth < 1024;
   const bottomInset = isMobile ? MOBILE_BOTTOM_INSET : 32;
-  const width = isMobile ? Math.min(PANEL_W, window.innerWidth - 24) : PANEL_W;
-  const height = Math.min(PANEL_H, window.innerHeight - bottomInset - 24);
   return {
-    x: isMobile ? 12 : Math.max(24, window.innerWidth - width - 24),
-    y: Math.max(80, window.innerHeight - height - bottomInset),
-    open: true,
+    x: Math.max(12, window.innerWidth - PILL_W - 24),
+    y: Math.max(80, window.innerHeight - PILL_H - bottomInset),
+    open: false,
   };
 };
 
