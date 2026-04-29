@@ -24,14 +24,25 @@ interface Pos {
   open: boolean;
 }
 
-/** Default placement: minimized pill near the bottom-right of the viewport. */
+/** Default placement: minimized pill near the top-right of the chart area,
+ *  just below the chart toolbar so it sits over the chart and not over the
+ *  community trader rail on the right. */
 const defaultPos = (): Pos => {
-  if (typeof window === "undefined") return { x: 24, y: 120, open: false };
+  if (typeof window === "undefined") return { x: 24, y: 240, open: false };
   const isMobile = window.innerWidth < 1024;
-  const bottomInset = isMobile ? MOBILE_BOTTOM_INSET : 32;
+  if (isMobile) {
+    return {
+      x: Math.max(12, window.innerWidth - PILL_W - 16),
+      y: Math.max(80, window.innerHeight - PILL_H - MOBILE_BOTTOM_INSET),
+      open: false,
+    };
+  }
+  // Desktop: tuck pill into the top-right of the chart, leaving room for
+  // the right-hand community/positions rail (~360px) and chart toolbar (~240px top).
+  const RIGHT_RAIL = 380;
   return {
-    x: Math.max(12, window.innerWidth - PILL_W - 24),
-    y: Math.max(80, window.innerHeight - PILL_H - bottomInset),
+    x: Math.max(12, window.innerWidth - RIGHT_RAIL - PILL_W - 24),
+    y: 240,
     open: false,
   };
 };
