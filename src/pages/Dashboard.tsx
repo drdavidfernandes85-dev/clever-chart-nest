@@ -73,7 +73,6 @@ const Dashboard = () => {
       risk: <RiskMeter />,
       watchlist: <Watchlist />,
       marketMovers: <MarketMovers />,
-      recentActivity: <RecentActivity />,
     }),
     [],
   );
