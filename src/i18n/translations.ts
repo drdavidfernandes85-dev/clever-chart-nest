@@ -296,7 +296,7 @@ const translations = {
     "dash.intro": "A professional control panel for serious traders: portfolio overview, real-time risk exposure, market analysis, AI trading assistant and live market movers — all in one place.",
     "dash.editor.editing": "Drag widgets by their handle. Resize from the bottom-right corner.",
     "dash.editor.idle": "Customize your terminal — drag, resize, save your layout.",
-    "dash.related.title": "Keep learning &amp; connecting",
+    "dash.related.title": "Keep learning & connecting",
     "dash.related.desc": "Deepen your edge with structured education and live discussion.",
     "dash.related.education": "Education Center",
     "dash.related.educationDesc": "Structured modules on technical analysis, risk management and trading psychology.",
