@@ -14,8 +14,28 @@ interface Step {
 const STEPS: Step[] = [
   {
     route: "/dashboard",
-    title: "Your Command Center",
-    body: "Daily AI briefing, market sentiment, news, calendar and live tickers — all in one place.",
+    title: "Welcome to your Command Center",
+    body: "Your dashboard is fully customizable. Each panel can be moved, resized, and persists across sessions.",
+  },
+  {
+    route: "/dashboard",
+    title: "Portfolio & Risk panels",
+    body: "Track your live MT4/5 balance, equity, open P/L and risk exposure in real time. Connect your account from the sidebar to populate them.",
+  },
+  {
+    route: "/dashboard",
+    title: "Watchlist & Market Movers",
+    body: "Pin your favourite symbols and spot the day's biggest gainers, losers and most active markets. Tap the CSV button on Movers to download the data.",
+  },
+  {
+    route: "/dashboard",
+    title: "Recent Activity",
+    body: "Search by symbol, filter by side or wins/losses, and export your trade history to CSV — all from this single panel.",
+  },
+  {
+    route: "/live-chart",
+    title: "Quick Trade — one-click orders",
+    body: "The yellow lightning button opens Quick Trade. Pick a symbol, set lots and SL/TP, then send the order straight to your connected MT account. You'll get a toast confirmation for every action.",
   },
   {
     route: "/live-chart",
