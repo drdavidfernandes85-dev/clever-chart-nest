@@ -331,8 +331,6 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      <FieryThemeQA />
-
       {/* Floating AI Assistant — bottom-right glowing yellow */}
       <AICopilot />
 
