@@ -9,7 +9,6 @@ export const WIDGET_IDS = [
   "risk",
   "watchlist",
   "marketMovers",
-  "recentActivity",
 ] as const;
 
 export type WidgetId = (typeof WIDGET_IDS)[number];
@@ -19,7 +18,6 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   risk: "Risk Exposure",
   watchlist: "Watchlist",
   marketMovers: "Market Movers",
-  recentActivity: "Recent Activity",
 };
 
 /** Sensible per-widget min sizes (12-col grid). Heights are minimums — autofit will grow as needed. */
@@ -28,7 +26,6 @@ export const WIDGET_MIN: Record<WidgetId, { w: number; h: number }> = {
   risk: { w: 3, h: 2 },
   watchlist: { w: 3, h: 2 },
   marketMovers: { w: 4, h: 2 },
-  recentActivity: { w: 3, h: 2 },
 };
 
 export type PresetId =
@@ -70,14 +67,12 @@ export const PRESETS: Preset[] = [
     name: "Classic Terminal",
     description: "Logical trader workflow — context, action, opportunity",
     lg: [
-      // Row 1 — context: portfolio hero (tall) + risk
-      make("portfolio", 0, 0, 8, 13),
+      // Row 1 — context: portfolio hero (tall, includes recent activity) + risk
+      make("portfolio", 0, 0, 8, 21),
       make("risk", 8, 0, 4, 13),
       // Row 2 — opportunity scan: watchlist + market movers
-      make("watchlist", 0, 13, 5, 11),
-      make("marketMovers", 5, 13, 7, 8),
-      // Row 3 — recent activity (full width)
-      make("recentActivity", 0, 24, 12, 8),
+      make("watchlist", 0, 21, 5, 11),
+      make("marketMovers", 5, 21, 7, 8),
     ],
   },
 ];
