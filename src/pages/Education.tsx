@@ -17,51 +17,80 @@ import {
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { cn } from "@/lib/utils";
-import { MODULES, TOTAL_MODULES } from "@/data/educationContent";
+import { useModules, TOTAL_MODULES } from "@/data/educationContent";
 import { useEducationProgress } from "@/hooks/useEducationProgress";
 import { Progress } from "@/components/ui/progress";
-
-const MILESTONES = [
-  { pct: 25, slug: "edu_milestone_bronze", label: "Initiate", icon: Medal, tier: "bronze" as const, xp: 100 },
-  { pct: 50, slug: "edu_milestone_silver", label: "Apprentice", icon: Award, tier: "silver" as const, xp: 200 },
-  { pct: 75, slug: "edu_milestone_gold", label: "Expert", icon: Trophy, tier: "gold" as const, xp: 300 },
-  { pct: 100, slug: "edu_graduate", label: "Elite Graduate", icon: GraduationCap, tier: "gold" as const, xp: 500 },
-];
-
-const tierStyle = (tier: "bronze" | "silver" | "gold") =>
-  tier === "gold"
-    ? "from-yellow-400/30 to-orange-500/20 border-primary/50 text-primary"
-    : tier === "silver"
-    ? "from-slate-300/20 to-slate-500/10 border-slate-400/40 text-slate-200"
-    : "from-orange-700/20 to-amber-800/10 border-amber-600/40 text-amber-300";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Education = () => {
+  const { t, locale } = useLanguage();
+  const MODULES = useModules();
   const { completed, loading, totalXp } = useEducationProgress(TOTAL_MODULES);
   const completedCount = completed.size;
   const percent = Math.round((completedCount * 100) / TOTAL_MODULES);
 
-  const jsonLd = useMemo(
-    () => ({
-      "@context": "https://schema.org",
-      "@type": "Course",
-      name: "IX Education Center",
-      description:
-        "Professional-grade trading education covering macro, technicals, patterns, risk, psychology, and advanced strategies.",
-      provider: { "@type": "Organization", name: "IX Live Trading Room" },
-      hasCourseInstance: MODULES.map((m) => ({
-        "@type": "CourseInstance",
-        name: m.shortTitle,
-        description: m.summary,
-      })),
-    }),
-    []
+  const MILESTONES = useMemo(
+    () => [
+      { pct: 25, slug: "edu_milestone_bronze", label: t("edu.tier.bronze"), icon: Medal, tier: "bronze" as const, xp: 100 },
+      { pct: 50, slug: "edu_milestone_silver", label: t("edu.tier.silver"), icon: Award, tier: "silver" as const, xp: 200 },
+      { pct: 75, slug: "edu_milestone_gold", label: t("edu.tier.gold"), icon: Trophy, tier: "gold" as const, xp: 300 },
+      { pct: 100, slug: "edu_graduate", label: t("edu.tier.graduate"), icon: GraduationCap, tier: "gold" as const, xp: 500 },
+    ],
+    [t]
   );
+
+  const tierStyle = (tier: "bronze" | "silver" | "gold") =>
+    tier === "gold"
+      ? "from-yellow-400/30 to-orange-500/20 border-primary/50 text-primary"
+      : tier === "silver"
+      ? "from-slate-300/20 to-slate-500/10 border-slate-400/40 text-slate-200"
+      : "from-orange-700/20 to-amber-800/10 border-amber-600/40 text-amber-300";
+
+  const jsonLd = useMemo(
+    () => [
+      {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        name: t("edu.seo.title"),
+        description: t("edu.seo.desc"),
+        inLanguage: locale === "pt" ? "pt-BR" : locale,
+        provider: { "@type": "Organization", name: "IX Live Trading Room" },
+        hasCourseInstance: MODULES.map((m) => ({
+          "@type": "CourseInstance",
+          name: m.shortTitle,
+          description: m.summary,
+          courseMode: "online",
+        })),
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: t("edu.curriculum"),
+        itemListElement: MODULES.map((m, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: m.shortTitle,
+          url: `https://www.salatradingelite.com/education/${m.slug}`,
+        })),
+      },
+    ],
+    [MODULES, t, locale]
+  );
+
+  const remaining = TOTAL_MODULES - completedCount;
+  const subtitle = loading
+    ? t("edu.curriculum.loading")
+    : completedCount === 0
+    ? t("edu.curriculum.start")
+    : remaining === 1
+    ? t("edu.curriculum.keepGoing.one")
+    : t("edu.curriculum.keepGoing.many").replace("{n}", String(remaining));
 
   return (
     <>
       <SEO
-        title="Education Center | IX Live Trading Room"
-        description="Master the markets through structured modules. Earn XP, unlock badges, and level up from beginner to elite trader."
+        title={t("edu.seo.title")}
+        description={t("edu.seo.desc")}
         canonical="https://www.salatradingelite.com/education"
         type="article"
         jsonLd={jsonLd}
@@ -93,19 +122,17 @@ const Education = () => {
               >
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-proxima text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
                   <GraduationCap className="h-3.5 w-3.5" />
-                  Education Center
+                  {t("edu.eyebrow")}
                 </span>
                 <h1 className="mt-4 font-heading text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
-                  Master the markets,{" "}
+                  {t("edu.h1.lead")}{" "}
                   <span className="bg-gradient-to-br from-primary via-primary to-orange-400 bg-clip-text text-transparent">
-                    one module
+                    {t("edu.h1.brand")}
                   </span>{" "}
-                  at a time.
+                  {t("edu.h1.tail")}
                 </h1>
                 <p className="mt-5 max-w-xl text-base md:text-lg leading-relaxed text-muted-foreground">
-                  Complete modules to earn XP and unlock badges. Whether you're a beginner or an
-                  experienced trader, our structured path will help you build a consistent,
-                  profitable career.
+                  {t("edu.intro")}
                 </p>
               </motion.div>
 
@@ -118,7 +145,7 @@ const Education = () => {
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-proxima text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
-                    Your Progress
+                    {t("edu.progress.label")}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     <Flame className="h-3.5 w-3.5 text-orange-400" />
@@ -129,7 +156,9 @@ const Education = () => {
                   <span className="font-heading text-4xl font-bold text-foreground">
                     {completedCount}
                   </span>
-                  <span className="text-muted-foreground text-sm">/ {TOTAL_MODULES} modules</span>
+                  <span className="text-muted-foreground text-sm">
+                    / {TOTAL_MODULES} {t("edu.progress.modulesSuffix")}
+                  </span>
                   <span className="ml-auto text-primary font-proxima font-bold text-lg">
                     {percent}%
                   </span>
@@ -168,7 +197,7 @@ const Education = () => {
           <div className="flex items-center gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 backdrop-blur-md">
             <Info className="h-3.5 w-3.5 shrink-0 text-primary" />
             <p className="text-[11px] leading-relaxed text-muted-foreground sm:text-xs">
-              All content is for <span className="font-semibold text-foreground">educational purposes only</span> and does not constitute financial advice. Trading involves risk; always do your own research.
+              {t("edu.disclaimer")}
             </p>
           </div>
         </div>
@@ -178,18 +207,16 @@ const Education = () => {
           <div className="mb-6 flex items-end justify-between">
             <div>
               <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-                Curriculum
+                {t("edu.curriculum")}
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {loading ? "Loading your progress…" : completedCount === 0 ? "Start with Module 01 — every journey begins with one step." : `Keep going — ${TOTAL_MODULES - completedCount} module${TOTAL_MODULES - completedCount === 1 ? "" : "s"} to go.`}
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
             </div>
             <Link
               to="/profile"
               className="hidden md:inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-card/40 px-4 py-2 font-proxima text-xs font-bold uppercase tracking-wider text-foreground hover:border-primary/60 hover:bg-primary/10 transition"
             >
               <Trophy className="h-4 w-4 text-primary" />
-              View Badges
+              {t("edu.viewBadges")}
             </Link>
           </div>
 
@@ -223,12 +250,12 @@ const Education = () => {
                       {/* badges overlay */}
                       <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-background/70 backdrop-blur px-2.5 py-1 font-proxima text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-                          Module {m.number}
+                          {t("eduMod.module")} {m.number}
                         </span>
                         {isDone ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 font-proxima text-[10px] font-bold uppercase tracking-wider text-primary-foreground shadow-[0_8px_20px_-8px_hsl(48_100%_51%/0.7)]">
                             <CheckCircle2 className="h-3 w-3" />
-                            Completed
+                            {t("edu.completed")}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/70 backdrop-blur px-2.5 py-1 font-proxima text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -255,7 +282,7 @@ const Education = () => {
                           {m.read}
                         </span>
                         <span className="inline-flex items-center gap-1 font-proxima text-xs font-bold uppercase tracking-wider text-primary group-hover:gap-2 transition-all">
-                          {isDone ? "Review" : "Start"}
+                          {isDone ? t("edu.review") : t("edu.start")}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </span>
                       </div>
@@ -270,7 +297,9 @@ const Education = () => {
           <section className="mt-12">
             <div className="mb-4 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              <h2 className="font-heading text-xl font-bold text-foreground">Tier Rewards</h2>
+              <h2 className="font-heading text-xl font-bold text-foreground">
+                {t("edu.tierRewards")}
+              </h2>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {MILESTONES.map((m) => {
@@ -290,7 +319,7 @@ const Education = () => {
                       <Icon className={cn("h-6 w-6", reached ? "" : "opacity-50")} />
                       {reached ? (
                         <span className="text-[10px] font-proxima font-bold uppercase tracking-wider">
-                          Unlocked
+                          {t("edu.unlocked")}
                         </span>
                       ) : (
                         <Lock className="h-3.5 w-3.5 opacity-50" />
@@ -298,7 +327,7 @@ const Education = () => {
                     </div>
                     <div className="mt-3 font-heading text-base font-bold">{m.label}</div>
                     <div className="text-[12px] mt-1">
-                      {m.pct}% complete · +{m.xp} XP
+                      {m.pct}% {t("edu.tier.complete")} · +{m.xp} XP
                     </div>
                   </div>
                 );
@@ -310,23 +339,21 @@ const Education = () => {
           <section className="mt-12 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/[0.10] via-card/40 to-transparent p-6 md:p-10 text-center">
             <Play className="mx-auto h-10 w-10 text-primary mb-3" />
             <h3 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
-              Ready to put theory into practice?
+              {t("edu.cta.title")}
             </h3>
-            <p className="mt-2 max-w-xl mx-auto text-muted-foreground">
-              Join a live webinar with our analysts and watch real setups unfold in real time.
-            </p>
+            <p className="mt-2 max-w-xl mx-auto text-muted-foreground">{t("edu.cta.desc")}</p>
             <div className="mt-5 flex flex-wrap gap-3 justify-center">
               <Link
                 to="/webinars"
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-proxima text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.6)] hover:brightness-110 transition"
               >
-                Join Live Webinars
+                {t("edu.cta.joinWebinars")}
               </Link>
               <Link
                 to="/videos"
                 className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-card/40 px-5 py-2.5 font-proxima text-sm font-bold uppercase tracking-wider text-foreground hover:border-primary/60 hover:bg-primary/10 transition"
               >
-                Open Video Library
+                {t("edu.cta.openVideos")}
               </Link>
             </div>
           </section>
