@@ -145,13 +145,34 @@ const SQUAWK_FILTERS = ["ALL", "BREAKING", "CENTRAL BANKS", "DATA", "FX", "GEOPO
 const LiveSquawkFeed = () => {
   const [pulse, setPulse] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
+  const [items, setItems] = useState<SquawkItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const interval = setInterval(() => setPulse((p) => !p), 1500);
-    return () => clearInterval(interval);
+  const fetchSquawk = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
+      if (!error && data?.data) {
+        const classified = (data.data as RssNewsItem[]).map(classifyNews);
+        setItems(classified);
+      }
+    } catch (e) {
+      console.error("Failed to fetch squawk:", e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const filteredItems = squawkItems.filter((item) => {
+  useEffect(() => {
+    fetchSquawk();
+    const refresh = setInterval(fetchSquawk, 60_000);
+    const blink = setInterval(() => setPulse((p) => !p), 1500);
+    return () => {
+      clearInterval(refresh);
+      clearInterval(blink);
+    };
+  }, [fetchSquawk]);
+
+  const filteredItems = items.filter((item) => {
     if (activeFilter === "ALL") return true;
     if (activeFilter === "BREAKING") return item.priority === "breaking";
     return item.category === activeFilter;
@@ -167,7 +188,9 @@ const LiveSquawkFeed = () => {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-[10px] text-muted-foreground">Auto-refresh: ON</span>
-          <RefreshCw className="h-3.5 w-3.5 text-muted-foreground cursor-pointer hover:text-foreground" />
+          <button onClick={fetchSquawk} className="text-muted-foreground hover:text-foreground" aria-label="Refresh squawk">
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          </button>
         </div>
       </div>
 
@@ -184,13 +207,24 @@ const LiveSquawkFeed = () => {
       </div>
 
       <div className="max-h-[400px] overflow-y-auto divide-y divide-border/20">
-        {filteredItems.length === 0 ? (
+        {loading && items.length === 0 ? (
+          <div className="flex h-32 items-center justify-center text-xs text-muted-foreground gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading live squawk…
+          </div>
+        ) : filteredItems.length === 0 ? (
           <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
             No items for this filter
           </div>
         ) : (
           filteredItems.map((item, i) => (
-            <div key={i} className={`border-l-2 px-4 py-2.5 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}>
+            <a
+              key={`${item.link}-${i}`}
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`block border-l-2 px-4 py-2.5 transition-colors hover:bg-muted/20 ${priorityStyles[item.priority]}`}
+            >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-mono text-muted-foreground">{item.time}</span>
@@ -217,7 +251,7 @@ const LiveSquawkFeed = () => {
               <p className={`text-xs font-medium leading-snug ${item.priority === "breaking" ? "text-red-300" : "text-foreground"}`}>
                 {item.headline}
               </p>
-            </div>
+            </a>
           ))
         )}
       </div>
