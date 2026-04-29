@@ -29,6 +29,33 @@ const setLink = (rel: string, href: string) => {
   el.setAttribute("href", href);
 };
 
+/**
+ * Refresh the alternate-language hreflang link tags. The site does not
+ * yet use locale-prefixed URLs, so each alternate points at the same URL
+ * — this still signals to crawlers that translated content exists at the
+ * same address (selected via the in-app switcher / stored preference).
+ */
+const HREFLANG_LOCALES: { hreflang: string }[] = [
+  { hreflang: "en" },
+  { hreflang: "es" },
+  { hreflang: "pt-BR" },
+  { hreflang: "x-default" },
+];
+const setHreflangs = (canonical: string) => {
+  // Remove any previously-injected alternates so the set stays clean
+  document.head
+    .querySelectorAll('link[rel="alternate"][data-i18n="1"]')
+    .forEach((n) => n.remove());
+  HREFLANG_LOCALES.forEach(({ hreflang }) => {
+    const link = document.createElement("link");
+    link.setAttribute("rel", "alternate");
+    link.setAttribute("hreflang", hreflang);
+    link.setAttribute("href", canonical);
+    link.setAttribute("data-i18n", "1");
+    document.head.appendChild(link);
+  });
+};
+
 const SEO = ({ title, description, canonical, image, type = "website", jsonLd }: SEOProps) => {
   useEffect(() => {
     const fullTitle = title.length > 60 ? title.slice(0, 57) + "…" : title;
