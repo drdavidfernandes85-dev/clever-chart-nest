@@ -15,12 +15,12 @@ import PageTransition from "@/components/PageTransition";
 import RouteOverlayLoader from "@/components/RouteOverlayLoader";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
-import FloatingJoinLive from "@/components/webinars/FloatingJoinLive";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
-import ExitIntentPopup from "@/components/lead/ExitIntentPopup";
-import FloatingMobileCTA from "@/components/lead/FloatingMobileCTA";
 import Index from "./pages/Index.tsx";
 
+const FloatingJoinLive = lazy(() => import("@/components/webinars/FloatingJoinLive"));
+const FloatingMobileCTA = lazy(() => import("@/components/lead/FloatingMobileCTA"));
+const ExitIntentPopup = lazy(() => import("@/components/lead/ExitIntentPopup"));
 const DashboardLayout = lazy(() => import("@/components/dashboard/DashboardLayout"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Analytics = lazy(() => import("./pages/Analytics"));
@@ -111,9 +111,11 @@ const App = () => (
             </PageTransition>
             <OnboardingTour />
             <MobileBottomNav />
-            <FloatingJoinLive />
-            <FloatingMobileCTA />
-            <ExitIntentPopup />
+            <Suspense fallback={null}>
+              <FloatingJoinLive />
+              <FloatingMobileCTA />
+              <ExitIntentPopup />
+            </Suspense>
             </QuickTradeProvider>
           </AuthProvider>
         </BrowserRouter>
