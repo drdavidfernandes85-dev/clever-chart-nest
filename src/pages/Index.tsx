@@ -1,22 +1,22 @@
+import { lazy, Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import SEO from "@/components/SEO";
 import HeroSection from "@/components/HeroSection";
-import AnnouncementBanner from "@/components/AnnouncementBanner";
-import SponsorsSection from "@/components/SponsorsSection";
-import FeaturesSection from "@/components/FeaturesSection";
-import MentoringSection from "@/components/MentoringSection";
-import TeamSection from "@/components/TeamSection";
-import TrustpilotSection from "@/components/TrustpilotSection";
-import FAQSection from "@/components/FAQSection";
-import CTASection from "@/components/CTASection";
-import NewsletterSection from "@/components/NewsletterSection";
-import ContactSection from "@/components/ContactSection";
-import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
 import DeferredSection from "@/components/DeferredSection";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const SITE_URL = "https://elitelivetradingroom.com";
+const SponsorsSection = lazy(() => import("@/components/SponsorsSection"));
+const FeaturesSection = lazy(() => import("@/components/FeaturesSection"));
+const TeamSection = lazy(() => import("@/components/TeamSection"));
+const MentoringSection = lazy(() => import("@/components/MentoringSection"));
+const TrustpilotSection = lazy(() => import("@/components/TrustpilotSection"));
+const FAQSection = lazy(() => import("@/components/FAQSection"));
+const CTASection = lazy(() => import("@/components/CTASection"));
+const ContactSection = lazy(() => import("@/components/ContactSection"));
+const NewsletterSection = lazy(() => import("@/components/NewsletterSection"));
+const Footer = lazy(() => import("@/components/Footer"));
 
 const Index = () => {
   const { t, locale } = useLanguage();
