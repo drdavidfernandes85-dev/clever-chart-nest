@@ -209,6 +209,37 @@ const MarketMovers = () => {
             {loading && <Loader2 className="h-3 w-3 animate-spin" />}
             {loading ? t("movers.loading") : t("movers.live")}
           </span>
+          <button
+            onClick={() => {
+              if (!filtered.length) {
+                toast.error("No data to export yet");
+                return;
+              }
+              const rows = filtered.map((d) => ({
+                symbol: d.symbol,
+                asset_class: d.asset.assetClass,
+                price: d.price.toFixed(decimalsFor(d.asset)),
+                change_pct: d.changePct.toFixed(2),
+                volume: d.volume ?? "",
+              }));
+              downloadCSV(
+                `market-movers-${tab}-${new Date().toISOString().slice(0, 10)}.csv`,
+                toCSV(rows, [
+                  { key: "symbol", label: "Symbol" },
+                  { key: "asset_class", label: "Asset Class" },
+                  { key: "price", label: "Price" },
+                  { key: "change_pct", label: "Change %" },
+                  { key: "volume", label: "Volume" },
+                ]),
+              );
+              toast.success(`Exported ${rows.length} rows`);
+            }}
+            title="Export to CSV"
+            className="inline-flex items-center gap-1 rounded-md border border-border/40 bg-muted/30 px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+          >
+            <Download className="h-3 w-3" />
+            CSV
+          </button>
         </div>
       </div>
       <div className="grid gap-2 md:grid-cols-3">
