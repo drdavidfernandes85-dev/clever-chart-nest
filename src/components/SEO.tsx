@@ -75,6 +75,7 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd }:
     if (canonical) {
       setLink("canonical", canonical);
       setMeta('meta[property="og:url"]', "property", "og:url", canonical);
+      setHreflangs(canonical);
     }
 
     if (image) {
