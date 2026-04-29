@@ -1194,11 +1194,7 @@ const translations = {
     "pricing.enterprise.f3": "Acesso API personalizado",
     "pricing.enterprise.f4": "Gerente de conta dedicado",
     "pricing.enterprise.f5": "Opções de marca branca",
-    "faq.title1": "Perguntas",
-    "faq.title2": "Frequentes",
-    "faq.desc": "Tudo o que você precisa saber sobre a IX Live Trading Room.",
-    "faq.q1": "O que é a IX Live Trading Room?",
-    "faq.a1": "A IX Live Trading Room é um ambiente de trading em tempo real onde analistas profissionais compartilham análises de mercado ao vivo, sinais de trading e conteúdo educacional em FX, commodities, índices e criptomoedas.",
+    // FAQ — refined for E-E-A-T + keywords
     "faq.title1": "Perguntas",
     "faq.title2": "Frequentes",
     "faq.desc": "Tudo o que você precisa saber sobre a IX Live Trading Room: nossa comunidade de traders, as sessões de análise técnica ao vivo e as ferramentas de gestão de risco no trading.",
