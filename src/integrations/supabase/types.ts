@@ -538,6 +538,7 @@ export type Database = {
           display_name: string
           id: string
           leaderboard_opt_out: boolean
+          preferred_language: string
           updated_at: string
           user_id: string
         }
@@ -547,6 +548,7 @@ export type Database = {
           display_name: string
           id?: string
           leaderboard_opt_out?: boolean
+          preferred_language?: string
           updated_at?: string
           user_id: string
         }
@@ -556,6 +558,7 @@ export type Database = {
           display_name?: string
           id?: string
           leaderboard_opt_out?: boolean
+          preferred_language?: string
           updated_at?: string
           user_id?: string
         }
