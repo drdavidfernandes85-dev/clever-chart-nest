@@ -13,12 +13,27 @@ import type { LayoutItem } from "react-grid-layout";
 const ALLOWED = new Set<string>(WIDGET_IDS);
 const sanitize = (items: LayoutItem[] | undefined): LayoutItem[] =>
   (items ?? []).filter((l) => ALLOWED.has(l.i));
-const sanitizeLayouts = (l: Layouts): Layouts => ({
-  lg: sanitize(l.lg),
-  md: sanitize(l.md),
-  sm: sanitize(l.sm),
-  xs: sanitize(l.xs),
-});
+
+/**
+ * Ensure every required widget exists in the layout. If one is missing
+ * (e.g. user has an older saved layout), inject it using the default
+ * preset's position so it renders instead of disappearing.
+ */
+const ensureAllWidgets = (items: LayoutItem[], defaults: LayoutItem[]): LayoutItem[] => {
+  const present = new Set(items.map((l) => l.i));
+  const missing = defaults.filter((d) => !present.has(d.i));
+  return missing.length ? [...items, ...missing] : items;
+};
+
+const sanitizeLayouts = (l: Layouts): Layouts => {
+  const defaults = getPreset(DEFAULT_PRESET).lg;
+  return {
+    lg: ensureAllWidgets(sanitize(l.lg), defaults),
+    md: ensureAllWidgets(sanitize(l.md), defaults),
+    sm: ensureAllWidgets(sanitize(l.sm), defaults),
+    xs: ensureAllWidgets(sanitize(l.xs), defaults),
+  };
+};
 
 export type Layouts = {
   lg: LayoutItem[];
@@ -27,7 +42,7 @@ export type Layouts = {
   xs: LayoutItem[];
 };
 
-const LS_KEY = "eltr.dashboard.layout.v1";
+const LS_KEY = "eltr.dashboard.layout.v2";
 
 interface StoredLayout {
   preset: PresetId;
