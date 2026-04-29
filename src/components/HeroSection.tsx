@@ -58,6 +58,9 @@ const HeroSection = () => {
           src={heroComet}
           alt=""
           aria-hidden
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
           className="absolute inset-y-0 right-0 h-full w-[82%] object-contain object-right select-none animate-breathe"
           style={{
             filter: "saturate(1.15) contrast(1.08)",
