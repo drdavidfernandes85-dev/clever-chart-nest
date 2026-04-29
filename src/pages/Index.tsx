@@ -13,6 +13,7 @@ import NewsletterSection from "@/components/NewsletterSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
+import DeferredSection from "@/components/DeferredSection";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const SITE_URL = "https://elitelivetradingroom.com";
@@ -66,16 +67,16 @@ const Index = () => {
       />
       <Navbar />
       <HeroSection />
-      <ScrollReveal><SponsorsSection /></ScrollReveal>
-      <ScrollReveal delay={100}><FeaturesSection /></ScrollReveal>
-      <ScrollReveal delay={100}><TeamSection /></ScrollReveal>
-      <ScrollReveal delay={100}><MentoringSection /></ScrollReveal>
-      <ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal>
-      <ScrollReveal delay={100}><FAQSection /></ScrollReveal>
-      <ScrollReveal><CTASection /></ScrollReveal>
-      <ScrollReveal><ContactSection /></ScrollReveal>
-      <ScrollReveal><NewsletterSection /></ScrollReveal>
-      <Footer />
+      <DeferredSection minHeight={260}><ScrollReveal><SponsorsSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={520}><ScrollReveal delay={100}><FeaturesSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={520}><ScrollReveal delay={100}><TeamSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={520}><ScrollReveal delay={100}><MentoringSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={320}><ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={620}><ScrollReveal delay={100}><FAQSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={320}><ScrollReveal><CTASection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={560}><ScrollReveal><ContactSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={360}><ScrollReveal><NewsletterSection /></ScrollReveal></DeferredSection>
+      <DeferredSection minHeight={420}><Footer /></DeferredSection>
     </div>
   );
 };
