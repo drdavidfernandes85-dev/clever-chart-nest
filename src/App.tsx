@@ -83,27 +83,27 @@ const App = () => (
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   {/* Open to all logged-in users (no eligibility required) */}
-                  <Route path="/dashboard" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Dashboard /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
-                  <Route path="/command" element={<ProtectedRoute><DashboardLayout><CommandDeck /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/profile" element={<ProtectedRoute><DashboardLayout><Profile /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/videos" element={<ProtectedRoute><DashboardLayout><VideoLibrary /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/connect-mt" element={<ProtectedRoute><DashboardLayout><ConnectMT /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/webinars" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/webinars/:id" element={<ProtectedRoute><DashboardLayout><Webinars /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/dashboard" element={<GatedDashboardShell><Dashboard /></GatedDashboardShell>} />
+                  <Route path="/command" element={<DashboardShell><CommandDeck /></DashboardShell>} />
+                  <Route path="/profile" element={<DashboardShell><Profile /></DashboardShell>} />
+                  <Route path="/videos" element={<DashboardShell><VideoLibrary /></DashboardShell>} />
+                  <Route path="/connect-mt" element={<DashboardShell><ConnectMT /></DashboardShell>} />
+                  <Route path="/webinars" element={<DashboardShell><Webinars /></DashboardShell>} />
+                  <Route path="/webinars/:id" element={<DashboardShell><Webinars /></DashboardShell>} />
 
                   {/* Eligibility-gated routes: requires verified live Infinox account + $100 USD min balance */}
-                  <Route path="/live-chart" element={<ProtectedRoute><EligibilityGate><DashboardLayout><LiveChart /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
-                  <Route path="/chatroom" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Chatroom /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
-                  <Route path="/signals" element={<ProtectedRoute><EligibilityGate><DashboardLayout><TradingSignals /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
-                  <Route path="/leaderboard" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Leaderboard /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
-                  <Route path="/analytics" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Analytics /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
-                  <Route path="/news" element={<ProtectedRoute><EligibilityGate><DashboardLayout><News /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/live-chart" element={<GatedDashboardShell><LiveChart /></GatedDashboardShell>} />
+                  <Route path="/chatroom" element={<GatedDashboardShell><Chatroom /></GatedDashboardShell>} />
+                  <Route path="/signals" element={<GatedDashboardShell><TradingSignals /></GatedDashboardShell>} />
+                  <Route path="/leaderboard" element={<GatedDashboardShell><Leaderboard /></GatedDashboardShell>} />
+                  <Route path="/analytics" element={<GatedDashboardShell><Analytics /></GatedDashboardShell>} />
+                  <Route path="/news" element={<GatedDashboardShell><News /></GatedDashboardShell>} />
                   <Route path="/calendar" element={<Navigate to="/news" replace />} />
-                  <Route path="/education" element={<ProtectedRoute><EligibilityGate><DashboardLayout><Education /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
-                  <Route path="/education/:slug" element={<ProtectedRoute><EligibilityGate><DashboardLayout><EducationModule /></DashboardLayout></EligibilityGate></ProtectedRoute>} />
+                  <Route path="/education" element={<GatedDashboardShell><Education /></GatedDashboardShell>} />
+                  <Route path="/education/:slug" element={<GatedDashboardShell><EducationModule /></GatedDashboardShell>} />
 
                   <Route path="/admin" element={<AdminRoute><DashboardLayout><Admin /></DashboardLayout></AdminRoute>} />
-                  <Route path="/u/:userId" element={<ProtectedRoute><DashboardLayout><PublicProfile /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/u/:userId" element={<DashboardShell><PublicProfile /></DashboardShell>} />
                   <Route path="/__qa/hero" element={<HeroQA />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
