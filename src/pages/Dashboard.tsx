@@ -55,7 +55,7 @@ const Dashboard = () => {
   const [editingLayout, setEditingLayout] = useState(false);
   const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
   const { account } = useMTAccount();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user, session, ready, isRefreshing } = useAuth();
   const { currentTier, newlyUnlocked, acknowledge } = useMentorTierProgress();
   const isConnected = !!account && account.status === "connected";
