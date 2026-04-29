@@ -98,11 +98,9 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
     return () => document.removeEventListener("fullscreenchange", update);
   }, []);
 
-  // Auto-expand whenever something calls openTrade() (e.g. "Take this signal")
-  const { prefillNonce } = useQuickTrade();
-  useEffect(() => {
-    if (prefillNonce > 0) setPos((p) => ({ ...p, open: true }));
-  }, [prefillNonce]);
+  // Always stay minimized by default — user must click the pill to expand.
+  // (Previously auto-expanded on openTrade(); removed per request so it
+  // never covers the chart / community trader panel unsolicited.)
 
   const setOpen = (open: boolean) => setPos((p) => ({ ...p, open }));
 
