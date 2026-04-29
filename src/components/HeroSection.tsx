@@ -131,7 +131,7 @@ const HeroSection = () => {
       <div className="relative z-10 mx-auto mt-2 max-w-[min(1200px,92%)] overflow-hidden rounded-full border border-primary/40 bg-black/60 backdrop-blur-md">
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/90 to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/90 to-transparent z-10" />
-        <ForexTickerBar />
+        <ForexTickerBar live={false} />
       </div>
 
       {/* ── HERO CONTENT ───────────────────────────────────────── */}
