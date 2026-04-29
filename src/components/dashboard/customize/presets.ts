@@ -9,8 +9,6 @@ export const WIDGET_IDS = [
   "risk",
   "watchlist",
   "marketMovers",
-  "liveSignals",
-  "quickTrade",
   "recentActivity",
 ] as const;
 
@@ -21,8 +19,6 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   risk: "Risk Exposure",
   watchlist: "Watchlist",
   marketMovers: "Market Movers",
-  liveSignals: "Live Trade Ideas",
-  quickTrade: "Quick Trade",
   recentActivity: "Recent Activity",
 };
 
@@ -32,8 +28,6 @@ export const WIDGET_MIN: Record<WidgetId, { w: number; h: number }> = {
   risk: { w: 3, h: 7 },
   watchlist: { w: 3, h: 9 },
   marketMovers: { w: 4, h: 8 },
-  liveSignals: { w: 3, h: 6 },
-  quickTrade: { w: 3, h: 14 },
   recentActivity: { w: 3, h: 6 },
 };
 
@@ -74,18 +68,16 @@ export const PRESETS: Preset[] = [
   {
     id: "classic",
     name: "Classic Terminal",
-    description: "Logical trader workflow — context, action, opportunity, community",
+    description: "Logical trader workflow — context, action, opportunity",
     lg: [
-      // Row 1 — context: portfolio hero (tall) + risk + quickTrade rail
-      make("portfolio", 0, 0, 6, 13),
-      make("risk", 6, 0, 3, 13),
-      make("quickTrade", 9, 0, 3, 16),
-      // Row 2 — opportunity scan: watchlist + market movers (compact)
-      make("watchlist", 0, 13, 4, 11),
-      make("marketMovers", 4, 13, 5, 8),
-      // Row 3 — community + history (full width split)
-      make("liveSignals", 0, 24, 7, 8),
-      make("recentActivity", 7, 24, 5, 8),
+      // Row 1 — context: portfolio hero (tall) + risk
+      make("portfolio", 0, 0, 8, 13),
+      make("risk", 8, 0, 4, 13),
+      // Row 2 — opportunity scan: watchlist + market movers
+      make("watchlist", 0, 13, 5, 11),
+      make("marketMovers", 5, 13, 7, 8),
+      // Row 3 — recent activity (full width)
+      make("recentActivity", 0, 24, 12, 8),
     ],
   },
 ];

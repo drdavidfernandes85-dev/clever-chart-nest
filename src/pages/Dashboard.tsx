@@ -21,7 +21,7 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
 import Watchlist from "@/components/dashboard/Watchlist";
-import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
+
 import CopiedTradesHistory from "@/components/copytrade/CopiedTradesHistory";
 import MarketMovers from "@/components/dashboard/MarketMovers";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
@@ -73,8 +73,6 @@ const Dashboard = () => {
       risk: <RiskMeter />,
       watchlist: <Watchlist />,
       marketMovers: <MarketMovers />,
-      liveSignals: <LiveSharedSignals />,
-      quickTrade: <QuickTradePanel compact />,
       recentActivity: <RecentActivity />,
     }),
     [],
