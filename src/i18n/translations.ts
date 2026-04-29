@@ -171,10 +171,13 @@ const translations = {
     "contact.send": "Send Message",
     "contact.sending": "Sending...",
     // CTA
-    "cta.title1": "Ready to Start",
-    "cta.title2": "Trading?",
-    "cta.desc": "Join thousands of traders who are already using our platform to navigate the markets with confidence.",
-    "cta.join": "Join Now",
+    "cta.title1": "Start Learning With",
+    "cta.title2": "The Community",
+    "cta.desc": "Create a free account to join the daily live webinars, the trader chatroom and our educational library — built around technical analysis and disciplined risk management.",
+    "cta.join": "Create Free Account",
+    // SEO meta — homepage
+    "seo.home.title": "IX Live Trading Room | Trader Community & Education",
+    "seo.home.description": "Educational trading community by INFINOX: live technical analysis, free daily webinars, risk-management tools and a 24/7 trader chatroom for forex, indices, commodities and crypto.",
     // Footer
     "footer.desc": "The IX Live Trading Room for the INFINOX LATAM community.",
     "footer.quickLinks": "Quick Links",
