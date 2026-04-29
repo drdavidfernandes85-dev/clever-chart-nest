@@ -13,36 +13,71 @@ import NewsletterSection from "@/components/NewsletterSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 import ScrollReveal from "@/components/ScrollReveal";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-const Index = () => (
-  <div className="min-h-screen">
-    <SEO
-      title="IX Live Trading Room | Real-Time Forex by INFINOX"
-      description="Real-time forex analysis, expert signals, live chatroom, and pro tools — join the IX Live Trading Room powered by INFINOX."
-      canonical="https://elitelivetradingroom.com/"
-      image="https://elitelivetradingroom.com/og-image.jpg"
-      jsonLd={{
-        "@context": "https://schema.org",
-        "@type": "FinancialService",
-        name: "IX Live Trading Room",
-        url: "https://elitelivetradingroom.com",
-        areaServed: "Worldwide",
-        serviceType: "Forex education and live trading community",
-      }}
-    />
-    <Navbar />
-    <HeroSection />
-    <ScrollReveal><SponsorsSection /></ScrollReveal>
-    <ScrollReveal delay={100}><FeaturesSection /></ScrollReveal>
-    <ScrollReveal delay={100}><TeamSection /></ScrollReveal>
-    <ScrollReveal delay={100}><MentoringSection /></ScrollReveal>
-    <ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal>
-    <ScrollReveal delay={100}><FAQSection /></ScrollReveal>
-    <ScrollReveal><CTASection /></ScrollReveal>
-    <ScrollReveal><ContactSection /></ScrollReveal>
-    <ScrollReveal><NewsletterSection /></ScrollReveal>
-    <Footer />
-  </div>
-);
+const SITE_URL = "https://elitelivetradingroom.com";
+
+const Index = () => {
+  const { t, locale } = useLanguage();
+
+  // Build a FAQPage + Organization schema graph for richer SEO snippets.
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "FinancialService",
+      name: "IX Live Trading Room",
+      url: SITE_URL,
+      description: t("seo.home.description"),
+      areaServed: ["LATAM", "Worldwide"],
+      serviceType:
+        locale === "es"
+          ? "Educación de trading y comunidad de traders en vivo"
+          : locale === "pt"
+          ? "Educação de trading e comunidade de traders ao vivo"
+          : "Trading education and live trader community",
+      provider: {
+        "@type": "Organization",
+        name: "INFINOX",
+        url: "https://www.infinox.com",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => ({
+        "@type": "Question",
+        name: t(`faq.q${n}` as any),
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: t(`faq.a${n}` as any),
+        },
+      })),
+    },
+  ];
+
+  return (
+    <div className="min-h-screen">
+      <SEO
+        title={t("seo.home.title")}
+        description={t("seo.home.description")}
+        canonical={SITE_URL + "/"}
+        image={`${SITE_URL}/og-image.jpg`}
+        jsonLd={jsonLd}
+      />
+      <Navbar />
+      <HeroSection />
+      <ScrollReveal><SponsorsSection /></ScrollReveal>
+      <ScrollReveal delay={100}><FeaturesSection /></ScrollReveal>
+      <ScrollReveal delay={100}><TeamSection /></ScrollReveal>
+      <ScrollReveal delay={100}><MentoringSection /></ScrollReveal>
+      <ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal>
+      <ScrollReveal delay={100}><FAQSection /></ScrollReveal>
+      <ScrollReveal><CTASection /></ScrollReveal>
+      <ScrollReveal><ContactSection /></ScrollReveal>
+      <ScrollReveal><NewsletterSection /></ScrollReveal>
+      <Footer />
+    </div>
+  );
+};
 
 export default Index;
