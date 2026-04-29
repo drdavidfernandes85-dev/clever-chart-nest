@@ -292,17 +292,20 @@ const Dashboard = () => {
         </span>
       </button>
 
-      {/* Mobile Quick Trade bottom sheet */}
+      {/* Quick Trade — mobile bottom sheet + desktop centered dialog */}
       <AnimatePresence>
         {tradeOpen && (
           <>
+            {/* Backdrop (both) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeTrade}
-              className="lg:hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
+              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
             />
+
+            {/* Mobile bottom sheet */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -326,6 +329,33 @@ const Dashboard = () => {
               </div>
               <div className="p-3">
                 <QuickTradePanel compact />
+              </div>
+            </motion.div>
+
+            {/* Desktop centered dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="hidden lg:flex fixed inset-0 z-50 items-center justify-center p-6 pointer-events-none"
+            >
+              <div className="pointer-events-auto w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border/50 shadow-2xl">
+                <div className="sticky top-0 z-10 flex items-center justify-between bg-card/95 backdrop-blur-xl border-b border-border/40 px-5 py-3">
+                  <h3 className="font-heading text-sm font-bold text-foreground">
+                    {t("dash.quickTrade")}
+                  </h3>
+                  <button
+                    onClick={closeTrade}
+                    aria-label={t("common.close")}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="p-4">
+                  <QuickTradePanel compact />
+                </div>
               </div>
             </motion.div>
           </>
