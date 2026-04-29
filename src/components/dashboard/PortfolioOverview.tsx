@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import RecentActivity from "./RecentActivity";
 import {
   Briefcase,
   TrendingUp,
