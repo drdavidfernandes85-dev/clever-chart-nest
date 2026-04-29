@@ -4,10 +4,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   DEFAULT_PRESET,
   PresetId,
+  WIDGET_IDS,
   buildResponsiveLayouts,
   getPreset,
 } from "@/components/dashboard/customize/presets";
 import type { LayoutItem } from "react-grid-layout";
+
+const ALLOWED = new Set<string>(WIDGET_IDS);
+const sanitize = (items: LayoutItem[] | undefined): LayoutItem[] =>
+  (items ?? []).filter((l) => ALLOWED.has(l.i));
+const sanitizeLayouts = (l: Layouts): Layouts => ({
+  lg: sanitize(l.lg),
+  md: sanitize(l.md),
+  sm: sanitize(l.sm),
+  xs: sanitize(l.xs),
+});
 
 export type Layouts = {
   lg: LayoutItem[];
@@ -51,7 +62,7 @@ export function useDashboardLayout() {
           const parsed = JSON.parse(raw) as StoredLayout;
           if (parsed?.layouts && parsed?.preset) {
             setPresetState(parsed.preset);
-            setLayouts(parsed.layouts);
+            setLayouts(sanitizeLayouts(parsed.layouts));
           }
         }
       } catch {
@@ -70,7 +81,7 @@ export function useDashboardLayout() {
           const remote = data.layouts as unknown as Layouts;
           if (remote.lg && Array.isArray(remote.lg)) {
             setPresetState((data.preset as PresetId) ?? DEFAULT_PRESET);
-            setLayouts(remote);
+            setLayouts(sanitizeLayouts(remote));
           }
         }
       }
