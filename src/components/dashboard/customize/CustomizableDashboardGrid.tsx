@@ -31,7 +31,13 @@ const ROW_HEIGHT = 56;
 const MARGIN_Y = 16;
 
 /** Widgets that should auto-fit their height to content. */
-const AUTOFIT_WIDGETS: WidgetId[] = ["marketMovers"];
+const AUTOFIT_WIDGETS: WidgetId[] = [
+  "portfolio",
+  "risk",
+  "watchlist",
+  "marketMovers",
+  "recentActivity",
+];
 
 const CustomizableDashboardGrid = ({
   editing,
