@@ -56,25 +56,12 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
   const constraintsRef = useRef<HTMLDivElement | null>(null);
   const dragControls = useDragControls();
 
-  // Hydrate from localStorage when the user (storage key) changes.
+  // Always start at the default bottom-right placement, minimized.
+  // We intentionally ignore any saved x/y so the widget never reappears
+  // inside the chart toolbar / watchlist row from a previous session.
   useEffect(() => {
     setHydrated(false);
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (raw) {
-        const saved = JSON.parse(raw) as Partial<Pos>;
-        setPos((prev) => ({
-          x: typeof saved.x === "number" ? saved.x : prev.x,
-          y: typeof saved.y === "number" ? saved.y : prev.y,
-          // Always start minimized — the panel must be opened explicitly each visit.
-          open: false,
-        }));
-      } else {
-        setPos(defaultPos());
-      }
-    } catch {
-      /* ignore */
-    }
+    setPos(defaultPos());
     setHydrated(true);
   }, [storageKey]);
 
