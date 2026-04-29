@@ -415,11 +415,6 @@ const PortfolioOverview = () => {
         </div>
       </div>
 
-      {/* Embedded Recent Activity */}
-      <div className="border-t border-border/40">
-        <RecentActivity />
-      </div>
-
       {/* Footer link */}
       <div className="border-t border-border/40 px-6 py-3 flex items-center justify-between gap-3">
         <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
