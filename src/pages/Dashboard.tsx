@@ -22,7 +22,7 @@ import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
 import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
 import Watchlist from "@/components/dashboard/Watchlist";
 
-import CopiedTradesHistory from "@/components/copytrade/CopiedTradesHistory";
+
 import MarketMovers from "@/components/dashboard/MarketMovers";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import RiskMeter from "@/components/dashboard/RiskMeter";
@@ -275,17 +275,6 @@ const Dashboard = () => {
             widgets={widgets}
           />
 
-          {/* Personal copy-trade history — kept (no community widgets) */}
-          {railOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="hidden xl:block"
-            >
-              <CopiedTradesHistory limit={6} compact />
-            </motion.div>
-          )}
         </main>
       </div>
 
