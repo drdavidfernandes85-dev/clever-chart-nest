@@ -28,11 +28,15 @@ export interface Webinar {
  *
  * Auto-subscribes to realtime so LIVE state and new sessions appear instantly.
  */
-export const useWebinars = () => {
+export const useWebinars = (enabled = true) => {
   const [items, setItems] = useState<Webinar[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     let mounted = true;
     const load = async () => {
       const { data } = await supabase
@@ -59,7 +63,7 @@ export const useWebinars = () => {
       mounted = false;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [enabled]);
 
   const { liveNow, upcoming, past } = useMemo(() => {
     const now = Date.now();
