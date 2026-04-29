@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import translations, { Locale, TranslationKey } from "./translations";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LanguageContextType {
   locale: Locale;
@@ -15,10 +16,11 @@ const LanguageContext = createContext<LanguageContextType>({
   t: defaultT,
 });
 
+const isLocale = (v: unknown): v is Locale =>
+  typeof v === "string" && (v === "en" || v === "es" || v === "pt");
+
 /**
- * In development, audit every locale for keys present in EN but missing
- * in the active locale. Logged once per (from→to) switch so devs can
- * quickly spot what is still untranslated. No-op in production.
+ * Dev-only: log keys that are present in EN but missing in the target locale.
  */
 const auditMissingKeys = (from: Locale | null, to: Locale) => {
   if (!import.meta.env.DEV) return;
@@ -53,6 +55,9 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     return saved && translations[saved] ? saved : "es";
   });
   const previousLocaleRef = useRef<Locale | null>(null);
+  // Track which user we've already hydrated from to avoid clobbering
+  // an in-session user choice with a stale profile fetch.
+  const hydratedForUserRef = useRef<string | null>(null);
 
   // Audit on mount + every locale change (dev-only).
   useEffect(() => {
@@ -60,14 +65,32 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     previousLocaleRef.current = locale;
   }, [locale]);
 
-  const setLocale = useCallback((l: Locale) => {
-    setLocaleState(l);
-    localStorage.setItem("locale", l);
-    // Reflect on <html lang> for accessibility / SEO
-    if (typeof document !== "undefined") {
-      document.documentElement.lang = l;
+  const persistToProfile = useCallback(async (l: Locale) => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const uid = data.user?.id;
+      if (!uid) return;
+      await supabase
+        .from("profiles")
+        .update({ preferred_language: l })
+        .eq("user_id", uid);
+    } catch {
+      // best-effort; localStorage is the fallback
     }
   }, []);
+
+  const setLocale = useCallback(
+    (l: Locale) => {
+      setLocaleState(l);
+      localStorage.setItem("locale", l);
+      if (typeof document !== "undefined") {
+        document.documentElement.lang = l;
+      }
+      // Fire-and-forget DB write
+      void persistToProfile(l);
+    },
+    [persistToProfile]
+  );
 
   // Keep <html lang> in sync with current locale on mount/changes.
   useEffect(() => {
@@ -76,8 +99,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [locale]);
 
-  // Cross-tab sync: if the user changes language in another tab/window,
-  // mirror it here so the app stays consistent across the whole session.
+  // Cross-tab sync via localStorage.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onStorage = (e: StorageEvent) => {
@@ -89,6 +111,55 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, [locale]);
+
+  // Hydrate from Supabase profile on sign-in, so a user's preferred
+  // language follows them across devices. Only runs once per user id.
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrate = async (userId: string) => {
+      if (hydratedForUserRef.current === userId) return;
+      hydratedForUserRef.current = userId;
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("preferred_language")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (cancelled || error || !data) return;
+        const remote = data.preferred_language;
+        if (isLocale(remote) && remote !== locale) {
+          setLocaleState(remote);
+          localStorage.setItem("locale", remote);
+          if (typeof document !== "undefined") document.documentElement.lang = remote;
+        }
+      } catch {
+        // ignore — falls back to localStorage value
+      }
+    };
+
+    // Initial check
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.id) hydrate(data.user.id);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user?.id) {
+        hydratedForUserRef.current = null; // allow re-hydrate for new user
+        hydrate(session.user.id);
+      }
+      if (event === "SIGNED_OUT") {
+        hydratedForUserRef.current = null;
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+    // Intentionally only run once on mount; locale value is read fresh inside.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const t = useCallback(
     (key: TranslationKey): string => {
