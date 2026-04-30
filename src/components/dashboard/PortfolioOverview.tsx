@@ -167,7 +167,25 @@ const PortfolioOverview = () => {
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={() => sync()}
+              onClick={async () => {
+                const isEA =
+                  account.broker_name === "Connected via EA" ||
+                  account.server_name === "EA Webhook";
+                const result = await sync();
+                if (isEA) {
+                  const lastSync = account.last_synced_at
+                    ? formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })
+                    : "never";
+                  toast.info(
+                    `EA Webhook account — data is pushed in real-time by the EA running on your MetaTrader. Last push: ${lastSync}. If this is stale, make sure the IX_Sync_EA is attached to a chart, "Allow WebRequest" is enabled, and the URL is whitelisted.`,
+                    { duration: 9000 },
+                  );
+                } else if (result?.error) {
+                  toast.error(result.error);
+                } else {
+                  toast.success("Account synced");
+                }
+              }}
               disabled={syncing}
               className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors disabled:opacity-60"
               title={t("portfolio.syncNow")}
