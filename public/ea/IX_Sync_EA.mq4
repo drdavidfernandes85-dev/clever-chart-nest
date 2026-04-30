@@ -1,5 +1,5 @@
 //+------------------------------------------------------------------+
-//| IX_Sync_EA v2.03 (MT4)                                           |
+//| IX_Sync_EA v2.04 (MT4)                                           |
 //| Copyright © IX Live Trading Room | IX LTR                        |
 //+------------------------------------------------------------------+
 //|  - Pushes account & open orders every 8s                         |
@@ -8,7 +8,7 @@
 //|  - Auto-translates web symbols (BTC/USDT -> BTCUSD, etc.)        |
 //+------------------------------------------------------------------+
 #property copyright "IX Live Trading Room | IX LTR"
-#property version   "2.03"
+#property version   "2.04"
 #property strict
 
 input string WebhookURL          = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
@@ -52,7 +52,7 @@ string NormalizeSymbol(string webSymbol)
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   PrintFormat("✅ IX_Sync_EA v2.03 (MT4) | IX LTR loaded. Webhook: %s", WebhookURL);
+   PrintFormat("✅ IX_Sync_EA v2.04 (MT4) | IX LTR loaded. Webhook: %s", WebhookURL);
    if(StringLen(SecretToken) < 16)
       Print("⚠️ WARNING: SecretToken looks empty/short. Re-download EA from your dashboard.");
    return(INIT_SUCCEEDED);
@@ -80,7 +80,8 @@ void OnTick()
 //+------------------------------------------------------------------+
 void SendAccountInfo()
 {
-   string json = StringFormat("{\"type\":\"account\",\"platform\":\"mt4\",\"account\":%d,\"balance\":%.2f,\"equity\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,\"timestamp\":%d}",
+   string json = StringFormat("{\"type\":\"account\",\"token\":\"%s\",\"platform\":\"mt4\",\"account\":%d,\"balance\":%.2f,\"equity\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,\"timestamp\":%d}",
+                   SecretToken,
                   (int)AccountNumber(),
                   AccountBalance(),
                   AccountEquity(),
@@ -115,8 +116,8 @@ void SendOpenPositions()
    }
    positions += "]";
 
-   string json = StringFormat("{\"type\":\"positions\",\"platform\":\"mt4\",\"account\":%d,\"positions\":%s}",
-                  (int)AccountNumber(), positions);
+   string json = StringFormat("{\"type\":\"positions\",\"token\":\"%s\",\"platform\":\"mt4\",\"account\":%d,\"positions\":%s}",
+                   SecretToken, (int)AccountNumber(), positions);
    string resp; PostToWebhook(json, resp);
 }
 
@@ -125,8 +126,8 @@ void SendOpenPositions()
 //+------------------------------------------------------------------+
 void PollPendingOrders()
 {
-   string body = StringFormat("{\"type\":\"poll_orders\",\"platform\":\"mt4\",\"account\":%d}",
-                              (int)AccountNumber());
+   string body = StringFormat("{\"type\":\"poll_orders\",\"token\":\"%s\",\"platform\":\"mt4\",\"account\":%d}",
+                              SecretToken, (int)AccountNumber());
    string resp;
    int code = PostToWebhook(body, resp);
    if(code != 200) return;
@@ -257,8 +258,8 @@ void ReportResult(string orderId, string status, int ticket, string message)
    string safeMsg = message;
    StringReplace(safeMsg, "\\", "\\\\");
    StringReplace(safeMsg, "\"", "\\\"");
-   string body = StringFormat("{\"type\":\"order_result\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":\"%d\",\"message\":\"%s\"}",
-                              orderId, status, ticket, safeMsg);
+   string body = StringFormat("{\"type\":\"order_result\",\"token\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":\"%d\",\"message\":\"%s\"}",
+                               SecretToken, orderId, status, ticket, safeMsg);
    string resp; PostToWebhook(body, resp);
 }
 
@@ -268,7 +269,7 @@ int PostToWebhook(string body, string &response)
    char postData[];
    StringToCharArray(body, postData, 0, StringLen(body));
 
-   string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + SecretToken;
+   string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + SecretToken + "\r\nX-Webhook-Token: " + SecretToken + "\r\n";
    char result[];
    string responseHeaders;
 

@@ -33,6 +33,32 @@ async function sha256Hex(input: string): Promise<string> {
     .join("");
 }
 
+function tokenFromRequest(req: Request): string | null {
+  const directHeader =
+    req.headers.get("x-webhook-token") ?? req.headers.get("x-api-key");
+  if (directHeader?.trim()) return directHeader.trim();
+
+  const url = new URL(req.url);
+  const queryToken =
+    url.searchParams.get("token") ??
+    url.searchParams.get("secret") ??
+    url.searchParams.get("access_token");
+  if (queryToken?.trim()) return queryToken.trim();
+
+  const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  if (auth?.toLowerCase().startsWith("bearer ")) {
+    return auth.slice(7).trim();
+  }
+
+  return null;
+}
+
+function tokenFromBody(body: any): string | null {
+  const value =
+    body?.token ?? body?.secret_token ?? body?.SecretToken ?? body?.api_key;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 function mt5SideToString(t: number | string): "buy" | "sell" {
   // MQL5 ENUM_POSITION_TYPE: 0 = BUY, 1 = SELL
   // MQL4 OP_BUY = 0, OP_SELL = 1
@@ -48,11 +74,17 @@ Deno.serve(async (req) => {
     return json(405, { error: "Method not allowed" });
   }
 
-  const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
-  if (!auth?.toLowerCase().startsWith("bearer ")) {
-    return json(401, { error: "Missing bearer token" });
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return json(400, { error: "Invalid JSON" });
   }
-  const rawToken = auth.slice(7).trim();
+
+  const rawToken = tokenFromBody(body) ?? tokenFromRequest(req);
+  if (!rawToken) {
+    return json(401, { error: "Missing webhook token" });
+  }
   if (rawToken.length < 16) {
     return json(401, { error: "Invalid token" });
   }
@@ -88,13 +120,6 @@ Deno.serve(async (req) => {
     .update({ last_used_at: new Date().toISOString(), last_used_ip: ip })
     .eq("id", tokenRow.id)
     .then(() => {});
-
-  let body: any;
-  try {
-    body = await req.json();
-  } catch {
-    return json(400, { error: "Invalid JSON" });
-  }
 
   const type = body?.type;
   const accountLogin = String(body?.account ?? "").trim();
