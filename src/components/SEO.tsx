@@ -7,6 +7,7 @@ interface SEOProps {
   image?: string;
   type?: "website" | "article";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  keywords?: string;
 }
 
 const setMeta = (selector: string, attr: string, key: string, value: string) => {
@@ -56,7 +57,7 @@ const setHreflangs = (canonical: string) => {
   });
 };
 
-const SEO = ({ title, description, canonical, image, type = "website", jsonLd }: SEOProps) => {
+const SEO = ({ title, description, canonical, image, type = "website", jsonLd, keywords }: SEOProps) => {
   useEffect(() => {
     const fullTitle = title.length > 60 ? title.slice(0, 57) + "…" : title;
     document.title = fullTitle;
@@ -66,6 +67,10 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd }:
       setMeta('meta[name="description"]', "name", "description", desc);
       setMeta('meta[property="og:description"]', "property", "og:description", desc);
       setMeta('meta[name="twitter:description"]', "name", "twitter:description", desc);
+    }
+
+    if (keywords) {
+      setMeta('meta[name="keywords"]', "name", "keywords", keywords);
     }
 
     setMeta('meta[property="og:title"]', "property", "og:title", fullTitle);
@@ -95,7 +100,7 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd }:
     } else if (scriptEl) {
       scriptEl.remove();
     }
-  }, [title, description, canonical, image, type, jsonLd]);
+  }, [title, description, canonical, image, type, jsonLd, keywords]);
 
   return null;
 };

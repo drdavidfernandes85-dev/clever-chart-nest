@@ -114,16 +114,26 @@ const Dashboard = () => {
   }, [tradeOpen]);
 
   const jsonLd = useMemo(
-    () => ({
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      name: t("dash.seo.title"),
-      description: t("dash.seo.desc"),
-      applicationCategory: "FinanceApplication",
-      operatingSystem: "Web",
-      inLanguage: locale === "pt" ? "pt-BR" : locale,
-      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-    }),
+    () => [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: t("dash.seo.title"),
+        description: t("dash.seo.desc"),
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: locale === "pt" ? "pt-BR" : locale,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.salatradingelite.com/" },
+          { "@type": "ListItem", position: 2, name: t("dash.h1"), item: "https://www.salatradingelite.com/dashboard" },
+        ],
+      },
+    ],
     [t, locale],
   );
 
@@ -132,6 +142,7 @@ const Dashboard = () => {
       <SEO
         title={t("dash.seo.title")}
         description={t("dash.seo.desc")}
+        keywords={t("dash.seo.keywords")}
         canonical="https://www.salatradingelite.com/dashboard"
         type="website"
         jsonLd={jsonLd}
@@ -304,6 +315,46 @@ const Dashboard = () => {
             onLayoutChange={onLayoutChange}
             widgets={widgets}
           />
+
+          {/* 3b. SEO content — keyword-rich H2/H3 block, indexable but visually elegant */}
+          <section
+            aria-labelledby="dash-seo-section-title"
+            className="rounded-3xl border border-primary/15 bg-gradient-to-br from-card/40 via-card/20 to-transparent backdrop-blur-2xl p-6 md:p-10"
+          >
+            <header className="mb-6 max-w-3xl">
+              <h2
+                id="dash-seo-section-title"
+                className="font-heading text-xl md:text-3xl font-bold text-foreground"
+              >
+                {t("dash.seo.sectionTitle")}
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground mt-2 leading-relaxed">
+                {t("dash.seo.sectionDesc")}
+              </p>
+            </header>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                { t: t("dash.seo.f1Title"), d: t("dash.seo.f1Desc") },
+                { t: t("dash.seo.f2Title"), d: t("dash.seo.f2Desc") },
+                { t: t("dash.seo.f3Title"), d: t("dash.seo.f3Desc") },
+                { t: t("dash.seo.f4Title"), d: t("dash.seo.f4Desc") },
+                { t: t("dash.seo.f5Title"), d: t("dash.seo.f5Desc") },
+                { t: t("dash.seo.f6Title"), d: t("dash.seo.f6Desc") },
+              ].map((f) => (
+                <article
+                  key={f.t}
+                  className="rounded-2xl border border-border/40 bg-card/40 p-5 hover:border-primary/30 transition-colors"
+                >
+                  <h3 className="font-proxima text-sm md:text-base font-bold text-foreground">
+                    {f.t}
+                  </h3>
+                  <p className="text-xs md:text-sm text-muted-foreground mt-2 leading-relaxed">
+                    {f.d}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
 
           {/* 4. Related — internal-link block (SEO + UX) */}
           <section
