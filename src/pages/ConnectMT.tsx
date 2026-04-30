@@ -11,6 +11,8 @@ import {
   Activity,
   Plug,
   Radio,
+  UserPlus,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -19,9 +21,12 @@ import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
 import EAWebhookSetup from "@/components/mt/EAWebhookSetup";
 import { formatDistanceToNow } from "date-fns";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { track } from "@/lib/analytics";
 
 const ConnectMT = () => {
   const { account, positions, refresh, loading } = useMTAccount();
+  const { t } = useLanguage();
 
   const handleDisconnect = async () => {
     if (!account) return;
