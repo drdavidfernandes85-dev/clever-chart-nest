@@ -633,8 +633,8 @@ const translations = {
     "ai.tryAgain": "Try again later.",
 
     // Education Center page
-    "edu.seo.title": "Trading Education Center | Risk Management, Technical Analysis & Live Webinars",
-    "edu.seo.desc": "Professional trading education: technical analysis, chart patterns, risk management, trading psychology and live webinars — built for a serious trading community.",
+    "edu.seo.title": "Trading Education Center | Risk & Technical Analysis",
+    "edu.seo.desc": "Trading education: technical analysis, chart patterns, risk management, trading psychology and free live webinars — for a serious trader community.",
     "edu.seo.keywords": "trading education, risk management, technical analysis, chart patterns, trading community, live webinars, market analysis, trading psychology, forex education",
     "edu.eyebrow": "Education Center",
     "edu.h1.lead": "Master the markets,",
@@ -711,10 +711,10 @@ const translations = {
     "eduMod.toast.badge": "🏅 Badge unlocked: {name}",
     "eduMod.toast.reset": "Module reset. You can complete it again.",
     "access.seo.title": "Verified Live Account Required | IX Live Trading Room Access",
-    "access.seo.desc": "Unlock the full IX Live Trading Room: connect a verified Infinox live account with a $100 USD minimum balance to access mentors, signals and live education.",
+    "access.seo.desc": "Unlock the IX Live Trading Room: connect a verified Infinox live account with a $100 USD minimum deposit for mentors, signals and live education.",
     "access.seo.keywords": "trading room access, verified live trading account, minimum trading deposit, Infinox live account, trading education, live trading room, forex mentorship",
     // Live Chart / Trading Terminal SEO (EN)
-    "livechart.seo.title": "Live Charts & Trading Terminal | Real-Time Technical Analysis",
+    "livechart.seo.title": "Live Charts & Trading Terminal | Technical Analysis",
     "livechart.seo.desc": "Pro trading terminal with live charts, real-time technical analysis, advanced indicators and fast execution — built for an active trader community.",
     "livechart.seo.keywords": "live charts, trading terminal, real-time technical analysis, trading charts, technical indicators, trader community, educational trading platform, market analysis",
     "access.h1": "Almost there — unlock the full IX Live Trading Room",
@@ -1011,8 +1011,8 @@ const translations = {
     "dash.openMenu": "Abrir menú",
     "dash.closeMenu": "Cerrar menú",
     "dash.profile": "Perfil",
-    "dash.seo.title": "Plataforma Trading Educativa | Comunidad de Traders y Análisis Técnico en Vivo",
-    "dash.seo.desc": "Plataforma trading educativa en español: comunidad de traders, análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis y educación trading profesional.",
+    "dash.seo.title": "Dashboard Trading | Comunidad de Traders & Análisis Vivo",
+    "dash.seo.desc": "Plataforma trading educativa: comunidad de traders, análisis técnico en vivo, gestión de riesgo trading y webinars trading gratis en español.",
     "dash.seo.keywords": "comunidad de traders, análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis, educación trading, plataforma trading educativa, trading en español, análisis de mercado, dashboard trading",
     "dash.h1": "Plataforma de Trading Educativa para una Comunidad de Traders en Español",
     "dash.intro": "Plataforma trading educativa diseñada para una comunidad de traders en español: análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis, educación trading estructurada y análisis de mercado en tiempo real — todo en un solo panel.",
@@ -1322,8 +1322,8 @@ const translations = {
     "ai.tryAgain": "Inténtalo de nuevo más tarde.",
 
     // Centro de Educación
-    "edu.seo.title": "Centro de Educación Trading | Gestión de Riesgo, Análisis Técnico y Webinars",
-    "edu.seo.desc": "Educación trading profesional: análisis técnico, patrones de gráficos, gestión de riesgo, psicología y webinars trading en vivo — para una comunidad de traders seria.",
+    "edu.seo.title": "Centro de Educación Trading | Análisis Técnico & Riesgo",
+    "edu.seo.desc": "Educación trading: análisis técnico en vivo, gestión de riesgo trading, patrones de gráficos, psicología y webinars trading gratis para la comunidad de traders.",
     "edu.seo.keywords": "educación trading, gestión de riesgo, análisis técnico, patrones de gráficos, comunidad de traders, webinars trading, análisis de mercado, psicología trading, educación forex",
     "edu.eyebrow": "Centro de Educación",
     "edu.h1.lead": "Domina los mercados,",
@@ -1704,8 +1704,8 @@ const translations = {
     "dash.openMenu": "Abrir menu",
     "dash.closeMenu": "Fechar menu",
     "dash.profile": "Perfil",
-    "dash.seo.title": "Plataforma de Trading Educativa | Comunidade de Traders e Análise Técnica ao Vivo",
-    "dash.seo.desc": "Plataforma de trading educativa em português: comunidade de traders, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis e educação trading profissional.",
+    "dash.seo.title": "Dashboard Trading | Comunidade de Traders & Análise ao Vivo",
+    "dash.seo.desc": "Plataforma de trading educativa: comunidade de traders, análise técnica ao vivo, gestão de risco no trading e webinars de trading grátis em português.",
     "dash.seo.keywords": "comunidade de traders, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis, educação trading, plataforma de trading educativa, trading em português, análise de mercado, dashboard trading",
     "dash.h1": "Plataforma de Trading Educativa para uma Comunidade de Traders em Português",
     "dash.intro": "Plataforma de trading educativa feita para uma comunidade de traders em português: análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis, educação trading estruturada e análise de mercado em tempo real — tudo em um único painel.",
@@ -2015,8 +2015,8 @@ const translations = {
     "ai.tryAgain": "Tente novamente mais tarde.",
 
     // Centro de Educação
-    "edu.seo.title": "Centro de Educação em Trading | Gestão de Risco, Análise Técnica e Webinars",
-    "edu.seo.desc": "Educação em trading profissional: análise técnica, padrões de gráficos, gestão de risco, psicologia e webinars de trading ao vivo — para uma comunidade de traders séria.",
+    "edu.seo.title": "Centro de Educação em Trading | Análise Técnica & Risco",
+    "edu.seo.desc": "Educação trading: análise técnica ao vivo, gestão de risco no trading, padrões de gráficos, psicologia e webinars de trading grátis para a comunidade de traders.",
     "edu.seo.keywords": "educação trading, gestão de risco, análise técnica, padrões de gráficos, comunidade de traders, webinars de trading, análise de mercado, psicologia trading, educação forex",
     "edu.eyebrow": "Centro de Educação",
     "edu.h1.lead": "Domine os mercados,",
@@ -2093,7 +2093,7 @@ const translations = {
     "eduMod.toast.badge": "🏅 Selo desbloqueado: {name}",
     "eduMod.toast.reset": "Módulo reiniciado. Você pode concluí-lo novamente.",
     "access.seo.title": "Conta Live Verificada Necessária | Acesso IX Trading Room",
-    "access.seo.desc": "Acesse a IX Live Trading Room: conecte uma conta live Infinox verificada com depósito mínimo de $100 USD e desbloqueie mentores, sinais e educação em trading ao vivo.",
+    "access.seo.desc": "Acesse a IX Live Trading Room: conecte uma conta live Infinox verificada com depósito mínimo de $100 USD para mentores, sinais e educação.",
     "access.seo.keywords": "acesso sala de trading, conta verificada trading, depósito mínimo trading, conta live infinox, educação em trading, sala de trading ao vivo, mentoria forex",
     // Live Chart / Trading Terminal SEO (PT-BR)
     "livechart.seo.title": "Gráficos ao Vivo & Trading Terminal | Análise Técnica",
@@ -2101,7 +2101,7 @@ const translations = {
     "livechart.seo.keywords": "gráficos ao vivo, análise técnica ao vivo, trading terminal, gráficos de trading, indicadores técnicos, comunidade de traders, plataforma de trading educativa, trading em português",
     // Community Hub / Chatroom SEO (PT-BR)
     "chat.seo.title": "Comunidade de Traders ao Vivo | Chat e Análise de Mercado",
-    "chat.seo.desc": "Comunidade de traders em português: chat ao vivo, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis e educação trading compartilhada.",
+    "chat.seo.desc": "Comunidade de traders em português: chat ao vivo, análise técnica ao vivo, gestão de risco e webinars de trading grátis com mentores.",
     "chat.seo.keywords": "comunidade de traders, chat de trading, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis, educação trading, plataforma de trading educativa, trading em português",
     "access.h1": "Quase lá — desbloqueie a IX Live Trading Room completa",
     "access.intro": "O acesso completo à sala de trading ao vivo, mentores, sinais e sessões educativas requer uma conta live Infinox verificada com saldo líquido mínimo de $100 USD.",
