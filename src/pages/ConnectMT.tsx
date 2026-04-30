@@ -187,6 +187,7 @@ const ConnectMT = () => {
 
         {/* New users — Open Infinox account */}
         <motion.section
+          ref={newUserSectionRef}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-3xl border-2 border-[hsl(45,100%,50%)]/40 bg-gradient-to-br from-[hsl(45,100%,50%)]/[0.08] via-[hsl(45,100%,50%)]/[0.04] to-transparent p-6 backdrop-blur-xl shadow-[0_0_40px_hsl(45,100%,50%/0.15)] sm:p-8"
@@ -212,7 +213,12 @@ const ConnectMT = () => {
                 href="https://myaccount.infinox.com/es/links/go/9926281"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => track("open_infinox_account_click", { location: "connect_mt_new_user" })}
+                onClick={() =>
+                  track("open_infinox_account_click", {
+                    location: "connect_mt_new_user",
+                    locale,
+                  })
+                }
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 {t("connectMt5.newUser.cta")}
@@ -220,6 +226,30 @@ const ConnectMT = () => {
               </a>
             </Button>
           </div>
+
+          {/* 3-step new-user checklist */}
+          <div className="mt-6 rounded-2xl border border-[hsl(45,100%,50%)]/25 bg-background/40 p-4 sm:p-5">
+            <h3 className="font-heading text-sm font-semibold text-foreground sm:text-base">
+              {t("connectMt5.newUser.checklist.title")}
+            </h3>
+            <ol className="mt-3 space-y-2.5">
+              {[
+                t("connectMt5.newUser.checklist.1"),
+                t("connectMt5.newUser.checklist.2"),
+                t("connectMt5.newUser.checklist.3"),
+              ].map((step, idx) => (
+                <li key={idx} className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(45,100%,50%)] text-xs font-bold text-black">
+                    {idx + 1}
+                  </span>
+                  <span className="text-sm leading-relaxed text-muted-foreground">
+                    {step}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
           <p className="mt-5 rounded-xl border border-[hsl(45,100%,50%)]/20 bg-background/40 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
             💡 {t("connectMt5.newUser.note")}
           </p>
