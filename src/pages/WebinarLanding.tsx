@@ -21,7 +21,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import SEO from "@/components/SEO";
-import LeadCaptureForm from "@/components/lead/LeadCaptureForm";
 import WebinarRegistrationForm from "@/components/lead/WebinarRegistrationForm";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
