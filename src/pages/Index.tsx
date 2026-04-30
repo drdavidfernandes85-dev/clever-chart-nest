@@ -54,6 +54,13 @@ const Index = () => {
         },
       })),
     },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL + "/" },
+      ],
+    },
   ];
 
   return (
@@ -61,6 +68,7 @@ const Index = () => {
       <SEO
         title={t("seo.home.title")}
         description={t("seo.home.description")}
+        keywords={t("seo.home.keywords" as any)}
         canonical={SITE_URL + "/"}
         image={`${SITE_URL}/og-image.jpg`}
         jsonLd={jsonLd}
