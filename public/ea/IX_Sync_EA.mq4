@@ -57,9 +57,10 @@ string NormalizeSymbol(string webSymbol)
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   PrintFormat("✅ IX_Sync_EA v2.04 (MT4) | IX LTR loaded. Webhook: %s", WebhookURL);
+   PrintFormat("✅ IX_Sync_EA v2.05 (MT4) | IX LTR loaded. Webhook: %s", WebhookURL);
    if(StringLen(SecretToken) < 16)
       Print("⚠️ WARNING: SecretToken looks empty/short. Re-download EA from your dashboard.");
+   historyCursor = TimeCurrent() - HistoryLookbackDays * 86400;
    return(INIT_SUCCEEDED);
 }
 
@@ -79,6 +80,12 @@ void OnTick()
    {
       lastPoll = now;
       PollPendingOrders();
+   }
+
+   if(now - lastHistorySend >= HistoryIntervalSeconds)
+   {
+      lastHistorySend = now;
+      SendClosedDeals();
    }
 }
 
