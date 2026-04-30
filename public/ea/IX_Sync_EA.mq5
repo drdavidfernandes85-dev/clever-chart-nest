@@ -58,18 +58,21 @@ int OnInit()
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(MaxSlippagePoints);
 
-   Print("✅ IX_Sync_EA v2.04 (MT5) cargado correctamente");
+   Print("✅ IX_Sync_EA v2.05 (MT5) cargado correctamente");
    Print("   Webhook URL: ", WebhookURL);
 
    if(StringLen(SecretToken) < 20)
       Print("⚠️ AVISO: SecretToken parece incompleto.");
+
+   // Initialize history cursor: start from N days ago so we backfill recent history once.
+   historyCursor = TimeCurrent() - (datetime)(HistoryLookbackDays * 86400);
 
    return(INIT_SUCCEEDED);
 }
 
 void OnDeinit(const int reason)
 {
-   Print("IX_Sync_EA v2.04 detenido.");
+   Print("IX_Sync_EA v2.05 detenido.");
 }
 
 //+------------------------------------------------------------------+
@@ -88,6 +91,12 @@ void OnTick()
    {
       lastPoll = now;
       PollPendingOrders();
+   }
+
+   if(now - lastHistorySend >= HistoryIntervalSeconds)
+   {
+      lastHistorySend = now;
+      SendClosedDeals();
    }
 }
 
