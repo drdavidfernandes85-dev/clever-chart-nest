@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Calendar, PlayCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import ScrollReveal from "@/components/ScrollReveal";
+import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const CTASection = () => {
@@ -56,21 +57,18 @@ const CTASection = () => {
               <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
                 <Button
                   size="lg"
-                  className="h-12 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground hover:bg-primary/80"
+                  className="h-12 rounded-full bg-[#FFCD05] px-8 text-sm font-bold text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.55)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.8)] transition-shadow"
                   asChild
                 >
-                  <Link to="/register">
-                    {t("cta.join")} <ArrowRight className="h-4 w-4" />
+                  <Link to="/contact">
+                    <Calendar className="h-4 w-4" /> {t("cta.bookSession")}
                   </Link>
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-border bg-transparent text-foreground hover:bg-secondary font-semibold h-12 px-8 text-sm rounded-full"
-                  asChild
-                >
-                  <Link to="/login">{t("nav.login")}</Link>
-                </Button>
+                <FreeWebinarTrigger
+                  source="home_journey_cta"
+                  label={t("cta.watchWebinar")}
+                  className="h-12 rounded-full border border-primary/60 bg-primary/10 px-8 text-sm font-bold text-primary hover:bg-primary/20 backdrop-blur-md"
+                />
               </div>
             </div>
           </div>
