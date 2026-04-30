@@ -237,7 +237,8 @@ void SendClosedDeals()
    }
 }
 
-
+//+------------------------------------------------------------------+
+void PollPendingOrders()
 {
    string body = StringFormat("{\"type\":\"poll_orders\",\"token\":\"%s\",\"platform\":\"mt5\",\"account\":%I64d}",
                               SecretToken, AccountInfoInteger(ACCOUNT_LOGIN));
