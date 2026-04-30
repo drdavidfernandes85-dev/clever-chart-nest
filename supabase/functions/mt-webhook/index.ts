@@ -34,21 +34,23 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 function tokenFromRequest(req: Request): string | null {
-  const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
-  if (auth?.toLowerCase().startsWith("bearer ")) {
-    return auth.slice(7).trim();
-  }
-
   const directHeader =
     req.headers.get("x-webhook-token") ?? req.headers.get("x-api-key");
   if (directHeader?.trim()) return directHeader.trim();
 
   const url = new URL(req.url);
-  return (
+  const queryToken =
     url.searchParams.get("token") ??
     url.searchParams.get("secret") ??
-    url.searchParams.get("access_token")
-  );
+    url.searchParams.get("access_token");
+  if (queryToken?.trim()) return queryToken.trim();
+
+  const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  if (auth?.toLowerCase().startsWith("bearer ")) {
+    return auth.slice(7).trim();
+  }
+
+  return null;
 }
 
 function tokenFromBody(body: any): string | null {
