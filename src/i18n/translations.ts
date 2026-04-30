@@ -176,8 +176,9 @@ const translations = {
     "cta.desc": "Create a free account to join the daily live webinars, the trader chatroom and our educational library — built around technical analysis and disciplined risk management.",
     "cta.join": "Create Free Account",
     // SEO meta — homepage
-    "seo.home.title": "IX Live Trading Room | Trader Community & Education",
-    "seo.home.description": "Educational trading community by INFINOX: live technical analysis, free daily webinars, risk-management tools and a 24/7 trader chatroom for forex, indices, commodities and crypto.",
+    "seo.home.title": "IX Live Trading Room | Trader Community, Live Analysis & Education",
+    "seo.home.description": "Educational trading platform: trader community, live technical analysis, risk management, free trading webinars and trading education by INFINOX — forex, indices, commodities and crypto.",
+    "seo.home.keywords": "trader community, live technical analysis, trading risk management, free trading webinars, trading education, educational trading platform, market analysis, INFINOX trading",
     // Footer
     "footer.desc": "The IX Live Trading Room for the INFINOX LATAM community.",
     "footer.quickLinks": "Quick Links",
@@ -869,8 +870,9 @@ const translations = {
     "cta.desc": "Crea una cuenta gratuita para unirte a los webinars de trading en vivo, al chat de traders y a nuestra biblioteca educativa — construida sobre el análisis técnico y la gestión de riesgo disciplinada.",
     "cta.join": "Crear Cuenta Gratis",
     // SEO meta — homepage (ES)
-    "seo.home.title": "IX Live Trading Room | Comunidad de Traders y Educación",
-    "seo.home.description": "Comunidad de traders con análisis técnico en vivo, webinars de trading gratis y herramientas de gestión de riesgo. Plataforma de trading educativa con análisis de mercado en español por INFINOX.",
+    "seo.home.title": "Comunidad de Traders en Español | Análisis Técnico en Vivo y Webinars Trading Gratis",
+    "seo.home.description": "Plataforma trading educativa para una comunidad de traders en español: análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis y educación trading profesional por INFINOX.",
+    "seo.home.keywords": "comunidad de traders, análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis, educación trading, plataforma trading educativa, trading en español, análisis de mercado, INFINOX",
     "footer.desc": "La IX Live Trading Room para la comunidad INFINOX LATAM.",
     "footer.quickLinks": "Enlaces Rápidos",
     "footer.resources": "Recursos",
@@ -1543,8 +1545,9 @@ const translations = {
     "cta.desc": "Crie uma conta gratuita para participar dos webinars de trading ao vivo, do chat de traders e da nossa biblioteca educativa — construída em torno da análise técnica e da gestão de risco disciplinada.",
     "cta.join": "Criar Conta Grátis",
     // SEO meta — homepage (PT-BR)
-    "seo.home.title": "IX Live Trading Room | Comunidade de Traders e Educação",
-    "seo.home.description": "Comunidade de traders com análise técnica ao vivo, webinars de trading grátis e ferramentas de gestão de risco no trading. Plataforma de trading educativa com análise de mercado em português pela INFINOX.",
+    "seo.home.title": "Comunidade de Traders em Português | Análise Técnica ao Vivo e Webinars de Trading Grátis",
+    "seo.home.description": "Plataforma de trading educativa para uma comunidade de traders em português: análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis e educação trading profissional pela INFINOX.",
+    "seo.home.keywords": "comunidade de traders, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis, educação trading, plataforma de trading educativa, trading em português, análise de mercado, INFINOX",
     "footer.desc": "A IX Live Trading Room para a comunidade INFINOX LATAM.",
     "footer.quickLinks": "Links Rápidos",
     "footer.resources": "Recursos",
