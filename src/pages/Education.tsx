@@ -458,6 +458,8 @@ const Education = () => {
               </Link>
             </div>
           </section>
+
+          <KeywordCrossLinks current="education" />
         </main>
       </div>
     </>

@@ -424,6 +424,8 @@ const Dashboard = () => {
             </div>
           </section>
 
+          <KeywordCrossLinks current="dashboard" />
+
         </main>
       </div>
 

@@ -388,6 +388,8 @@ const LiveChart = () => {
         </div>
       </div>
 
+      <KeywordCrossLinks current="livechart" />
+
       {/* Compact, draggable Quick Trade widget — auto-opens prefilled when
           "Take This Signal" is clicked from Live Shared Signals / Community Hub. */}
       <FloatingQuickTrade
