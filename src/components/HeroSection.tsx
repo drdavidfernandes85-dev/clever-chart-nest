@@ -154,7 +154,7 @@ const HeroSection = () => {
               {t("hero.subheadline")}
             </p>
 
-            {/* CTAs — single primary + supporting secondary */}
+            {/* CTAs — primary: Connect MT5 · secondary: Watch Free Webinar · tertiary: Sign up */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <MagneticButton strength={0.25}>
                 <Button
@@ -162,14 +162,15 @@ const HeroSection = () => {
                   className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] cta-pulse shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
                   asChild
                 >
-                  <Link to="/register">
-                    {t("hero.cta")} <ArrowRight className="h-4 w-4" />
+                  <Link to="/connect-mt" aria-label={t("hero.cta.mt5")}>
+                    {t("hero.cta.mt5")} <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
               </MagneticButton>
               <MagneticButton strength={0.22}>
                 <FreeWebinarTrigger
                   source="hero"
+                  label={t("hero.cta.webinar")}
                   className="h-14 gap-2 rounded-full bg-[#FFCD05]/15 border border-primary/60 px-7 text-base font-bold text-primary hover:bg-primary/25 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
                 />
               </MagneticButton>
@@ -179,9 +180,8 @@ const HeroSection = () => {
                 className="h-14 gap-2 rounded-full px-5 text-sm font-medium text-white/70 hover:text-primary hover:bg-white/5"
                 asChild
               >
-                <Link to="/dashboard">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Go to Dashboard
+                <Link to="/register" aria-label={t("hero.cta")}>
+                  {t("hero.cta")}
                 </Link>
               </Button>
             </div>
