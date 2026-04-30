@@ -32,6 +32,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import SEO from "@/components/SEO";
+import KeywordCrossLinks from "@/components/seo/KeywordCrossLinks";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 
@@ -387,6 +388,8 @@ const LiveChart = () => {
           </aside>
         </div>
       </div>
+
+      <KeywordCrossLinks current="livechart" />
 
       {/* Compact, draggable Quick Trade widget — auto-opens prefilled when
           "Take This Signal" is clicked from Live Shared Signals / Community Hub. */}
