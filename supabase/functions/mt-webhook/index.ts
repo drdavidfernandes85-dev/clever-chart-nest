@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     return json(400, { error: "Invalid JSON" });
   }
 
-  const rawToken = tokenFromRequest(req) ?? tokenFromBody(body);
+  const rawToken = tokenFromBody(body) ?? tokenFromRequest(req);
   if (!rawToken) {
     return json(401, { error: "Missing webhook token" });
   }
