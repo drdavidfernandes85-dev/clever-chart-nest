@@ -57,7 +57,7 @@ const setHreflangs = (canonical: string) => {
   });
 };
 
-const SEO = ({ title, description, canonical, image, type = "website", jsonLd }: SEOProps) => {
+const SEO = ({ title, description, canonical, image, type = "website", jsonLd, keywords }: SEOProps) => {
   useEffect(() => {
     const fullTitle = title.length > 60 ? title.slice(0, 57) + "…" : title;
     document.title = fullTitle;
@@ -67,6 +67,10 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd }:
       setMeta('meta[name="description"]', "name", "description", desc);
       setMeta('meta[property="og:description"]', "property", "og:description", desc);
       setMeta('meta[name="twitter:description"]', "name", "twitter:description", desc);
+    }
+
+    if (keywords) {
+      setMeta('meta[name="keywords"]', "name", "keywords", keywords);
     }
 
     setMeta('meta[property="og:title"]', "property", "og:title", fullTitle);
