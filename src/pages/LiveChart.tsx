@@ -27,6 +27,7 @@ import {
 
 
 import NotificationsBell from "@/components/notifications/NotificationsBell";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
