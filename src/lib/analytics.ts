@@ -21,6 +21,7 @@ export type TrackEvent =
   | "register"
   | "connect_mt_click"
   | "open_infinox_account_click"
+  | "open_infinox_account_impression"
   | "deposit_click"
   | "webinar_signup"
   | "lead_capture"
