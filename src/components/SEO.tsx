@@ -100,7 +100,7 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd, k
     } else if (scriptEl) {
       scriptEl.remove();
     }
-  }, [title, description, canonical, image, type, jsonLd]);
+  }, [title, description, canonical, image, type, jsonLd, keywords]);
 
   return null;
 };
