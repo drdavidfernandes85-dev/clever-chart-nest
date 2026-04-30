@@ -46,6 +46,7 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary"));
 const Webinars = lazy(() => import("./pages/Webinars"));
+const WebinarLanding = lazy(() => import("./pages/WebinarLanding"));
 
 const DashboardShell = ({ children }: { children: ReactNode }) => (
   <ProtectedRoute>
@@ -91,6 +92,7 @@ const App = () => (
                   <Route path="/videos" element={<DashboardShell><VideoLibrary /></DashboardShell>} />
                   <Route path="/connect-mt" element={<DashboardShell><ConnectMT /></DashboardShell>} />
                   <Route path="/connect" element={<ConnectMyMT5 />} />
+                  <Route path="/webinar" element={<WebinarLanding />} />
                   <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
                   <Route path="/webinars" element={<DashboardShell><Webinars /></DashboardShell>} />
                   <Route path="/webinars/:id" element={<DashboardShell><Webinars /></DashboardShell>} />
