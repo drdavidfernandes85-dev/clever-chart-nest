@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -22,11 +23,89 @@ import SEO from "@/components/SEO";
 import EAWebhookSetup from "@/components/mt/EAWebhookSetup";
 import { formatDistanceToNow } from "date-fns";
 import { useLanguage } from "@/i18n/LanguageContext";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { track } from "@/lib/analytics";
+
+const SEO_BY_LOCALE: Record<string, { title: string; description: string }> = {
+  en: {
+    title: "Connect MT5 Account or Open New Infinox Account | Elite Live",
+    description:
+      "New to Infinox? Open a live MT5 account in minutes. Already have one? Securely connect via our free EA Webhook to sync balance, equity and trades in real time.",
+  },
+  es: {
+    title: "Conecta tu MT5 o Abre una Cuenta Infinox | Elite Live",
+    description:
+      "¿Nuevo en Infinox? Abre una cuenta MT5 real en minutos. ¿Ya tienes una? Conéctala de forma segura con nuestro EA Webhook gratuito y sincroniza saldo y operaciones en tiempo real.",
+  },
+  pt: {
+    title: "Conecte seu MT5 ou Abra uma Conta Infinox | Elite Live",
+    description:
+      "Novo na Infinox? Abra uma conta MT5 real em minutos. Já tem uma? Conecte com segurança via nosso EA Webhook gratuito e sincronize saldo e trades em tempo real.",
+  },
+};
 
 const ConnectMT = () => {
   const { account, positions, refresh, loading } = useMTAccount();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const newUserSectionRef = useRef<HTMLElement | null>(null);
+  const impressionFiredRef = useRef(false);
+
+  useEffect(() => {
+    const el = newUserSectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !impressionFiredRef.current) {
+            impressionFiredRef.current = true;
+            track("open_infinox_account_impression", {
+              location: "connect_mt_new_user",
+              locale,
+            });
+            obs.disconnect();
+          }
+        });
+      },
+      { threshold: 0.4 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [locale]);
+
+  const seo = SEO_BY_LOCALE[locale] ?? SEO_BY_LOCALE.en;
+  const jsonLd = useMemo(
+    () => ({
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      name: seo.title,
+      description: seo.description,
+      inLanguage: locale === "pt" ? "pt-BR" : locale,
+      step: [
+        {
+          "@type": "HowToStep",
+          position: 1,
+          name: t("connectMt5.newUser.checklist.1"),
+        },
+        {
+          "@type": "HowToStep",
+          position: 2,
+          name: t("connectMt5.newUser.checklist.2"),
+        },
+        {
+          "@type": "HowToStep",
+          position: 3,
+          name: t("connectMt5.newUser.checklist.3"),
+        },
+      ],
+      potentialAction: {
+        "@type": "RegisterAction",
+        name: t("connectMt5.newUser.cta"),
+        target: "https://myaccount.infinox.com/es/links/go/9926281",
+      },
+    }),
+    [locale, seo, t]
+  );
+
 
   const handleDisconnect = async () => {
     if (!account) return;
@@ -59,21 +138,24 @@ const ConnectMT = () => {
   return (
     <div className="min-h-screen bg-background pb-16">
       <SEO
-        title="Connect MetaTrader Account | IX Live Trading Room"
-        description="Securely link your MT4 or MT5 account using a free Custom EA Webhook to sync real balance, equity and trades in real-time."
+        title={seo.title}
+        description={seo.description}
         canonical="https://elitelivetradingroom.com/connect-mt"
+        jsonLd={jsonLd}
       />
 
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
-        <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+        <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
           <Link to="/dashboard" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm">Dashboard</span>
           </Link>
-          <span className="font-heading text-sm font-semibold text-foreground">
+          <span className="hidden font-heading text-sm font-semibold text-foreground sm:inline">
             Connect <span className="text-primary">Trading Account</span>
           </span>
-          <div className="w-20" />
+          <div className="flex items-center justify-end">
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 
@@ -105,6 +187,7 @@ const ConnectMT = () => {
 
         {/* New users — Open Infinox account */}
         <motion.section
+          ref={newUserSectionRef}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="rounded-3xl border-2 border-[hsl(45,100%,50%)]/40 bg-gradient-to-br from-[hsl(45,100%,50%)]/[0.08] via-[hsl(45,100%,50%)]/[0.04] to-transparent p-6 backdrop-blur-xl shadow-[0_0_40px_hsl(45,100%,50%/0.15)] sm:p-8"
@@ -130,7 +213,12 @@ const ConnectMT = () => {
                 href="https://myaccount.infinox.com/es/links/go/9926281"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => track("open_infinox_account_click", { location: "connect_mt_new_user" })}
+                onClick={() =>
+                  track("open_infinox_account_click", {
+                    location: "connect_mt_new_user",
+                    locale,
+                  })
+                }
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 {t("connectMt5.newUser.cta")}
@@ -138,6 +226,30 @@ const ConnectMT = () => {
               </a>
             </Button>
           </div>
+
+          {/* 3-step new-user checklist */}
+          <div className="mt-6 rounded-2xl border border-[hsl(45,100%,50%)]/25 bg-background/40 p-4 sm:p-5">
+            <h3 className="font-heading text-sm font-semibold text-foreground sm:text-base">
+              {t("connectMt5.newUser.checklist.title")}
+            </h3>
+            <ol className="mt-3 space-y-2.5">
+              {[
+                t("connectMt5.newUser.checklist.1"),
+                t("connectMt5.newUser.checklist.2"),
+                t("connectMt5.newUser.checklist.3"),
+              ].map((step, idx) => (
+                <li key={idx} className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(45,100%,50%)] text-xs font-bold text-black">
+                    {idx + 1}
+                  </span>
+                  <span className="text-sm leading-relaxed text-muted-foreground">
+                    {step}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
           <p className="mt-5 rounded-xl border border-[hsl(45,100%,50%)]/20 bg-background/40 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
             💡 {t("connectMt5.newUser.note")}
           </p>
