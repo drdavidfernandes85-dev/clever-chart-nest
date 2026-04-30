@@ -6,6 +6,8 @@ import {
   LayoutDashboard,
   CheckCircle2,
   Sparkles,
+  UserPlus,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
