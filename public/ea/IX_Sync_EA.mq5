@@ -1,9 +1,9 @@
 //+------------------------------------------------------------------+
-//| IX_Sync_EA v2.04 (MT5)                                           |
+//| IX_Sync_EA v2.05 (MT5)                                           |
 //| Copyright © IX Live Trading Room | IX LTR                        |
 //+------------------------------------------------------------------+
 #property copyright "IX Live Trading Room | IX LTR"
-#property version   "2.04"
+#property version   "2.05"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -12,12 +12,16 @@ input string WebhookURL          = "{{WEBHOOK_URL}}";   // Pre-filled when downl
 input string SecretToken         = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
 input int    SendIntervalSeconds = 8;
 input int    PollIntervalSeconds = 5;
+input int    HistoryIntervalSeconds = 30;   // How often to push closed-deal history
+input int    HistoryLookbackDays = 30;      // How far back to scan history on start
 input int    MagicNumber         = 88008800;
 input int    MaxSlippagePoints   = 30;
 
 CTrade trade;
 datetime lastSend = 0;
 datetime lastPoll = 0;
+datetime lastHistorySend = 0;
+datetime historyCursor = 0;   // Only send deals with time > cursor
 
 //+------------------------------------------------------------------+
 //| Traductor automático de símbolos                                 |
@@ -54,18 +58,21 @@ int OnInit()
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(MaxSlippagePoints);
 
-   Print("✅ IX_Sync_EA v2.04 (MT5) cargado correctamente");
+   Print("✅ IX_Sync_EA v2.05 (MT5) cargado correctamente");
    Print("   Webhook URL: ", WebhookURL);
 
    if(StringLen(SecretToken) < 20)
       Print("⚠️ AVISO: SecretToken parece incompleto.");
+
+   // Initialize history cursor: start from N days ago so we backfill recent history once.
+   historyCursor = TimeCurrent() - (datetime)(HistoryLookbackDays * 86400);
 
    return(INIT_SUCCEEDED);
 }
 
 void OnDeinit(const int reason)
 {
-   Print("IX_Sync_EA v2.04 detenido.");
+   Print("IX_Sync_EA v2.05 detenido.");
 }
 
 //+------------------------------------------------------------------+
@@ -84,6 +91,12 @@ void OnTick()
    {
       lastPoll = now;
       PollPendingOrders();
+   }
+
+   if(now - lastHistorySend >= HistoryIntervalSeconds)
+   {
+      lastHistorySend = now;
+      SendClosedDeals();
    }
 }
 
@@ -131,7 +144,100 @@ void SendOpenPositions()
 }
 
 //+------------------------------------------------------------------+
-void PollPendingOrders()
+//| Push closed deal history to the backend.                         |
+//| Walks HistoryDeals from `historyCursor` forward, builds a JSON   |
+//| array of closed positions (DEAL_ENTRY_OUT) and POSTs them.       |
+//+------------------------------------------------------------------+
+void SendClosedDeals()
+{
+   datetime from = historyCursor;
+   datetime to   = TimeCurrent() + 60;
+   if(!HistorySelect(from, to)) return;
+
+   int total = HistoryDealsTotal();
+   if(total <= 0) return;
+
+   // Group OUT deals by position_id, accumulating profit/commission/swap.
+   // We also need entry price (from the IN deal) and open time.
+   string deals = "[";
+   int sent = 0;
+   datetime maxTime = historyCursor;
+
+   for(int i = 0; i < total; i++)
+   {
+      ulong dealTicket = HistoryDealGetTicket(i);
+      if(dealTicket == 0) continue;
+
+      long entryType = HistoryDealGetInteger(dealTicket, DEAL_ENTRY);
+      if(entryType != DEAL_ENTRY_OUT && entryType != DEAL_ENTRY_OUT_BY) continue;
+
+      datetime closeTime = (datetime)HistoryDealGetInteger(dealTicket, DEAL_TIME);
+      if(closeTime <= historyCursor) continue;
+
+      ulong posId = (ulong)HistoryDealGetInteger(dealTicket, DEAL_POSITION_ID);
+      if(posId == 0) continue;
+
+      string symbol = HistoryDealGetString(dealTicket, DEAL_SYMBOL);
+      double volume = HistoryDealGetDouble(dealTicket, DEAL_VOLUME);
+      double exitPrice = HistoryDealGetDouble(dealTicket, DEAL_PRICE);
+      double profit = HistoryDealGetDouble(dealTicket, DEAL_PROFIT);
+      double commission = HistoryDealGetDouble(dealTicket, DEAL_COMMISSION);
+      double swap = HistoryDealGetDouble(dealTicket, DEAL_SWAP);
+      long dealType = HistoryDealGetInteger(dealTicket, DEAL_TYPE);
+      // OUT deal type is opposite of position direction.
+      // DEAL_TYPE_BUY (0) closing a SELL position; DEAL_TYPE_SELL (1) closing a BUY.
+      // So position type = 1 - dealType (mapped to 0=buy, 1=sell)
+      int posSide = (dealType == DEAL_TYPE_BUY) ? 1 : 0;
+
+      // Walk back to find matching IN deal for entry price + open time
+      double entryPrice = 0.0;
+      datetime openTime = closeTime;
+      double inCommission = 0.0;
+      double inSwap = 0.0;
+      for(int j = 0; j < total; j++)
+      {
+         ulong inTicket = HistoryDealGetTicket(j);
+         if(inTicket == 0) continue;
+         if((ulong)HistoryDealGetInteger(inTicket, DEAL_POSITION_ID) != posId) continue;
+         long inEntry = HistoryDealGetInteger(inTicket, DEAL_ENTRY);
+         if(inEntry == DEAL_ENTRY_IN)
+         {
+            entryPrice = HistoryDealGetDouble(inTicket, DEAL_PRICE);
+            openTime = (datetime)HistoryDealGetInteger(inTicket, DEAL_TIME);
+            inCommission += HistoryDealGetDouble(inTicket, DEAL_COMMISSION);
+            inSwap += HistoryDealGetDouble(inTicket, DEAL_SWAP);
+            break;
+         }
+      }
+
+      if(sent > 0) deals += ",";
+      deals += StringFormat("{\"ticket\":%I64u,\"symbol\":\"%s\",\"type\":%d,\"volume\":%.2f,\"entry\":%.5f,\"exit\":%.5f,\"profit\":%.2f,\"commission\":%.2f,\"swap\":%.2f,\"opened_at\":%d,\"closed_at\":%d}",
+         posId, symbol, posSide, volume, entryPrice, exitPrice,
+         profit, commission + inCommission, swap + inSwap,
+         (int)openTime, (int)closeTime);
+
+      sent++;
+      if(closeTime > maxTime) maxTime = closeTime;
+
+      // Cap payload size — flush in batches of 50
+      if(sent >= 50) break;
+   }
+
+   deals += "]";
+   if(sent == 0) return;
+
+   string json = StringFormat("{\"type\":\"deals\",\"token\":\"%s\",\"platform\":\"mt5\",\"account\":%I64d,\"deals\":%s}",
+                  SecretToken, AccountInfoInteger(ACCOUNT_LOGIN), deals);
+   string resp;
+   int code = PostToWebhook(json, resp);
+   if(code == 200)
+   {
+      historyCursor = maxTime;
+      PrintFormat("📊 Sent %d closed deal(s) to backend.", sent);
+   }
+}
+
+
 {
    string body = StringFormat("{\"type\":\"poll_orders\",\"token\":\"%s\",\"platform\":\"mt5\",\"account\":%I64d}",
                               SecretToken, AccountInfoInteger(ACCOUNT_LOGIN));

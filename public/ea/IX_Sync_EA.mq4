@@ -1,25 +1,30 @@
 //+------------------------------------------------------------------+
-//| IX_Sync_EA v2.04 (MT4)                                           |
+//| IX_Sync_EA v2.05 (MT4)                                           |
 //| Copyright © IX Live Trading Room | IX LTR                        |
 //+------------------------------------------------------------------+
 //|  - Pushes account & open orders every 8s                         |
 //|  - Polls dashboard every 5s for "Take This Signal" orders        |
+//|  - Pushes closed-trade history every 30s                         |
 //|  - Executes received orders automatically                        |
 //|  - Auto-translates web symbols (BTC/USDT -> BTCUSD, etc.)        |
 //+------------------------------------------------------------------+
 #property copyright "IX Live Trading Room | IX LTR"
-#property version   "2.04"
+#property version   "2.05"
 #property strict
 
-input string WebhookURL          = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
-input string SecretToken         = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
-input int    SendIntervalSeconds = 8;                   // Account/positions push interval
-input int    PollIntervalSeconds = 5;                   // Pending orders poll interval
-input int    MagicNumber         = 88008800;            // Identifies trades placed by this EA
-input int    MaxSlippagePoints   = 30;                  // Max acceptable slippage for market orders
+input string WebhookURL              = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
+input string SecretToken             = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
+input int    SendIntervalSeconds     = 8;                   // Account/positions push interval
+input int    PollIntervalSeconds     = 5;                   // Pending orders poll interval
+input int    HistoryIntervalSeconds  = 30;                  // Closed-trade history push interval
+input int    HistoryLookbackDays     = 30;                  // How far back to scan history on start
+input int    MagicNumber             = 88008800;            // Identifies trades placed by this EA
+input int    MaxSlippagePoints       = 30;                  // Max acceptable slippage for market orders
 
 datetime lastSend = 0;
 datetime lastPoll = 0;
+datetime lastHistorySend = 0;
+datetime historyCursor = 0;
 
 //+------------------------------------------------------------------+
 //| Automatic symbol translator (web -> broker)                      |
@@ -52,9 +57,10 @@ string NormalizeSymbol(string webSymbol)
 //+------------------------------------------------------------------+
 int OnInit()
 {
-   PrintFormat("✅ IX_Sync_EA v2.04 (MT4) | IX LTR loaded. Webhook: %s", WebhookURL);
+   PrintFormat("✅ IX_Sync_EA v2.05 (MT4) | IX LTR loaded. Webhook: %s", WebhookURL);
    if(StringLen(SecretToken) < 16)
       Print("⚠️ WARNING: SecretToken looks empty/short. Re-download EA from your dashboard.");
+   historyCursor = TimeCurrent() - HistoryLookbackDays * 86400;
    return(INIT_SUCCEEDED);
 }
 
@@ -74,6 +80,12 @@ void OnTick()
    {
       lastPoll = now;
       PollPendingOrders();
+   }
+
+   if(now - lastHistorySend >= HistoryIntervalSeconds)
+   {
+      lastHistorySend = now;
+      SendClosedDeals();
    }
 }
 
@@ -119,6 +131,55 @@ void SendOpenPositions()
    string json = StringFormat("{\"type\":\"positions\",\"token\":\"%s\",\"platform\":\"mt4\",\"account\":%d,\"positions\":%s}",
                    SecretToken, (int)AccountNumber(), positions);
    string resp; PostToWebhook(json, resp);
+}
+
+//+------------------------------------------------------------------+
+//| Push closed-trade history to the backend.                        |
+//| Walks OrdersHistory, picks orders closed after `historyCursor`,  |
+//| and POSTs them as a single batch. Backend dedupes by ticket.     |
+//+------------------------------------------------------------------+
+void SendClosedDeals()
+{
+   string deals = "[";
+   int sent = 0;
+   datetime maxTime = historyCursor;
+   int total = OrdersHistoryTotal();
+
+   for(int i = 0; i < total; i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY)) continue;
+      int otype = OrderType();
+      if(otype != OP_BUY && otype != OP_SELL) continue;
+      datetime closeTime = OrderCloseTime();
+      if(closeTime <= historyCursor) continue;
+
+      if(sent > 0) deals += ",";
+      string safeSym = OrderSymbol();
+      StringReplace(safeSym, "\"", "");
+
+      deals += StringFormat("{\"ticket\":%d,\"symbol\":\"%s\",\"type\":%d,\"volume\":%.2f,\"entry\":%.5f,\"exit\":%.5f,\"profit\":%.2f,\"commission\":%.2f,\"swap\":%.2f,\"opened_at\":%d,\"closed_at\":%d}",
+         OrderTicket(), safeSym, otype, OrderLots(),
+         OrderOpenPrice(), OrderClosePrice(),
+         OrderProfit(), OrderCommission(), OrderSwap(),
+         (int)OrderOpenTime(), (int)closeTime);
+
+      sent++;
+      if(closeTime > maxTime) maxTime = closeTime;
+      if(sent >= 50) break;
+   }
+
+   deals += "]";
+   if(sent == 0) return;
+
+   string json = StringFormat("{\"type\":\"deals\",\"token\":\"%s\",\"platform\":\"mt4\",\"account\":%d,\"deals\":%s}",
+                  SecretToken, (int)AccountNumber(), deals);
+   string resp;
+   int code = PostToWebhook(json, resp);
+   if(code == 200)
+   {
+      historyCursor = maxTime;
+      PrintFormat("📊 Sent %d closed deal(s) to backend.", sent);
+   }
 }
 
 //+------------------------------------------------------------------+
