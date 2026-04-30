@@ -15,6 +15,7 @@ import CommunityTrustBar from "@/components/social/CommunityTrustBar";
 import AICopilot from "@/components/ai/AICopilot";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import SEO from "@/components/SEO";
 
 interface Channel {
   id: string;
@@ -282,6 +283,20 @@ const Chatroom = () => {
   const messageItems = buildMessageList();
 
   return (
+    <>
+    <SEO
+      title={t("chat.seo.title")}
+      description={t("chat.seo.desc")}
+      keywords={t("chat.seo.keywords")}
+      canonical="https://elitelivetradingroom.com/chatroom"
+      jsonLd={{
+        "@context": "https://schema.org",
+        "@type": "DiscussionForumPosting",
+        headline: t("chat.seo.title"),
+        description: t("chat.seo.desc"),
+        url: "https://elitelivetradingroom.com/chatroom",
+      }}
+    />
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar */}
       <aside className="hidden w-[280px] shrink-0 flex-col border-r border-border/50 bg-card md:flex">
@@ -427,6 +442,7 @@ const Chatroom = () => {
       {/* AI Trading Assistant — floating bubble for educational Q&A. */}
       <AICopilot />
     </div>
+    </>
   );
 };
 

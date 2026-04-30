@@ -27,6 +27,7 @@ import {
 
 
 import NotificationsBell from "@/components/notifications/NotificationsBell";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
@@ -97,6 +98,7 @@ const tvSymbolToPair = (tv: string) => {
 };
 
 const LiveChart = () => {
+  const { t } = useLanguage();
   const [symbol, setSymbol] = useState("BINANCE:BTCUSDT");
   const [interval, setInterval] = useState("15");
   const [studies, setStudies] = useState<string[]>([]);
@@ -161,8 +163,9 @@ const LiveChart = () => {
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <SEO
-        title="Live Chart Terminal | IX Live Trading Room"
-        description="High-end live trading terminal with real-time charts, quick trade execution and pro indicators."
+        title={t("livechart.seo.title")}
+        description={t("livechart.seo.desc")}
+        keywords={t("livechart.seo.keywords")}
         canonical="https://elitelivetradingroom.com/live-chart"
       />
 

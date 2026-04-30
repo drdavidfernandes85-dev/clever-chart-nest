@@ -713,6 +713,10 @@ const translations = {
     "access.seo.title": "Verified Live Account Required | IX Live Trading Room Access",
     "access.seo.desc": "Unlock the full IX Live Trading Room: connect a verified Infinox live account with a $100 USD minimum balance to access mentors, signals and live education.",
     "access.seo.keywords": "trading room access, verified live trading account, minimum trading deposit, Infinox live account, trading education, live trading room, forex mentorship",
+    // Live Chart / Trading Terminal SEO (EN)
+    "livechart.seo.title": "Live Charts & Trading Terminal | Real-Time Technical Analysis",
+    "livechart.seo.desc": "Pro trading terminal with live charts, real-time technical analysis, advanced indicators and fast execution — built for an active trader community.",
+    "livechart.seo.keywords": "live charts, trading terminal, real-time technical analysis, trading charts, technical indicators, trader community, educational trading platform, market analysis",
     "access.h1": "Almost there — unlock the full IX Live Trading Room",
     "access.intro": "Full access to the live trading room, mentors, signals and educational sessions requires a verified Infinox live account with a minimum net balance of $100 USD.",
     "access.reason.no_account": "We couldn't find a connected MetaTrader account on your profile. Connect your live Infinox account to unlock the full Live Trading Room.",
@@ -1398,6 +1402,14 @@ const translations = {
     "access.seo.title": "Cuenta Live Verificada Requerida | Acceso IX Trading Room",
     "access.seo.desc": "Accede al IX Live Trading Room: conecta una cuenta live Infinox verificada con depósito mínimo de $100 USD y desbloquea mentores, señales y educación trading en vivo.",
     "access.seo.keywords": "acceso trading room, cuenta verificada trading, depósito mínimo trading, cuenta live infinox, educación trading, sala de trading en vivo, mentoría forex",
+    // Live Chart / Trading Terminal SEO (ES)
+    "livechart.seo.title": "Gráficos en Vivo & Trading Terminal | Análisis Técnico",
+    "livechart.seo.desc": "Trading terminal con gráficos en vivo, análisis técnico en vivo, indicadores profesionales y ejecución rápida — para la comunidad de traders en español.",
+    "livechart.seo.keywords": "gráficos en vivo, análisis técnico en vivo, trading terminal, gráficos de trading, indicadores técnicos, comunidad de traders, plataforma trading educativa, trading en español",
+    // Community Hub / Chatroom SEO (ES)
+    "chat.seo.title": "Comunidad de Traders en Vivo | Chat y Análisis de Mercado",
+    "chat.seo.desc": "Comunidad de traders en español: chat en vivo, análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis y educación trading compartida.",
+    "chat.seo.keywords": "comunidad de traders, chat de trading, análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis, educación trading, plataforma trading educativa, trading en español",
     "access.h1": "Ya casi — desbloquea el IX Live Trading Room completo",
     "access.intro": "El acceso completo a la sala de trading en vivo, mentores, señales y sesiones educativas requiere una cuenta live Infinox verificada con un saldo neto mínimo de $100 USD.",
     "access.reason.no_account": "No encontramos una cuenta MetaTrader conectada en tu perfil. Conecta tu cuenta live de Infinox para desbloquear el Live Trading Room completo.",
@@ -2083,6 +2095,14 @@ const translations = {
     "access.seo.title": "Conta Live Verificada Necessária | Acesso IX Trading Room",
     "access.seo.desc": "Acesse a IX Live Trading Room: conecte uma conta live Infinox verificada com depósito mínimo de $100 USD e desbloqueie mentores, sinais e educação em trading ao vivo.",
     "access.seo.keywords": "acesso sala de trading, conta verificada trading, depósito mínimo trading, conta live infinox, educação em trading, sala de trading ao vivo, mentoria forex",
+    // Live Chart / Trading Terminal SEO (PT-BR)
+    "livechart.seo.title": "Gráficos ao Vivo & Trading Terminal | Análise Técnica",
+    "livechart.seo.desc": "Trading terminal com gráficos ao vivo, análise técnica ao vivo, indicadores profissionais e execução rápida — para a comunidade de traders em português.",
+    "livechart.seo.keywords": "gráficos ao vivo, análise técnica ao vivo, trading terminal, gráficos de trading, indicadores técnicos, comunidade de traders, plataforma de trading educativa, trading em português",
+    // Community Hub / Chatroom SEO (PT-BR)
+    "chat.seo.title": "Comunidade de Traders ao Vivo | Chat e Análise de Mercado",
+    "chat.seo.desc": "Comunidade de traders em português: chat ao vivo, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis e educação trading compartilhada.",
+    "chat.seo.keywords": "comunidade de traders, chat de trading, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis, educação trading, plataforma de trading educativa, trading em português",
     "access.h1": "Quase lá — desbloqueie a IX Live Trading Room completa",
     "access.intro": "O acesso completo à sala de trading ao vivo, mentores, sinais e sessões educativas requer uma conta live Infinox verificada com saldo líquido mínimo de $100 USD.",
     "access.reason.no_account": "Não encontramos uma conta MetaTrader conectada ao seu perfil. Conecte sua conta live Infinox para desbloquear a Live Trading Room completa.",
