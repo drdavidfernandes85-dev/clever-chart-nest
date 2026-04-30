@@ -27,7 +27,13 @@ export type TrackEvent =
   | "lead_capture"
   | "exit_intent_shown"
   | "free_webinar_open"
-  | "cta_click";
+  | "cta_click"
+  | "webinar_form_impression"
+  | "webinar_form_field_focus"
+  | "webinar_form_submit_attempt"
+  | "webinar_form_submit_success"
+  | "webinar_form_submit_error"
+  | "webinar_form_duplicate_blocked";
 
 export const track = (event: TrackEvent, params: Record<string, unknown> = {}) => {
   if (typeof window === "undefined") return;
