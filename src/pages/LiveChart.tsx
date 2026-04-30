@@ -32,6 +32,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import SEO from "@/components/SEO";
+import KeywordCrossLinks from "@/components/seo/KeywordCrossLinks";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 

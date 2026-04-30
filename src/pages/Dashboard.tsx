@@ -15,6 +15,7 @@ import {
   Video,
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import KeywordCrossLinks from "@/components/seo/KeywordCrossLinks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";

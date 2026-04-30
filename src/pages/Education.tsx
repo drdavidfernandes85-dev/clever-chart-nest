@@ -24,6 +24,7 @@ import {
   Video,
 } from "lucide-react";
 import SEO from "@/components/SEO";
+import KeywordCrossLinks from "@/components/seo/KeywordCrossLinks";
 import { cn } from "@/lib/utils";
 import { useModules, TOTAL_MODULES } from "@/data/educationContent";
 import { useEducationProgress } from "@/hooks/useEducationProgress";
