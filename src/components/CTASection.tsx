@@ -60,7 +60,7 @@ const CTASection = () => {
                   className="h-12 rounded-full bg-[#FFCD05] px-8 text-sm font-bold text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.55)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.8)] transition-shadow"
                   asChild
                 >
-                  <Link to="/contact">
+                  <Link to="/#contact">
                     <Calendar className="h-4 w-4" /> {t("cta.bookSession")}
                   </Link>
                 </Button>
