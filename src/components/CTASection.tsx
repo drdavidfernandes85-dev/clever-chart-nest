@@ -57,12 +57,18 @@ const CTASection = () => {
               <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
                 <Button
                   size="lg"
+                  onClick={() => {
+                    const el = document.getElementById("contact");
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      history.replaceState(null, "", "/#contact");
+                    } else {
+                      window.location.href = "/#contact";
+                    }
+                  }}
                   className="h-12 rounded-full bg-[#FFCD05] px-8 text-sm font-bold text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.55)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.8)] transition-shadow"
-                  asChild
                 >
-                  <Link to="/#contact">
-                    <Calendar className="h-4 w-4" /> {t("cta.bookSession")}
-                  </Link>
+                  <Calendar className="h-4 w-4" /> {t("cta.bookSession")}
                 </Button>
                 <FreeWebinarTrigger
                   source="home_journey_cta"
