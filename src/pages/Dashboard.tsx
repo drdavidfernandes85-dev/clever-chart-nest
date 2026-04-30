@@ -114,16 +114,26 @@ const Dashboard = () => {
   }, [tradeOpen]);
 
   const jsonLd = useMemo(
-    () => ({
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      name: t("dash.seo.title"),
-      description: t("dash.seo.desc"),
-      applicationCategory: "FinanceApplication",
-      operatingSystem: "Web",
-      inLanguage: locale === "pt" ? "pt-BR" : locale,
-      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-    }),
+    () => [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: t("dash.seo.title"),
+        description: t("dash.seo.desc"),
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: locale === "pt" ? "pt-BR" : locale,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.salatradingelite.com/" },
+          { "@type": "ListItem", position: 2, name: t("dash.h1"), item: "https://www.salatradingelite.com/dashboard" },
+        ],
+      },
+    ],
     [t, locale],
   );
 
@@ -132,6 +142,7 @@ const Dashboard = () => {
       <SEO
         title={t("dash.seo.title")}
         description={t("dash.seo.desc")}
+        keywords={t("dash.seo.keywords")}
         canonical="https://www.salatradingelite.com/dashboard"
         type="website"
         jsonLd={jsonLd}
