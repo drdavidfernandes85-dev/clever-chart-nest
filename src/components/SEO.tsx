@@ -5,6 +5,10 @@ interface SEOProps {
   description?: string;
   canonical?: string;
   image?: string;
+  imageAlt?: string;
+  twitterCard?: "summary" | "summary_large_image";
+  shareTitle?: string;
+  shareDescription?: string;
   type?: "website" | "article";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   keywords?: string;
@@ -57,14 +61,34 @@ const setHreflangs = (canonical: string) => {
   });
 };
 
-const SEO = ({ title, description, canonical, image, type = "website", jsonLd, keywords }: SEOProps) => {
+const SEO = ({
+  title,
+  description,
+  canonical,
+  image,
+  imageAlt,
+  twitterCard,
+  shareTitle,
+  shareDescription,
+  type = "website",
+  jsonLd,
+  keywords,
+}: SEOProps) => {
   useEffect(() => {
     const fullTitle = title.length > 60 ? title.slice(0, 57) + "…" : title;
     document.title = fullTitle;
 
+    const ogTitle = (shareTitle ?? title);
+    const ogTitleClipped = ogTitle.length > 90 ? ogTitle.slice(0, 87) + "…" : ogTitle;
+
     if (description) {
       const desc = description.length > 160 ? description.slice(0, 157) + "…" : description;
       setMeta('meta[name="description"]', "name", "description", desc);
+    }
+
+    const ogDesc = shareDescription ?? description;
+    if (ogDesc) {
+      const desc = ogDesc.length > 200 ? ogDesc.slice(0, 197) + "…" : ogDesc;
       setMeta('meta[property="og:description"]', "property", "og:description", desc);
       setMeta('meta[name="twitter:description"]', "name", "twitter:description", desc);
     }
@@ -73,9 +97,15 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd, k
       setMeta('meta[name="keywords"]', "name", "keywords", keywords);
     }
 
-    setMeta('meta[property="og:title"]', "property", "og:title", fullTitle);
-    setMeta('meta[name="twitter:title"]', "name", "twitter:title", fullTitle);
+    setMeta('meta[property="og:title"]', "property", "og:title", ogTitleClipped);
+    setMeta('meta[name="twitter:title"]', "name", "twitter:title", ogTitleClipped);
     setMeta('meta[property="og:type"]', "property", "og:type", type);
+    setMeta(
+      'meta[name="twitter:card"]',
+      "name",
+      "twitter:card",
+      twitterCard ?? "summary_large_image",
+    );
 
     if (canonical) {
       setLink("canonical", canonical);
@@ -86,6 +116,12 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd, k
     if (image) {
       setMeta('meta[property="og:image"]', "property", "og:image", image);
       setMeta('meta[name="twitter:image"]', "name", "twitter:image", image);
+      setMeta('meta[property="og:image:width"]', "property", "og:image:width", "1200");
+      setMeta('meta[property="og:image:height"]', "property", "og:image:height", "630");
+      if (imageAlt) {
+        setMeta('meta[property="og:image:alt"]', "property", "og:image:alt", imageAlt);
+        setMeta('meta[name="twitter:image:alt"]', "name", "twitter:image:alt", imageAlt);
+      }
     }
 
     let scriptEl = document.head.querySelector<HTMLScriptElement>("script#page-jsonld");
@@ -100,7 +136,7 @@ const SEO = ({ title, description, canonical, image, type = "website", jsonLd, k
     } else if (scriptEl) {
       scriptEl.remove();
     }
-  }, [title, description, canonical, image, type, jsonLd, keywords]);
+  }, [title, description, canonical, image, imageAlt, twitterCard, shareTitle, shareDescription, type, jsonLd, keywords]);
 
   return null;
 };
