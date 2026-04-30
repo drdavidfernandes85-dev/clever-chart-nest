@@ -331,7 +331,7 @@ Deno.serve(async (req) => {
       await supabase.from("trade_journal").insert({
         user_id: userId,
         pair: c.symbol,
-        direction: c.side,
+        direction: c.side === "sell" || c.side === "short" ? "short" : "long",
         entry_price: Number(c.open_price),
         exit_price: null, // EA payload doesn't include closing price; left null
         position_size: Number(c.volume),
