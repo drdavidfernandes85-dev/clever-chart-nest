@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
-import PerformanceAnalytics from "@/components/dashboard/PerformanceAnalytics";
+import AnalyticsFilteredView from "@/components/dashboard/AnalyticsFilteredView";
 import PerformanceCoach from "@/components/ai/PerformanceCoach";
 import AICopilot from "@/components/ai/AICopilot";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
@@ -98,7 +98,7 @@ const Analytics = () => {
           </Button>
         </div>
 
-        <PerformanceAnalytics />
+        <AnalyticsFilteredView />
 
         {/* AI Performance Coach — personalized analysis */}
         <PerformanceCoach />
