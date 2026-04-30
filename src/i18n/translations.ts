@@ -878,7 +878,7 @@ const translations = {
     "cta.join": "Crear Cuenta Gratis",
     // SEO meta — homepage (ES)
     "seo.home.title": "Comunidad de Traders en Español | Trading Educativo",
-    "seo.home.description": "Comunidad de traders en español: análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis y educación trading en plataforma educativa por INFINOX.",
+    "seo.home.description": "Comunidad de traders en español: análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis y educación trading por INFINOX.",
     "seo.home.keywords": "comunidad de traders, análisis técnico en vivo, gestión de riesgo trading, webinars trading gratis, educación trading, plataforma trading educativa, trading en español, análisis de mercado, INFINOX",
     "seo.home.internal.title": "Explora la comunidad de traders",
     "seo.home.internal.dashboard": "Dashboard de trading y portafolio en vivo",
@@ -1560,7 +1560,7 @@ const translations = {
     "cta.join": "Criar Conta Grátis",
     // SEO meta — homepage (PT-BR)
     "seo.home.title": "Comunidade de Traders em Português | Trading Educativo",
-    "seo.home.description": "Comunidade de traders em português: análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis e educação trading em plataforma educativa pela INFINOX.",
+    "seo.home.description": "Comunidade de traders em português: análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis e educação trading pela INFINOX.",
     "seo.home.keywords": "comunidade de traders, análise técnica ao vivo, gestão de risco no trading, webinars de trading grátis, educação trading, plataforma de trading educativa, trading em português, análise de mercado, INFINOX",
     "seo.home.internal.title": "Explore a comunidade de traders",
     "seo.home.internal.dashboard": "Dashboard de trading e portfólio ao vivo",
