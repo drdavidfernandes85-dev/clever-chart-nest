@@ -98,7 +98,7 @@ const Analytics = () => {
           </Button>
         </div>
 
-        <PerformanceAnalytics />
+        <AnalyticsFilteredView />
 
         {/* AI Performance Coach — personalized analysis */}
         <PerformanceCoach />
