@@ -1408,7 +1408,7 @@ const translations = {
     "eduMod.toast.badge": "🏅 Insignia desbloqueada: {name}",
     "eduMod.toast.reset": "Módulo reiniciado. Puedes volver a completarlo.",
     "access.seo.title": "Cuenta Live Verificada Requerida | Acceso IX Trading Room",
-    "access.seo.desc": "Accede al IX Live Trading Room: conecta una cuenta live Infinox verificada con depósito mínimo de $100 USD y desbloquea mentores, señales y educación trading en vivo.",
+    "access.seo.desc": "Accede al IX Live Trading Room: conecta una cuenta live Infinox con depósito mínimo de $100 USD para mentores, señales y educación trading.",
     "access.seo.keywords": "acceso trading room, cuenta verificada trading, depósito mínimo trading, cuenta live infinox, educación trading, sala de trading en vivo, mentoría forex",
     // Live Chart / Trading Terminal SEO (ES)
     "livechart.seo.title": "Gráficos en Vivo & Trading Terminal | Análisis Técnico",
@@ -2032,7 +2032,7 @@ const translations = {
 
     // Centro de Educação
     "edu.seo.title": "Centro de Educação em Trading | Análise Técnica & Risco",
-    "edu.seo.desc": "Educação trading: análise técnica ao vivo, gestão de risco no trading, padrões de gráficos, psicologia e webinars de trading grátis para a comunidade de traders.",
+    "edu.seo.desc": "Educação trading: análise técnica ao vivo, gestão de risco no trading, padrões de gráficos e webinars de trading grátis para a comunidade de traders.",
     "edu.seo.keywords": "educação trading, gestão de risco, análise técnica, padrões de gráficos, comunidade de traders, webinars de trading, análise de mercado, psicologia trading, educação forex",
     "edu.eyebrow": "Centro de Educação",
     "edu.h1.lead": "Domine os mercados,",
