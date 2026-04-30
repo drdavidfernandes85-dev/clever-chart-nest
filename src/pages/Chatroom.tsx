@@ -15,6 +15,7 @@ import CommunityTrustBar from "@/components/social/CommunityTrustBar";
 import AICopilot from "@/components/ai/AICopilot";
 import { useLanguage } from "@/i18n/LanguageContext";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import SEO from "@/components/SEO";
 
 interface Channel {
   id: string;
@@ -441,6 +442,7 @@ const Chatroom = () => {
       {/* AI Trading Assistant — floating bubble for educational Q&A. */}
       <AICopilot />
     </div>
+    </>
   );
 };
 
