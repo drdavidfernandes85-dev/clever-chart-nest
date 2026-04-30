@@ -134,6 +134,55 @@ void SendOpenPositions()
 }
 
 //+------------------------------------------------------------------+
+//| Push closed-trade history to the backend.                        |
+//| Walks OrdersHistory, picks orders closed after `historyCursor`,  |
+//| and POSTs them as a single batch. Backend dedupes by ticket.     |
+//+------------------------------------------------------------------+
+void SendClosedDeals()
+{
+   string deals = "[";
+   int sent = 0;
+   datetime maxTime = historyCursor;
+   int total = OrdersHistoryTotal();
+
+   for(int i = 0; i < total; i++)
+   {
+      if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY)) continue;
+      int otype = OrderType();
+      if(otype != OP_BUY && otype != OP_SELL) continue;
+      datetime closeTime = OrderCloseTime();
+      if(closeTime <= historyCursor) continue;
+
+      if(sent > 0) deals += ",";
+      string safeSym = OrderSymbol();
+      StringReplace(safeSym, "\"", "");
+
+      deals += StringFormat("{\"ticket\":%d,\"symbol\":\"%s\",\"type\":%d,\"volume\":%.2f,\"entry\":%.5f,\"exit\":%.5f,\"profit\":%.2f,\"commission\":%.2f,\"swap\":%.2f,\"opened_at\":%d,\"closed_at\":%d}",
+         OrderTicket(), safeSym, otype, OrderLots(),
+         OrderOpenPrice(), OrderClosePrice(),
+         OrderProfit(), OrderCommission(), OrderSwap(),
+         (int)OrderOpenTime(), (int)closeTime);
+
+      sent++;
+      if(closeTime > maxTime) maxTime = closeTime;
+      if(sent >= 50) break;
+   }
+
+   deals += "]";
+   if(sent == 0) return;
+
+   string json = StringFormat("{\"type\":\"deals\",\"token\":\"%s\",\"platform\":\"mt4\",\"account\":%d,\"deals\":%s}",
+                  SecretToken, (int)AccountNumber(), deals);
+   string resp;
+   int code = PostToWebhook(json, resp);
+   if(code == 200)
+   {
+      historyCursor = maxTime;
+      PrintFormat("📊 Sent %d closed deal(s) to backend.", sent);
+   }
+}
+
+//+------------------------------------------------------------------+
 //| Ask the dashboard for any pending "Take This Signal" orders.      |
 //+------------------------------------------------------------------+
 void PollPendingOrders()
