@@ -1,9 +1,9 @@
 //+------------------------------------------------------------------+
-//| IX_Sync_EA v2.04 (MT5)                                           |
+//| IX_Sync_EA v2.05 (MT5)                                           |
 //| Copyright © IX Live Trading Room | IX LTR                        |
 //+------------------------------------------------------------------+
 #property copyright "IX Live Trading Room | IX LTR"
-#property version   "2.04"
+#property version   "2.05"
 #property strict
 
 #include <Trade/Trade.mqh>
