@@ -138,21 +138,24 @@ const ConnectMT = () => {
   return (
     <div className="min-h-screen bg-background pb-16">
       <SEO
-        title="Connect MetaTrader Account | IX Live Trading Room"
-        description="Securely link your MT4 or MT5 account using a free Custom EA Webhook to sync real balance, equity and trades in real-time."
+        title={seo.title}
+        description={seo.description}
         canonical="https://elitelivetradingroom.com/connect-mt"
+        jsonLd={jsonLd}
       />
 
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
-        <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+        <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
           <Link to="/dashboard" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm">Dashboard</span>
           </Link>
-          <span className="font-heading text-sm font-semibold text-foreground">
+          <span className="hidden font-heading text-sm font-semibold text-foreground sm:inline">
             Connect <span className="text-primary">Trading Account</span>
           </span>
-          <div className="w-20" />
+          <div className="flex items-center justify-end">
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 
