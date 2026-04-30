@@ -141,11 +141,9 @@ const HeroSection = () => {
           <div className="relative flex flex-col items-start gap-6 text-left lg:pl-4 xl:pl-2 2xl:pl-0">
             {/* Headline */}
             <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.headline.lead")}</span>{" "}
               <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
                 {t("hero.headline.brand")}
-              </span>
-              <br />
+              </span>{" "}
               <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.headline.tail")}</span>
             </h1>
 
@@ -154,7 +152,18 @@ const HeroSection = () => {
               {t("hero.subheadline")}
             </p>
 
-            {/* CTAs — primary: Connect MT5 · secondary: Watch Free Webinar · tertiary: Sign up */}
+            {/* Live online counter — prominent */}
+            <OnlineNowPill />
+
+            {/* Eligibility note — prominent, framed */}
+            <div className="flex w-full max-w-xl items-start gap-2 rounded-xl border border-primary/40 bg-primary/[0.06] px-4 py-3 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.18)]">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+              <p className="text-xs leading-relaxed text-white/80">
+                {t("hero.eligibility")}
+              </p>
+            </div>
+
+            {/* CTAs — primary: Open Infinox Account · secondary: Connect existing MT5 */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <MagneticButton strength={0.25}>
                 <Button
@@ -162,36 +171,31 @@ const HeroSection = () => {
                   className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] cta-pulse shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
                   asChild
                 >
-                  <Link to="/connect-mt" aria-label={t("hero.cta.mt5")}>
-                    {t("hero.cta.mt5")} <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  <a
+                    href="https://myaccount.infinox.com/es/links/go/9926281"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t("hero.cta.openAccount")}
+                  >
+                    {t("hero.cta.openAccount")} <ArrowRight className="h-4 w-4" />
+                  </a>
                 </Button>
               </MagneticButton>
               <MagneticButton strength={0.22}>
-                <FreeWebinarTrigger
-                  source="hero"
-                  label={t("hero.cta.webinar")}
-                  className="h-14 gap-2 rounded-full bg-[#FFCD05]/15 border border-primary/60 px-7 text-base font-bold text-primary hover:bg-primary/25 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
-                />
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 gap-2 rounded-full bg-[#FFCD05]/10 border-primary/60 px-7 text-base font-bold text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
+                  asChild
+                >
+                  <Link to="/connect" aria-label={t("hero.cta.connectExisting")}>
+                    {t("hero.cta.connectExisting")}
+                  </Link>
+                </Button>
               </MagneticButton>
-              <Button
-                size="lg"
-                variant="ghost"
-                className="h-14 gap-2 rounded-full px-5 text-sm font-medium text-white/70 hover:text-primary hover:bg-white/5"
-                asChild
-              >
-                <Link to="/register" aria-label={t("hero.cta")}>
-                  {t("hero.cta")}
-                </Link>
-              </Button>
             </div>
 
-            {/* Eligibility note — subtle */}
-            <p className="max-w-2xl text-xs leading-relaxed text-white/55">
-              Full access requires a verified live Infinox account with a minimum net balance of $100 USD. All content is for educational purposes only.
-            </p>
-
-            {/* Trust strip — Active traders, Next session countdown, Community */}
+            {/* Trust strip — Active traders, Next session countdown */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
                 <Users className="h-4 w-4 text-primary" />
@@ -216,19 +220,13 @@ const HeroSection = () => {
                   </>
                 )}
               </div>
-
-              <OnlineNowPill />
-              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
-                <Users className="h-4 w-4 text-primary" />
-                <span className="text-sm text-white/85">Community of active traders &amp; mentors</span>
-              </div>
             </div>
 
             {/* Risk disclaimer */}
             <div className="mt-2 flex w-full max-w-xl items-start gap-2 rounded-lg border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/60" />
               <p className="text-xs leading-relaxed text-white/65">
-                Trading involves significant risk. Past performance is not indicative of future results.
+                Trading involves significant risk. Past performance is not indicative of future results. All content is for educational purposes only.
               </p>
             </div>
           </div>
