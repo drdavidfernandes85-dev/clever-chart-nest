@@ -97,6 +97,7 @@ const tvSymbolToPair = (tv: string) => {
 };
 
 const LiveChart = () => {
+  const { t } = useLanguage();
   const [symbol, setSymbol] = useState("BINANCE:BTCUSDT");
   const [interval, setInterval] = useState("15");
   const [studies, setStudies] = useState<string[]>([]);
