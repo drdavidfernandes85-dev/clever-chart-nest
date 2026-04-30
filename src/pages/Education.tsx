@@ -14,6 +14,14 @@ import {
   Star,
   ChevronRight,
   Info,
+  BookOpen,
+  Globe2,
+  LineChart,
+  Shapes,
+  ShieldCheck,
+  Target,
+  Layers,
+  Video,
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { cn } from "@/lib/utils";
@@ -73,8 +81,30 @@ const Education = () => {
           url: `https://www.salatradingelite.com/education/${m.slug}`,
         })),
       },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.salatradingelite.com/" },
+          { "@type": "ListItem", position: 2, name: t("edu.eyebrow"), item: "https://www.salatradingelite.com/education" },
+        ],
+      },
     ],
     [MODULES, t, locale]
+  );
+
+  const pillars = useMemo(
+    () => [
+      { icon: BookOpen, h: "edu.pillar.start.h", p: "edu.pillar.start.p" },
+      { icon: Globe2, h: "edu.pillar.macro.h", p: "edu.pillar.macro.p" },
+      { icon: LineChart, h: "edu.pillar.tech.h", p: "edu.pillar.tech.p" },
+      { icon: Shapes, h: "edu.pillar.patterns.h", p: "edu.pillar.patterns.p" },
+      { icon: ShieldCheck, h: "edu.pillar.risk.h", p: "edu.pillar.risk.p" },
+      { icon: Target, h: "edu.pillar.strategies.h", p: "edu.pillar.strategies.p" },
+      { icon: Layers, h: "edu.pillar.advanced.h", p: "edu.pillar.advanced.p" },
+      { icon: Video, h: "edu.pillar.webinars.h", p: "edu.pillar.webinars.p" },
+    ] as const,
+    []
   );
 
   const remaining = TOTAL_MODULES - completedCount;
@@ -91,6 +121,7 @@ const Education = () => {
       <SEO
         title={t("edu.seo.title")}
         description={t("edu.seo.desc")}
+        keywords={t("edu.seo.keywords")}
         canonical="https://www.salatradingelite.com/education"
         type="article"
         jsonLd={jsonLd}
