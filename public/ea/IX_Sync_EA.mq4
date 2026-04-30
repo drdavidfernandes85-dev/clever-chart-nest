@@ -1,25 +1,30 @@
 //+------------------------------------------------------------------+
-//| IX_Sync_EA v2.04 (MT4)                                           |
+//| IX_Sync_EA v2.05 (MT4)                                           |
 //| Copyright © IX Live Trading Room | IX LTR                        |
 //+------------------------------------------------------------------+
 //|  - Pushes account & open orders every 8s                         |
 //|  - Polls dashboard every 5s for "Take This Signal" orders        |
+//|  - Pushes closed-trade history every 30s                         |
 //|  - Executes received orders automatically                        |
 //|  - Auto-translates web symbols (BTC/USDT -> BTCUSD, etc.)        |
 //+------------------------------------------------------------------+
 #property copyright "IX Live Trading Room | IX LTR"
-#property version   "2.04"
+#property version   "2.05"
 #property strict
 
-input string WebhookURL          = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
-input string SecretToken         = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
-input int    SendIntervalSeconds = 8;                   // Account/positions push interval
-input int    PollIntervalSeconds = 5;                   // Pending orders poll interval
-input int    MagicNumber         = 88008800;            // Identifies trades placed by this EA
-input int    MaxSlippagePoints   = 30;                  // Max acceptable slippage for market orders
+input string WebhookURL              = "{{WEBHOOK_URL}}";   // Pre-filled when downloaded from your dashboard
+input string SecretToken             = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
+input int    SendIntervalSeconds     = 8;                   // Account/positions push interval
+input int    PollIntervalSeconds     = 5;                   // Pending orders poll interval
+input int    HistoryIntervalSeconds  = 30;                  // Closed-trade history push interval
+input int    HistoryLookbackDays     = 30;                  // How far back to scan history on start
+input int    MagicNumber             = 88008800;            // Identifies trades placed by this EA
+input int    MaxSlippagePoints       = 30;                  // Max acceptable slippage for market orders
 
 datetime lastSend = 0;
 datetime lastPoll = 0;
+datetime lastHistorySend = 0;
+datetime historyCursor = 0;
 
 //+------------------------------------------------------------------+
 //| Automatic symbol translator (web -> broker)                      |
