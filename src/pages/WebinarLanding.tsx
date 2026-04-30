@@ -22,10 +22,12 @@ import {
 } from "@/components/ui/accordion";
 import SEO from "@/components/SEO";
 import LeadCaptureForm from "@/components/lead/LeadCaptureForm";
+import WebinarRegistrationForm from "@/components/lead/WebinarRegistrationForm";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useWebinars } from "@/hooks/useWebinars";
 import { track } from "@/lib/analytics";
+import ogWebinarImage from "@/assets/og-webinar.jpg";
 
 const SITE_URL = "https://elitelivetradingroom.com";
 const PAGE_URL = `${SITE_URL}/webinar`;
@@ -150,7 +152,11 @@ const WebinarLanding = () => {
         description={t("webinarLp.seo.desc")}
         keywords={t("webinarLp.seo.keywords" as any)}
         canonical={PAGE_URL}
-        image={`${SITE_URL}/og-image.jpg`}
+        image={`${SITE_URL}${ogWebinarImage}`}
+        imageAlt={t("webinarLp.share.imageAlt" as any)}
+        shareTitle={t("webinarLp.share.title" as any)}
+        shareDescription={t("webinarLp.share.desc" as any)}
+        twitterCard="summary_large_image"
         jsonLd={jsonLd}
       />
 
@@ -295,10 +301,7 @@ const WebinarLanding = () => {
               </p>
 
               <div className="mt-5">
-                <LeadCaptureForm
-                  source="webinar_lp_hero"
-                  ctaLabel={t("webinarLp.form.cta")}
-                />
+                <WebinarRegistrationForm source="webinar_lp_hero" />
               </div>
 
               <div className="mt-5 flex items-start gap-2 rounded-lg border border-white/5 bg-background/40 px-3 py-2.5">
@@ -469,10 +472,7 @@ const WebinarLanding = () => {
             {t("webinarLp.form.subtitle")}
           </p>
           <div className="mx-auto mt-6 max-w-md">
-            <LeadCaptureForm
-              source="webinar_lp_footer"
-              ctaLabel={t("webinarLp.form.cta")}
-            />
+            <WebinarRegistrationForm source="webinar_lp_footer" />
           </div>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Button
