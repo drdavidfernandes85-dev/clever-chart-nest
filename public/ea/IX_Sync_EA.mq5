@@ -1,9 +1,9 @@
 //+------------------------------------------------------------------+
-//| IX_Sync_EA v2.03 (MT5)                                           |
+//| IX_Sync_EA v2.04 (MT5)                                           |
 //| Copyright © IX Live Trading Room | IX LTR                        |
 //+------------------------------------------------------------------+
 #property copyright "IX Live Trading Room | IX LTR"
-#property version   "2.03"
+#property version   "2.04"
 #property strict
 
 #include <Trade/Trade.mqh>
@@ -54,7 +54,7 @@ int OnInit()
    trade.SetExpertMagicNumber(MagicNumber);
    trade.SetDeviationInPoints(MaxSlippagePoints);
 
-   Print("✅ IX_Sync_EA v2.03 (MT5) cargado correctamente");
+   Print("✅ IX_Sync_EA v2.04 (MT5) cargado correctamente");
    Print("   Webhook URL: ", WebhookURL);
 
    if(StringLen(SecretToken) < 20)
@@ -65,7 +65,7 @@ int OnInit()
 
 void OnDeinit(const int reason)
 {
-   Print("IX_Sync_EA v2.03 detenido.");
+   Print("IX_Sync_EA v2.04 detenido.");
 }
 
 //+------------------------------------------------------------------+
@@ -90,7 +90,8 @@ void OnTick()
 //+------------------------------------------------------------------+
 void SendAccountInfo()
 {
-   string json = StringFormat("{\"type\":\"account\",\"platform\":\"mt5\",\"account\":%I64d,\"balance\":%.2f,\"equity\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,\"timestamp\":%d}",
+   string json = StringFormat("{\"type\":\"account\",\"token\":\"%s\",\"platform\":\"mt5\",\"account\":%I64d,\"balance\":%.2f,\"equity\":%.2f,\"margin\":%.2f,\"free_margin\":%.2f,\"timestamp\":%d}",
+                   SecretToken,
                   AccountInfoInteger(ACCOUNT_LOGIN),
                   AccountInfoDouble(ACCOUNT_BALANCE),
                   AccountInfoDouble(ACCOUNT_EQUITY),
@@ -123,8 +124,8 @@ void SendOpenPositions()
    }
    positions += "]";
 
-   string json = StringFormat("{\"type\":\"positions\",\"platform\":\"mt5\",\"account\":%I64d,\"positions\":%s}",
-                  AccountInfoInteger(ACCOUNT_LOGIN), positions);
+   string json = StringFormat("{\"type\":\"positions\",\"token\":\"%s\",\"platform\":\"mt5\",\"account\":%I64d,\"positions\":%s}",
+                   SecretToken, AccountInfoInteger(ACCOUNT_LOGIN), positions);
    string resp;
    PostToWebhook(json, resp);
 }
@@ -132,8 +133,8 @@ void SendOpenPositions()
 //+------------------------------------------------------------------+
 void PollPendingOrders()
 {
-   string body = StringFormat("{\"type\":\"poll_orders\",\"platform\":\"mt5\",\"account\":%I64d}",
-                              AccountInfoInteger(ACCOUNT_LOGIN));
+   string body = StringFormat("{\"type\":\"poll_orders\",\"token\":\"%s\",\"platform\":\"mt5\",\"account\":%I64d}",
+                              SecretToken, AccountInfoInteger(ACCOUNT_LOGIN));
    string resp;
    int code = PostToWebhook(body, resp);
    if(code != 200) return;
@@ -262,8 +263,8 @@ void ReportResult(string orderId, string status, long ticket, string message)
    StringReplace(safeMsg, "\\", "\\\\");
    StringReplace(safeMsg, "\"", "\\\"");
 
-   string body = StringFormat("{\"type\":\"order_result\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":\"%I64d\",\"message\":\"%s\"}",
-                              orderId, status, ticket, safeMsg);
+   string body = StringFormat("{\"type\":\"order_result\",\"token\":\"%s\",\"order_id\":\"%s\",\"status\":\"%s\",\"ticket\":\"%I64d\",\"message\":\"%s\"}",
+                               SecretToken, orderId, status, ticket, safeMsg);
    string resp;
    PostToWebhook(body, resp);
 }
@@ -273,7 +274,7 @@ int PostToWebhook(string body, string &response)
 {
    char postData[];
    StringToCharArray(body, postData, 0, StringLen(body));
-   string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + SecretToken;
+   string headers = "Content-Type: application/json\r\nAuthorization: Bearer " + SecretToken + "\r\nX-Webhook-Token: " + SecretToken + "\r\n";
 
    char result[];
    string responseHeaders;
