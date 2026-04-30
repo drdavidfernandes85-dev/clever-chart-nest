@@ -451,6 +451,9 @@ const translations = {
     "chat.exitFocus": "Exit Focus",
     "chat.enterFocusMode": "Enter focus mode",
     "chat.exitFocusMode": "Exit focus mode",
+    "chat.seo.title": "Community Hub | Live Trader Chat & Market Discussion",
+    "chat.seo.desc": "Join an active trader community: live chat, real-time technical analysis, risk management discussion, free trading webinars and shared market analysis.",
+    "chat.seo.keywords": "trader community, live trading chat, technical analysis, risk management, free trading webinars, trading education, market analysis, trading community",
     // KPI strip
     "kpi.pnlToday": "P&L Today",
     "kpi.winRate": "Win Rate (open)",
