@@ -11,6 +11,8 @@ import {
   Activity,
   Plug,
   Radio,
+  UserPlus,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -19,9 +21,12 @@ import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
 import EAWebhookSetup from "@/components/mt/EAWebhookSetup";
 import { formatDistanceToNow } from "date-fns";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { track } from "@/lib/analytics";
 
 const ConnectMT = () => {
   const { account, positions, refresh, loading } = useMTAccount();
+  const { t } = useLanguage();
 
   const handleDisconnect = async () => {
     if (!account) return;
@@ -97,6 +102,46 @@ const ConnectMT = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* New users — Open Infinox account */}
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl border-2 border-[hsl(45,100%,50%)]/40 bg-gradient-to-br from-[hsl(45,100%,50%)]/[0.08] via-[hsl(45,100%,50%)]/[0.04] to-transparent p-6 backdrop-blur-xl shadow-[0_0_40px_hsl(45,100%,50%/0.15)] sm:p-8"
+        >
+          <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[hsl(45,100%,50%)]/40 bg-[hsl(45,100%,50%)]/15 text-[hsl(45,100%,60%)]">
+                <UserPlus className="h-5 w-5" />
+              </div>
+              <h2 className="font-heading text-xl font-bold text-foreground sm:text-2xl">
+                {t("connectMt5.newUser.headline")}
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                {t("connectMt5.newUser.subtitle")}
+              </p>
+            </div>
+            <Button
+              asChild
+              size="lg"
+              className="cta-pulse group w-full shrink-0 bg-[hsl(45,100%,50%)] font-bold text-black hover:bg-[hsl(45,100%,55%)] sm:w-auto"
+            >
+              <a
+                href="https://myaccount.infinox.com/es/links/go/9926281"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track("open_infinox_account_click", { location: "connect_mt_new_user" })}
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                {t("connectMt5.newUser.cta")}
+                <ExternalLink className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </a>
+            </Button>
+          </div>
+          <p className="mt-5 rounded-xl border border-[hsl(45,100%,50%)]/20 bg-background/40 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            💡 {t("connectMt5.newUser.note")}
+          </p>
+        </motion.section>
 
         {!loading && account && (
           <motion.div
