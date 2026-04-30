@@ -28,6 +28,7 @@ const Chatroom = lazy(() => import("./pages/Chatroom"));
 const CommandDeck = lazy(() => import("./pages/CommandDeck"));
 const ConnectMT = lazy(() => import("./pages/ConnectMT"));
 const ConnectMyMT5 = lazy(() => import("./pages/ConnectMyMT5"));
+const Community = lazy(() => import("./pages/Community"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Education = lazy(() => import("./pages/Education"));
 const EducationModule = lazy(() => import("./pages/EducationModule"));
@@ -90,6 +91,7 @@ const App = () => (
                   <Route path="/videos" element={<DashboardShell><VideoLibrary /></DashboardShell>} />
                   <Route path="/connect-mt" element={<DashboardShell><ConnectMT /></DashboardShell>} />
                   <Route path="/connect" element={<ConnectMyMT5 />} />
+                  <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
                   <Route path="/webinars" element={<DashboardShell><Webinars /></DashboardShell>} />
                   <Route path="/webinars/:id" element={<DashboardShell><Webinars /></DashboardShell>} />
 
