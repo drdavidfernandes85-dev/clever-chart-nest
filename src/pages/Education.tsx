@@ -14,6 +14,14 @@ import {
   Star,
   ChevronRight,
   Info,
+  BookOpen,
+  Globe2,
+  LineChart,
+  Shapes,
+  ShieldCheck,
+  Target,
+  Layers,
+  Video,
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { cn } from "@/lib/utils";
@@ -73,8 +81,30 @@ const Education = () => {
           url: `https://www.salatradingelite.com/education/${m.slug}`,
         })),
       },
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.salatradingelite.com/" },
+          { "@type": "ListItem", position: 2, name: t("edu.eyebrow"), item: "https://www.salatradingelite.com/education" },
+        ],
+      },
     ],
     [MODULES, t, locale]
+  );
+
+  const pillars = useMemo(
+    () => [
+      { icon: BookOpen, h: "edu.pillar.start.h", p: "edu.pillar.start.p" },
+      { icon: Globe2, h: "edu.pillar.macro.h", p: "edu.pillar.macro.p" },
+      { icon: LineChart, h: "edu.pillar.tech.h", p: "edu.pillar.tech.p" },
+      { icon: Shapes, h: "edu.pillar.patterns.h", p: "edu.pillar.patterns.p" },
+      { icon: ShieldCheck, h: "edu.pillar.risk.h", p: "edu.pillar.risk.p" },
+      { icon: Target, h: "edu.pillar.strategies.h", p: "edu.pillar.strategies.p" },
+      { icon: Layers, h: "edu.pillar.advanced.h", p: "edu.pillar.advanced.p" },
+      { icon: Video, h: "edu.pillar.webinars.h", p: "edu.pillar.webinars.p" },
+    ] as const,
+    []
   );
 
   const remaining = TOTAL_MODULES - completedCount;
@@ -91,6 +121,7 @@ const Education = () => {
       <SEO
         title={t("edu.seo.title")}
         description={t("edu.seo.desc")}
+        keywords={t("edu.seo.keywords")}
         canonical="https://www.salatradingelite.com/education"
         type="article"
         jsonLd={jsonLd}
@@ -333,6 +364,76 @@ const Education = () => {
                 );
               })}
             </div>
+          </section>
+
+          {/* SEO Pillars — full educational path with H2/H3 hierarchy & internal linking */}
+          <section className="mt-16">
+            <header className="mb-8 max-w-3xl">
+              <h2 className="font-heading text-2xl md:text-3xl font-bold text-foreground">
+                {t("edu.pillars.title")}
+              </h2>
+              <p className="mt-2 text-sm md:text-base text-muted-foreground leading-relaxed">
+                {t("edu.pillars.subtitle")}
+              </p>
+            </header>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {pillars.map(({ icon: Icon, h, p }) => (
+                <article
+                  key={h}
+                  className="group relative overflow-hidden rounded-2xl border border-primary/15 bg-card/40 backdrop-blur-2xl p-5 hover:border-primary/40 hover:shadow-[0_24px_70px_-25px_hsl(48_100%_51%/0.45)] transition-all"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-heading text-base md:text-lg font-bold text-foreground">
+                        {t(h)}
+                      </h3>
+                      <p className="mt-1.5 text-[13px] md:text-sm leading-relaxed text-muted-foreground">
+                        {t(p)}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            {/* Internal linking block — boosts crawlability & topical authority */}
+            <nav
+              aria-label="Education internal links"
+              className="mt-8 flex flex-wrap gap-2"
+            >
+              <Link
+                to="/webinars"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3.5 py-1.5 font-proxima text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/15 transition"
+              >
+                <Video className="h-3.5 w-3.5" />
+                {t("edu.pillars.linkWebinars")}
+              </Link>
+              <Link
+                to="/videos"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3.5 py-1.5 font-proxima text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/15 transition"
+              >
+                <Play className="h-3.5 w-3.5" />
+                {t("edu.pillars.linkVideos")}
+              </Link>
+              <Link
+                to="/signals"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3.5 py-1.5 font-proxima text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/15 transition"
+              >
+                <LineChart className="h-3.5 w-3.5" />
+                {t("edu.pillars.linkSignals")}
+              </Link>
+              <Link
+                to="/chatroom"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3.5 py-1.5 font-proxima text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/15 transition"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {t("edu.pillars.linkChat")}
+              </Link>
+            </nav>
           </section>
 
           {/* CTA strip */}
