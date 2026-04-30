@@ -7,6 +7,7 @@ interface SEOProps {
   image?: string;
   type?: "website" | "article";
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  keywords?: string;
 }
 
 const setMeta = (selector: string, attr: string, key: string, value: string) => {
