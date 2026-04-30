@@ -357,5 +357,100 @@ Deno.serve(async (req) => {
     });
   }
 
+  // --- deals: EA pushes closed trade history (idempotent on ticket) ---
+  // Payload: { type:"deals", account, deals: [
+  //   { ticket, symbol, type (0=buy,1=sell), volume, entry, exit, profit,
+  //     commission, swap, opened_at (unix sec), closed_at (unix sec) }
+  // ]}
+  if (type === "deals") {
+    const incoming: any[] = Array.isArray(body?.deals) ? body.deals : [];
+    if (incoming.length === 0) {
+      return json(200, { ok: true, type: "deals", inserted: 0 });
+    }
+
+    const tickets = incoming
+      .map((d) => (d?.ticket != null ? String(d.ticket) : null))
+      .filter((t): t is string => !!t);
+
+    // Find which tickets we already logged for this user (idempotency)
+    const { data: existingRows } = await supabase
+      .from("trade_journal")
+      .select("notes")
+      .eq("user_id", userId)
+      .like("notes", "%Ticket #%");
+
+    const existingTickets = new Set<string>();
+    for (const r of existingRows ?? []) {
+      const m = String(r.notes ?? "").match(/Ticket #(\d+)/);
+      if (m) existingTickets.add(m[1]);
+    }
+
+    const rowsToInsert: any[] = [];
+    for (const d of incoming) {
+      const ticket = d?.ticket != null ? String(d.ticket) : null;
+      if (!ticket || existingTickets.has(ticket)) continue;
+
+      const side = mt5SideToString(d?.type ?? 0);
+      const volume = Number(d?.volume ?? 0);
+      const entry = Number(d?.entry ?? d?.open_price ?? 0);
+      const exit =
+        d?.exit != null ? Number(d.exit) :
+        d?.close_price != null ? Number(d.close_price) : null;
+      const profit = d?.profit != null ? Number(d.profit) : 0;
+      const commission = d?.commission != null ? Number(d.commission) : 0;
+      const swap = d?.swap != null ? Number(d.swap) : 0;
+      const pnl = profit + commission + swap;
+
+      const openedAt =
+        d?.opened_at && Number(d.opened_at) > 0
+          ? new Date(Number(d.opened_at) * 1000).toISOString()
+          : null;
+      const closedAt =
+        d?.closed_at && Number(d.closed_at) > 0
+          ? new Date(Number(d.closed_at) * 1000).toISOString()
+          : new Date().toISOString();
+
+      rowsToInsert.push({
+        user_id: userId,
+        pair: String(d?.symbol ?? ""),
+        direction: side,
+        entry_price: entry,
+        exit_price: exit,
+        position_size: volume,
+        pnl,
+        status: "closed",
+        opened_at: openedAt,
+        closed_at: closedAt,
+        setup_tag: "ea-webhook",
+        notes: `Auto-logged from MT EA history. Ticket #${ticket}.`,
+      });
+
+      // Also remove from open positions if it lingered there
+      await supabase
+        .from("mt_positions")
+        .delete()
+        .eq("user_id", userId)
+        .eq("ticket", ticket);
+    }
+
+    if (rowsToInsert.length > 0) {
+      const { error: insertErr } = await supabase
+        .from("trade_journal")
+        .insert(rowsToInsert);
+      if (insertErr) {
+        console.error("mt-webhook: deals insert error", insertErr);
+        return json(500, { error: "Could not log deals" });
+      }
+    }
+
+    return json(200, {
+      ok: true,
+      type: "deals",
+      received: incoming.length,
+      inserted: rowsToInsert.length,
+      skipped: incoming.length - rowsToInsert.length,
+    });
+  }
+
   return json(400, { error: `Unknown payload type: ${type}` });
 });
