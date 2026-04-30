@@ -95,8 +95,9 @@ export const EAWebhookSetup = () => {
       if (stored) {
         setRawToken(stored);
       } else if (data) {
-        // No cached raw token but a hashed one exists — auto-rotate so token is always visible
-        await createToken();
+        // Keep existing EA tokens active. Do not auto-rotate here, because that
+        // immediately breaks MetaTrader terminals already running with the old token.
+        setRawToken(null);
       } else {
         await createToken();
       }
@@ -117,12 +118,6 @@ export const EAWebhookSetup = () => {
     if (!user) return;
     setCreating(true);
     try {
-      await (supabase as any)
-        .from("mt_webhook_tokens")
-        .update({ revoked_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .is("revoked_at", null);
-
       const raw = generateToken();
       const hash = await sha256Hex(raw);
       const { data, error } = await (supabase as any)
@@ -253,7 +248,12 @@ export const EAWebhookSetup = () => {
           <div className="flex gap-2">
             <Input
               readOnly
-              value={rawToken ?? "Generating your token…"}
+              value={
+                rawToken ??
+                (token
+                  ? "Hidden for security — generate a new EA token only if needed"
+                  : "Generating your token…")
+              }
               onFocus={(e) => e.currentTarget.select()}
               className="bg-primary/5 border-primary/40 font-mono text-xs h-11 text-foreground"
             />
@@ -265,6 +265,18 @@ export const EAWebhookSetup = () => {
             >
               <Copy className="h-4 w-4" /> Copy
             </Button>
+            {!rawToken && token && (
+              <Button
+                type="button"
+                onClick={createToken}
+                disabled={creating}
+                variant="outline"
+                className="shrink-0 h-11 gap-2 px-4"
+              >
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                New token
+              </Button>
+            )}
           </div>
           <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
             <Shield className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
