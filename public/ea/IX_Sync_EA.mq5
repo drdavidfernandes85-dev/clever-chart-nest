@@ -12,12 +12,16 @@ input string WebhookURL          = "{{WEBHOOK_URL}}";   // Pre-filled when downl
 input string SecretToken         = "{{SECRET_TOKEN}}";  // Pre-filled when downloaded from your dashboard
 input int    SendIntervalSeconds = 8;
 input int    PollIntervalSeconds = 5;
+input int    HistoryIntervalSeconds = 30;   // How often to push closed-deal history
+input int    HistoryLookbackDays = 30;      // How far back to scan history on start
 input int    MagicNumber         = 88008800;
 input int    MaxSlippagePoints   = 30;
 
 CTrade trade;
 datetime lastSend = 0;
 datetime lastPoll = 0;
+datetime lastHistorySend = 0;
+datetime historyCursor = 0;   // Only send deals with time > cursor
 
 //+------------------------------------------------------------------+
 //| Traductor automático de símbolos                                 |
