@@ -59,11 +59,12 @@ function tokenFromBody(body: any): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function mt5SideToString(t: number | string): "buy" | "sell" {
+function mt5SideToString(t: number | string): "long" | "short" {
   // MQL5 ENUM_POSITION_TYPE: 0 = BUY, 1 = SELL
   // MQL4 OP_BUY = 0, OP_SELL = 1
+  // trade_journal.direction check constraint expects 'long' | 'short'
   const n = typeof t === "string" ? parseInt(t, 10) : t;
-  return n === 1 ? "sell" : "buy";
+  return n === 1 ? "short" : "long";
 }
 
 Deno.serve(async (req) => {
@@ -330,7 +331,7 @@ Deno.serve(async (req) => {
       await supabase.from("trade_journal").insert({
         user_id: userId,
         pair: c.symbol,
-        direction: c.side,
+        direction: c.side === "sell" || c.side === "short" ? "short" : "long",
         entry_price: Number(c.open_price),
         exit_price: null, // EA payload doesn't include closing price; left null
         position_size: Number(c.volume),
