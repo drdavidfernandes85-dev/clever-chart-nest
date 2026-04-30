@@ -619,8 +619,9 @@ const translations = {
     "ai.tryAgain": "Try again later.",
 
     // Education Center page
-    "edu.seo.title": "Education Center | Trading Community & Webinars",
-    "edu.seo.desc": "Educational trading center: live technical analysis, risk management, market analysis and free webinars for a serious traders community.",
+    "edu.seo.title": "Trading Education Center | Risk Management, Technical Analysis & Live Webinars",
+    "edu.seo.desc": "Professional trading education: technical analysis, chart patterns, risk management, trading psychology and live webinars — built for a serious trading community.",
+    "edu.seo.keywords": "trading education, risk management, technical analysis, chart patterns, trading community, live webinars, market analysis, trading psychology, forex education",
     "edu.eyebrow": "Education Center",
     "edu.h1.lead": "Master the markets,",
     "edu.h1.brand": "one module",
@@ -1269,8 +1270,9 @@ const translations = {
     "ai.tryAgain": "Inténtalo de nuevo más tarde.",
 
     // Centro de Educación
-    "edu.seo.title": "Centro de Educación | Comunidad de Traders y Webinars",
-    "edu.seo.desc": "Centro educativo de trading: análisis técnico en vivo, gestión de riesgo, análisis de mercado y webinars trading gratis para una comunidad de traders seria.",
+    "edu.seo.title": "Centro de Educación Trading | Gestión de Riesgo, Análisis Técnico y Webinars",
+    "edu.seo.desc": "Educación trading profesional: análisis técnico, patrones de gráficos, gestión de riesgo, psicología y webinars trading en vivo — para una comunidad de traders seria.",
+    "edu.seo.keywords": "educación trading, gestión de riesgo, análisis técnico, patrones de gráficos, comunidad de traders, webinars trading, análisis de mercado, psicología trading, educación forex",
     "edu.eyebrow": "Centro de Educación",
     "edu.h1.lead": "Domina los mercados,",
     "edu.h1.brand": "un módulo",
@@ -1919,8 +1921,9 @@ const translations = {
     "ai.tryAgain": "Tente novamente mais tarde.",
 
     // Centro de Educação
-    "edu.seo.title": "Centro de Educação | Comunidade de Traders e Webinars",
-    "edu.seo.desc": "Centro educacional de trading: análise técnica ao vivo, gestão de risco no trading, análise de mercado e webinars de trading grátis para uma comunidade de traders séria.",
+    "edu.seo.title": "Centro de Educação em Trading | Gestão de Risco, Análise Técnica e Webinars",
+    "edu.seo.desc": "Educação em trading profissional: análise técnica, padrões de gráficos, gestão de risco, psicologia e webinars de trading ao vivo — para uma comunidade de traders séria.",
+    "edu.seo.keywords": "educação trading, gestão de risco, análise técnica, padrões de gráficos, comunidade de traders, webinars de trading, análise de mercado, psicologia trading, educação forex",
     "edu.eyebrow": "Centro de Educação",
     "edu.h1.lead": "Domine os mercados,",
     "edu.h1.brand": "um módulo",
