@@ -330,6 +330,19 @@ const Chatroom = () => {
             </div>
           </div>
         ))}
+        <div className="mt-4 border-t border-border/40 pt-3">
+          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
+            Community
+          </p>
+          <Link
+            to="/community/guidelines"
+            onClick={() => setSidebarOpen(false)}
+            className="group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm text-muted-foreground transition-all hover:bg-secondary/50 hover:text-foreground"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary/80" />
+            <span className="truncate font-medium">Community Guidelines</span>
+          </Link>
+        </div>
       </ScrollArea>
       <div className="border-t border-border/50 p-3 space-y-2">
         <div className="flex items-center gap-2 px-1">
