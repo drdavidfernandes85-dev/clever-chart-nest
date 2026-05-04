@@ -48,7 +48,7 @@ const translations = {
     // Hero headline + subheadline (SEO-optimized H1)
     "hero.headline.lead": "",
     "hero.headline.brand": "IX",
-    "hero.headline.tail": "Sala de Trading",
+    "hero.headline.tail": "Live Trading Room,",
     "hero.subheadline": "A professional trading community for live trading, free trading education and free live trading webinars — real-time technical analysis, risk management trading and AI insights, all in one platform. Educational content only.",
     "hero.cta.openAccount": "Open My Infinox Account Now",
     "hero.cta.connectExisting": "Connect My Existing MT5 Account",
@@ -917,7 +917,7 @@ const translations = {
     // Headline + subheadline (H1 SEO)
     "hero.headline.lead": "",
     "hero.headline.brand": "IX",
-    "hero.headline.tail": "Sala de Trading",
+    "hero.headline.tail": "Sala de Trading en Vivo",
     "hero.subheadline": "Una comunidad de traders profesional para trading en vivo, educación trading gratis y webinars trading gratis — análisis técnico en vivo, gestión de riesgo trading e insights de IA en una sola plataforma. Contenido únicamente educativo.",
     "hero.cta.openAccount": "Abrir Mi Cuenta Infinox Ahora",
     "hero.cta.connectExisting": "Conectar Mi Cuenta MT5 Existente",
@@ -1760,7 +1760,7 @@ const translations = {
     // Headline + subheadline (H1 SEO)
     "hero.headline.lead": "",
     "hero.headline.brand": "IX",
-    "hero.headline.tail": "Sala de Trading",
+    "hero.headline.tail": "Sala de Trading ao Vivo",
     "hero.subheadline": "Uma comunidade de traders profissional para trading ao vivo, educação trading grátis e webinars de trading grátis — análise técnica ao vivo, gestão de risco no trading e insights de IA em uma única plataforma. Conteúdo apenas educacional.",
     "hero.cta.openAccount": "Abrir Minha Conta Infinox Agora",
     "hero.cta.connectExisting": "Conectar Minha Conta MT5 Existente",
