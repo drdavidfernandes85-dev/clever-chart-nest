@@ -31,6 +31,7 @@ const CommandDeck = lazy(() => import("./pages/CommandDeck"));
 const ConnectMT = lazy(() => import("./pages/ConnectMT"));
 const ConnectMyMT5 = lazy(() => import("./pages/ConnectMyMT5"));
 const Community = lazy(() => import("./pages/Community"));
+const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Education = lazy(() => import("./pages/Education"));
 const EducationModule = lazy(() => import("./pages/EducationModule"));
