@@ -165,10 +165,31 @@ const WebinarRegistrationForm = ({ source, webinar }: WebinarRegistrationFormPro
         source,
         ts: new Date().toISOString(),
       });
+
+      // Persist the lead + their preferred language to the backend so the
+      // email automation (Brevo / nurture sequence) can send the correct
+      // language version. Best-effort — never block the success UI.
+      const preferredLanguage = localeToPreferredLanguage(locale);
+      void supabase
+        .from("newsletter_subscribers")
+        .upsert(
+          { email: cleanEmail, preferred_language: preferredLanguage },
+          { onConflict: "email", ignoreDuplicates: false },
+        )
+        .then(({ error }) => {
+          if (error) {
+            track("lead_persist_error", {
+              source,
+              locale,
+              reason: error.message ?? "unknown",
+            });
+          }
+        });
+
       await new Promise((r) => setTimeout(r, 350));
       setDone(true);
-      track("lead_capture", { source, locale });
-      track("webinar_signup", { source, locale });
+      track("lead_capture", { source, locale, preferredLanguage });
+      track("webinar_signup", { source, locale, preferredLanguage });
       track("webinar_form_submit_success", { source, locale });
 
       // Fire-and-forget email confirmation with calendar invite (.ics).
