@@ -21,6 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import SEO from "@/components/SEO";
+import KeywordCrossLinks from "@/components/seo/KeywordCrossLinks";
 import WebinarRegistrationForm from "@/components/lead/WebinarRegistrationForm";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -517,6 +518,9 @@ const WebinarLanding = () => {
           </div>
         </div>
       </section>
+
+      {/* SEO internal links */}
+      <KeywordCrossLinks current="webinars" />
 
       {/* Footer disclaimer */}
       <footer className="relative z-10 mx-auto max-w-5xl px-4 py-10 sm:px-6">
