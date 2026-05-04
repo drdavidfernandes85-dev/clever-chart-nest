@@ -127,24 +127,32 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
                 className="h-14 w-full gap-2 rounded-full border-primary/40 bg-primary/[0.06] px-7 font-semibold text-primary backdrop-blur-md hover:bg-primary/15 hover:border-primary/70 sm:w-auto"
               >
                 <Link
-                  to="/webinars"
-                  onClick={() => track("cta_click", { location: "access_denied_secondary_webinars", locale })}
+                  to="/connect"
+                  onClick={() => track("connect_mt_click", { location: "access_denied_secondary", locale })}
                 >
-                  <PlayCircle className="h-4 w-4" />
-                  {t("access.cta.webinars")}
+                  <Link2 className="h-4 w-4" />
+                  {t("access.cta.connect")}
                 </Link>
               </Button>
             </div>
 
-            {/* Reassuring "already have an account" */}
-            <div className="mt-5">
+            {/* Already have an account helper line */}
+            <p className="mx-auto mt-5 max-w-lg text-xs text-foreground/75 sm:text-sm">
+              {t("access.cta.alreadyHave" as any)}
+            </p>
+
+            {/* Free webinars note + link */}
+            <div className="mt-4 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                {t("access.freeNote" as any)}
+              </p>
               <Link
-                to="/connect"
-                onClick={() => track("connect_mt_click", { location: "access_denied_already_have", locale })}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-background/40 px-4 py-2 text-xs font-medium text-foreground/80 backdrop-blur-md transition-all hover:border-primary/50 hover:bg-primary/10 hover:text-primary sm:text-sm"
+                to="/webinars"
+                onClick={() => track("cta_click", { location: "access_denied_webinars_link", locale })}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline sm:text-sm"
               >
-                <Link2 className="h-3.5 w-3.5 text-primary" />
-                {t("access.cta.alreadyHave" as any)}
+                <PlayCircle className="h-3.5 w-3.5" />
+                {t("access.cta.webinars")}
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
