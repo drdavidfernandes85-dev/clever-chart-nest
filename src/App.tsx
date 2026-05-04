@@ -31,6 +31,7 @@ const CommandDeck = lazy(() => import("./pages/CommandDeck"));
 const ConnectMT = lazy(() => import("./pages/ConnectMT"));
 const ConnectMyMT5 = lazy(() => import("./pages/ConnectMyMT5"));
 const Community = lazy(() => import("./pages/Community"));
+const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Education = lazy(() => import("./pages/Education"));
 const EducationModule = lazy(() => import("./pages/EducationModule"));
@@ -96,6 +97,7 @@ const App = () => (
                   <Route path="/connect" element={<ConnectMyMT5 />} />
                   <Route path="/webinar" element={<WebinarLanding />} />
                   <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+                  <Route path="/community/guidelines" element={<CommunityGuidelines />} />
                   <Route path="/webinars" element={<DashboardShell><Webinars /></DashboardShell>} />
                   <Route path="/webinars/:id" element={<DashboardShell><Webinars /></DashboardShell>} />
 

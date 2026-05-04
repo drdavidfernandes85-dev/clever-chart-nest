@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X, Maximize2, Minimize2 } from "lucide-react";
+import { Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X, Maximize2, Minimize2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,6 +11,7 @@ import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
+import WelcomeBanner from "@/components/chatroom/WelcomeBanner";
 import CommunityTrustBar from "@/components/social/CommunityTrustBar";
 import AICopilot from "@/components/ai/AICopilot";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -85,7 +86,7 @@ const COPILOT_COLLAPSED_KEY = "infinox.chatroom.copilotCollapsed";
 
 const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const getDateLabel = useDateLabel();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
@@ -330,6 +331,19 @@ const Chatroom = () => {
             </div>
           </div>
         ))}
+        <div className="mt-4 border-t border-border/40 pt-3">
+          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
+            Community
+          </p>
+          <Link
+            to="/community/guidelines"
+            onClick={() => setSidebarOpen(false)}
+            className="group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm text-muted-foreground transition-all hover:bg-secondary/50 hover:text-foreground"
+          >
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-primary/80" />
+            <span className="truncate font-medium">Community Guidelines</span>
+          </Link>
+        </div>
       </ScrollArea>
       <div className="border-t border-border/50 p-3 space-y-2">
         <div className="flex items-center gap-2 px-1">
@@ -417,20 +431,11 @@ const Chatroom = () => {
 
         <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 bg-background">
           <div className="space-y-0">
+            {/* Auto welcome message — appears at the top of every channel, localized. */}
+            <WelcomeBanner locale={locale} channelName={activeChannelName} />
+
             {messages.length === 0 && activeChannelName === "general" && (
-              <>
-                <div className="mb-4 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
-                  <div className="relative flex h-2 w-2 shrink-0">
-                    <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-primary opacity-70" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                  </div>
-                  <p className="text-xs text-foreground/80">
-                    <span className="font-semibold text-primary">{t("chat.welcome")}</span>{" "}
-                    {t("chat.welcomeDesc")}
-                  </p>
-                </div>
-                <SampleMessages />
-              </>
+              <SampleMessages />
             )}
             {messages.length === 0 && activeChannelName !== "general" && (
               <p className="text-center text-sm text-muted-foreground py-12">
