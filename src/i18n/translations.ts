@@ -47,8 +47,8 @@ const translations = {
     "hero.tradersLabel": "Members",
     // Hero headline + subheadline (SEO-optimized H1)
     "hero.headline.lead": "",
-    "hero.headline.brand": "IX Live",
-    "hero.headline.tail": "Trading Room",
+    "hero.headline.brand": "IX",
+    "hero.headline.tail": "Sala de Trading",
     "hero.subheadline": "A professional trading community for live trading, free trading education and free live trading webinars — real-time technical analysis, risk management trading and AI insights, all in one platform. Educational content only.",
     "hero.cta.openAccount": "Open My Infinox Account Now",
     "hero.cta.connectExisting": "Connect My Existing MT5 Account",
@@ -916,8 +916,8 @@ const translations = {
     "hero.tradersLabel": "Miembros",
     // Headline + subheadline (H1 SEO)
     "hero.headline.lead": "",
-    "hero.headline.brand": "IX Live",
-    "hero.headline.tail": "Trading Room",
+    "hero.headline.brand": "IX",
+    "hero.headline.tail": "Sala de Trading",
     "hero.subheadline": "Una comunidad de traders profesional para trading en vivo, educación trading gratis y webinars trading gratis — análisis técnico en vivo, gestión de riesgo trading e insights de IA en una sola plataforma. Contenido únicamente educativo.",
     "hero.cta.openAccount": "Abrir Mi Cuenta Infinox Ahora",
     "hero.cta.connectExisting": "Conectar Mi Cuenta MT5 Existente",
@@ -1555,7 +1555,7 @@ const translations = {
     "eduMod.toast.complete": "Módulo completado — vas por el {pct}% del plan.",
     "eduMod.toast.badge": "🏅 Insignia desbloqueada: {name}",
     "eduMod.toast.reset": "Módulo reiniciado. Puedes volver a completarlo.",
-    "access.seo.title": "Cuenta Live Verificada Requerida | Acceso IX Trading Room",
+    "access.seo.title": "Cuenta Live Verificada Requerida | Acceso IX Sala de Trading",
     "access.seo.desc": "Accede al IX Sala de Trading: conecta una cuenta live Infinox con depósito mínimo de $100 USD para mentores, señales y educación trading.",
     "access.seo.keywords": "acceso trading room, cuenta verificada trading, depósito mínimo trading, cuenta live infinox, educación trading, sala de trading en vivo, mentoría forex",
     // Live Chart / Trading Terminal SEO (ES)
@@ -1759,8 +1759,8 @@ const translations = {
     "hero.tradersLabel": "Membros",
     // Headline + subheadline (H1 SEO)
     "hero.headline.lead": "",
-    "hero.headline.brand": "IX Live",
-    "hero.headline.tail": "Trading Room",
+    "hero.headline.brand": "IX",
+    "hero.headline.tail": "Sala de Trading",
     "hero.subheadline": "Uma comunidade de traders profissional para trading ao vivo, educação trading grátis e webinars de trading grátis — análise técnica ao vivo, gestão de risco no trading e insights de IA em uma única plataforma. Conteúdo apenas educacional.",
     "hero.cta.openAccount": "Abrir Minha Conta Infinox Agora",
     "hero.cta.connectExisting": "Conectar Minha Conta MT5 Existente",
@@ -2398,7 +2398,7 @@ const translations = {
     "eduMod.toast.complete": "Módulo concluído — você está em {pct}% do currículo.",
     "eduMod.toast.badge": "🏅 Selo desbloqueado: {name}",
     "eduMod.toast.reset": "Módulo reiniciado. Você pode concluí-lo novamente.",
-    "access.seo.title": "Conta Live Verificada Necessária | Acesso IX Trading Room",
+    "access.seo.title": "Conta Live Verificada Necessária | Acesso IX Sala de Trading",
     "access.seo.desc": "Acesse a IX Sala de Trading: conecte uma conta live Infinox verificada com depósito mínimo de $100 USD para mentores, sinais e educação.",
     "access.seo.keywords": "acesso sala de trading, conta verificada trading, depósito mínimo trading, conta live infinox, educação em trading, sala de trading ao vivo, mentoria forex",
     // Live Chart / Trading Terminal SEO (PT-BR)

@@ -239,7 +239,7 @@ const WebinarLanding = () => {
           to="/"
           className="font-heading text-base font-bold tracking-tight text-foreground hover:text-primary transition-colors"
         >
-          IX <span className="text-primary">Live</span> Trading Room
+          IX <span className="text-primary">Sala</span> de Trading
         </Link>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
