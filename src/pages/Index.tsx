@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
 import { Link } from "react-router-dom";
 import {
@@ -33,7 +33,7 @@ const LazyHomeSection = ({
   minHeight,
   delay,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   minHeight: number;
   delay?: number;
 }) => (
