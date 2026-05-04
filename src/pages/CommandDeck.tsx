@@ -298,7 +298,7 @@ const CommandDeck = () => {
   return (
     <div className="relative min-h-screen">
       <SEO
-        title="Command Deck | IX Sala de Trading"
+        title="Command Deck | IX LTR"
         description="Bloomberg-grade live trading terminal — yellow candlesticks, dense panels, signals, community nest."
         canonical="https://elitelivetradingroom.com/command"
       />
@@ -319,7 +319,7 @@ const CommandDeck = () => {
             </div>
             <h1 className="font-proxima text-2xl font-light tracking-tight text-foreground md:text-3xl">
               Clever Chart Nest <span className="text-primary">·</span>{" "}
-              <span className="heading-semibold">IX Sala de Trading</span>
+              <span className="heading-semibold">IX LTR</span>
             </h1>
           </div>
           <div className="hidden items-center gap-2 md:flex">

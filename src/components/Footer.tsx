@@ -45,11 +45,11 @@ const Footer = () => {
       <div className="container">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <Link to="/" className="flex items-center gap-3" aria-label="IX Sala de Trading — Home">
+            <Link to="/" className="flex items-center gap-3" aria-label="IX LTR — Home">
               <img src={infinoxLogo} alt="INFINOX — Online Trading Broker" className="h-6" />
             </Link>
             <span className="mt-3 inline-block font-heading text-sm font-semibold text-foreground">
-              <span className="text-primary">IX</span> Sala de Trading
+              <span className="text-primary">IX</span> LTR
             </span>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}
@@ -80,12 +80,12 @@ const Footer = () => {
             <span className="font-semibold text-foreground/70">Risk Disclaimer:</span> Trading involves significant risk of loss. Past performance is not indicative of future results. All content is for educational purposes only and does not constitute financial advice.
           </p>
           <p className="text-muted-foreground/60">
-            IX Sala de Trading is an educational community. We do not provide signals or copy-trading services. Always trade responsibly.
+            IX LTR is an educational community. We do not provide signals or copy-trading services. Always trade responsibly.
           </p>
         </div>
         <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <div className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} IX Sala de Trading — Powered by INFINOX. {t("footer.rights")}
+            © {new Date().getFullYear()} IX LTR — Powered by INFINOX. {t("footer.rights")}
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
             <Sparkles className="h-3 w-3" /> Version 1.0 · Launch Ready

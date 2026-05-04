@@ -52,8 +52,8 @@ const Register = () => {
   return (
     <div className="relative flex min-h-screen overflow-hidden">
       <SEO
-        title="Create Account | IX Sala de Trading"
-        description="Create your free account and join the IX Sala de Trading — live forex analysis, signals and a pro community."
+        title="Create Account | IX LTR"
+        description="Create your free account and join the IX LTR — live forex analysis, signals and a pro community."
         canonical="https://elitelivetradingroom.com/register"
       />
       <div className="pointer-events-none absolute inset-0">
@@ -125,7 +125,7 @@ const Register = () => {
               <div className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="text-[10px] font-bold text-foreground"><span className="text-primary">IX</span> Sala de Trading</span>
+                  <span className="text-[10px] font-bold text-foreground"><span className="text-primary">IX</span> LTR</span>
                 </div>
               </div>
               {["EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD", "USD/CAD"].map((pair, i) => (

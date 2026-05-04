@@ -178,7 +178,7 @@ const LiveChart = () => {
               <img src={infinoxLogo} alt="INFINOX" className="h-5 shrink-0" />
               <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
               <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground truncate">
-                <span className="text-primary">IX</span> Sala de Trading
+                <span className="text-primary">IX</span> LTR
               </span>
             </Link>
             <Badge variant="secondary" className="hidden sm:inline-flex text-[10px] uppercase tracking-wider rounded-full">

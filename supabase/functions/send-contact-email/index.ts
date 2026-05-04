@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `IX Sala de Trading <onboarding@resend.dev>`,
+        from: `IX LTR <onboarding@resend.dev>`,
         to: ['ventas@infinox.com'],
         subject: `[Contact Form] ${subject}`,
         reply_to: email,

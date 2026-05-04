@@ -20,7 +20,7 @@ const News = () => {
   return (
     <>
       <SEO
-        title="News & Economic Calendar | IX Sala de Trading"
+        title="News & Economic Calendar | IX LTR"
         description="Real-time financial news flow and the live economic calendar — every market-moving event, in one place for serious traders."
         canonical="https://elitelivetradingroom.com/news"
       />

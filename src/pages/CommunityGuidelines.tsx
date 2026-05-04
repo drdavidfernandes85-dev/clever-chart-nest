@@ -28,8 +28,8 @@ interface GuidelinesContent {
 const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
   en: {
     label: "English",
-    title: "Community Guidelines – IX Sala de Trading",
-    intro: "Welcome to the IX Sala de Trading.",
+    title: "Community Guidelines – IX LTR",
+    intro: "Welcome to the IX LTR.",
     intro2:
       "Our goal is to build a respectful, professional, and educational space where traders can connect, share ideas, discuss market setups, and learn together.",
     disclaimer:
@@ -66,8 +66,8 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
   },
   es: {
     label: "Español",
-    title: "Normas de la Comunidad – IX Sala de Trading",
-    intro: "Bienvenido al IX Sala de Trading.",
+    title: "Normas de la Comunidad – IX LTR",
+    intro: "Bienvenido al IX LTR.",
     intro2:
       "Nuestro objetivo es construir un espacio respetuoso, profesional y educativo donde los traders puedan conectarse, compartir ideas, discutir configuraciones de mercado y aprender juntos.",
     disclaimer:
@@ -104,8 +104,8 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
   },
   pt: {
     label: "Português (Brasil)",
-    title: "Regras da Comunidade – IX Sala de Trading",
-    intro: "Bem-vindo ao IX Sala de Trading.",
+    title: "Regras da Comunidade – IX LTR",
+    intro: "Bem-vindo ao IX LTR.",
     intro2:
       "Nosso objetivo é construir um espaço respeitoso, profissional e educativo onde os traders possam se conectar, compartilhar ideias, discutir configurações de mercado e aprender juntos.",
     disclaimer:
@@ -155,8 +155,8 @@ const CommunityGuidelines = () => {
   return (
     <>
       <SEO
-        title="Community Guidelines — IX Sala de Trading"
-        description="Read the official community guidelines for the IX Sala de Trading. Educational content only — no signals, no financial advice."
+        title="Community Guidelines — IX LTR"
+        description="Read the official community guidelines for the IX LTR. Educational content only — no signals, no financial advice."
         canonical="https://ixsalatrading.com/community/guidelines"
       />
       <div className="min-h-screen bg-background">
@@ -173,7 +173,7 @@ const CommunityGuidelines = () => {
               <img src={infinoxLogo} alt="INFINOX" className="h-4" />
               <span className="hidden sm:inline text-xs text-muted-foreground/40">|</span>
               <span className="hidden sm:inline font-heading text-xs font-semibold tracking-tight">
-                <span className="text-primary">IX</span> Sala de Trading
+                <span className="text-primary">IX</span> LTR
               </span>
             </div>
           </div>
