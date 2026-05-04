@@ -136,8 +136,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
           .eq("user_id", userId)
           .maybeSingle();
         if (cancelled || error || !data) return;
-        const remote = data.preferred_language;
-        if (isLocale(remote) && remote !== locale) {
+        const remoteRaw = data.preferred_language;
+        // DB may store "pt-BR" — normalize back to in-app Locale ("pt").
+        const remote: Locale | null =
+          remoteRaw === "pt-BR" || remoteRaw === "pt"
+            ? "pt"
+            : isLocale(remoteRaw)
+            ? remoteRaw
+            : null;
+        if (remote && remote !== locale) {
           setLocaleState(remote);
           localStorage.setItem("locale", remote);
           if (typeof document !== "undefined") document.documentElement.lang = remote;
