@@ -173,7 +173,7 @@ const CommunityGuidelines = () => {
               <img src={infinoxLogo} alt="INFINOX" className="h-4" />
               <span className="hidden sm:inline text-xs text-muted-foreground/40">|</span>
               <span className="hidden sm:inline font-heading text-xs font-semibold tracking-tight">
-                <span className="text-primary">IX</span> Live Trading Room
+                <span className="text-primary">IX</span> Sala de Trading
               </span>
             </div>
           </div>

@@ -49,7 +49,7 @@ const Footer = () => {
               <img src={infinoxLogo} alt="INFINOX — Online Trading Broker" className="h-6" />
             </Link>
             <span className="mt-3 inline-block font-heading text-sm font-semibold text-foreground">
-              <span className="text-primary">IX</span> Live Trading Room
+              <span className="text-primary">IX</span> Sala de Trading
             </span>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}

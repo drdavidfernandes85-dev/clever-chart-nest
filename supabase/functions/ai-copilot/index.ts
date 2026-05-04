@@ -105,7 +105,7 @@ function buildSystemPrompt(ctx: Awaited<ReturnType<typeof fetchContext>>) {
     ? `User stats: ${ctx.stats.totalTrades} closed trades, win rate ${ctx.stats.winRate}, total P&L ${ctx.stats.totalPnl}, ${ctx.stats.openTrades} open.`
     : "User has no closed trades yet.";
 
-  return `You are **Infinox AI Co-pilot**, an elite trading assistant for the Infinox Live Trading Room.
+  return `You are **Infinox AI Co-pilot**, an elite trading assistant for the IX Sala de Trading.
 
 Your job: answer questions about markets, signals, the user's performance, news, and macro events.
 Be concise, professional, and data-driven. Use markdown formatting (lists, bold, tables when useful).

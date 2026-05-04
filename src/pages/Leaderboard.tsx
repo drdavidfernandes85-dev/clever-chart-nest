@@ -213,7 +213,7 @@ const Leaderboard = () => {
             <img src={infinoxLogo} alt="INFINOX" className="h-5" />
             <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
             <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-              <span className="text-primary">IX</span> Live Trading Room
+              <span className="text-primary">IX</span> Sala de Trading
             </span>
           </Link>
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground gap-1.5">

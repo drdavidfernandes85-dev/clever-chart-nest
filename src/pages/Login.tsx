@@ -146,7 +146,7 @@ const Login = () => {
               <div className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="text-[10px] font-bold text-foreground"><span className="text-primary">IX</span> Live Trading Room</span>
+                  <span className="text-[10px] font-bold text-foreground"><span className="text-primary">IX</span> Sala de Trading</span>
                 </div>
                 <div className="flex gap-3 text-[8px] text-muted-foreground">
                   <span>EUR/USD <span className="text-emerald-400">+0.12%</span></span>
