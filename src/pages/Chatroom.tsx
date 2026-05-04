@@ -86,7 +86,7 @@ const COPILOT_COLLAPSED_KEY = "infinox.chatroom.copilotCollapsed";
 
 const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const getDateLabel = useDateLabel();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
