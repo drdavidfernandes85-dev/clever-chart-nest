@@ -647,14 +647,14 @@ const translations = {
     "ai.tryAgain": "Try again later.",
 
     // Education Center page
-    "edu.seo.title": "Trading Education Center | Risk & Technical Analysis",
-    "edu.seo.desc": "Trading education: technical analysis, chart patterns, risk management, trading psychology and free live webinars — for a serious trader community.",
-    "edu.seo.keywords": "trading education, risk management, technical analysis, chart patterns, trading community, live webinars, market analysis, trading psychology, forex education",
+    "edu.seo.title": "Trading Education Center — Technical Analysis, Risk Management & Free Live Webinars | IX Live Trading Room",
+    "edu.seo.desc": "Free trading education center: master technical analysis, chart patterns, risk management, trading psychology and macro analysis with structured modules and free live trading webinars. Built for a serious forex, indices and crypto trader community.",
+    "edu.seo.keywords": "trading education, free trading course, technical analysis course, risk management trading, trading psychology, chart patterns, price action, forex education, learn day trading, learn swing trading, live trading webinars, trading community, market analysis, macro analysis, online trading academy",
     "edu.eyebrow": "Education Center",
     "edu.h1.lead": "Master the markets,",
     "edu.h1.brand": "one module",
     "edu.h1.tail": "at a time.",
-    "edu.intro": "An educational path for serious traders: technical analysis, risk management, trading psychology, market analysis and free trading webinars — built around process, not promises.",
+    "edu.intro": "A complete trading education path for serious traders: technical analysis, chart patterns, risk management, trading psychology, macro analysis and free live trading webinars — structured modules built around process, not promises. Learn forex, indices, crypto and commodities the right way.",
     "edu.progress.label": "Your Progress",
     "edu.progress.modulesSuffix": "modules",
     "edu.disclaimer": "All content is for educational purposes only and does not constitute financial advice. Trading involves risk; always do your own research.",
