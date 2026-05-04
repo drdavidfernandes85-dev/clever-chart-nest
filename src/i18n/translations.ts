@@ -1478,14 +1478,14 @@ const translations = {
     "ai.tryAgain": "Inténtalo de nuevo más tarde.",
 
     // Centro de Educación
-    "edu.seo.title": "Centro de Educación Trading | Análisis Técnico & Riesgo",
-    "edu.seo.desc": "Educación trading: análisis técnico en vivo, gestión de riesgo trading, patrones de gráficos, psicología y webinars trading gratis para la comunidad de traders.",
-    "edu.seo.keywords": "educación trading, gestión de riesgo, análisis técnico, patrones de gráficos, comunidad de traders, webinars trading, análisis de mercado, psicología trading, educación forex",
+    "edu.seo.title": "Centro de Educación Trading Gratis — Análisis Técnico, Gestión de Riesgo y Webinars en Vivo | IX Live Trading Room",
+    "edu.seo.desc": "Centro de educación trading gratis: aprende análisis técnico, patrones de gráficos, gestión de riesgo, psicología del trading y análisis macro con módulos estructurados y webinars de trading en vivo gratis. Curso de trading forex, índices y criptomonedas para una comunidad de traders en español seria.",
+    "edu.seo.keywords": "educación trading, curso de trading gratis, aprender trading, análisis técnico trading, gestión de riesgo trading, psicología trading, patrones de gráficos, price action, curso forex, aprender forex, day trading, swing trading, webinars trading en vivo, comunidad de traders en español, análisis de mercado, análisis macro, academia de trading online",
     "edu.eyebrow": "Centro de Educación",
     "edu.h1.lead": "Domina los mercados,",
     "edu.h1.brand": "un módulo",
     "edu.h1.tail": "a la vez.",
-    "edu.intro": "Una ruta educativa para traders serios: análisis técnico, gestión de riesgo trading, psicología, análisis de mercado y webinars de trading gratis — basada en proceso, no en promesas.",
+    "edu.intro": "Una ruta completa de educación trading para traders serios: análisis técnico, patrones de gráficos, gestión de riesgo trading, psicología del trading, análisis macro y webinars de trading en vivo gratis — módulos estructurados construidos sobre proceso, no promesas. Aprende a operar forex, índices, criptomonedas y materias primas con metodología profesional.",
     "edu.progress.label": "Tu Progreso",
     "edu.progress.modulesSuffix": "módulos",
     "edu.disclaimer": "Todo el contenido tiene fines exclusivamente educativos y no constituye asesoramiento financiero. El trading conlleva riesgo; haz siempre tu propia investigación.",
