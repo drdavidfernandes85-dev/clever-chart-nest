@@ -432,7 +432,7 @@ const Chatroom = () => {
         <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 bg-background">
           <div className="space-y-0">
             {/* Auto welcome message — appears at the top of every channel, localized. */}
-            <WelcomeBanner locale={useLanguage().locale} />
+            <WelcomeBanner locale={locale} channelName={activeChannelName} />
 
             {messages.length === 0 && activeChannelName === "general" && (
               <SampleMessages />
