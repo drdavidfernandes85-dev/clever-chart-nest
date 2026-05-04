@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
 //| IX_Sync_EA v2.05 (MT4)                                           |
-//| Copyright © IX Live Trading Room | IX LTR                        |
+//| Copyright © IX Sala de Trading | IX LTR                        |
 //+------------------------------------------------------------------+
 //|  - Pushes account & open orders every 8s                         |
 //|  - Polls dashboard every 5s for "Take This Signal" orders        |
@@ -8,7 +8,7 @@
 //|  - Executes received orders automatically                        |
 //|  - Auto-translates web symbols (BTC/USDT -> BTCUSD, etc.)        |
 //+------------------------------------------------------------------+
-#property copyright "IX Live Trading Room | IX LTR"
+#property copyright "IX Sala de Trading | IX LTR"
 #property version   "2.05"
 #property strict
 

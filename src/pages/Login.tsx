@@ -64,8 +64,8 @@ const Login = () => {
   return (
     <div className="relative flex min-h-screen overflow-hidden">
       <SEO
-        title="Login | IX Live Trading Room"
-        description="Sign in to access live forex analysis, signals and the IX Live Trading Room community."
+        title="Login | IX Sala de Trading"
+        description="Sign in to access live forex analysis, signals and the IX Sala de Trading community."
         canonical="https://elitelivetradingroom.com/login"
       />
       <div className="pointer-events-none absolute inset-0">
@@ -146,7 +146,7 @@ const Login = () => {
               <div className="flex items-center justify-between rounded-lg bg-secondary px-3 py-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-primary" />
-                  <span className="text-[10px] font-bold text-foreground"><span className="text-primary">IX</span> Live Trading Room</span>
+                  <span className="text-[10px] font-bold text-foreground"><span className="text-primary">IX</span> Sala de Trading</span>
                 </div>
                 <div className="flex gap-3 text-[8px] text-muted-foreground">
                   <span>EUR/USD <span className="text-emerald-400">+0.12%</span></span>

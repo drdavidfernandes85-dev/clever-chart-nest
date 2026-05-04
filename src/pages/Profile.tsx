@@ -113,7 +113,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title="My Profile | IX Live Trading Room"
+        title="My Profile | IX Sala de Trading"
         description="Manage your trader profile, avatar and leaderboard visibility."
         canonical="https://elitelivetradingroom.com/profile"
       />
@@ -124,7 +124,7 @@ const Profile = () => {
               <img src={infinoxLogo} alt="INFINOX" className="h-5" />
               <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
               <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-                <span className="text-primary">IX</span> Live Trading Room
+                <span className="text-primary">IX</span> Sala de Trading
               </span>
             </Link>
           </div>

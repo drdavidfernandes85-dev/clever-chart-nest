@@ -44,7 +44,7 @@ const STEPS: Step[] = [
   },
   {
     route: "/chatroom",
-    title: "Live Trading Room",
+    title: "Sala de Trading",
     body: "Real-time chat with mentors and traders. Mention with @, reply, react.",
   },
   {

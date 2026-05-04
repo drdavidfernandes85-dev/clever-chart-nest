@@ -151,8 +151,8 @@ const TradingSignals = () => {
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <SEO
-        title="Trade Ideas | IX Live Trading Room"
-        description="Live and historical forex signals from the IX Live Trading Room moderators with entry, stop and target."
+        title="Trade Ideas | IX Sala de Trading"
+        description="Live and historical forex signals from the IX Sala de Trading moderators with entry, stop and target."
         canonical="https://elitelivetradingroom.com/signals"
       />
       <div className="container max-w-4xl py-24">

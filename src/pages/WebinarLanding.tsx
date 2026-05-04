@@ -124,7 +124,7 @@ const WebinarLanding = () => {
       },
       organizer: {
         "@type": "Organization",
-        name: "IX Live Trading Room",
+        name: "IX Sala de Trading",
         url: SITE_URL,
       },
       performer: {
@@ -164,7 +164,7 @@ const WebinarLanding = () => {
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "IX Live Trading Room",
+      name: "IX Sala de Trading",
       url: SITE_URL,
       logo: `${SITE_URL}/favicon.ico`,
       sameAs: ["https://www.infinox.com"],
@@ -176,7 +176,7 @@ const WebinarLanding = () => {
       description: t("webinarLp.seo.desc"),
       provider: {
         "@type": "Organization",
-        name: "IX Live Trading Room",
+        name: "IX Sala de Trading",
         sameAs: SITE_URL,
       },
       inLanguage: ["es", "pt-BR", "en"],
@@ -239,7 +239,7 @@ const WebinarLanding = () => {
           to="/"
           className="font-heading text-base font-bold tracking-tight text-foreground hover:text-primary transition-colors"
         >
-          IX <span className="text-primary">Live</span> Trading Room
+          IX <span className="text-primary">Sala</span> de Trading
         </Link>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />

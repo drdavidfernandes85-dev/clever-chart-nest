@@ -22,7 +22,7 @@ const CONTENT: Record<Locale, Content> = {
   en: {
     badge: "Unlock full access",
     title: "Open My Infinox Account Now",
-    body: "Full access to the IX Live Trading Room requires a verified live Infinox account with a minimum net balance of $100 USD.",
+    body: "Full access to the IX Sala de Trading requires a verified live Infinox account with a minimum net balance of $100 USD.",
     primary: "Open My Infinox Account Now",
     secondary: "Connect My Existing MT5 Account",
     dismiss: "Dismiss",
@@ -30,7 +30,7 @@ const CONTENT: Record<Locale, Content> = {
   es: {
     badge: "Desbloquea el acceso completo",
     title: "Abre mi cuenta Infinox ahora",
-    body: "El acceso completo al IX Live Trading Room requiere una cuenta Infinox real verificada con un saldo neto mínimo de $100 USD.",
+    body: "El acceso completo al IX Sala de Trading requiere una cuenta Infinox real verificada con un saldo neto mínimo de $100 USD.",
     primary: "Abrir mi cuenta Infinox ahora",
     secondary: "Conectar mi cuenta MT5 existente",
     dismiss: "Cerrar",
@@ -38,7 +38,7 @@ const CONTENT: Record<Locale, Content> = {
   pt: {
     badge: "Desbloqueie o acesso completo",
     title: "Abra minha conta Infinox agora",
-    body: "Acesso completo ao IX Live Trading Room requer uma conta Infinox real verificada com saldo líquido mínimo de $100 USD.",
+    body: "Acesso completo ao IX Sala de Trading requer uma conta Infinox real verificada com saldo líquido mínimo de $100 USD.",
     primary: "Abrir minha conta Infinox agora",
     secondary: "Conectar minha conta MT5 existente",
     dismiss: "Fechar",

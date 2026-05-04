@@ -106,7 +106,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen pb-16 md:pb-0">
-      <SEO title="Admin Console | IX Live Trading Room" description="Moderation tools for admins." />
+      <SEO title="Admin Console | IX Sala de Trading" description="Moderation tools for admins." />
       <header className="sticky top-0 z-40 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <Link to="/dashboard" className="flex items-center gap-3">
