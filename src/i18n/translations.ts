@@ -809,8 +809,8 @@ const translations = {
     "community.disclaimer": "Disclaimer: All community content is for educational purposes only and does not constitute financial advice. Trading CFDs and leveraged products involves significant risk of loss.",
     // ── Webinar Landing Page (public)
     "webinarLp.seo.title": "Free Live Trading Webinars | IX Live Trading Room",
-    "webinarLp.seo.desc": "Reserve your free spot in the next live trading webinar. Practical strategies, technical analysis, risk management — hosted by experienced analysts. Educational only.",
-    "webinarLp.seo.keywords": "free trading webinars, live trading education, technical analysis webinar, risk management trading, IX Live Trading Room webinars, INFINOX webinars, forex webinar, free trading class",
+    "webinarLp.seo.desc": "Join our free live trading webinars. Learn technical analysis, risk management and real strategies from professional traders. 100% free education — no purchase required.",
+    "webinarLp.seo.keywords": "free live trading webinars, online trading webinar, learn technical analysis, risk management webinar, free trading class, forex webinar, day trading webinar, IX Live Trading Room webinars, INFINOX webinars, trading education, trading community webinar",
     "webinarLp.eyebrow": "Free Live Webinar",
     "webinarLp.h1": "Join Our Next Free Live Webinar",
     "webinarLp.sub": "Live educational sessions hosted by experienced traders and analysts. Learn practical strategies, risk management, technical analysis and more.",
