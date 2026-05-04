@@ -310,7 +310,7 @@ const WebinarLanding = () => {
               </p>
 
               <div className="mt-5">
-                <WebinarRegistrationForm source="webinar_lp_hero" />
+                <WebinarRegistrationForm source="webinar_lp_hero" webinar={webinarContext} />
               </div>
 
               <div className="mt-5 flex items-start gap-2 rounded-lg border border-white/5 bg-background/40 px-3 py-2.5">
@@ -481,7 +481,7 @@ const WebinarLanding = () => {
             {t("webinarLp.form.subtitle")}
           </p>
           <div className="mx-auto mt-6 max-w-md">
-            <WebinarRegistrationForm source="webinar_lp_footer" />
+            <WebinarRegistrationForm source="webinar_lp_footer" webinar={webinarContext} />
           </div>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Button
