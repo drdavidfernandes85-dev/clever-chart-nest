@@ -35,8 +35,36 @@ interface Message {
 
 type UserRoleMap = Record<string, string>;
 
+const CHANNEL_DISPLAY_NAMES: Record<string, string> = {
+  general: "General",
+  espanol: "Español",
+  portugues_brasil: "Português (Brasil)",
+  news_and_research: "News And Research",
+  fx: "Fx",
+  indices: "Indices",
+  crypto: "Crypto",
+  commodities: "Commodities",
+  webinar_chat: "Webinar Chat",
+};
+
 const formatChannelName = (name: string) =>
+  CHANNEL_DISPLAY_NAMES[name] ??
   name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Explicit ordering of sidebar sections and the channels inside each section.
+const CATEGORY_ORDER = ["Trading", "Research", "Markets", "Live"] as const;
+const CHANNEL_ORDER: Record<string, string[]> = {
+  Trading: ["general", "espanol", "portugues_brasil"],
+  Research: ["news_and_research"],
+  Markets: ["fx", "indices", "crypto", "commodities"],
+  Live: ["webinar_chat"],
+};
+
+// Channels that represent a localized room — shown with a small flag chip.
+const CHANNEL_FLAGS: Record<string, string> = {
+  espanol: "🇪🇸",
+  portugues_brasil: "🇧🇷",
+};
 
 const useDateLabel = () => {
   const { t } = useLanguage();
