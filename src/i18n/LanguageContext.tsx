@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import translations, { Locale, TranslationKey } from "./translations";
 import { supabase } from "@/integrations/supabase/client";
+import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
+import { track } from "@/lib/analytics";
 
 interface LanguageContextType {
   locale: Locale;
