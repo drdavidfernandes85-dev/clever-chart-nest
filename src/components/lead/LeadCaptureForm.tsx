@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80, "Name too long"),
