@@ -33,7 +33,10 @@ export type TrackEvent =
   | "webinar_form_submit_attempt"
   | "webinar_form_submit_success"
   | "webinar_form_submit_error"
-  | "webinar_form_duplicate_blocked";
+  | "webinar_form_duplicate_blocked"
+  | "webinar_register_cta_click"
+  | "webinar_confirmation_email_sent"
+  | "webinar_confirmation_email_error";
 
 export const track = (event: TrackEvent, params: Record<string, unknown> = {}) => {
   if (typeof window === "undefined") return;

@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { track } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface WebinarRegistrationContext {
+  webinarId?: string | null;
+  topic: string;
+  scheduledAt: string; // ISO string
+  durationMinutes: number;
+  hostName?: string | null;
+  joinUrl?: string | null;
+}
 
 const LEADS_KEY = "ixltr.leads";
 const REGISTERED_EMAILS_KEY = "ixltr.webinar.emails";
@@ -54,9 +64,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface WebinarRegistrationFormProps {
   source: string;
+  webinar?: WebinarRegistrationContext;
 }
 
-const WebinarRegistrationForm = ({ source }: WebinarRegistrationFormProps) => {
+const WebinarRegistrationForm = ({ source, webinar }: WebinarRegistrationFormProps) => {
   const { t, locale } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -116,6 +127,8 @@ const WebinarRegistrationForm = ({ source }: WebinarRegistrationFormProps) => {
     e.preventDefault();
     if (submittedRef.current || loading) return;
 
+    // Primary CTA click — explicit attribution for "Reserve My Free Spot Now"
+    track("webinar_register_cta_click", { source, locale });
     track("webinar_form_submit_attempt", { source, locale });
 
     const v = validate();
@@ -156,6 +169,46 @@ const WebinarRegistrationForm = ({ source }: WebinarRegistrationFormProps) => {
       track("lead_capture", { source, locale });
       track("webinar_signup", { source, locale });
       track("webinar_form_submit_success", { source, locale });
+
+      // Fire-and-forget email confirmation with calendar invite (.ics).
+      // Failures here must NEVER block the success UI — email infra may not
+      // be fully configured yet (RESEND_API_KEY).
+      if (webinar?.scheduledAt) {
+        supabase.functions
+          .invoke("send-webinar-confirmation", {
+            body: {
+              name: cleanName,
+              email: cleanEmail,
+              locale,
+              webinar: {
+                id: webinar.webinarId ?? null,
+                topic: webinar.topic,
+                scheduledAt: webinar.scheduledAt,
+                durationMinutes: webinar.durationMinutes,
+                hostName: webinar.hostName ?? null,
+                joinUrl: webinar.joinUrl ?? null,
+              },
+            },
+          })
+          .then(({ error }) => {
+            if (error) {
+              track("webinar_confirmation_email_error", {
+                source,
+                locale,
+                reason: error.message ?? "unknown",
+              });
+            } else {
+              track("webinar_confirmation_email_sent", { source, locale });
+            }
+          })
+          .catch((err) => {
+            track("webinar_confirmation_email_error", {
+              source,
+              locale,
+              reason: (err as Error)?.message ?? "exception",
+            });
+          });
+      }
     } catch {
       submittedRef.current = false;
       setErrors({ email: t("webinarLp.form.error.generic") });
