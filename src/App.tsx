@@ -97,6 +97,7 @@ const App = () => (
                   <Route path="/connect" element={<ConnectMyMT5 />} />
                   <Route path="/webinar" element={<WebinarLanding />} />
                   <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+                  <Route path="/community/guidelines" element={<CommunityGuidelines />} />
                   <Route path="/webinars" element={<DashboardShell><Webinars /></DashboardShell>} />
                   <Route path="/webinars/:id" element={<DashboardShell><Webinars /></DashboardShell>} />
 
