@@ -153,6 +153,59 @@ const WebinarLanding = () => {
         },
       })),
     },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: t("webinarLp.eyebrow"), item: PAGE_URL },
+      ],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "IX Live Trading Room",
+      url: SITE_URL,
+      logo: `${SITE_URL}/favicon.ico`,
+      sameAs: ["https://www.infinox.com"],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      name: t("webinarLp.h1"),
+      description: t("webinarLp.seo.desc"),
+      provider: {
+        "@type": "Organization",
+        name: "IX Live Trading Room",
+        sameAs: SITE_URL,
+      },
+      inLanguage: ["es", "pt-BR", "en"],
+      isAccessibleForFree: true,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        category: "Free",
+      },
+      hasCourseInstance: {
+        "@type": "CourseInstance",
+        courseMode: "online",
+        startDate: target.toISOString(),
+        inLanguage: localeTag,
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      url: PAGE_URL,
+      name: t("webinarLp.seo.title"),
+      description: t("webinarLp.seo.desc"),
+      inLanguage: localeTag,
+      speakable: {
+        "@type": "SpeakableSpecification",
+        cssSelector: ["h1", "h2"],
+      },
+    },
   ];
 
   return (
