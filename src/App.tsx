@@ -95,10 +95,13 @@ const App = () => (
                   <Route path="/videos" element={<DashboardShell><VideoLibrary /></DashboardShell>} />
                   <Route path="/connect-mt" element={<DashboardShell><ConnectMT /></DashboardShell>} />
                   <Route path="/connect" element={<ConnectMyMT5 />} />
+                  {/* Public-facing free webinar landing page (high-conversion) */}
                   <Route path="/webinar" element={<WebinarLanding />} />
+                  <Route path="/webinars" element={<WebinarLanding />} />
                   <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
                   <Route path="/community/guidelines" element={<CommunityGuidelines />} />
-                  <Route path="/webinars" element={<DashboardShell><Webinars /></DashboardShell>} />
+                  {/* In-app webinar library (logged-in) */}
+                  <Route path="/webinars/all" element={<DashboardShell><Webinars /></DashboardShell>} />
                   <Route path="/webinars/:id" element={<DashboardShell><Webinars /></DashboardShell>} />
 
                   {/* Eligibility-gated routes: requires verified live Infinox account + $100 USD min balance */}
