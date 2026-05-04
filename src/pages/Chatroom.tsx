@@ -11,6 +11,7 @@ import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
 import SampleMessages from "@/components/chatroom/SampleMessages";
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
+import WelcomeBanner from "@/components/chatroom/WelcomeBanner";
 import CommunityTrustBar from "@/components/social/CommunityTrustBar";
 import AICopilot from "@/components/ai/AICopilot";
 import { useLanguage } from "@/i18n/LanguageContext";
