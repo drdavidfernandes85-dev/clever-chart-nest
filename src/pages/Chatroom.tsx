@@ -294,29 +294,40 @@ const Chatroom = () => {
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Users className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><AtSign className="h-4 w-4" /></Button>
       </div>
-      <ScrollArea className="flex-1 px-2 py-2">
-        {Object.entries(groupedChannels).map(([category, chs]) => (
-          <div key={category} className="mb-4">
-            <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+      <ScrollArea className="flex-1 px-2 py-3">
+        {orderedSections.map(({ category, channels: chs }, idx) => (
+          <div key={category} className={idx > 0 ? "mt-4 pt-3 border-t border-border/40" : ""}>
+            <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
               {category}
             </p>
-            {chs.map((ch) => {
-              const isActive = activeChannelId === ch.id;
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => { setActiveChannelId(ch.id); setActiveChannelName(ch.name); setSidebarOpen(false); }}
-                  className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-all ${
-                    isActive
-                      ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(48_100%_51%/0.35),0_4px_18px_-6px_hsl(48_100%_51%/0.5)]"
-                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                  }`}
-                >
-                  <Hash className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  <span className="truncate font-medium">{formatChannelName(ch.name)}</span>
-                </button>
-              );
-            })}
+            <div className="space-y-0.5">
+              {chs.map((ch) => {
+                const isActive = activeChannelId === ch.id;
+                const flag = CHANNEL_FLAGS[ch.name];
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => { setActiveChannelId(ch.id); setActiveChannelName(ch.name); setSidebarOpen(false); }}
+                    className={`group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-all ${
+                      isActive
+                        ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(48_100%_51%/0.35),0_4px_18px_-6px_hsl(48_100%_51%/0.5)]"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }`}
+                  >
+                    <Hash className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground/60"}`} />
+                    <span className="truncate font-medium">{formatChannelName(ch.name)}</span>
+                    {flag && (
+                      <span
+                        aria-hidden="true"
+                        className={`ml-auto text-xs leading-none ${isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}
+                      >
+                        {flag}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ))}
       </ScrollArea>
