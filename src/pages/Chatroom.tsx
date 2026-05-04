@@ -35,8 +35,36 @@ interface Message {
 
 type UserRoleMap = Record<string, string>;
 
+const CHANNEL_DISPLAY_NAMES: Record<string, string> = {
+  general: "General",
+  espanol: "Español",
+  portugues_brasil: "Português (Brasil)",
+  news_and_research: "News And Research",
+  fx: "Fx",
+  indices: "Indices",
+  crypto: "Crypto",
+  commodities: "Commodities",
+  webinar_chat: "Webinar Chat",
+};
+
 const formatChannelName = (name: string) =>
+  CHANNEL_DISPLAY_NAMES[name] ??
   name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Explicit ordering of sidebar sections and the channels inside each section.
+const CATEGORY_ORDER = ["Trading", "Research", "Markets", "Live"] as const;
+const CHANNEL_ORDER: Record<string, string[]> = {
+  Trading: ["general", "espanol", "portugues_brasil"],
+  Research: ["news_and_research"],
+  Markets: ["fx", "indices", "crypto", "commodities"],
+  Live: ["webinar_chat"],
+};
+
+// Channels that represent a localized room — shown with a small flag chip.
+const CHANNEL_FLAGS: Record<string, string> = {
+  espanol: "🇪🇸",
+  portugues_brasil: "🇧🇷",
+};
 
 const useDateLabel = () => {
   const { t } = useLanguage();
@@ -179,6 +207,35 @@ const Chatroom = () => {
     return acc;
   }, {});
 
+  // Build the ordered sidebar sections — categories and channels follow the
+  // explicit order defined at the top of this file, with any unknown extras
+  // appended at the end so we never silently drop a channel from the DB.
+  const orderedSections = (() => {
+    const used = new Set<string>();
+    const sections: { category: string; channels: Channel[] }[] = [];
+    for (const cat of CATEGORY_ORDER) {
+      const list = groupedChannels[cat];
+      if (!list?.length) continue;
+      const order = CHANNEL_ORDER[cat] ?? [];
+      const sorted = [...list].sort((a, b) => {
+        const ai = order.indexOf(a.name);
+        const bi = order.indexOf(b.name);
+        if (ai === -1 && bi === -1) return a.name.localeCompare(b.name);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
+      sorted.forEach((c) => used.add(c.id));
+      sections.push({ category: cat, channels: sorted });
+    }
+    // Fallback bucket for any uncategorized channels
+    Object.entries(groupedChannels).forEach(([cat, list]) => {
+      const remaining = list.filter((c) => !used.has(c.id));
+      if (remaining.length) sections.push({ category: cat, channels: remaining });
+    });
+    return sections;
+  })();
+
   const handleReply = (messageId: string, displayName: string, content: string) => {
     setReplyTo({ id: messageId, displayName, content });
   };
@@ -237,29 +294,40 @@ const Chatroom = () => {
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Users className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><AtSign className="h-4 w-4" /></Button>
       </div>
-      <ScrollArea className="flex-1 px-2 py-2">
-        {Object.entries(groupedChannels).map(([category, chs]) => (
-          <div key={category} className="mb-4">
-            <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/80">
+      <ScrollArea className="flex-1 px-2 py-3">
+        {orderedSections.map(({ category, channels: chs }, idx) => (
+          <div key={category} className={idx > 0 ? "mt-4 pt-3 border-t border-border/40" : ""}>
+            <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
               {category}
             </p>
-            {chs.map((ch) => {
-              const isActive = activeChannelId === ch.id;
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => { setActiveChannelId(ch.id); setActiveChannelName(ch.name); setSidebarOpen(false); }}
-                  className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-all ${
-                    isActive
-                      ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(48_100%_51%/0.35),0_4px_18px_-6px_hsl(48_100%_51%/0.5)]"
-                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                  }`}
-                >
-                  <Hash className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  <span className="truncate font-medium">{formatChannelName(ch.name)}</span>
-                </button>
-              );
-            })}
+            <div className="space-y-0.5">
+              {chs.map((ch) => {
+                const isActive = activeChannelId === ch.id;
+                const flag = CHANNEL_FLAGS[ch.name];
+                return (
+                  <button
+                    key={ch.id}
+                    onClick={() => { setActiveChannelId(ch.id); setActiveChannelName(ch.name); setSidebarOpen(false); }}
+                    className={`group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-all ${
+                      isActive
+                        ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(48_100%_51%/0.35),0_4px_18px_-6px_hsl(48_100%_51%/0.5)]"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }`}
+                  >
+                    <Hash className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground/60"}`} />
+                    <span className="truncate font-medium">{formatChannelName(ch.name)}</span>
+                    {flag && (
+                      <span
+                        aria-hidden="true"
+                        className={`ml-auto text-xs leading-none ${isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}
+                      >
+                        {flag}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ))}
       </ScrollArea>
