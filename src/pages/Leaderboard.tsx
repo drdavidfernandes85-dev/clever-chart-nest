@@ -203,7 +203,7 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title="Trader Leaderboard | IX Sala de Trading"
+        title="Trader Leaderboard | IX LTR"
         description="Live ranking of community traders by 7-day, 30-day and all-time P&L, win rate and average R."
         canonical="https://elitelivetradingroom.com/leaderboard"
       />
@@ -213,7 +213,7 @@ const Leaderboard = () => {
             <img src={infinoxLogo} alt="INFINOX" className="h-5" />
             <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
             <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-              <span className="text-primary">IX</span> Sala de Trading
+              <span className="text-primary">IX</span> LTR
             </span>
           </Link>
           <Button variant="ghost" size="sm" asChild className="text-muted-foreground gap-1.5">

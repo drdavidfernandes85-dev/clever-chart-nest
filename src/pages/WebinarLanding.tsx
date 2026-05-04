@@ -124,7 +124,7 @@ const WebinarLanding = () => {
       },
       organizer: {
         "@type": "Organization",
-        name: "IX Sala de Trading",
+        name: "IX LTR",
         url: SITE_URL,
       },
       performer: {
@@ -164,7 +164,7 @@ const WebinarLanding = () => {
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "IX Sala de Trading",
+      name: "IX LTR",
       url: SITE_URL,
       logo: `${SITE_URL}/favicon.ico`,
       sameAs: ["https://www.infinox.com"],
@@ -176,7 +176,7 @@ const WebinarLanding = () => {
       description: t("webinarLp.seo.desc"),
       provider: {
         "@type": "Organization",
-        name: "IX Sala de Trading",
+        name: "IX LTR",
         sameAs: SITE_URL,
       },
       inLanguage: ["es", "pt-BR", "en"],

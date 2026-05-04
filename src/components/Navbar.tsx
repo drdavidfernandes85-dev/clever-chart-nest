@@ -62,7 +62,7 @@ const Navbar = () => {
           <div className="relative flex items-center justify-center shrink-0 h-10 sm:h-12 lg:h-14 aspect-square">
             <img
               src={infinoxLogo}
-              alt="INFINOX IX Sala de Trading"
+              alt="INFINOX IX LTR"
               width={220}
               height={220}
               className="h-full w-full object-contain object-center select-none block"
@@ -80,7 +80,7 @@ const Navbar = () => {
           </div>
           <span className="hidden sm:inline-block h-5 lg:h-6 w-px bg-border/50 shrink-0" aria-hidden="true" />
           <span className="hidden sm:inline font-heading text-sm lg:text-base font-semibold text-foreground truncate leading-none tracking-tight">
-            <span className="text-primary">IX</span> Sala de Trading
+            <span className="text-primary">IX</span> LTR
           </span>
         </a>
 

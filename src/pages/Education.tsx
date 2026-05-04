@@ -63,7 +63,7 @@ const Education = () => {
         name: t("edu.seo.title"),
         description: t("edu.seo.desc"),
         inLanguage: locale === "pt" ? "pt-BR" : locale,
-        provider: { "@type": "Organization", name: "IX Sala de Trading" },
+        provider: { "@type": "Organization", name: "IX LTR" },
         hasCourseInstance: MODULES.map((m) => ({
           "@type": "CourseInstance",
           name: m.shortTitle,
