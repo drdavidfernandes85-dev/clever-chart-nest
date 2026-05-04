@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 import translations, { Locale, TranslationKey } from "./translations";
 import { supabase } from "@/integrations/supabase/client";
+import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
+import { track } from "@/lib/analytics";
 
 interface LanguageContextType {
   locale: Locale;
@@ -70,9 +72,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       const { data } = await supabase.auth.getUser();
       const uid = data.user?.id;
       if (!uid) return;
+      // Persist canonical BCP-47 tag ("pt-BR" instead of "pt") so the
+      // email automation system (Brevo / nurture sequence) can match it.
       await supabase
         .from("profiles")
-        .update({ preferred_language: l })
+        .update({ preferred_language: localeToPreferredLanguage(l) })
         .eq("user_id", uid);
     } catch {
       // best-effort; localStorage is the fallback
@@ -86,6 +90,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       if (typeof document !== "undefined") {
         document.documentElement.lang = l;
       }
+      // Analytics: track language switching for nurture-sequence segmentation
+      track("language_change", {
+        locale: l,
+        preferredLanguage: localeToPreferredLanguage(l),
+      });
       // Fire-and-forget DB write
       void persistToProfile(l);
     },
@@ -127,8 +136,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
           .eq("user_id", userId)
           .maybeSingle();
         if (cancelled || error || !data) return;
-        const remote = data.preferred_language;
-        if (isLocale(remote) && remote !== locale) {
+        const remoteRaw = data.preferred_language;
+        // DB may store "pt-BR" — normalize back to in-app Locale ("pt").
+        const remote: Locale | null =
+          remoteRaw === "pt-BR" || remoteRaw === "pt"
+            ? "pt"
+            : isLocale(remoteRaw)
+            ? remoteRaw
+            : null;
+        if (remote && remote !== locale) {
           setLocaleState(remote);
           localStorage.setItem("locale", remote);
           if (typeof document !== "undefined") document.documentElement.lang = remote;

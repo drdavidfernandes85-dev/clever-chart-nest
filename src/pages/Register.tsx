@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
 import SEO from "@/components/SEO";
 
 const Register = () => {
@@ -14,7 +15,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,11 +28,15 @@ const Register = () => {
       return;
     }
     setLoading(true);
+    const preferredLanguage = localeToPreferredLanguage(locale);
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
-        data: { display_name: displayName.trim() },
+        data: {
+          display_name: displayName.trim(),
+          preferred_language: preferredLanguage,
+        },
         emailRedirectTo: window.location.origin,
       },
     });

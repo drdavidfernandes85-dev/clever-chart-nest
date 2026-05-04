@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/i18n/LanguageContext";
+import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80, "Name too long"),
@@ -41,6 +44,7 @@ const LeadCaptureForm = ({
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const { locale } = useLanguage();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,18 +55,39 @@ const LeadCaptureForm = ({
     }
     setLoading(true);
     try {
+      const cleanEmail = parsed.data.email.toLowerCase();
       persistLead({
         name: parsed.data.name,
-        email: parsed.data.email,
+        email: cleanEmail,
         source,
         ts: new Date().toISOString(),
       });
       // Mark a "seen" flag so we don't re-show exit popups
       localStorage.setItem("ixltr.lead.captured", "1");
+
+      // Persist lead + preferred language for the email automation /
+      // nurture sequence (Brevo). Best-effort.
+      const preferredLanguage = localeToPreferredLanguage(locale);
+      void supabase
+        .from("newsletter_subscribers")
+        .upsert(
+          { email: cleanEmail, preferred_language: preferredLanguage },
+          { onConflict: "email", ignoreDuplicates: false },
+        )
+        .then(({ error }) => {
+          if (error) {
+            track("lead_persist_error", {
+              source,
+              locale,
+              reason: error.message ?? "unknown",
+            });
+          }
+        });
+
       await new Promise((r) => setTimeout(r, 350));
       setDone(true);
-      track("lead_capture", { source });
-      if (/webinar/i.test(source)) track("webinar_signup", { source });
+      track("lead_capture", { source, locale, preferredLanguage });
+      if (/webinar/i.test(source)) track("webinar_signup", { source, locale, preferredLanguage });
       toast.success("You're in! Check your email for the invite.");
       onSuccess?.({ name: parsed.data.name as string, email: parsed.data.email as string });
     } catch {
