@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
 import { Link } from "react-router-dom";
 import {
@@ -27,6 +27,22 @@ const CTASection = lazy(() => import("@/components/CTASection"));
 const ContactSection = lazy(() => import("@/components/ContactSection"));
 const NewsletterSection = lazy(() => import("@/components/NewsletterSection"));
 const Footer = lazy(() => import("@/components/Footer"));
+
+const LazyHomeSection = ({
+  children,
+  minHeight,
+  delay,
+}: {
+  children: ReactNode;
+  minHeight: number;
+  delay?: number;
+}) => (
+  <DeferredSection minHeight={minHeight}>
+    <Suspense fallback={<div style={{ minHeight }} aria-hidden="true" />}>
+      <ScrollReveal delay={delay}>{children}</ScrollReveal>
+    </Suspense>
+  </DeferredSection>
+);
 
 const Index = () => {
   const { t, locale } = useLanguage();
@@ -122,13 +138,12 @@ const Index = () => {
       />
       <Navbar />
       <HeroSection />
-      <Suspense fallback={null}>
-        <DeferredSection minHeight={260}><ScrollReveal><SponsorsSection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={520}><ScrollReveal delay={100}><FeaturesSection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={520}><ScrollReveal delay={100}><TeamSection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={520}><ScrollReveal delay={100}><MentoringSection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={320}><ScrollReveal delay={100}><TrustpilotSection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={620}><ScrollReveal delay={100}><FAQSection /></ScrollReveal></DeferredSection>
+      <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={520} delay={100}><FeaturesSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={520} delay={100}><MentoringSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={320} delay={100}><TrustpilotSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={620} delay={100}><FAQSection /></LazyHomeSection>
 
         {/* Keyword-focused internal links — strengthens topical relevance & crawlability */}
         <section
@@ -159,11 +174,14 @@ const Index = () => {
           </div>
         </section>
 
-        <DeferredSection minHeight={320}><ScrollReveal><CTASection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={560}><ScrollReveal><ContactSection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={360}><ScrollReveal><NewsletterSection /></ScrollReveal></DeferredSection>
-        <DeferredSection minHeight={420}><Footer /></DeferredSection>
-      </Suspense>
+      <LazyHomeSection minHeight={320}><CTASection /></LazyHomeSection>
+      <LazyHomeSection minHeight={560}><ContactSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={360}><NewsletterSection /></LazyHomeSection>
+      <DeferredSection minHeight={420}>
+        <Suspense fallback={<div style={{ minHeight: 420 }} aria-hidden="true" />}>
+          <Footer />
+        </Suspense>
+      </DeferredSection>
     </div>
   );
 };
