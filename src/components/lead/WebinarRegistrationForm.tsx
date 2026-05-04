@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { track } from "@/lib/analytics";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface WebinarRegistrationContext {
+  webinarId?: string | null;
+  topic: string;
+  scheduledAt: string; // ISO string
+  durationMinutes: number;
+  hostName?: string | null;
+  joinUrl?: string | null;
+}
 
 const LEADS_KEY = "ixltr.leads";
 const REGISTERED_EMAILS_KEY = "ixltr.webinar.emails";
@@ -54,9 +64,10 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface WebinarRegistrationFormProps {
   source: string;
+  webinar?: WebinarRegistrationContext;
 }
 
-const WebinarRegistrationForm = ({ source }: WebinarRegistrationFormProps) => {
+const WebinarRegistrationForm = ({ source, webinar }: WebinarRegistrationFormProps) => {
   const { t, locale } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
