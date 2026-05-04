@@ -37,10 +37,10 @@ type UserRoleMap = Record<string, string>;
 
 const CHANNEL_DISPLAY_NAMES: Record<string, string> = {
   general: "General",
-  espanol: "Español",
-  portugues_brasil: "Português (Brasil)",
+  espanol: "ES",
+  portugues_brasil: "PT",
+  trades_room: "Trades Room",
   news_and_research: "News And Research",
-  fx: "Fx",
   indices: "Indices",
   crypto: "Crypto",
   commodities: "Commodities",
@@ -54,9 +54,9 @@ const formatChannelName = (name: string) =>
 // Explicit ordering of sidebar sections and the channels inside each section.
 const CATEGORY_ORDER = ["Trading", "Research", "Markets", "Live"] as const;
 const CHANNEL_ORDER: Record<string, string[]> = {
-  Trading: ["general", "espanol", "portugues_brasil"],
+  Trading: ["general", "espanol", "portugues_brasil", "trades_room"],
   Research: ["news_and_research"],
-  Markets: ["fx", "indices", "crypto", "commodities"],
+  Markets: ["indices", "crypto", "commodities"],
   Live: ["webinar_chat"],
 };
 
