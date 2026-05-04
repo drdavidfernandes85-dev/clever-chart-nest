@@ -207,6 +207,35 @@ const Chatroom = () => {
     return acc;
   }, {});
 
+  // Build the ordered sidebar sections — categories and channels follow the
+  // explicit order defined at the top of this file, with any unknown extras
+  // appended at the end so we never silently drop a channel from the DB.
+  const orderedSections = (() => {
+    const used = new Set<string>();
+    const sections: { category: string; channels: Channel[] }[] = [];
+    for (const cat of CATEGORY_ORDER) {
+      const list = groupedChannels[cat];
+      if (!list?.length) continue;
+      const order = CHANNEL_ORDER[cat] ?? [];
+      const sorted = [...list].sort((a, b) => {
+        const ai = order.indexOf(a.name);
+        const bi = order.indexOf(b.name);
+        if (ai === -1 && bi === -1) return a.name.localeCompare(b.name);
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      });
+      sorted.forEach((c) => used.add(c.id));
+      sections.push({ category: cat, channels: sorted });
+    }
+    // Fallback bucket for any uncategorized channels
+    Object.entries(groupedChannels).forEach(([cat, list]) => {
+      const remaining = list.filter((c) => !used.has(c.id));
+      if (remaining.length) sections.push({ category: cat, channels: remaining });
+    });
+    return sections;
+  })();
+
   const handleReply = (messageId: string, displayName: string, content: string) => {
     setReplyTo({ id: messageId, displayName, content });
   };
