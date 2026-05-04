@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
 import SEO from "@/components/SEO";
 
 const Register = () => {
