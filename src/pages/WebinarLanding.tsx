@@ -82,6 +82,16 @@ const WebinarLanding = () => {
   const sessionTitle = upcoming?.title || t("webinarLp.topic.fallback");
   const sessionDuration = upcoming?.duration_minutes ?? 60;
   const speakerName = upcoming?.host_name || t("webinarLp.speaker.name");
+  const joinUrl = upcoming?.stream_url || PAGE_URL;
+
+  const webinarContext = {
+    webinarId: upcoming?.id ?? null,
+    topic: sessionTitle,
+    scheduledAt: target.toISOString(),
+    durationMinutes: sessionDuration,
+    hostName: speakerName,
+    joinUrl,
+  };
 
   const localeTag = locale === "pt" ? "pt-BR" : locale === "es" ? "es-ES" : "en-US";
   const dateString = useMemo(
