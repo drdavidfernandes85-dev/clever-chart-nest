@@ -72,9 +72,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       const { data } = await supabase.auth.getUser();
       const uid = data.user?.id;
       if (!uid) return;
+      // Persist canonical BCP-47 tag ("pt-BR" instead of "pt") so the
+      // email automation system (Brevo / nurture sequence) can match it.
       await supabase
         .from("profiles")
-        .update({ preferred_language: l })
+        .update({ preferred_language: localeToPreferredLanguage(l) })
         .eq("user_id", uid);
     } catch {
       // best-effort; localStorage is the fallback
@@ -88,6 +90,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       if (typeof document !== "undefined") {
         document.documentElement.lang = l;
       }
+      // Analytics: track language switching for nurture-sequence segmentation
+      track("language_change", {
+        locale: l,
+        preferredLanguage: localeToPreferredLanguage(l),
+      });
       // Fire-and-forget DB write
       void persistToProfile(l);
     },
