@@ -48,7 +48,7 @@ const translations = {
     // Hero headline + subheadline (SEO-optimized H1)
     "hero.headline.lead": "",
     "hero.headline.brand": "IX",
-    "hero.headline.tail": "Live Trading Room,",
+    "hero.headline.tail": "Live Trading Room",
     "hero.subheadline": "A professional trading community for live trading, free trading education and free live trading webinars — real-time technical analysis, risk management trading and AI insights, all in one platform. Educational content only.",
     "hero.cta.openAccount": "Open My Infinox Account Now",
     "hero.cta.connectExisting": "Connect My Existing MT5 Account",
