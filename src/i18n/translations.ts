@@ -2495,8 +2495,8 @@ const translations = {
     "community.disclaimer": "Aviso legal: Todo o conteúdo da comunidade tem caráter exclusivamente educativo e não constitui aconselhamento financeiro. Negociar CFDs e produtos alavancados envolve risco significativo de perda.",
     // ── Webinar Landing Page (público)
     "webinarLp.seo.title": "Webinars de Trading ao Vivo Grátis | IX Live Trading Room",
-    "webinarLp.seo.desc": "Reserve sua vaga no próximo webinar de trading ao vivo grátis. Estratégias práticas, análise técnica e gestão de risco com analistas experientes. Apenas educacional.",
-    "webinarLp.seo.keywords": "webinars de trading grátis, webinar de trading ao vivo, educação trading ao vivo, análise técnica webinar, gestão de risco no trading, webinars INFINOX, IX Live Trading Room webinars, aulas de trading grátis",
+    "webinarLp.seo.desc": "Participe dos nossos webinars de trading ao vivo grátis. Aprenda análise técnica, gestão de risco e estratégias reais com traders profissionais. Educação 100% gratuita.",
+    "webinarLp.seo.keywords": "webinars de trading ao vivo grátis, webinar de trading grátis, webinars trading ao vivo, aprender análise técnica, gestão de risco no trading, aulas de trading grátis, curso de trading ao vivo, webinar forex, webinar day trade, webinars INFINOX, comunidade de traders em português, IX Live Trading Room webinars",
     "webinarLp.eyebrow": "Webinar ao Vivo Grátis",
     "webinarLp.h1": "Participe do Nosso Próximo Webinar ao Vivo Grátis",
     "webinarLp.sub": "Sessões educativas ao vivo conduzidas por traders e analistas experientes. Aprenda estratégias práticas, gestão de risco, análise técnica e muito mais.",
