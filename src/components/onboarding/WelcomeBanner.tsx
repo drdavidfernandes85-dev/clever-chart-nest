@@ -45,7 +45,7 @@ const WelcomeBanner = () => {
           </div>
           <div className="space-y-0.5">
             <h3 className="font-heading text-base font-bold text-foreground sm:text-lg">
-              Welcome to <span className="text-primary">IX Live Trading Room</span>, {name}!
+              Welcome to <span className="text-primary">IX Sala de Trading</span>, {name}!
             </h3>
             <p className="text-xs text-muted-foreground sm:text-sm">
               Next step: connect your Infinox MT5 account to view your portfolio and join the community.

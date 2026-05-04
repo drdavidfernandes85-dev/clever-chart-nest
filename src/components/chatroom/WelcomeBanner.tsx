@@ -15,7 +15,7 @@ interface WelcomeContent {
 
 const CONTENT: Record<Locale, WelcomeContent> = {
   en: {
-    greeting: "👋 Welcome to the IX Live Trading Room!",
+    greeting: "👋 Welcome to the IX Sala de Trading!",
     body1: "This is a professional educational community.",
     body2: "Please keep conversations respectful and focused on learning.",
     disclaimer: "All content is for educational purposes only.",
@@ -24,7 +24,7 @@ const CONTENT: Record<Locale, WelcomeContent> = {
     dismiss: "Dismiss",
   },
   es: {
-    greeting: "👋 ¡Bienvenido al IX Live Trading Room!",
+    greeting: "👋 ¡Bienvenido al IX Sala de Trading!",
     body1: "Esta es una comunidad educativa profesional.",
     body2: "Mantén las conversaciones respetuosas y enfocadas en el aprendizaje.",
     disclaimer: "Todo el contenido es solo con fines educativos.",
@@ -33,7 +33,7 @@ const CONTENT: Record<Locale, WelcomeContent> = {
     dismiss: "Cerrar",
   },
   pt: {
-    greeting: "👋 Bem-vindo ao IX Live Trading Room!",
+    greeting: "👋 Bem-vindo ao IX Sala de Trading!",
     body1: "Esta é uma comunidade educativa profissional.",
     body2: "Mantenha as conversas respeitosas e focadas em aprendizado.",
     disclaimer: "Todo o conteúdo é apenas para fins educacionais.",

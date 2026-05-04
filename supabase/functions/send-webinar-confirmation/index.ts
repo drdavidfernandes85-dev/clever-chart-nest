@@ -30,7 +30,7 @@ const BodySchema = z.object({
 type Body = z.infer<typeof BodySchema>
 type Locale = Body['locale']
 
-const SITE_NAME = 'IX Live Trading Room'
+const SITE_NAME = 'IX Sala de Trading'
 const SITE_URL = 'https://elitelivetradingroom.com'
 
 const COPY: Record<Locale, {

@@ -28,8 +28,8 @@ interface GuidelinesContent {
 const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
   en: {
     label: "English",
-    title: "Community Guidelines – IX Live Trading Room",
-    intro: "Welcome to the IX Live Trading Room.",
+    title: "Community Guidelines – IX Sala de Trading",
+    intro: "Welcome to the IX Sala de Trading.",
     intro2:
       "Our goal is to build a respectful, professional, and educational space where traders can connect, share ideas, discuss market setups, and learn together.",
     disclaimer:
@@ -66,8 +66,8 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
   },
   es: {
     label: "Español",
-    title: "Normas de la Comunidad – IX Live Trading Room",
-    intro: "Bienvenido al IX Live Trading Room.",
+    title: "Normas de la Comunidad – IX Sala de Trading",
+    intro: "Bienvenido al IX Sala de Trading.",
     intro2:
       "Nuestro objetivo es construir un espacio respetuoso, profesional y educativo donde los traders puedan conectarse, compartir ideas, discutir configuraciones de mercado y aprender juntos.",
     disclaimer:
@@ -104,8 +104,8 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
   },
   pt: {
     label: "Português (Brasil)",
-    title: "Regras da Comunidade – IX Live Trading Room",
-    intro: "Bem-vindo ao IX Live Trading Room.",
+    title: "Regras da Comunidade – IX Sala de Trading",
+    intro: "Bem-vindo ao IX Sala de Trading.",
     intro2:
       "Nosso objetivo é construir um espaço respeitoso, profissional e educativo onde os traders possam se conectar, compartilhar ideias, discutir configurações de mercado e aprender juntos.",
     disclaimer:
@@ -155,8 +155,8 @@ const CommunityGuidelines = () => {
   return (
     <>
       <SEO
-        title="Community Guidelines — IX Live Trading Room"
-        description="Read the official community guidelines for the IX Live Trading Room. Educational content only — no signals, no financial advice."
+        title="Community Guidelines — IX Sala de Trading"
+        description="Read the official community guidelines for the IX Sala de Trading. Educational content only — no signals, no financial advice."
         canonical="https://ixsalatrading.com/community/guidelines"
       />
       <div className="min-h-screen bg-background">
