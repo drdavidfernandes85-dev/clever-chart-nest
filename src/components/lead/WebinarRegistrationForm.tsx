@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { track } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
+import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
 
 export interface WebinarRegistrationContext {
   webinarId?: string | null;
