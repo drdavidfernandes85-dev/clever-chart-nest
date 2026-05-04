@@ -49,6 +49,7 @@ import MentorTierBanner from "@/components/social/MentorTierBanner";
 import MentorTierCelebration from "@/components/social/MentorTierCelebration";
 import SmartInsights from "@/components/ai/SmartInsights";
 import AICopilot from "@/components/ai/AICopilot";
+import OpenAccountBanner from "@/components/dashboard/OpenAccountBanner";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
@@ -274,6 +275,9 @@ const Dashboard = () => {
             <h1>{t("dash.h1")}</h1>
             <p>{t("dash.intro")}</p>
           </header>
+
+          {/* Prominent Open Infinox Account banner — shown to users without a connected live account */}
+          <OpenAccountBanner show={!isConnected} />
 
           {/* Mentor tier banner — celebrates current rank, dismissible per-tier */}
           <MentorTierBanner tier={currentTier} userId={user?.id ?? null} />

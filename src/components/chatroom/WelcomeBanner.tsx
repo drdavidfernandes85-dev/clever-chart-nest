@@ -16,38 +16,29 @@ interface WelcomeContent {
 const CONTENT: Record<Locale, WelcomeContent> = {
   en: {
     greeting: "👋 Welcome to the IX Live Trading Room!",
-    body1:
-      "This is a professional educational community where traders connect, share ideas, discuss market setups, and learn together.",
-    body2:
-      "💡 Please keep all conversations respectful, constructive, and focused on education.",
-    disclaimer:
-      "All content is for educational purposes only. Trading involves significant risk of loss.",
-    intro: "Feel free to introduce yourself!",
-    link: "Full Community Guidelines",
+    body1: "This is a professional educational community.",
+    body2: "Please keep conversations respectful and focused on learning.",
+    disclaimer: "All content is for educational purposes only.",
+    intro: "",
+    link: "Full guidelines",
     dismiss: "Dismiss",
   },
   es: {
     greeting: "👋 ¡Bienvenido al IX Live Trading Room!",
-    body1:
-      "Esta es una comunidad educativa profesional donde los traders se conectan, comparten ideas y aprenden juntos.",
-    body2:
-      "💡 Mantén todas las conversaciones respetuosas y enfocadas en la educación.",
-    disclaimer:
-      "Todo el contenido es solo con fines educativos. El trading implica riesgo significativo de pérdida.",
-    intro: "¡Siéntete libre de presentarte!",
-    link: "Normas completas de la Comunidad",
+    body1: "Esta es una comunidad educativa profesional.",
+    body2: "Mantén las conversaciones respetuosas y enfocadas en el aprendizaje.",
+    disclaimer: "Todo el contenido es solo con fines educativos.",
+    intro: "",
+    link: "Normas completas",
     dismiss: "Cerrar",
   },
   pt: {
     greeting: "👋 Bem-vindo ao IX Live Trading Room!",
-    body1:
-      "Esta é uma comunidade educativa profissional onde traders se conectam, compartilham ideias e aprendem juntos.",
-    body2:
-      "💡 Mantenha todas as conversas respeitosas e focadas em educação.",
-    disclaimer:
-      "Todo o conteúdo é apenas para fins educacionais. O trading envolve risco significativo de perda.",
-    intro: "Sinta-se à vontade para se apresentar!",
-    link: "Regras completas da Comunidade",
+    body1: "Esta é uma comunidade educativa profissional.",
+    body2: "Mantenha as conversas respeitosas e focadas em aprendizado.",
+    disclaimer: "Todo o conteúdo é apenas para fins educacionais.",
+    intro: "",
+    link: "Regras completas",
     dismiss: "Fechar",
   },
 };
