@@ -430,20 +430,11 @@ const Chatroom = () => {
 
         <div ref={scrollRef} className="relative flex-1 overflow-y-auto px-4 py-4 bg-background">
           <div className="space-y-0">
+            {/* Auto welcome message — appears at the top of every channel, localized. */}
+            <WelcomeBanner locale={useLanguage().locale} />
+
             {messages.length === 0 && activeChannelName === "general" && (
-              <>
-                <div className="mb-4 flex items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3">
-                  <div className="relative flex h-2 w-2 shrink-0">
-                    <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-primary opacity-70" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                  </div>
-                  <p className="text-xs text-foreground/80">
-                    <span className="font-semibold text-primary">{t("chat.welcome")}</span>{" "}
-                    {t("chat.welcomeDesc")}
-                  </p>
-                </div>
-                <SampleMessages />
-              </>
+              <SampleMessages />
             )}
             {messages.length === 0 && activeChannelName !== "general" && (
               <p className="text-center text-sm text-muted-foreground py-12">
