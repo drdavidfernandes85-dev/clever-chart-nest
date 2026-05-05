@@ -62,7 +62,7 @@ const Analytics = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title="My Analytics | IX LTR"
+        title="My Analytics | IX Sala de Trading"
         description="Personal trading analytics, equity curve and AI-generated weekly reports."
       />
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">

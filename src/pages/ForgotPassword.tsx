@@ -34,8 +34,8 @@ const ForgotPassword = () => {
   return (
     <div className="relative flex min-h-screen items-center justify-center px-6">
       <SEO
-        title="Forgot Password | IX LTR"
-        description="Reset your IX LTR account password."
+        title="Forgot Password | IX Sala de Trading"
+        description="Reset your IX Sala de Trading account password."
       />
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-grid-pattern opacity-15" />
