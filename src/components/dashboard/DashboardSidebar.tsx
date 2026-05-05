@@ -87,7 +87,7 @@ const DashboardSidebar = () => {
         <Link to="/" className="flex items-center gap-2 min-w-0 leading-none">
           <img
             src={infinoxLogo}
-            alt="INFINOX IX LTR"
+            alt="INFINOX IX Sala de Trading"
             className="h-9 w-9 shrink-0 object-contain"
             draggable={false}
           />

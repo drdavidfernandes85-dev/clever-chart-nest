@@ -1136,7 +1136,7 @@ const AdvancedBody_PT = () => (
 
 const VideoBody_EN = () => (
   <>
-    <P>Theory becomes intuition when you watch real traders execute in real markets. Our live webinars and on-demand video library are <strong>free for every member</strong> of the IX LTR.</P>
+    <P>Theory becomes intuition when you watch real traders execute in real markets. Our live webinars and on-demand video library are <strong>free for every member</strong> of the IX Sala de Trading.</P>
     <UL>
       <LI>Daily live sessions — London &amp; New York opens, with Q&amp;A</LI>
       <LI>Recorded archive — every webinar, indexed by topic and instrument</LI>
@@ -1156,7 +1156,7 @@ const VideoBody_EN = () => (
 
 const VideoBody_ES = () => (
   <>
-    <P>La teoría se convierte en intuición cuando ves a traders reales ejecutar en mercados reales. Nuestros webinars en vivo y la videoteca bajo demanda son <strong>gratis para cada miembro</strong> de la IX LTR.</P>
+    <P>La teoría se convierte en intuición cuando ves a traders reales ejecutar en mercados reales. Nuestros webinars en vivo y la videoteca bajo demanda son <strong>gratis para cada miembro</strong> de la IX Sala de Trading.</P>
     <UL>
       <LI>Sesiones en vivo diarias — apertura de Londres y Nueva York, con Q&amp;A</LI>
       <LI>Archivo grabado — cada webinar, indexado por tema e instrumento</LI>
@@ -1176,7 +1176,7 @@ const VideoBody_ES = () => (
 
 const VideoBody_PT = () => (
   <>
-    <P>A teoria vira intuição quando você assiste traders reais executando em mercados reais. Nossos webinars ao vivo e a videoteca sob demanda são <strong>gratuitos para todos os membros</strong> da IX LTR.</P>
+    <P>A teoria vira intuição quando você assiste traders reais executando em mercados reais. Nossos webinars ao vivo e a videoteca sob demanda são <strong>gratuitos para todos os membros</strong> da IX Sala de Trading.</P>
     <UL>
       <LI>Sessões ao vivo diárias — aberturas de Londres e Nova York, com Q&amp;A</LI>
       <LI>Acervo gravado — cada webinar, indexado por tema e instrumento</LI>

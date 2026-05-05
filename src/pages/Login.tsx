@@ -64,8 +64,8 @@ const Login = () => {
   return (
     <div className="relative flex min-h-screen overflow-hidden">
       <SEO
-        title="Login | IX LTR"
-        description="Sign in to access live forex analysis, signals and the IX LTR community."
+        title="Login | IX Sala de Trading"
+        description="Sign in to access live forex analysis, signals and the IX Sala de Trading community."
         canonical="https://elitelivetradingroom.com/login"
       />
       <div className="pointer-events-none absolute inset-0">

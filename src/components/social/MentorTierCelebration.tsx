@@ -56,7 +56,7 @@ const MentorTierCelebration = ({ tier, onClose }: Props) => {
   const benefits = TIER_BENEFITS[tier.id];
 
   const shareSignal = async () => {
-    const text = `I just unlocked ${tier.label} on IX LTR! 🎉`;
+    const text = `I just unlocked ${tier.label} on IX Sala de Trading! 🎉`;
     if (navigator.share) {
       try {
         await navigator.share({ title: tier.label, text, url: window.location.origin });
