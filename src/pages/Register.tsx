@@ -51,31 +51,38 @@ const Register = () => {
         preferred_language: preferredLanguage,
       };
 
-      // Idempotent insert: upsert on user_id so re-runs of the handler don't duplicate
+      // Idempotent upsert wrapped in try/catch so a DB error never blocks signup completion
       console.log('➡️ Upserting user_signups (idempotent on user_id):', data.user.id);
-      const { data: signupInsertData, error: signupInsertError } = await supabase
-        .from('user_signups')
-        .upsert(signupPayload, { onConflict: 'user_id', ignoreDuplicates: false })
-        .select()
-        .single();
+      try {
+        const { data: signupInsertData, error: signupInsertError } = await supabase
+          .from('user_signups')
+          .upsert(signupPayload, { onConflict: 'user_id', ignoreDuplicates: false })
+          .select()
+          .maybeSingle();
 
-      if (signupInsertError) {
-        console.error('❌ user_signups upsert failed:', signupInsertError);
-        // Fallback: when email confirmation is required there is no session,
-        // so RLS blocks the direct insert. Use the service-role edge function
-        // (which should also be idempotent server-side).
-        console.log('➡️ Falling back to log-user-signup edge function');
-        const { data: fnData, error: fnError } = await supabase.functions.invoke(
-          'log-user-signup',
-          { body: signupPayload }
-        );
-        if (fnError) {
-          console.error('❌ log-user-signup edge function failed:', fnError);
+        if (signupInsertError) {
+          console.error('⚠️ user_signups upsert failed (non-blocking):', signupInsertError.message, signupInsertError);
+          // Fallback: when email confirmation is required there is no session,
+          // so RLS blocks the direct insert. Use the service-role edge function.
+          console.log('➡️ Falling back to log-user-signup edge function');
+          try {
+            const { data: fnData, error: fnError } = await supabase.functions.invoke(
+              'log-user-signup',
+              { body: signupPayload }
+            );
+            if (fnError) {
+              console.error('⚠️ log-user-signup edge function failed (non-blocking):', fnError);
+            } else {
+              console.log('✅ log-user-signup edge function success:', fnData);
+            }
+          } catch (fnEx) {
+            console.error('❌ Exception invoking log-user-signup (non-blocking):', fnEx);
+          }
         } else {
-          console.log('✅ log-user-signup edge function success:', fnData);
+          console.log('✅ user_signups upsert successful:', signupInsertData);
         }
-      } else {
-        console.log('✅ user_signups upsert successful:', signupInsertData);
+      } catch (upsertEx) {
+        console.error('❌ Exception in user_signups upsert (non-blocking):', upsertEx);
       }
 
       // Fire Make.com webhook. Idempotency on Make's side should be keyed off user_id.
