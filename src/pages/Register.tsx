@@ -29,7 +29,7 @@ const Register = () => {
     }
     setLoading(true);
     const preferredLanguage = localeToPreferredLanguage(locale);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
@@ -43,6 +43,17 @@ const Register = () => {
     if (error) {
       toast.error(error.message);
     } else {
+      const newUser = data.user;
+      if (newUser) {
+        const { error: signupLogError } = await supabase.from("user_signups").insert({
+          user_id: newUser.id,
+          email: email.trim(),
+          preferred_language: preferredLanguage,
+        });
+        if (signupLogError) {
+          console.error("Failed to log user signup:", signupLogError);
+        }
+      }
       toast.success("Account created! You can now log in.");
       navigate("/login");
     }

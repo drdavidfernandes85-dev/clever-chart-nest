@@ -893,6 +893,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_signups: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          preferred_language: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          preferred_language?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          preferred_language?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_xp: {
         Row: {
           created_at: string
