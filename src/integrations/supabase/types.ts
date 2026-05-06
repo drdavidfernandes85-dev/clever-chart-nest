@@ -989,6 +989,45 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_retry_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          next_retry_at: string
+          payload: Json
+          status: string
+          updated_at: string
+          user_id: string | null
+          webhook_url: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_retry_at?: string
+          payload: Json
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          webhook_url: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          next_retry_at?: string
+          payload?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       webinars: {
         Row: {
           category: string
