@@ -11,3 +11,18 @@ export const localeToPreferredLanguage = (l: Locale): "en" | "es" | "pt-BR" => {
   if (l === "es") return "es";
   return "en";
 };
+
+/**
+ * Normalize any input to a valid preferred_language value.
+ * Always returns one of: "en" | "es" | "pt-BR". Defaults to "es".
+ */
+export const normalizePreferredLanguage = (
+  value: unknown
+): "en" | "es" | "pt-BR" => {
+  if (typeof value !== "string") return "es";
+  const v = value.trim().toLowerCase();
+  if (v === "en" || v.startsWith("en-")) return "en";
+  if (v === "pt" || v === "pt-br" || v.startsWith("pt-")) return "pt-BR";
+  if (v === "es" || v.startsWith("es-")) return "es";
+  return "es";
+};

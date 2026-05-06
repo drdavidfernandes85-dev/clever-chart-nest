@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { localeToPreferredLanguage } from "@/lib/preferredLanguage";
+import { localeToPreferredLanguage, normalizePreferredLanguage } from "@/lib/preferredLanguage";
 import SEO from "@/components/SEO";
 
 const Register = () => {
@@ -28,8 +28,8 @@ const Register = () => {
       return;
     }
     setLoading(true);
-    const preferredLanguage = localeToPreferredLanguage(locale);
-    console.log('➡️ Calling supabase.auth.signUp for:', email.trim());
+    const preferredLanguage = normalizePreferredLanguage(localeToPreferredLanguage(locale));
+    console.log('➡️ Calling supabase.auth.signUp for:', email.trim(), 'lang:', preferredLanguage);
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -45,32 +45,29 @@ const Register = () => {
     if (data.user && !error) {
       console.log('✅ Auth signup successful for:', data.user.email);
 
-      console.log('➡️ Inserting into user_signups for user_id:', data.user.id);
+      const signupPayload = {
+        user_id: data.user.id,
+        email: data.user.email,
+        preferred_language: preferredLanguage,
+      };
+
+      // Idempotent insert: upsert on user_id so re-runs of the handler don't duplicate
+      console.log('➡️ Upserting user_signups (idempotent on user_id):', data.user.id);
       const { data: signupInsertData, error: signupInsertError } = await supabase
         .from('user_signups')
-        .insert({
-          user_id: data.user.id,
-          email: data.user.email,
-          preferred_language: preferredLanguage || 'es',
-        })
+        .upsert(signupPayload, { onConflict: 'user_id', ignoreDuplicates: false })
         .select()
         .single();
 
       if (signupInsertError) {
-        console.error('❌ user_signups insert failed:', signupInsertError);
+        console.error('❌ user_signups upsert failed:', signupInsertError);
         // Fallback: when email confirmation is required there is no session,
         // so RLS blocks the direct insert. Use the service-role edge function
-        // to guarantee the row is logged.
+        // (which should also be idempotent server-side).
         console.log('➡️ Falling back to log-user-signup edge function');
         const { data: fnData, error: fnError } = await supabase.functions.invoke(
           'log-user-signup',
-          {
-            body: {
-              user_id: data.user.id,
-              email: data.user.email,
-              preferred_language: preferredLanguage || 'es',
-            },
-          }
+          { body: signupPayload }
         );
         if (fnError) {
           console.error('❌ log-user-signup edge function failed:', fnError);
@@ -78,27 +75,58 @@ const Register = () => {
           console.log('✅ log-user-signup edge function success:', fnData);
         }
       } else {
-        console.log('✅ user_signups insert successful:', signupInsertData);
+        console.log('✅ user_signups upsert successful:', signupInsertData);
       }
 
-      // Fire Make.com webhook directly from the client to guarantee the
-      // automation runs on every signup, regardless of email confirmation state.
+      // Fire Make.com webhook. Idempotency on Make's side should be keyed off user_id.
       const webhookUrl = "https://hook.us2.make.com/vjosqr8bswhnofseo84q3b65lgwvjmb5";
+      const webhookPayload = {
+        email: data.user.email,
+        preferred_language: preferredLanguage,
+        user_id: data.user.id,
+        type: "INSERT",
+      };
       console.log('➡️ Calling Make.com webhook:', webhookUrl);
+      let webhookOk = false;
+      let webhookErrMsg: string | null = null;
       try {
         const webhookRes = await fetch(webhookUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: data.user.email,
-            preferred_language: preferredLanguage || 'es',
-            user_id: data.user.id,
-            type: "INSERT",
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            // Idempotency hint for Make scenario
+            "X-Idempotency-Key": data.user.id,
+          },
+          body: JSON.stringify(webhookPayload),
         });
-        console.log('✅ Make.com webhook response status:', webhookRes.status);
+        console.log('⬅️ Make.com webhook response status:', webhookRes.status);
+        if (webhookRes.ok) {
+          webhookOk = true;
+          console.log('✅ Make.com webhook delivered');
+        } else {
+          webhookErrMsg = `HTTP ${webhookRes.status}`;
+          console.error('❌ Make.com webhook returned non-OK:', webhookRes.status);
+        }
       } catch (webhookErr) {
+        webhookErrMsg = webhookErr instanceof Error ? webhookErr.message : String(webhookErr);
         console.error('❌ Make.com webhook call failed:', webhookErr);
+      }
+
+      if (!webhookOk) {
+        console.log('➡️ Persisting failed webhook to retry queue');
+        const { error: retryErr } = await supabase
+          .from('webhook_retry_queue')
+          .insert({
+            user_id: data.user.id,
+            webhook_url: webhookUrl,
+            payload: webhookPayload,
+            last_error: webhookErrMsg,
+          });
+        if (retryErr) {
+          console.error('❌ Failed to enqueue webhook for retry:', retryErr);
+        } else {
+          console.log('✅ Webhook enqueued for later retry');
+        }
       }
 
       // If Supabase requires email verification, signUp returns user without a session.
