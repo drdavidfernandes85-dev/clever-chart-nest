@@ -40,36 +40,42 @@ const Register = () => {
         emailRedirectTo: window.location.origin,
       },
     });
-    if (error) {
-      toast.error(error.message);
-    } else {
-      const newUser = data.user;
-      if (newUser) {
-        const signupPayload = {
-          user_id: newUser.id,
-          email: newUser.email ?? email.trim(),
-          preferred_language: preferredLanguage,
-        };
+    if (data.user && !error) {
+      console.log("✅ Auth signup successful for:", data.user.email);
 
-        const { error: insertError } = await supabase.from("user_signups").insert(signupPayload);
+      const signupPayload = {
+        user_id: data.user.id,
+        email: data.user.email ?? email.trim(),
+        preferred_language: preferredLanguage || "es",
+      };
 
-        if (insertError) {
-          console.error("Failed to insert into user_signups:", insertError);
-          const { error: fallbackError } = await supabase.functions.invoke("log-user-signup", {
-            body: signupPayload,
-          });
+      const { data: insertData, error: insertError } = await supabase
+        .from("user_signups")
+        .insert(signupPayload)
+        .select()
+        .single();
 
-          if (fallbackError) {
-            console.error("Failed to insert into user_signups via fallback:", fallbackError);
-          } else {
-            console.log("✅ user_signups row created successfully");
-          }
+      if (insertError) {
+        console.error("❌ FAILED to insert into user_signups:", insertError);
+        console.error("Full error details:", JSON.stringify(insertError, null, 2));
+
+        const { error: fallbackError } = await supabase.functions.invoke("log-user-signup", {
+          body: signupPayload,
+        });
+        if (fallbackError) {
+          console.error("❌ Fallback edge function also failed:", fallbackError);
         } else {
-          console.log("✅ user_signups row created successfully");
+          console.log("✅ user_signups row created via fallback edge function");
         }
+      } else {
+        console.log("✅ SUCCESS: row inserted into user_signups", insertData);
       }
+
       toast.success("Account created! You can now log in.");
       navigate("/login");
+    } else {
+      console.error("❌ Auth signup failed:", error);
+      toast.error(error?.message ?? "Signup failed");
     }
     setLoading(false);
   };
