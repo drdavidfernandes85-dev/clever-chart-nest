@@ -60,8 +60,21 @@ const Register = () => {
         console.log('✅ REAL SUCCESS: row inserted:', insertData);
       }
 
-      toast.success("Account created! You can now log in.");
-      navigate("/login");
+      // Auto sign-in to confirm credentials work, then go to dashboard
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (signInError || !signInData.session) {
+        console.error('❌ Auto sign-in after signup failed:', signInError);
+        toast.success("Account created! Please log in.");
+        navigate("/login");
+      } else {
+        console.log('✅ Auto sign-in successful, redirecting to /dashboard');
+        toast.success("Account created! Welcome.");
+        navigate("/dashboard");
+      }
     } else {
       console.error("❌ Auth signup failed:", error);
       toast.error(error?.message ?? "Signup failed");
