@@ -45,13 +45,27 @@ const Register = () => {
     } else {
       const newUser = data.user;
       if (newUser) {
-        const { error: signupLogError } = await supabase.from("user_signups").insert({
+        const signupPayload = {
           user_id: newUser.id,
-          email: email.trim(),
+          email: newUser.email ?? email.trim(),
           preferred_language: preferredLanguage,
-        });
-        if (signupLogError) {
-          console.error("Failed to log user signup:", signupLogError);
+        };
+
+        const { error: insertError } = await supabase.from("user_signups").insert(signupPayload);
+
+        if (insertError) {
+          console.error("Failed to insert into user_signups:", insertError);
+          const { error: fallbackError } = await supabase.functions.invoke("log-user-signup", {
+            body: signupPayload,
+          });
+
+          if (fallbackError) {
+            console.error("Failed to insert into user_signups via fallback:", fallbackError);
+          } else {
+            console.log("✅ user_signups row created successfully");
+          }
+        } else {
+          console.log("✅ user_signups row created successfully");
         }
       }
       toast.success("Account created! You can now log in.");
