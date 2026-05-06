@@ -60,7 +60,7 @@ const Register = () => {
         console.error('❌ user_signups insert failed:', signupInsertError);
         // Fallback: when email confirmation is required there is no session,
         // so RLS blocks the direct insert. Use the service-role edge function
-        // to guarantee the row is logged for the Make.com automation.
+        // to guarantee the row is logged.
         console.log('➡️ Falling back to log-user-signup edge function');
         const { data: fnData, error: fnError } = await supabase.functions.invoke(
           'log-user-signup',
@@ -79,6 +79,26 @@ const Register = () => {
         }
       } else {
         console.log('✅ user_signups insert successful:', signupInsertData);
+      }
+
+      // Fire Make.com webhook directly from the client to guarantee the
+      // automation runs on every signup, regardless of email confirmation state.
+      const webhookUrl = "https://hook.us2.make.com/vjosqr8bswhnofseo84q3b65lgwvjmb5";
+      console.log('➡️ Calling Make.com webhook:', webhookUrl);
+      try {
+        const webhookRes = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: data.user.email,
+            preferred_language: preferredLanguage || 'es',
+            user_id: data.user.id,
+            type: "INSERT",
+          }),
+        });
+        console.log('✅ Make.com webhook response status:', webhookRes.status);
+      } catch (webhookErr) {
+        console.error('❌ Make.com webhook call failed:', webhookErr);
       }
 
       // If Supabase requires email verification, signUp returns user without a session.
