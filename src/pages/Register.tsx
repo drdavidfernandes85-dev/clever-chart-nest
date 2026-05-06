@@ -82,9 +82,9 @@ const Register = () => {
           );
           navigate("/login");
         } else {
-          console.log('✅ Auto sign-in successful, redirecting to /dashboard');
-          toast.success("Account created! Welcome.");
-          navigate("/dashboard");
+          console.log('✅ Auto sign-in successful, redirecting to /connect-mt');
+          toast.success("Account created! Connect your MT account to unlock the trading room.");
+          navigate("/connect-mt");
         }
       }
     } else {
