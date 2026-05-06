@@ -60,20 +60,32 @@ const Register = () => {
         console.log('✅ REAL SUCCESS: row inserted:', insertData);
       }
 
-      // Auto sign-in to confirm credentials work, then go to dashboard
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (signInError || !signInData.session) {
-        console.error('❌ Auto sign-in after signup failed:', signInError);
-        toast.success("Account created! Please log in.");
+      // If Supabase requires email verification, signUp returns user without a session.
+      // In that case, do NOT attempt sign-in — show a clear message instead.
+      if (!data.session) {
+        console.log('ℹ️ Email verification required — no session returned from signUp');
+        toast.success(
+          "Account created! Check your inbox to verify your email before signing in."
+        );
         navigate("/login");
       } else {
-        console.log('✅ Auto sign-in successful, redirecting to /dashboard');
-        toast.success("Account created! Welcome.");
-        navigate("/dashboard");
+        // Session already exists (auto-confirm enabled). Confirm by signing in, then route.
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (signInError || !signInData.session) {
+          console.error('❌ Auto sign-in after signup failed:', signInError);
+          toast.error(
+            signInError?.message ?? "Account created, but sign-in failed. Please log in manually."
+          );
+          navigate("/login");
+        } else {
+          console.log('✅ Auto sign-in successful, redirecting to /dashboard');
+          toast.success("Account created! Welcome.");
+          navigate("/dashboard");
+        }
       }
     } else {
       console.error("❌ Auth signup failed:", error);
