@@ -29,6 +29,7 @@ const Register = () => {
     }
     setLoading(true);
     const preferredLanguage = localeToPreferredLanguage(locale);
+    console.log('➡️ Calling supabase.auth.signUp for:', email.trim());
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
@@ -40,24 +41,44 @@ const Register = () => {
         emailRedirectTo: window.location.origin,
       },
     });
+    console.log('⬅️ supabase.auth.signUp returned. hasUser:', !!data?.user, 'hasSession:', !!data?.session, 'error:', error?.message);
     if (data.user && !error) {
       console.log('✅ Auth signup successful for:', data.user.email);
 
-      const { data: insertData, error: insertError } = await supabase
+      console.log('➡️ Inserting into user_signups for user_id:', data.user.id);
+      const { data: signupInsertData, error: signupInsertError } = await supabase
         .from('user_signups')
         .insert({
           user_id: data.user.id,
           email: data.user.email,
-          preferred_language: preferredLanguage || 'es'
+          preferred_language: preferredLanguage || 'es',
         })
         .select()
         .single();
 
-      if (insertError) {
-        console.error('❌ REAL ERROR inserting into user_signups:', insertError);
-        console.error('Full error object:', JSON.stringify(insertError, null, 2));
+      if (signupInsertError) {
+        console.error('❌ user_signups insert failed:', signupInsertError);
+        // Fallback: when email confirmation is required there is no session,
+        // so RLS blocks the direct insert. Use the service-role edge function
+        // to guarantee the row is logged for the Make.com automation.
+        console.log('➡️ Falling back to log-user-signup edge function');
+        const { data: fnData, error: fnError } = await supabase.functions.invoke(
+          'log-user-signup',
+          {
+            body: {
+              user_id: data.user.id,
+              email: data.user.email,
+              preferred_language: preferredLanguage || 'es',
+            },
+          }
+        );
+        if (fnError) {
+          console.error('❌ log-user-signup edge function failed:', fnError);
+        } else {
+          console.log('✅ log-user-signup edge function success:', fnData);
+        }
       } else {
-        console.log('✅ REAL SUCCESS: row inserted:', insertData);
+        console.log('✅ user_signups insert successful:', signupInsertData);
       }
 
       // If Supabase requires email verification, signUp returns user without a session.
