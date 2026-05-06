@@ -41,34 +41,23 @@ const Register = () => {
       },
     });
     if (data.user && !error) {
-      console.log("✅ Auth signup successful for:", data.user.email);
-
-      const signupPayload = {
-        user_id: data.user.id,
-        email: data.user.email ?? email.trim(),
-        preferred_language: preferredLanguage || "es",
-      };
+      console.log('✅ Auth signup successful for:', data.user.email);
 
       const { data: insertData, error: insertError } = await supabase
-        .from("user_signups")
-        .insert(signupPayload)
+        .from('user_signups')
+        .insert({
+          user_id: data.user.id,
+          email: data.user.email,
+          preferred_language: preferredLanguage || 'es'
+        })
         .select()
         .single();
 
       if (insertError) {
-        console.error("❌ FAILED to insert into user_signups:", insertError);
-        console.error("Full error details:", JSON.stringify(insertError, null, 2));
-
-        const { error: fallbackError } = await supabase.functions.invoke("log-user-signup", {
-          body: signupPayload,
-        });
-        if (fallbackError) {
-          console.error("❌ Fallback edge function also failed:", fallbackError);
-        } else {
-          console.log("✅ user_signups row created via fallback edge function");
-        }
+        console.error('❌ REAL ERROR inserting into user_signups:', insertError);
+        console.error('Full error object:', JSON.stringify(insertError, null, 2));
       } else {
-        console.log("✅ SUCCESS: row inserted into user_signups", insertData);
+        console.log('✅ REAL SUCCESS: row inserted:', insertData);
       }
 
       toast.success("Account created! You can now log in.");
