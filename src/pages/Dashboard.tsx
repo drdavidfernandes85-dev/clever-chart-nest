@@ -51,6 +51,7 @@ import SmartInsights from "@/components/ai/SmartInsights";
 import AICopilot from "@/components/ai/AICopilot";
 import OpenAccountBanner from "@/components/dashboard/OpenAccountBanner";
 import LivePortfolioWidget from "@/components/dashboard/LivePortfolioWidget";
+import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWidget";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
