@@ -1,5 +1,5 @@
-// ping-trading-layer
-// Diagnostic endpoint. Verifies reachability of Trading Layer API.
+// trading-layer-health
+// Diagnostic endpoint. Verifies Trading Layer tenant endpoint.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,14 +24,15 @@ Deno.serve(async (req) => {
 
   const apiKey = Deno.env.get("TRADING_LAYER_API_KEY");
 
-  let reachable: boolean | null = null;
-  let status: number | null = null;
-  let errorMsg: string | null = null;
+  let upstreamRes: Response | null = null;
+  let upstreamJson: any = null;
+  let upstreamError: string | null = null;
 
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 8000);
-    const res = await fetch(`${TRADING_LAYER_BASE}/health`, {
+    upstreamRes = await fetch(`${TRADING_LAYER_BASE}/api/v1/tenant`, {
+      method: "GET",
       headers: {
         Accept: "application/json",
         ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
@@ -39,28 +40,40 @@ Deno.serve(async (req) => {
       signal: ctrl.signal,
     });
     clearTimeout(t);
-    status = res.status;
-    reachable = res.ok;
-    if (!res.ok) errorMsg = (await res.text()).slice(0, 300);
+
+    const text = await upstreamRes.text();
+    try { upstreamJson = JSON.parse(text); } catch { upstreamJson = { raw: text }; }
   } catch (e) {
-    reachable = false;
-    errorMsg = e instanceof Error ? e.message : String(e);
+    upstreamError = e instanceof Error ? e.message : String(e);
   }
 
+  const status = upstreamRes?.status ?? null;
+  const isHttpError = status === 404 || status === 401 || status === 403 || status === 500;
+
+  // If Trading Layer returned an error HTTP status, treat as error
+  if (!upstreamRes || !upstreamRes.ok || isHttpError) {
+    return json(200, {
+      success: false,
+      error: upstreamError || `Upstream returned HTTP ${status}`,
+      upstream_status: status,
+      upstream: upstreamJson,
+      env: {
+        has_trading_layer_api_key: Boolean(apiKey),
+      },
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Forward Trading Layer response as-is, adding our envelope
   return json(200, {
     success: true,
-    pong: true,
-    received: body,
-    env: {
-      has_trading_layer_api_key: Boolean(apiKey),
-      supabase_url_present: Boolean(Deno.env.get("SUPABASE_URL")),
+    ...upstreamJson,
+    _meta: {
+      received: body,
+      env: {
+        has_trading_layer_api_key: Boolean(apiKey),
+      },
+      timestamp: new Date().toISOString(),
     },
-    trading_layer: {
-      base_url: TRADING_LAYER_BASE,
-      reachable,
-      status,
-      error: errorMsg,
-    },
-    timestamp: new Date().toISOString(),
   });
 });
