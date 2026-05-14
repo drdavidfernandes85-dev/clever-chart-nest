@@ -52,7 +52,7 @@ const SymbolPositions = ({ symbolLabel }: Props) => {
       });
       if (error) throw error;
       toast.success(`Close order queued for #${pos.ticket}`, {
-        description: "Your EA will execute on the next poll (≤5 seconds).",
+        description: "Trading Layer will execute the trade shortly.",
       });
     } catch (e: any) {
       toast.error("Could not queue close order", {

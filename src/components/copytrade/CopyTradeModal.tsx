@@ -128,7 +128,7 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
       setPhase((p) => {
         if (p === "sending") {
           setErrorMsg(
-            "No confirmation received yet. The order is still queued — your EA may be offline.",
+            "No confirmation received yet. The order is still queued — your Trading Layer connection may be offline.",
           );
           return "failed";
         }
@@ -171,7 +171,7 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
     }
     if (!account || !isConnected) {
       toast.error("MT account not connected", {
-        description: "Connect your EA from Connect MT first.",
+        description: "Connect your MT5 account through Trading Layer first.",
       });
       return;
     }

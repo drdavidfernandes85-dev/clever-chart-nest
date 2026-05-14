@@ -169,7 +169,7 @@ const PortfolioOverview = () => {
             <button
               onClick={async () => {
                 const isEA =
-                  account.broker_name === "Connected via EA" ||
+                  account.broker_name === "Connected via Trading Layer" ||
                   account.server_name === "Trading Layer connection";
                 const result = await sync();
                 if (isEA) {

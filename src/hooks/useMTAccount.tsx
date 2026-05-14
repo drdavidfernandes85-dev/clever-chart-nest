@@ -160,7 +160,7 @@ export function useMTAccount() {
   useEffect(() => {
     if (!account || isRefreshing) return;
     const isEAWebhook =
-      account.broker_name === "Connected via EA" ||
+      account.broker_name === "Connected via Trading Layer" ||
       account.server_name === "Trading Layer connection" ||
       !account.has_metaapi_token;
 
