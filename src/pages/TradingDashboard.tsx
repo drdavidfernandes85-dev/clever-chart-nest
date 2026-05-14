@@ -847,13 +847,13 @@ const TradeStat = ({
   </div>
 );
 
-// ---------- Execution Log ----------
+// ---------- Trade Execution Log ----------
 const ExecutionLogTable = ({ logs }: { logs: ExecutionLog[] }) => (
   <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
     <div className="flex items-center gap-2 mb-4">
       <Clock className="h-4 w-4 text-primary" />
       <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-        Execution Log
+        Trade Execution Log
       </h2>
       <Badge variant="outline" className="ml-auto border-border/50 text-muted-foreground">
         {logs.length}
@@ -861,7 +861,7 @@ const ExecutionLogTable = ({ logs }: { logs: ExecutionLog[] }) => (
     </div>
     {logs.length === 0 ? (
       <p className="rounded-md border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
-        No executions yet.
+        No trades executed yet.
       </p>
     ) : (
       <div className="overflow-x-auto">
