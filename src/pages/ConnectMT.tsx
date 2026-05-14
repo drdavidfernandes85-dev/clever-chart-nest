@@ -315,7 +315,7 @@ const ConnectMT = () => {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {metrics.map((m) => (
+                  {metrics.filter((m) => m.label !== "Open Positions").map((m) => (
                     <div
                       key={m.label}
                       className="flex items-center gap-3 rounded-2xl border border-white/[0.08] p-4"
