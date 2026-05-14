@@ -357,8 +357,103 @@ const ConnectMT = () => {
           }}
         >
           <AnimatePresence mode="wait">
-            {/* === CONNECTED STATE === */}
-            {status === "connected" && summary ? (
+            {/* === INITIAL LOAD === */}
+            {status === "loading" ? (
+              <motion.div
+                key="loading-init"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center justify-center py-16"
+              >
+                <Loader2 className="h-7 w-7 animate-spin" style={{ color: "#FFCD05" }} />
+              </motion.div>
+            ) : /* === ALREADY CONNECTED === */ status === "preconnected" && summary ? (
+              <motion.div
+                key="preconnected"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-6"
+              >
+                <div className="flex items-start gap-3">
+                  <div
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ring-1"
+                    style={{
+                      backgroundColor: "rgba(34, 197, 94, 0.15)",
+                      color: "#4ade80",
+                      borderColor: "rgba(34, 197, 94, 0.30)",
+                    }}
+                  >
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="font-heading text-xl font-semibold text-white">
+                      Account Already Connected
+                    </h2>
+                    <p className="mt-1 text-sm text-neutral-400">
+                      Your Infinox MT5 account is linked to the trading room.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {metrics.map((m) => (
+                    <div
+                      key={m.label}
+                      className="flex items-center gap-3 rounded-2xl border border-white/[0.08] p-4"
+                      style={{ backgroundColor: "rgba(0, 0, 0, 0.25)" }}
+                    >
+                      <div
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: "rgba(255, 205, 5, 0.12)", color: "#FFCD05" }}
+                      >
+                        <m.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-500">
+                          {m.label}
+                        </div>
+                        <div className="mt-0.5 truncate font-mono text-sm font-bold text-white">
+                          {m.value}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    size="lg"
+                    onClick={() => navigate("/trading-dashboard")}
+                    className="w-full font-bold text-black hover:brightness-110 sm:w-auto"
+                    style={{ backgroundColor: "#FFCD05" }}
+                  >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Go to Dashboard
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={disconnect}
+                    disabled={isDisconnecting}
+                    className="w-full border-white/15 text-white hover:bg-white/[0.06] sm:w-auto"
+                  >
+                    {isDisconnecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Disconnect Account
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={async () => { await disconnect(); }}
+                    disabled={isDisconnecting}
+                    className="w-full border-white/15 text-neutral-300 hover:bg-white/[0.06] sm:w-auto"
+                  >
+                    Switch Account
+                  </Button>
+                </div>
+              </motion.div>
+            ) : /* === CONNECTED STATE === */ status === "connected" && summary ? (
               <motion.div
                 key="connected"
                 initial={{ opacity: 0, scale: 0.98 }}
