@@ -1,408 +1,414 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  RefreshCw,
-  Trash2,
-  Wallet,
-  Activity,
+  Eye,
+  EyeOff,
+  ShieldCheck,
   Plug,
-  Radio,
-  UserPlus,
-  ExternalLink,
+  LayoutDashboard,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useMTAccount } from "@/hooks/useMTAccount";
 import SEO from "@/components/SEO";
-import EAWebhookSetup from "@/components/mt/EAWebhookSetup";
-import { formatDistanceToNow } from "date-fns";
-import { useLanguage } from "@/i18n/LanguageContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { track } from "@/lib/analytics";
 
-const SEO_BY_LOCALE: Record<string, { title: string; description: string }> = {
-  en: {
-    title: "Connect MT5 Account or Open New Infinox Account | Elite Live",
-    description:
-      "New to Infinox? Open a live MT5 account in minutes. Already have one? Securely connect via our free EA Webhook to sync balance, equity and trades in real time.",
-  },
-  es: {
-    title: "Conecta tu MT5 o Abre una Cuenta Infinox | Elite Live",
-    description:
-      "¿Nuevo en Infinox? Abre una cuenta MT5 real en minutos. ¿Ya tienes una? Conéctala de forma segura con nuestro EA Webhook gratuito y sincroniza saldo y operaciones en tiempo real.",
-  },
-  pt: {
-    title: "Conecte seu MT5 ou Abra uma Conta Infinox | Elite Live",
-    description:
-      "Novo na Infinox? Abra uma conta MT5 real em minutos. Já tem uma? Conecte com segurança via nosso EA Webhook gratuito e sincronize saldo e trades em tempo real.",
-  },
+const INFINOX_SERVERS = [
+  "InfinoxLimited-MT5Live",
+  "InfinoxLimited-MT5Live2",
+  "InfinoxLimited-MT5Live3",
+  "InfinoxLimited-MT5Demo",
+  "IX-Live",
+  "IX-Demo",
+];
+
+type AccountSummary = {
+  login: string;
+  server: string;
+  balance: number;
+  equity: number;
+  leverage: number;
+  currency?: string;
+  name?: string;
 };
 
+type Status = "idle" | "testing" | "tested" | "connecting" | "connected" | "error";
+
 const ConnectMT = () => {
-  const { account, positions, refresh, loading } = useMTAccount();
-  const { t, locale } = useLanguage();
-  const newUserSectionRef = useRef<HTMLElement | null>(null);
-  const impressionFiredRef = useRef(false);
+  const navigate = useNavigate();
+  const [server, setServer] = useState<string>(INFINOX_SERVERS[0]);
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
+  const [accountType, setAccountType] = useState<"live" | "demo">("live");
+  const [showPassword, setShowPassword] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
+  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [summary, setSummary] = useState<AccountSummary | null>(null);
 
-  useEffect(() => {
-    const el = newUserSectionRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && !impressionFiredRef.current) {
-            impressionFiredRef.current = true;
-            track("open_infinox_account_impression", {
-              location: "connect_mt_new_user",
-              locale,
-            });
-            obs.disconnect();
-          }
-        });
-      },
-      { threshold: 0.4 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [locale]);
+  const formValid = login.trim().length >= 4 && password.length >= 4 && server;
 
-  const seo = SEO_BY_LOCALE[locale] ?? SEO_BY_LOCALE.en;
-  const jsonLd = useMemo(
-    () => ({
-      "@context": "https://schema.org",
-      "@type": "HowTo",
-      name: seo.title,
-      description: seo.description,
-      inLanguage: locale === "pt" ? "pt-BR" : locale,
-      step: [
-        {
-          "@type": "HowToStep",
-          position: 1,
-          name: t("connectMt5.newUser.checklist.1"),
+  const callConnect = async (mode: "test" | "connect") => {
+    setErrorMsg("");
+    setStatus(mode === "test" ? "testing" : "connecting");
+    try {
+      const { data, error } = await supabase.functions.invoke("connect-mt5", {
+        body: {
+          mode,
+          broker: "Infinox",
+          server,
+          login: login.trim(),
+          password,
+          account_type: accountType,
         },
-        {
-          "@type": "HowToStep",
-          position: 2,
-          name: t("connectMt5.newUser.checklist.2"),
-        },
-        {
-          "@type": "HowToStep",
-          position: 3,
-          name: t("connectMt5.newUser.checklist.3"),
-        },
-      ],
-      potentialAction: {
-        "@type": "RegisterAction",
-        name: t("connectMt5.newUser.cta"),
-        target: "https://myaccount.infinox.com/es/links/go/9926281",
-      },
-    }),
-    [locale, seo, t]
-  );
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Unable to connect to your account.");
 
-
-  const handleDisconnect = async () => {
-    if (!account) return;
-    if (!confirm("Disconnect this MetaTrader account? Your synced history will be removed.")) return;
-    const { error } = await (supabase as any)
-      .from("user_mt_accounts")
-      .delete()
-      .eq("id", account.id);
-    if (error) {
-      toast.error(error.message);
-      return;
+      setSummary(data.account as AccountSummary);
+      if (mode === "test") {
+        setStatus("tested");
+        toast.success("Connection test successful");
+      } else {
+        setStatus("connected");
+        toast.success("Account connected");
+      }
+    } catch (e: any) {
+      setStatus("error");
+      setErrorMsg(e?.message || "Something went wrong. Please try again.");
     }
-    toast.success("Account disconnected");
-    refresh();
   };
 
-  const handleRefresh = async () => {
-    await refresh();
-    toast.success("Checked for latest data");
+  const reset = () => {
+    setStatus("idle");
+    setSummary(null);
+    setErrorMsg("");
   };
-
-  const statusConfig = {
-    pending: { color: "text-muted-foreground", bg: "bg-muted/40", ring: "ring-muted-foreground/30", label: "Pending", Icon: Loader2 },
-    syncing: { color: "text-primary", bg: "bg-primary/10", ring: "ring-primary/40", label: "Syncing", Icon: Loader2 },
-    connected: { color: "text-emerald-400", bg: "bg-emerald-500/10", ring: "ring-emerald-500/30", label: "Connected", Icon: CheckCircle2 },
-    error: { color: "text-red-400", bg: "bg-red-500/10", ring: "ring-red-500/30", label: "Error", Icon: AlertCircle },
-    disconnected: { color: "text-muted-foreground", bg: "bg-muted/40", ring: "ring-muted-foreground/30", label: "Disconnected", Icon: AlertCircle },
-  } as const;
 
   return (
-    <div className="min-h-screen bg-background pb-16">
+    <div className="relative min-h-screen bg-background pb-20">
       <SEO
-        title={seo.title}
-        description={seo.description}
+        title="Connect Your Infinox MT5 Account | Elite Live Trading Room"
+        description="Securely link your Infinox MT5 account for real-time portfolio sync, copy signals, and direct trade execution from the trading room."
         canonical="https://elitelivetradingroom.com/connect-mt"
-        jsonLd={jsonLd}
       />
+
+      {/* Ambient glow */}
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-[hsl(45,100%,50%)]/10 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[380px] w-[380px] rounded-full bg-[hsl(20,90%,50%)]/10 blur-[100px]" />
+      </div>
 
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background/85 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
-          <Link to="/dashboard" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground">
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          >
             <ArrowLeft className="h-4 w-4" />
             <span className="text-sm">Dashboard</span>
           </Link>
           <span className="hidden font-heading text-sm font-semibold text-foreground sm:inline">
             Connect <span className="text-primary">Trading Account</span>
           </span>
-          <div className="flex items-center justify-end">
-            <LanguageSwitcher />
-          </div>
+          <LanguageSwitcher />
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-6"
-          style={{
-            boxShadow: "0 20px 60px -25px hsl(48 100% 51% / 0.35)",
-          }}
-        >
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/20 text-primary ring-1 ring-primary/40">
-              <Plug className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="font-heading text-2xl font-bold text-foreground">
-                Connect via Custom EA Webhook
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Free, real-time sync that runs directly inside your MT4/MT5 terminal.
-                No broker credentials leave your computer — your Expert Advisor pushes data
-                straight to your dashboard every 8 seconds.
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* New users — Open Infinox account */}
-        <motion.section
-          ref={newUserSectionRef}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-3xl border-2 border-[hsl(45,100%,50%)]/40 bg-gradient-to-br from-[hsl(45,100%,50%)]/[0.08] via-[hsl(45,100%,50%)]/[0.04] to-transparent p-6 backdrop-blur-xl shadow-[0_0_40px_hsl(45,100%,50%/0.15)] sm:p-8"
-        >
-          <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex-1">
-              <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[hsl(45,100%,50%)]/40 bg-[hsl(45,100%,50%)]/15 text-[hsl(45,100%,60%)]">
-                <UserPlus className="h-5 w-5" />
-              </div>
-              <h2 className="font-heading text-xl font-bold text-foreground sm:text-2xl">
-                {t("connectMt5.newUser.headline")}
-              </h2>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                {t("connectMt5.newUser.subtitle")}
-              </p>
-            </div>
-            <Button
-              asChild
-              size="lg"
-              className="cta-pulse group w-full shrink-0 bg-[hsl(45,100%,50%)] font-bold text-black hover:bg-[hsl(45,100%,55%)] sm:w-auto"
-            >
-              <a
-                href="https://myaccount.infinox.com/es/links/go/9926281"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() =>
-                  track("open_infinox_account_click", {
-                    location: "connect_mt_new_user",
-                    locale,
-                  })
-                }
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                {t("connectMt5.newUser.cta")}
-                <ExternalLink className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </a>
-            </Button>
-          </div>
-
-          {/* 3-step new-user checklist */}
-          <div className="mt-6 rounded-2xl border border-[hsl(45,100%,50%)]/25 bg-background/40 p-4 sm:p-5">
-            <h3 className="font-heading text-sm font-semibold text-foreground sm:text-base">
-              {t("connectMt5.newUser.checklist.title")}
-            </h3>
-            <ol className="mt-3 space-y-2.5">
-              {[
-                t("connectMt5.newUser.checklist.1"),
-                t("connectMt5.newUser.checklist.2"),
-                t("connectMt5.newUser.checklist.3"),
-              ].map((step, idx) => (
-                <li key={idx} className="flex items-start gap-3">
-                  <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(45,100%,50%)] text-xs font-bold text-black">
-                    {idx + 1}
-                  </span>
-                  <span className="text-sm leading-relaxed text-muted-foreground">
-                    {step}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <p className="mt-5 rounded-xl border border-[hsl(45,100%,50%)]/20 bg-background/40 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            💡 {t("connectMt5.newUser.note")}
+      <main className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
+        {/* Hero */}
+        <section className="text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(45,100%,50%)]/30 bg-[hsl(45,100%,50%)]/10 px-3 py-1 text-[11px] font-mono uppercase tracking-widest text-[hsl(45,100%,60%)]">
+            <Sparkles className="h-3 w-3" />
+            Connect Your Infinox MT5 Account
+          </span>
+          <h1 className="mt-5 font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Link Your Trading Account
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            Connect your existing Infinox MT5 account to enable real-time portfolio sync,
+            copy community signals, and execute trades directly from the room.
           </p>
-        </motion.section>
+        </section>
 
-        {!loading && account && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
-          >
-            <div className="border-b border-border/40 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/20">
-                  <Wallet className="h-4 w-4" />
+        {/* Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-2xl shadow-[0_30px_80px_-30px_hsl(45,100%,50%/0.25)] sm:p-8"
+        >
+          <AnimatePresence mode="wait">
+            {(status === "connected" || status === "tested") && summary ? (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-6"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30">
+                    <CheckCircle2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="font-heading text-xl font-semibold text-foreground">
+                      {status === "connected"
+                        ? "Account Connected Successfully"
+                        : "Connection Test Successful"}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {status === "connected"
+                        ? "Your account is now synced in real-time."
+                        : "Credentials verified. Click Connect Account to finish linking."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/10 bg-background/40 p-5 sm:grid-cols-4">
+                  {[
+                    {
+                      label: "Balance",
+                      value: `$${Number(summary.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    },
+                    {
+                      label: "Equity",
+                      value: `$${Number(summary.equity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    },
+                    { label: "Server", value: summary.server },
+                    { label: "Leverage", value: `1:${summary.leverage}` },
+                  ].map((m) => (
+                    <div key={m.label}>
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                        {m.label}
+                      </div>
+                      <div className="mt-1 truncate font-mono text-sm font-bold text-foreground">
+                        {m.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  {status === "tested" ? (
+                    <>
+                      <Button
+                        size="lg"
+                        onClick={() => callConnect("connect")}
+                        className="w-full bg-[hsl(45,100%,50%)] font-bold text-black hover:bg-[hsl(45,100%,55%)] sm:w-auto"
+                      >
+                        <Plug className="mr-2 h-4 w-4" />
+                        Connect Account
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={reset}
+                        className="w-full border-white/15 bg-white/[0.02] sm:w-auto"
+                      >
+                        Edit Credentials
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      size="lg"
+                      onClick={() => navigate("/dashboard")}
+                      className="w-full bg-[hsl(45,100%,50%)] font-bold text-black hover:bg-[hsl(45,100%,55%)] sm:w-auto"
+                    >
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Go to Dashboard
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            ) : status === "testing" || status === "connecting" ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center gap-4 py-12 text-center"
+              >
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[hsl(45,100%,50%)]/10 ring-1 ring-[hsl(45,100%,50%)]/30">
+                  <Loader2 className="h-7 w-7 animate-spin text-[hsl(45,100%,60%)]" />
                 </div>
                 <div>
-                  <h2 className="font-heading text-sm font-semibold text-foreground">
-                    {account.nickname || `${account.platform.toUpperCase()} #${account.login}`}
+                  <h2 className="font-heading text-lg font-semibold text-foreground">
+                    Connecting to Trading Layer...
                   </h2>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                    {account.broker_name} • {account.server_name}
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Securely verifying your credentials with Infinox.
                   </p>
                 </div>
-              </div>
-              {(() => {
-                const cfg = statusConfig[account.status];
-                const Icon = cfg.Icon;
-                return (
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider ring-1 ${cfg.bg} ${cfg.color} ${cfg.ring}`}
-                  >
-                    <Icon className={`h-3 w-3 ${account.status === "syncing" ? "animate-spin" : ""}`} />
-                    {cfg.label}
-                  </span>
-                );
-              })()}
-            </div>
+              </motion.div>
+            ) : (
+              <motion.form
+                key="form"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (formValid) callConnect("test");
+                }}
+                className="space-y-5"
+              >
+                {/* Broker */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                    Broker
+                  </Label>
+                  <Input
+                    value="Infinox"
+                    disabled
+                    className="h-11 cursor-not-allowed border-white/10 bg-white/[0.02] font-medium text-foreground"
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 px-6 py-5">
-              {[
-                { label: "Balance", value: account.balance },
-                { label: "Equity", value: account.equity },
-                { label: "Margin", value: account.margin },
-                { label: "Free Margin", value: account.free_margin },
-              ].map((m) => (
-                <div key={m.label}>
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                    {m.label}
-                  </div>
-                  <div className="font-mono text-base font-bold tabular-nums text-foreground mt-0.5">
-                    {m.value != null
-                      ? `$${Number(m.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      : "—"}
+                {/* Server */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                    Server
+                  </Label>
+                  <Select value={server} onValueChange={setServer}>
+                    <SelectTrigger className="h-11 border-white/10 bg-white/[0.02]">
+                      <SelectValue placeholder="Select server" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INFINOX_SERVERS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Login */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                    MT5 Login (Account Number)
+                  </Label>
+                  <Input
+                    inputMode="numeric"
+                    placeholder="e.g. 5012345"
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value.replace(/\s+/g, ""))}
+                    className="h-11 border-white/10 bg-white/[0.02] font-mono"
+                    autoComplete="off"
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                    MT5 Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Investor or trader password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-11 border-white/10 bg-white/[0.02] pr-10 font-mono"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="border-t border-border/40 px-6 py-4 flex items-center justify-between gap-3">
-              <div className="text-[11px] text-muted-foreground font-mono">
-                {account.last_synced_at
-                  ? `Last synced ${formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })}`
-                  : "Never synced"}
-                {positions.length > 0 && ` • ${positions.length} open position${positions.length === 1 ? "" : "s"}`}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleDisconnect}
-                className="rounded-lg gap-1.5 text-red-400 hover:text-red-300 border-red-500/30 hover:border-red-500/60"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Disconnect
-              </Button>
-            </div>
-          </motion.div>
-        )}
+                {/* Account Type */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                    Account Type
+                  </Label>
+                  <RadioGroup
+                    value={accountType}
+                    onValueChange={(v) => setAccountType(v as "live" | "demo")}
+                    className="grid grid-cols-2 gap-3"
+                  >
+                    {(["live", "demo"] as const).map((type) => (
+                      <label
+                        key={type}
+                        htmlFor={`acct-${type}`}
+                        className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition ${
+                          accountType === type
+                            ? "border-[hsl(45,100%,50%)]/60 bg-[hsl(45,100%,50%)]/10"
+                            : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                        }`}
+                      >
+                        <RadioGroupItem id={`acct-${type}`} value={type} />
+                        <span className="text-sm font-semibold capitalize text-foreground">
+                          {type}
+                        </span>
+                      </label>
+                    ))}
+                  </RadioGroup>
+                </div>
 
-        {!loading && (
-          <>
-            <EAWebhookSetup />
-
-            {/* Live data status */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
-            >
-              <div className="border-b border-border/40 px-5 py-3 flex items-center justify-between gap-3">
-                <h3 className="font-heading text-sm font-semibold text-foreground inline-flex items-center gap-2">
-                  <Radio className="h-4 w-4 text-primary" /> Live data status
-                </h3>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleRefresh}
-                  className="rounded-lg gap-1.5"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Refresh
-                </Button>
-              </div>
-
-              <div className="px-5 py-6">
-                {account ? (
-                  <div className="flex items-start gap-3">
-                    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/30">
-                      <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                    </div>
-                    <div className="min-w-0 space-y-1">
-                      <div className="text-sm font-semibold text-foreground">
-                        Receiving data from your EA
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Last update {account.last_synced_at
-                          ? formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })
-                          : "—"}
-                        {" • "}
-                        Balance ${Number(account.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        {" • "}
-                        {positions.length} open position{positions.length === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/40 ring-1 ring-border/50">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 space-y-1">
-                      <div className="text-sm font-semibold text-foreground">
-                        Waiting for data from your EA…
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Once you generate a token, install the Expert Advisor and attach it
-                        to a chart in MT4/MT5, your live account data will appear here within ~10 seconds.
-                        Hit <span className="text-foreground font-medium">Refresh</span> to check again.
-                      </p>
-                    </div>
+                {status === "error" && errorMsg && (
+                  <div className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{errorMsg}</span>
                   </div>
                 )}
-              </div>
-            </motion.div>
-          </>
-        )}
 
-        {loading && (
-          <div className="flex items-center justify-center py-16 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        )}
+                {/* Buttons */}
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={!formValid}
+                    className="w-full bg-[hsl(45,100%,50%)] font-bold text-black hover:bg-[hsl(45,100%,55%)] disabled:opacity-50 sm:flex-1"
+                  >
+                    <Plug className="mr-2 h-4 w-4" />
+                    Test Connection
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    disabled
+                    className="w-full border-white/15 bg-white/[0.02] disabled:opacity-50 sm:flex-1"
+                    title="Run a successful Test Connection first"
+                  >
+                    Connect Account
+                  </Button>
+                </div>
+
+                {/* Security note */}
+                <div className="flex items-start gap-2 pt-2 text-[11px] leading-relaxed text-muted-foreground">
+                  <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[hsl(45,100%,55%)]" />
+                  <span>
+                    Your credentials are encrypted and stored securely. We use Trading Layer
+                    to connect directly to your broker. We never store your password in plain text.
+                  </span>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </main>
     </div>
   );
