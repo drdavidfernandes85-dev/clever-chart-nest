@@ -583,23 +583,26 @@ const ConnectMT = () => {
                         } catch { /* ignore */ }
                       }
 
-                      // Validate Trading Layer tenant response
-                      const isSuccess =
-                        payload?.success === true &&
-                        payload?.provider === "trading-layer" &&
-                        payload?.step === "tenant_check" &&
-                        payload?.status === 200;
+                      // Validate Trading Layer tenant response (upstream-shaped)
+                      const upstream = payload?.upstream ?? payload;
+                      const accountId = upstream?.data?.ownerAccount?.accountId;
+                      const isSuccess = upstream?.success === true && !!accountId;
+                      const upstreamStatus = upstream?.status ?? payload?.status;
+                      const isErrorStatus = [401, 403, 404, 500].includes(upstreamStatus);
 
-                      const isErrorStatus = [404, 401, 403, 500].includes(payload?.status);
-
-                      if (isErrorStatus || !isSuccess) {
+                      if (!isSuccess || isErrorStatus) {
                         setDebugResponse({
                           success: false,
-                          error: payload?.error || `Invalid response (status: ${payload?.status ?? "unknown"})`,
+                          error: payload?.error || upstream?.error || `Invalid response (status: ${upstreamStatus ?? "unknown"})`,
                           upstream: payload,
                         });
                       } else {
-                        setDebugResponse(payload);
+                        setDebugResponse({
+                          success: true,
+                          message: "Trading Layer connected",
+                          accountId,
+                          raw: payload,
+                        });
                       }
                     } catch (e: any) {
                       setDebugResponse({ success: false, error: e?.message || String(e) });
