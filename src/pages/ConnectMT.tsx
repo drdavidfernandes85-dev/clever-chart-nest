@@ -67,6 +67,7 @@ const ConnectMT = () => {
 
   const callConnect = async (mode: "test" | "connect") => {
     setErrorMsg("");
+    if (mode === "connect") setIsConnecting(true);
     setStatus(mode === "test" ? "testing" : "connecting");
     try {
       const { data, error } = await supabase.functions.invoke("connect-mt5", {
@@ -93,11 +94,14 @@ const ConnectMT = () => {
     } catch (e: any) {
       setStatus("error");
       setErrorMsg(e?.message || "Something went wrong. Please try again.");
+    } finally {
+      if (mode === "connect") setIsConnecting(false);
     }
   };
 
   const reset = () => {
     setStatus("idle");
+    setIsConnecting(false);
     setSummary(null);
     setErrorMsg("");
   };
@@ -344,11 +348,11 @@ const ConnectMT = () => {
                   <Button
                     size="lg"
                     onClick={() => callConnect("connect")}
-                    disabled={status === "connecting"}
+                    disabled={isConnecting}
                     className="w-full font-bold text-black hover:brightness-110 disabled:opacity-50 sm:w-auto"
                     style={{ backgroundColor: "#FFCD05" }}
                   >
-                    {status === "connecting" ? (
+                    {isConnecting ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                       <Plug className="mr-2 h-4 w-4" />
@@ -365,7 +369,7 @@ const ConnectMT = () => {
                   </Button>
                 </div>
               </motion.div>
-            ) : /* === TESTING STATE === */ status === "testing" ? (
+            ) : /* === TESTING / CONNECTING STATE === */ status === "testing" || status === "connecting" ? (
               <motion.div
                 key="loading"
                 initial={{ opacity: 0 }}
@@ -384,10 +388,12 @@ const ConnectMT = () => {
                 </div>
                 <div>
                   <h2 className="font-heading text-lg font-semibold text-white">
-                    Testing Connection...
+                    {status === "connecting" ? "Connecting Account..." : "Testing Connection..."}
                   </h2>
                   <p className="mt-1 text-sm text-neutral-400">
-                    Securely verifying your credentials with Infinox.
+                    {status === "connecting"
+                      ? "Finalizing your account link with Infinox."
+                      : "Securely verifying your credentials with Infinox."}
                   </p>
                 </div>
               </motion.div>
