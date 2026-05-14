@@ -563,10 +563,10 @@ const ConnectMT = () => {
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    setDebugResponse({ loading: "ping-trading-layer..." });
+                    setDebugResponse({ loading: "trading-layer-health..." });
                     try {
                       const { data, error } = await supabase.functions.invoke(
-                        "ping-trading-layer",
+                        "trading-layer-health",
                         { body: { test: true } },
                       );
                       if (error) {
