@@ -1,6 +1,6 @@
 // connect-mt5-v2
-// Real MT5 credential validation via MetaApi. No mocked balance/equity.
-// Returns success:true ONLY when MetaApi confirms the account credentials.
+// MT5 credential validation via Trading Layer only. No mocked balance/equity.
+// Returns success:true ONLY when Trading Layer confirms the account.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -10,6 +10,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const TRADING_LAYER_BASE = "https://api.trading-layer.com";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -24,10 +26,7 @@ interface Body {
   mode?: "test" | "connect";
 }
 
-const METAAPI_BASE = "https://mt-provisioning-profile-api-v1.agiliumtrade.ai";
-const METAAPI_CLIENT_BASE = "https://mt-client-api-v1.agiliumtrade.ai";
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 12000) {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 15000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -52,7 +51,6 @@ Deno.serve(async (req) => {
   const password = String(body.password ?? "");
   const mode = body.mode === "connect" ? "connect" : "test";
 
-  // ---- Validation ----
   if (!account_number || !server || !password) {
     return json(400, {
       success: false,
@@ -66,16 +64,15 @@ Deno.serve(async (req) => {
     return json(422, { success: false, error: "Password is too short." });
   }
 
-  const metaToken = Deno.env.get("METAAPI_TOKEN");
-  if (!metaToken) {
+  const apiKey = Deno.env.get("TRADING_LAYER_API_KEY");
+  if (!apiKey) {
     return json(500, {
       success: false,
-      error:
-        "Broker connector is not configured (METAAPI_TOKEN missing). Real MT5 validation is unavailable.",
+      error: "Trading Layer is not configured (TRADING_LAYER_API_KEY missing).",
     });
   }
 
-  // ---- Auth (required for connect mode) ----
+  // Auth (required for connect mode)
   const authHeader = req.headers.get("Authorization") ?? "";
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -95,114 +92,56 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ---- Real validation via MetaApi ----
-  // Strategy: provision a short-lived MetaApi account in cloud-g1 with the
-  // user's credentials. MetaApi will reject invalid credentials. We then
-  // fetch account information to confirm the connection and return real
-  // balance/equity. Account is left in MetaApi (idempotent by login+server).
+  // Validate credentials with Trading Layer
   try {
-    // 1) Look up an existing account by login+server (if any)
-    const listRes = await fetchWithTimeout(
-      `${METAAPI_BASE}/users/current/accounts?login=${encodeURIComponent(account_number)}`,
-      { headers: { "auth-token": metaToken, Accept: "application/json" } },
-    );
-    const listText = await listRes.text();
-    if (!listRes.ok) {
-      return json(502, {
-        success: false,
-        error: `Broker lookup failed (${listRes.status}): ${listText.slice(0, 300)}`,
-      });
-    }
-    let existing: any[] = [];
-    try { existing = JSON.parse(listText); } catch { existing = []; }
-    const match = Array.isArray(existing)
-      ? existing.find((a) => String(a?.login) === account_number && a?.server === server)
-      : null;
-
-    let accountId: string | null = match?._id ?? match?.id ?? null;
-
-    // 2) If not found, provision it
-    if (!accountId) {
-      const createRes = await fetchWithTimeout(
-        `${METAAPI_BASE}/users/current/accounts`,
-        {
-          method: "POST",
-          headers: {
-            "auth-token": metaToken,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            name: `Infinox ${account_number}`,
-            type: "cloud-g1",
-            login: account_number,
-            password,
-            server,
-            platform: "mt5",
-            magic: 0,
-            application: "MetaApi",
-            keywords: ["Infinox", "MT5"],
-            reliability: "regular",
-          }),
+    const res = await fetchWithTimeout(
+      `${TRADING_LAYER_BASE}/accounts/validate`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        15000,
-      );
-      const createText = await createRes.text();
-      if (!createRes.ok) {
-        // MetaApi returns descriptive errors for bad credentials / wrong server.
-        return json(422, {
-          success: false,
-          error: `Broker rejected credentials (${createRes.status}): ${createText.slice(0, 400)}`,
-        });
-      }
-      try {
-        const created = JSON.parse(createText);
-        accountId = created?.id ?? created?._id ?? null;
-      } catch {
-        return json(502, {
-          success: false,
-          error: "Broker returned an unexpected response on provisioning.",
-        });
-      }
-    }
-
-    if (!accountId) {
-      return json(502, { success: false, error: "Could not obtain MetaApi account id." });
-    }
-
-    // 3) Fetch account information from MetaApi client API
-    const infoRes = await fetchWithTimeout(
-      `${METAAPI_CLIENT_BASE}/users/current/accounts/${accountId}/account-information`,
-      { headers: { "auth-token": metaToken, Accept: "application/json" } },
+        body: JSON.stringify({
+          platform: "mt5",
+          broker: "Infinox",
+          server,
+          login: account_number,
+          password,
+        }),
+      },
       15000,
     );
-    const infoText = await infoRes.text();
-    if (!infoRes.ok) {
-      return json(422, {
+
+    const text = await res.text();
+    let payload: any = null;
+    try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
+
+    if (!res.ok) {
+      return json(res.status === 401 || res.status === 422 ? res.status : 422, {
         success: false,
-        error: `Broker did not return account info (${infoRes.status}): ${infoText.slice(0, 300)}`,
+        error: payload?.error || payload?.message || `Trading Layer rejected credentials (${res.status})`,
+        upstream_status: res.status,
+        upstream: payload,
       });
     }
-    let info: any;
-    try { info = JSON.parse(infoText); } catch {
-      return json(502, { success: false, error: "Invalid account info from broker." });
-    }
 
+    const acc = payload?.account ?? payload;
     const account = {
       login: account_number,
       server,
-      balance: Number(info.balance ?? 0),
-      equity: Number(info.equity ?? 0),
-      leverage: Number(info.leverage ?? 0),
-      currency: info.currency ?? "USD",
-      name: info.name ?? `Infinox ${account_number}`,
+      balance: Number(acc?.balance ?? 0),
+      equity: Number(acc?.equity ?? 0),
+      leverage: Number(acc?.leverage ?? 0),
+      currency: acc?.currency ?? "USD",
+      name: acc?.name ?? `Infinox ${account_number}`,
     };
 
     if (mode === "test") {
-      return json(200, { success: true, mode, account, metaapi_account_id: accountId });
+      return json(200, { success: true, mode, account, upstream: payload });
     }
 
-    // 4) Persist on connect
     if (userId) {
       try {
         await supabase
@@ -219,7 +158,6 @@ Deno.serve(async (req) => {
               balance: account.balance,
               equity: account.equity,
               last_synced_at: new Date().toISOString(),
-              metaapi_account_id: accountId,
             },
             { onConflict: "user_id,login,server_name" },
           );
@@ -228,10 +166,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json(200, { success: true, mode, account, metaapi_account_id: accountId });
+    return json(200, { success: true, mode, account, upstream: payload });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("connect-mt5-v2 error:", msg);
-    return json(500, { success: false, error: `Broker connectivity error: ${msg}` });
+    return json(500, { success: false, error: `Trading Layer connectivity error: ${msg}` });
   }
 });
