@@ -62,6 +62,7 @@ const ConnectMT = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [summary, setSummary] = useState<AccountSummary | null>(null);
+  const [traderId, setTraderId] = useState<string | null>(null);
   const [debugResponse, setDebugResponse] = useState<unknown>(null);
 
   const formValid = login.trim().length >= 4 && password.length >= 4 && server;
@@ -125,10 +126,18 @@ const ConnectMT = () => {
       setSummary(payload.account as AccountSummary);
       if (mode === "test") {
         setStatus("tested");
-        toast.success("Connection test successful");
+        toast.success("Connection Test Successful");
       } else {
+        const tid =
+          payload.traderId ||
+          payload.trading_layer_trader_id ||
+          payload.account?.metaapi_account_id ||
+          payload.account?.trading_layer_trader_id ||
+          null;
+        setTraderId(tid);
+        setPassword(""); // never keep password in memory after linking
         setStatus("connected");
-        toast.success("Account connected");
+        toast.success("Account successfully linked!");
       }
     } catch (e: any) {
       setStatus("error");
@@ -220,7 +229,23 @@ const ConnectMT = () => {
           <span className="hidden font-heading text-sm font-semibold text-white sm:inline">
             Connect <span style={{ color: "#FFCD05" }}>Trading Account</span>
           </span>
-          <div className="w-10" />
+          <div className="flex w-auto items-center justify-end">
+            {status === "connected" ? (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest"
+                style={{
+                  borderColor: "rgba(74, 222, 128, 0.35)",
+                  backgroundColor: "rgba(34, 197, 94, 0.12)",
+                  color: "#4ade80",
+                }}
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                Connected
+              </span>
+            ) : (
+              <span className="block w-10" />
+            )}
+          </div>
         </div>
       </header>
 
@@ -281,16 +306,16 @@ const ConnectMT = () => {
                   </div>
                   <div>
                     <h2 className="font-heading text-xl font-semibold text-white">
-                      Account Connected Successfully
+                      Account successfully linked!
                     </h2>
-                    <p className="mt-1 text-sm" style={{ color: "#4ade80" }}>
-                      Account successfully connected and synced in real-time
+                    <p className="mt-1 text-sm text-neutral-400">
+                      Your Infinox MT5 account is now connected to the trading room.
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {metrics.map((m) => (
+                  {metrics.filter((m) => m.label !== "Open Positions").map((m) => (
                     <div
                       key={m.label}
                       className="flex items-center gap-3 rounded-2xl border border-white/[0.08] p-4"
