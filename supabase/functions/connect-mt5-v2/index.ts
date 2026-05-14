@@ -135,24 +135,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Test the form credentials
-    const testRes = await fetchWithTimeout(
-      `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials/test`,
-      {
-        method: "POST",
-        headers: tlHeaders,
-        body: JSON.stringify({
-          login: Number(account_number),
-          password,
-          server,
-          validateOnly: true,
-        }),
-      },
-      20000,
-    );
-    const testJson = await readJson(testRes);
+    // 3. Test the form credentials (with retry on transient 5xx from Cloudflare)
+    let testRes!: Response;
+    let testJson: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      testRes = await fetchWithTimeout(
+        `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials/test`,
+        {
+          method: "POST",
+          headers: tlHeaders,
+          body: JSON.stringify({
+            login: Number(account_number),
+            password,
+            server,
+            validateOnly: true,
+          }),
+        },
+        20000,
+      );
+      testJson = await readJson(testRes);
+      if (testRes.status !== 502 && testRes.status !== 503 && testRes.status !== 504) break;
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+    }
 
-    // 4. Non-200 = invalid
+    // 4. Transient upstream failure — surface as retryable, not as bad credentials
+    if (testRes.status >= 500) {
+      return json(503, {
+        success: false,
+        step: "mt5_credentials_test",
+        error: "Trading Layer is temporarily unavailable. Please try again in a moment.",
+        tradingLayerStatus: testRes.status,
+        tradingLayerResponse: testJson,
+      });
+    }
+
+    // Any other non-200 = invalid credentials
     if (testRes.status !== 200) {
       return json(422, {
         success: false,
@@ -164,12 +181,15 @@ Deno.serve(async (req) => {
     }
 
     // 5. Strict shape check
+    // Trading Layer semantics:
+    //   validated === true  -> the login/password/server combination is CORRECT
+    //   connected           -> live runtime session attached (transient state, not credential validity)
+    // We only require validated + an account payload with matching login.
     const data = testJson?.data;
     const validated = data?.validated === true;
-    const connected = data?.connected === true;
     const account = data?.account;
 
-    if (!validated || !connected || !account) {
+    if (!validated || !account) {
       return json(422, {
         success: false,
         step: "mt5_credentials_test",
