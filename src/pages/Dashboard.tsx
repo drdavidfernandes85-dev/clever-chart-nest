@@ -281,6 +281,9 @@ const Dashboard = () => {
           {/* Live Portfolio — real-time MT5 account snapshot */}
           <LivePortfolioWidget />
 
+          {/* Trade Execution Log — recent execute-trade results */}
+          <TradeExecutionLogWidget />
+
           {/* Prominent Open Infinox Account banner — shown to users without a connected live account */}
           <OpenAccountBanner show={!isConnected} />
 
