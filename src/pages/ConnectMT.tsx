@@ -569,19 +569,37 @@ const ConnectMT = () => {
                         "trading-layer-health",
                         { body: { test: true } },
                       );
+
+                      // Parse error body if Edge Function returned non-2xx
+                      let payload: any = data;
                       if (error) {
-                        let parsed: any = { success: false, error: error.message };
                         try {
                           const ctx: any = (error as any).context;
-                          if (ctx?.json) parsed = await ctx.json();
+                          if (ctx?.json) payload = await ctx.json();
                           else if (ctx?.text) {
                             const t = await ctx.text();
-                            try { parsed = JSON.parse(t); } catch { parsed = { success: false, error: t }; }
+                            try { payload = JSON.parse(t); } catch { payload = { success: false, error: t }; }
                           }
                         } catch { /* ignore */ }
-                        setDebugResponse(parsed);
+                      }
+
+                      // Validate Trading Layer tenant response
+                      const isSuccess =
+                        payload?.success === true &&
+                        payload?.provider === "trading-layer" &&
+                        payload?.step === "tenant_check" &&
+                        payload?.status === 200;
+
+                      const isErrorStatus = [404, 401, 403, 500].includes(payload?.status);
+
+                      if (isErrorStatus || !isSuccess) {
+                        setDebugResponse({
+                          success: false,
+                          error: payload?.error || `Invalid response (status: ${payload?.status ?? "unknown"})`,
+                          upstream: payload,
+                        });
                       } else {
-                        setDebugResponse(data);
+                        setDebugResponse(payload);
                       }
                     } catch (e: any) {
                       setDebugResponse({ success: false, error: e?.message || String(e) });
@@ -589,7 +607,7 @@ const ConnectMT = () => {
                   }}
                   className="w-full border-white/15 text-neutral-300 hover:bg-white/[0.06]"
                 >
-                  Ping Edge Function
+                  Ping Trading Layer Tenant
                 </Button>
 
                 {/* Security note */}
@@ -611,7 +629,7 @@ const ConnectMT = () => {
                     }}
                   >
                     <div className="mb-1 font-mono uppercase tracking-widest text-neutral-500">
-                      Debug · raw response from connect-mt5-v2
+                      Debug · raw response from trading-layer-health
                     </div>
                     <pre className="overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-neutral-300">
 {JSON.stringify(debugResponse, null, 2)}
