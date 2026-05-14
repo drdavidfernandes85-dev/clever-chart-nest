@@ -15,6 +15,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Per-request timeout to keep total exec well under the 150s edge limit.
+const FETCH_TIMEOUT_MS = 6000;
+async function tfetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 type Quote = {
   symbol: string;          // pretty label, e.g. "BTC/USDT", "EUR/USD", "SPX", "AAPL"
   assetClass: "crypto" | "forex" | "index" | "stock";
