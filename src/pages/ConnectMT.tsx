@@ -101,7 +101,23 @@ const ConnectMT = () => {
       setDebugResponse(payload ?? { success: false, error: error?.message ?? "No response" });
 
       if (!payload || payload.success !== true || !payload.account) {
-        const msg = payload?.error || error?.message || "Connection failed";
+        const upstream = payload?.tradingLayerResponse;
+        const upstreamStatus = payload?.tradingLayerStatus;
+        const isRetryable =
+          upstream?.retryable === true ||
+          (typeof upstreamStatus === "number" && upstreamStatus >= 500);
+
+        let msg: string;
+        if (isRetryable) {
+          const retryAfter = Number(upstream?.retry_after ?? upstream?.retryAfter);
+          msg = Number.isFinite(retryAfter) && retryAfter > 0
+            ? `Trading Layer is temporarily unavailable. Please retry in ${retryAfter} seconds.`
+            : "Trading Layer is temporarily unavailable. Please retry shortly.";
+        } else if (upstreamStatus === 422) {
+          msg = "Invalid credentials. Please check login, password and server.";
+        } else {
+          msg = payload?.error || error?.message || "Connection failed";
+        }
         throw new Error(msg);
       }
 
