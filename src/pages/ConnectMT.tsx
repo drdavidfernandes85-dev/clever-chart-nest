@@ -557,6 +557,41 @@ const ConnectMT = () => {
                   </Button>
                 </div>
 
+                {/* Temporary debug: ping edge function */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    setDebugResponse({ loading: "ping-trading-layer..." });
+                    try {
+                      const { data, error } = await supabase.functions.invoke(
+                        "ping-trading-layer",
+                        { body: { test: true } },
+                      );
+                      if (error) {
+                        let parsed: any = { success: false, error: error.message };
+                        try {
+                          const ctx: any = (error as any).context;
+                          if (ctx?.json) parsed = await ctx.json();
+                          else if (ctx?.text) {
+                            const t = await ctx.text();
+                            try { parsed = JSON.parse(t); } catch { parsed = { success: false, error: t }; }
+                          }
+                        } catch { /* ignore */ }
+                        setDebugResponse(parsed);
+                      } else {
+                        setDebugResponse(data);
+                      }
+                    } catch (e: any) {
+                      setDebugResponse({ success: false, error: e?.message || String(e) });
+                    }
+                  }}
+                  className="w-full border-white/15 text-neutral-300 hover:bg-white/[0.06]"
+                >
+                  Ping Edge Function
+                </Button>
+
                 {/* Security note */}
                 <div className="flex items-start gap-2 pt-2 text-[11px] leading-relaxed text-neutral-500">
                   <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: "#FFCD05" }} />
