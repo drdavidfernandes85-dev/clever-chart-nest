@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
   Zap,
   TrendingUp,
@@ -11,30 +12,33 @@ import {
   AlertTriangle,
   Check,
   Loader2,
+  Plug,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
-import { useMTAccount } from "@/hooks/useMTAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { MARKET_UNIVERSE, fetchMarketQuotes, decimalsFor } from "@/lib/markets";
 
-const DEFAULT_SYMBOLS = ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD", "AUD/USD", "GBP/JPY", "USD/CAD", "NZD/USD"];
+// Broker-safe defaults — used until get-live-account / get-symbols returns the
+// connected broker's symbol list.
+const DEFAULT_SYMBOLS = ["XAUUSD", "EURUSD", "GBPUSD", "US30", "NAS100"];
 
-const LEVERAGE = 30;
-
-// Map a "EUR/USD" style symbol to base/quote for the FX API.
-const splitPair = (sym: string) => {
-  const [base, quote] = sym.split("/");
-  return { base, quote };
-};
+const QUICK_LOTS = [0.01, 0.02, 0.05, 0.1];
 
 const tradeSchema = z.object({
-  symbol: z.string().min(3).max(10),
+  symbol: z.string().min(3).max(12),
   side: z.enum(["buy", "sell"]),
   type: z.enum(["market", "limit"]),
   lots: z.number().positive().max(100),
@@ -43,21 +47,21 @@ const tradeSchema = z.object({
   tp: z.number().nonnegative().optional(),
 });
 
-const pipMul = (sym: string) =>
-  sym.includes("JPY") ? 100 : sym.includes("XAU") ? 10 : 10000;
-
-const pipValuePerLot = (sym: string) => (sym.includes("XAU") ? 10 : 10);
+interface LiveAccount {
+  account_number?: string;
+  server?: string;
+  equity?: number;
+  currency?: string;
+  symbols?: string[];
+}
 
 interface Props {
   compact?: boolean;
-  /** List of symbol labels (e.g. "BTC/USDT", "EUR/USD") shown in the symbol picker. */
   symbols?: string[];
-  /** Called when the user picks a symbol from the picker — lets parents sync the chart. */
   onSymbolChange?: (label: string) => void;
 }
 
-const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange }: Props) => {
-  const SYMBOLS = symbolsProp && symbolsProp.length > 0 ? symbolsProp : DEFAULT_SYMBOLS;
+const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const {
     symbol: ctxSymbol,
     side: ctxSide,
@@ -66,32 +70,79 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
     prefill,
     prefillNonce,
   } = useQuickTrade();
-  const { account } = useMTAccount();
   const { user } = useAuth();
 
-  // Live equity from MT account; fall back to 0 if not connected.
+  // --- Connected MT5 account (Trading Layer) ---
+  const [accountConnected, setAccountConnected] = useState<boolean | null>(null);
+  const [account, setAccount] = useState<LiveAccount | null>(null);
+  const [accountChecking, setAccountChecking] = useState(true);
+
+  const loadAccount = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("get-live-account", {
+        body: { refresh: true },
+      });
+      if (error) throw error;
+      if ((data as any)?.success === true) {
+        const acc = (data as any).account ?? (data as any).data ?? null;
+        setAccount(acc);
+        setAccountConnected(true);
+      } else {
+        setAccount(null);
+        setAccountConnected(false);
+      }
+    } catch {
+      setAccount(null);
+      setAccountConnected(false);
+    } finally {
+      setAccountChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAccount();
+  }, []);
+
+  // Symbol universe: prop > broker symbols (when available) > defaults
+  const SYMBOLS = useMemo(() => {
+    if (symbolsProp && symbolsProp.length > 0) return symbolsProp;
+    if (account?.symbols && account.symbols.length > 0) return account.symbols;
+    return DEFAULT_SYMBOLS;
+  }, [symbolsProp, account]);
+
+  // Make sure the active symbol exists in the list — otherwise reset to first.
+  useEffect(() => {
+    if (!SYMBOLS.includes(ctxSymbol)) {
+      setCtxSymbol(SYMBOLS[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [SYMBOLS]);
+
   const accountEquity =
-    account && account.status === "connected" && account.equity != null
-      ? Number(account.equity)
-      : 0;
+    accountConnected && account?.equity != null ? Number(account.equity) : 0;
+  const accountCurrency = account?.currency || "USD";
 
   const [type, setType] = useState<"market" | "limit">("market");
-  const [lots, setLots] = useState("1.00");
+  const [lots, setLots] = useState("0.01");
   const [entry, setEntry] = useState("");
   const [sl, setSl] = useState("");
   const [tp, setTp] = useState("");
   const [openSymbols, setOpenSymbols] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [livePrices, setLivePrices] = useState<Record<string, number>>({});
-  const [signalId, setSignalId] = useState<string | null>(null);
+  const [tradeIdSrc, setTradeIdSrc] = useState<string | null>(null);
+  const [resultState, setResultState] = useState<{
+    type: "filled" | "placed" | "rejected" | "failed";
+    message: string;
+  } | null>(null);
   const [flash, setFlash] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbol = ctxSymbol;
   const side = ctxSide;
+  const isBuy = side === "buy";
 
-  // Apply prefill (lots, entry, SL, TP, signal_id) every time openTrade() is called.
+  // Apply prefill from Take This Trade buttons.
   useEffect(() => {
     if (!prefill) return;
     if (prefill.lots) setLots(prefill.lots);
@@ -104,8 +155,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
     }
     setSl(prefill.sl ?? "");
     setTp(prefill.tp ?? "");
-    setSignalId(prefill.signalId ?? null);
-    // Visual confirmation: scroll the inline panel into view + flash it
+    setTradeIdSrc(prefill.signalId ?? null);
     if (typeof window !== "undefined") {
       rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       setFlash(true);
@@ -115,96 +165,20 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillNonce]);
 
-  // Reset SL/TP when user manually changes symbol (but not when prefilled).
-  useEffect(() => {
-    setEntry((prev) => prev);
-  }, [symbol]);
-
-  // Poll live price for the active symbol every 5s.
-  // Forex/XAU use direct public APIs (low latency); other classes use the
-  // shared market-quotes edge function which covers crypto, indices, stocks.
-  useEffect(() => {
-    let cancelled = false;
-    const asset = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
-    const isForex = asset?.assetClass === "forex" || (!asset && symbol.includes("/") && !symbol.includes("USDT"));
-    const isXau = symbol.includes("XAU");
-
-    const fetchPrice = async () => {
-      try {
-        let p: number | null = null;
-
-        if (isXau) {
-          const res = await fetch("https://api.gold-api.com/price/XAU", {
-            cache: "no-store",
-          });
-          const json = await res.json();
-          p = Number(json?.price);
-        } else if (isForex) {
-          const { base, quote } = splitPair(symbol);
-          if (!base || !quote) return;
-          const res = await fetch(
-            `https://api.frankfurter.dev/v1/latest?base=${base}&symbols=${quote}`,
-            { cache: "no-store" },
-          );
-          const json = await res.json();
-          p = Number(json?.rates?.[quote]);
-        } else {
-          // Crypto / indices / stocks via the shared edge function.
-          const quotes = await fetchMarketQuotes();
-          const q = quotes.find((qq) => qq.symbol === symbol);
-          if (q?.price != null && Number.isFinite(q.price)) p = q.price;
-        }
-
-        if (Number.isFinite(p) && !cancelled) {
-          setLivePrices((prev) => ({ ...prev, [symbol]: p as number }));
-        }
-      } catch {
-        /* swallow */
-      }
-    };
-    fetchPrice();
-    const id = window.setInterval(fetchPrice, 5000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [symbol]);
-
-  const livePrice = livePrices[symbol] ?? 0;
-  const refPrice = type === "limit" && entry ? parseFloat(entry) || livePrice : livePrice;
-
   const lotsNum = parseFloat(lots) || 0;
-
-  const margin = useMemo(() => {
-    const notional = lotsNum * (symbol.includes("XAU") ? refPrice * 100 : 100000);
-    return notional / LEVERAGE;
-  }, [lotsNum, refPrice, symbol]);
-
-  // Potential P&L preview based on TP target
-  const tpNum = parseFloat(tp) || 0;
   const slNum = parseFloat(sl) || 0;
+  const tpNum = parseFloat(tp) || 0;
 
-  const projectedPnl = useMemo(() => {
-    if (!tpNum || lotsNum <= 0) return 0;
-    const dir = side === "buy" ? 1 : -1;
-    const diff = (tpNum - refPrice) * dir;
-    const pips = diff * pipMul(symbol);
-    return pips * pipValuePerLot(symbol) * lotsNum * (symbol.includes("XAU") ? 10 : 1);
-  }, [tpNum, refPrice, side, lotsNum, symbol]);
+  // Symbol specs (contract size, tick value/size) are not yet exposed by
+  // Trading Layer — until they are we cannot calculate accurate P&L or risk.
+  const symbolSpecs: { tickValue: number; tickSize: number; contractSize: number } | null =
+    null;
 
-  const projectedRiskUsd = useMemo(() => {
-    if (!slNum || lotsNum <= 0) return 0;
-    const dir = side === "buy" ? 1 : -1;
-    const diff = (refPrice - slNum) * dir;
-    const pips = diff * pipMul(symbol);
-    return Math.abs(pips * pipValuePerLot(symbol) * lotsNum * (symbol.includes("XAU") ? 10 : 1));
-  }, [slNum, refPrice, side, lotsNum, symbol]);
-
-  const projectedPnlPct = accountEquity > 0 ? (projectedPnl / accountEquity) * 100 : 0;
-  const riskPct = accountEquity > 0 ? (projectedRiskUsd / accountEquity) * 100 : 0;
+  const canCalculateRisk =
+    accountEquity > 0 && slNum > 0 && symbolSpecs !== null;
 
   const adjustLots = (delta: number) => {
-    const next = Math.max(0.01, Math.min(100, lotsNum + delta));
+    const next = Math.max(0.01, Math.min(100, +(lotsNum + delta).toFixed(2)));
     setLots(next.toFixed(2));
   };
 
@@ -224,113 +198,12 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
       });
       return;
     }
-    if (type === "limit" && !parsed.data.entry) {
-      toast.error("Limit order requires entry price");
+    if (type === "limit") {
+      toast.error("Limit orders coming soon");
       return;
     }
-
-    // --- Reference price (limit entry or live price) ---
-    const ref =
-      type === "limit" && parsed.data.entry ? parsed.data.entry : livePrice;
-    if (!ref || ref <= 0) {
-      toast.error("Live price not available yet", {
-        description: "Wait a couple of seconds for the price to load and try again.",
-      });
-      return;
-    }
-
-    // --- Auto-fill SL/TP if user left them empty ---
-    // Use an asset-aware distance generous enough to clear broker minimum
-    // stop levels (which are often 30-100 pips on FX, larger on crypto).
-    const asset = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
-    const isCrypto = asset?.assetClass === "crypto" || symbol.includes("USDT");
-    const isIndex = asset?.assetClass === "index";
-    const isStock = asset?.assetClass === "stock";
-    const isJpy = symbol.includes("JPY");
-    const isXau = symbol.includes("XAU");
-
-    let distance: number;
-    let decimals: number;
-    if (isCrypto || isIndex || isStock) {
-      // 0.5% of price — safely outside broker freeze/stop levels for these classes.
-      distance = ref * 0.005;
-      decimals = ref >= 1000 ? 2 : ref >= 1 ? 3 : 5;
-    } else if (isXau) {
-      distance = 5;        // ~$5 on gold
-      decimals = 2;
-    } else if (isJpy) {
-      distance = 0.5;      // 50 pips on JPY pairs
-      decimals = 3;
-    } else {
-      distance = 0.005;    // 50 pips on standard FX pairs
-      decimals = 5;
-    }
-
-    let finalSl = slNum;
-    let finalTp = tpNum;
-    if (!finalSl) {
-      finalSl = isBuy ? ref - distance : ref + distance;
-      setSl(finalSl.toFixed(decimals));
-    }
-    if (!finalTp) {
-      finalTp = isBuy ? ref + distance : ref - distance;
-      setTp(finalTp.toFixed(decimals));
-    }
-
-    // Sanity: SL/TP must be in the same order of magnitude as the live price.
-    const outOfRange = (v?: number) =>
-      v != null && (v > ref * 5 || v < ref / 5);
-    if (outOfRange(finalSl) || outOfRange(finalTp)) {
-      toast.error("Stop Loss / Take Profit look wrong", {
-        description: `Current ${symbol} price is ~${ref.toFixed(decimals)}. Your SL/TP must be in the same range.`,
-      });
-      return;
-    }
-    if (isBuy) {
-      if (finalSl >= ref) {
-        toast.error("Invalid Stop Loss", {
-          description: `For a BUY, SL must be BELOW current price (${ref.toFixed(decimals)}).`,
-        });
-        return;
-      }
-      if (finalTp <= ref) {
-        toast.error("Invalid Take Profit", {
-          description: `For a BUY, TP must be ABOVE current price (${ref.toFixed(decimals)}).`,
-        });
-        return;
-      }
-    } else {
-      if (finalSl <= ref) {
-        toast.error("Invalid Stop Loss", {
-          description: `For a SELL, SL must be ABOVE current price (${ref.toFixed(decimals)}).`,
-        });
-        return;
-      }
-      if (finalTp >= ref) {
-        toast.error("Invalid Take Profit", {
-          description: `For a SELL, TP must be BELOW current price (${ref.toFixed(decimals)}).`,
-        });
-        return;
-      }
-    }
-
-    // Brokers reject orders whose SL/TP are inside their stop/freeze level.
-    // Reject anything closer than ~30% of our auto-distance to give a buffer.
-    const minDistance = distance * 0.3;
-    const slGap = Math.abs(ref - finalSl);
-    const tpGap = Math.abs(ref - finalTp);
-    if (slGap < minDistance || tpGap < minDistance) {
-      toast.error("SL/TP too close to price", {
-        description: `Move them at least ${distance.toFixed(decimals)} away from ${ref.toFixed(decimals)} so your broker accepts the order.`,
-      });
-      return;
-    }
-
     setConfirming(true);
   };
-
-  // Convert "EUR/USD" → "EURUSD" so the EA can find the broker symbol.
-  const toBrokerSymbol = (s: string) => s.replace(/[^A-Za-z0-9]/g, "");
 
   const confirmTrade = async () => {
     if (!user) {
@@ -338,52 +211,88 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
       setConfirming(false);
       return;
     }
-    if (!account || account.status !== "connected") {
-      toast.error("MT account not connected", {
-        description: "Connect your MetaTrader EA from Connect MT first.",
+    if (!accountConnected) {
+      toast.error("MT5 account not connected", {
+        description: "Connect your MT5 account through Trading Layer first.",
       });
       setConfirming(false);
       return;
     }
     setSubmitting(true);
     try {
-      const payload = {
-        user_id: user.id,
-        account_id: account.id,
-        signal_id: signalId,
-        symbol: toBrokerSymbol(symbol),
-        side,
-        order_type: type,
-        volume: Number(lotsNum.toFixed(2)),
-        entry_price: type === "limit" && entry ? parseFloat(entry) : null,
-        stop_loss: slNum || null,
-        take_profit: tpNum || null,
-      };
-      console.log("[QuickTrade] inserting order:", payload);
-      const { error } = await supabase.from("mt_pending_orders").insert(payload);
-      if (error) {
-        console.error("[QuickTrade] insert error:", error);
-        throw error;
+      const tradeId = tradeIdSrc ?? crypto.randomUUID();
+      const { data, error } = await supabase.functions.invoke("execute-trade", {
+        body: {
+          tradeId,
+          symbol,
+          side,
+          volume: Number(lotsNum.toFixed(2)),
+          stopLoss: slNum ? Number(slNum) : null,
+          takeProfit: tpNum ? Number(tpNum) : null,
+        },
+      });
+      if (error) throw error;
+      const res = data as any;
+      if (res?.success === true) {
+        const status = res.status as string;
+        if (status === "filled") {
+          setResultState({ type: "filled", message: "Trade filled" });
+          toast.success("Trade filled");
+        } else if (status === "placed") {
+          setResultState({ type: "placed", message: "Trade placed" });
+          toast.success("Trade placed");
+        } else {
+          setResultState({ type: "filled", message: "Trade executed" });
+          toast.success("Trade executed");
+        }
+        setConfirming(false);
+        setTradeIdSrc(null);
+        // Refresh the dashboard's live account + execution log.
+        loadAccount();
+        window.dispatchEvent(new CustomEvent("trade-executed"));
+      } else {
+        const msg = res?.error || "Trade execution failed";
+        if (res?.status === "rejected") {
+          setResultState({ type: "rejected", message: `Trade rejected: ${msg}` });
+        } else {
+          setResultState({ type: "failed", message: msg });
+        }
+        toast.error(msg);
       }
-      setConfirming(false);
-      setSignalId(null);
-      toast.success(`Order queued: ${side.toUpperCase()} ${lotsNum.toFixed(2)} ${symbol}`, {
-        description:
-          "Sent to your EA. It will execute on the next poll (≤5 seconds).",
-      });
     } catch (e: any) {
-      toast.error("Could not queue order", {
-        description: e?.message ?? "Try again.",
-      });
+      const msg = e?.message || "Trade execution failed";
+      setResultState({ type: "failed", message: msg });
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isBuy = side === "buy";
   const sideAccent = isBuy
     ? "from-emerald-500/15 to-transparent border-emerald-500/30"
     : "from-red-500/15 to-transparent border-red-500/30";
+
+  // ---------- Not-connected state ----------
+  if (!accountChecking && accountConnected === false) {
+    return (
+      <div className="rounded-2xl border border-primary/30 bg-gradient-to-br from-card/80 to-background/40 backdrop-blur-xl p-6 text-center shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)]">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+          <Plug className="h-5 w-5" />
+        </div>
+        <h3 className="font-heading text-base font-bold text-foreground mb-1">
+          MT5 account not connected
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Connect your MT5 account to start trading.
+        </p>
+        <Link to="/connect-mt">
+          <Button className="rounded-full bg-primary text-background hover:bg-primary/90 font-bold">
+            Connect MT5 Account
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -396,7 +305,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
           flash ? "ring-2 ring-primary scale-[1.01]" : ""
         }`}
       >
-        {/* Header — premium, prominent */}
+        {/* Header */}
         <div className="flex items-center justify-between border-b border-border/40 px-4 py-3 bg-card/70 backdrop-blur-xl">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-background ring-1 ring-primary/40 shadow-[0_0_18px_-4px_hsl(48_100%_51%/0.7)]">
@@ -407,14 +316,16 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                 Quick Trade
               </h3>
               <span className="mt-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-                One-click execution
+                Trading Layer execution
               </span>
             </div>
           </div>
-          <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Live
-          </span>
+          {accountConnected && (
+            <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              Connected
+            </span>
+          )}
         </div>
 
         <div className="p-4 space-y-3.5 bg-card/60">
@@ -428,21 +339,9 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
               onClick={() => setOpenSymbols((v) => !v)}
               className="flex h-12 w-full items-center justify-between rounded-xl border border-border/50 bg-background/60 px-3.5 text-left transition-colors hover:border-primary/40"
             >
-              <div className="flex items-baseline gap-3 min-w-0">
-                <span className="font-heading text-base font-bold text-foreground">
-                  {symbol}
-                </span>
-                <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                  {(() => {
-                    const a = MARKET_UNIVERSE.find((m) => m.symbol === symbol);
-                    return a
-                      ? livePrice
-                        ? livePrice.toFixed(decimalsFor(a, livePrice))
-                        : "—"
-                      : livePrice.toFixed(symbol.includes("JPY") ? 3 : symbol.includes("XAU") ? 2 : 5);
-                  })()}
-                </span>
-              </div>
+              <span className="font-heading text-base font-bold text-foreground">
+                {symbol}
+              </span>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform ${
                   openSymbols ? "rotate-180" : ""
@@ -451,35 +350,23 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
             </button>
             {openSymbols && (
               <ul className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
-                {SYMBOLS.map((s) => {
-                  const a = MARKET_UNIVERSE.find((m) => m.symbol === s);
-                  const px = livePrices[s];
-                  const display = a
-                    ? px != null && Number.isFinite(px)
-                      ? px.toFixed(decimalsFor(a, px))
-                      : "—"
-                    : (px ?? 0).toFixed(s.includes("JPY") ? 3 : s.includes("XAU") ? 2 : 5);
-                  return (
-                    <li key={s}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCtxSymbol(s);
-                          onSymbolChange?.(s);
-                          setOpenSymbols(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
-                          s === symbol ? "text-primary bg-primary/5" : "text-foreground"
-                        }`}
-                      >
-                        <span>{s}</span>
-                        <span className="font-mono tabular-nums text-muted-foreground">
-                          {display}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
+                {SYMBOLS.map((s) => (
+                  <li key={s}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCtxSymbol(s);
+                        onSymbolChange?.(s);
+                        setOpenSymbols(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
+                        s === symbol ? "text-primary bg-primary/5" : "text-foreground"
+                      }`}
+                    >
+                      <span>{s}</span>
+                    </button>
+                  </li>
+                ))}
               </ul>
             )}
           </div>
@@ -522,16 +409,22 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
             >
               Market
             </button>
-            <button
-              onClick={() => setType("limit")}
-              className={`h-9 rounded-lg font-mono text-[10px] uppercase tracking-widest transition-all ring-1 ${
-                type === "limit"
-                  ? "bg-primary/15 text-primary ring-primary/40"
-                  : "bg-muted/20 text-muted-foreground ring-border/30 hover:text-foreground"
-              }`}
-            >
-              Limit
-            </button>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <button
+                      disabled
+                      aria-disabled="true"
+                      className="h-9 w-full rounded-lg font-mono text-[10px] uppercase tracking-widest ring-1 bg-muted/10 text-muted-foreground/60 ring-border/20 cursor-not-allowed"
+                    >
+                      Limit
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Limit orders coming soon.</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           {/* Lots stepper */}
@@ -541,7 +434,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
             </Label>
             <div className="flex items-stretch gap-2">
               <button
-                onClick={() => adjustLots(-0.1)}
+                onClick={() => adjustLots(-0.01)}
                 aria-label="Decrease lots"
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
               >
@@ -556,7 +449,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                 className="h-12 flex-1 bg-background/60 border-border/50 font-mono text-base font-bold tabular-nums text-center focus-visible:ring-primary/40"
               />
               <button
-                onClick={() => adjustLots(0.1)}
+                onClick={() => adjustLots(0.01)}
                 aria-label="Increase lots"
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
               >
@@ -564,35 +457,17 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
               </button>
             </div>
             <div className="mt-1.5 flex gap-1">
-              {[0.1, 0.5, 1, 2, 5].map((v) => (
+              {QUICK_LOTS.map((v) => (
                 <button
                   key={v}
                   onClick={() => setLots(v.toFixed(2))}
                   className="flex-1 h-7 rounded-md bg-muted/30 hover:bg-primary/10 hover:text-primary text-[10px] font-mono tabular-nums text-muted-foreground transition-colors"
                 >
-                  {v}
+                  {v.toFixed(2)}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Entry price (limit only) */}
-          {type === "limit" && (
-            <div>
-              <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
-                Entry Price
-              </Label>
-              <Input
-                inputMode="decimal"
-                placeholder={livePrice.toFixed(5)}
-                value={entry}
-                onChange={(e) =>
-                  setEntry(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))
-                }
-                className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-primary/40"
-              />
-            </div>
-          )}
 
           {/* SL / TP */}
           <div className="grid grid-cols-2 gap-3">
@@ -626,38 +501,25 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
             </div>
           </div>
 
-          {/* Live preview metrics */}
+          {/* Live preview metrics — P&L / risk pending symbol specs */}
           <div className="rounded-xl border border-border/40 bg-background/40 divide-y divide-border/30 overflow-hidden">
-            <Row label="Est. Margin" value={`$${margin.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
             <Row
-              label="Potential P&L"
+              label="Equity"
               value={
-                tpNum
-                  ? `${projectedPnl >= 0 ? "+" : "−"}$${Math.abs(projectedPnl).toFixed(2)}  (${
-                      projectedPnl >= 0 ? "+" : "−"
-                    }${Math.abs(projectedPnlPct).toFixed(2)}%)`
+                accountConnected
+                  ? `${accountCurrency} ${accountEquity.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
                   : "—"
-              }
-              valueClass={
-                tpNum
-                  ? projectedPnl >= 0
-                    ? "text-emerald-400"
-                    : "text-red-400"
-                  : "text-muted-foreground"
               }
             />
             <Row
-              label="Risk %"
-              value={slNum ? `${riskPct.toFixed(2)}%  ($${projectedRiskUsd.toFixed(2)})` : "—"}
-              valueClass={
-                slNum
-                  ? riskPct > 3
-                    ? "text-red-400"
-                    : riskPct > 1.5
-                    ? "text-primary"
-                    : "text-emerald-400"
-                  : "text-muted-foreground"
-              }
+              label="Potential P&L"
+              value="Calculated after symbol specs load"
+              valueClass="text-muted-foreground italic text-[11px] normal-case"
+            />
+            <Row
+              label="Risk"
+              value={canCalculateRisk ? "—" : "Pending symbol data"}
+              valueClass="text-muted-foreground italic text-[11px] normal-case"
             />
           </div>
 
@@ -670,7 +532,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                 : "bg-red-500 hover:bg-red-500 text-white shadow-[0_10px_30px_-10px_hsl(0_84%_60%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(0_84%_60%/0.9)]"
             }`}
           >
-            CONFIRM & PLACE {isBuy ? "BUY" : "SELL"} TRADE
+            CONFIRM {isBuy ? "BUY" : "SELL"} TRADE
           </Button>
         </div>
       </motion.div>
@@ -685,7 +547,7 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  onClick={() => setConfirming(false)}
+                  onClick={() => !submitting && setConfirming(false)}
                   className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm"
                 />
                 <motion.div
@@ -705,40 +567,21 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                         className={`h-4 w-4 ${isBuy ? "text-emerald-400" : "text-red-400"}`}
                       />
                       <h4 className="font-heading text-sm font-bold text-foreground">
-                        Confirm {isBuy ? "Buy" : "Sell"} Order
+                        Confirm {isBuy ? "Buy" : "Sell"} Trade
                       </h4>
                     </div>
                   </div>
                   <div className="px-5 py-4 space-y-2.5 text-xs">
                     <ConfirmRow label="Symbol" value={symbol} />
                     <ConfirmRow
-                      label="Side"
-                      value={isBuy ? "BUY (long)" : "SELL (short)"}
+                      label="Direction"
+                      value={isBuy ? "BUY" : "SELL"}
                       valueClass={isBuy ? "text-emerald-400" : "text-red-400"}
                     />
-                    <ConfirmRow label="Type" value={type.toUpperCase()} />
-                    <ConfirmRow label="Size" value={`${lotsNum.toFixed(2)} lots`} />
-                    {type === "limit" && entry && (
-                      <ConfirmRow label="Entry" value={entry} />
-                    )}
+                    <ConfirmRow label="Volume" value={`${lotsNum.toFixed(2)} lots`} />
                     {sl && <ConfirmRow label="Stop Loss" value={sl} valueClass="text-red-400" />}
-                    {tp && <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />}
-                    <ConfirmRow
-                      label="Est. Margin"
-                      value={`$${margin.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-                    />
-                    {slNum > 0 && (
-                      <ConfirmRow
-                        label="Risk"
-                        value={`${riskPct.toFixed(2)}% ($${projectedRiskUsd.toFixed(2)})`}
-                        valueClass={
-                          riskPct > 3
-                            ? "text-red-400"
-                            : riskPct > 1.5
-                            ? "text-primary"
-                            : "text-emerald-400"
-                        }
-                      />
+                    {tp && (
+                      <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />
                     )}
                   </div>
                   <div className="flex gap-2 px-5 py-4 border-t border-border/40 bg-muted/20">
@@ -762,14 +605,60 @@ const QuickTradePanel = ({ compact = false, symbols: symbolsProp, onSymbolChange
                       {submitting ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                          Sending to EA…
+                          Executing…
                         </>
                       ) : (
                         <>
                           <Check className="h-4 w-4 mr-1.5" />
-                          PLACE TRADE
+                          CONFIRM {isBuy ? "BUY" : "SELL"} TRADE
                         </>
                       )}
+                    </Button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>,
+          document.body,
+        )}
+
+      {/* Result modal */}
+      {typeof document !== "undefined" &&
+        createPortal(
+          <AnimatePresence>
+            {resultState && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setResultState(null)}
+                  className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm"
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="fixed left-1/2 top-1/2 z-[101] w-[92vw] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden"
+                >
+                  <div className="flex flex-col items-center px-6 py-7 text-center">
+                    {resultState.type === "filled" || resultState.type === "placed" ? (
+                      <CheckCircle2 className="h-10 w-10 text-emerald-400 mb-2" />
+                    ) : (
+                      <XCircle className="h-10 w-10 text-red-400 mb-2" />
+                    )}
+                    <h4 className="font-heading text-base font-bold text-foreground mb-1">
+                      {resultState.type === "filled" && "Trade filled"}
+                      {resultState.type === "placed" && "Trade placed"}
+                      {resultState.type === "rejected" && "Trade rejected"}
+                      {resultState.type === "failed" && "Trade execution failed"}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">{resultState.message}</p>
+                    <Button
+                      onClick={() => setResultState(null)}
+                      className="mt-5 w-full bg-primary text-background hover:bg-primary/90 font-bold"
+                    >
+                      Close
                     </Button>
                   </div>
                 </motion.div>
