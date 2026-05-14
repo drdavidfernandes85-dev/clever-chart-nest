@@ -50,7 +50,7 @@ type AccountSummary = {
   open_positions?: number;
 };
 
-type Status = "idle" | "testing" | "tested" | "connecting" | "connected" | "error";
+type Status = "loading" | "idle" | "testing" | "tested" | "connecting" | "connected" | "preconnected" | "error";
 
 const ConnectMT = () => {
   const navigate = useNavigate();
@@ -58,14 +58,87 @@ const ConnectMT = () => {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [status, setStatus] = useState<Status>("idle");
+  const [status, setStatus] = useState<Status>("loading");
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [summary, setSummary] = useState<AccountSummary | null>(null);
   const [traderId, setTraderId] = useState<string | null>(null);
+  const [connectedRowId, setConnectedRowId] = useState<string | null>(null);
   const [debugResponse, setDebugResponse] = useState<unknown>(null);
 
   const formValid = login.trim().length >= 4 && password.length >= 4 && server;
+
+  // Load any existing connected account on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: ures } = await supabase.auth.getUser();
+        const uid = ures?.user?.id;
+        if (!uid) {
+          if (!cancelled) setStatus("idle");
+          return;
+        }
+        const { data: row } = await supabase
+          .from("user_mt_accounts")
+          .select("id, login, server_name, balance, equity, currency, leverage, last_synced_at, metaapi_account_id")
+          .eq("user_id", uid)
+          .eq("status", "connected")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled) return;
+        if (row) {
+          setConnectedRowId(row.id);
+          setTraderId(row.metaapi_account_id ?? null);
+          setSummary({
+            login: String(row.login ?? ""),
+            server: String(row.server_name ?? ""),
+            balance: Number(row.balance ?? 0),
+            equity: Number(row.equity ?? 0),
+            leverage: Number(row.leverage ?? 0),
+            currency: row.currency ?? "USD",
+            open_positions: 0,
+          });
+          setStatus("preconnected");
+        } else {
+          setStatus("idle");
+        }
+      } catch {
+        if (!cancelled) setStatus("idle");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const disconnect = async () => {
+    setIsDisconnecting(true);
+    try {
+      const { data: ures } = await supabase.auth.getUser();
+      const uid = ures?.user?.id;
+      if (!uid) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("user_mt_accounts")
+        .delete()
+        .eq("user_id", uid)
+        .eq("status", "connected");
+      if (error) throw error;
+      setConnectedRowId(null);
+      setTraderId(null);
+      setSummary(null);
+      setPassword("");
+      setStatus("idle");
+      toast.success("Account disconnected");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to disconnect");
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
 
   const callConnect = async (mode: "test" | "connect") => {
     setErrorMsg("");
