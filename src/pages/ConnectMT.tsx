@@ -126,10 +126,18 @@ const ConnectMT = () => {
       setSummary(payload.account as AccountSummary);
       if (mode === "test") {
         setStatus("tested");
-        toast.success("Connection test successful");
+        toast.success("Connection Test Successful");
       } else {
+        const tid =
+          payload.traderId ||
+          payload.trading_layer_trader_id ||
+          payload.account?.metaapi_account_id ||
+          payload.account?.trading_layer_trader_id ||
+          null;
+        setTraderId(tid);
+        setPassword(""); // never keep password in memory after linking
         setStatus("connected");
-        toast.success("Account connected");
+        toast.success("Account successfully linked!");
       }
     } catch (e: any) {
       setStatus("error");
