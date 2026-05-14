@@ -229,7 +229,23 @@ const ConnectMT = () => {
           <span className="hidden font-heading text-sm font-semibold text-white sm:inline">
             Connect <span style={{ color: "#FFCD05" }}>Trading Account</span>
           </span>
-          <div className="w-10" />
+          <div className="flex w-auto items-center justify-end">
+            {status === "connected" ? (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest"
+                style={{
+                  borderColor: "rgba(74, 222, 128, 0.35)",
+                  backgroundColor: "rgba(34, 197, 94, 0.12)",
+                  color: "#4ade80",
+                }}
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                Connected
+              </span>
+            ) : (
+              <span className="block w-10" />
+            )}
+          </div>
         </div>
       </header>
 
