@@ -62,6 +62,7 @@ const ConnectMT = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [summary, setSummary] = useState<AccountSummary | null>(null);
+  const [traderId, setTraderId] = useState<string | null>(null);
   const [debugResponse, setDebugResponse] = useState<unknown>(null);
 
   const formValid = login.trim().length >= 4 && password.length >= 4 && server;
