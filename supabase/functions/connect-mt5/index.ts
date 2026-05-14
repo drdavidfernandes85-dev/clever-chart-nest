@@ -26,8 +26,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const body = (await req.json()) as ConnectBody;
-    const { mode, broker, server, login, password, account_type } = body || {};
+    const body = (await req.json()) as ConnectBody & { account_number?: string };
+    const { mode, broker, server, password } = body || {};
+    const account_type = body?.account_type ?? "live";
+    const login = body?.login ?? body?.account_number ?? "";
 
     // ---- Validation ----
     if (!server || !login || !password || !account_type) {
