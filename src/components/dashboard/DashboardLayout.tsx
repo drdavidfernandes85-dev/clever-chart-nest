@@ -35,6 +35,7 @@ const DashboardLayout = ({ children }: Props) => {
     <div className="min-h-screen flex bg-transparent">
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <ConnectedAccountBadge />
 
       {/* Floating mobile hamburger — visible on every page < lg */}
       <button
