@@ -588,6 +588,75 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_execution_logs: {
+        Row: {
+          account_id: string | null
+          classification: string | null
+          comment: string | null
+          created_at: string
+          error_message: string | null
+          http_status: number | null
+          id: string
+          request_payload: Json | null
+          response_payload: Json | null
+          retcode: number | null
+          retcode_description: string | null
+          side: string
+          signal_id: string | null
+          status: string
+          stop_loss: number | null
+          symbol: string
+          take_profit: number | null
+          ticket: string | null
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          account_id?: string | null
+          classification?: string | null
+          comment?: string | null
+          created_at?: string
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          retcode?: number | null
+          retcode_description?: string | null
+          side: string
+          signal_id?: string | null
+          status?: string
+          stop_loss?: number | null
+          symbol: string
+          take_profit?: number | null
+          ticket?: string | null
+          user_id: string
+          volume: number
+        }
+        Update: {
+          account_id?: string | null
+          classification?: string | null
+          comment?: string | null
+          created_at?: string
+          error_message?: string | null
+          http_status?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          retcode?: number | null
+          retcode_description?: string | null
+          side?: string
+          signal_id?: string | null
+          status?: string
+          stop_loss?: number | null
+          symbol?: string
+          take_profit?: number | null
+          ticket?: string | null
+          user_id?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       trade_journal: {
         Row: {
           closed_at: string | null
