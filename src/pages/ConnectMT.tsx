@@ -62,24 +62,23 @@ const ConnectMT = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [summary, setSummary] = useState<AccountSummary | null>(null);
+  const [debugResponse, setDebugResponse] = useState<unknown>(null);
 
   const formValid = login.trim().length >= 4 && password.length >= 4 && server;
 
   const callConnect = async (mode: "test" | "connect") => {
     setErrorMsg("");
     setSummary(null);
+    setDebugResponse(null);
     if (mode === "connect") setIsConnecting(true);
     setStatus(mode === "test" ? "testing" : "connecting");
     try {
-      const { data, error } = await supabase.functions.invoke("connect-mt5", {
+      const { data, error } = await supabase.functions.invoke("connect-mt5-v2", {
         body: {
-          mode,
-          broker: "Infinox",
-          server,
           account_number: login.trim(),
-          login: login.trim(),
+          server,
           password,
-          account_type: "live",
+          mode,
         },
       });
 
@@ -98,6 +97,8 @@ const ConnectMT = () => {
           // ignore parse failure
         }
       }
+
+      setDebugResponse(payload ?? { success: false, error: error?.message ?? "No response" });
 
       if (!payload || payload.success !== true || !payload.account) {
         const msg = payload?.error || error?.message || "Connection failed";
