@@ -104,12 +104,13 @@ const ConnectMT = () => {
         const upstream = payload?.tradingLayerResponse;
         const upstreamStatus = payload?.tradingLayerStatus;
         const isRetryable =
+          payload?.retryable === true ||
           upstream?.retryable === true ||
           (typeof upstreamStatus === "number" && upstreamStatus >= 500);
 
         let msg: string;
         if (isRetryable) {
-          const retryAfter = Number(upstream?.retry_after ?? upstream?.retryAfter);
+          const retryAfter = Number(payload?.retryAfter ?? payload?.retry_after ?? upstream?.retry_after ?? upstream?.retryAfter);
           msg = Number.isFinite(retryAfter) && retryAfter > 0
             ? `Trading Layer is temporarily unavailable. Please retry in ${retryAfter} seconds.`
             : "Trading Layer is temporarily unavailable. Please retry shortly.";

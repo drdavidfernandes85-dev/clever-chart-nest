@@ -42,6 +42,15 @@ async function readJson(res: Response): Promise<any> {
   try { return JSON.parse(text); } catch { return { raw: text }; }
 }
 
+function retryAfterSeconds(payload: any): number | null {
+  const value = Number(payload?.retry_after ?? payload?.retryAfter);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function isRetryableTradingLayerFailure(status: number, payload: any): boolean {
+  return payload?.retryable === true || status === 502 || status === 503 || status === 504;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -158,12 +167,29 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
     }
 
-    // Any non-200 = treat as invalid credentials
+    // Any non-200 from Trading Layer is not automatically invalid credentials.
+    // Only a Trading Layer 422 proves the submitted MT5 credentials are invalid.
     if (testRes.status !== 200) {
-      return json(422, {
+      const retryable = isRetryableTradingLayerFailure(testRes.status, testJson);
+      if (retryable) {
+        const retryAfter = retryAfterSeconds(testJson) ?? 60;
+        return json(200, {
+          success: false,
+          step: "mt5_credentials_test",
+          error: `Trading Layer is temporarily unavailable. Please retry in ${retryAfter} seconds.`,
+          tradingLayerStatus: testRes.status,
+          tradingLayerResponse: testJson,
+          retryable: true,
+          retryAfter,
+        });
+      }
+
+      return json(200, {
         success: false,
         step: "mt5_credentials_test",
-        error: "Invalid MT5 credentials. Please check login, password and server.",
+        error: testRes.status === 422
+          ? "Invalid MT5 credentials. Please check login, password and server."
+          : "Trading Layer could not validate the MT5 credentials.",
         tradingLayerStatus: testRes.status,
         tradingLayerResponse: testJson,
       });
