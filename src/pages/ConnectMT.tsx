@@ -62,24 +62,23 @@ const ConnectMT = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [summary, setSummary] = useState<AccountSummary | null>(null);
+  const [debugResponse, setDebugResponse] = useState<unknown>(null);
 
   const formValid = login.trim().length >= 4 && password.length >= 4 && server;
 
   const callConnect = async (mode: "test" | "connect") => {
     setErrorMsg("");
     setSummary(null);
+    setDebugResponse(null);
     if (mode === "connect") setIsConnecting(true);
     setStatus(mode === "test" ? "testing" : "connecting");
     try {
-      const { data, error } = await supabase.functions.invoke("connect-mt5", {
+      const { data, error } = await supabase.functions.invoke("connect-mt5-v2", {
         body: {
-          mode,
-          broker: "Infinox",
-          server,
           account_number: login.trim(),
-          login: login.trim(),
+          server,
           password,
-          account_type: "live",
+          mode,
         },
       });
 
@@ -98,6 +97,8 @@ const ConnectMT = () => {
           // ignore parse failure
         }
       }
+
+      setDebugResponse(payload ?? { success: false, error: error?.message ?? "No response" });
 
       if (!payload || payload.success !== true || !payload.account) {
         const msg = payload?.error || error?.message || "Connection failed";
@@ -127,6 +128,7 @@ const ConnectMT = () => {
     setIsConnecting(false);
     setSummary(null);
     setErrorMsg("");
+    setDebugResponse(null);
   };
 
   const metrics = summary
@@ -563,6 +565,24 @@ const ConnectMT = () => {
                     via Trading Layer. We never store your password in plain text.
                   </span>
                 </div>
+
+                {/* Debug box (temporary) */}
+                {debugResponse !== null && (
+                  <div
+                    className="mt-2 rounded-xl border p-3 text-[11px]"
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      borderColor: "rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div className="mb-1 font-mono uppercase tracking-widest text-neutral-500">
+                      Debug · raw response from connect-mt5-v2
+                    </div>
+                    <pre className="overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-neutral-300">
+{JSON.stringify(debugResponse, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </motion.form>
             )}
           </AnimatePresence>
