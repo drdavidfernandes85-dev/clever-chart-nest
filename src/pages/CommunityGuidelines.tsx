@@ -33,7 +33,7 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
     intro2:
       "Our goal is to build a respectful, professional, and educational space where traders can connect, share ideas, discuss market setups, and learn together.",
     disclaimer:
-      "All content is for educational purposes only. Trading involves significant risk of loss. We do not provide financial advice, trading signals, or investment recommendations.",
+      "All content is for educational purposes only. Trading involves significant risk of loss. We do not provide financial advice, trading trade ideas, or investment recommendations.",
     coreTitle: "Core Rules",
     core: [
       "Be respectful and professional at all times",
@@ -44,7 +44,7 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
     ],
     prohibitedTitle: "Strictly Prohibited",
     prohibited: [
-      "Sharing trading signals, “buy/sell” recommendations, or copy-trading instructions",
+      "Sharing trading trade ideas, “buy/sell” recommendations, or copy-trading instructions",
       "Giving direct financial advice or guaranteeing profits",
       "Harassment, insults, discrimination, or toxic behavior",
       "Spam, advertising, or self-promotion",
@@ -71,7 +71,7 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
     intro2:
       "Nuestro objetivo es construir un espacio respetuoso, profesional y educativo donde los traders puedan conectarse, compartir ideas, discutir configuraciones de mercado y aprender juntos.",
     disclaimer:
-      "Todo el contenido es solo con fines educativos. El trading implica un riesgo significativo de pérdida. No ofrecemos asesoramiento financiero, señales de trading ni recomendaciones de inversión.",
+      "Todo el contenido es solo con fines educativos. El trading implica un riesgo significativo de pérdida. No ofrecemos asesoramiento financiero, ideas de trading de trading ni recomendaciones de inversión.",
     coreTitle: "Reglas Principales",
     core: [
       "Sé respetuoso y profesional en todo momento",
@@ -82,7 +82,7 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
     ],
     prohibitedTitle: "Estrictamente Prohibido",
     prohibited: [
-      "Compartir señales de trading, recomendaciones de “compra/venta” o instrucciones de copy-trading",
+      "Compartir ideas de trading de trading, recomendaciones de “compra/venta” o instrucciones de copy-trading",
       "Dar asesoramiento financiero directo o garantizar ganancias",
       "Acoso, insultos, discriminación o comportamiento tóxico",
       "Spam, publicidad o autopromoción",
@@ -109,7 +109,7 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
     intro2:
       "Nosso objetivo é construir um espaço respeitoso, profissional e educativo onde os traders possam se conectar, compartilhar ideias, discutir configurações de mercado e aprender juntos.",
     disclaimer:
-      "Todo o conteúdo é apenas para fins educacionais. O trading envolve risco significativo de perda. Não fornecemos aconselhamento financeiro, sinais de trading ou recomendações de investimento.",
+      "Todo o conteúdo é apenas para fins educacionais. O trading envolve risco significativo de perda. Não fornecemos aconselhamento financeiro, ideias de trading de trading ou recomendações de investimento.",
     coreTitle: "Regras Principais",
     core: [
       "Seja respeitoso e profissional em todos os momentos",
@@ -120,7 +120,7 @@ const CONTENT: Record<GuidelinesLocale, GuidelinesContent> = {
     ],
     prohibitedTitle: "Estritamente Proibido",
     prohibited: [
-      "Compartilhar sinais de trading, recomendações de “compra/venda” ou instruções de copy-trading",
+      "Compartilhar ideias de trading de trading, recomendações de “compra/venda” ou instruções de copy-trading",
       "Dar aconselhamento financeiro direto ou garantir lucros",
       "Assédio, insultos, discriminação ou comportamento tóxico",
       "Spam, publicidade ou autopromoção",
@@ -156,7 +156,7 @@ const CommunityGuidelines = () => {
     <>
       <SEO
         title="Community Guidelines — IX Sala de Trading"
-        description="Read the official community guidelines for the IX Sala de Trading. Educational content only — no signals, no financial advice."
+        description="Read the official community guidelines for the IX Sala de Trading. Educational content only — no trade ideas, no financial advice."
         canonical="https://ixsalatrading.com/community/guidelines"
       />
       <div className="min-h-screen bg-background">

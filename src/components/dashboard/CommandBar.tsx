@@ -17,7 +17,7 @@ const CommandBar = () => (
       <Search className="h-3.5 w-3.5 text-muted-foreground" />
       <input
         type="text"
-        placeholder="Type ticker or command…  (e.g. EURUSD LIVE, /signal, /journal)"
+        placeholder="Type ticker or command…  (e.g. EURUSD LIVE, /trade idea, /journal)"
         className="flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground/70"
       />
       <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-border/50 bg-secondary/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">

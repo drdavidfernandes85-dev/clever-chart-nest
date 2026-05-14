@@ -19,7 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const WEBHOOK_URL = `https://${
   import.meta.env.VITE_SUPABASE_PROJECT_ID
-}.supabase.co/functions/v1/mt-webhook`;
+}.supabase.co/functions/v1/mt-Trading Layer connection`;
 
 type TokenRow = {
   id: string;
@@ -160,7 +160,7 @@ export const EAWebhookSetup = () => {
     {
       n: 1,
       title: "Download the Expert Advisor",
-      body: "Click the green button below to download the EA file (.mq5 for MT5, or .mq4 for MT4). It's already pre-configured with your webhook URL and token.",
+      body: "Click the green button below to download the EA file (.mq5 for MT5, or .mq4 for MT4). It's already pre-configured with your Trading Layer connection URL and token.",
     },
     {
       n: 2,
@@ -169,7 +169,7 @@ export const EAWebhookSetup = () => {
     },
     {
       n: 3,
-      title: "Check the Webhook URL & Secret Token",
+      title: "Check the Trading Layer connection URL & Secret Token",
       body: "Inside MetaEditor, scroll to the input parameters at the top. Both fields are already filled — but if needed, copy them again from the boxes below.",
     },
     {
@@ -211,7 +211,7 @@ export const EAWebhookSetup = () => {
       <div className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-5">
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-heading text-sm font-semibold text-foreground inline-flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-primary" /> Your webhook credentials
+            <KeyRound className="h-4 w-4 text-primary" /> Your Trading Layer connection credentials
           </h3>
           {(loading || creating) && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -221,7 +221,7 @@ export const EAWebhookSetup = () => {
         {/* Webhook URL */}
         <div className="space-y-2">
           <Label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-            1. Webhook URL
+            1. Trading Layer connection URL
           </Label>
           <div className="flex gap-2">
             <Input
@@ -232,7 +232,7 @@ export const EAWebhookSetup = () => {
             />
             <Button
               type="button"
-              onClick={() => copy(WEBHOOK_URL, "Webhook URL")}
+              onClick={() => copy(WEBHOOK_URL, "Trading Layer connection URL")}
               className="shrink-0 h-11 gap-2 px-4"
             >
               <Copy className="h-4 w-4" /> Copy

@@ -43,7 +43,7 @@ const TradingSignals = () => {
   const { user } = useAuth();
   const copied = useCopiedSignals();
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [trade ideas, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
   const [view, setView] = useState<"cards" | "grid">("cards");
@@ -144,7 +144,7 @@ const TradingSignals = () => {
     if (error) {
       toast.error("Failed to update trade idea status");
     } else {
-      toast.success(`Signal marked as ${statusConfig[newStatus]?.label || newStatus}`);
+      toast.success(`Trade Idea marked as ${statusConfig[newStatus]?.label || newStatus}`);
     }
   };
 
@@ -152,7 +152,7 @@ const TradingSignals = () => {
     <div className="min-h-screen bg-background pb-16 md:pb-0">
       <SEO
         title="Trade Ideas | IX Sala de Trading"
-        description="Live and historical forex signals from the IX Sala de Trading moderators with entry, stop and target."
+        description="Live and historical forex trade ideas from the IX Sala de Trading moderators with entry, stop and target."
         canonical="https://elitelivetradingroom.com/signals"
       />
       <div className="container max-w-4xl py-24">
@@ -411,7 +411,7 @@ const TradingSignals = () => {
                                 })
                               }
                               className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                                copied.has(signal.id)
+                                copied.has(trade idea.id)
                                   ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
                                   : "bg-primary text-primary-foreground hover:bg-primary/90"
                               }`}
@@ -438,7 +438,7 @@ const TradingSignals = () => {
                                     <XCircle className="h-3.5 w-3.5" /> Mark SL Hit
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => updateStatus(signal.id, "cancelled")} className="gap-2 text-muted-foreground">
-                                    <ShieldAlert className="h-3.5 w-3.5" /> Cancel Signal
+                                    <ShieldAlert className="h-3.5 w-3.5" /> Cancel Trade Idea
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -473,7 +473,7 @@ const TradingSignals = () => {
                 <div
                   key={signal.id}
                   className={`rounded-2xl border bg-card p-5 transition-all hover:shadow-md ${
-                    signal.status === "active"
+                    trade idea.status === "active"
                       ? "border-primary/20 hover:border-primary/40"
                       : "border-border/30"
                   }`}
@@ -512,7 +512,7 @@ const TradingSignals = () => {
                               <XCircle className="h-3.5 w-3.5" /> Mark SL Hit
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => updateStatus(signal.id, "cancelled")} className="gap-2 text-muted-foreground">
-                              <ShieldAlert className="h-3.5 w-3.5" /> Cancel Signal
+                              <ShieldAlert className="h-3.5 w-3.5" /> Cancel Trade Idea
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

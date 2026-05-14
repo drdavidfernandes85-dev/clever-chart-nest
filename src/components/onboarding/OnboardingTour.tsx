@@ -40,7 +40,7 @@ const STEPS: Step[] = [
   {
     route: "/live-chart",
     title: "Pro Charts + Pair Intel",
-    body: "Multi-timeframe charts with related news and signals filtered to the current pair.",
+    body: "Multi-timeframe charts with related news and trade ideas filtered to the current pair.",
   },
   {
     route: "/chatroom",

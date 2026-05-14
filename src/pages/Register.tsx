@@ -174,7 +174,7 @@ const Register = () => {
     <div className="relative flex min-h-screen overflow-hidden">
       <SEO
         title="Create Account | IX Sala de Trading"
-        description="Create your free account and join the IX Sala de Trading — live forex analysis, signals and a pro community."
+        description="Create your free account and join the IX Sala de Trading — live forex analysis, trade ideas and a pro community."
         canonical="https://elitelivetradingroom.com/register"
       />
       <div className="pointer-events-none absolute inset-0">
