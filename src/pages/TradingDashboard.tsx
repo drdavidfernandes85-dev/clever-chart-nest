@@ -294,7 +294,7 @@ const TradingDashboard = () => {
             <LivePortfolioPanel data={data!} lastUpdated={lastUpdated} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <RiskPanel equity={data!.equity} currency={data!.currency} />
-              <TradeIdeaCards ideas={DEMO_TRADE_IDEAS} onTaken={loadLogs} />
+              <TradeIdeaCards ideas={DEMO_TRADE_IDEAS} onTaken={() => { loadLogs(); load(); }} />
             </div>
             <OpenPositionsTable positions={data!.positions} currency={data!.currency} />
             <ExecutionLogTable logs={logs} />
@@ -659,16 +659,12 @@ const TradeIdeaCards = ({
       });
       if (error) throw error;
       const res = data as any;
-      if (res?.success) {
+      if (res?.success === true) {
         const status = res.status as string;
         if (status === "filled") toast.success("Trade executed successfully");
         else if (status === "placed") toast.success("Trade placed");
         else if (status === "partial") toast.success("Trade partially filled");
         else toast.success("Trade executed");
-      } else if (res?.status === "rejected") {
-        toast.error(`Trade rejected${res?.error ? `: ${res.error}` : ""}`);
-      } else if (res?.status === "unavailable") {
-        toast.error("Trading Layer is temporarily unavailable");
       } else {
         toast.error(res?.error || "Trade execution failed");
       }
@@ -744,7 +740,7 @@ const TradeIdeaCards = ({
       <Dialog open={!!confirming} onOpenChange={(o) => !o && setConfirming(null)}>
         <DialogContent className="sm:max-w-md border-primary/30 bg-card/95 backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="font-heading">Execute Trade</DialogTitle>
+            <DialogTitle className="font-heading">Confirm Trade</DialogTitle>
             <DialogDescription>
               You are about to execute this trade on your connected MT5 account.
             </DialogDescription>
@@ -752,7 +748,6 @@ const TradeIdeaCards = ({
           {confirming && (
             <div className="space-y-3 py-2">
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <ConfirmRow label="Trade ID" value={confirming.id} mono />
                 <ConfirmRow label="Symbol" value={confirming.symbol} mono />
                 <ConfirmRow
                   label="Direction"
