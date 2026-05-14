@@ -740,7 +740,7 @@ const TradeIdeaCards = ({
       <Dialog open={!!confirming} onOpenChange={(o) => !o && setConfirming(null)}>
         <DialogContent className="sm:max-w-md border-primary/30 bg-card/95 backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="font-heading">Execute Trade</DialogTitle>
+            <DialogTitle className="font-heading">Confirm Trade</DialogTitle>
             <DialogDescription>
               You are about to execute this trade on your connected MT5 account.
             </DialogDescription>
@@ -748,7 +748,6 @@ const TradeIdeaCards = ({
           {confirming && (
             <div className="space-y-3 py-2">
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <ConfirmRow label="Trade ID" value={confirming.id} mono />
                 <ConfirmRow label="Symbol" value={confirming.symbol} mono />
                 <ConfirmRow
                   label="Direction"
