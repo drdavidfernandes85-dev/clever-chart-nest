@@ -47,6 +47,7 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Register = lazy(() => import("./pages/Register"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
+const TradingDashboard = lazy(() => import("./pages/TradingDashboard"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary"));
 const Webinars = lazy(() => import("./pages/Webinars"));
 const WebinarLanding = lazy(() => import("./pages/WebinarLanding"));
@@ -110,6 +111,7 @@ const App = () => (
                   <Route path="/signals" element={<GatedDashboardShell><TradingSignals /></GatedDashboardShell>} />
                   <Route path="/leaderboard" element={<GatedDashboardShell><Leaderboard /></GatedDashboardShell>} />
                   <Route path="/analytics" element={<GatedDashboardShell><Analytics /></GatedDashboardShell>} />
+                  <Route path="/trading-dashboard" element={<GatedDashboardShell><TradingDashboard /></GatedDashboardShell>} />
                   <Route path="/news" element={<GatedDashboardShell><News /></GatedDashboardShell>} />
                   <Route path="/calendar" element={<Navigate to="/news" replace />} />
                   <Route path="/education" element={<GatedDashboardShell><Education /></GatedDashboardShell>} />
