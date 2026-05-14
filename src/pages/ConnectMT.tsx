@@ -306,10 +306,10 @@ const ConnectMT = () => {
                   </div>
                   <div>
                     <h2 className="font-heading text-xl font-semibold text-white">
-                      Account Connected Successfully
+                      Account successfully linked!
                     </h2>
-                    <p className="mt-1 text-sm" style={{ color: "#4ade80" }}>
-                      Account successfully connected and synced in real-time
+                    <p className="mt-1 text-sm text-neutral-400">
+                      Your Infinox MT5 account is now connected to the trading room.
                     </p>
                   </div>
                 </div>
