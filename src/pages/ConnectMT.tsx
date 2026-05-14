@@ -67,6 +67,7 @@ const ConnectMT = () => {
 
   const callConnect = async (mode: "test" | "connect") => {
     setErrorMsg("");
+    setSummary(null);
     if (mode === "connect") setIsConnecting(true);
     setStatus(mode === "test" ? "testing" : "connecting");
     try {
@@ -75,15 +76,35 @@ const ConnectMT = () => {
           mode,
           broker: "Infinox",
           server,
+          account_number: login.trim(),
           login: login.trim(),
           password,
           account_type: "live",
         },
       });
-      if (error) throw new Error(error.message);
-      if (!data?.success) throw new Error(data?.error || "Unable to connect to your account.");
 
-      setSummary(data.account as AccountSummary);
+      // Parse error body if Edge Function returned non-2xx
+      let payload: any = data;
+      if (error) {
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            payload = await ctx.json();
+          } else if (ctx && typeof ctx.text === "function") {
+            const txt = await ctx.text();
+            try { payload = JSON.parse(txt); } catch { payload = { success: false, error: txt }; }
+          }
+        } catch {
+          // ignore parse failure
+        }
+      }
+
+      if (!payload || payload.success !== true || !payload.account) {
+        const msg = payload?.error || error?.message || "Connection failed";
+        throw new Error(msg);
+      }
+
+      setSummary(payload.account as AccountSummary);
       if (mode === "test") {
         setStatus("tested");
         toast.success("Connection test successful");
@@ -93,7 +114,9 @@ const ConnectMT = () => {
       }
     } catch (e: any) {
       setStatus("error");
-      setErrorMsg(e?.message || "Something went wrong. Please try again.");
+      setSummary(null);
+      setErrorMsg(e?.message || "Connection failed");
+      toast.error(e?.message || "Connection failed");
     } finally {
       if (mode === "connect") setIsConnecting(false);
     }
