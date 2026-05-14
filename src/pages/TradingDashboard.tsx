@@ -659,16 +659,12 @@ const TradeIdeaCards = ({
       });
       if (error) throw error;
       const res = data as any;
-      if (res?.success) {
+      if (res?.success === true) {
         const status = res.status as string;
         if (status === "filled") toast.success("Trade executed successfully");
         else if (status === "placed") toast.success("Trade placed");
         else if (status === "partial") toast.success("Trade partially filled");
         else toast.success("Trade executed");
-      } else if (res?.status === "rejected") {
-        toast.error(`Trade rejected${res?.error ? `: ${res.error}` : ""}`);
-      } else if (res?.status === "unavailable") {
-        toast.error("Trading Layer is temporarily unavailable");
       } else {
         toast.error(res?.error || "Trade execution failed");
       }
