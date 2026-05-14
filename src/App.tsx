@@ -111,6 +111,7 @@ const App = () => (
                   <Route path="/signals" element={<GatedDashboardShell><TradingSignals /></GatedDashboardShell>} />
                   <Route path="/leaderboard" element={<GatedDashboardShell><Leaderboard /></GatedDashboardShell>} />
                   <Route path="/analytics" element={<GatedDashboardShell><Analytics /></GatedDashboardShell>} />
+                  <Route path="/trading-dashboard" element={<GatedDashboardShell><TradingDashboard /></GatedDashboardShell>} />
                   <Route path="/news" element={<GatedDashboardShell><News /></GatedDashboardShell>} />
                   <Route path="/calendar" element={<Navigate to="/news" replace />} />
                   <Route path="/education" element={<GatedDashboardShell><Education /></GatedDashboardShell>} />
