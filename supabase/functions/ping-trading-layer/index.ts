@@ -1,6 +1,5 @@
 // ping-trading-layer
-// Temporary diagnostic endpoint. Echoes the request body and reports whether
-// METAAPI_TOKEN is configured, plus a simple reachability check to MetaApi.
+// Diagnostic endpoint. Verifies reachability of Trading Layer API.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const TRADING_LAYER_BASE = "https://api.trading-layer.com";
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -21,29 +22,29 @@ Deno.serve(async (req) => {
   let body: unknown = null;
   try { body = await req.json(); } catch { /* ignore */ }
 
-  const metaToken = Deno.env.get("METAAPI_TOKEN");
-  let metaapiReachable: boolean | null = null;
-  let metaapiStatus: number | null = null;
-  let metaapiError: string | null = null;
+  const apiKey = Deno.env.get("TRADING_LAYER_API_KEY");
 
-  if (metaToken) {
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 8000);
-      const res = await fetch(
-        "https://mt-provisioning-profile-api-v1.agiliumtrade.ai/users/current/accounts?limit=1",
-        { headers: { "auth-token": metaToken, Accept: "application/json" }, signal: ctrl.signal },
-      );
-      clearTimeout(t);
-      metaapiStatus = res.status;
-      metaapiReachable = res.ok;
-      if (!res.ok) {
-        metaapiError = (await res.text()).slice(0, 300);
-      }
-    } catch (e) {
-      metaapiReachable = false;
-      metaapiError = e instanceof Error ? e.message : String(e);
-    }
+  let reachable: boolean | null = null;
+  let status: number | null = null;
+  let errorMsg: string | null = null;
+
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(`${TRADING_LAYER_BASE}/health`, {
+      headers: {
+        Accept: "application/json",
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+      },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    status = res.status;
+    reachable = res.ok;
+    if (!res.ok) errorMsg = (await res.text()).slice(0, 300);
+  } catch (e) {
+    reachable = false;
+    errorMsg = e instanceof Error ? e.message : String(e);
   }
 
   return json(200, {
@@ -51,13 +52,14 @@ Deno.serve(async (req) => {
     pong: true,
     received: body,
     env: {
-      has_metaapi_token: Boolean(metaToken),
+      has_trading_layer_api_key: Boolean(apiKey),
       supabase_url_present: Boolean(Deno.env.get("SUPABASE_URL")),
     },
-    metaapi: {
-      reachable: metaapiReachable,
-      status: metaapiStatus,
-      error: metaapiError,
+    trading_layer: {
+      base_url: TRADING_LAYER_BASE,
+      reachable,
+      status,
+      error: errorMsg,
     },
     timestamp: new Date().toISOString(),
   });
