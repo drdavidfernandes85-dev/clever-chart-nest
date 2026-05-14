@@ -294,7 +294,7 @@ const TradingDashboard = () => {
             <LivePortfolioPanel data={data!} lastUpdated={lastUpdated} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <RiskPanel equity={data!.equity} currency={data!.currency} />
-              <TradeIdeaCards ideas={DEMO_TRADE_IDEAS} onTaken={loadLogs} />
+              <TradeIdeaCards ideas={DEMO_TRADE_IDEAS} onTaken={() => { loadLogs(); load(); }} />
             </div>
             <OpenPositionsTable positions={data!.positions} currency={data!.currency} />
             <ExecutionLogTable logs={logs} />
