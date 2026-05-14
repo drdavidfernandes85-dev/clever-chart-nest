@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
+import ConnectedAccountBadge from "./ConnectedAccountBadge";
 import WelcomeBanner from "@/components/onboarding/WelcomeBanner";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -34,6 +35,7 @@ const DashboardLayout = ({ children }: Props) => {
     <div className="min-h-screen flex bg-transparent">
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <ConnectedAccountBadge />
 
       {/* Floating mobile hamburger — visible on every page < lg */}
       <button
