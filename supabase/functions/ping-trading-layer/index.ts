@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 8000);
       const res = await fetch(
-        "https://mt-provisioning-profile-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts?limit=1",
+        "https://mt-provisioning-profile-api-v1.agiliumtrade.ai/users/current/accounts?limit=1",
         { headers: { "auth-token": metaToken, Accept: "application/json" }, signal: ctrl.signal },
       );
       clearTimeout(t);

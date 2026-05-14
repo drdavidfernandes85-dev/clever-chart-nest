@@ -24,8 +24,8 @@ interface Body {
   mode?: "test" | "connect";
 }
 
-const METAAPI_BASE = "https://mt-provisioning-profile-api-v1.agiliumtrade.agiliumtrade.ai";
-const METAAPI_CLIENT_BASE = "https://mt-client-api-v1.agiliumtrade.agiliumtrade.ai";
+const METAAPI_BASE = "https://mt-provisioning-profile-api-v1.agiliumtrade.ai";
+const METAAPI_CLIENT_BASE = "https://mt-client-api-v1.agiliumtrade.ai";
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 12000) {
   const ctrl = new AbortController();
