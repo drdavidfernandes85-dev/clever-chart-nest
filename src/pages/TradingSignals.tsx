@@ -43,7 +43,7 @@ const TradingSignals = () => {
   const { user } = useAuth();
   const copied = useCopiedSignals();
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
-  const [trade ideas, setSignals] = useState<Signal[]>([]);
+  const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"active" | "closed">("active");
   const [view, setView] = useState<"cards" | "grid">("cards");

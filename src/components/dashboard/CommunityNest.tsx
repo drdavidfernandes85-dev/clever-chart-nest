@@ -54,7 +54,7 @@ const initialsOf = (n: string) =>
 
 const CommunityNest = () => {
   const [traders, setTraders] = useState<Trader[]>([]);
-  const [trade ideas, setSignals] = useState<SharedSignal[]>([]);
+  const [signals, setSignals] = useState<SharedSignal[]>([]);
   const [messages, setMessages] = useState<ChatPreview[]>([]);
   const [onlineCount, setOnlineCount] = useState(184);
   const { openTrade } = useQuickTrade();

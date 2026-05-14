@@ -49,7 +49,7 @@ const formatPair = (sym: string) => {
 
 const SymbolIntelligence = ({ symbol = "FX:EURUSD" }: Props) => {
   const [news, setNews] = useState<NewsItem[]>([]);
-  const [trade ideas, setSignals] = useState<Signal[]>([]);
+  const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
 
   const pair = formatPair(symbol);

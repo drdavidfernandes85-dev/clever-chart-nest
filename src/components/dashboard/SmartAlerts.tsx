@@ -426,7 +426,7 @@ const SmartAlerts = ({
     };
     load();
     const channel = supabase
-      .channel(`smart-alerts-trade ideas-${Math.random().toString(36).slice(2)}`);
+      .channel(`smart-alerts-signals-${Math.random().toString(36).slice(2)}`);
     channel.on(
       "postgres_changes",
       { event: "*", schema: "public", table: "trading_signals" },
