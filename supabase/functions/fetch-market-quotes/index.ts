@@ -15,6 +15,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Per-request timeout to keep total exec well under the 150s edge limit.
+const FETCH_TIMEOUT_MS = 6000;
+async function tfetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 type Quote = {
   symbol: string;          // pretty label, e.g. "BTC/USDT", "EUR/USD", "SPX", "AAPL"
   assetClass: "crypto" | "forex" | "index" | "stock";
@@ -62,7 +74,7 @@ const STOCKS: Array<{ stooq: string; label: string }> = [
 async function fetchCrypto(): Promise<Quote[]> {
   try {
     const ids = CRYPTO.map((c) => c.id).join(",");
-    const r = await fetch(
+    const r = await tfetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`,
       { headers: { accept: "application/json" } },
     );
@@ -108,7 +120,7 @@ async function fetchForex(): Promise<Quote[]> {
           const tos = FOREX.filter((p) => p.startsWith(b + "/"))
             .map((p) => p.split("/")[1])
             .join(",");
-          const r = await fetch(
+          const r = await tfetch(
             `https://api.frankfurter.dev/v1/${endpoint}?base=${b}&symbols=${tos}`,
           );
           const j = await r.json();
@@ -162,7 +174,7 @@ async function fetchStooq(
   const results = await Promise.all(
     list.map(async (s) => {
       try {
-        const r = await fetch(
+        const r = await tfetch(
           `https://stooq.com/q/l/?s=${encodeURIComponent(s.stooq)}&f=sohlcv&h&e=csv`,
           {
             headers: {
