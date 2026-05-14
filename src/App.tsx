@@ -47,6 +47,7 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Register = lazy(() => import("./pages/Register"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
+const TradingDashboard = lazy(() => import("./pages/TradingDashboard"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary"));
 const Webinars = lazy(() => import("./pages/Webinars"));
 const WebinarLanding = lazy(() => import("./pages/WebinarLanding"));
