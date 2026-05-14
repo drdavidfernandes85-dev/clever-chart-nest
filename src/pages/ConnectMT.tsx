@@ -303,7 +303,7 @@ const ConnectMT = () => {
             Connect <span style={{ color: "#FFCD05" }}>Trading Account</span>
           </span>
           <div className="flex w-auto items-center justify-end">
-            {status === "connected" ? (
+            {status === "connected" || status === "preconnected" ? (
               <span
                 className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest"
                 style={{
