@@ -158,18 +158,7 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
     }
 
-    // 4. Transient upstream failure — surface as retryable, not as bad credentials
-    if (testRes.status >= 500) {
-      return json(503, {
-        success: false,
-        step: "mt5_credentials_test",
-        error: "Trading Layer is temporarily unavailable. Please try again in a moment.",
-        tradingLayerStatus: testRes.status,
-        tradingLayerResponse: testJson,
-      });
-    }
-
-    // Any other non-200 = invalid credentials
+    // Any non-200 = treat as invalid credentials
     if (testRes.status !== 200) {
       return json(422, {
         success: false,
