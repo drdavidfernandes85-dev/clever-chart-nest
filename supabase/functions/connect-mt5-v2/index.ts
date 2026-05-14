@@ -1,7 +1,7 @@
 // connect-mt5-v2
 // MT5 credential validation via Trading Layer.
-// Flow: create/update trader -> POST mt5-credentials/test (validateOnly) -> if "connect" mode, persist credentials.
-// Never returns success unless Trading Layer confirms validated AND connected.
+// Flow: GET /tenant -> use ownerAccount.accountId -> POST /mt5-credentials/test (validateOnly).
+// Strict success: requires validated && connected && account && login matches.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -27,7 +27,7 @@ interface Body {
   mode?: "test" | "connect";
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 15000) {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 20000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  // 1. Authenticate Supabase user (required)
+  // Authenticate Supabase user
   const authHeader = req.headers.get("Authorization") ?? "";
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -87,11 +87,9 @@ Deno.serve(async (req) => {
   });
 
   let userId: string | null = null;
-  let userEmail: string | null = null;
   if (authHeader) {
     const { data } = await supabase.auth.getUser();
     userId = data.user?.id ?? null;
-    userEmail = data.user?.email ?? null;
   }
   if (!userId) {
     return json(401, {
@@ -107,45 +105,37 @@ Deno.serve(async (req) => {
   };
 
   try {
-    // 2. Create/update trader
-    const traderRes = await fetchWithTimeout(
-      `${TRADING_LAYER_BASE}/api/v1/traders`,
-      {
-        method: "POST",
-        headers: tlHeaders,
-        body: JSON.stringify({
-          externalTraderId: userId,
-          displayName: userEmail || userId,
-          metadata: { source: "trading_room_website" },
-        }),
-      },
+    // 1. Get tenant
+    const tenantRes = await fetchWithTimeout(
+      `${TRADING_LAYER_BASE}/api/v1/tenant`,
+      { method: "GET", headers: tlHeaders },
       15000,
     );
-    const traderJson = await readJson(traderRes);
+    const tenantJson = await readJson(tenantRes);
 
-    if (!traderRes.ok) {
+    if (!tenantRes.ok) {
       return json(502, {
         success: false,
-        error: "Failed to create/update trader in Trading Layer.",
-        step: "traders",
-        tradingLayerStatus: traderRes.status,
-        tradingLayerResponse: traderJson,
+        step: "tenant",
+        error: "Failed to load Trading Layer tenant.",
+        tradingLayerStatus: tenantRes.status,
+        tradingLayerResponse: tenantJson,
       });
     }
 
-    // 3. Extract accountId
-    const accountId = traderJson?.data?.traderId;
+    // 2. Extract ownerAccount.accountId
+    const accountId = tenantJson?.data?.ownerAccount?.accountId;
     if (!accountId) {
       return json(502, {
         success: false,
-        error: "Trading Layer did not return a traderId.",
-        step: "traders",
-        tradingLayerStatus: traderRes.status,
-        tradingLayerResponse: traderJson,
+        step: "tenant",
+        error: "Trading Layer tenant has no ownerAccount.accountId.",
+        tradingLayerStatus: tenantRes.status,
+        tradingLayerResponse: tenantJson,
       });
     }
 
-    // 4. Test credentials
+    // 3. Test the form credentials
     const testRes = await fetchWithTimeout(
       `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials/test`,
       {
@@ -162,18 +152,18 @@ Deno.serve(async (req) => {
     );
     const testJson = await readJson(testRes);
 
-    // 5. 422 or any non-ok = invalid credentials
-    if (!testRes.ok || testRes.status === 422) {
+    // 4. Non-200 = invalid
+    if (testRes.status !== 200) {
       return json(422, {
         success: false,
+        step: "mt5_credentials_test",
         error: "Invalid MT5 credentials. Please check login, password and server.",
-        step: "mt5-credentials/test",
         tradingLayerStatus: testRes.status,
         tradingLayerResponse: testJson,
       });
     }
 
-    // 6 & 7. Strict success check
+    // 5. Strict shape check
     const data = testJson?.data;
     const validated = data?.validated === true;
     const connected = data?.connected === true;
@@ -182,66 +172,86 @@ Deno.serve(async (req) => {
     if (!validated || !connected || !account) {
       return json(422, {
         success: false,
+        step: "mt5_credentials_test",
         error: "Invalid MT5 credentials. Please check login, password and server.",
-        step: "mt5-credentials/test",
         tradingLayerStatus: testRes.status,
         tradingLayerResponse: testJson,
       });
     }
 
-    // 8. In connect mode, persist credentials in Trading Layer
-    let persistResponse: any = null;
-    if (mode === "connect") {
-      const persistRes = await fetchWithTimeout(
-        `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials`,
-        {
-          method: "POST",
-          headers: tlHeaders,
-          body: JSON.stringify({
-            login: Number(account_number),
-            password,
-            server,
-          }),
-        },
-        20000,
-      );
-      persistResponse = await readJson(persistRes);
-      if (!persistRes.ok) {
-        return json(502, {
-          success: false,
-          error: "Credentials validated but failed to save in Trading Layer.",
-          step: "mt5-credentials",
-          tradingLayerStatus: persistRes.status,
-          tradingLayerResponse: persistResponse,
-        });
-      }
+    // 6. Login must match what the user submitted
+    if (String(account.login) !== String(account_number)) {
+      return json(422, {
+        success: false,
+        step: "mt5_credentials_test",
+        error: "Account mismatch: Trading Layer returned a different MT5 login than the one submitted.",
+        tradingLayerStatus: testRes.status,
+        tradingLayerResponse: testJson,
+      });
+    }
 
-      // 9. Persist record locally — never store the password.
-      try {
-        await supabase
-          .from("user_mt_accounts")
-          .upsert(
-            {
-              user_id: userId,
-              platform: "mt5",
-              broker_name: "Infinox",
-              server_name: server,
-              login: account_number,
-              nickname: account?.name ?? `Infinox ${account_number}`,
-              status: "connected",
-              balance: Number(account?.balance ?? 0),
-              equity: Number(account?.equity ?? 0),
-              leverage: Number(account?.leverage ?? 0),
-              currency: account?.currency ?? "USD",
-              metaapi_account_id: String(accountId),
-              investor_password_encrypted: null,
-              last_synced_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id,login,server_name" },
-          );
-      } catch (e) {
-        console.warn("user_mt_accounts upsert failed:", e);
-      }
+    // 7. Test mode — stop here
+    if (mode === "test") {
+      return json(200, {
+        success: true,
+        mode,
+        accountId,
+        account,
+        tradingLayerStatus: testRes.status,
+        tradingLayerResponse: testJson,
+      });
+    }
+
+    // 8. Connect mode — persist credentials in Trading Layer
+    const persistRes = await fetchWithTimeout(
+      `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials`,
+      {
+        method: "POST",
+        headers: tlHeaders,
+        body: JSON.stringify({
+          login: Number(account_number),
+          password,
+          server,
+        }),
+      },
+      20000,
+    );
+    const persistJson = await readJson(persistRes);
+    if (!persistRes.ok) {
+      return json(502, {
+        success: false,
+        step: "mt5_credentials_save",
+        error: "Credentials validated but failed to save in Trading Layer.",
+        tradingLayerStatus: persistRes.status,
+        tradingLayerResponse: persistJson,
+      });
+    }
+
+    // 9 & 10. Persist locally — never store the password.
+    try {
+      await supabase
+        .from("user_mt_accounts")
+        .upsert(
+          {
+            user_id: userId,
+            platform: "mt5",
+            broker_name: "Infinox",
+            server_name: server,
+            login: account_number,
+            nickname: account?.name ?? `Infinox ${account_number}`,
+            status: "connected",
+            balance: Number(account?.balance ?? 0),
+            equity: Number(account?.equity ?? 0),
+            leverage: Number(account?.leverage ?? 0),
+            currency: account?.currency ?? "USD",
+            metaapi_account_id: String(accountId),
+            investor_password_encrypted: null,
+            last_synced_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,login,server_name" },
+        );
+    } catch (e) {
+      console.warn("user_mt_accounts upsert failed:", e);
     }
 
     return json(200, {
@@ -251,7 +261,7 @@ Deno.serve(async (req) => {
       account,
       tradingLayerStatus: testRes.status,
       tradingLayerResponse: testJson,
-      persistResponse,
+      persistResponse: persistJson,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
