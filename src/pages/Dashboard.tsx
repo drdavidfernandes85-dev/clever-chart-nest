@@ -51,6 +51,7 @@ import SmartInsights from "@/components/ai/SmartInsights";
 import AICopilot from "@/components/ai/AICopilot";
 import OpenAccountBanner from "@/components/dashboard/OpenAccountBanner";
 import LivePortfolioWidget from "@/components/dashboard/LivePortfolioWidget";
+import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWidget";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
@@ -279,6 +280,9 @@ const Dashboard = () => {
 
           {/* Live Portfolio — real-time MT5 account snapshot */}
           <LivePortfolioWidget />
+
+          {/* Trade Execution Log — recent execute-trade results */}
+          <TradeExecutionLogWidget />
 
           {/* Prominent Open Infinox Account banner — shown to users without a connected live account */}
           <OpenAccountBanner show={!isConnected} />
