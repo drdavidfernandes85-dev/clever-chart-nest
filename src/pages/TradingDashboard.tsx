@@ -4,61 +4,61 @@ import {
   ArrowLeft,
   RefreshCw,
   Loader2,
-  Search,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
   Wallet,
   Activity,
   Target,
+  CheckCircle2,
+  Server,
+  Hash,
+  Zap,
+  Plug,
+  Clock,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
-import infinoxLogo from "@/assets/infinox-logo-white.png";
+import { cn } from "@/lib/utils";
 
 // ---------- Types ----------
-interface Symbol {
-  symbol?: string;
-  name?: string;
-  description?: string;
-  digits?: number;
-  volume_min?: number;
-  volume_max?: number;
-  volume_step?: number;
-  [k: string]: any;
+interface LivePosition {
+  ticket: string | null;
+  symbol: string;
+  side: "buy" | "sell";
+  volume: number;
+  entry_price: number;
+  current_price: number;
+  stop_loss: number | null;
+  take_profit: number | null;
+  profit: number;
 }
 
-interface AccountInfo {
-  login?: number | string;
-  server?: string;
-  balance?: number;
-  equity?: number;
-  profit?: number;
-  margin_free?: number;
-  free_margin?: number;
-  currency?: string;
-  leverage?: number;
-  [k: string]: any;
+interface LiveData {
+  balance: number;
+  equity: number;
+  margin: number;
+  free_margin: number;
+  currency: string;
+  leverage: number | null;
+  floating_pnl: number;
+  open_positions: number;
+  positions: LivePosition[];
+  account_number: string;
+  server: string;
+  status: string;
+  last_synced: string | null;
 }
 
-interface Mt5Info extends AccountInfo {}
-
-interface DashboardResponse {
+interface LiveResponse {
   success: boolean;
   error?: string;
-  account?: AccountInfo | null;
-  mt5?: Mt5Info | null;
-  symbols?: Symbol[];
-  linkedAccount?: {
-    account_number?: string | number;
-    server?: string;
-    status?: string;
-    last_synced?: string | null;
-  };
+  data?: LiveData;
 }
 
 interface Signal {
@@ -72,7 +72,19 @@ interface Signal {
   suggestedRisk: string;
 }
 
-// Demo signals (until wired to backend signal feed for this account)
+interface ExecutionLog {
+  id: string;
+  created_at: string;
+  symbol: string;
+  side: string;
+  volume: number;
+  status: string;
+  classification: string | null;
+  retcode_description: string | null;
+  ticket: string | null;
+  error_message: string | null;
+}
+
 const DEMO_SIGNALS: Signal[] = [
   {
     id: "s1",
@@ -94,111 +106,190 @@ const DEMO_SIGNALS: Signal[] = [
     takeProfit: 2320,
     suggestedRisk: "0.5%",
   },
+  {
+    id: "s3",
+    symbol: "GBPJPY",
+    direction: "buy",
+    entryFrom: 198.4,
+    entryTo: 198.6,
+    stopLoss: 197.8,
+    takeProfit: 200.2,
+    suggestedRisk: "1%",
+  },
 ];
 
 // ---------- Helpers ----------
-const fmt = (v: any, digits = 2) =>
+const fmtMoney = (v: number, currency = "USD") =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency || "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(v) ? v : 0);
+
+const fmtPrice = (v: number | null | undefined, digits = 5) =>
   typeof v === "number" && Number.isFinite(v) ? v.toFixed(digits) : "—";
 
-const fmtMoney = (v: any, currency = "USD") =>
-  typeof v === "number" && Number.isFinite(v)
-    ? `${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
-    : "—";
+const fmtTime = (iso: string | null) => {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleTimeString();
+  } catch {
+    return "—";
+  }
+};
+
+const AnimatedValue = ({
+  value,
+  className,
+  format,
+}: {
+  value: number;
+  className?: string;
+  format: (n: number) => string;
+}) => (
+  <span className={cn("relative inline-block tabular-nums", className)}>
+    <AnimatePresence mode="popLayout">
+      <motion.span
+        key={format(value)}
+        initial={{ y: -6, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 6, opacity: 0 }}
+        transition={{ duration: 0.25, ease: "easeOut" }}
+        className="inline-block"
+      >
+        {format(value)}
+      </motion.span>
+    </AnimatePresence>
+  </span>
+);
 
 // ---------- Page ----------
 const TradingDashboard = () => {
-  const [data, setData] = useState<DashboardResponse | null>(null);
+  const [res, setRes] = useState<LiveResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const intervalRef = useRef<number | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const visibleRef = useRef(true);
+  const [logs, setLogs] = useState<ExecutionLog[]>([]);
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     try {
-      const { data: res, error } = await supabase.functions.invoke("trading-dashboard", {
+      const { data, error } = await supabase.functions.invoke("get-live-account", {
         body: { refresh: true },
       });
       if (error) throw error;
-      setData(res as DashboardResponse);
-      if (manual && (res as DashboardResponse)?.success) toast.success("Dashboard refreshed");
+      setRes(data as LiveResponse);
+      setLastUpdated(new Date());
+      if (manual && (data as LiveResponse)?.success) toast.success("Dashboard refreshed");
     } catch (e: any) {
       toast.error(e?.message || "Failed to load dashboard");
-      setData({ success: false, error: e?.message || "Failed to load dashboard" });
+      setRes({ success: false, error: e?.message || "Failed to load dashboard" });
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
+  const loadLogs = useCallback(async () => {
+    const { data } = await supabase
+      .from("trade_execution_logs")
+      .select("id, created_at, symbol, side, volume, status, classification, retcode_description, ticket, error_message")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setLogs((data ?? []) as ExecutionLog[]);
+  }, []);
+
   useEffect(() => {
     load();
-    intervalRef.current = window.setInterval(() => load(false), 30_000);
-    return () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
+    loadLogs();
+    const onVis = () => {
+      visibleRef.current = !document.hidden;
+      if (visibleRef.current) load();
     };
-  }, [load]);
+    document.addEventListener("visibilitychange", onVis);
+    const id = setInterval(() => {
+      if (visibleRef.current) load();
+    }, 10_000);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [load, loadLogs]);
 
-  const account: AccountInfo = useMemo(
-    () => ({ ...(data?.mt5 ?? {}), ...(data?.account ?? {}) }),
-    [data]
-  );
-  const symbols = data?.symbols ?? [];
-  const currency = account.currency || "USD";
-  const equity = Number(account.equity) || 0;
+  const data = res?.data;
+  const connected = res?.success === true && !!data;
 
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
         title="Trading Dashboard | IX Sala de Trading"
-        description="Live trading account dashboard, risk panel, symbols and signals."
+        description="Live trading account dashboard, risk panel, open positions and signals."
       />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
-        <div className="flex h-14 items-center justify-between px-4">
-          <Link to="/dashboard" className="flex items-center gap-3">
-            <img src={infinoxLogo} alt="INFINOX" className="h-5" />
-            <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
-            <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-              Trading <span className="text-primary">Dashboard</span>
-            </span>
-          </Link>
+      <header className="sticky top-0 z-40 border-b border-border/30 bg-background/80 backdrop-blur-2xl">
+        <div className="mx-auto max-w-7xl flex h-16 items-center justify-between gap-3 px-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              to="/dashboard"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/40 text-muted-foreground hover:text-primary hover:border-primary/40 transition"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+            <div className="min-w-0">
+              <h1 className="font-heading text-base sm:text-lg font-bold text-foreground leading-tight truncate">
+                Trading Room <span className="text-primary">Dashboard</span>
+              </h1>
+              {connected && (
+                <p className="text-[11px] font-mono text-muted-foreground truncate">
+                  <Hash className="inline h-3 w-3 -mt-0.5" />
+                  {data!.account_number}
+                  <span className="mx-1.5 text-muted-foreground/40">·</span>
+                  <Server className="inline h-3 w-3 -mt-0.5" />
+                  {data!.server}
+                </p>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
+            {connected && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-[hsl(145_65%_50%)]/30 bg-[hsl(145_65%_50%)]/10 px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider text-[hsl(145_65%_55%)]">
+                <CheckCircle2 className="h-3 w-3" />
+                Connected
+              </span>
+            )}
             <Button
               size="sm"
               variant="outline"
               onClick={() => load(true)}
               disabled={refreshing}
-              className="gap-1.5 rounded-full"
+              className="gap-1.5 rounded-full border-primary/30 hover:bg-primary/10 hover:text-primary"
             >
-              {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Refresh
+              {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              <span className="text-xs">Refresh</span>
             </Button>
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
-                <ArrowLeft className="h-4 w-4" /> Back
-              </Button>
-            </Link>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
-        {loading ? (
+      <div className="mx-auto max-w-7xl space-y-5 p-4 md:p-6">
+        {loading && !res ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : !data?.success ? (
-          <NoAccountState message={data?.error || "No connected trading account found."} />
+        ) : !connected ? (
+          <NoAccountState message={res?.error || "No connected trading account found."} />
         ) : (
           <>
-            <AccountSummary account={account} linked={data.linkedAccount} />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <RiskPanel equity={equity} currency={currency} symbols={symbols} />
-              <SymbolSearch symbols={symbols} />
+            <LivePortfolioPanel data={data!} lastUpdated={lastUpdated} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <RiskPanel equity={data!.equity} currency={data!.currency} />
+              <SignalCards signals={DEMO_SIGNALS} onTaken={loadLogs} />
             </div>
-            <OpenPositions />
-            <SignalCards signals={DEMO_SIGNALS} equity={equity} currency={currency} />
+            <OpenPositionsTable positions={data!.positions} currency={data!.currency} />
+            <ExecutionLogTable logs={logs} />
           </>
         )}
       </div>
@@ -207,110 +298,166 @@ const TradingDashboard = () => {
 };
 
 // ---------- States ----------
-const NoAccountState = ({ message }: { message: string }) => (
-  <div className="rounded-2xl border border-border/40 bg-card p-10 text-center">
-    <AlertTriangle className="mx-auto h-10 w-10 text-primary mb-3" />
-    <h2 className="font-heading text-lg font-semibold text-foreground mb-1">Dashboard unavailable</h2>
-    <p className="text-sm text-muted-foreground mb-5">{message}</p>
-    <Link to="/connect-mt">
-      <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/80">
-        Connect your MT5 account
-      </Button>
-    </Link>
-  </div>
-);
+const NoAccountState = ({ message }: { message: string }) => {
+  const noAccount = /no connected/i.test(message);
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/80 to-background/40 backdrop-blur-xl p-10 text-center shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)]">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
+        {noAccount ? <Plug className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+      </div>
+      <h2 className="font-heading text-lg font-semibold text-foreground mb-1">
+        {noAccount ? "Connect your MT5 account" : "Dashboard unavailable"}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">{message}</p>
+      <Link to="/connect-mt">
+        <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
+          {noAccount ? "Connect Account" : "Manage Account"}
+        </Button>
+      </Link>
+    </div>
+  );
+};
 
-// ---------- Account Summary ----------
-const Stat = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
-  <div className="rounded-xl border border-border/40 bg-card/60 p-4">
-    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-    <p className={`mt-1 font-heading text-lg font-bold ${accent ? "text-primary" : "text-foreground"}`}>
-      {value}
-    </p>
-  </div>
-);
-
-const AccountSummary = ({
-  account,
-  linked,
+// ---------- Live Portfolio ----------
+const LivePortfolioPanel = ({
+  data,
+  lastUpdated,
 }: {
-  account: AccountInfo;
-  linked?: DashboardResponse["linkedAccount"];
+  data: LiveData;
+  lastUpdated: Date | null;
 }) => {
-  const currency = account.currency || "USD";
-  const profit = Number(account.profit ?? 0);
-  const profitPositive = profit >= 0;
-  const free = account.free_margin ?? account.margin_free;
+  const pnlTone =
+    data.floating_pnl > 0
+      ? "text-[hsl(145_65%_55%)]"
+      : data.floating_pnl < 0
+      ? "text-red-400"
+      : "text-muted-foreground";
 
   return (
-    <section className="rounded-2xl border border-border/40 bg-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-4 w-4 text-primary" />
-          <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-            Account Summary
-          </h2>
+    <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-card/80 via-card/60 to-background/40 backdrop-blur-xl shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)]">
+      <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+      <div className="relative p-5">
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              <Activity className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="font-heading text-base sm:text-lg font-bold text-foreground leading-tight">
+                Live Portfolio
+              </h2>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono flex items-center gap-1.5">
+                <Clock className="h-3 w-3" />
+                Updated {lastUpdated ? lastUpdated.toLocaleTimeString() : "—"}
+                <span className="text-muted-foreground/40">·</span>
+                Auto 10s
+              </p>
+            </div>
+          </div>
         </div>
-        {linked?.status && (
-          <Badge variant="outline" className="border-primary/40 text-primary">
-            {linked.status}
-          </Badge>
-        )}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Stat label="Account #" value={String(account.login ?? linked?.account_number ?? "—")} />
-        <Stat label="Server" value={String(linked?.server ?? account.server ?? "—")} />
-        <Stat label="Balance" value={fmtMoney(account.balance, currency)} />
-        <Stat label="Equity" value={fmtMoney(account.equity, currency)} accent />
-        <Stat
-          label="Profit"
-          value={
-            typeof profit === "number"
-              ? `${profitPositive ? "+" : ""}${profit.toFixed(2)} ${currency}`
-              : "—"
-          }
-        />
-        <Stat label="Free Margin" value={fmtMoney(free, currency)} />
-        <Stat label="Currency" value={currency} />
-        <Stat label="Leverage" value={account.leverage ? `1:${account.leverage}` : "—"} />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <BigTile
+            label="Balance"
+            icon={<Wallet className="h-3.5 w-3.5" />}
+            value={
+              <AnimatedValue
+                value={data.balance}
+                format={(v) => fmtMoney(v, data.currency)}
+                className="text-2xl font-bold text-foreground"
+              />
+            }
+          />
+          <BigTile
+            label="Equity"
+            accent
+            value={
+              <AnimatedValue
+                value={data.equity}
+                format={(v) => fmtMoney(v, data.currency)}
+                className="text-2xl font-bold text-primary"
+              />
+            }
+          />
+          <BigTile
+            label="Floating P&L"
+            icon={
+              data.floating_pnl >= 0 ? (
+                <TrendingUp className="h-3.5 w-3.5" />
+              ) : (
+                <TrendingDown className="h-3.5 w-3.5" />
+              )
+            }
+            value={
+              <AnimatedValue
+                value={data.floating_pnl}
+                format={(v) => `${v >= 0 ? "+" : ""}${fmtMoney(v, data.currency)}`}
+                className={cn("text-2xl font-bold", pnlTone)}
+              />
+            }
+          />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <Mini label="Open Positions" value={String(data.open_positions)} />
+          <Mini label="Free Margin" value={fmtMoney(data.free_margin, data.currency)} />
+          <Mini label="Margin" value={fmtMoney(data.margin, data.currency)} />
+          <Mini label="Currency" value={data.currency} />
+        </div>
       </div>
     </section>
   );
 };
 
+const BigTile = ({
+  label,
+  value,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon?: React.ReactNode;
+  accent?: boolean;
+}) => (
+  <div
+    className={cn(
+      "rounded-xl border p-3.5 backdrop-blur-md",
+      accent ? "border-primary/30 bg-primary/5" : "border-border/50 bg-background/40",
+    )}
+  >
+    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-mono text-muted-foreground mb-1.5">
+      {icon}
+      {label}
+    </div>
+    <div>{value}</div>
+  </div>
+);
+
+const Mini = ({ label, value }: { label: string; value: string }) => (
+  <div className="rounded-lg border border-border/40 bg-background/30 px-2.5 py-2">
+    <div className="text-[9px] uppercase tracking-wider font-mono text-muted-foreground mb-0.5">
+      {label}
+    </div>
+    <div className="font-mono text-xs font-semibold text-foreground tabular-nums truncate">
+      {value}
+    </div>
+  </div>
+);
+
 // ---------- Risk Panel ----------
 const RISK_PRESETS = [0.5, 1, 2] as const;
 
-const RiskPanel = ({
-  equity,
-  currency,
-  symbols,
-}: {
-  equity: number;
-  currency: string;
-  symbols: Symbol[];
-}) => {
+const RiskPanel = ({ equity, currency }: { equity: number; currency: string }) => {
   const [riskPct, setRiskPct] = useState<number>(1);
   const [customRisk, setCustomRisk] = useState<string>("");
   const [lot, setLot] = useState<string>("0.10");
-  const [symbolPick, setSymbolPick] = useState<string>(symbols[0]?.symbol || symbols[0]?.name || "");
-
-  useEffect(() => {
-    if (!symbolPick && symbols.length) setSymbolPick(symbols[0]?.symbol || symbols[0]?.name || "");
-  }, [symbols, symbolPick]);
-
-  const sym = symbols.find((s) => (s.symbol || s.name) === symbolPick);
-  const lotNum = parseFloat(lot);
-  const minVol = sym?.volume_min;
-  const maxVol = sym?.volume_max;
-  const tooLow = sym && Number.isFinite(lotNum) && minVol != null && lotNum < minVol;
-  const tooHigh = sym && Number.isFinite(lotNum) && maxVol != null && lotNum > maxVol;
 
   const effectiveRisk = customRisk ? parseFloat(customRisk) : riskPct;
   const riskAmount = (equity * (effectiveRisk || 0)) / 100;
+  const tooHigh = (effectiveRisk || 0) > 3;
 
   return (
-    <section className="rounded-2xl border border-border/40 bg-card p-5 space-y-4">
+    <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5 space-y-4">
       <div className="flex items-center gap-2">
         <Target className="h-4 w-4 text-primary" />
         <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
@@ -319,12 +466,18 @@ const RiskPanel = ({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Stat label="Equity" value={fmtMoney(equity, currency)} />
-        <Stat label="Risk Amount" value={fmtMoney(riskAmount, currency)} accent />
+        <BigTile label="Equity" value={<span className="text-lg font-bold">{fmtMoney(equity, currency)}</span>} />
+        <BigTile
+          label="Estimated Risk"
+          accent
+          value={<span className="text-lg font-bold text-primary">{fmtMoney(riskAmount, currency)}</span>}
+        />
       </div>
 
       <div>
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Risk per trade</p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-mono">
+          Risk per trade
+        </p>
         <div className="flex flex-wrap gap-2">
           {RISK_PRESETS.map((p) => (
             <button
@@ -333,11 +486,12 @@ const RiskPanel = ({
                 setRiskPct(p);
                 setCustomRisk("");
               }}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-semibold border transition",
                 !customRisk && riskPct === p
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border/50 text-muted-foreground hover:text-foreground"
-              }`}
+                  : "border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/40",
+              )}
             >
               {p}%
             </button>
@@ -355,222 +509,285 @@ const RiskPanel = ({
       </div>
 
       <div>
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Symbol</p>
-        <select
-          value={symbolPick}
-          onChange={(e) => setSymbolPick(e.target.value)}
-          className="w-full rounded-md border border-border/50 bg-background px-3 py-2 text-sm"
-        >
-          {symbols.map((s) => {
-            const v = s.symbol || s.name || "";
-            return (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            );
-          })}
-        </select>
-      </div>
-
-      <div>
-        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Lot Size</p>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-mono">
+          Lot Size
+        </p>
         <Input
           type="number"
-          step={sym?.volume_step ?? 0.01}
+          step="0.01"
+          min="0"
           value={lot}
           onChange={(e) => setLot(e.target.value)}
           className="h-9"
         />
-        <p className="mt-1 text-[10px] text-muted-foreground">
-          Min {fmt(minVol, 2)} • Max {fmt(maxVol, 2)} • Step {fmt(sym?.volume_step, 2)}
-        </p>
-        {(tooLow || tooHigh) && (
-          <div className="mt-2 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-            <span>
-              {tooLow
-                ? `Volume is below the symbol minimum (${minVol}).`
-                : `Volume exceeds the symbol maximum (${maxVol}).`}
-            </span>
-          </div>
-        )}
       </div>
-    </section>
-  );
-};
 
-// ---------- Symbol Search ----------
-const SymbolSearch = ({ symbols }: { symbols: Symbol[] }) => {
-  const [q, setQ] = useState("");
-  const filtered = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    const list = t
-      ? symbols.filter((s) =>
-          [s.symbol, s.name, s.description].filter(Boolean).some((v) => String(v).toLowerCase().includes(t))
-        )
-      : symbols;
-    return list.slice(0, 50);
-  }, [symbols, q]);
-
-  return (
-    <section className="rounded-2xl border border-border/40 bg-card p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <Search className="h-4 w-4 text-primary" />
-        <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-          Symbol Search
-        </h2>
-        <Badge variant="outline" className="ml-auto border-border/50 text-muted-foreground">
-          {symbols.length}
-        </Badge>
-      </div>
-      <Input
-        placeholder="Search symbols..."
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="mb-3 h-9"
-      />
-      <div className="max-h-72 overflow-y-auto divide-y divide-border/30 rounded-md border border-border/30">
-        {filtered.length === 0 ? (
-          <p className="p-4 text-center text-xs text-muted-foreground">No symbols found</p>
-        ) : (
-          filtered.map((s, i) => {
-            const name = s.symbol || s.name || `#${i}`;
-            return (
-              <div key={`${name}-${i}`} className="px-3 py-2 hover:bg-primary/5 transition">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-sm font-semibold text-foreground">{name}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    digits {fmt(s.digits, 0)}
-                  </span>
-                </div>
-                {s.description && (
-                  <p className="text-[11px] text-muted-foreground truncate">{s.description}</p>
-                )}
-                <p className="text-[10px] text-muted-foreground">
-                  min {fmt(s.volume_min, 2)} • step {fmt(s.volume_step, 2)} • max {fmt(s.volume_max, 2)}
-                </p>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </section>
-  );
-};
-
-// ---------- Open Positions ----------
-const OpenPositions = () => {
-  const positions: any[] = []; // not yet wired
-  return (
-    <section className="rounded-2xl border border-border/40 bg-card p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <Activity className="h-4 w-4 text-primary" />
-        <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-          Open Positions
-        </h2>
-      </div>
-      {positions.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
-          No open positions
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                <th className="py-2">Symbol</th>
-                <th>Side</th>
-                <th>Volume</th>
-                <th>Entry</th>
-                <th>Current</th>
-                <th>SL</th>
-                <th>TP</th>
-                <th className="text-right">Profit</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
-              {/* future rows */}
-            </tbody>
-          </table>
+      {tooHigh && (
+        <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>Risk above 3% is considered very aggressive. Consider lowering it.</span>
         </div>
       )}
     </section>
   );
 };
 
-// ---------- Signal Cards ----------
-const SignalCards = ({
-  signals,
-  equity,
+// ---------- Open Positions ----------
+const OpenPositionsTable = ({
+  positions,
   currency,
 }: {
-  signals: Signal[];
-  equity: number;
+  positions: LivePosition[];
   currency: string;
-}) => {
-  return (
-    <section className="space-y-3">
+}) => (
+  <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
+    <div className="flex items-center gap-2 mb-4">
+      <Activity className="h-4 w-4 text-primary" />
       <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-        Active Signals
+        Open Positions
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Badge variant="outline" className="ml-auto border-border/50 text-muted-foreground">
+        {positions.length}
+      </Badge>
+    </div>
+    {positions.length === 0 ? (
+      <p className="rounded-md border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
+        No open positions.
+      </p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground font-mono border-b border-border/30">
+              <th className="py-2 pr-3">Symbol</th>
+              <th className="pr-3">Side</th>
+              <th className="pr-3">Volume</th>
+              <th className="pr-3">Entry</th>
+              <th className="pr-3">Current</th>
+              <th className="pr-3">SL</th>
+              <th className="pr-3">TP</th>
+              <th className="text-right">P&L</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/30">
+            {positions.map((p) => {
+              const positive = p.profit >= 0;
+              return (
+                <tr key={p.ticket ?? `${p.symbol}-${p.entry_price}`} className="font-mono text-xs">
+                  <td className="py-2.5 pr-3 font-bold text-foreground">{p.symbol}</td>
+                  <td className="pr-3">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                        p.side === "buy"
+                          ? "bg-[hsl(145_65%_50%)]/15 text-[hsl(145_65%_55%)]"
+                          : "bg-red-500/15 text-red-400",
+                      )}
+                    >
+                      {p.side}
+                    </span>
+                  </td>
+                  <td className="pr-3 tabular-nums">{p.volume.toFixed(2)}</td>
+                  <td className="pr-3 tabular-nums">{fmtPrice(p.entry_price)}</td>
+                  <td className="pr-3 tabular-nums">{fmtPrice(p.current_price)}</td>
+                  <td className="pr-3 tabular-nums text-muted-foreground">{fmtPrice(p.stop_loss)}</td>
+                  <td className="pr-3 tabular-nums text-muted-foreground">{fmtPrice(p.take_profit)}</td>
+                  <td
+                    className={cn(
+                      "text-right font-bold tabular-nums",
+                      positive ? "text-[hsl(145_65%_55%)]" : "text-red-400",
+                    )}
+                  >
+                    {positive ? "+" : ""}
+                    {fmtMoney(p.profit, currency)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+);
+
+// ---------- Signal Cards ----------
+const SignalCards = ({ signals, onTaken }: { signals: Signal[]; onTaken: () => void }) => {
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const take = async (s: Signal) => {
+    setBusyId(s.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("execute-signal", {
+        body: {
+          signalId: s.id,
+          symbol: s.symbol,
+          side: s.direction,
+          volume: 0.1,
+          stopLoss: s.stopLoss,
+          takeProfit: s.takeProfit,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.success) {
+        toast.success(`Signal sent (${(data as any).status ?? "ok"})`);
+      } else {
+        toast.error((data as any)?.error ?? "Signal rejected");
+      }
+      onTaken();
+    } catch (e: any) {
+      toast.error(e?.message || "Could not execute signal");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Zap className="h-4 w-4 text-primary" />
+        <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
+          Trading Signals
+        </h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {signals.map((s) => {
           const isBuy = s.direction === "buy";
-          const Icon = isBuy ? TrendingUp : TrendingDown;
-          const accent = isBuy ? "text-emerald-500" : "text-destructive";
-          const riskNum = parseFloat(s.suggestedRisk) || 0;
-          const riskAmt = (equity * riskNum) / 100;
           return (
-            <article
+            <div
               key={s.id}
-              className="rounded-2xl border border-border/40 bg-card p-5 hover:border-primary/40 transition"
+              className="rounded-xl border border-border/40 bg-background/40 p-4 hover:border-primary/40 transition"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-base font-bold text-foreground">{s.symbol}</span>
-                  <Badge className={`gap-1 ${isBuy ? "bg-emerald-500/15 text-emerald-500" : "bg-destructive/15 text-destructive"} border-0 uppercase`}>
-                    <Icon className="h-3 w-3" />
+                  <span className="font-mono text-sm font-bold text-foreground">{s.symbol}</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                      isBuy
+                        ? "bg-[hsl(145_65%_50%)]/15 text-[hsl(145_65%_55%)]"
+                        : "bg-red-500/15 text-red-400",
+                    )}
+                  >
                     {s.direction}
-                  </Badge>
+                  </span>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
                   Risk {s.suggestedRisk}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase">Entry</p>
-                  <p className="font-mono text-foreground">
-                    {s.entryFrom} – {s.entryTo}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase">Stop Loss</p>
-                  <p className={`font-mono ${accent}`}>{s.stopLoss}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase">Take Profit</p>
-                  <p className="font-mono text-primary">{s.takeProfit}</p>
-                </div>
+              <div className="grid grid-cols-3 gap-2 mb-3 text-xs font-mono">
+                <SignalStat label="Entry" value={`${s.entryFrom}–${s.entryTo}`} />
+                <SignalStat label="SL" value={String(s.stopLoss)} tone="red" />
+                <SignalStat label="TP" value={String(s.takeProfit)} tone="green" />
               </div>
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="text-[11px] text-muted-foreground">
-                  ≈ {fmtMoney(riskAmt, currency)} at risk
-                </p>
-                <Button
-                  size="sm"
-                  className="rounded-full bg-primary text-primary-foreground hover:bg-primary/80"
-                  onClick={() => toast.info(`Signal ready: ${s.symbol} ${s.direction.toUpperCase()}`)}
-                >
-                  Take This Signal
-                </Button>
-              </div>
-            </article>
+              <Button
+                size="sm"
+                onClick={() => take(s)}
+                disabled={busyId === s.id}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+              >
+                {busyId === s.id ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  "Take This Signal"
+                )}
+              </Button>
+            </div>
           );
         })}
       </div>
     </section>
   );
 };
+
+const SignalStat = ({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "red" | "green";
+}) => (
+  <div className="rounded-md border border-border/40 bg-background/40 px-2 py-1.5">
+    <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div
+      className={cn(
+        "tabular-nums font-semibold",
+        tone === "red" && "text-red-400",
+        tone === "green" && "text-[hsl(145_65%_55%)]",
+        !tone && "text-foreground",
+      )}
+    >
+      {value}
+    </div>
+  </div>
+);
+
+// ---------- Execution Log ----------
+const ExecutionLogTable = ({ logs }: { logs: ExecutionLog[] }) => (
+  <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
+    <div className="flex items-center gap-2 mb-4">
+      <Clock className="h-4 w-4 text-primary" />
+      <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
+        Execution Log
+      </h2>
+      <Badge variant="outline" className="ml-auto border-border/50 text-muted-foreground">
+        {logs.length}
+      </Badge>
+    </div>
+    {logs.length === 0 ? (
+      <p className="rounded-md border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
+        No executions yet.
+      </p>
+    ) : (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground font-mono border-b border-border/30">
+              <th className="py-2 pr-3">Time</th>
+              <th className="pr-3">Symbol</th>
+              <th className="pr-3">Side</th>
+              <th className="pr-3">Volume</th>
+              <th className="pr-3">Status</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/30">
+            {logs.map((l) => {
+              const ok = l.status === "filled" || l.status === "placed" || l.status === "partial";
+              return (
+                <tr key={l.id} className="font-mono text-xs">
+                  <td className="py-2.5 pr-3 text-muted-foreground">{fmtTime(l.created_at)}</td>
+                  <td className="pr-3 font-bold text-foreground">{l.symbol}</td>
+                  <td className="pr-3 uppercase">{l.side}</td>
+                  <td className="pr-3 tabular-nums">{Number(l.volume).toFixed(2)}</td>
+                  <td className="pr-3">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                        ok
+                          ? "bg-[hsl(145_65%_50%)]/15 text-[hsl(145_65%_55%)]"
+                          : "bg-red-500/15 text-red-400",
+                      )}
+                    >
+                      {l.status}
+                    </span>
+                  </td>
+                  <td className="text-muted-foreground truncate max-w-[260px]">
+                    {l.ticket
+                      ? `Ticket #${l.ticket}`
+                      : l.retcode_description || l.error_message || l.classification || "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+);
 
 export default TradingDashboard;
