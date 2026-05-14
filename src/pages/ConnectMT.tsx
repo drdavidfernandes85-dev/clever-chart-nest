@@ -128,6 +128,7 @@ const ConnectMT = () => {
     setIsConnecting(false);
     setSummary(null);
     setErrorMsg("");
+    setDebugResponse(null);
   };
 
   const metrics = summary
