@@ -565,6 +565,24 @@ const ConnectMT = () => {
                     via Trading Layer. We never store your password in plain text.
                   </span>
                 </div>
+
+                {/* Debug box (temporary) */}
+                {debugResponse !== null && (
+                  <div
+                    className="mt-2 rounded-xl border p-3 text-[11px]"
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      borderColor: "rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div className="mb-1 font-mono uppercase tracking-widest text-neutral-500">
+                      Debug · raw response from connect-mt5-v2
+                    </div>
+                    <pre className="overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-neutral-300">
+{JSON.stringify(debugResponse, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </motion.form>
             )}
           </AnimatePresence>
