@@ -39,7 +39,7 @@ const SymbolPositions = ({ symbolLabel }: Props) => {
     if (!account) return;
     try {
       // Queue a counter-order. The EA picks it up, closes the matching ticket,
-      // and reports back via mt-webhook.
+      // and reports back via Trading Layer.
       const { error } = await supabase.from("mt_pending_orders").insert({
         user_id: account.user_id,
         account_id: account.id,
