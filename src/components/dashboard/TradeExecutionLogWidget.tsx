@@ -65,7 +65,12 @@ const TradeExecutionLogWidget = () => {
   useEffect(() => {
     load();
     const id = setInterval(load, 15_000);
-    return () => clearInterval(id);
+    const onTrade = () => load();
+    window.addEventListener("trade-executed", onTrade);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("trade-executed", onTrade);
+    };
   }, []);
 
   return (
