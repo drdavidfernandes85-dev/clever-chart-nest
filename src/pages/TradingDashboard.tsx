@@ -21,6 +21,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
@@ -61,7 +69,7 @@ interface LiveResponse {
   data?: LiveData;
 }
 
-interface Signal {
+interface TradeIdea {
   id: string;
   symbol: string;
   direction: "buy" | "sell";
@@ -85,7 +93,7 @@ interface ExecutionLog {
   error_message: string | null;
 }
 
-const DEMO_SIGNALS: Signal[] = [
+const DEMO_TRADE_IDEAS: TradeIdea[] = [
   {
     id: "s1",
     symbol: "EURUSD",
@@ -225,7 +233,7 @@ const TradingDashboard = () => {
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
         title="Trading Dashboard | IX Sala de Trading"
-        description="Live trading account dashboard, risk panel, open positions and signals."
+        description="Live trading account dashboard, risk panel, open trades and trade ideas."
       />
 
       {/* Header */}
@@ -286,7 +294,7 @@ const TradingDashboard = () => {
             <LivePortfolioPanel data={data!} lastUpdated={lastUpdated} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <RiskPanel equity={data!.equity} currency={data!.currency} />
-              <SignalCards signals={DEMO_SIGNALS} onTaken={loadLogs} />
+              <TradeIdeaCards ideas={DEMO_TRADE_IDEAS} onTaken={loadLogs} />
             </div>
             <OpenPositionsTable positions={data!.positions} currency={data!.currency} />
             <ExecutionLogTable logs={logs} />
@@ -398,7 +406,7 @@ const LivePortfolioPanel = ({
           />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <Mini label="Open Positions" value={String(data.open_positions)} />
+          <Mini label="Open Trades" value={String(data.open_positions)} />
           <Mini label="Free Margin" value={fmtMoney(data.free_margin, data.currency)} />
           <Mini label="Margin" value={fmtMoney(data.margin, data.currency)} />
           <Mini label="Currency" value={data.currency} />
@@ -532,7 +540,7 @@ const RiskPanel = ({ equity, currency }: { equity: number; currency: string }) =
   );
 };
 
-// ---------- Open Positions ----------
+// ---------- Open Trades ----------
 const OpenPositionsTable = ({
   positions,
   currency,
@@ -544,7 +552,7 @@ const OpenPositionsTable = ({
     <div className="flex items-center gap-2 mb-4">
       <Activity className="h-4 w-4 text-primary" />
       <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-        Open Positions
+        Open Trades
       </h2>
       <Badge variant="outline" className="ml-auto border-border/50 text-muted-foreground">
         {positions.length}
@@ -552,7 +560,7 @@ const OpenPositionsTable = ({
     </div>
     {positions.length === 0 ? (
       <p className="rounded-md border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
-        No open positions.
+        No open trades.
       </p>
     ) : (
       <div className="overflow-x-auto">
@@ -611,97 +619,211 @@ const OpenPositionsTable = ({
   </section>
 );
 
-// ---------- Signal Cards ----------
-const SignalCards = ({ signals, onTaken }: { signals: Signal[]; onTaken: () => void }) => {
+// ---------- Trade Ideas ----------
+const TradeIdeaCards = ({
+  ideas,
+  onTaken,
+}: {
+  ideas: TradeIdea[];
+  onTaken: () => void;
+}) => {
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<TradeIdea | null>(null);
+  const [volume, setVolume] = useState<string>("0.10");
 
-  const take = async (s: Signal) => {
-    setBusyId(s.id);
+  const openConfirm = (idea: TradeIdea) => {
+    setVolume("0.10");
+    setConfirming(idea);
+  };
+
+  const confirmTrade = async () => {
+    if (!confirming) return;
+    const idea = confirming;
+    const vol = parseFloat(volume);
+    if (!Number.isFinite(vol) || vol <= 0) {
+      toast.error("Enter a valid volume.");
+      return;
+    }
+    setBusyId(idea.id);
+    setConfirming(null);
     try {
-      const { data, error } = await supabase.functions.invoke("execute-signal", {
+      const { data, error } = await supabase.functions.invoke("execute-trade", {
         body: {
-          signalId: s.id,
-          symbol: s.symbol,
-          side: s.direction,
-          volume: 0.1,
-          stopLoss: s.stopLoss,
-          takeProfit: s.takeProfit,
+          tradeId: idea.id,
+          symbol: idea.symbol,
+          side: idea.direction,
+          volume: vol,
+          stopLoss: idea.stopLoss,
+          takeProfit: idea.takeProfit,
         },
       });
       if (error) throw error;
-      if ((data as any)?.success) {
-        toast.success(`Signal sent (${(data as any).status ?? "ok"})`);
+      const res = data as any;
+      if (res?.success) {
+        const status = res.status as string;
+        if (status === "filled") toast.success("Trade executed successfully");
+        else if (status === "placed") toast.success("Trade placed");
+        else if (status === "partial") toast.success("Trade partially filled");
+        else toast.success("Trade executed");
+      } else if (res?.status === "rejected") {
+        toast.error(`Trade rejected${res?.error ? `: ${res.error}` : ""}`);
+      } else if (res?.status === "unavailable") {
+        toast.error("Trading Layer is temporarily unavailable");
       } else {
-        toast.error((data as any)?.error ?? "Signal rejected");
+        toast.error(res?.error || "Trade execution failed");
       }
       onTaken();
     } catch (e: any) {
-      toast.error(e?.message || "Could not execute signal");
+      toast.error(e?.message || "Trade execution failed");
     } finally {
       setBusyId(null);
     }
   };
 
   return (
-    <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <Zap className="h-4 w-4 text-primary" />
-        <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-          Trading Signals
-        </h2>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {signals.map((s) => {
-          const isBuy = s.direction === "buy";
-          return (
-            <div
-              key={s.id}
-              className="rounded-xl border border-border/40 bg-background/40 p-4 hover:border-primary/40 transition"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-bold text-foreground">{s.symbol}</span>
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-                      isBuy
-                        ? "bg-[hsl(145_65%_50%)]/15 text-[hsl(145_65%_55%)]"
-                        : "bg-red-500/15 text-red-400",
-                    )}
-                  >
-                    {s.direction}
+    <>
+      <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="h-4 w-4 text-primary" />
+          <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
+            Trade Ideas
+          </h2>
+          <Badge variant="outline" className="ml-auto border-primary/30 text-primary text-[10px]">
+            Featured Trade Setups
+          </Badge>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {ideas.map((s) => {
+            const isBuy = s.direction === "buy";
+            return (
+              <div
+                key={s.id}
+                className="rounded-xl border border-border/40 bg-background/40 p-4 hover:border-primary/40 transition"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm font-bold text-foreground">{s.symbol}</span>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                        isBuy
+                          ? "bg-[hsl(145_65%_50%)]/15 text-[hsl(145_65%_55%)]"
+                          : "bg-red-500/15 text-red-400",
+                      )}
+                    >
+                      {s.direction}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
+                    Risk {s.suggestedRisk}
                   </span>
                 </div>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-primary">
-                  Risk {s.suggestedRisk}
-                </span>
+                <div className="grid grid-cols-3 gap-2 mb-3 text-xs font-mono">
+                  <TradeStat label="Entry" value={`${s.entryFrom}–${s.entryTo}`} />
+                  <TradeStat label="SL" value={String(s.stopLoss)} tone="red" />
+                  <TradeStat label="TP" value={String(s.takeProfit)} tone="green" />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => openConfirm(s)}
+                  disabled={busyId === s.id}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+                >
+                  {busyId === s.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    "Take This Trade"
+                  )}
+                </Button>
               </div>
-              <div className="grid grid-cols-3 gap-2 mb-3 text-xs font-mono">
-                <SignalStat label="Entry" value={`${s.entryFrom}–${s.entryTo}`} />
-                <SignalStat label="SL" value={String(s.stopLoss)} tone="red" />
-                <SignalStat label="TP" value={String(s.takeProfit)} tone="green" />
+            );
+          })}
+        </div>
+      </section>
+
+      <Dialog open={!!confirming} onOpenChange={(o) => !o && setConfirming(null)}>
+        <DialogContent className="sm:max-w-md border-primary/30 bg-card/95 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Execute Trade</DialogTitle>
+            <DialogDescription>
+              You are about to execute this trade on your connected MT5 account.
+            </DialogDescription>
+          </DialogHeader>
+          {confirming && (
+            <div className="space-y-3 py-2">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <ConfirmRow label="Trade ID" value={confirming.id} mono />
+                <ConfirmRow label="Symbol" value={confirming.symbol} mono />
+                <ConfirmRow
+                  label="Direction"
+                  value={confirming.direction.toUpperCase()}
+                  tone={confirming.direction === "buy" ? "green" : "red"}
+                />
+                <ConfirmRow label="Stop Loss" value={String(confirming.stopLoss)} mono />
+                <ConfirmRow label="Take Profit" value={String(confirming.takeProfit)} mono />
               </div>
-              <Button
-                size="sm"
-                onClick={() => take(s)}
-                disabled={busyId === s.id}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
-              >
-                {busyId === s.id ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  "Take This Signal"
-                )}
-              </Button>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+                  Volume
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={volume}
+                  onChange={(e) => setVolume(e.target.value)}
+                  className="h-9 mt-1"
+                />
+              </div>
             </div>
-          );
-        })}
-      </div>
-    </section>
+          )}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setConfirming(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmTrade}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+            >
+              Confirm Trade
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
-const SignalStat = ({
+const ConfirmRow = ({
+  label,
+  value,
+  mono,
+  tone,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  tone?: "red" | "green";
+}) => (
+  <div className="rounded-md border border-border/40 bg-background/40 px-2.5 py-1.5">
+    <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-mono">
+      {label}
+    </div>
+    <div
+      className={cn(
+        "font-semibold text-sm tabular-nums truncate",
+        mono && "font-mono",
+        tone === "red" && "text-red-400",
+        tone === "green" && "text-[hsl(145_65%_55%)]",
+        !tone && "text-foreground",
+      )}
+    >
+      {value}
+    </div>
+  </div>
+);
+
+const TradeStat = ({
   label,
   value,
   tone,
@@ -725,13 +847,13 @@ const SignalStat = ({
   </div>
 );
 
-// ---------- Execution Log ----------
+// ---------- Trade Execution Log ----------
 const ExecutionLogTable = ({ logs }: { logs: ExecutionLog[] }) => (
   <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
     <div className="flex items-center gap-2 mb-4">
       <Clock className="h-4 w-4 text-primary" />
       <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-        Execution Log
+        Trade Execution Log
       </h2>
       <Badge variant="outline" className="ml-auto border-border/50 text-muted-foreground">
         {logs.length}
@@ -739,7 +861,7 @@ const ExecutionLogTable = ({ logs }: { logs: ExecutionLog[] }) => (
     </div>
     {logs.length === 0 ? (
       <p className="rounded-md border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
-        No executions yet.
+        No trades executed yet.
       </p>
     ) : (
       <div className="overflow-x-auto">
