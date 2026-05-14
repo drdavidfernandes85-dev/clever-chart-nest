@@ -80,7 +80,7 @@ const Footer = () => {
             <span className="font-semibold text-foreground/70">Risk Disclaimer:</span> Trading involves significant risk of loss. Past performance is not indicative of future results. All content is for educational purposes only and does not constitute financial advice.
           </p>
           <p className="text-muted-foreground/60">
-            IX Sala de Trading is an educational community. We do not provide signals or copy-trading services. Always trade responsibly.
+            IX Sala de Trading is an educational community. We do not provide trade ideas or copy-trading services. Always trade responsibly.
           </p>
         </div>
         <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">

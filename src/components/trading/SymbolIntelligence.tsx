@@ -132,7 +132,7 @@ const SymbolIntelligence = ({ symbol = "FX:EURUSD" }: Props) => {
       {signals.length > 0 && (
         <div className="border-b border-border/30">
           <div className="px-4 pt-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Recent Signals
+            Recent Trade Ideas
           </div>
           <div className="divide-y divide-border/20">
             {signals.slice(0, 4).map((s) => {

@@ -169,15 +169,15 @@ const PortfolioOverview = () => {
             <button
               onClick={async () => {
                 const isEA =
-                  account.broker_name === "Connected via EA" ||
-                  account.server_name === "EA Webhook";
+                  account.broker_name === "Connected via Trading Layer" ||
+                  account.server_name === "Trading Layer connection";
                 const result = await sync();
                 if (isEA) {
                   const lastSync = account.last_synced_at
                     ? formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })
                     : "never";
                   toast.info(
-                    `EA Webhook account — data is pushed in real-time by the EA running on your MetaTrader. Last push: ${lastSync}. If this is stale, make sure the IX_Sync_EA is attached to a chart, "Allow WebRequest" is enabled, and the URL is whitelisted.`,
+                    `Trading Layer connection account — data is pushed in real-time by the EA running on your MetaTrader. Last push: ${lastSync}. If this is stale, make sure the IX_Sync_EA is attached to a chart, "Allow WebRequest" is enabled, and the URL is whitelisted.`,
                     { duration: 9000 },
                   );
                 } else if (result?.error) {

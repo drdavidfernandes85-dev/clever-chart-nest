@@ -32,7 +32,7 @@ export function useCopiedSignals() {
     fetchCopied();
 
     const channel = supabase
-      .channel(`copied-signals-${user.id}`)
+      .channel(`copied-trade-ideas-${user.id}`)
       .on(
         "postgres_changes",
         {

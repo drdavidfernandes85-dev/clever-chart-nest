@@ -299,7 +299,7 @@ const CommandDeck = () => {
     <div className="relative min-h-screen">
       <SEO
         title="Command Deck | IX Sala de Trading"
-        description="Bloomberg-grade live trading terminal — yellow candlesticks, dense panels, signals, community nest."
+        description="Bloomberg-grade live trading terminal — yellow candlesticks, dense panels, trade ideas, community nest."
         canonical="https://elitelivetradingroom.com/command"
       />
       <Navbar />

@@ -91,7 +91,7 @@ const SAMPLE: SampleMsg[] = [
     verified: true,
     minutesAgo: 6,
     content:
-      "Question for the room — anyone running a higher TF bias confirmation script in TradingView? Looking to combine with the room's signals.",
+      "Question for the room — anyone running a higher TF bias confirmation script in TradingView? Looking to combine with the room's trade ideas.",
     replies: 4,
   },
   {

@@ -160,7 +160,7 @@ const NotificationsBell = () => {
               <Bell className="h-8 w-8 text-muted-foreground/30 mb-2" />
               <p className="text-xs text-muted-foreground">No notifications yet</p>
               <p className="mt-1 text-[10px] text-muted-foreground/70">
-                You'll be notified about new signals, mentions and webinars.
+                You'll be notified about new trade ideas, mentions and webinars.
               </p>
             </div>
           ) : (

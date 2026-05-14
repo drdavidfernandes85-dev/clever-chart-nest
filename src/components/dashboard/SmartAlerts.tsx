@@ -395,7 +395,7 @@ const FooterLink = () => (
     to="/signals"
     className="flex items-center justify-center gap-1 border-t border-border/40 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/5 transition-colors"
   >
-    See All Signals
+    See All Trade Ideas
     <ArrowRight className="h-3 w-3" />
   </Link>
 );

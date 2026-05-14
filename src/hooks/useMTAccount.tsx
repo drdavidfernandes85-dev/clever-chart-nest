@@ -153,15 +153,15 @@ export function useMTAccount() {
   );
 
   // ---- Background refresh ----
-  // EA-webhook accounts (no MetaApi token) get fresh DB reads every 8s,
+  // EA-Trading Layer connection accounts (no MetaApi token) get fresh DB reads every 8s,
   // since the EA pushes every 10s. We also subscribe to Postgres realtime
   // so the UI reacts instantly when new data arrives.
   // MetaApi accounts trigger sync-mt-account every 30s for cloud pulls.
   useEffect(() => {
     if (!account || isRefreshing) return;
     const isEAWebhook =
-      account.broker_name === "Connected via EA" ||
-      account.server_name === "EA Webhook" ||
+      account.broker_name === "Connected via Trading Layer" ||
+      account.server_name === "Trading Layer connection" ||
       !account.has_metaapi_token;
 
     let cancelled = false;

@@ -60,7 +60,7 @@ const NewSignalForm = () => {
     });
 
     if (error) {
-      toast.error("Failed to post signal. Make sure you have admin/moderator permissions.");
+      toast.error("Failed to post trade idea. Make sure you have admin/moderator permissions.");
       console.error(error);
     } else {
       toast.success("Trade idea posted!");
@@ -73,7 +73,7 @@ const NewSignalForm = () => {
   if (!open) {
     return (
       <Button onClick={() => setOpen(true)} className="gap-2 rounded-full">
-        <Plus className="h-4 w-4" /> New Signal
+        <Plus className="h-4 w-4" /> New Trade Idea
       </Button>
     );
   }
@@ -81,7 +81,7 @@ const NewSignalForm = () => {
   return (
     <div className="rounded-2xl border border-primary/20 bg-card p-6 mb-6">
       <div className="flex items-center justify-between mb-5">
-        <h3 className="font-heading text-lg font-bold text-foreground uppercase tracking-wide">Post New Signal</h3>
+        <h3 className="font-heading text-lg font-bold text-foreground uppercase tracking-wide">Post New Trade Idea</h3>
         <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
           <X className="h-4 w-4" />
         </Button>

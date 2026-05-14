@@ -131,7 +131,7 @@ const requestSignalScore = (key: string, props: Props, locale: Locale) => {
       },
     })
     .then(({ data, error }) => {
-      if (error) throw new Error(error.message || "AI signal scoring failed");
+      if (error) throw new Error(error.message || "AI trade idea scoring failed");
       const normalized = normalizeScore(data);
       scoreCache.set(key, normalized);
       return normalized;

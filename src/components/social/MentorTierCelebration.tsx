@@ -153,7 +153,7 @@ const MentorTierCelebration = ({ tier, onClose }: Props) => {
                 className="flex h-11 items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-card/80 font-heading text-xs font-extrabold uppercase tracking-wider text-foreground transition-colors hover:bg-muted/40"
               >
                 <Share2 className="h-3.5 w-3.5" />
-                Share My Signal
+                Share My Trade Idea
               </button>
             </div>
           </div>

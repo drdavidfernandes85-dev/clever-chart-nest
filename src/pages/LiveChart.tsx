@@ -134,7 +134,7 @@ const LiveChart = () => {
     window.localStorage.setItem("eltr.liveChart.rail", railOpen ? "1" : "0");
   }, [railOpen]);
 
-  // Whenever something calls openTrade() (e.g. "Take this signal"), make sure
+  // Whenever something calls openTrade() (e.g. "Take this trade idea"), make sure
   // the right rail is visible so the prefilled Quick Trade panel is in view.
   useEffect(() => {
     if (prefillNonce > 0) setRailOpen(true);
@@ -392,7 +392,7 @@ const LiveChart = () => {
       <KeywordCrossLinks current="livechart" />
 
       {/* Compact, draggable Quick Trade widget — auto-opens prefilled when
-          "Take This Signal" is clicked from Live Shared Signals / Community Hub. */}
+          "Take This Trade Idea" is clicked from Live Shared Signals / Community Hub. */}
       <FloatingQuickTrade
         symbols={SYMBOL_OPTIONS.map((o) => o.label)}
         onSymbolChange={(label) => {

@@ -255,19 +255,19 @@ const MacroBody_EN = () => (
     <P>
       Collected monthly by national statistics agencies. It's the most-watched gauge of labour
       market health. <strong>200K+</strong> is typical of expansion; readings near zero — or
-      negative spikes — signal contraction.
+      negative spikes — trade idea contraction.
     </P>
     <H3>Production Indicators</H3>
     <UL>
       <LI><strong>Manufacturing Production</strong> — % change in inflation-adjusted output by manufacturers.</LI>
       <LI><strong>Industrial Production</strong> — same idea but covers the entire industrial sector.</LI>
-      <LI><strong>Inventory Levels</strong> — rising inventories signal weak consumer demand.</LI>
+      <LI><strong>Inventory Levels</strong> — rising inventories trade idea weak consumer demand.</LI>
     </UL>
     <H3>Retail Sales</H3>
     <P>The most reliable gauge of consumer spending — which accounts for <strong>60–70% of GDP</strong> in most western economies.</P>
     <H3>Jobless Claims, Building Permits &amp; PMI</H3>
     <UL>
-      <LI><strong>Jobless Claims</strong> — rising claims signal a deteriorating labour force.</LI>
+      <LI><strong>Jobless Claims</strong> — rising claims trade idea a deteriorating labour force.</LI>
       <LI><strong>Building Permits / Housing Starts</strong> — early-warning indicators for recession.</LI>
       <LI><strong>PMI / ISM</strong> — &gt;50 expansion, &lt;50 contraction.</LI>
     </UL>
@@ -486,9 +486,9 @@ const TechnicalBody_EN = () => (
     </UL>
     <H2>4. Reading Candlesticks</H2>
     <P>A candlestick is a snapshot of the battle between buyers and sellers in a fixed time window.</P>
-    <H3>Single-Candle Signals</H3>
+    <H3>Single-Candle Trade Ideas</H3>
     <UL>
-      <LI><strong>Marubozu</strong> — no wicks. The strongest single-candle signal.</LI>
+      <LI><strong>Marubozu</strong> — no wicks. The strongest single-candle trade idea.</LI>
       <LI><strong>Hammer</strong> — bullish reversal at downtrend bottom.</LI>
       <LI><strong>Shooting Star</strong> — bearish reversal at uptrend top.</LI>
       <LI><strong>Doji</strong> — open = close. Indecision; reversal candidate at extremes.</LI>
@@ -504,7 +504,7 @@ const TechnicalBody_EN = () => (
       <LI><strong>SMA</strong> — equal weight to every data point</LI>
       <LI><strong>EMA</strong> — more weight to recent data</LI>
       <LI><strong>50- &amp; 200-day SMAs</strong> — institutional benchmarks</LI>
-      <LI><strong>Golden / Death Cross</strong> — regime signals</LI>
+      <LI><strong>Golden / Death Cross</strong> — regime trade ideas</LI>
     </UL>
     <H2>6. Indicators That Actually Help</H2>
     <H3>RSI &amp; Volume</H3>
@@ -551,9 +551,9 @@ const TechnicalBody_ES = () => (
     </UL>
     <H2>4. Lectura de Velas Japonesas</H2>
     <P>Una vela es la fotografía de la batalla entre compradores y vendedores en una ventana de tiempo fija.</P>
-    <H3>Señales de una sola vela</H3>
+    <H3>Ideas de Trading de una sola vela</H3>
     <UL>
-      <LI><strong>Marubozu</strong> — sin mechas. La señal individual más fuerte.</LI>
+      <LI><strong>Marubozu</strong> — sin mechas. La idea de trading individual más fuerte.</LI>
       <LI><strong>Martillo</strong> — reversión alcista en suelo bajista.</LI>
       <LI><strong>Estrella Fugaz</strong> — reversión bajista en techo alcista.</LI>
       <LI><strong>Doji</strong> — apertura = cierre. Indecisión; candidato a reversión.</LI>
@@ -569,7 +569,7 @@ const TechnicalBody_ES = () => (
       <LI><strong>SMA</strong> — peso igual a cada dato</LI>
       <LI><strong>EMA</strong> — más peso a los datos recientes</LI>
       <LI><strong>SMAs de 50 y 200</strong> — referencia institucional</LI>
-      <LI><strong>Cruce Dorado / de la Muerte</strong> — señales de régimen</LI>
+      <LI><strong>Cruce Dorado / de la Muerte</strong> — ideas de trading de régimen</LI>
     </UL>
     <H2>6. Indicadores Que Realmente Ayudan</H2>
     <H3>RSI y Volumen</H3>
@@ -616,9 +616,9 @@ const TechnicalBody_PT = () => (
     </UL>
     <H2>4. Leitura de Candles</H2>
     <P>Um candle é a fotografia da batalha entre compradores e vendedores em uma janela de tempo fixa.</P>
-    <H3>Sinais de uma única vela</H3>
+    <H3>Ideias de Trading de uma única vela</H3>
     <UL>
-      <LI><strong>Marubozu</strong> — sem pavios. O sinal individual mais forte.</LI>
+      <LI><strong>Marubozu</strong> — sem pavios. O ideia de trading individual mais forte.</LI>
       <LI><strong>Martelo</strong> — reversão de alta em fundo de tendência baixista.</LI>
       <LI><strong>Estrela Cadente</strong> — reversão de baixa em topo de tendência altista.</LI>
       <LI><strong>Doji</strong> — abertura = fechamento. Indecisão; candidato a reversão.</LI>
@@ -634,7 +634,7 @@ const TechnicalBody_PT = () => (
       <LI><strong>SMA</strong> — peso igual a cada dado</LI>
       <LI><strong>EMA</strong> — mais peso aos dados recentes</LI>
       <LI><strong>SMAs de 50 e 200</strong> — referência institucional</LI>
-      <LI><strong>Cruzamento Dourado / da Morte</strong> — sinais de regime</LI>
+      <LI><strong>Cruzamento Dourado / da Morte</strong> — ideias de trading de regime</LI>
     </UL>
     <H2>6. Indicadores Que Realmente Ajudam</H2>
     <H3>RSI e Volume</H3>
