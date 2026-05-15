@@ -212,6 +212,36 @@ const ConnectMT = () => {
         setPassword(""); // never keep password in memory after linking
         setStatus("connected");
         toast.success("Account successfully linked!");
+
+        // Temporary debug: query user's MT5 accounts right after connect succeeds.
+        try {
+          const { data: ures } = await supabase.auth.getUser();
+          const uid = ures?.user?.id;
+          if (uid) {
+            const { data: rows, error: qErr } = await supabase
+              .from("user_mt_accounts")
+              .select("user_id, metaapi_account_id, login, server_name, status, last_synced_at")
+              .eq("user_id", uid)
+              .order("created_at", { ascending: false })
+              .limit(5);
+            if (qErr) {
+              setMt5DebugRows({ error: qErr.message });
+            } else {
+              setMt5DebugRows(
+                (rows ?? []).map((r: any) => ({
+                  user_id: r.user_id,
+                  trading_layer_trader_id: r.metaapi_account_id,
+                  account_number: r.login,
+                  server: r.server_name,
+                  status: r.status,
+                  last_synced: r.last_synced_at,
+                })),
+              );
+            }
+          }
+        } catch (e: any) {
+          setMt5DebugRows({ error: e?.message || String(e) });
+        }
       }
     } catch (e: any) {
       setStatus("error");
