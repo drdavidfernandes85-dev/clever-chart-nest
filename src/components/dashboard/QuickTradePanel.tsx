@@ -623,7 +623,14 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     </div>
                   </div>
                   <div className="px-5 py-4 space-y-2.5 text-xs">
-                    <ConfirmRow label="Symbol" value={symbol} />
+                    <ConfirmRow
+                      label="Symbol"
+                      value={
+                        symbolDisplay !== brokerSymbol
+                          ? `${symbolDisplay} (${brokerSymbol})`
+                          : brokerSymbol
+                      }
+                    />
                     <ConfirmRow
                       label="Direction"
                       value={isBuy ? "BUY" : "SELL"}
