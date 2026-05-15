@@ -282,9 +282,9 @@ const TradeExecutionLogWidget = () => {
                           "px-3 max-w-[320px] truncate",
                           isFailed ? "text-red-400" : "text-muted-foreground",
                         )}
-                        title={String(displayBrokerMsg)}
+                        title={displayBrokerMsg}
                       >
-                        {String(displayBrokerMsg)}
+                        {truncatedBrokerMsg}
                       </td>
                     </tr>
                     {isFailed && isOpen && (
