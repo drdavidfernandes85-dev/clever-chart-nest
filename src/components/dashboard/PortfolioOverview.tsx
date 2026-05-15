@@ -68,25 +68,38 @@ const PortfolioOverview = () => {
     refresh();
   };
 
-  // Map MT positions to local Position shape — live data only, no mocks.
+  // Positions — live response from get-live-account is the source of truth.
+  // Falls back to DB-backed mtPositions only when the live response is empty.
   const livePositions: Position[] = useMemo(() => {
     if (!isConnected) return [];
-    return mtPositions.map((mp) => ({
-      symbol: mp.symbol,
-      side: mp.side === "buy" ? "long" : "short",
-      size: Number(mp.volume),
-      entry: Number(mp.open_price),
-      current: Number(mp.current_price ?? mp.open_price),
-      pnl: Number(mp.profit ?? 0),
-      pct:
-        mp.current_price && mp.open_price
-          ? ((Number(mp.current_price) - Number(mp.open_price)) /
-              Number(mp.open_price)) *
-            100 *
-            (mp.side === "buy" ? 1 : -1)
-          : 0,
-    }));
-  }, [isConnected, mtPositions]);
+    const source =
+      Array.isArray(livePos) && livePos.length > 0
+        ? livePos.map((lp) => ({
+            symbol: String(lp.symbol ?? ""),
+            side: lp.side === "sell" ? ("short" as const) : ("long" as const),
+            size: Number(lp.volume ?? 0),
+            entry: Number(lp.entry_price ?? 0),
+            current: Number(lp.current_price ?? 0),
+            pnl: Number(lp.profit ?? 0),
+            pct: 0,
+          }))
+        : mtPositions.map((mp) => ({
+            symbol: mp.symbol,
+            side: mp.side === "buy" ? ("long" as const) : ("short" as const),
+            size: Number(mp.volume),
+            entry: Number(mp.open_price),
+            current: Number(mp.current_price ?? mp.open_price),
+            pnl: Number(mp.profit ?? 0),
+            pct:
+              mp.current_price && mp.open_price
+                ? ((Number(mp.current_price) - Number(mp.open_price)) /
+                    Number(mp.open_price)) *
+                  100 *
+                  (mp.side === "buy" ? 1 : -1)
+                : 0,
+          }));
+    return source;
+  }, [isConnected, livePos, mtPositions]);
 
   const [positions, setPositions] = useState<Position[]>(livePositions);
   useEffect(() => setPositions(livePositions), [livePositions]);
@@ -361,10 +374,10 @@ const PortfolioOverview = () => {
                   {p.size.toFixed(2)}
                 </span>
                 <span className="text-right font-mono text-xs tabular-nums text-muted-foreground">
-                  {fmtPrice(p.entry)}
+                  {p.entry > 0 ? fmtPrice(p.entry) : "—"}
                 </span>
                 <span className="text-right font-mono text-xs tabular-nums text-foreground">
-                  {fmtPrice(p.current)}
+                  {p.current > 0 ? fmtPrice(p.current) : "—"}
                 </span>
                 <span
                   className={`text-right font-mono text-sm font-bold tabular-nums ${
