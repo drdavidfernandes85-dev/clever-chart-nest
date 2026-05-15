@@ -181,7 +181,16 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   } = useBrokerSymbols();
   const { isAdmin } = useIsAdmin();
   const showDebug = isAdmin;
+  // Always prefer the live broker symbols list when loaded — show every
+  // symbol the connected MT5 account exposes. Fall back to the optional
+  // prop, then the static default list.
   const SYMBOL_ITEMS = useMemo<SymbolItem[]>(() => {
+    if (brokerSymbolsLive && brokerSymbols.length > 0) {
+      return brokerSymbols.map((s) => ({
+        displayName: s.displayName || s.symbol,
+        brokerSymbol: s.brokerSymbol || s.name || s.symbol,
+      }));
+    }
     if (symbolsProp && symbolsProp.length > 0) {
       return symbolsProp.map((label) => ({
         displayName: label,
@@ -190,12 +199,12 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     }
     if (brokerSymbols.length > 0) {
       return brokerSymbols.map((s) => ({
-        displayName: s.symbol,
-        brokerSymbol: s.symbol,
+        displayName: s.displayName || s.symbol,
+        brokerSymbol: s.brokerSymbol || s.name || s.symbol,
       }));
     }
     return DEFAULT_SYMBOL_ITEMS;
-  }, [symbolsProp, brokerSymbols]);
+  }, [symbolsProp, brokerSymbols, brokerSymbolsLive]);
 
   // Resolve currently selected item from context value (matches either
   // displayName or brokerSymbol so legacy "EUR/USD" values keep working).
