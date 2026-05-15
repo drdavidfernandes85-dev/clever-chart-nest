@@ -175,7 +175,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [connected, selectedBrokerSymbol]);
+  }, [user, selectedBrokerSymbol]);
 
   const value = useMemo<Ctx>(
     () => ({
