@@ -91,8 +91,8 @@ serve(async (req) => {
     }
 
     const { data: linkedAccount, error: accountError } = await supabase
-      .from("user_mt5_accounts")
-      .select("trading_layer_trader_id, account_number, server, status")
+      .from("user_mt_accounts")
+      .select("metaapi_account_id, login, server_name, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -103,7 +103,7 @@ serve(async (req) => {
       return json({ success: false, step: "database_lookup", error: accountError.message }, 500);
     }
 
-    let accountId = linkedAccount?.trading_layer_trader_id || null;
+    let accountId = linkedAccount?.metaapi_account_id || null;
     let accountSource = "database";
 
     if (!accountId) {
@@ -113,16 +113,18 @@ serve(async (req) => {
       if (tenantRes.ok && ownerAccount?.accountId && mt5?.status === "connected") {
         accountId = ownerAccount.accountId;
         accountSource = "tenant_fallback";
-        await supabase.from("user_mt5_accounts").upsert({
+        const nowIso = new Date().toISOString();
+        await supabase.from("user_mt_accounts").insert({
           user_id: user.id,
-          trading_layer_trader_id: ownerAccount.accountId,
-          account_number: String(mt5.login || ""),
-          server: String(mt5.server || ""),
-          encrypted_password: null,
+          metaapi_account_id: String(ownerAccount.accountId),
+          login: String(mt5.login || ""),
+          server_name: String(mt5.server || ""),
+          platform: "mt5",
+          broker_name: "Infinox",
           status: "connected",
-          last_synced: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id,account_number,server" });
+          last_synced_at: nowIso,
+          updated_at: nowIso,
+        });
       }
     }
 
