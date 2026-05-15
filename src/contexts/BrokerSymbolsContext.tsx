@@ -45,7 +45,7 @@ interface Ctx {
   selectedSymbolValid: boolean;
   selectedSymbolInfo: any;
   tick: any;
-  /** Last raw response from get-broker-symbol (debug). */
+  /** Last raw response from get-mt5-symbol-data (debug). */
   lastResponse: unknown;
   refresh: (selectedSymbol?: string) => Promise<void>;
   setSelectedBrokerSymbol: (symbol: string) => void;
@@ -85,7 +85,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       const normalizedSelectedSymbol = normalize(overrideSelected || selectedBrokerSymbol || "EURUSD");
       try {
         const { data, error: invErr } = await supabase.functions.invoke(
-          "get-broker-symbol",
+          "get-mt5-symbol-data",
           { body: { debug: true, selectedSymbol: normalizedSelectedSymbol } },
         );
 
