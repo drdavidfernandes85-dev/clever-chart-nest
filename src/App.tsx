@@ -90,8 +90,8 @@ const App = () => (
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   {/* Open to all logged-in users (no eligibility required) */}
-                  <Route path="/dashboard" element={<DashboardShell><TradingDashboard /></DashboardShell>} />
-                  <Route path="/dashboard-legacy" element={<DashboardShell><Dashboard /></DashboardShell>} />
+                  <Route path="/dashboard" element={<DashboardShell><Dashboard /></DashboardShell>} />
+                  <Route path="/trading-room" element={<DashboardShell><TradingDashboard /></DashboardShell>} />
                   <Route path="/command" element={<DashboardShell><CommandDeck /></DashboardShell>} />
                   <Route path="/profile" element={<DashboardShell><Profile /></DashboardShell>} />
                   <Route path="/videos" element={<DashboardShell><VideoLibrary /></DashboardShell>} />
