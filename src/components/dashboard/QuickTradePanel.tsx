@@ -158,7 +158,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   // Symbol universe: prop > broker symbols (live) > fallback.
   // Each item carries both a displayName (e.g. "EUR/USD") and the exact
   // broker symbol (e.g. "EURUSD") that must be sent to execute-trade.
-  const { symbols: brokerSymbols, isLive: brokerSymbolsLive, error: brokerSymbolsError } = useBrokerSymbols();
+  const { symbols: brokerSymbols, isLive: brokerSymbolsLive, loading: brokerSymbolsLoading, error: brokerSymbolsError, refresh: refreshBrokerSymbols } = useBrokerSymbols();
   const SYMBOL_ITEMS = useMemo<SymbolItem[]>(() => {
     if (symbolsProp && symbolsProp.length > 0) {
       return symbolsProp.map((label) => ({
@@ -229,12 +229,16 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const resolvedBrokerSymbol = resolveBrokerSymbol(rawBrokerSymbol, brokerSymbols);
 
   // Validation state for the symbol that will be sent.
-  const symbolValidation: { ok: boolean; sentSymbol: string; reason: string } = (() => {
+  const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
+    if (brokerSymbolsLoading) {
+      return { ok: false, sentSymbol: rawBrokerSymbol, reason: "Loading broker symbols…" };
+    }
     if (!brokerSymbolsLive || brokerSymbols.length === 0) {
       return {
         ok: false,
         sentSymbol: rawBrokerSymbol,
-        reason: "Live broker symbols list hasn't loaded yet. Connect MT5 or wait for symbols to sync before trading.",
+        reason: brokerSymbolsError ?? "Broker symbols could not be loaded. Please refresh.",
+        canRetry: true,
       };
     }
     if (!resolvedBrokerSymbol) {
@@ -761,13 +765,24 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                         </div>
                       )}
                       <div
-                        className={`mt-1.5 text-[10px] font-mono uppercase tracking-widest ${
+                        className={`mt-1.5 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest ${
                           symbolValidation.ok ? "text-emerald-400" : "text-red-400"
                         }`}
                       >
-                        {symbolValidation.ok
-                          ? `✓ Validated against ${brokerSymbols.length} broker symbols`
-                          : `✗ ${symbolValidation.reason}`}
+                        <span>
+                          {symbolValidation.ok
+                            ? `✓ Validated against ${brokerSymbols.length} broker symbols`
+                            : `✗ ${symbolValidation.reason}`}
+                        </span>
+                        {symbolValidation.canRetry && (
+                          <button
+                            type="button"
+                            onClick={() => refreshBrokerSymbols()}
+                            className="rounded border border-red-400/40 px-2 py-0.5 text-red-300 hover:bg-red-500/10"
+                          >
+                            Refresh
+                          </button>
+                        )}
                       </div>
                     </div>
                     <ConfirmRow
