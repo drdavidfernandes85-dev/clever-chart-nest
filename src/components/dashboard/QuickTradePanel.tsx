@@ -778,7 +778,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               accountConnected !== true ||
               !brokerSymbol ||
               lotsNum <= 0 ||
-              !validBroker;
+              !validBroker ||
+              !!stopsError;
             const reason =
               accountConnected !== true
                 ? "Connect your MT5 account to place trades"
@@ -788,6 +789,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 ? "Selected symbol is not a valid broker symbol"
                 : lotsNum <= 0
                 ? "Volume must be greater than 0"
+                : stopsError
+                ? stopsError
                 : "";
             return (
               <>
