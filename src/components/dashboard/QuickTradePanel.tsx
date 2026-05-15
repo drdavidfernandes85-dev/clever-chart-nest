@@ -925,7 +925,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 </pre>
                 <button
                   type="button"
-                  onClick={() => refreshBrokerSymbols()}
+                  onClick={() => refreshBrokerSymbols(normalizedSymbol)}
                   className="mt-1 rounded border border-amber-500/40 px-2 py-0.5 uppercase tracking-widest text-amber-300 hover:bg-amber-500/10"
                 >
                   Refresh symbols
@@ -1010,7 +1010,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                         {symbolValidation.canRetry && (
                           <button
                             type="button"
-                            onClick={() => refreshBrokerSymbols()}
+                            onClick={() => refreshBrokerSymbols(normalizedSymbol)}
                             className="rounded border border-red-400/40 px-2 py-0.5 text-red-300 hover:bg-red-500/10"
                           >
                             Refresh
