@@ -694,11 +694,12 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               <Input
                 inputMode="decimal"
                 placeholder="—"
-                value={sl}
+                value={noStops ? "" : sl}
+                disabled={noStops}
                 onChange={(e) =>
                   setSl(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))
                 }
-                className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-red-500/40"
+                className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-red-500/40 disabled:opacity-50"
               />
             </div>
             <div>
@@ -708,14 +709,43 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               <Input
                 inputMode="decimal"
                 placeholder="—"
-                value={tp}
+                value={noStops ? "" : tp}
+                disabled={noStops}
                 onChange={(e) =>
                   setTp(e.target.value.replace(/[^0-9.]/g, "").slice(0, 12))
                 }
-                className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-emerald-500/40"
+                className="h-11 bg-background/60 border-border/50 font-mono text-sm tabular-nums focus-visible:ring-emerald-500/40 disabled:opacity-50"
               />
             </div>
           </div>
+
+          {/* Place trade without SL/TP */}
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={noStops}
+              onCheckedChange={(v) => setNoStops(v === true)}
+            />
+            <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+              Place trade without SL/TP
+            </span>
+          </label>
+
+          {/* Current price + SL/TP validation hint */}
+          {!noStops && (slValid || tpValid) && (
+            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest">
+              <span className="text-muted-foreground">
+                Current price:{" "}
+                <span className="text-foreground tabular-nums">
+                  {currentPrice != null ? currentPrice : "—"}
+                </span>
+              </span>
+              {stopsError && (
+                <span className="text-red-400 normal-case tracking-normal">
+                  {stopsError}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Live preview metrics — P&L / risk pending symbol specs */}
           <div className="rounded-xl border border-border/40 bg-background/40 divide-y divide-border/30 overflow-hidden">
