@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
 
@@ -14,12 +14,12 @@ export interface BrokerSymbol {
 }
 
 const enrich = (s: any): BrokerSymbol => {
-  const sym = String(s?.symbol ?? s?.brokerSymbol ?? s?.name ?? "").toUpperCase();
+  const sym = String(s?.name ?? s?.brokerSymbol ?? s?.symbol ?? "").toUpperCase();
   return {
     symbol: sym,
-    brokerSymbol: sym,
-    name: sym,
-    displayName: s?.displayName ?? sym,
+    brokerSymbol: s?.brokerSymbol ?? s?.name ?? sym,
+    name: s?.name ?? sym,
+    displayName: s?.displayName ?? s?.name ?? sym,
     description: s?.description ?? null,
     digits: s?.digits ?? null,
     contractSize: s?.contractSize ?? null,
@@ -45,8 +45,10 @@ interface Ctx {
   selectedSymbolValid: boolean;
   selectedSymbolInfo: any;
   tick: any;
-  /** Last raw response from get-mt5-symbol-data (debug). */
+  /** Last raw response from get-mt5-symbols (debug). */
   lastResponse: unknown;
+  /** Last raw response from get-mt5-symbol-data (debug). */
+  lastSymbolDataResponse: unknown;
   refresh: (selectedSymbol?: string) => Promise<void>;
   setSelectedBrokerSymbol: (symbol: string) => void;
 }
@@ -64,63 +66,47 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastResponse, setLastResponse] = useState<unknown>(null);
+  const [lastSymbolDataResponse, setLastSymbolDataResponse] = useState<unknown>(null);
   const [selectedSymbolValid, setSelectedSymbolValid] = useState(false);
   const [selectedSymbolInfo, setSelectedSymbolInfo] = useState<any>(null);
   const [tick, setTick] = useState<any>(null);
   const [selectedBrokerSymbol, setSelectedBrokerSymbol] = useState<string>("EURUSD");
 
+  // Fetch full broker symbols list via the new get-mt5-symbols function.
   const refresh = useCallback(
-    async (overrideSelected?: string) => {
+    async (_overrideSelected?: string) => {
       if (!connected) {
         setSymbols(FALLBACK_SYMBOLS);
         setIsLive(false);
         setLoaded(false);
-        setSelectedSymbolValid(false);
-        setSelectedSymbolInfo(null);
-        setTick(null);
         setError(null);
         return;
       }
       setLoading(true);
-      const normalizedSelectedSymbol = normalize(overrideSelected || selectedBrokerSymbol || "EURUSD");
       try {
-        const { data, error: invErr } = await supabase.functions.invoke(
-          "get-mt5-symbol-data",
-          { body: { debug: true, selectedSymbol: normalizedSelectedSymbol } },
-        );
-
+        const { data, error: invErr } = await supabase.functions.invoke("get-mt5-symbols", {
+          body: {},
+        });
         if (invErr) {
           setLastResponse({ success: false, error: invErr.message ?? String(invErr) });
           setSymbols(FALLBACK_SYMBOLS);
           setIsLive(false);
           setLoaded(false);
-          setSelectedSymbolValid(false);
-          setSelectedSymbolInfo(null);
-          setTick(null);
           setError(invErr.message ?? "Broker symbols could not be loaded. Please refresh.");
           return;
         }
-
         setLastResponse(data);
-
         if (data?.success === true) {
           const list = Array.isArray(data.symbols) ? data.symbols : [];
           const enriched = list.length > 0 ? list.map(enrich) : FALLBACK_SYMBOLS;
           setSymbols(enriched);
           setIsLive(list.length > 0);
           setLoaded(data.symbolsLoaded === true || list.length > 0);
-          setSelectedSymbolValid(data.selectedSymbolValid === true);
-          setSelectedSymbolInfo(data.selectedSymbolInfo || null);
-          setTick(data.tick || null);
-          setError(null);
+          setError(list.length === 0 ? "Broker returned no symbols." : null);
         } else {
-          const list = Array.isArray(data?.symbols) ? data.symbols : [];
-          setSymbols(list.length > 0 ? list.map(enrich) : FALLBACK_SYMBOLS);
+          setSymbols(FALLBACK_SYMBOLS);
           setIsLive(false);
-          setLoaded(data?.symbolsLoaded === true || list.length > 0);
-          setSelectedSymbolValid(false);
-          setSelectedSymbolInfo(null);
-          setTick(null);
+          setLoaded(false);
           setError(data?.error ?? "Broker symbols could not be loaded. Please refresh.");
         }
       } catch (e: any) {
@@ -128,20 +114,68 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setSymbols(FALLBACK_SYMBOLS);
         setIsLive(false);
         setLoaded(false);
-        setSelectedSymbolValid(false);
-        setSelectedSymbolInfo(null);
-        setTick(null);
         setError(e?.message ?? "Broker symbols could not be loaded. Please refresh.");
       } finally {
         setLoading(false);
       }
     },
-    [connected, selectedBrokerSymbol],
+    [connected],
   );
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Fetch specs + tick for the currently selected symbol.
+  const lastFetchedSymbol = useRef<string | null>(null);
+  useEffect(() => {
+    if (!connected) {
+      setSelectedSymbolValid(false);
+      setSelectedSymbolInfo(null);
+      setTick(null);
+      return;
+    }
+    const sym = normalize(selectedBrokerSymbol);
+    if (!sym) return;
+    if (lastFetchedSymbol.current === sym) return;
+    lastFetchedSymbol.current = sym;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data, error: invErr } = await supabase.functions.invoke(
+          "get-mt5-symbol-data",
+          { body: { debug: true, selectedSymbol: sym } },
+        );
+        if (cancelled) return;
+        if (invErr) {
+          setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
+          setSelectedSymbolValid(false);
+          setSelectedSymbolInfo(null);
+          setTick(null);
+          return;
+        }
+        setLastSymbolDataResponse(data);
+        if (data?.success === true) {
+          setSelectedSymbolValid(data.selectedSymbolValid === true);
+          setSelectedSymbolInfo(data.selectedSymbolInfo || null);
+          setTick(data.tick || null);
+        } else {
+          setSelectedSymbolValid(false);
+          setSelectedSymbolInfo(null);
+          setTick(null);
+        }
+      } catch (e: any) {
+        if (cancelled) return;
+        setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
+        setSelectedSymbolValid(false);
+        setSelectedSymbolInfo(null);
+        setTick(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [connected, selectedBrokerSymbol]);
 
   const value = useMemo<Ctx>(
     () => ({
@@ -154,10 +188,11 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       selectedSymbolInfo,
       tick,
       lastResponse,
+      lastSymbolDataResponse,
       refresh,
       setSelectedBrokerSymbol,
     }),
-    [symbols, isLive, loading, loaded, error, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, refresh],
+    [symbols, isLive, loading, loaded, error, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, lastSymbolDataResponse, refresh],
   );
 
   return <BrokerCtx.Provider value={value}>{children}</BrokerCtx.Provider>;
@@ -176,6 +211,7 @@ export function useBrokerSymbols(): Ctx {
       selectedSymbolInfo: null,
       tick: null,
       lastResponse: null,
+      lastSymbolDataResponse: null,
       refresh: async () => {},
       setSelectedBrokerSymbol: () => {},
     };
