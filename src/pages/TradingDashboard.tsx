@@ -34,6 +34,29 @@ import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import { cn } from "@/lib/utils";
 
+// Legacy dashboard widgets — preserved on the new dashboard
+import KpiStrip from "@/components/dashboard/KpiStrip";
+import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
+import WebinarHeroBanner from "@/components/webinars/WebinarHeroBanner";
+import SmartInsights from "@/components/ai/SmartInsights";
+import AICopilot from "@/components/ai/AICopilot";
+import OpenAccountBanner from "@/components/dashboard/OpenAccountBanner";
+import MentorTierBanner from "@/components/social/MentorTierBanner";
+import MentorTierCelebration from "@/components/social/MentorTierCelebration";
+import KeywordCrossLinks from "@/components/seo/KeywordCrossLinks";
+import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
+import Watchlist from "@/components/dashboard/Watchlist";
+import MarketMovers from "@/components/dashboard/MarketMovers";
+import RiskMeter from "@/components/dashboard/RiskMeter";
+import RecentActivity from "@/components/dashboard/RecentActivity";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMentorTierProgress } from "@/hooks/useMentorTierProgress";
+import { useQuickTrade, QuickTradeProvider } from "@/contexts/QuickTradeContext";
+import { LiveAccountProvider } from "@/contexts/LiveAccountContext";
+import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
+import { X } from "lucide-react";
+
 // ---------- Types ----------
 interface LivePosition {
   ticket: string | null;
