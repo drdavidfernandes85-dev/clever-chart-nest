@@ -260,6 +260,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       setConfirming(false);
       return;
     }
+    // Validate broker symbol against the live broker symbols list.
+    if (brokerSymbolsLive && brokerSymbols.length > 0) {
+      const exists = brokerSymbols.some(
+        (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
+      );
+      if (!exists) {
+        const msg = `Symbol "${brokerSymbol}" is not available on your broker. Pick one from the live symbols list.`;
+        toast.error("Invalid broker symbol", { description: msg });
+        setResultState({ type: "failed", message: msg });
+        setConfirming(false);
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       const tradeId = tradeIdSrc ?? crypto.randomUUID();
