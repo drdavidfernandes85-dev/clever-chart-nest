@@ -59,7 +59,7 @@ const normalize = (v: string) =>
   String(v || "").replace("/", "").replace("-", "").replace(" ", "").toUpperCase();
 
 export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
-  const { connected } = useLiveAccount();
+  const { user } = useAuth();
   const [symbols, setSymbols] = useState<BrokerSymbol[]>(FALLBACK_SYMBOLS);
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
