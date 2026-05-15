@@ -96,7 +96,9 @@ const TradingSignals = () => {
 
   const activeSignals = signals.filter((s) => s.status === "active");
   const closedSignals = signals.filter((s) => s.status !== "active");
-  const displayed = tab === "active" ? activeSignals : closedSignals;
+  const fullList = tab === "active" ? activeSignals : closedSignals;
+  const displayed = fullList.slice(0, pageSize);
+  const hasMore = fullList.length > displayed.length;
 
   // P&L calculations — TP Hit = always positive pips, SL Hit = always negative
   const pnlStats = closedSignals.reduce(
