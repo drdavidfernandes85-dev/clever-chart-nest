@@ -714,6 +714,37 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               </>
             );
           })()}
+
+          {showDebug && (
+            <details className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-[10px] font-mono text-amber-200/80">
+              <summary className="cursor-pointer uppercase tracking-widest text-amber-400 hover:text-amber-300">
+                Broker Symbols Debug
+              </summary>
+              <div className="mt-2 space-y-1">
+                <div>symbolsLoading: <span className="text-foreground">{String(brokerSymbolsLoading)}</span></div>
+                <div>symbolsLoaded: <span className="text-foreground">{String(symbolsLoaded)}</span></div>
+                <div>brokerSymbols.length: <span className="text-foreground">{brokerSymbols.length}</span></div>
+                <div>selected display symbol: <span className="text-foreground">{symbolDisplay}</span></div>
+                <div>selected broker symbol: <span className="text-foreground">{normalizedSymbol}</span></div>
+                <div>symbol exists in broker list: <span className="text-foreground">{String(existsInBrokerSymbols)}</span></div>
+                <div>accountConnected: <span className="text-foreground">{String(accountConnected)}</span></div>
+                {brokerSymbolsError && (
+                  <div>error: <span className="text-red-400">{brokerSymbolsError}</span></div>
+                )}
+                <div className="pt-1">last get-trading-symbols response:</div>
+                <pre className="mt-1 max-h-40 overflow-auto rounded bg-background/60 p-2 text-[10px] text-foreground/80 whitespace-pre-wrap break-all">
+{JSON.stringify(brokerSymbolsLastResponse, null, 2)}
+                </pre>
+                <button
+                  type="button"
+                  onClick={() => refreshBrokerSymbols()}
+                  className="mt-1 rounded border border-amber-500/40 px-2 py-0.5 uppercase tracking-widest text-amber-300 hover:bg-amber-500/10"
+                >
+                  Refresh symbols
+                </button>
+              </div>
+            </details>
+          )}
         </div>
       </motion.div>
 
