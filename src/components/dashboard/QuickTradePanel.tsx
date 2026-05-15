@@ -692,33 +692,80 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               />
             </button>
             {openSymbols && (
-              <ul className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
-                {SYMBOL_ITEMS.map((it) => {
-                  const isActive = it.brokerSymbol === brokerSymbol;
-                  return (
-                    <li key={it.brokerSymbol}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCtxSymbol(it.displayName);
-                          onSymbolChange?.(it.displayName);
-                          setOpenSymbols(false);
-                        }}
-                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
-                          isActive ? "text-primary bg-primary/5" : "text-foreground"
-                        }`}
-                      >
-                        <span>{it.displayName}</span>
-                        {it.displayName !== it.brokerSymbol && (
-                          <span className="text-[10px] font-mono text-muted-foreground">
-                            {it.brokerSymbol}
-                          </span>
-                        )}
-                      </button>
+              <div className="absolute left-0 right-0 z-20 mt-1 rounded-xl border border-border/50 bg-popover shadow-xl overflow-hidden">
+                <div className="p-2 border-b border-border/40 space-y-2 bg-card/80 backdrop-blur">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      autoFocus
+                      value={symbolSearch}
+                      onChange={(e) => setSymbolSearch(e.target.value)}
+                      placeholder={`Search ${brokerSymbols.length} symbols…`}
+                      className="h-9 bg-background/60 border-border/50 font-mono text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => refreshBrokerSymbols(normalizedSymbol, { force: true })}
+                      disabled={brokerSymbolsLoading}
+                      className="inline-flex items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1.5 text-[9px] font-bold uppercase tracking-widest text-primary hover:bg-primary/20 disabled:opacity-50"
+                      title="Hard refresh broker symbols"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${brokerSymbolsLoading ? "animate-spin" : ""}`} />
+                      Refresh
+                    </button>
+                  </div>
+                  {assetClasses.length > 1 && (
+                    <div className="flex flex-wrap gap-1">
+                      {assetClasses.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setAssetClassFilter(c)}
+                          className={`rounded-full px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest transition-colors ${
+                            assetClassFilter === c
+                              ? "bg-primary text-background"
+                              : "bg-muted/30 text-muted-foreground hover:bg-primary/15 hover:text-primary"
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <ul className="max-h-72 overflow-y-auto">
+                  {filteredSymbolItems.length === 0 && (
+                    <li className="px-3.5 py-4 text-center text-[11px] font-mono text-muted-foreground">
+                      No symbols match.
                     </li>
-                  );
-                })}
-              </ul>
+                  )}
+                  {filteredSymbolItems.map((it) => {
+                    const isActive = it.brokerSymbol === brokerSymbol;
+                    return (
+                      <li key={it.brokerSymbol}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCtxSymbol(it.displayName);
+                            onSymbolChange?.(it.displayName);
+                            setOpenSymbols(false);
+                            setSymbolSearch("");
+                          }}
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
+                            isActive ? "text-primary bg-primary/5" : "text-foreground"
+                          }`}
+                        >
+                          <span>{it.displayName}</span>
+                          {it.displayName !== it.brokerSymbol && (
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {it.brokerSymbol}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
           </div>
 
