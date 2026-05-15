@@ -9,6 +9,7 @@ import {
   Video,
   BarChart3,
   Activity,
+  Zap,
   ChevronLeft,
   ChevronRight,
   User,
