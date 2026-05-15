@@ -149,7 +149,7 @@ const GettingStartedBody_EN = () => (
       <LI>How global markets work — Forex, indices, commodities, crypto</LI>
       <LI>The difference between brokers, exchanges, and liquidity providers</LI>
       <LI>How to read a price chart and understand bid/ask, spread, and pip value</LI>
-      <LI>How to set up your trading platform (MT4 / MT5 / TradingView)</LI>
+      <LI>How to set up your trading platform (MT5 / TradingView)</LI>
     </UL>
     <ImgHint locale="en">"Trader's workstation with MT5 and TradingView side-by-side"</ImgHint>
     <H3>Build your trading toolkit</H3>
@@ -178,7 +178,7 @@ const GettingStartedBody_ES = () => (
       <LI>Cómo funcionan los mercados globales: Forex, índices, materias primas y criptomonedas</LI>
       <LI>La diferencia entre brokers, exchanges y proveedores de liquidez</LI>
       <LI>Cómo leer un gráfico de precios y entender bid/ask, spread y valor del pip</LI>
-      <LI>Cómo configurar tu plataforma de trading (MT4 / MT5 / TradingView)</LI>
+      <LI>Cómo configurar tu plataforma de trading (MT5 / TradingView)</LI>
     </UL>
     <ImgHint locale="es">"Estación de trabajo del trader con MT5 y TradingView lado a lado"</ImgHint>
     <H3>Arma tu kit de herramientas de trading</H3>
@@ -207,7 +207,7 @@ const GettingStartedBody_PT = () => (
       <LI>Como funcionam os mercados globais: Forex, índices, commodities e criptoativos</LI>
       <LI>A diferença entre brokers, exchanges e provedores de liquidez</LI>
       <LI>Como ler um gráfico de preços e entender bid/ask, spread e valor do pip</LI>
-      <LI>Como configurar sua plataforma de trading (MT4 / MT5 / TradingView)</LI>
+      <LI>Como configurar sua plataforma de trading (MT5 / TradingView)</LI>
     </UL>
     <ImgHint locale="pt">"Estação de trabalho do trader com MT5 e TradingView lado a lado"</ImgHint>
     <H3>Monte seu kit de ferramentas de trading</H3>

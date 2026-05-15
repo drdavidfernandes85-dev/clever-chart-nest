@@ -105,13 +105,13 @@ const SymbolPositions = ({ symbolLabel }: Props) => {
         ) : !account ? (
           <div className="px-4 py-5 text-center">
             <p className="text-xs text-muted-foreground mb-2">
-              No MetaTrader account connected.
+              No MT5 account connected.
             </p>
             <Link
               to="/connect-mt"
               className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-heading font-semibold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
             >
-              Connect MT4 / MT5
+              Connect MT5
             </Link>
           </div>
         ) : rows.length === 0 ? (

@@ -20,7 +20,7 @@ const STEPS: Step[] = [
   {
     route: "/dashboard",
     title: "Portfolio & Risk panels",
-    body: "Track your live MT4/5 balance, equity, open P/L and risk exposure in real time. Connect your account from the sidebar to populate them.",
+    body: "Track your connected MT5 account's balance, equity, open P/L and risk exposure in real time. Connect your account from the sidebar to populate them.",
   },
   {
     route: "/dashboard",

@@ -251,7 +251,7 @@ const RecentActivity = () => {
           className="block border-t border-border/40 px-5 py-2.5 text-center text-[11px] font-semibold text-primary hover:bg-primary/5 transition-colors"
         >
           <Plug className="inline h-3 w-3 mr-1" />
-          Connect MT4/5 for real activity
+          Connect MT5 for real activity
         </Link>
       )}
     </motion.div>

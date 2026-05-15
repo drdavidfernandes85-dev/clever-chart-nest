@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Plug, Sparkles, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 
 const DISMISS_KEY = "ixltr.welcomeBanner.dismissed";
 
@@ -12,7 +12,7 @@ const ELIGIBLE_ROUTES = ["/dashboard", "/profile", "/webinars", "/videos"];
 
 const WelcomeBanner = () => {
   const { user, profile, ready } = useAuth();
-  const { account, loading } = useMTAccount();
+  const { connected, loading } = useLiveAccount();
   const location = useLocation();
   const [dismissed, setDismissed] = useState(false);
 
@@ -22,7 +22,7 @@ const WelcomeBanner = () => {
 
   if (!ready || !user) return null;
   if (loading) return null;
-  if (account) return null; // already connected
+  if (connected) return null; // already connected via get-live-account
   if (dismissed) return null;
   if (!ELIGIBLE_ROUTES.some((p) => location.pathname.startsWith(p))) return null;
   // Hide on the connect-mt page itself

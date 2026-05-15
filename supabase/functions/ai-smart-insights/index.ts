@@ -68,13 +68,13 @@ Deno.serve(async (req) => {
               market_summary: { type: "string", description: "1-2 sentence overview of macro tape and risk tone." },
               key_opportunities: {
                 type: "array",
-                description: "2-4 concrete opportunities a discretionary trader should watch today.",
+                description: "2-4 concrete trade ideas / trade setups / market opportunities a discretionary trader should watch today. Never use the word 'signal' — use 'trade idea', 'trade setup', or 'market opportunity'.",
                 items: {
                   type: "object",
                   properties: {
                     pair: { type: "string" },
                     bias: { type: "string", enum: ["bullish", "bearish", "neutral"] },
-                    rationale: { type: "string" },
+                    rationale: { type: "string", description: "Short rationale framed as a trade idea or trade setup. Do not use the word 'signal'." },
                   },
                   required: ["pair", "bias", "rationale"],
                   additionalProperties: false,
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              `You are an institutional macro strategist. You read live news + calendar and return tight, actionable insights for active FX/metals traders. Never give financial advice; speak in probabilistic terms. Write all natural-language fields (market_summary, rationale, title, detail) in ${LANG_NAME[locale]}. The "bias" enum (bullish/bearish/neutral) and "severity" enum (low/medium/high) MUST stay in English. Keep ticker symbols (EUR/USD, XAU/USD, NAS100, BTC/USD, etc.) in their original form.`,
+              `You are an institutional macro strategist. You read live news + calendar and return tight, actionable trade ideas, trade setups, and market opportunities for active FX/metals traders. Never use the word "signal" — use "trade idea", "trade setup", or "market opportunity" instead. Never give financial advice; speak in probabilistic terms. Write all natural-language fields (market_summary, rationale, title, detail) in ${LANG_NAME[locale]}. The "bias" enum (bullish/bearish/neutral) and "severity" enum (low/medium/high) MUST stay in English. Keep ticker symbols (EUR/USD, XAU/USD, NAS100, BTC/USD, etc.) in their original form.`,
           },
           {
             role: "user",

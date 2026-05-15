@@ -356,9 +356,9 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
               <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-[11px] text-amber-300">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  Your MetaTrader EA is not connected. Connect from{" "}
+                  Your MT5 account is not connected. Connect from{" "}
                   <a href="/connect-mt" className="font-semibold underline">
-                    Connect MT
+                    Connect MT5
                   </a>{" "}
                   first.
                 </span>
@@ -398,10 +398,10 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
               <div className="flex flex-col items-center justify-center gap-3 py-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="font-heading text-sm font-bold text-foreground">
-                  Sending order to your EA…
+                  Executing trade on your connected MT5 account…
                 </p>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  EA polls every ≤5 seconds
+                  Routing through the Trading Layer
                 </p>
               </div>
             )}

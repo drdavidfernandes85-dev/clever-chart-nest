@@ -35,10 +35,15 @@ export const MARKET_UNIVERSE: MarketSymbol[] = [
   { symbol: "NZD/USD",   assetClass: "forex",  tv: "FX:NZDUSD" },
   { symbol: "EUR/GBP",   assetClass: "forex",  tv: "FX:EURGBP" },
 
+  // Metals
+  { symbol: "XAUUSD",      assetClass: "forex", tv: "OANDA:XAUUSD" },
+
   // Indices
   { symbol: "S&P 500",     assetClass: "index", tv: "TVC:SPX"     },
   { symbol: "Nasdaq 100",  assetClass: "index", tv: "TVC:NDX"     },
   { symbol: "Dow Jones",   assetClass: "index", tv: "TVC:DJI"     },
+  { symbol: "NAS100",      assetClass: "index", tv: "TVC:NDX"     },
+  { symbol: "US30",        assetClass: "index", tv: "TVC:DJI"     },
   { symbol: "DAX 40",      assetClass: "index", tv: "TVC:DAX"     },
   { symbol: "FTSE 100",    assetClass: "index", tv: "TVC:UKX"     },
   { symbol: "Nikkei 225",  assetClass: "index", tv: "TVC:NI225"   },
