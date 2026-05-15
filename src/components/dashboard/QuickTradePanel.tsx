@@ -155,10 +155,6 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     accountConnected && account?.equity != null ? Number(account.equity) : 0;
   const accountCurrency = account?.currency || "USD";
 
-  const accountEquity =
-    accountConnected && account?.equity != null ? Number(account.equity) : 0;
-  const accountCurrency = account?.currency || "USD";
-
   const [type, setType] = useState<"market" | "limit">("market");
   const [lots, setLots] = useState("0.01");
   const [entry, setEntry] = useState("");
@@ -175,7 +171,9 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const [flash, setFlash] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  const symbol = ctxSymbol;
+  const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
+  const brokerSymbol =
+    selectedItem?.brokerSymbol ?? toBrokerSymbol(ctxSymbol);
   const side = ctxSide;
   const isBuy = side === "buy";
 
