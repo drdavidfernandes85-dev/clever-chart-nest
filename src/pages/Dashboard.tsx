@@ -52,6 +52,7 @@ import AICopilot from "@/components/ai/AICopilot";
 import OpenAccountBanner from "@/components/dashboard/OpenAccountBanner";
 import LivePortfolioWidget from "@/components/dashboard/LivePortfolioWidget";
 import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWidget";
+import LiveAccountDebugPanel from "@/components/dashboard/LiveAccountDebugPanel";
 
 const Dashboard = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
@@ -280,6 +281,9 @@ const Dashboard = () => {
 
           {/* Live Portfolio — real-time MT5 account snapshot */}
           <LivePortfolioWidget />
+
+          {/* TEMP: Live Account Debug — dev-only raw response viewer */}
+          <LiveAccountDebugPanel />
 
           {/* Trade Execution Log — recent execute-trade results */}
           <TradeExecutionLogWidget />
