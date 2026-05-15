@@ -16,12 +16,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// Default mix across all four asset classes — two of each.
+// Broker-safe defaults shown until live broker symbols are loaded.
 const DEFAULT_LABELS = [
-  "BTC/USDT", "ETH/USDT",
-  "EUR/USD",  "USD/JPY",
-  "S&P 500",  "Nasdaq 100",
-  "AAPL",     "NVDA",
+  "XAUUSD",
+  "EUR/USD",
+  "GBP/USD",
+  "US30",
+  "NAS100",
 ];
 
 interface PriceState {
