@@ -1050,11 +1050,18 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 <div>selected symbol function used: <span className="text-foreground">get-mt5-symbol-data</span></div>
                 <div>symbolsLoading: <span className="text-foreground">{String(brokerSymbolsLoading)}</span></div>
                 <div>symbolsLoaded: <span className="text-foreground">{String(symbolsLoaded)}</span></div>
-                <div>brokerSymbols.length: <span className="text-foreground">{brokerSymbols.length}</span></div>
+                <div>get-mt5-symbols count (response): <span className="text-foreground">{String((brokerSymbolsLastResponse as any)?.count ?? "—")}</span></div>
+                <div>brokerSymbols.length (in memory): <span className="text-foreground">{brokerSymbols.length}</span></div>
+                <div>asset classes: <span className="text-foreground">{assetClasses.length - 1}</span></div>
                 <div>selected display symbol: <span className="text-foreground">{symbolDisplay}</span></div>
                 <div>selected broker symbol: <span className="text-foreground">{normalizedSymbol}</span></div>
-                <div>symbol exists in broker list: <span className="text-foreground">{String(existsInBrokerSymbols)}</span></div>
-                <div>selectedSymbolValid: <span className="text-foreground">{String(ctxSelectedSymbolValid)}</span></div>
+                <div>
+                  selected symbol present in loaded list:{" "}
+                  <span className={existsInBrokerSymbols ? "text-emerald-400" : "text-red-400"}>
+                    {existsInBrokerSymbols ? "YES" : "NO"}
+                  </span>
+                </div>
+                <div>selectedSymbolValid (broker check): <span className="text-foreground">{String(ctxSelectedSymbolValid)}</span></div>
                 <div>accountConnected: <span className="text-foreground">{String(accountConnected)}</span></div>
                 {brokerSymbolsError && (
                   <div>error: <span className="text-red-400">{brokerSymbolsError}</span></div>
@@ -1077,10 +1084,12 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 </pre>
                 <button
                   type="button"
-                  onClick={() => refreshBrokerSymbols(normalizedSymbol)}
-                  className="mt-1 rounded border border-amber-500/40 px-2 py-0.5 uppercase tracking-widest text-amber-300 hover:bg-amber-500/10"
+                  onClick={() => refreshBrokerSymbols(normalizedSymbol, { force: true })}
+                  disabled={brokerSymbolsLoading}
+                  className="mt-1 inline-flex items-center gap-1 rounded border border-amber-500/40 px-2 py-0.5 uppercase tracking-widest text-amber-300 hover:bg-amber-500/10 disabled:opacity-50"
                 >
-                  Refresh symbols
+                  <RefreshCw className={`h-3 w-3 ${brokerSymbolsLoading ? "animate-spin" : ""}`} />
+                  Hard refresh symbols
                 </button>
               </div>
             </details>
