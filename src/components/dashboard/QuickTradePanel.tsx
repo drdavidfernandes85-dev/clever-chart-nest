@@ -32,6 +32,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { fetchMarketQuotes } from "@/lib/markets";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Broker-safe defaults — used until get-trading-symbols returns the
 // connected broker's live symbol list.
