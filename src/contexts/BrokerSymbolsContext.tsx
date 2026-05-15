@@ -3,12 +3,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
 
 export interface BrokerSymbol {
+  /** Exact broker symbol string sent to execute-trade (e.g. "EURUSD"). */
   symbol: string;
+  brokerSymbol: string;
+  name: string;
+  /** Human-friendly label (e.g. "EUR/USD"). Falls back to `symbol`. */
+  displayName: string;
   description?: string | null;
   digits?: number | null;
   contractSize?: number | null;
   assetClass?: string | null;
 }
+
+const enrich = (s: any): BrokerSymbol => {
+  const sym = String(s?.symbol ?? s?.brokerSymbol ?? s?.name ?? "").toUpperCase();
+  return {
+    symbol: sym,
+    brokerSymbol: sym,
+    name: sym,
+    displayName: s?.displayName ?? sym,
+    description: s?.description ?? null,
+    digits: s?.digits ?? null,
+    contractSize: s?.contractSize ?? null,
+    assetClass: s?.assetClass ?? null,
+  };
+};
 
 /** Used until the broker symbol list loads. Clearly marked as fallback. */
 export const FALLBACK_SYMBOLS: BrokerSymbol[] = [
@@ -18,7 +37,7 @@ export const FALLBACK_SYMBOLS: BrokerSymbol[] = [
   { symbol: "GBPCAD", description: "Pound vs CAD (fallback)" },
   { symbol: "US30",   description: "Dow Jones 30 (fallback)" },
   { symbol: "NAS100", description: "Nasdaq 100 (fallback)" },
-];
+].map(enrich);
 
 interface Ctx {
   symbols: BrokerSymbol[];
