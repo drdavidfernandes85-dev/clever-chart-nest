@@ -526,8 +526,11 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         setSl("");
         setTp("");
         setEntry("");
+        try {
+          window.localStorage.setItem("eltr.lastTradedSymbol", brokerSymbol);
+        } catch { /* ignore */ }
         loadAccount();
-        window.dispatchEvent(new CustomEvent("trade-executed"));
+        window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: brokerSymbol } }));
       } else {
         // Prefer the broker's retcode_description, then comment, then error.
         const brokerMsg =
