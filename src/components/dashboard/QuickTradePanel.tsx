@@ -378,8 +378,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       type,
       lots: lotsNum,
       entry: entry ? parseFloat(entry) : undefined,
-      sl: slNum || undefined,
-      tp: tpNum || undefined,
+      sl: effectiveSl ?? undefined,
+      tp: effectiveTp ?? undefined,
     });
     if (!parsed.success) {
       toast.error("Invalid order", {
@@ -389,6 +389,10 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     }
     if (type === "limit") {
       toast.error("Limit orders coming soon");
+      return;
+    }
+    if (stopsError) {
+      toast.error(stopsError);
       return;
     }
     setConfirming(true);
