@@ -935,9 +935,25 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                       valueClass={isBuy ? "text-emerald-400" : "text-red-400"}
                     />
                     <ConfirmRow label="Volume" value={`${lotsNum.toFixed(2)} lots`} />
-                    {sl && <ConfirmRow label="Stop Loss" value={sl} valueClass="text-red-400" />}
-                    {tp && (
-                      <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />
+                    {noStops ? (
+                      <ConfirmRow
+                        label="Stops"
+                        value="None — sending without SL/TP"
+                        valueClass="text-amber-400"
+                      />
+                    ) : (
+                      <>
+                        <ConfirmRow
+                          label="Stop Loss"
+                          value={effectiveSl != null ? String(effectiveSl) : "None"}
+                          valueClass={effectiveSl != null ? "text-red-400" : "text-muted-foreground"}
+                        />
+                        <ConfirmRow
+                          label="Take Profit"
+                          value={effectiveTp != null ? String(effectiveTp) : "None"}
+                          valueClass={effectiveTp != null ? "text-emerald-400" : "text-muted-foreground"}
+                        />
+                      </>
                     )}
                     {/* Exact payload preview */}
                     <details className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 group">
@@ -950,8 +966,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     symbol: brokerSymbol,
     side,
     volume: Number(lotsNum.toFixed(2)),
-    stopLoss: slNum ? Number(slNum) : null,
-    takeProfit: tpNum ? Number(tpNum) : null,
+    stopLoss: effectiveSl,
+    takeProfit: effectiveTp,
   },
   null,
   2,
@@ -970,7 +986,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     </Button>
                     <Button
                       onClick={confirmTrade}
-                      disabled={submitting || !symbolValidation.ok}
+                      disabled={submitting || !symbolValidation.ok || !!stopsError}
                       className={`flex-1 h-11 font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
                         isBuy
                           ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
