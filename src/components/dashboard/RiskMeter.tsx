@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Shield, AlertTriangle, Plug } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Exposure {
@@ -13,10 +14,13 @@ interface Exposure {
 
 const RiskMeter = () => {
   const { account, positions } = useMTAccount();
+  const { liveAccount, connected: liveConnected } = useLiveAccount();
   const { t } = useLanguage();
-  const isConnected = !!account && account.status === "connected";
+  const isConnected = liveConnected || (!!account && account.status === "connected");
 
-  const ACCOUNT_EQUITY = isConnected && account?.equity ? Number(account.equity) : 0;
+  // Prefer live equity / margin from get-live-account; fall back to MT account.
+  const ACCOUNT_EQUITY = liveAccount?.equity ?? (account?.equity ? Number(account.equity) : 0);
+  const ACCOUNT_MARGIN = liveAccount?.margin ?? (account?.margin ? Number(account.margin) : 0);
 
   // Real risk derived from MT positions only (distance from open to SL × volume × pip value).
   // No mocks — empty array when no positions are open.
@@ -167,7 +171,7 @@ const RiskMeter = () => {
               {POSITIONS_RISK.length} {t("risk.positions")}
             </span>
             <span className="text-[10px] font-mono text-muted-foreground">
-              {t("risk.of")} ${ACCOUNT_EQUITY.toLocaleString()} {t("risk.equity")}
+              {t("risk.of")} ${ACCOUNT_EQUITY.toLocaleString()} {t("risk.equity")} · ${ACCOUNT_MARGIN.toLocaleString()} margin
             </span>
           </div>
           <ul className="space-y-2">

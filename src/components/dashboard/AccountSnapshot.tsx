@@ -3,32 +3,32 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Wallet, TrendingUp, Plug } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 
-/**
- * Top-bar account snapshot. Shows real equity + day P&L delta from the
- * latest MT snapshots. When no MT account is connected, shows a compact
- * "Connect MT" call-to-action — no mock data.
- */
 const AccountSnapshot = () => {
   const { account, snapshots } = useMTAccount();
+  const { liveAccount, connected: liveConnected } = useLiveAccount();
+
+  // Live equity is preferred; fallback to MT row.
+  const liveEquity = liveAccount?.equity ?? null;
+  const mtEquity = account?.equity != null ? Number(account.equity) : null;
+  const equityValue = liveEquity ?? mtEquity;
   const isConnected =
-    !!account && account.status === "connected" && account.equity != null;
+    liveConnected || (!!account && account.status === "connected" && account.equity != null);
 
-  const [equity, setEquity] = useState<number>(
-    isConnected ? Number(account!.equity) : 0,
-  );
-
+  const [equity, setEquity] = useState<number>(equityValue ?? 0);
   useEffect(() => {
-    if (isConnected) setEquity(Number(account!.equity));
-  }, [isConnected, account]);
+    if (equityValue != null) setEquity(equityValue);
+  }, [equityValue]);
 
   const dayPnl = (() => {
     if (!isConnected) return 0;
-    if (snapshots.length === 0) return 0;
+    if (liveAccount?.profit != null) return liveAccount.profit;
+    if (snapshots.length === 0 || !account?.equity) return 0;
     const today = new Date().toISOString().slice(0, 10);
     const todays = snapshots.filter((s) => s.recorded_at.startsWith(today));
     const baseline = (todays[0] ?? snapshots[0]).equity;
-    return Number(account!.equity) - Number(baseline);
+    return Number(account.equity) - Number(baseline);
   })();
 
   if (!isConnected) {

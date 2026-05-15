@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Activity, Target, Flame, DollarSign } from "lucide-react";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
@@ -48,8 +49,9 @@ const accentColor: Record<KPI["accent"], string> = {
 
 const KpiStrip = () => {
   const { account, positions, snapshots } = useMTAccount();
+  const { liveAccount, connected: liveConnected, positions: livePositions } = useLiveAccount();
   const { t } = useLanguage();
-  const isConnected = !!account && account.status === "connected";
+  const isConnected = liveConnected || (!!account && account.status === "connected");
 
   const EMPTY_KPI: KPI[] = [
     { label: t("kpi.pnlToday"), value: "—", delta: t("kpi.connectMT"), deltaDir: "flat", icon: DollarSign, spark: [], accent: "gold" },
@@ -59,25 +61,29 @@ const KpiStrip = () => {
   ];
 
   const liveKpis = useMemo<KPI[] | null>(() => {
-    if (!isConnected || !account) return null;
+    if (!isConnected) return null;
 
-    // P&L Today: equity - earliest snapshot today (fallback: sum of open profit)
+    // Prefer live data from get-live-account; fall back to MT row.
+    const equity = liveAccount?.equity ?? Number(account?.equity ?? 0);
+    const openPositions = livePositions.length > 0 ? livePositions : positions;
+
     const today = new Date().toISOString().slice(0, 10);
     const todays = snapshots.filter((s) => s.recorded_at.startsWith(today));
     const baselineEquity = todays.length > 0 ? Number(todays[0].equity) : null;
-    const equity = Number(account.equity ?? 0);
-    const openPnl = positions.reduce((sum, p) => sum + Number(p.profit ?? 0), 0);
+    const openPnl =
+      liveAccount?.profit ??
+      openPositions.reduce((sum: number, p: any) => sum + Number(p.profit ?? 0), 0);
     const pnlToday = baselineEquity != null ? equity - baselineEquity : openPnl;
     const pnlPct = baselineEquity && baselineEquity !== 0 ? (pnlToday / baselineEquity) * 100 : 0;
 
     // Volume traded = sum of open volume (lots)
-    const volume = positions.reduce((sum, p) => sum + Number(p.volume ?? 0), 0);
+    const volume = openPositions.reduce((sum: number, p: any) => sum + Number(p.volume ?? 0), 0);
 
     // Win rate from open positions (winners / total)
-    const winners = positions.filter((p) => Number(p.profit ?? 0) > 0).length;
-    const winRate = positions.length > 0 ? (winners / positions.length) * 100 : 0;
+    const winners = openPositions.filter((p: any) => Number(p.profit ?? 0) > 0).length;
+    const winRate = openPositions.length > 0 ? (winners / openPositions.length) * 100 : 0;
 
-    // Win streak from open positions (consecutive winners from most recent)
+    // Win streak from open positions (consecutive winners from most recent) — only available from MT.
     const sorted = [...positions].sort(
       (a, b) => new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime(),
     );
@@ -101,7 +107,7 @@ const KpiStrip = () => {
       {
         label: t("kpi.winRate"),
         value: `${winRate.toFixed(1)}%`,
-        delta: `${winners}/${positions.length} ${t("kpi.winners")}`,
+        delta: `${winners}/${openPositions.length} ${t("kpi.winners")}`,
         deltaDir: winRate >= 50 ? "up" : "down",
         icon: Target,
         spark: [],
@@ -110,7 +116,7 @@ const KpiStrip = () => {
       {
         label: t("kpi.volumeOpen"),
         value: `${volume.toFixed(2)} lots`,
-        delta: `${positions.length} ${t("kpi.positions")}`,
+        delta: `${openPositions.length} ${t("kpi.positions")}`,
         deltaDir: "up",
         icon: Activity,
         spark: [],
@@ -126,7 +132,7 @@ const KpiStrip = () => {
         accent: "gold",
       },
     ];
-  }, [isConnected, account, positions, snapshots, t]);
+  }, [isConnected, account, positions, snapshots, liveAccount, livePositions, t]);
 
   const items = useMemo(
     () =>

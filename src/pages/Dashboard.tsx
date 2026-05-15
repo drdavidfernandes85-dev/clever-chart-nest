@@ -54,8 +54,15 @@ import LivePortfolioWidget from "@/components/dashboard/LivePortfolioWidget";
 import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWidget";
 import LiveAccountDebugPanel from "@/components/dashboard/LiveAccountDebugPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { LiveAccountProvider, useLiveAccount } from "@/contexts/LiveAccountContext";
 
-const Dashboard = () => {
+const Dashboard = () => (
+  <LiveAccountProvider>
+    <DashboardInner />
+  </LiveAccountProvider>
+);
+
+const DashboardInner = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
   const [editingLayout, setEditingLayout] = useState(false);
@@ -65,42 +72,8 @@ const Dashboard = () => {
   const { user, session, ready, isRefreshing } = useAuth();
   const { currentTier, newlyUnlocked, acknowledge } = useMentorTierProgress();
 
-  // Live account connection — sourced exclusively from get-live-account edge function.
-  // Do NOT read localStorage or legacy EA/webhook/bridge state.
-  const [accountConnected, setAccountConnected] = useState(false);
-  const [liveAccount, setLiveAccount] = useState<any>(null);
-  const [livePositions, setLivePositions] = useState<any[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: res } = await supabase.functions.invoke("get-live-account", {
-          body: { refresh: true },
-        });
-        if (cancelled) return;
-        if (res?.success === true) {
-          setAccountConnected(true);
-          setLiveAccount(res.account ?? res.data ?? null);
-          setLivePositions(res.positions || []);
-        } else {
-          setAccountConnected(false);
-          setLiveAccount(null);
-          setLivePositions([]);
-        }
-      } catch {
-        if (!cancelled) {
-          setAccountConnected(false);
-          setLiveAccount(null);
-          setLivePositions([]);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
-
+  // Live account connection state — sourced from LiveAccountProvider (which calls get-live-account).
+  const { connected: accountConnected, liveAccount, positions: livePositions } = useLiveAccount();
   const isConnected = accountConnected;
 
   const {

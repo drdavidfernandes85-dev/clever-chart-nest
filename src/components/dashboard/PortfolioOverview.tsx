@@ -18,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -46,9 +47,11 @@ const calcPnl = (p: Position): { pnl: number; pct: number } => {
 
 const PortfolioOverview = () => {
   const { account, positions: mtPositions, snapshots, syncing, sync, refresh } = useMTAccount();
+  const { liveAccount, connected: liveConnected, positions: livePos } = useLiveAccount();
   const { openTrade } = useQuickTrade();
   const { t } = useLanguage();
-  const isConnected = !!account && account.status === "connected";
+  // Treat as connected if get-live-account returns success OR if MT account row says connected.
+  const isConnected = liveConnected || (!!account && account.status === "connected");
 
   const handleDisconnect = async () => {
     if (!account) return;
@@ -88,7 +91,7 @@ const PortfolioOverview = () => {
   const [positions, setPositions] = useState<Position[]>(livePositions);
   useEffect(() => setPositions(livePositions), [livePositions]);
 
-  const accountEquity = isConnected && account?.equity ? Number(account.equity) : 0;
+  const accountEquity = liveAccount?.equity ?? (isConnected && account?.equity ? Number(account.equity) : 0);
 
   const totalPnl = useMemo(
     () => positions.reduce((acc, p) => acc + calcPnl(p).pnl, 0),

@@ -92,28 +92,63 @@ Deno.serve(async (req) => {
       0,
     );
 
+    const balance = Number(acc.balance ?? mt5.balance ?? 0);
+    const equity = Number(acc.equity ?? mt5.equity ?? 0);
+    const margin = Number(acc.margin ?? mt5.margin ?? 0);
+    const marginFree = Number(
+      acc.free_margin ?? acc.freeMargin ?? mt5.free_margin ?? mt5.freeMargin ?? 0,
+    );
+    const currency = acc.currency ?? mt5.currency ?? "USD";
+    const leverage = acc.leverage ?? mt5.leverage ?? null;
+
+    const mappedPositions = positions.map((p: any) => ({
+      ticket: p?.ticket ?? p?.id ?? null,
+      symbol: p?.symbol ?? "",
+      side: (p?.side ?? p?.action ?? p?.type ?? "")
+        .toString()
+        .toLowerCase()
+        .includes("sell")
+        ? "sell"
+        : "buy",
+      volume: Number(p?.volume ?? p?.lots ?? 0),
+      entry_price: Number(p?.open_price ?? p?.openPrice ?? p?.entry_price ?? p?.price ?? 0),
+      current_price: Number(p?.current_price ?? p?.currentPrice ?? p?.price ?? 0),
+      stop_loss: p?.stop_loss ?? p?.sl ?? null,
+      take_profit: p?.take_profit ?? p?.tp ?? null,
+      profit: Number(p?.profit ?? p?.pnl ?? 0),
+    }));
+
+    // Canonical account shape (camelCase) — preferred by UI widgets.
+    const accountOut = {
+      login: account.login,
+      server: account.server_name,
+      status: account.status, // "connected" when live
+      currency,
+      leverage,
+      balance,
+      equity,
+      margin,
+      marginFree,
+      profit: floatingPnl,
+      openPositionsCount: mappedPositions.length,
+      lastSynced: account.last_synced_at,
+    };
+
     return json(200, {
       success: true,
+      account: accountOut,
+      positions: mappedPositions,
+      // Backwards-compatible flat snake_case payload.
       data: {
-        balance: Number(acc.balance ?? mt5.balance ?? 0),
-        equity: Number(acc.equity ?? mt5.equity ?? 0),
-        margin: Number(acc.margin ?? mt5.margin ?? 0),
-        free_margin: Number(acc.free_margin ?? acc.freeMargin ?? mt5.free_margin ?? mt5.freeMargin ?? 0),
-        currency: acc.currency ?? mt5.currency ?? "USD",
-        leverage: acc.leverage ?? mt5.leverage ?? null,
+        balance,
+        equity,
+        margin,
+        free_margin: marginFree,
+        currency,
+        leverage,
         floating_pnl: floatingPnl,
-        open_positions: positions.length,
-        positions: positions.map((p: any) => ({
-          ticket: p?.ticket ?? p?.id ?? null,
-          symbol: p?.symbol ?? "",
-          side: (p?.side ?? p?.action ?? p?.type ?? "").toString().toLowerCase().includes("sell") ? "sell" : "buy",
-          volume: Number(p?.volume ?? p?.lots ?? 0),
-          entry_price: Number(p?.open_price ?? p?.openPrice ?? p?.entry_price ?? p?.price ?? 0),
-          current_price: Number(p?.current_price ?? p?.currentPrice ?? p?.price ?? 0),
-          stop_loss: p?.stop_loss ?? p?.sl ?? null,
-          take_profit: p?.take_profit ?? p?.tp ?? null,
-          profit: Number(p?.profit ?? p?.pnl ?? 0),
-        })),
+        open_positions: mappedPositions.length,
+        positions: mappedPositions,
         account_number: account.login,
         server: account.server_name,
         status: account.status,
