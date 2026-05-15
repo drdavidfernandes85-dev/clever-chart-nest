@@ -811,8 +811,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     </Button>
                     <Button
                       onClick={confirmTrade}
-                      disabled={submitting}
-                      className={`flex-1 h-11 font-bold ${
+                      disabled={submitting || !symbolValidation.ok}
+                      className={`flex-1 h-11 font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
                         isBuy
                           ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
                           : "bg-red-500 hover:bg-red-500/90 text-white"
