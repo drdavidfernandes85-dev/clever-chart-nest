@@ -745,19 +745,63 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             </span>
           </label>
 
-          {/* Current price + SL/TP validation hint */}
-          {!noStops && (slValid || tpValid) && (
-            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest">
-              <span className="text-muted-foreground">
-                Current price:{" "}
-                <span className="text-foreground tabular-nums">
-                  {currentPrice != null ? currentPrice : "—"}
+          {/* Current price + SL/TP rules + retry */}
+          {!noStops && (
+            <div className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 space-y-1.5">
+              <div className="flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-widest">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  Current price:
+                  {priceLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span
+                      className={`tabular-nums ${
+                        currentPrice != null ? "text-foreground" : "text-amber-400"
+                      }`}
+                    >
+                      {currentPrice != null ? currentPrice : "—"}
+                    </span>
+                  )}
                 </span>
-              </span>
-              {stopsError && (
-                <span className="text-red-400 normal-case tracking-normal">
-                  {stopsError}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setPriceNonce((n) => n + 1)}
+                  disabled={priceLoading}
+                  className="inline-flex items-center gap-1 rounded border border-border/50 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground hover:text-primary hover:border-primary/40 disabled:opacity-50"
+                  aria-label="Retry price fetch"
+                >
+                  <RefreshCw
+                    className={`h-3 w-3 ${priceLoading ? "animate-spin" : ""}`}
+                  />
+                  Retry
+                </button>
+              </div>
+
+              {/* Rule helper text */}
+              <p className="text-[10px] leading-snug text-muted-foreground normal-case tracking-normal">
+                {isBuy
+                  ? "BUY: Stop Loss must be below current price · Take Profit must be above."
+                  : "SELL: Stop Loss must be above current price · Take Profit must be below."}
+                {currentPrice == null && (slValid || tpValid) && (
+                  <>
+                    {" "}
+                    Current price unavailable — manual SL/TP cannot be validated;
+                    trade will be allowed but the broker may reject invalid stops.
+                  </>
+                )}
+              </p>
+
+              {priceError && currentPrice == null && (
+                <p className="text-[10px] leading-snug text-amber-400 normal-case tracking-normal">
+                  {priceError}. Trade is still allowed; check the broker rules.
+                </p>
+              )}
+
+              {stopsError && (slValid || tpValid) && (
+                <p className="text-[10px] leading-snug text-red-400 normal-case tracking-normal">
+                  {stopsError} Confirm Trade is disabled until you fix the values
+                  or enable “Place trade without SL/TP”.
+                </p>
               )}
             </div>
           )}
