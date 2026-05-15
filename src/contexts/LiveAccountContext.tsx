@@ -64,7 +64,7 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
     try {
       const { data: res, error: invErr } = await supabase.functions.invoke(
         "get-live-account",
-        { body: { refresh: true } },
+        { body: { refresh: true, debug: true } },
       );
       if (invErr) throw invErr;
       if (res?.success === true) {
