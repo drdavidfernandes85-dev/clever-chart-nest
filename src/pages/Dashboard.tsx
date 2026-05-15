@@ -55,10 +55,13 @@ import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWid
 import LiveAccountDebugPanel from "@/components/dashboard/LiveAccountDebugPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { LiveAccountProvider, useLiveAccount } from "@/contexts/LiveAccountContext";
+import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
 
 const Dashboard = () => (
   <LiveAccountProvider>
-    <DashboardInner />
+    <BrokerSymbolsProvider>
+      <DashboardInner />
+    </BrokerSymbolsProvider>
   </LiveAccountProvider>
 );
 
