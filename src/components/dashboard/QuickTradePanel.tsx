@@ -1017,7 +1017,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     {/* Exact payload preview */}
                     <details className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 group">
                       <summary className="cursor-pointer text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground">
-                        execute-trade payload
+                        Execute Trade Payload
                       </summary>
                       <pre className="mt-2 text-[10px] font-mono text-foreground/80 whitespace-pre-wrap break-all">
 {JSON.stringify(
