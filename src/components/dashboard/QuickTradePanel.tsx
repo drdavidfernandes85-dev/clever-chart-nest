@@ -234,14 +234,21 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const symbolsLoaded = brokerSymbolsLive && brokerSymbols.length > 0;
 
   const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
+    if (accountConnected !== true) {
+      return {
+        ok: false,
+        sentSymbol: normalizedSymbol,
+        reason: "Connect your MT5 account before trading.",
+      };
+    }
     if (brokerSymbolsLoading) {
-      return { ok: false, sentSymbol: normalizedSymbol, reason: "Loading broker symbols…" };
+      return { ok: false, sentSymbol: normalizedSymbol, reason: "Loading broker symbols..." };
     }
     if (!symbolsLoaded) {
       return {
         ok: false,
         sentSymbol: normalizedSymbol,
-        reason: brokerSymbolsError ?? "Live broker symbols list hasn't loaded yet. Please refresh.",
+        reason: "Broker symbols unavailable. Please refresh before trading.",
         canRetry: true,
       };
     }
@@ -249,7 +256,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       return {
         ok: false,
         sentSymbol: normalizedSymbol,
-        reason: `"${normalizedSymbol}" is not available on your broker. Pick a symbol from the live list.`,
+        reason: "This symbol is not available on your connected MT5 account.",
       };
     }
     return { ok: true, sentSymbol: normalizedSymbol, reason: "" };
