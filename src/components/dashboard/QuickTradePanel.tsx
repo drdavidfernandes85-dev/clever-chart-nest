@@ -1022,6 +1022,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                       <pre className="mt-2 text-[10px] font-mono text-foreground/80 whitespace-pre-wrap break-all">
 {JSON.stringify(
   {
+    tradeId: previewTradeId,
     symbol: brokerSymbol,
     side,
     volume: Number(lotsNum.toFixed(2)),
