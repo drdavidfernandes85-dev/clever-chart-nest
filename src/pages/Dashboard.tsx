@@ -54,8 +54,15 @@ import LivePortfolioWidget from "@/components/dashboard/LivePortfolioWidget";
 import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWidget";
 import LiveAccountDebugPanel from "@/components/dashboard/LiveAccountDebugPanel";
 import { supabase } from "@/integrations/supabase/client";
+import { LiveAccountProvider, useLiveAccount } from "@/contexts/LiveAccountContext";
 
-const Dashboard = () => {
+const Dashboard = () => (
+  <LiveAccountProvider>
+    <DashboardInner />
+  </LiveAccountProvider>
+);
+
+const DashboardInner = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
   const [editingLayout, setEditingLayout] = useState(false);
