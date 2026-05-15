@@ -906,6 +906,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 <div>selected display symbol: <span className="text-foreground">{symbolDisplay}</span></div>
                 <div>selected broker symbol: <span className="text-foreground">{normalizedSymbol}</span></div>
                 <div>symbol exists in broker list: <span className="text-foreground">{String(existsInBrokerSymbols)}</span></div>
+                <div>selectedSymbolValid: <span className="text-foreground">{String(ctxSelectedSymbolValid)}</span></div>
                 <div>accountConnected: <span className="text-foreground">{String(accountConnected)}</span></div>
                 {brokerSymbolsError && (
                   <div>error: <span className="text-red-400">{brokerSymbolsError}</span></div>
