@@ -175,6 +175,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     lastResponse: brokerSymbolsLastResponse,
     refresh: refreshBrokerSymbols,
     selectedSymbolValid: ctxSelectedSymbolValid,
+    selectedSymbolInfo: ctxSelectedSymbolInfo,
+    tick: ctxTick,
     setSelectedBrokerSymbol,
   } = useBrokerSymbols();
   const { isAdmin } = useIsAdmin();
@@ -908,6 +910,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 Broker Symbols Debug
               </summary>
               <div className="mt-2 space-y-1">
+                <div>function used: <span className="text-foreground">get-broker-symbol</span></div>
                 <div>symbolsLoading: <span className="text-foreground">{String(brokerSymbolsLoading)}</span></div>
                 <div>symbolsLoaded: <span className="text-foreground">{String(symbolsLoaded)}</span></div>
                 <div>brokerSymbols.length: <span className="text-foreground">{brokerSymbols.length}</span></div>
@@ -919,7 +922,15 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 {brokerSymbolsError && (
                   <div>error: <span className="text-red-400">{brokerSymbolsError}</span></div>
                 )}
-                <div className="pt-1">last get-trading-symbols response:</div>
+                <div className="pt-1">selectedSymbolInfo:</div>
+                <pre className="mt-1 max-h-32 overflow-auto rounded bg-background/60 p-2 text-[10px] text-foreground/80 whitespace-pre-wrap break-all">
+{JSON.stringify(ctxSelectedSymbolInfo, null, 2)}
+                </pre>
+                <div className="pt-1">tick:</div>
+                <pre className="mt-1 max-h-32 overflow-auto rounded bg-background/60 p-2 text-[10px] text-foreground/80 whitespace-pre-wrap break-all">
+{JSON.stringify(ctxTick, null, 2)}
+                </pre>
+                <div className="pt-1">last get-broker-symbol response:</div>
                 <pre className="mt-1 max-h-40 overflow-auto rounded bg-background/60 p-2 text-[10px] text-foreground/80 whitespace-pre-wrap break-all">
 {JSON.stringify(brokerSymbolsLastResponse, null, 2)}
                 </pre>
