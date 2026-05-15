@@ -172,8 +172,15 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
-  const brokerSymbol =
-    selectedItem?.brokerSymbol ?? toBrokerSymbol(ctxSymbol);
+  // Always send the exact broker symbol (no slashes). Prefer brokerSymbol,
+  // fall back to a `symbol` field, then strip "/" from the display label.
+  const brokerSymbol = (
+    (selectedItem as any)?.brokerSymbol ||
+    (selectedItem as any)?.symbol ||
+    (selectedItem as any)?.label?.replace(/\//g, "") ||
+    selectedItem?.displayName?.replace(/\//g, "") ||
+    toBrokerSymbol(ctxSymbol)
+  ).toUpperCase();
   const side = ctxSide;
   const isBuy = side === "buy";
 
