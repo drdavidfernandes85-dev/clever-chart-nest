@@ -175,7 +175,9 @@ const Leaderboard = () => {
   const { t } = useLanguage();
   const [rows, setRows] = useState<LeaderRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>("pnl_30d");
+  const [sortKey, setSortKey] = useState<SortKey>("score");
 
   const PERIOD_LABELS_T: Record<Period, string> = {
     pnl_7d: t("leaderboard.last7"),
@@ -183,25 +185,36 @@ const Leaderboard = () => {
     total_pnl: t("leaderboard.allTime"),
   };
 
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: err } = await supabase
+      .from("leaderboard_stats" as any)
+      .select("*")
+      .order(period, { ascending: false })
+      .limit(50);
+    if (err) {
+      setError(err.message || "Failed to load ranking");
+    } else if (data) {
+      setRows(data as unknown as LeaderRow[]);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("leaderboard_stats" as any)
-        .select("*")
-        .order(period, { ascending: false })
-        .limit(50);
-      if (!error && data) setRows(data as unknown as LeaderRow[]);
-      setLoading(false);
-    };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
   const realRanked = rows.filter((r) => r.total_trades > 0);
-  const usingDemo = realRanked.length === 0 && !loading;
-  // Re-sort demo dataset by selected period
-  const demoSorted = [...DEMO_TRADERS].sort((a, b) => (b[period] as number) - (a[period] as number));
-  const ranked: DemoRow[] = usingDemo ? demoSorted : (realRanked as DemoRow[]);
+  const usingDemo = realRanked.length === 0 && !loading && !error;
+  const baseList: DemoRow[] = usingDemo ? [...DEMO_TRADERS] : (realRanked as DemoRow[]);
+
+  const sortValue = (r: DemoRow): number => {
+    if (sortKey === "score") return (r[period] as number) ?? 0;
+    return (r[sortKey] as number) ?? 0;
+  };
+  const ranked: DemoRow[] = [...baseList].sort((a, b) => sortValue(b) - sortValue(a));
 
   const top3 = ranked.slice(0, 3);
   const rest = ranked.slice(3, 10);
