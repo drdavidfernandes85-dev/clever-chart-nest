@@ -68,6 +68,39 @@ const resolveErrorMessage = (l: LogRow): string => {
   return "Trade execution failed";
 };
 
+/** Always returns a string — never "[object Object]". */
+const stringifyMaybe = (v: unknown): string | null => {
+  if (v == null) return null;
+  if (typeof v === "string") return v.trim() || null;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  try {
+    const s = JSON.stringify(v);
+    return s && s !== "{}" && s !== "[]" ? s : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Extract the most useful broker/error message from a log row. */
+const getBrokerMessage = (row: LogRow, raw: any): string => {
+  return (
+    stringifyMaybe(row.retcode_description) ||
+    stringifyMaybe(raw?.error?.message) ||
+    stringifyMaybe(raw?.error) ||
+    stringifyMaybe(raw?.message) ||
+    stringifyMaybe(raw?.detail) ||
+    stringifyMaybe(raw?.title) ||
+    stringifyMaybe(raw?.data?.message) ||
+    stringifyMaybe(raw?.data?.retcode_description) ||
+    stringifyMaybe(raw?.raw?.error?.message) ||
+    stringifyMaybe(raw?.raw?.message) ||
+    stringifyMaybe(row.error_message) ||
+    stringifyMaybe(row.comment) ||
+    stringifyMaybe(raw) ||
+    ""
+  );
+};
+
 const TradeExecutionLogWidget = () => {
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,11 +200,11 @@ const TradeExecutionLogWidget = () => {
                   "failed";
                 const displayClassification = l.classification || "—";
                 const displayBrokerMsg =
-                  l.retcode_description ||
-                  (raw_response as any)?.error ||
-                  (raw_response as any)?.message ||
-                  resolveErrorMessage(l) ||
-                  "—";
+                  getBrokerMessage(l, raw_response) || "—";
+                const truncatedBrokerMsg =
+                  displayBrokerMsg.length > 140
+                    ? displayBrokerMsg.slice(0, 137) + "…"
+                    : displayBrokerMsg;
 
                 const isFailed = FAILED_STATUSES.has(displayStatus.toLowerCase());
                 const isOpen = expanded.has(l.id);
@@ -249,9 +282,9 @@ const TradeExecutionLogWidget = () => {
                           "px-3 max-w-[320px] truncate",
                           isFailed ? "text-red-400" : "text-muted-foreground",
                         )}
-                        title={String(displayBrokerMsg)}
+                        title={displayBrokerMsg}
                       >
-                        {String(displayBrokerMsg)}
+                        {truncatedBrokerMsg}
                       </td>
                     </tr>
                     {isFailed && isOpen && (
