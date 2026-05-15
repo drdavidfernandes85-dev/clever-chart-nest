@@ -1186,7 +1186,7 @@ const translations = {
     "dash.seo.sectionTitle": "Plataforma trading educativa para una comunidad de traders seria",
     "dash.seo.sectionDesc": "Una plataforma trading educativa pensada para la comunidad de traders en español: análisis técnico en vivo, gestión de riesgo trading aplicada, webinars trading gratis con analistas y educación trading basada en proceso. Aprende, opera y discute setups con una comunidad activa.",
     "dash.seo.f1Title": "Vista de portafolio en tiempo real",
-    "dash.seo.f1Desc": "Visualiza tu portafolio de trading actualizado en vivo: balance, equity, P&L abierto y exposición en cada posición. Conecta MetaTrader 4 o 5 para sincronizar operaciones automáticamente.",
+    "dash.seo.f1Desc": "Visualiza tu portafolio de trading actualizado en vivo: balance, equity, P&L abierto y exposición en cada posición. Conecta MT5 para sincronizar operaciones automáticamente.",
     "dash.seo.f2Title": "Gestión de riesgo en vivo",
     "dash.seo.f2Desc": "Monitorea el riesgo de tu cuenta, drawdown y uso de margen en tiempo real. El medidor de riesgo destaca la sobreexposición antes de que sea un problema — disciplina antes que beneficio.",
     "dash.seo.f3Title": "AI trading assistant e insights inteligentes",
