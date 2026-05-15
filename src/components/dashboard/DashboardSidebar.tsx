@@ -8,7 +8,7 @@ import {
   Trophy,
   Video,
   BarChart3,
-  
+  Activity,
   ChevronLeft,
   ChevronRight,
   User,
@@ -40,6 +40,7 @@ import { Globe } from "lucide-react";
 
 const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
+  { to: "/trading-room", labelKey: "sidebar.tradingRoom", icon: Activity },
   { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
   { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },

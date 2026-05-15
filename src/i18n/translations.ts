@@ -284,6 +284,7 @@ const translations = {
     "social.backToLeaderboard": "Back to leaderboard",
     // Sidebar / mobile nav
     "sidebar.dashboard": "Dashboard",
+    "sidebar.tradingRoom": "Trading Room",
     "sidebar.liveWebinars": "Live Webinars",
     "sidebar.liveCharts": "Live Charts",
     "sidebar.signals": "Trade Ideas",
@@ -1135,6 +1136,7 @@ const translations = {
     "social.backToLeaderboard": "Volver al ranking",
     // Sidebar / mobile nav
     "sidebar.dashboard": "Panel",
+    "sidebar.tradingRoom": "Sala de Trading",
     "sidebar.liveWebinars": "Webinars en Vivo",
     "sidebar.liveCharts": "Gráficos en Vivo",
     "sidebar.signals": "Ideas de Trading",
@@ -1979,6 +1981,7 @@ const translations = {
     "social.backToLeaderboard": "Voltar ao ranking",
     // Sidebar / mobile nav
     "sidebar.dashboard": "Painel",
+    "sidebar.tradingRoom": "Sala de Trading",
     "sidebar.liveWebinars": "Webinars Ao Vivo",
     "sidebar.liveCharts": "Gráficos Ao Vivo",
     "sidebar.signals": "Ideias de Trading",
