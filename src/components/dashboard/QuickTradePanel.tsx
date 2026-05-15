@@ -175,6 +175,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     lastResponse: brokerSymbolsLastResponse,
     refresh: refreshBrokerSymbols,
     selectedSymbolValid: ctxSelectedSymbolValid,
+    selectedSymbolInfo: ctxSelectedSymbolInfo,
+    tick: ctxTick,
     setSelectedBrokerSymbol,
   } = useBrokerSymbols();
   const { isAdmin } = useIsAdmin();
