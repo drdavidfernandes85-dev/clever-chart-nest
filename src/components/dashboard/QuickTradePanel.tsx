@@ -297,8 +297,66 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   }, [prefillNonce]);
 
   const lotsNum = parseFloat(lots) || 0;
-  const slNum = parseFloat(sl) || 0;
-  const tpNum = parseFloat(tp) || 0;
+  const slNum = sl.trim() === "" ? null : parseFloat(sl);
+  const tpNum = tp.trim() === "" ? null : parseFloat(tp);
+  const slValid = slNum !== null && !isNaN(slNum) && slNum > 0;
+  const tpValid = tpNum !== null && !isNaN(tpNum) && tpNum > 0;
+
+  // Effective values that will be sent to the broker. Empty/invalid → null.
+  // The "Place trade without SL/TP" checkbox forces both to null.
+  const effectiveSl = noStops || !slValid ? null : (slNum as number);
+  const effectiveTp = noStops || !tpValid ? null : (tpNum as number);
+
+  // Fetch a current market price for the selected broker symbol so we can
+  // validate manual SL/TP before sending the order. Refresh every 15s while
+  // the panel is mounted.
+  useEffect(() => {
+    let cancelled = false;
+    const norm = (s: string) => s.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    const target = norm(brokerSymbol);
+    if (!target) {
+      setCurrentPrice(null);
+      return;
+    }
+    const load = async () => {
+      const quotes = await fetchMarketQuotes();
+      if (cancelled) return;
+      const match = quotes.find(
+        (q) => q.price != null && (norm(q.symbol) === target || norm(q.symbol).startsWith(target) || target.startsWith(norm(q.symbol))),
+      );
+      setCurrentPrice(match?.price ?? null);
+    };
+    load();
+    const id = window.setInterval(load, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [brokerSymbol]);
+
+  // Validate SL/TP relative to the current market price.
+  // Returns null when valid, or a human-readable error message.
+  const stopsError: string | null = (() => {
+    if (noStops) return null;
+    if (!slValid && !tpValid) return null;
+    if (currentPrice == null) return null; // Allow when price unavailable.
+    if (isBuy) {
+      if (slValid && (slNum as number) >= currentPrice) {
+        return "Invalid Stop Loss or Take Profit for current market price.";
+      }
+      if (tpValid && (tpNum as number) <= currentPrice) {
+        return "Invalid Stop Loss or Take Profit for current market price.";
+      }
+    } else {
+      if (slValid && (slNum as number) <= currentPrice) {
+        return "Invalid Stop Loss or Take Profit for current market price.";
+      }
+      if (tpValid && (tpNum as number) >= currentPrice) {
+        return "Invalid Stop Loss or Take Profit for current market price.";
+      }
+    }
+    return null;
+  })();
 
   // Symbol specs (contract size, tick value/size) are not yet exposed by
   // Trading Layer — until they are we cannot calculate accurate P&L or risk.
@@ -306,7 +364,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     null;
 
   const canCalculateRisk =
-    accountEquity > 0 && slNum > 0 && symbolSpecs !== null;
+    accountEquity > 0 && slValid && symbolSpecs !== null;
 
   const adjustLots = (delta: number) => {
     const next = Math.max(0.01, Math.min(100, +(lotsNum + delta).toFixed(2)));
