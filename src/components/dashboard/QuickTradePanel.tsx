@@ -575,16 +575,46 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
           </div>
 
           {/* Place trade button */}
-          <Button
-            onClick={handlePlace}
-            className={`w-full h-14 font-bold text-base tracking-wide rounded-xl transition-all hover:scale-[1.01] ${
-              isBuy
-                ? "bg-emerald-500 hover:bg-emerald-500 text-white shadow-[0_10px_30px_-10px_hsl(160_84%_50%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(160_84%_50%/0.9)]"
-                : "bg-red-500 hover:bg-red-500 text-white shadow-[0_10px_30px_-10px_hsl(0_84%_60%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(0_84%_60%/0.9)]"
-            }`}
-          >
-            CONFIRM {isBuy ? "BUY" : "SELL"} TRADE
-          </Button>
+          {(() => {
+            const validBroker = SYMBOL_ITEMS.some(
+              (it) => it.brokerSymbol === brokerSymbol,
+            );
+            const disabled =
+              accountConnected !== true ||
+              !brokerSymbol ||
+              lotsNum <= 0 ||
+              !validBroker;
+            const reason =
+              accountConnected !== true
+                ? "Connect your MT5 account to place trades"
+                : !brokerSymbol
+                ? "Select a symbol"
+                : !validBroker
+                ? "Selected symbol is not a valid broker symbol"
+                : lotsNum <= 0
+                ? "Volume must be greater than 0"
+                : "";
+            return (
+              <>
+                <Button
+                  onClick={handlePlace}
+                  disabled={disabled}
+                  className={`w-full h-14 font-bold text-base tracking-wide rounded-xl transition-all hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed ${
+                    isBuy
+                      ? "bg-emerald-500 hover:bg-emerald-500 text-white shadow-[0_10px_30px_-10px_hsl(160_84%_50%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(160_84%_50%/0.9)]"
+                      : "bg-red-500 hover:bg-red-500 text-white shadow-[0_10px_30px_-10px_hsl(0_84%_60%/0.7)] hover:shadow-[0_15px_40px_-10px_hsl(0_84%_60%/0.9)]"
+                  }`}
+                >
+                  CONFIRM {isBuy ? "BUY" : "SELL"} TRADE
+                </Button>
+                {disabled && reason && (
+                  <p className="mt-2 text-center text-[10px] font-mono uppercase tracking-widest text-amber-400/80">
+                    {reason}
+                  </p>
+                )}
+              </>
+            );
+          })()}
         </div>
       </motion.div>
 

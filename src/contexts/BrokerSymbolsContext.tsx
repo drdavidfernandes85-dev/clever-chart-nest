@@ -15,6 +15,7 @@ export const FALLBACK_SYMBOLS: BrokerSymbol[] = [
   { symbol: "XAUUSD", description: "Gold vs USD (fallback)" },
   { symbol: "EURUSD", description: "Euro vs USD (fallback)" },
   { symbol: "GBPUSD", description: "Pound vs USD (fallback)" },
+  { symbol: "GBPCAD", description: "Pound vs CAD (fallback)" },
   { symbol: "US30",   description: "Dow Jones 30 (fallback)" },
   { symbol: "NAS100", description: "Nasdaq 100 (fallback)" },
 ];
