@@ -167,11 +167,11 @@ const TradeExecutionLogWidget = () => {
                   "failed";
                 const displayClassification = l.classification || "—";
                 const displayBrokerMsg =
-                  l.retcode_description ||
-                  (raw_response as any)?.error ||
-                  (raw_response as any)?.message ||
-                  resolveErrorMessage(l) ||
-                  "—";
+                  getBrokerMessage(l, raw_response) || "—";
+                const truncatedBrokerMsg =
+                  displayBrokerMsg.length > 140
+                    ? displayBrokerMsg.slice(0, 137) + "…"
+                    : displayBrokerMsg;
 
                 const isFailed = FAILED_STATUSES.has(displayStatus.toLowerCase());
                 const isOpen = expanded.has(l.id);
