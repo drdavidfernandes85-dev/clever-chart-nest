@@ -45,19 +45,27 @@ const TradingSignals = () => {
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"active" | "closed">("active");
   const [view, setView] = useState<"cards" | "grid">("cards");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchSignals = async () => {
+    setError(null);
+    const { data, error: err } = await supabase
+      .from("trading_signals")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (err) {
+      setError(err.message || "Failed to load trade ideas");
+    } else if (data) {
+      setSignals(data);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchSignals = async () => {
-      const { data } = await supabase
-        .from("trading_signals")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (data) setSignals(data);
-      setLoading(false);
-    };
     fetchSignals();
 
     const channel = supabase
@@ -69,6 +77,9 @@ const TradingSignals = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Reset visible page when switching tabs
+  useEffect(() => { setPageSize(10); }, [tab]);
 
   useEffect(() => {
     if (!user) return;
