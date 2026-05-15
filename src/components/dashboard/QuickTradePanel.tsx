@@ -41,7 +41,7 @@ import {
 } from "@/lib/quick-trade-validation";
 import { RefreshCw } from "lucide-react";
 
-// Broker-safe defaults — used until get-trading-symbols returns the
+// Broker-safe defaults — used until get-mt5-symbol-data returns the
 // connected broker's live symbol list.
 interface SymbolItem {
   displayName: string;
@@ -908,7 +908,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 Broker Symbols Debug
               </summary>
               <div className="mt-2 space-y-1">
-                <div>function used: <span className="text-foreground">get-broker-symbol</span></div>
+                <div>function used: <span className="text-foreground">get-mt5-symbol-data</span></div>
                 <div>symbolsLoading: <span className="text-foreground">{String(brokerSymbolsLoading)}</span></div>
                 <div>symbolsLoaded: <span className="text-foreground">{String(symbolsLoaded)}</span></div>
                 <div>brokerSymbols.length: <span className="text-foreground">{brokerSymbols.length}</span></div>
@@ -928,7 +928,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 <pre className="mt-1 max-h-32 overflow-auto rounded bg-background/60 p-2 text-[10px] text-foreground/80 whitespace-pre-wrap break-all">
 {JSON.stringify(ctxTick, null, 2)}
                 </pre>
-                <div className="pt-1">last get-broker-symbol response:</div>
+                <div className="pt-1">last get-mt5-symbol-data response:</div>
                 <pre className="mt-1 max-h-40 overflow-auto rounded bg-background/60 p-2 text-[10px] text-foreground/80 whitespace-pre-wrap break-all">
 {JSON.stringify(brokerSymbolsLastResponse, null, 2)}
                 </pre>
