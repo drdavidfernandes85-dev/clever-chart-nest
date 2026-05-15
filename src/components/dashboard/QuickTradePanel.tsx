@@ -44,6 +44,49 @@ const DEFAULT_SYMBOL_ITEMS: SymbolItem[] = FALLBACK_SYMBOLS.map((s) => ({
   brokerSymbol: toBrokerSymbol(s.symbol),
 }));
 
+// Common broker symbol aliases. Maps a normalized user-facing token to a
+// list of equivalent root names that brokers commonly use.
+const SYMBOL_ALIASES: Record<string, string[]> = {
+  XAUUSD: ["GOLD", "XAU/USD", "XAUUSD"],
+  GOLD: ["XAUUSD"],
+  XAGUSD: ["SILVER", "XAG/USD"],
+  SILVER: ["XAGUSD"],
+  US30: ["DJ30", "DOW30", "WS30", "USA30"],
+  NAS100: ["NDX100", "USTEC", "USA100", "NQ100"],
+  SPX500: ["US500", "SP500", "USA500"],
+  GER40: ["DAX40", "DE40", "GER30"],
+  BTCUSD: ["BTCUSDT", "BITCOIN"],
+  BTCUSDT: ["BTCUSD"],
+};
+
+// Normalize a symbol: trim, uppercase, strip "/", "-", "_", and spaces.
+const normalizeSymbol = (s: string) =>
+  (s ?? "").trim().toUpperCase().replace(/[\s/_-]/g, "");
+
+// Try to resolve a user-entered symbol against the live broker symbols list.
+// Matches exact, case-insensitive, alias, and broker-suffix variants
+// (e.g. "EURUSD" matches "EURUSD.m", "EURUSD.cash", "EURUSDi").
+const resolveBrokerSymbol = (
+  input: string,
+  list: { symbol: string }[],
+): string | null => {
+  if (!input || list.length === 0) return null;
+  const target = normalizeSymbol(input);
+  const candidates = new Set<string>([target, ...(SYMBOL_ALIASES[target] ?? []).map(normalizeSymbol)]);
+  // 1. Exact normalized match
+  for (const s of list) {
+    if (candidates.has(normalizeSymbol(s.symbol))) return s.symbol;
+  }
+  // 2. Suffix match: broker root starts with target (e.g. EURUSD.m → EURUSD)
+  for (const s of list) {
+    const norm = normalizeSymbol(s.symbol);
+    for (const c of candidates) {
+      if (norm.startsWith(c) && norm.length - c.length <= 4) return s.symbol;
+    }
+  }
+  return null;
+};
+
 const QUICK_LOTS = [0.01, 0.02, 0.05, 0.1];
 
 const tradeSchema = z.object({
@@ -172,15 +215,39 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
-  // Always send the exact broker symbol (no slashes). Prefer brokerSymbol,
-  // fall back to a `symbol` field, then strip "/" from the display label.
-  const brokerSymbol = (
+  // Raw broker symbol candidate (no slashes, uppercase).
+  const rawBrokerSymbol = (
     (selectedItem as any)?.brokerSymbol ||
     (selectedItem as any)?.symbol ||
     (selectedItem as any)?.label?.replace(/\//g, "") ||
     selectedItem?.displayName?.replace(/\//g, "") ||
     toBrokerSymbol(ctxSymbol)
   ).toUpperCase();
+
+  // Resolve against the live broker symbols list (handles aliases + suffixes).
+  // If matched, this is the EXACT string we'll send to execute-trade.
+  const resolvedBrokerSymbol = resolveBrokerSymbol(rawBrokerSymbol, brokerSymbols);
+
+  // Validation state for the symbol that will be sent.
+  const symbolValidation: { ok: boolean; sentSymbol: string; reason: string } = (() => {
+    if (!brokerSymbolsLive || brokerSymbols.length === 0) {
+      return {
+        ok: false,
+        sentSymbol: rawBrokerSymbol,
+        reason: "Live broker symbols list hasn't loaded yet. Connect MT5 or wait for symbols to sync before trading.",
+      };
+    }
+    if (!resolvedBrokerSymbol) {
+      return {
+        ok: false,
+        sentSymbol: rawBrokerSymbol,
+        reason: `"${rawBrokerSymbol}" is not available on your broker. Pick a symbol from the live list.`,
+      };
+    }
+    return { ok: true, sentSymbol: resolvedBrokerSymbol, reason: "" };
+  })();
+
+  const brokerSymbol = symbolValidation.sentSymbol;
   const side = ctxSide;
   const isBuy = side === "buy";
 
@@ -260,18 +327,12 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       setConfirming(false);
       return;
     }
-    // Validate broker symbol against the live broker symbols list.
-    if (brokerSymbolsLive && brokerSymbols.length > 0) {
-      const exists = brokerSymbols.some(
-        (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
-      );
-      if (!exists) {
-        const msg = `Symbol "${brokerSymbol}" is not available on your broker. Pick one from the live symbols list.`;
-        toast.error("Invalid broker symbol", { description: msg });
-        setResultState({ type: "failed", message: msg });
-        setConfirming(false);
-        return;
-      }
+    // Validate the broker symbol against the live broker symbols list.
+    // Block if the list isn't loaded OR the symbol can't be resolved.
+    if (!symbolValidation.ok) {
+      toast.error("Cannot send trade", { description: symbolValidation.reason });
+      setSubmitting(false);
+      return;
     }
     setSubmitting(true);
     try {
@@ -674,35 +735,40 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                   </div>
                   <div className="px-5 py-4 space-y-2.5 text-xs">
                     {/* Prominent broker symbol that will actually be sent */}
-                    <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5">
+                    <div
+                      className={`rounded-lg border px-3 py-2.5 ${
+                        symbolValidation.ok
+                          ? "border-primary/30 bg-primary/5"
+                          : "border-red-500/40 bg-red-500/10"
+                      }`}
+                    >
                       <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">
                         Broker symbol sent to execute-trade
                       </div>
-                      <div className="font-heading text-lg font-bold tabular-nums text-primary">
+                      <div
+                        className={`font-heading text-lg font-bold tabular-nums ${
+                          symbolValidation.ok ? "text-primary" : "text-red-400"
+                        }`}
+                      >
                         {brokerSymbol}
                       </div>
                       {symbolDisplay !== brokerSymbol && (
                         <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
                           Displayed as {symbolDisplay}
+                          {rawBrokerSymbol !== brokerSymbol && symbolValidation.ok && (
+                            <> · normalized from {rawBrokerSymbol}</>
+                          )}
                         </div>
                       )}
-                      {brokerSymbolsLive && brokerSymbols.length > 0 && (
-                        <div
-                          className={`mt-1 text-[10px] font-mono uppercase tracking-widest ${
-                            brokerSymbols.some(
-                              (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
-                            )
-                              ? "text-emerald-400"
-                              : "text-red-400"
-                          }`}
-                        >
-                          {brokerSymbols.some(
-                            (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
-                          )
-                            ? "✓ Validated against broker symbols"
-                            : "✗ Not in broker symbols list"}
-                        </div>
-                      )}
+                      <div
+                        className={`mt-1.5 text-[10px] font-mono uppercase tracking-widest ${
+                          symbolValidation.ok ? "text-emerald-400" : "text-red-400"
+                        }`}
+                      >
+                        {symbolValidation.ok
+                          ? `✓ Validated against ${brokerSymbols.length} broker symbols`
+                          : `✗ ${symbolValidation.reason}`}
+                      </div>
                     </div>
                     <ConfirmRow
                       label="Direction"
@@ -714,6 +780,25 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     {tp && (
                       <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />
                     )}
+                    {/* Exact payload preview */}
+                    <details className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 group">
+                      <summary className="cursor-pointer text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground">
+                        execute-trade payload
+                      </summary>
+                      <pre className="mt-2 text-[10px] font-mono text-foreground/80 whitespace-pre-wrap break-all">
+{JSON.stringify(
+  {
+    symbol: brokerSymbol,
+    side,
+    volume: Number(lotsNum.toFixed(2)),
+    stopLoss: slNum ? Number(slNum) : null,
+    takeProfit: tpNum ? Number(tpNum) : null,
+  },
+  null,
+  2,
+)}
+                      </pre>
+                    </details>
                   </div>
                   <div className="flex gap-2 px-5 py-4 border-t border-border/40 bg-muted/20">
                     <Button
@@ -726,8 +811,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     </Button>
                     <Button
                       onClick={confirmTrade}
-                      disabled={submitting}
-                      className={`flex-1 h-11 font-bold ${
+                      disabled={submitting || !symbolValidation.ok}
+                      className={`flex-1 h-11 font-bold disabled:opacity-50 disabled:cursor-not-allowed ${
                         isBuy
                           ? "bg-emerald-500 hover:bg-emerald-500/90 text-white"
                           : "bg-red-500 hover:bg-red-500/90 text-white"
