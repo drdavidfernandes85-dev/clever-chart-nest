@@ -337,6 +337,10 @@ serve(async (req) => {
       let errorMessage = brokerMessage || "Trade execution failed.";
       let retryable = false;
       let retryAfter = 0;
+      const brokerRejected =
+        classification === "rejected" ||
+        retcode === 10019 ||
+        tradeResponse.status === 400;
 
       if ([500, 502, 503, 504].includes(tradeResponse.status)) {
         errorMessage = "Trading Layer is temporarily unavailable. Please try again shortly.";
@@ -356,7 +360,7 @@ serve(async (req) => {
         {
           success: false,
           step: "trade_execution",
-          status: "failed",
+          status: brokerRejected ? "rejected" : "failed",
           error: errorMessage,
           tradingLayerStatus: tradeResponse.status,
           retryable,
@@ -368,7 +372,7 @@ serve(async (req) => {
           payloadSent: orderPayload,
           raw: tradeData,
         },
-        tradeResponse.status,
+        brokerRejected ? 200 : tradeResponse.status,
       );
     }
 
@@ -386,7 +390,7 @@ serve(async (req) => {
           payloadSent: orderPayload,
           raw: tradeData,
         },
-        400,
+        200,
       );
     }
 
