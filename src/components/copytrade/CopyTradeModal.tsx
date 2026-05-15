@@ -398,10 +398,10 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
               <div className="flex flex-col items-center justify-center gap-3 py-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 <p className="font-heading text-sm font-bold text-foreground">
-                  Sending order to your EA…
+                  Executing trade on your connected MT5 account…
                 </p>
                 <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                  EA polls every ≤5 seconds
+                  Routing through the Trading Layer
                 </p>
               </div>
             )}

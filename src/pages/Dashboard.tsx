@@ -186,17 +186,17 @@ const DashboardInner = () => {
                 <AccountSnapshot />
               </div>
 
-              {/* Connected via EA — compact status pill */}
+              {/* Connected MT5 — compact status pill */}
               {isConnected && (
                 <span
                   className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-[hsl(145_65%_50%)]/30 bg-[hsl(145_65%_50%)]/10 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[hsl(145_65%_50%)]"
-                  title={`MT${account?.platform === "mt4" ? "4" : "5"} #${account?.login} • Connected via EA`}
+                  title={`MT5 #${account?.login} • Connected MT5 account`}
                 >
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-60" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[hsl(145_65%_50%)]" />
                   </span>
-                  EA · #{account?.login}
+                  MT5 · #{account?.login}
                 </span>
               )}
 
