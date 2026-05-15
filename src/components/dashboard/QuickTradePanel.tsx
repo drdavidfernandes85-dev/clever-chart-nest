@@ -229,12 +229,16 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const resolvedBrokerSymbol = resolveBrokerSymbol(rawBrokerSymbol, brokerSymbols);
 
   // Validation state for the symbol that will be sent.
-  const symbolValidation: { ok: boolean; sentSymbol: string; reason: string } = (() => {
+  const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
+    if (brokerSymbolsLoading) {
+      return { ok: false, sentSymbol: rawBrokerSymbol, reason: "Loading broker symbols…" };
+    }
     if (!brokerSymbolsLive || brokerSymbols.length === 0) {
       return {
         ok: false,
         sentSymbol: rawBrokerSymbol,
-        reason: "Live broker symbols list hasn't loaded yet. Connect MT5 or wait for symbols to sync before trading.",
+        reason: brokerSymbolsError ?? "Broker symbols could not be loaded. Please refresh.",
+        canRetry: true,
       };
     }
     if (!resolvedBrokerSymbol) {
