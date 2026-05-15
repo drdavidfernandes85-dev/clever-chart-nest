@@ -90,7 +90,8 @@ const App = () => (
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   {/* Open to all logged-in users (no eligibility required) */}
-                  <Route path="/dashboard" element={<DashboardShell><Dashboard /></DashboardShell>} />
+                  <Route path="/dashboard" element={<DashboardShell><TradingDashboard /></DashboardShell>} />
+                  <Route path="/dashboard-legacy" element={<DashboardShell><Dashboard /></DashboardShell>} />
                   <Route path="/command" element={<DashboardShell><CommandDeck /></DashboardShell>} />
                   <Route path="/profile" element={<DashboardShell><Profile /></DashboardShell>} />
                   <Route path="/videos" element={<DashboardShell><VideoLibrary /></DashboardShell>} />
@@ -111,7 +112,7 @@ const App = () => (
                   <Route path="/signals" element={<GatedDashboardShell><TradingSignals /></GatedDashboardShell>} />
                   <Route path="/leaderboard" element={<GatedDashboardShell><Leaderboard /></GatedDashboardShell>} />
                   <Route path="/analytics" element={<GatedDashboardShell><Analytics /></GatedDashboardShell>} />
-                  <Route path="/trading-dashboard" element={<GatedDashboardShell><TradingDashboard /></GatedDashboardShell>} />
+                  <Route path="/trading-dashboard" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/news" element={<GatedDashboardShell><News /></GatedDashboardShell>} />
                   <Route path="/calendar" element={<Navigate to="/news" replace />} />
                   <Route path="/education" element={<GatedDashboardShell><Education /></GatedDashboardShell>} />
