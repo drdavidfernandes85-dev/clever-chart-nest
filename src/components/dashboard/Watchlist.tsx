@@ -158,10 +158,10 @@ const Watchlist = () => {
   const available = useMemo(() => {
     const owned = new Set(items.map((i) => i.symbol));
     const q = addQuery.trim().toLowerCase();
-    return MARKET_UNIVERSE.filter((m) => !owned.has(m.symbol)).filter((m) =>
+    return universe.filter((m) => !owned.has(m.symbol)).filter((m) =>
       q ? m.symbol.toLowerCase().includes(q) || m.assetClass.toLowerCase().includes(q) : true,
     );
-  }, [items, addQuery]);
+  }, [items, addQuery, universe]);
 
   const grouped = useMemo(() => {
     const groups: Record<AssetClass, MarketSymbol[]> = {
@@ -189,6 +189,14 @@ const Watchlist = () => {
           <span className="ml-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
             {items.length}
           </span>
+          {!isLive && (
+            <span
+              className="ml-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest text-amber-400"
+              title={symbolsError ?? "Showing fallback symbols. Connect your MT5 account for live broker symbols."}
+            >
+              Fallback
+            </span>
+          )}
         </div>
         <Popover open={addOpen} onOpenChange={setAddOpen}>
           <PopoverTrigger asChild>
