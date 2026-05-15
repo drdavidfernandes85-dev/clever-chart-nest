@@ -215,40 +215,44 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
-  // Raw broker symbol candidate (no slashes, uppercase).
-  const rawBrokerSymbol = (
+  // Resolve the broker symbol field-by-field, then strip "/" and uppercase.
+  const rawBrokerSymbol: string =
     (selectedItem as any)?.brokerSymbol ||
+    (selectedItem as any)?.name ||
     (selectedItem as any)?.symbol ||
+    (selectedItem as any)?.displayName?.replace(/\//g, "") ||
     (selectedItem as any)?.label?.replace(/\//g, "") ||
-    selectedItem?.displayName?.replace(/\//g, "") ||
-    toBrokerSymbol(ctxSymbol)
-  ).toUpperCase();
+    toBrokerSymbol(ctxSymbol);
+  const normalizedSymbol = (rawBrokerSymbol ?? "").replace(/\//g, "").toUpperCase();
 
-  // Resolve against the live broker symbols list (handles aliases + suffixes).
-  // If matched, this is the EXACT string we'll send to execute-trade.
-  const resolvedBrokerSymbol = resolveBrokerSymbol(rawBrokerSymbol, brokerSymbols);
+  // Strict normalized match against the loaded broker symbols list.
+  const existsInBrokerSymbols = brokerSymbols.some((s: any) =>
+    String(s.brokerSymbol || s.name || s.symbol || "")
+      .replace(/\//g, "")
+      .toUpperCase() === normalizedSymbol,
+  );
+  const symbolsLoaded = brokerSymbolsLive && brokerSymbols.length > 0;
 
-  // Validation state for the symbol that will be sent.
   const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
     if (brokerSymbolsLoading) {
-      return { ok: false, sentSymbol: rawBrokerSymbol, reason: "Loading broker symbols…" };
+      return { ok: false, sentSymbol: normalizedSymbol, reason: "Loading broker symbols…" };
     }
-    if (!brokerSymbolsLive || brokerSymbols.length === 0) {
+    if (!symbolsLoaded) {
       return {
         ok: false,
-        sentSymbol: rawBrokerSymbol,
-        reason: brokerSymbolsError ?? "Broker symbols could not be loaded. Please refresh.",
+        sentSymbol: normalizedSymbol,
+        reason: brokerSymbolsError ?? "Live broker symbols list hasn't loaded yet. Please refresh.",
         canRetry: true,
       };
     }
-    if (!resolvedBrokerSymbol) {
+    if (!existsInBrokerSymbols) {
       return {
         ok: false,
-        sentSymbol: rawBrokerSymbol,
-        reason: `"${rawBrokerSymbol}" is not available on your broker. Pick a symbol from the live list.`,
+        sentSymbol: normalizedSymbol,
+        reason: `"${normalizedSymbol}" is not available on your broker. Pick a symbol from the live list.`,
       };
     }
-    return { ok: true, sentSymbol: resolvedBrokerSymbol, reason: "" };
+    return { ok: true, sentSymbol: normalizedSymbol, reason: "" };
   })();
 
   const brokerSymbol = symbolValidation.sentSymbol;
