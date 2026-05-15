@@ -34,6 +34,12 @@ import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsCont
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { fetchMarketQuotes } from "@/lib/markets";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  validateStops,
+  getEffectiveStops,
+  matchQuote,
+} from "@/lib/quick-trade-validation";
+import { RefreshCw } from "lucide-react";
 
 // Broker-safe defaults — used until get-trading-symbols returns the
 // connected broker's live symbol list.
@@ -214,6 +220,9 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [tradeIdSrc, setTradeIdSrc] = useState<string | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const [priceNonce, setPriceNonce] = useState(0);
   const [resultState, setResultState] = useState<{
     type: "filled" | "placed" | "rejected" | "failed";
     message: string;
@@ -304,27 +313,48 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   // Effective values that will be sent to the broker. Empty/invalid → null.
   // The "Place trade without SL/TP" checkbox forces both to null.
-  const effectiveSl = noStops || !slValid ? null : (slNum as number);
-  const effectiveTp = noStops || !tpValid ? null : (tpNum as number);
+  const { stopLoss: effectiveSl, takeProfit: effectiveTp } = getEffectiveStops({
+    sl: slNum,
+    tp: tpNum,
+    noStops,
+  });
 
   // Fetch a current market price for the selected broker symbol so we can
-  // validate manual SL/TP before sending the order. Refresh every 15s while
-  // the panel is mounted.
+  // validate manual SL/TP before sending the order. Refresh every 15s, plus
+  // on demand via the retry button (priceNonce).
   useEffect(() => {
-    let cancelled = false;
-    const norm = (s: string) => s.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-    const target = norm(brokerSymbol);
-    if (!target) {
+    if (!brokerSymbol) {
       setCurrentPrice(null);
+      setPriceError(null);
+      setPriceLoading(false);
       return;
     }
+    let cancelled = false;
     const load = async () => {
-      const quotes = await fetchMarketQuotes();
-      if (cancelled) return;
-      const match = quotes.find(
-        (q) => q.price != null && (norm(q.symbol) === target || norm(q.symbol).startsWith(target) || target.startsWith(norm(q.symbol))),
-      );
-      setCurrentPrice(match?.price ?? null);
+      setPriceLoading(true);
+      try {
+        const quotes = await fetchMarketQuotes();
+        if (cancelled) return;
+        const match = matchQuote(brokerSymbol, quotes);
+        if (match?.price != null) {
+          setCurrentPrice(match.price);
+          setPriceError(null);
+        } else {
+          setCurrentPrice(null);
+          setPriceError(
+            quotes.length === 0
+              ? "Quote service unavailable"
+              : "No live quote for this symbol",
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setCurrentPrice(null);
+          setPriceError("Failed to fetch current price");
+        }
+      } finally {
+        if (!cancelled) setPriceLoading(false);
+      }
     };
     load();
     const id = window.setInterval(load, 15000);
@@ -332,31 +362,16 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [brokerSymbol]);
+  }, [brokerSymbol, priceNonce]);
 
   // Validate SL/TP relative to the current market price.
-  // Returns null when valid, or a human-readable error message.
-  const stopsError: string | null = (() => {
-    if (noStops) return null;
-    if (!slValid && !tpValid) return null;
-    if (currentPrice == null) return null; // Allow when price unavailable.
-    if (isBuy) {
-      if (slValid && (slNum as number) >= currentPrice) {
-        return "Invalid Stop Loss or Take Profit for current market price.";
-      }
-      if (tpValid && (tpNum as number) <= currentPrice) {
-        return "Invalid Stop Loss or Take Profit for current market price.";
-      }
-    } else {
-      if (slValid && (slNum as number) <= currentPrice) {
-        return "Invalid Stop Loss or Take Profit for current market price.";
-      }
-      if (tpValid && (tpNum as number) >= currentPrice) {
-        return "Invalid Stop Loss or Take Profit for current market price.";
-      }
-    }
-    return null;
-  })();
+  const stopsError = validateStops({
+    side,
+    currentPrice,
+    sl: slNum,
+    tp: tpNum,
+    noStops,
+  });
 
   // Symbol specs (contract size, tick value/size) are not yet exposed by
   // Trading Layer — until they are we cannot calculate accurate P&L or risk.
@@ -730,19 +745,63 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             </span>
           </label>
 
-          {/* Current price + SL/TP validation hint */}
-          {!noStops && (slValid || tpValid) && (
-            <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest">
-              <span className="text-muted-foreground">
-                Current price:{" "}
-                <span className="text-foreground tabular-nums">
-                  {currentPrice != null ? currentPrice : "—"}
+          {/* Current price + SL/TP rules + retry */}
+          {!noStops && (
+            <div className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 space-y-1.5">
+              <div className="flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-widest">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  Current price:
+                  {priceLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                  ) : (
+                    <span
+                      className={`tabular-nums ${
+                        currentPrice != null ? "text-foreground" : "text-amber-400"
+                      }`}
+                    >
+                      {currentPrice != null ? currentPrice : "—"}
+                    </span>
+                  )}
                 </span>
-              </span>
-              {stopsError && (
-                <span className="text-red-400 normal-case tracking-normal">
-                  {stopsError}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setPriceNonce((n) => n + 1)}
+                  disabled={priceLoading}
+                  className="inline-flex items-center gap-1 rounded border border-border/50 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground hover:text-primary hover:border-primary/40 disabled:opacity-50"
+                  aria-label="Retry price fetch"
+                >
+                  <RefreshCw
+                    className={`h-3 w-3 ${priceLoading ? "animate-spin" : ""}`}
+                  />
+                  Retry
+                </button>
+              </div>
+
+              {/* Rule helper text */}
+              <p className="text-[10px] leading-snug text-muted-foreground normal-case tracking-normal">
+                {isBuy
+                  ? "BUY: Stop Loss must be below current price · Take Profit must be above."
+                  : "SELL: Stop Loss must be above current price · Take Profit must be below."}
+                {currentPrice == null && (slValid || tpValid) && (
+                  <>
+                    {" "}
+                    Current price unavailable — manual SL/TP cannot be validated;
+                    trade will be allowed but the broker may reject invalid stops.
+                  </>
+                )}
+              </p>
+
+              {priceError && currentPrice == null && (
+                <p className="text-[10px] leading-snug text-amber-400 normal-case tracking-normal">
+                  {priceError}. Trade is still allowed; check the broker rules.
+                </p>
+              )}
+
+              {stopsError && (slValid || tpValid) && (
+                <p className="text-[10px] leading-snug text-red-400 normal-case tracking-normal">
+                  {stopsError} Confirm Trade is disabled until you fix the values
+                  or enable “Place trade without SL/TP”.
+                </p>
               )}
             </div>
           )}
