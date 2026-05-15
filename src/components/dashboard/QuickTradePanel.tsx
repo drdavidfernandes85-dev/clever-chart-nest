@@ -34,7 +34,15 @@ import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsCont
 
 // Broker-safe defaults — used until get-trading-symbols returns the
 // connected broker's live symbol list.
-const DEFAULT_SYMBOLS = FALLBACK_SYMBOLS.map((s) => s.symbol);
+interface SymbolItem {
+  displayName: string;
+  brokerSymbol: string;
+}
+const toBrokerSymbol = (label: string) => label.replace(/\//g, "").toUpperCase();
+const DEFAULT_SYMBOL_ITEMS: SymbolItem[] = FALLBACK_SYMBOLS.map((s) => ({
+  displayName: s.symbol,
+  brokerSymbol: toBrokerSymbol(s.symbol),
+}));
 
 const QUICK_LOTS = [0.01, 0.02, 0.05, 0.1];
 
@@ -104,21 +112,44 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     loadAccount();
   }, []);
 
-  // Symbol universe: prop > broker symbols (live) > fallback
+  // Symbol universe: prop > broker symbols (live) > fallback.
+  // Each item carries both a displayName (e.g. "EUR/USD") and the exact
+  // broker symbol (e.g. "EURUSD") that must be sent to execute-trade.
   const { symbols: brokerSymbols, isLive: brokerSymbolsLive, error: brokerSymbolsError } = useBrokerSymbols();
-  const SYMBOLS = useMemo(() => {
-    if (symbolsProp && symbolsProp.length > 0) return symbolsProp;
-    if (brokerSymbols.length > 0) return brokerSymbols.map((s) => s.symbol);
-    return DEFAULT_SYMBOLS;
+  const SYMBOL_ITEMS = useMemo<SymbolItem[]>(() => {
+    if (symbolsProp && symbolsProp.length > 0) {
+      return symbolsProp.map((label) => ({
+        displayName: label,
+        brokerSymbol: toBrokerSymbol(label),
+      }));
+    }
+    if (brokerSymbols.length > 0) {
+      return brokerSymbols.map((s) => ({
+        displayName: s.symbol,
+        brokerSymbol: s.symbol,
+      }));
+    }
+    return DEFAULT_SYMBOL_ITEMS;
   }, [symbolsProp, brokerSymbols]);
 
-  // Make sure the active symbol exists in the list — otherwise reset to first.
+  // Resolve currently selected item from context value (matches either
+  // displayName or brokerSymbol so legacy "EUR/USD" values keep working).
+  const selectedItem: SymbolItem =
+    SYMBOL_ITEMS.find(
+      (it) => it.displayName === ctxSymbol || it.brokerSymbol === ctxSymbol,
+    ) ?? SYMBOL_ITEMS[0];
+
+  // Make sure context tracks an entry that exists in the list.
   useEffect(() => {
-    if (!SYMBOLS.includes(ctxSymbol)) {
-      setCtxSymbol(SYMBOLS[0]);
+    if (!selectedItem) return;
+    if (
+      ctxSymbol !== selectedItem.displayName &&
+      ctxSymbol !== selectedItem.brokerSymbol
+    ) {
+      setCtxSymbol(selectedItem.displayName);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SYMBOLS]);
+  }, [SYMBOL_ITEMS]);
 
   const accountEquity =
     accountConnected && account?.equity != null ? Number(account.equity) : 0;
@@ -140,7 +171,9 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const [flash, setFlash] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  const symbol = ctxSymbol;
+  const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
+  const brokerSymbol =
+    selectedItem?.brokerSymbol ?? toBrokerSymbol(ctxSymbol);
   const side = ctxSide;
   const isBuy = side === "buy";
 
@@ -186,7 +219,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   const handlePlace = () => {
     const parsed = tradeSchema.safeParse({
-      symbol,
+      symbol: brokerSymbol,
       side,
       type,
       lots: lotsNum,
@@ -226,7 +259,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       const { data, error } = await supabase.functions.invoke("execute-trade", {
         body: {
           tradeId,
-          symbol,
+          symbol: brokerSymbol,
           side,
           volume: Number(lotsNum.toFixed(2)),
           stopLoss: slNum ? Number(slNum) : null,
@@ -350,7 +383,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               className="flex h-12 w-full items-center justify-between rounded-xl border border-border/50 bg-background/60 px-3.5 text-left transition-colors hover:border-primary/40"
             >
               <span className="font-heading text-base font-bold text-foreground">
-                {symbol}
+                {symbolDisplay}
               </span>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform ${
@@ -360,23 +393,31 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             </button>
             {openSymbols && (
               <ul className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
-                {SYMBOLS.map((s) => (
-                  <li key={s}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCtxSymbol(s);
-                        onSymbolChange?.(s);
-                        setOpenSymbols(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
-                        s === symbol ? "text-primary bg-primary/5" : "text-foreground"
-                      }`}
-                    >
-                      <span>{s}</span>
-                    </button>
-                  </li>
-                ))}
+                {SYMBOL_ITEMS.map((it) => {
+                  const isActive = it.brokerSymbol === brokerSymbol;
+                  return (
+                    <li key={it.brokerSymbol}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCtxSymbol(it.displayName);
+                          onSymbolChange?.(it.displayName);
+                          setOpenSymbols(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
+                          isActive ? "text-primary bg-primary/5" : "text-foreground"
+                        }`}
+                      >
+                        <span>{it.displayName}</span>
+                        {it.displayName !== it.brokerSymbol && (
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {it.brokerSymbol}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -582,7 +623,14 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     </div>
                   </div>
                   <div className="px-5 py-4 space-y-2.5 text-xs">
-                    <ConfirmRow label="Symbol" value={symbol} />
+                    <ConfirmRow
+                      label="Symbol"
+                      value={
+                        symbolDisplay !== brokerSymbol
+                          ? `${symbolDisplay} (${brokerSymbol})`
+                          : brokerSymbol
+                      }
+                    />
                     <ConfirmRow
                       label="Direction"
                       value={isBuy ? "BUY" : "SELL"}
