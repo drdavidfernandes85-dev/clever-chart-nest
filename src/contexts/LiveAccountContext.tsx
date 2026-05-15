@@ -90,14 +90,41 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    // Initial fetch on mount.
     refresh();
-    const id = setInterval(() => {
-      if (!document.hidden) refresh();
-    }, REFRESH_MS);
+
+    let intervalId: number | null = null;
+    const start = () => {
+      if (intervalId !== null) return;
+      intervalId = window.setInterval(() => {
+        if (document.visibilityState === "visible") refresh();
+      }, REFRESH_MS);
+    };
+    const stop = () => {
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        // Refresh immediately when the tab becomes visible, then resume polling.
+        refresh();
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
+
     const onTrade = () => refresh();
     window.addEventListener("trade-executed", onTrade);
+
     return () => {
-      clearInterval(id);
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("trade-executed", onTrade);
     };
   }, [refresh]);
