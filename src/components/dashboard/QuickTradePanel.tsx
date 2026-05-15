@@ -474,13 +474,35 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
           signalId: tradeIdSrc || null,
         },
       });
-      if (error) throw error;
-      const res = data as any;
+
+      // Non-2xx responses populate `error` but the JSON body is on error.context.
+      // Read it so we can surface the broker's real retcode_description.
+      let res: any = data;
+      if (error) {
+        try {
+          const ctx: any = (error as any)?.context;
+          if (ctx && typeof ctx.json === "function") {
+            res = await ctx.json();
+          } else if (ctx && typeof ctx.text === "function") {
+            res = JSON.parse(await ctx.text());
+          }
+        } catch {
+          /* fall through to generic error */
+        }
+        if (!res) {
+          const msg = (error as any)?.message || "Trade execution failed";
+          setResultState({ type: "failed", message: msg });
+          toast.error(msg);
+          return;
+        }
+      }
+
       if (res?.success === true) {
         const classification = (res.classification || res.status || "executed") as string;
         const label =
           classification === "filled" ? "Trade filled"
           : classification === "placed" ? "Trade placed"
+          : classification === "done" ? "Trade filled"
           : `Trade ${classification}`;
         setResultState({
           type: classification === "placed" ? "placed" : "filled",
@@ -491,22 +513,30 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         });
         setConfirming(false);
         setTradeIdSrc(null);
-        // Reset form to defaults
         setLots("0.01");
         setSl("");
         setTp("");
         setEntry("");
-        // Refresh the dashboard's live account + execution log.
         loadAccount();
         window.dispatchEvent(new CustomEvent("trade-executed"));
       } else {
-        const msg = res?.error || "Trade execution failed";
-        if (res?.status === "rejected" || res?.classification === "rejected") {
-          setResultState({ type: "rejected", message: `Trade rejected: ${msg}` });
-        } else {
-          setResultState({ type: "failed", message: msg });
-        }
-        toast.error(msg);
+        // Prefer the broker's retcode_description, then comment, then error.
+        const brokerMsg =
+          res?.retcodeDescription ||
+          res?.retcode_description ||
+          res?.raw?.data?.retcode_description ||
+          res?.raw?.data?.comment ||
+          res?.error ||
+          "Trade rejected by broker";
+        const isRejected =
+          res?.status === "rejected" || res?.classification === "rejected";
+        setResultState({
+          type: isRejected ? "rejected" : "failed",
+          message: isRejected ? `Trade rejected: ${brokerMsg}` : brokerMsg,
+        });
+        toast.error(isRejected ? "Trade rejected" : "Trade failed", {
+          description: brokerMsg,
+        });
       }
     } catch (e: any) {
       const msg = e?.message || "Trade execution failed";
