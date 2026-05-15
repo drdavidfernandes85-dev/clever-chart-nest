@@ -282,6 +282,41 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     if (normalizedSymbol) setSelectedBrokerSymbol(normalizedSymbol);
   }, [normalizedSymbol, setSelectedBrokerSymbol]);
 
+  // Hard refresh broker symbols whenever the panel mounts.
+  useEffect(() => {
+    refreshBrokerSymbols(undefined, { force: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Searchable dropdown state.
+  const [symbolSearch, setSymbolSearch] = useState("");
+  const [assetClassFilter, setAssetClassFilter] = useState<string>("All");
+  const assetClasses = useMemo<string[]>(() => {
+    const set = new Set<string>();
+    brokerSymbols.forEach((s: any) => {
+      const c = (s.assetClass || "").toString().trim();
+      if (c) set.add(c);
+    });
+    return ["All", ...Array.from(set).sort()];
+  }, [brokerSymbols]);
+  const filteredSymbolItems = useMemo(() => {
+    const q = symbolSearch.trim().toUpperCase();
+    return SYMBOL_ITEMS.filter((it) => {
+      if (assetClassFilter !== "All") {
+        const meta: any = brokerSymbols.find(
+          (b: any) => (b.brokerSymbol || b.name || b.symbol) === it.brokerSymbol,
+        );
+        if ((meta?.assetClass || "") !== assetClassFilter) return false;
+      }
+      if (!q) return true;
+      return (
+        it.displayName.toUpperCase().includes(q) ||
+        it.brokerSymbol.toUpperCase().includes(q)
+      );
+    }).slice(0, 300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [SYMBOL_ITEMS, symbolSearch, assetClassFilter, brokerSymbols]);
+
   const selectedSymbolValid = lastSelectedSymbolValid;
 
   const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
