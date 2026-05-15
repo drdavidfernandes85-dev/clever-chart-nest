@@ -75,7 +75,7 @@ const LivePortfolioWidget = () => {
                 Live Portfolio
               </h2>
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-mono">
-                Auto-refresh · 15s
+                Auto-refresh · 10s
               </p>
             </div>
           </div>
