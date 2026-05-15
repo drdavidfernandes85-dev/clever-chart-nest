@@ -443,7 +443,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     }
     setSubmitting(true);
     try {
-      const tradeId = tradeIdSrc ?? crypto.randomUUID();
+      const tradeId = previewTradeId || crypto.randomUUID();
       const { data, error } = await supabase.functions.invoke("execute-trade", {
         body: {
           tradeId,
