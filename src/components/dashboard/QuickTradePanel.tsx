@@ -159,7 +159,9 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   // Symbol universe: prop > broker symbols (live) > fallback.
   // Each item carries both a displayName (e.g. "EUR/USD") and the exact
   // broker symbol (e.g. "EURUSD") that must be sent to execute-trade.
-  const { symbols: brokerSymbols, isLive: brokerSymbolsLive, loading: brokerSymbolsLoading, error: brokerSymbolsError, refresh: refreshBrokerSymbols } = useBrokerSymbols();
+  const { symbols: brokerSymbols, isLive: brokerSymbolsLive, loading: brokerSymbolsLoading, error: brokerSymbolsError, lastResponse: brokerSymbolsLastResponse, refresh: refreshBrokerSymbols } = useBrokerSymbols();
+  const { isAdmin } = useIsAdmin();
+  const showDebug = isAdmin || import.meta.env.DEV;
   const SYMBOL_ITEMS = useMemo<SymbolItem[]>(() => {
     if (symbolsProp && symbolsProp.length > 0) {
       return symbolsProp.map((label) => ({
