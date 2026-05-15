@@ -248,15 +248,23 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     (selectedItem as any)?.displayName?.replace(/\//g, "") ||
     (selectedItem as any)?.label?.replace(/\//g, "") ||
     toBrokerSymbol(ctxSymbol);
-  const normalizedSymbol = (rawBrokerSymbol ?? "").replace(/\//g, "").toUpperCase();
+  const normalizedSymbol = (rawBrokerSymbol ?? "")
+    .replace(/\//g, "")
+    .replace(/-/g, "")
+    .toUpperCase();
 
   // Strict normalized match against the loaded broker symbols list.
   const existsInBrokerSymbols = brokerSymbols.some((s: any) =>
     String(s.brokerSymbol || s.name || s.symbol || "")
       .replace(/\//g, "")
+      .replace(/-/g, "")
       .toUpperCase() === normalizedSymbol,
   );
   const symbolsLoaded = brokerSymbolsLive && brokerSymbols.length > 0;
+  const lastSelectedSymbolValid =
+    (brokerSymbolsLastResponse as any)?.selectedSymbolValid === true ||
+    ctxSelectedSymbolValid === true;
+  const isTradableSymbol = existsInBrokerSymbols || lastSelectedSymbolValid;
 
   useEffect(() => {
     if (normalizedSymbol) setSelectedBrokerSymbol(normalizedSymbol);
@@ -273,7 +281,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     if (brokerSymbolsLoading) {
       return { ok: false, sentSymbol: normalizedSymbol, reason: "Loading broker symbols..." };
     }
-    if (!symbolsLoaded) {
+    if (!symbolsLoaded && !lastSelectedSymbolValid) {
       return {
         ok: false,
         sentSymbol: normalizedSymbol,
@@ -281,7 +289,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         canRetry: true,
       };
     }
-    if (!existsInBrokerSymbols) {
+    if (!isTradableSymbol) {
       return {
         ok: false,
         sentSymbol: normalizedSymbol,
