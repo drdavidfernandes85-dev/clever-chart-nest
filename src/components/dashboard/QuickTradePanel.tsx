@@ -30,10 +30,11 @@ import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsContext";
 
-// Broker-safe defaults — used until get-live-account / get-symbols returns the
-// connected broker's symbol list.
-const DEFAULT_SYMBOLS = ["XAUUSD", "EURUSD", "GBPUSD", "US30", "NAS100"];
+// Broker-safe defaults — used until get-trading-symbols returns the
+// connected broker's live symbol list.
+const DEFAULT_SYMBOLS = FALLBACK_SYMBOLS.map((s) => s.symbol);
 
 const QUICK_LOTS = [0.01, 0.02, 0.05, 0.1];
 
@@ -103,12 +104,13 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     loadAccount();
   }, []);
 
-  // Symbol universe: prop > broker symbols (when available) > defaults
+  // Symbol universe: prop > broker symbols (live) > fallback
+  const { symbols: brokerSymbols, isLive: brokerSymbolsLive, error: brokerSymbolsError } = useBrokerSymbols();
   const SYMBOLS = useMemo(() => {
     if (symbolsProp && symbolsProp.length > 0) return symbolsProp;
-    if (account?.symbols && account.symbols.length > 0) return account.symbols;
+    if (brokerSymbols.length > 0) return brokerSymbols.map((s) => s.symbol);
     return DEFAULT_SYMBOLS;
-  }, [symbolsProp, account]);
+  }, [symbolsProp, brokerSymbols]);
 
   // Make sure the active symbol exists in the list — otherwise reset to first.
   useEffect(() => {
@@ -331,8 +333,16 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         <div className="p-4 space-y-3.5 bg-card/60">
           {/* Symbol selector */}
           <div className="relative">
-            <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
-              Symbol
+            <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block flex items-center gap-1.5">
+              <span>Symbol</span>
+              {!brokerSymbolsLive && (
+                <span
+                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-400"
+                  title={brokerSymbolsError ?? "Showing fallback symbols. Connect your MT5 account for live broker symbols."}
+                >
+                  Fallback
+                </span>
+              )}
             </Label>
             <button
               type="button"

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap, Search } from "lucide-react";
+import { Eye, GripVertical, Plus, X, ArrowUp, ArrowDown, Zap, Search, AlertTriangle } from "lucide-react";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useBrokerSymbols, type BrokerSymbol } from "@/contexts/BrokerSymbolsContext";
 import {
   MARKET_UNIVERSE,
   fetchMarketQuotes,
@@ -16,15 +17,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// Broker-safe defaults shown until live broker symbols are loaded.
-const DEFAULT_LABELS = [
-  "XAUUSD",
-  "EUR/USD",
-  "GBP/USD",
-  "US30",
-  "NAS100",
-];
-
 interface PriceState {
   price: number;
   prev: number;
@@ -33,36 +25,63 @@ interface PriceState {
   open: number;
 }
 
+/** Map a broker symbol string to a MarketSymbol entry (for sparkline metadata). */
+function brokerToMarket(b: BrokerSymbol): MarketSymbol {
+  const found = MARKET_UNIVERSE.find(
+    (m) => m.symbol === b.symbol || m.symbol.replace("/", "") === b.symbol,
+  );
+  if (found) return { ...found, symbol: b.symbol };
+  // Best-effort defaults for an unknown broker symbol.
+  const upper = b.symbol.toUpperCase();
+  const assetClass: AssetClass =
+    /BTC|ETH|XRP|SOL|DOGE|BNB|USDT/.test(upper) ? "crypto"
+      : /XAU|XAG|USD|EUR|GBP|JPY|CHF|CAD|AUD|NZD/.test(upper) && upper.length <= 8 ? "forex"
+      : /US30|NAS100|SPX|DAX|FTSE|NIKKEI|UK100|GER|JPN/.test(upper) ? "index"
+      : "stock";
+  return { symbol: b.symbol, assetClass, tv: upper };
+}
+
 const Watchlist = () => {
   const { t } = useLanguage();
-  const initial = useMemo(
-    () =>
-      DEFAULT_LABELS.map((l) => MARKET_UNIVERSE.find((m) => m.symbol === l)).filter(
-        Boolean,
-      ) as MarketSymbol[],
-    [],
-  );
+  const { symbols: brokerSymbols, isLive, error: symbolsError, refresh } = useBrokerSymbols();
+
+  const universe = useMemo(() => brokerSymbols.map(brokerToMarket), [brokerSymbols]);
+
+  // Default selection: first 8 broker symbols (or all if fewer).
+  const initial = useMemo(() => universe.slice(0, 8), [universe]);
   const [items, setItems] = useState<MarketSymbol[]>(initial);
   const [prices, setPrices] = useState<Record<string, PriceState>>({});
   const dragId = useRef<string | null>(null);
   const { openTrade } = useQuickTrade();
 
+  // When the broker symbol set changes, drop any items that are no longer offered
+  // and seed the list if it ended up empty.
+  useEffect(() => {
+    const allowed = new Set(universe.map((m) => m.symbol));
+    setItems((prev) => {
+      const filtered = prev.filter((i) => allowed.has(i.symbol));
+      if (filtered.length > 0) return filtered;
+      return universe.slice(0, 8);
+    });
+  }, [universe]);
+
   // Restore order — versioned key so old layouts are dropped automatically.
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("eltr.watchlist.order.v3");
-      if (saved) {
+      const saved = localStorage.getItem("eltr.watchlist.order.v4");
+      if (saved && universe.length > 0) {
         const labels: string[] = JSON.parse(saved);
-        const map = new Map(MARKET_UNIVERSE.map((i) => [i.symbol, i]));
+        const map = new Map(universe.map((i) => [i.symbol, i]));
         const ordered = labels.map((l) => map.get(l)).filter(Boolean) as MarketSymbol[];
         if (ordered.length) setItems(ordered);
       }
     } catch { /* ignore */ }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [universe.length === 0]);
 
   useEffect(() => {
     localStorage.setItem(
-      "eltr.watchlist.order.v3",
+      "eltr.watchlist.order.v4",
       JSON.stringify(items.map((i) => i.symbol)),
     );
   }, [items]);
@@ -139,10 +158,10 @@ const Watchlist = () => {
   const available = useMemo(() => {
     const owned = new Set(items.map((i) => i.symbol));
     const q = addQuery.trim().toLowerCase();
-    return MARKET_UNIVERSE.filter((m) => !owned.has(m.symbol)).filter((m) =>
+    return universe.filter((m) => !owned.has(m.symbol)).filter((m) =>
       q ? m.symbol.toLowerCase().includes(q) || m.assetClass.toLowerCase().includes(q) : true,
     );
-  }, [items, addQuery]);
+  }, [items, addQuery, universe]);
 
   const grouped = useMemo(() => {
     const groups: Record<AssetClass, MarketSymbol[]> = {
@@ -170,6 +189,14 @@ const Watchlist = () => {
           <span className="ml-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
             {items.length}
           </span>
+          {!isLive && (
+            <span
+              className="ml-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-widest text-amber-400"
+              title={symbolsError ?? "Showing fallback symbols. Connect your MT5 account for live broker symbols."}
+            >
+              Fallback
+            </span>
+          )}
         </div>
         <Popover open={addOpen} onOpenChange={setAddOpen}>
           <PopoverTrigger asChild>
@@ -223,6 +250,22 @@ const Watchlist = () => {
           </PopoverContent>
         </Popover>
       </div>
+
+      {!isLive && symbolsError && (
+        <div className="flex items-center justify-between gap-2 border-b border-amber-500/20 bg-amber-500/5 px-4 py-2 text-[11px] text-amber-300">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="h-3 w-3" />
+            <span>Broker symbols unavailable. Please refresh.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       <ul className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
         <AnimatePresence initial={false}>
