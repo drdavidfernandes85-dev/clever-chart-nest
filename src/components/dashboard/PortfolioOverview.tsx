@@ -18,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useMTAccount } from "@/hooks/useMTAccount";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -90,7 +91,7 @@ const PortfolioOverview = () => {
   const [positions, setPositions] = useState<Position[]>(livePositions);
   useEffect(() => setPositions(livePositions), [livePositions]);
 
-  const accountEquity = isConnected && account?.equity ? Number(account.equity) : 0;
+  const accountEquity = liveAccount?.equity ?? (isConnected && account?.equity ? Number(account.equity) : 0);
 
   const totalPnl = useMemo(
     () => positions.reduce((acc, p) => acc + calcPnl(p).pnl, 0),
