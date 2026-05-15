@@ -211,12 +211,22 @@ const Navbar = () => {
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
             </Button>
-            <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
-              <Link to="/connect-mt" onClick={() => { setMobileOpen(false); track("connect_mt_click", { location: "navbar_mobile" }); }}>
-                <Plug className="h-3.5 w-3.5" />
-                Connect MT5
-              </Link>
-            </Button>
+            {connected && liveAccount ? (
+              <div className="flex items-center justify-between gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  MT5 #{liveAccount.login}
+                </div>
+                <span className="text-[10px] text-muted-foreground truncate max-w-[120px]">{liveAccount.server}</span>
+              </div>
+            ) : (
+              <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
+                <Link to="/connect-mt" onClick={() => { setMobileOpen(false); track("connect_mt_click", { location: "navbar_mobile" }); }}>
+                  <Plug className="h-3.5 w-3.5" />
+                  Connect MT5 Account
+                </Link>
+              </Button>
+            )}
 
             {user ? (
               <div className="flex items-center gap-2 mt-1">
