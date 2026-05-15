@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, LogOut, User, Plug } from "lucide-react";
+import { Menu, X, LogOut, User, Plug, CheckCircle2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import sidebarLogo from "@/assets/logo-sidebar.png";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -9,6 +9,7 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { track } from "@/lib/analytics";
 import {
   DropdownMenu,
