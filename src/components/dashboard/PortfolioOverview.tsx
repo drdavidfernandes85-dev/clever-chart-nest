@@ -374,10 +374,10 @@ const PortfolioOverview = () => {
                   {p.size.toFixed(2)}
                 </span>
                 <span className="text-right font-mono text-xs tabular-nums text-muted-foreground">
-                  {fmtPrice(p.entry)}
+                  {p.entry > 0 ? fmtPrice(p.entry) : "—"}
                 </span>
                 <span className="text-right font-mono text-xs tabular-nums text-foreground">
-                  {fmtPrice(p.current)}
+                  {p.current > 0 ? fmtPrice(p.current) : "—"}
                 </span>
                 <span
                   className={`text-right font-mono text-sm font-bold tabular-nums ${
