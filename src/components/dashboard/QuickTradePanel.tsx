@@ -464,39 +464,44 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     }
     setSubmitting(true);
     try {
-      const tradeId = previewTradeId || crypto.randomUUID();
       const { data, error } = await supabase.functions.invoke("execute-trade", {
         body: {
-          tradeId,
           symbol: brokerSymbol,
           side,
           volume: Number(lotsNum.toFixed(2)),
           stopLoss: effectiveSl,
           takeProfit: effectiveTp,
+          signalId: tradeIdSrc || null,
         },
       });
       if (error) throw error;
       const res = data as any;
       if (res?.success === true) {
-        const status = res.status as string;
-        if (status === "filled") {
-          setResultState({ type: "filled", message: "Trade filled" });
-          toast.success("Trade filled");
-        } else if (status === "placed") {
-          setResultState({ type: "placed", message: "Trade placed" });
-          toast.success("Trade placed");
-        } else {
-          setResultState({ type: "filled", message: "Trade executed" });
-          toast.success("Trade executed");
-        }
+        const classification = (res.classification || res.status || "executed") as string;
+        const label =
+          classification === "filled" ? "Trade filled"
+          : classification === "placed" ? "Trade placed"
+          : `Trade ${classification}`;
+        setResultState({
+          type: classification === "placed" ? "placed" : "filled",
+          message: label,
+        });
+        toast.success(label, {
+          description: res.ticket ? `Ticket #${res.ticket}` : undefined,
+        });
         setConfirming(false);
         setTradeIdSrc(null);
+        // Reset form to defaults
+        setLots("0.01");
+        setSl("");
+        setTp("");
+        setEntry("");
         // Refresh the dashboard's live account + execution log.
         loadAccount();
         window.dispatchEvent(new CustomEvent("trade-executed"));
       } else {
         const msg = res?.error || "Trade execution failed";
-        if (res?.status === "rejected") {
+        if (res?.status === "rejected" || res?.classification === "rejected") {
           setResultState({ type: "rejected", message: `Trade rejected: ${msg}` });
         } else {
           setResultState({ type: "failed", message: msg });
