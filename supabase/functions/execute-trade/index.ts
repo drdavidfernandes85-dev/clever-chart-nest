@@ -191,8 +191,8 @@ serve(async (req) => {
     }
 
     const { data: account, error: accountError } = await supabase
-      .from("user_mt5_accounts")
-      .select("trading_layer_trader_id, account_number, server, status")
+      .from("user_mt_accounts")
+      .select("metaapi_account_id, login, server_name, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -210,7 +210,7 @@ serve(async (req) => {
       );
     }
 
-    if (!account?.trading_layer_trader_id) {
+    if (!account?.metaapi_account_id) {
       return json(
         {
           success: false,
@@ -221,7 +221,7 @@ serve(async (req) => {
       );
     }
 
-    const accountId = account.trading_layer_trader_id;
+    const accountId = account.metaapi_account_id;
     const idempotencyKey = `trade-${tradeId}-${user.id}`;
 
     const orderPayload: Record<string, unknown> = {
