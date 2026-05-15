@@ -220,6 +220,9 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [tradeIdSrc, setTradeIdSrc] = useState<string | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const [priceNonce, setPriceNonce] = useState(0);
   const [resultState, setResultState] = useState<{
     type: "filled" | "placed" | "rejected" | "failed";
     message: string;
