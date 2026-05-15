@@ -304,20 +304,20 @@ serve(async (req) => {
 
     const { error: logError } = await supabase.from("trade_execution_logs").insert({
       user_id: user.id,
-      trading_layer_trader_id: accountId,
-      trade_id: tradeId,
+      signal_id: tradeId,
       symbol,
       side,
       volume,
       stop_loss: stopLoss ?? null,
       take_profit: takeProfit ?? null,
-      idempotency_key: idempotencyKey,
       classification: classification || null,
       retcode,
-      retcode_name: retcodeName,
       retcode_description: brokerMessage,
-      raw_response: tradeData,
+      request_payload: orderPayload,
+      response_payload: tradeData,
+      http_status: tradeResponse.status,
       status: finalStatus,
+      error_message: isAccepted ? null : brokerMessage,
     });
 
     if (logError) {
