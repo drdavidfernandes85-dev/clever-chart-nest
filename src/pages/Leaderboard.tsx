@@ -358,7 +358,7 @@ const Leaderboard = () => {
                             )}
                           </div>
                           <p className="text-[10px] text-muted-foreground font-mono">
-                            {r.total_trades} {t("leaderboard.trades")} · avg {r.avg_r.toFixed(1)}R
+                            {r.total_trades ?? 0} {t("leaderboard.trades")} · avg {(r.avg_r ?? 0).toFixed(1)}R
                           </p>
                         </div>
                       </div>
