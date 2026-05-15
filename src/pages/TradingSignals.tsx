@@ -411,7 +411,7 @@ const TradingSignals = () => {
                                 })
                               }
                               className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                                copied.has(trade idea.id)
+                                copied.has(signal.id)
                                   ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
                                   : "bg-primary text-primary-foreground hover:bg-primary/90"
                               }`}
@@ -473,7 +473,7 @@ const TradingSignals = () => {
                 <div
                   key={signal.id}
                   className={`rounded-2xl border bg-card p-5 transition-all hover:shadow-md ${
-                    trade idea.status === "active"
+                    signal.status === "active"
                       ? "border-primary/20 hover:border-primary/40"
                       : "border-border/30"
                   }`}
