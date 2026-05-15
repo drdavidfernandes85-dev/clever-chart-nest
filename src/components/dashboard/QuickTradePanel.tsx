@@ -765,13 +765,24 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                         </div>
                       )}
                       <div
-                        className={`mt-1.5 text-[10px] font-mono uppercase tracking-widest ${
+                        className={`mt-1.5 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest ${
                           symbolValidation.ok ? "text-emerald-400" : "text-red-400"
                         }`}
                       >
-                        {symbolValidation.ok
-                          ? `✓ Validated against ${brokerSymbols.length} broker symbols`
-                          : `✗ ${symbolValidation.reason}`}
+                        <span>
+                          {symbolValidation.ok
+                            ? `✓ Validated against ${brokerSymbols.length} broker symbols`
+                            : `✗ ${symbolValidation.reason}`}
+                        </span>
+                        {symbolValidation.canRetry && (
+                          <button
+                            type="button"
+                            onClick={() => refreshBrokerSymbols()}
+                            className="rounded border border-red-400/40 px-2 py-0.5 text-red-300 hover:bg-red-500/10"
+                          >
+                            Refresh
+                          </button>
+                        )}
                       </div>
                     </div>
                     <ConfirmRow
