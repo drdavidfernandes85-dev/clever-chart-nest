@@ -67,9 +67,32 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
         { body: { refresh: true, debug: true } },
       );
       if (invErr) throw invErr;
-      if (res?.success === true) {
-        setLiveAccount((res.account ?? null) as LiveAccount | null);
-        setPositions((res.positions ?? []) as LivePosition[]);
+
+      const isConnected =
+        res?.success === true || res?.accountConnected === true;
+
+      if (isConnected) {
+        // Prefer canonical camelCase `account`; otherwise synthesize from `data`.
+        const a = res.account ?? null;
+        const d = res.data ?? {};
+        const merged: LiveAccount = {
+          login: String(a?.login ?? d?.account_number ?? ""),
+          server: String(a?.server ?? d?.server ?? ""),
+          status: String(a?.status ?? d?.status ?? "connected"),
+          currency: a?.currency ?? d?.currency ?? "USD",
+          leverage: a?.leverage ?? d?.leverage ?? null,
+          balance: Number(a?.balance ?? d?.balance ?? 0),
+          equity: Number(a?.equity ?? d?.equity ?? 0),
+          margin: Number(a?.margin ?? d?.margin ?? 0),
+          marginFree: Number(a?.marginFree ?? d?.free_margin ?? 0),
+          profit: Number(a?.profit ?? d?.floating_pnl ?? 0),
+          openPositionsCount: Number(
+            a?.openPositionsCount ?? d?.open_positions ?? 0,
+          ),
+          lastSynced: a?.lastSynced ?? d?.last_synced ?? null,
+        };
+        setLiveAccount(merged);
+        setPositions((res.positions ?? d?.positions ?? []) as LivePosition[]);
         setConnected(true);
         setError(null);
       } else {
