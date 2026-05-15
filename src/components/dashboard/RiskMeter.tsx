@@ -171,7 +171,7 @@ const RiskMeter = () => {
               {POSITIONS_RISK.length} {t("risk.positions")}
             </span>
             <span className="text-[10px] font-mono text-muted-foreground">
-              {t("risk.of")} ${ACCOUNT_EQUITY.toLocaleString()} {t("risk.equity")}
+              {t("risk.of")} ${ACCOUNT_EQUITY.toLocaleString()} {t("risk.equity")} · ${ACCOUNT_MARGIN.toLocaleString()} margin
             </span>
           </div>
           <ul className="space-y-2">
