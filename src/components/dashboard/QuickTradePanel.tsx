@@ -180,7 +180,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     setSelectedBrokerSymbol,
   } = useBrokerSymbols();
   const { isAdmin } = useIsAdmin();
-  const showDebug = isAdmin || import.meta.env.DEV;
+  const showDebug = isAdmin;
   const SYMBOL_ITEMS = useMemo<SymbolItem[]>(() => {
     if (symbolsProp && symbolsProp.length > 0) {
       return symbolsProp.map((label) => ({
