@@ -305,7 +305,16 @@ const TradingSignals = () => {
         </div>
 
         {/* Signals */}
-        {loading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-red-500/30 bg-red-500/5">
+            <ShieldAlert className="h-10 w-10 text-red-400/70 mb-3" />
+            <p className="text-sm text-foreground font-semibold">Couldn't load trade ideas</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+            <Button size="sm" variant="outline" className="mt-4" onClick={() => { setLoading(true); fetchSignals(); }}>
+              Retry
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="rounded-2xl border border-border/30 bg-card p-5 space-y-3">
