@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useLiveAccount } from "@/contexts/LiveAccountContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface BrokerSymbol {
   symbol: string;
