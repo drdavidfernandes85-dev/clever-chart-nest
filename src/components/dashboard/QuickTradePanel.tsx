@@ -208,10 +208,12 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const [entry, setEntry] = useState("");
   const [sl, setSl] = useState("");
   const [tp, setTp] = useState("");
+  const [noStops, setNoStops] = useState(false);
   const [openSymbols, setOpenSymbols] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [tradeIdSrc, setTradeIdSrc] = useState<string | null>(null);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [resultState, setResultState] = useState<{
     type: "filled" | "placed" | "rejected" | "failed";
     message: string;
