@@ -66,6 +66,7 @@ const ConnectMT = () => {
   const [traderId, setTraderId] = useState<string | null>(null);
   const [connectedRowId, setConnectedRowId] = useState<string | null>(null);
   const [debugResponse, setDebugResponse] = useState<unknown>(null);
+  const [mt5DebugRows, setMt5DebugRows] = useState<unknown>(null);
 
   const formValid = login.trim().length >= 4 && password.length >= 4 && server;
 
