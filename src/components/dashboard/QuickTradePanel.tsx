@@ -31,6 +31,7 @@ import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 // Broker-safe defaults — used until get-trading-symbols returns the
 // connected broker's live symbol list.
