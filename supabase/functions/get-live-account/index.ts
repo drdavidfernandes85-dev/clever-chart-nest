@@ -42,7 +42,12 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { data: account, error: accErr } = await supabase
+    const tlHeaders = {
+      "Authorization": `Bearer ${TRADING_LAYER_API_KEY}`,
+      "Content-Type": "application/json",
+    };
+
+    let { data: account, error: accErr } = await supabase
       .from("user_mt_accounts")
       .select("id, login, server_name, status, last_synced_at, metaapi_account_id, created_at")
       .eq("user_id", userId)
@@ -52,6 +57,42 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (accErr) return json(500, { success: false, error: accErr.message });
+
+    // Fallback: if no DB row, ask Trading Layer's tenant endpoint whether the
+    // owner account is already connected and self-heal the missing row.
+    if (!account) {
+      try {
+        const tenantRes = await fetch(`${TL_BASE}/tenant`, { headers: tlHeaders });
+        const tenantData = await tenantRes.json().catch(() => ({}));
+        const owner = tenantData?.data?.ownerAccount ?? {};
+        const ownerMt5 = owner?.mt5 ?? {};
+        if (tenantRes.ok && ownerMt5?.status === "connected" && owner?.accountId) {
+          const nowIso = new Date().toISOString();
+          const insertRow = {
+            user_id: userId,
+            metaapi_account_id: String(owner.accountId),
+            login: String(ownerMt5.login ?? ""),
+            server_name: String(ownerMt5.server ?? ""),
+            platform: "mt5",
+            broker_name: "Infinox",
+            status: "connected",
+            last_synced_at: nowIso,
+            updated_at: nowIso,
+          };
+          const { data: inserted, error: insErr } = await supabase
+            .from("user_mt_accounts")
+            .insert(insertRow)
+            .select("id, login, server_name, status, last_synced_at, metaapi_account_id, created_at")
+            .single();
+          if (!insErr && inserted) {
+            account = inserted;
+          }
+        }
+      } catch (_) {
+        // swallow — fall through to "no account" response below
+      }
+    }
+
     if (!account) {
       return json(200, { success: false, error: "No connected trading account found." });
     }
