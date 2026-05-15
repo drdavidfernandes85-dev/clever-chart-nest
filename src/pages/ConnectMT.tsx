@@ -66,6 +66,7 @@ const ConnectMT = () => {
   const [traderId, setTraderId] = useState<string | null>(null);
   const [connectedRowId, setConnectedRowId] = useState<string | null>(null);
   const [debugResponse, setDebugResponse] = useState<unknown>(null);
+  const [mt5DebugRows, setMt5DebugRows] = useState<unknown>(null);
 
   const formValid = login.trim().length >= 4 && password.length >= 4 && server;
 
@@ -211,6 +212,36 @@ const ConnectMT = () => {
         setPassword(""); // never keep password in memory after linking
         setStatus("connected");
         toast.success("Account successfully linked!");
+
+        // Temporary debug: query user's MT5 accounts right after connect succeeds.
+        try {
+          const { data: ures } = await supabase.auth.getUser();
+          const uid = ures?.user?.id;
+          if (uid) {
+            const { data: rows, error: qErr } = await supabase
+              .from("user_mt_accounts")
+              .select("user_id, metaapi_account_id, login, server_name, status, last_synced_at")
+              .eq("user_id", uid)
+              .order("created_at", { ascending: false })
+              .limit(5);
+            if (qErr) {
+              setMt5DebugRows({ error: qErr.message });
+            } else {
+              setMt5DebugRows(
+                (rows ?? []).map((r: any) => ({
+                  user_id: r.user_id,
+                  trading_layer_trader_id: r.metaapi_account_id,
+                  account_number: r.login,
+                  server: r.server_name,
+                  status: r.status,
+                  last_synced: r.last_synced_at,
+                })),
+              );
+            }
+          }
+        } catch (e: any) {
+          setMt5DebugRows({ error: e?.message || String(e) });
+        }
       }
     } catch (e: any) {
       setStatus("error");
@@ -846,6 +877,22 @@ const ConnectMT = () => {
                     </div>
                     <pre className="overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-neutral-300">
 {JSON.stringify(debugResponse, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                {mt5DebugRows !== null && (
+                  <div
+                    className="mt-2 rounded-xl border p-3 text-[11px]"
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      borderColor: "rgba(255,205,5,0.25)",
+                    }}
+                  >
+                    <div className="mb-1 font-mono uppercase tracking-widest text-[#FFCD05]/80">
+                      Debug · user_mt5_accounts (latest 5)
+                    </div>
+                    <pre className="overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-neutral-300">
+{JSON.stringify(mt5DebugRows, null, 2)}
                     </pre>
                   </div>
                 )}
