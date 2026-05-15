@@ -180,7 +180,7 @@ const PortfolioOverview = () => {
                     ? formatDistanceToNow(new Date(account.last_synced_at), { addSuffix: true })
                     : "never";
                   toast.info(
-                    `Trading Layer connection account — data is pushed in real-time by the EA running on your MetaTrader. Last push: ${lastSync}. If this is stale, make sure the IX_Sync_EA is attached to a chart, "Allow WebRequest" is enabled, and the URL is whitelisted.`,
+                    `Trading Layer connection — data is streamed in real-time from your connected MT5 account. Last push: ${lastSync}.`,
                     { duration: 9000 },
                   );
                 } else if (result?.error) {
