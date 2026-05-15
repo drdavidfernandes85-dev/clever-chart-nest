@@ -258,6 +258,10 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   );
   const symbolsLoaded = brokerSymbolsLive && brokerSymbols.length > 0;
 
+  useEffect(() => {
+    if (normalizedSymbol) setSelectedBrokerSymbol(normalizedSymbol);
+  }, [normalizedSymbol, setSelectedBrokerSymbol]);
+
   const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
     if (accountConnected !== true) {
       return {
