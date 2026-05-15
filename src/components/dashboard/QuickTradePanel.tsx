@@ -272,6 +272,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     if (normalizedSymbol) setSelectedBrokerSymbol(normalizedSymbol);
   }, [normalizedSymbol, setSelectedBrokerSymbol]);
 
+  const selectedSymbolValid = lastSelectedSymbolValid;
+
   const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
     if (accountConnected !== true) {
       return {
@@ -280,23 +282,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         reason: "Connect your MT5 account before trading.",
       };
     }
-    if (brokerSymbolsLoading) {
-      return { ok: false, sentSymbol: normalizedSymbol, reason: "Loading broker symbols..." };
-    }
-    if (!symbolsLoaded && !lastSelectedSymbolValid) {
-      return {
-        ok: false,
-        sentSymbol: normalizedSymbol,
-        reason: "Broker symbols unavailable. Please refresh before trading.",
-        canRetry: true,
-      };
-    }
-    if (!isTradableSymbol) {
+    if (selectedSymbolValid !== true) {
+      if (brokerSymbolsLoading) {
+        return { ok: false, sentSymbol: normalizedSymbol, reason: "Loading broker symbols..." };
+      }
       return {
         ok: false,
         sentSymbol: normalizedSymbol,
         reason: "This symbol is not available on your connected MT5 account.",
+        canRetry: true,
       };
+    }
+    if (!(lotsNum > 0)) {
+      return { ok: false, sentSymbol: normalizedSymbol, reason: "Volume must be greater than 0." };
     }
     return { ok: true, sentSymbol: normalizedSymbol, reason: "" };
   })();
