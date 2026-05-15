@@ -153,17 +153,36 @@ const TradeExecutionLogWidget = () => {
             </thead>
             <tbody className="divide-y divide-border/30">
               {logs.map((l) => {
-                const r = l.response_payload ?? {};
-                const isFailed = FAILED_STATUSES.has(l.status);
+                // Backend stores the Trading Layer raw response in
+                // `response_payload`; expose it as `raw_response` to match the
+                // documented mapping. `signal_id` doubles as the trade_id.
+                const raw_response = l.response_payload ?? null;
+                const trade_id = l.signal_id || l.id;
+
+                // Status: prefer recorded status, fall back to classification,
+                // then "failed" — never "unknown".
+                const displayStatus =
+                  (l.status && l.status.toLowerCase() !== "unknown" && l.status) ||
+                  l.classification ||
+                  "failed";
+                const displayClassification = l.classification || "—";
+                const displayBrokerMsg =
+                  l.retcode_description ||
+                  (raw_response as any)?.error ||
+                  (raw_response as any)?.message ||
+                  resolveErrorMessage(l) ||
+                  "—";
+
+                const isFailed = FAILED_STATUSES.has(displayStatus.toLowerCase());
                 const isOpen = expanded.has(l.id);
-                const brokerMsg = isFailed
-                  ? resolveErrorMessage(l)
-                  : l.retcode_description ||
-                    l.comment ||
-                    (l.ticket ? `Ticket #${l.ticket}` : "—");
                 const tradingLayerStatus =
-                  r.tradingLayerStatus ?? r.raw?.status ?? null;
-                const retcodeName = r.retcodeName ?? r.raw?.retcodeName ?? null;
+                  (raw_response as any)?.tradingLayerStatus ??
+                  (raw_response as any)?.raw?.status ??
+                  null;
+                const retcodeName =
+                  (raw_response as any)?.retcodeName ??
+                  (raw_response as any)?.raw?.retcodeName ??
+                  null;
                 return (
                   <Fragment key={l.id}>
                     <tr className="font-mono text-xs hover:bg-primary/5 transition-colors">
@@ -186,8 +205,11 @@ const TradeExecutionLogWidget = () => {
                       <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
                         {fmtTime(l.created_at)}
                       </td>
-                      <td className="px-3 text-muted-foreground truncate max-w-[120px]">
-                        {l.signal_id || "—"}
+                      <td
+                        className="px-3 text-muted-foreground truncate max-w-[140px]"
+                        title={trade_id}
+                      >
+                        {trade_id}
                       </td>
                       <td className="px-3 font-bold text-foreground">{l.symbol}</td>
                       <td className="px-3">
@@ -213,23 +235,23 @@ const TradeExecutionLogWidget = () => {
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
-                            statusTone(l.status),
+                            statusTone(displayStatus.toLowerCase()),
                           )}
                         >
-                          {l.status}
+                          {displayStatus}
                         </span>
                       </td>
                       <td className="px-3 text-muted-foreground uppercase text-[10px]">
-                        {l.classification || "—"}
+                        {displayClassification}
                       </td>
                       <td
                         className={cn(
                           "px-3 max-w-[320px] truncate",
                           isFailed ? "text-red-400" : "text-muted-foreground",
                         )}
-                        title={brokerMsg}
+                        title={String(displayBrokerMsg)}
                       >
-                        {brokerMsg}
+                        {String(displayBrokerMsg)}
                       </td>
                     </tr>
                     {isFailed && isOpen && (
