@@ -44,6 +44,49 @@ const DEFAULT_SYMBOL_ITEMS: SymbolItem[] = FALLBACK_SYMBOLS.map((s) => ({
   brokerSymbol: toBrokerSymbol(s.symbol),
 }));
 
+// Common broker symbol aliases. Maps a normalized user-facing token to a
+// list of equivalent root names that brokers commonly use.
+const SYMBOL_ALIASES: Record<string, string[]> = {
+  XAUUSD: ["GOLD", "XAU/USD", "XAUUSD"],
+  GOLD: ["XAUUSD"],
+  XAGUSD: ["SILVER", "XAG/USD"],
+  SILVER: ["XAGUSD"],
+  US30: ["DJ30", "DOW30", "WS30", "USA30"],
+  NAS100: ["NDX100", "USTEC", "USA100", "NQ100"],
+  SPX500: ["US500", "SP500", "USA500"],
+  GER40: ["DAX40", "DE40", "GER30"],
+  BTCUSD: ["BTCUSDT", "BITCOIN"],
+  BTCUSDT: ["BTCUSD"],
+};
+
+// Normalize a symbol: trim, uppercase, strip "/", "-", "_", and spaces.
+const normalizeSymbol = (s: string) =>
+  (s ?? "").trim().toUpperCase().replace(/[\s/_-]/g, "");
+
+// Try to resolve a user-entered symbol against the live broker symbols list.
+// Matches exact, case-insensitive, alias, and broker-suffix variants
+// (e.g. "EURUSD" matches "EURUSD.m", "EURUSD.cash", "EURUSDi").
+const resolveBrokerSymbol = (
+  input: string,
+  list: { symbol: string }[],
+): string | null => {
+  if (!input || list.length === 0) return null;
+  const target = normalizeSymbol(input);
+  const candidates = new Set<string>([target, ...(SYMBOL_ALIASES[target] ?? []).map(normalizeSymbol)]);
+  // 1. Exact normalized match
+  for (const s of list) {
+    if (candidates.has(normalizeSymbol(s.symbol))) return s.symbol;
+  }
+  // 2. Suffix match: broker root starts with target (e.g. EURUSD.m → EURUSD)
+  for (const s of list) {
+    const norm = normalizeSymbol(s.symbol);
+    for (const c of candidates) {
+      if (norm.startsWith(c) && norm.length - c.length <= 4) return s.symbol;
+    }
+  }
+  return null;
+};
+
 const QUICK_LOTS = [0.01, 0.02, 0.05, 0.1];
 
 const tradeSchema = z.object({
