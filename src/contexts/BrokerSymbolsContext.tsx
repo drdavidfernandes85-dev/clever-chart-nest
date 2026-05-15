@@ -129,7 +129,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   // Fetch specs + tick for the currently selected symbol.
   const lastFetchedSymbol = useRef<string | null>(null);
   useEffect(() => {
-    if (!connected) {
+    if (!user) {
       setSelectedSymbolValid(false);
       setSelectedSymbolInfo(null);
       setTick(null);
