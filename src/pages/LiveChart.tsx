@@ -42,6 +42,8 @@ import FloatingQuickTrade from "@/components/livechart/FloatingQuickTrade";
 import AICopilot from "@/components/ai/AICopilot";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { LiveAccountProvider } from "@/contexts/LiveAccountContext";
+import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
 
 // Mixed-asset chart selector — crypto, forex, indices, main stocks.
 const SYMBOL_OPTIONS = [
@@ -407,4 +409,12 @@ const LiveChart = () => {
   );
 };
 
-export default LiveChart;
+const LiveChartWithProviders = () => (
+  <LiveAccountProvider>
+    <BrokerSymbolsProvider>
+      <LiveChart />
+    </BrokerSymbolsProvider>
+  </LiveAccountProvider>
+);
+
+export default LiveChartWithProviders;

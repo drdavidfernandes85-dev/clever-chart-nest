@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useLiveAccount } from "@/contexts/LiveAccountContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface BrokerSymbol {
   symbol: string;
@@ -59,7 +59,7 @@ const normalize = (v: string) =>
   String(v || "").replace("/", "").replace("-", "").replace(" ", "").toUpperCase();
 
 export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
-  const { connected } = useLiveAccount();
+  const { user } = useAuth();
   const [symbols, setSymbols] = useState<BrokerSymbol[]>(FALLBACK_SYMBOLS);
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   // Fetch full broker symbols list via the new get-mt5-symbols function.
   const refresh = useCallback(
     async (_overrideSelected?: string) => {
-      if (!connected) {
+      if (!user) {
         setSymbols(FALLBACK_SYMBOLS);
         setIsLive(false);
         setLoaded(false);
@@ -119,7 +119,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [connected],
+    [user],
   );
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   // Fetch specs + tick for the currently selected symbol.
   const lastFetchedSymbol = useRef<string | null>(null);
   useEffect(() => {
-    if (!connected) {
+    if (!user) {
       setSelectedSymbolValid(false);
       setSelectedSymbolInfo(null);
       setTick(null);
@@ -175,7 +175,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [connected, selectedBrokerSymbol]);
+  }, [user, selectedBrokerSymbol]);
 
   const value = useMemo<Ctx>(
     () => ({

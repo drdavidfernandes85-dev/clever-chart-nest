@@ -526,8 +526,11 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         setSl("");
         setTp("");
         setEntry("");
+        try {
+          window.localStorage.setItem("eltr.lastTradedSymbol", brokerSymbol);
+        } catch { /* ignore */ }
         loadAccount();
-        window.dispatchEvent(new CustomEvent("trade-executed"));
+        window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: brokerSymbol } }));
       } else {
         // Prefer the broker's retcode_description, then comment, then error.
         const brokerMsg =
@@ -621,12 +624,20 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
           <div className="relative">
             <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block flex items-center gap-1.5">
               <span>Symbol</span>
-              {!brokerSymbolsLive && (
+              {brokerSymbolsLoading && (
+                <Loader2 className="h-3 w-3 animate-spin text-primary" />
+              )}
+              {!brokerSymbolsLoading && !brokerSymbolsLive && (
                 <span
                   className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-400"
                   title={brokerSymbolsError ?? "Showing fallback symbols. Connect your MT5 account for live broker symbols."}
                 >
                   Fallback
+                </span>
+              )}
+              {brokerSymbolsLive && brokerSymbols.length > 0 && (
+                <span className="text-[9px] font-mono text-emerald-400">
+                  {brokerSymbols.length} live
                 </span>
               )}
             </Label>

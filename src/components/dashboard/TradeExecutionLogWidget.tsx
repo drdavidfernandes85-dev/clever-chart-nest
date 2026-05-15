@@ -1,8 +1,16 @@
-import { useEffect, useState, Fragment } from "react";
-import { ChevronDown, ChevronRight, ClipboardList, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ClipboardList, Loader2, Zap, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface LogRow {
   id: string;
@@ -36,39 +44,25 @@ const fmtNum = (v: number | null, digits = 5) =>
   typeof v === "number" && Number.isFinite(v) ? v.toFixed(digits) : "—";
 
 const FAILED_STATUSES = new Set(["rejected", "failed", "error"]);
+const FILLED_STATUSES = new Set(["filled", "done", "partial"]);
+const PLACED_STATUSES = new Set(["placed", "pending", "queued"]);
 
 const statusTone = (s: string) => {
-  if (["filled", "placed", "partial"].includes(s))
-    return "bg-[hsl(145_65%_50%)]/15 text-[hsl(145_65%_55%)] border-[hsl(145_65%_50%)]/30";
-  if (FAILED_STATUSES.has(s))
-    return "bg-red-500/15 text-red-400 border-red-500/30";
+  const k = s.toLowerCase();
+  if (FILLED_STATUSES.has(k))
+    return "bg-emerald-500/15 text-emerald-400 border-emerald-500/40";
+  if (PLACED_STATUSES.has(k))
+    return "bg-primary/15 text-primary border-primary/40";
+  if (FAILED_STATUSES.has(k))
+    return "bg-red-500/15 text-red-400 border-red-500/40";
   return "bg-muted/30 text-muted-foreground border-border/40";
 };
 
-/** Pick the most informative error message available. */
-const resolveErrorMessage = (l: LogRow): string => {
-  const r = l.response_payload ?? {};
-  const raw = r.raw ?? {};
-  const candidates = [
-    r.error,
-    l.retcode_description,
-    r.retcodeDescription,
-    raw?.error?.message,
-    raw?.message,
-    typeof raw?.error === "string" ? raw.error : null,
-    l.error_message,
-    l.comment,
-  ];
-  for (const c of candidates) {
-    if (typeof c === "string" && c.trim().length > 0) return c.trim();
-  }
-  if (l.http_status && l.http_status >= 400) {
-    return `Trade execution failed (HTTP ${l.http_status})`;
-  }
-  return "Trade execution failed";
-};
+const sideTone = (s: string) =>
+  s?.toLowerCase() === "buy"
+    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40"
+    : "bg-red-500/15 text-red-400 border-red-500/40";
 
-/** Always returns a string — never "[object Object]". */
 const stringifyMaybe = (v: unknown): string | null => {
   if (v == null) return null;
   if (typeof v === "string") return v.trim() || null;
@@ -81,44 +75,46 @@ const stringifyMaybe = (v: unknown): string | null => {
   }
 };
 
-/** Extract the most useful broker/error message from a log row. */
-const getBrokerMessage = (row: LogRow, raw: any): string => {
+const getBrokerMessage = (row: LogRow): string => {
+  const raw: any = row.response_payload ?? {};
   return (
     stringifyMaybe(row.retcode_description) ||
+    stringifyMaybe(raw?.retcodeDescription) ||
     stringifyMaybe(raw?.error?.message) ||
     stringifyMaybe(raw?.error) ||
     stringifyMaybe(raw?.message) ||
-    stringifyMaybe(raw?.detail) ||
-    stringifyMaybe(raw?.title) ||
-    stringifyMaybe(raw?.data?.message) ||
     stringifyMaybe(raw?.data?.retcode_description) ||
-    stringifyMaybe(raw?.raw?.error?.message) ||
-    stringifyMaybe(raw?.raw?.message) ||
+    stringifyMaybe(raw?.data?.comment) ||
     stringifyMaybe(row.error_message) ||
     stringifyMaybe(row.comment) ||
-    stringifyMaybe(raw) ||
-    ""
+    "—"
   );
 };
+
+const TIME_FILTERS = [
+  { key: "24h", label: "24h", ms: 24 * 60 * 60 * 1000 },
+  { key: "7d", label: "7d", ms: 7 * 24 * 60 * 60 * 1000 },
+  { key: "30d", label: "30d", ms: 30 * 24 * 60 * 60 * 1000 },
+  { key: "all", label: "All", ms: Infinity },
+] as const;
+
+type TimeFilterKey = typeof TIME_FILTERS[number]["key"];
 
 const TradeExecutionLogWidget = () => {
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [refreshing, setRefreshing] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<TimeFilterKey>("7d");
+  const [pageSize, setPageSize] = useState<10 | 50>(10);
+  const [selected, setSelected] = useState<LogRow | null>(null);
+  const { openTrade } = useQuickTrade();
 
-  const toggle = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const load = async () => {
+  const load = async (silent = false) => {
+    if (!silent) setRefreshing(true);
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) {
       setLoading(false);
+      setRefreshing(false);
       return;
     }
     const { data } = await supabase
@@ -131,11 +127,12 @@ const TradeExecutionLogWidget = () => {
       .limit(50);
     setLogs((data ?? []) as LogRow[]);
     setLoading(false);
+    setRefreshing(false);
   };
 
   useEffect(() => {
-    load();
-    const id = setInterval(load, 15_000);
+    load(true);
+    const id = setInterval(() => load(true), 15_000);
     const onTrade = () => load();
     window.addEventListener("trade-executed", onTrade);
     return () => {
@@ -144,193 +141,224 @@ const TradeExecutionLogWidget = () => {
     };
   }, []);
 
+  const filtered = useMemo(() => {
+    const cutoffMs = TIME_FILTERS.find((f) => f.key === timeFilter)?.ms ?? Infinity;
+    const cutoff = Date.now() - cutoffMs;
+    return logs
+      .filter((l) => {
+        if (cutoffMs === Infinity) return true;
+        const t = new Date(l.created_at).getTime();
+        return Number.isFinite(t) && t >= cutoff;
+      })
+      .slice(0, pageSize);
+  }, [logs, timeFilter, pageSize]);
+
+  const handleEmptyCta = () => {
+    let lastSymbol: string | null = null;
+    try {
+      lastSymbol = window.localStorage.getItem("eltr.lastTradedSymbol");
+    } catch { /* ignore */ }
+    openTrade(lastSymbol ? { symbol: lastSymbol } : undefined);
+  };
+
   return (
-    <section className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/80 to-background/40 backdrop-blur-xl p-5 shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.18)]">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-          <ClipboardList className="h-4 w-4" />
+    <>
+      <section className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/80 to-background/40 backdrop-blur-xl p-5 shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.18)]">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
+            <ClipboardList className="h-4 w-4" />
+          </div>
+          <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
+            Recent Trades
+          </h2>
+          <Badge variant="outline" className="border-primary/30 text-primary text-[10px] font-mono">
+            {filtered.length}
+          </Badge>
+          {refreshing && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
+
+          <div className="ml-auto flex items-center gap-3">
+            {/* Time filter */}
+            <div className="flex rounded-full border border-border/40 bg-background/40 p-0.5">
+              {TIME_FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setTimeFilter(f.key)}
+                  className={cn(
+                    "px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest rounded-full transition-colors",
+                    timeFilter === f.key
+                      ? "bg-primary text-background font-bold"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {/* Page size toggle */}
+            <div className="flex rounded-full border border-border/40 bg-background/40 p-0.5">
+              {[10, 50].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setPageSize(n as 10 | 50)}
+                  className={cn(
+                    "px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest rounded-full transition-colors",
+                    pageSize === n
+                      ? "bg-primary text-background font-bold"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
-          Trade Execution Log
-        </h2>
-        <Badge variant="outline" className="ml-auto border-primary/30 text-primary text-[10px] font-mono">
-          {logs.length}
-        </Badge>
-      </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-        </div>
-      ) : logs.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border/40 p-8 text-center text-sm text-muted-foreground">
-          No trades executed yet.
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded-lg border border-border/30">
-          <table className="w-full text-sm">
-            <thead className="bg-background/50">
-              <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground font-mono border-b border-border/40">
-                <th className="py-2.5 px-3 w-6"></th>
-                <th className="px-3">Created</th>
-                <th className="px-3">Trade ID</th>
-                <th className="px-3">Symbol</th>
-                <th className="px-3">Direction</th>
-                <th className="px-3 text-right">Volume</th>
-                <th className="px-3 text-right">SL</th>
-                <th className="px-3 text-right">TP</th>
-                <th className="px-3">Status</th>
-                <th className="px-3">Classification</th>
-                <th className="px-3">Broker Message</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/30">
-              {logs.map((l) => {
-                // Backend stores the Trading Layer raw response in
-                // `response_payload`; expose it as `raw_response` to match the
-                // documented mapping. `signal_id` doubles as the trade_id.
-                const raw_response = l.response_payload ?? null;
-                const trade_id = l.signal_id || l.id;
-
-                // Status: prefer recorded status, fall back to classification,
-                // then "failed" — never "unknown".
-                const displayStatus =
-                  (l.status && l.status.toLowerCase() !== "unknown" && l.status) ||
-                  l.classification ||
-                  "failed";
-                const displayClassification = l.classification || "—";
-                const displayBrokerMsg =
-                  getBrokerMessage(l, raw_response) || "—";
-                const truncatedBrokerMsg =
-                  displayBrokerMsg.length > 140
-                    ? displayBrokerMsg.slice(0, 137) + "…"
-                    : displayBrokerMsg;
-
-                const isFailed = FAILED_STATUSES.has(displayStatus.toLowerCase());
-                const isOpen = expanded.has(l.id);
-                const tradingLayerStatus =
-                  (raw_response as any)?.tradingLayerStatus ??
-                  (raw_response as any)?.raw?.status ??
-                  null;
-                const retcodeName =
-                  (raw_response as any)?.retcodeName ??
-                  (raw_response as any)?.raw?.retcodeName ??
-                  null;
-                return (
-                  <Fragment key={l.id}>
-                    <tr className="font-mono text-xs hover:bg-primary/5 transition-colors">
-                      <td className="py-2.5 px-2 align-top">
-                        {isFailed ? (
-                          <button
-                            type="button"
-                            onClick={() => toggle(l.id)}
-                            aria-label={isOpen ? "Hide details" : "Show details"}
-                            className="text-muted-foreground hover:text-primary"
-                          >
-                            {isOpen ? (
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            ) : (
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                        ) : null}
-                      </td>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border/40 p-10 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              No trades yet. Execute your first trade from Quick Trade.
+            </p>
+            <Button
+              onClick={handleEmptyCta}
+              className="rounded-full bg-primary text-background hover:bg-primary/90 font-bold"
+            >
+              <Zap className="h-4 w-4 mr-1.5" />
+              Open Quick Trade
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border/30">
+            <table className="w-full text-sm">
+              <thead className="bg-background/50">
+                <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground font-mono border-b border-border/40">
+                  <th className="py-2.5 px-3">Time</th>
+                  <th className="px-3">Symbol</th>
+                  <th className="px-3">Direction</th>
+                  <th className="px-3 text-right">Volume</th>
+                  <th className="px-3">Status</th>
+                  <th className="px-3">Result</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {filtered.map((l) => {
+                  const displayStatus =
+                    (l.status && l.status.toLowerCase() !== "unknown" && l.status) ||
+                    l.classification ||
+                    "failed";
+                  const isFilled = FILLED_STATUSES.has(displayStatus.toLowerCase());
+                  const result = isFilled
+                    ? l.ticket
+                      ? `Ticket #${l.ticket}`
+                      : "Filled"
+                    : getBrokerMessage(l);
+                  const truncated =
+                    result.length > 80 ? result.slice(0, 77) + "…" : result;
+                  return (
+                    <tr
+                      key={l.id}
+                      onClick={() => setSelected(l)}
+                      className="font-mono text-xs cursor-pointer hover:bg-primary/5 transition-colors"
+                    >
                       <td className="py-2.5 px-3 text-muted-foreground whitespace-nowrap">
                         {fmtTime(l.created_at)}
-                      </td>
-                      <td
-                        className="px-3 text-muted-foreground truncate max-w-[140px]"
-                        title={trade_id}
-                      >
-                        {trade_id}
                       </td>
                       <td className="px-3 font-bold text-foreground">{l.symbol}</td>
                       <td className="px-3">
                         <span
                           className={cn(
-                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
-                            l.side?.toLowerCase() === "buy"
-                              ? "bg-[hsl(145_65%_50%)]/15 text-[hsl(145_65%_55%)]"
-                              : "bg-red-500/15 text-red-400",
+                            "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
+                            sideTone(l.side),
                           )}
                         >
                           {l.side}
                         </span>
                       </td>
-                      <td className="px-3 text-right tabular-nums">{Number(l.volume).toFixed(2)}</td>
-                      <td className="px-3 text-right tabular-nums text-muted-foreground">
-                        {fmtNum(l.stop_loss)}
-                      </td>
-                      <td className="px-3 text-right tabular-nums text-muted-foreground">
-                        {fmtNum(l.take_profit)}
+                      <td className="px-3 text-right tabular-nums">
+                        {Number(l.volume).toFixed(2)}
                       </td>
                       <td className="px-3">
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
-                            statusTone(displayStatus.toLowerCase()),
+                            statusTone(displayStatus),
                           )}
                         >
                           {displayStatus}
                         </span>
                       </td>
-                      <td className="px-3 text-muted-foreground uppercase text-[10px]">
-                        {displayClassification}
-                      </td>
                       <td
                         className={cn(
                           "px-3 max-w-[320px] truncate",
-                          isFailed ? "text-red-400" : "text-muted-foreground",
+                          isFilled ? "text-emerald-400" : "text-muted-foreground",
                         )}
-                        title={displayBrokerMsg}
+                        title={result}
                       >
-                        {truncatedBrokerMsg}
+                        {truncated}
                       </td>
                     </tr>
-                    {isFailed && isOpen && (
-                      <tr className="bg-background/40">
-                        <td colSpan={11} className="px-4 py-3">
-                          <div className="grid gap-2 md:grid-cols-2 text-[11px] font-mono">
-                            <DetailField label="Trading Layer status" value={tradingLayerStatus} />
-                            <DetailField label="Classification" value={l.classification} />
-                            <DetailField
-                              label="HTTP status"
-                              value={l.http_status != null ? String(l.http_status) : null}
-                            />
-                            <DetailField
-                              label="Retcode"
-                              value={l.retcode != null ? String(l.retcode) : null}
-                            />
-                            <DetailField label="Retcode name" value={retcodeName} />
-                            <DetailField
-                              label="Retcode description"
-                              value={l.retcode_description}
-                            />
-                            <DetailField
-                              label="Resolved error"
-                              value={resolveErrorMessage(l)}
-                              wide
-                            />
-                          </div>
-                          <details className="mt-3">
-                            <summary className="cursor-pointer text-[10px] uppercase tracking-widest text-muted-foreground hover:text-primary">
-                              Raw response
-                            </summary>
-                            <pre className="mt-2 max-h-72 overflow-auto rounded-md border border-border/40 bg-background/70 p-3 text-[10px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
-                              {JSON.stringify(l.response_payload ?? {}, null, 2)}
-                            </pre>
-                          </details>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Trade details drawer */}
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-2xl bg-card border-primary/20 text-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-heading uppercase tracking-tight flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              Trade Details
+            </DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                <DetailField label="Time" value={fmtTime(selected.created_at)} />
+                <DetailField label="Symbol" value={selected.symbol} highlight />
+                <DetailField
+                  label="Direction"
+                  value={selected.side?.toUpperCase()}
+                  badgeClass={sideTone(selected.side)}
+                />
+                <DetailField
+                  label="Status"
+                  value={(selected.status || "—").toUpperCase()}
+                  badgeClass={statusTone(selected.status)}
+                />
+                <DetailField label="Volume" value={Number(selected.volume).toFixed(2)} />
+                <DetailField label="Ticket" value={selected.ticket || "—"} />
+                <DetailField label="Stop Loss" value={fmtNum(selected.stop_loss)} />
+                <DetailField label="Take Profit" value={fmtNum(selected.take_profit)} />
+                <DetailField label="Retcode" value={selected.retcode != null ? String(selected.retcode) : "—"} />
+                <DetailField label="HTTP Status" value={selected.http_status != null ? String(selected.http_status) : "—"} />
+                <DetailField
+                  label="Retcode Description"
+                  value={selected.retcode_description || "—"}
+                  wide
+                />
+                <DetailField label="Comment" value={selected.comment || "—"} wide />
+              </div>
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5">
+                  Raw Broker Response
+                </div>
+                <pre className="max-h-72 overflow-auto rounded-md border border-border/40 bg-background/70 p-3 text-[10px] leading-relaxed text-muted-foreground whitespace-pre-wrap break-words">
+                  {JSON.stringify(selected.response_payload ?? {}, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -338,18 +366,38 @@ const DetailField = ({
   label,
   value,
   wide,
+  highlight,
+  badgeClass,
 }: {
   label: string;
   value: string | null | undefined;
   wide?: boolean;
+  highlight?: boolean;
+  badgeClass?: string;
 }) => (
-  <div className={cn("flex flex-col gap-0.5", wide && "md:col-span-2")}>
+  <div className={cn("flex flex-col gap-0.5", wide && "col-span-2")}>
     <span className="text-[9px] uppercase tracking-widest text-muted-foreground">
       {label}
     </span>
-    <span className="text-foreground break-words">
-      {value && String(value).length > 0 ? value : "—"}
-    </span>
+    {badgeClass ? (
+      <span
+        className={cn(
+          "inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
+          badgeClass,
+        )}
+      >
+        {value || "—"}
+      </span>
+    ) : (
+      <span
+        className={cn(
+          "break-words",
+          highlight ? "text-primary font-bold" : "text-foreground",
+        )}
+      >
+        {value && String(value).length > 0 ? value : "—"}
+      </span>
+    )}
   </div>
 );
 
