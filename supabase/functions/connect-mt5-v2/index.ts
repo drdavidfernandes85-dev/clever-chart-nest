@@ -262,38 +262,54 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 9 & 10. Persist locally — never store the password.
-    try {
-      await supabase
-        .from("user_mt_accounts")
-        .upsert(
-          {
-            user_id: userId,
-            platform: "mt5",
-            broker_name: "Infinox",
-            server_name: server,
-            login: account_number,
-            nickname: account?.name ?? `Infinox ${account_number}`,
-            status: "connected",
-            balance: Number(account?.balance ?? 0),
-            equity: Number(account?.equity ?? 0),
-            leverage: Number(account?.leverage ?? 0),
-            currency: account?.currency ?? "USD",
-            metaapi_account_id: String(accountId),
-            investor_password_encrypted: null,
-            last_synced_at: new Date().toISOString(),
-          },
-          { onConflict: "user_id,login,server_name" },
-        );
-    } catch (e) {
-      console.warn("user_mt_accounts upsert failed:", e);
+    // 9. Persist locally — never store the password. Strict: a save failure
+    // means the user will not appear connected on the dashboard, so surface it.
+    const nowIso = new Date().toISOString();
+    const { data: savedRow, error: saveError } = await supabase
+      .from("user_mt_accounts")
+      .upsert(
+        {
+          user_id: userId,
+          platform: "mt5",
+          broker_name: "Infinox",
+          server_name: server,
+          login: account_number,
+          nickname: account?.name ?? `Infinox ${account_number}`,
+          status: "connected",
+          balance: Number(account?.balance ?? 0),
+          equity: Number(account?.equity ?? 0),
+          leverage: Number(account?.leverage ?? 0),
+          currency: account?.currency ?? "USD",
+          metaapi_account_id: String(accountId),
+          investor_password_encrypted: null,
+          last_synced_at: nowIso,
+          updated_at: nowIso,
+        },
+        { onConflict: "user_id,platform,login,server_name" },
+      )
+      .select("id, user_id, login, server_name, status, metaapi_account_id, last_synced_at")
+      .single();
+
+    if (saveError || !savedRow) {
+      return json(500, {
+        success: false,
+        step: "save_connected_account",
+        error: saveError?.message ?? "Failed to save the connected account locally.",
+        tradingLayerStatus: testRes.status,
+        tradingLayerResponse: testJson,
+        persistResponse: persistJson,
+      });
     }
 
     return json(200, {
       success: true,
+      step: "account_saved",
+      message: "Account successfully linked!",
       mode,
       accountId,
+      trading_layer_trader_id: accountId,
       account,
+      savedRow,
       tradingLayerStatus: testRes.status,
       tradingLayerResponse: testJson,
       persistResponse: persistJson,
