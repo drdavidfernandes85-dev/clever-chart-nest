@@ -284,6 +284,7 @@ const translations = {
     "social.backToLeaderboard": "Back to leaderboard",
     // Sidebar / mobile nav
     "sidebar.dashboard": "Dashboard",
+    "sidebar.tradingRoom": "Trading Room",
     "sidebar.liveWebinars": "Live Webinars",
     "sidebar.liveCharts": "Live Charts",
     "sidebar.signals": "Trade Ideas",
