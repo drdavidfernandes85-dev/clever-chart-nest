@@ -333,8 +333,16 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         <div className="p-4 space-y-3.5 bg-card/60">
           {/* Symbol selector */}
           <div className="relative">
-            <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
-              Symbol
+            <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block flex items-center gap-1.5">
+              <span>Symbol</span>
+              {!brokerSymbolsLive && (
+                <span
+                  className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-amber-400"
+                  title={brokerSymbolsError ?? "Showing fallback symbols. Connect your MT5 account for live broker symbols."}
+                >
+                  Fallback
+                </span>
+              )}
             </Label>
             <button
               type="button"
