@@ -735,35 +735,40 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                   </div>
                   <div className="px-5 py-4 space-y-2.5 text-xs">
                     {/* Prominent broker symbol that will actually be sent */}
-                    <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5">
+                    <div
+                      className={`rounded-lg border px-3 py-2.5 ${
+                        symbolValidation.ok
+                          ? "border-primary/30 bg-primary/5"
+                          : "border-red-500/40 bg-red-500/10"
+                      }`}
+                    >
                       <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">
                         Broker symbol sent to execute-trade
                       </div>
-                      <div className="font-heading text-lg font-bold tabular-nums text-primary">
+                      <div
+                        className={`font-heading text-lg font-bold tabular-nums ${
+                          symbolValidation.ok ? "text-primary" : "text-red-400"
+                        }`}
+                      >
                         {brokerSymbol}
                       </div>
                       {symbolDisplay !== brokerSymbol && (
                         <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
                           Displayed as {symbolDisplay}
+                          {rawBrokerSymbol !== brokerSymbol && symbolValidation.ok && (
+                            <> · normalized from {rawBrokerSymbol}</>
+                          )}
                         </div>
                       )}
-                      {brokerSymbolsLive && brokerSymbols.length > 0 && (
-                        <div
-                          className={`mt-1 text-[10px] font-mono uppercase tracking-widest ${
-                            brokerSymbols.some(
-                              (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
-                            )
-                              ? "text-emerald-400"
-                              : "text-red-400"
-                          }`}
-                        >
-                          {brokerSymbols.some(
-                            (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
-                          )
-                            ? "✓ Validated against broker symbols"
-                            : "✗ Not in broker symbols list"}
-                        </div>
-                      )}
+                      <div
+                        className={`mt-1.5 text-[10px] font-mono uppercase tracking-widest ${
+                          symbolValidation.ok ? "text-emerald-400" : "text-red-400"
+                        }`}
+                      >
+                        {symbolValidation.ok
+                          ? `✓ Validated against ${brokerSymbols.length} broker symbols`
+                          : `✗ ${symbolValidation.reason}`}
+                      </div>
                     </div>
                     <ConfirmRow
                       label="Direction"
@@ -775,6 +780,25 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     {tp && (
                       <ConfirmRow label="Take Profit" value={tp} valueClass="text-emerald-400" />
                     )}
+                    {/* Exact payload preview */}
+                    <details className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 group">
+                      <summary className="cursor-pointer text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground">
+                        execute-trade payload
+                      </summary>
+                      <pre className="mt-2 text-[10px] font-mono text-foreground/80 whitespace-pre-wrap break-all">
+{JSON.stringify(
+  {
+    symbol: brokerSymbol,
+    side,
+    volume: Number(lotsNum.toFixed(2)),
+    stopLoss: slNum ? Number(slNum) : null,
+    takeProfit: tpNum ? Number(tpNum) : null,
+  },
+  null,
+  2,
+)}
+                      </pre>
+                    </details>
                   </div>
                   <div className="flex gap-2 px-5 py-4 border-t border-border/40 bg-muted/20">
                     <Button
