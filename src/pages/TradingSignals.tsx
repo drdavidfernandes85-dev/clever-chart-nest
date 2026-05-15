@@ -642,6 +642,15 @@ const TradingSignals = () => {
           </div>
         )}
 
+        {/* Pagination "Show more" */}
+        {!error && !loading && hasMore && (
+          <div className="mt-6 flex justify-center">
+            <Button variant="outline" size="sm" onClick={() => setPageSize((s) => s + 10)}>
+              Show more ({fullList.length - displayed.length} remaining)
+            </Button>
+          </div>
+        )}
+
         {/* Copied Trades history */}
         <div className="mt-8">
           <CopiedTradesHistory limit={10} />
