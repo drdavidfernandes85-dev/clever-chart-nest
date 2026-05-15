@@ -319,6 +319,14 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     noStops,
   });
 
+  // Preview tradeId — generated once per modal open so what the user sees in
+  // "Execute Trade Payload" is exactly what gets sent to the edge function.
+  const previewTradeId = useMemo(
+    () => tradeIdSrc ?? (typeof crypto !== "undefined" ? crypto.randomUUID() : ""),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [confirming, tradeIdSrc],
+  );
+
   // Fetch a current market price for the selected broker symbol so we can
   // validate manual SL/TP before sending the order. Refresh every 15s, plus
   // on demand via the retry button (priceNonce).
