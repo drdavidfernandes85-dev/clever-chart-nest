@@ -112,21 +112,48 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     loadAccount();
   }, []);
 
-  // Symbol universe: prop > broker symbols (live) > fallback
+  // Symbol universe: prop > broker symbols (live) > fallback.
+  // Each item carries both a displayName (e.g. "EUR/USD") and the exact
+  // broker symbol (e.g. "EURUSD") that must be sent to execute-trade.
   const { symbols: brokerSymbols, isLive: brokerSymbolsLive, error: brokerSymbolsError } = useBrokerSymbols();
-  const SYMBOLS = useMemo(() => {
-    if (symbolsProp && symbolsProp.length > 0) return symbolsProp;
-    if (brokerSymbols.length > 0) return brokerSymbols.map((s) => s.symbol);
-    return DEFAULT_SYMBOLS;
+  const SYMBOL_ITEMS = useMemo<SymbolItem[]>(() => {
+    if (symbolsProp && symbolsProp.length > 0) {
+      return symbolsProp.map((label) => ({
+        displayName: label,
+        brokerSymbol: toBrokerSymbol(label),
+      }));
+    }
+    if (brokerSymbols.length > 0) {
+      return brokerSymbols.map((s) => ({
+        displayName: s.symbol,
+        brokerSymbol: s.symbol,
+      }));
+    }
+    return DEFAULT_SYMBOL_ITEMS;
   }, [symbolsProp, brokerSymbols]);
 
-  // Make sure the active symbol exists in the list — otherwise reset to first.
+  // Resolve currently selected item from context value (matches either
+  // displayName or brokerSymbol so legacy "EUR/USD" values keep working).
+  const selectedItem: SymbolItem =
+    SYMBOL_ITEMS.find(
+      (it) => it.displayName === ctxSymbol || it.brokerSymbol === ctxSymbol,
+    ) ?? SYMBOL_ITEMS[0];
+
+  // Make sure context tracks an entry that exists in the list.
   useEffect(() => {
-    if (!SYMBOLS.includes(ctxSymbol)) {
-      setCtxSymbol(SYMBOLS[0]);
+    if (!selectedItem) return;
+    if (
+      ctxSymbol !== selectedItem.displayName &&
+      ctxSymbol !== selectedItem.brokerSymbol
+    ) {
+      setCtxSymbol(selectedItem.displayName);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [SYMBOLS]);
+  }, [SYMBOL_ITEMS]);
+
+  const accountEquity =
+    accountConnected && account?.equity != null ? Number(account.equity) : 0;
+  const accountCurrency = account?.currency || "USD";
 
   const accountEquity =
     accountConnected && account?.equity != null ? Number(account.equity) : 0;
