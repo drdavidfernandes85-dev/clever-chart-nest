@@ -251,6 +251,22 @@ const Watchlist = () => {
         </Popover>
       </div>
 
+      {!isLive && symbolsError && (
+        <div className="flex items-center justify-between gap-2 border-b border-amber-500/20 bg-amber-500/5 px-4 py-2 text-[11px] text-amber-300">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="h-3 w-3" />
+            <span>Broker symbols unavailable. Please refresh.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => refresh()}
+            className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-200 hover:text-amber-100"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <ul className="divide-y divide-border/30 max-h-[520px] overflow-y-auto">
         <AnimatePresence initial={false}>
           {items.map((item) => {
