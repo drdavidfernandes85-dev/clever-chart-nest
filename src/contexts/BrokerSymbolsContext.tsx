@@ -68,22 +68,22 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error: invErr } = await supabase.functions.invoke(
         "get-trading-symbols",
-        { body: { limit: 100 } },
+        { body: { limit: 300 } },
       );
       if (invErr) throw invErr;
       if (data?.success && Array.isArray(data.symbols) && data.symbols.length > 0) {
-        setSymbols(data.symbols as BrokerSymbol[]);
+        setSymbols((data.symbols as any[]).map(enrich));
         setIsLive(true);
         setError(null);
       } else {
         setSymbols(FALLBACK_SYMBOLS);
         setIsLive(false);
-        setError(data?.error ?? "Broker symbols unavailable. Please refresh.");
+        setError(data?.error ?? "Broker symbols could not be loaded. Please refresh.");
       }
     } catch (e: any) {
       setSymbols(FALLBACK_SYMBOLS);
       setIsLive(false);
-      setError(e?.message ?? "Broker symbols unavailable. Please refresh.");
+      setError(e?.message ?? "Broker symbols could not be loaded. Please refresh.");
     } finally {
       setLoading(false);
     }
