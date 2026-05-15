@@ -293,7 +293,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         canRetry: true,
       };
     }
-    if (!(lotsNum > 0)) {
+    if (!(Number(lots) > 0)) {
       return { ok: false, sentSymbol: normalizedSymbol, reason: "Volume must be greater than 0." };
     }
     return { ok: true, sentSymbol: normalizedSymbol, reason: "" };
