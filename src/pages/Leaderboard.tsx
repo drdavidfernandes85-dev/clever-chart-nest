@@ -137,24 +137,24 @@ const PodiumCard = ({ row, period, rank }: { row: DemoRow; period: Period; rank:
         <div className="mt-3 grid w-full grid-cols-3 gap-1.5 text-center">
           <div className="rounded-lg bg-background/40 px-1.5 py-1.5">
             <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("leaderboard.win")}</p>
-            <p className="font-mono text-xs font-bold text-foreground">{row.win_rate}%</p>
+            <p className="font-mono text-xs font-bold text-foreground">{row.win_rate ?? 0}%</p>
           </div>
           <div className="rounded-lg bg-background/40 px-1.5 py-1.5">
             <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("leaderboard.pf")}</p>
-            <p className="font-mono text-xs font-bold text-foreground">{row.profit_factor.toFixed(1)}</p>
+            <p className="font-mono text-xs font-bold text-foreground">{(row.profit_factor ?? 0).toFixed(1)}</p>
           </div>
           <div className="rounded-lg bg-background/40 px-1.5 py-1.5">
             <p className="text-[9px] uppercase tracking-wider text-muted-foreground">{t("leaderboard.streak")}</p>
             <p className="flex items-center justify-center gap-0.5 font-mono text-xs font-bold text-primary">
               <Flame className="h-3 w-3" />
-              {row.win_streak}
+              {row.win_streak ?? 0}
             </p>
           </div>
         </div>
 
         <div className="mt-3 flex items-center gap-1 text-[10px] text-muted-foreground">
           <Users className="h-3 w-3" />
-          {row.followers.toLocaleString()} {t("leaderboard.followers")}
+          {(row.followers ?? 0).toLocaleString()} {t("leaderboard.followers")}
         </div>
 
         <div className="mt-3 flex w-full gap-1.5">
