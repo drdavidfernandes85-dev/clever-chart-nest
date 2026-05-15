@@ -45,6 +45,8 @@ interface Ctx {
   isLive: boolean;
   loading: boolean;
   error: string | null;
+  /** Last raw response from get-trading-symbols (debug). */
+  lastResponse: unknown;
   refresh: () => Promise<void>;
 }
 
@@ -56,6 +58,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastResponse, setLastResponse] = useState<unknown>(null);
 
   const refresh = useCallback(async () => {
     if (!connected) {
@@ -70,6 +73,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         "get-trading-symbols",
         { body: { limit: 300 } },
       );
+      setLastResponse(invErr ? { error: invErr.message ?? String(invErr) } : data);
       if (invErr) throw invErr;
       if (data?.success && Array.isArray(data.symbols) && data.symbols.length > 0) {
         setSymbols((data.symbols as any[]).map(enrich));
@@ -81,6 +85,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setError(data?.error ?? "Broker symbols could not be loaded. Please refresh.");
       }
     } catch (e: any) {
+      setLastResponse({ error: e?.message ?? String(e) });
       setSymbols(FALLBACK_SYMBOLS);
       setIsLive(false);
       setError(e?.message ?? "Broker symbols could not be loaded. Please refresh.");
@@ -94,8 +99,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const value = useMemo<Ctx>(
-    () => ({ symbols, isLive, loading, error, refresh }),
-    [symbols, isLive, loading, error, refresh],
+    () => ({ symbols, isLive, loading, error, lastResponse, refresh }),
+    [symbols, isLive, loading, error, lastResponse, refresh],
   );
 
   return <BrokerCtx.Provider value={value}>{children}</BrokerCtx.Provider>;
@@ -104,7 +109,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
 export function useBrokerSymbols(): Ctx {
   const ctx = useContext(BrokerCtx);
   if (!ctx) {
-    return { symbols: FALLBACK_SYMBOLS, isLive: false, loading: false, error: null, refresh: async () => {} };
+    return { symbols: FALLBACK_SYMBOLS, isLive: false, loading: false, error: null, lastResponse: null, refresh: async () => {} };
   }
   return ctx;
 }
