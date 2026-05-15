@@ -101,16 +101,44 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
           </Button>
-          <Button
-            size="sm"
-            asChild
-            className="gap-1.5 rounded-full bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_hsl(45_100%_50%/0.35)] cta-pulse"
-          >
-            <Link to="/connect-mt" onClick={() => track("connect_mt_click", { location: "navbar" })}>
-              <Plug className="h-3.5 w-3.5" />
-              Connect MT5
-            </Link>
-          </Button>
+          {connected && liveAccount ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                  aria-label="MT5 connection details"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Connected
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-60">
+                <div className="px-3 py-2 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> MT5 Connected
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">Account</div>
+                  <div className="font-mono text-sm text-foreground">#{liveAccount.login}</div>
+                  <div className="text-[11px] text-muted-foreground pt-1">Server</div>
+                  <div className="font-mono text-xs text-foreground truncate">{liveAccount.server || "—"}</div>
+                </div>
+                <DropdownMenuItem onClick={() => navigate("/connect-mt")} className="gap-2">
+                  <Plug className="h-4 w-4" /> Manage Connection
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              size="sm"
+              asChild
+              className="gap-1.5 rounded-full bg-primary px-4 font-semibold text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_hsl(45_100%_50%/0.35)] cta-pulse"
+            >
+              <Link to="/connect-mt" onClick={() => track("connect_mt_click", { location: "navbar" })}>
+                <Plug className="h-3.5 w-3.5" />
+                Connect MT5 Account
+              </Link>
+            </Button>
+          )}
 
           {user ? (
             <>
