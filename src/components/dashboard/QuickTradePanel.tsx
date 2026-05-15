@@ -427,8 +427,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
           symbol: brokerSymbol,
           side,
           volume: Number(lotsNum.toFixed(2)),
-          stopLoss: slNum ? Number(slNum) : null,
-          takeProfit: tpNum ? Number(tpNum) : null,
+          stopLoss: effectiveSl,
+          takeProfit: effectiveTp,
         },
       });
       if (error) throw error;
