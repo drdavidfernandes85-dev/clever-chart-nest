@@ -34,7 +34,15 @@ import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsCont
 
 // Broker-safe defaults — used until get-trading-symbols returns the
 // connected broker's live symbol list.
-const DEFAULT_SYMBOLS = FALLBACK_SYMBOLS.map((s) => s.symbol);
+interface SymbolItem {
+  displayName: string;
+  brokerSymbol: string;
+}
+const toBrokerSymbol = (label: string) => label.replace(/\//g, "").toUpperCase();
+const DEFAULT_SYMBOL_ITEMS: SymbolItem[] = FALLBACK_SYMBOLS.map((s) => ({
+  displayName: s.symbol,
+  brokerSymbol: toBrokerSymbol(s.symbol),
+}));
 
 const QUICK_LOTS = [0.01, 0.02, 0.05, 0.1];
 
