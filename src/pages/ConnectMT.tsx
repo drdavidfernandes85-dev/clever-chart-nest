@@ -880,6 +880,22 @@ const ConnectMT = () => {
                     </pre>
                   </div>
                 )}
+                {mt5DebugRows !== null && (
+                  <div
+                    className="mt-2 rounded-xl border p-3 text-[11px]"
+                    style={{
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      borderColor: "rgba(255,205,5,0.25)",
+                    }}
+                  >
+                    <div className="mb-1 font-mono uppercase tracking-widest text-[#FFCD05]/80">
+                      Debug · user_mt5_accounts (latest 5)
+                    </div>
+                    <pre className="overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-neutral-300">
+{JSON.stringify(mt5DebugRows, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </motion.form>
             )}
           </AnimatePresence>
