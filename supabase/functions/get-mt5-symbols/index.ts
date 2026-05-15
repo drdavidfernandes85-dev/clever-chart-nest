@@ -117,11 +117,12 @@ serve(async (req) => {
 
     const attempts: any[] = [];
     const accountPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols`;
+
+    // 1. Try a single big-pull first.
     const candidatePaths = [
+      `${accountPath}?limit=10000`,
       `${accountPath}?limit=5000`,
-      `${accountPath}?limit=2000`,
-      `${accountPath}?limit=1000`,
-      `${accountPath}?all=true&limit=5000`,
+      `${accountPath}?all=true&limit=10000`,
       `${accountPath}/all`,
       accountPath,
     ];
@@ -138,21 +139,28 @@ serve(async (req) => {
       }
     }
 
-    if (rawList.length > 0 && rawList.length % 20 === 0) {
-      const paged: any[] = [];
-      for (let offset = 0; offset < 5000; offset += 1000) {
-        const p = `${accountPath}?limit=1000&offset=${offset}`;
-        const r = await tlGet(p);
-        const list = r.ok ? extractList(r.data) : [];
-        attempts.push({ path: p, status: r.status, ok: r.ok, count: list.length, pagination: "offset" });
-        if (!r.ok || list.length === 0) break;
-        paged.push(...list);
-        if (list.length < 1000) break;
-      }
-      if (paged.length > rawList.length) {
-        rawList = paged;
-        usedPath = `${accountPath}?limit=1000&offset=*`;
-      }
+    // 2. Always also iterate offset-pagination until exhausted, since some
+    //    brokers cap a single response regardless of `limit`.
+    const PAGE = 500;
+    const MAX_PAGES = 200; // hard cap = 100k symbols
+    const paged: any[] = [];
+    for (let i = 0; i < MAX_PAGES; i++) {
+      const offset = i * PAGE;
+      const p = `${accountPath}?limit=${PAGE}&offset=${offset}`;
+      const r = await tlGet(p);
+      const list = r.ok ? extractList(r.data) : [];
+      attempts.push({ path: p, status: r.status, ok: r.ok, count: list.length, pagination: "offset" });
+      if (!r.ok) break;
+      if (list.length === 0) break;
+      paged.push(...list);
+      if (list.length < PAGE) break;
+    }
+    if (paged.length > rawList.length) {
+      rawList = paged;
+      usedPath = `${accountPath}?limit=${PAGE}&offset=*`;
+    } else if (paged.length > 0) {
+      // Merge for safety: union of single-pull + paginated.
+      rawList = [...rawList, ...paged];
     }
 
     const symbols = dedupeSymbols(rawList);
