@@ -3,11 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
 
 export interface BrokerSymbol {
-  /** Exact broker symbol string sent to execute-trade (e.g. "EURUSD"). */
   symbol: string;
   brokerSymbol: string;
   name: string;
-  /** Human-friendly label (e.g. "EUR/USD"). Falls back to `symbol`. */
   displayName: string;
   description?: string | null;
   digits?: number | null;
@@ -29,7 +27,6 @@ const enrich = (s: any): BrokerSymbol => {
   };
 };
 
-/** Used until the broker symbol list loads. Clearly marked as fallback. */
 export const FALLBACK_SYMBOLS: BrokerSymbol[] = [
   { symbol: "XAUUSD", description: "Gold vs USD (fallback)" },
   { symbol: "EURUSD", description: "Euro vs USD (fallback)" },
@@ -41,19 +38,23 @@ export const FALLBACK_SYMBOLS: BrokerSymbol[] = [
 
 interface Ctx {
   symbols: BrokerSymbol[];
-  /** True only when symbols came from the broker (not fallback). */
   isLive: boolean;
   loading: boolean;
   loaded: boolean;
   error: string | null;
   selectedSymbolValid: boolean;
-  /** Last raw response from get-trading-symbols (debug). */
+  selectedSymbolInfo: any;
+  tick: any;
+  /** Last raw response from get-broker-symbol (debug). */
   lastResponse: unknown;
   refresh: (selectedSymbol?: string) => Promise<void>;
   setSelectedBrokerSymbol: (symbol: string) => void;
 }
 
 const BrokerCtx = createContext<Ctx | null>(null);
+
+const normalize = (v: string) =>
+  String(v || "").replace("/", "").replace("-", "").replace(" ", "").toUpperCase();
 
 export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   const { connected } = useLiveAccount();
@@ -64,6 +65,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [lastResponse, setLastResponse] = useState<unknown>(null);
   const [selectedSymbolValid, setSelectedSymbolValid] = useState(false);
+  const [selectedSymbolInfo, setSelectedSymbolInfo] = useState<any>(null);
+  const [tick, setTick] = useState<any>(null);
   const [selectedBrokerSymbol, setSelectedBrokerSymbol] = useState<string>("EURUSD");
 
   const refresh = useCallback(
@@ -73,15 +76,17 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setIsLive(false);
         setLoaded(false);
         setSelectedSymbolValid(false);
+        setSelectedSymbolInfo(null);
+        setTick(null);
         setError(null);
         return;
       }
       setLoading(true);
-      const selectedSymbol = overrideSelected || selectedBrokerSymbol || "EURUSD";
+      const normalizedSelectedSymbol = normalize(overrideSelected || selectedBrokerSymbol || "EURUSD");
       try {
         const { data, error: invErr } = await supabase.functions.invoke(
-          "get-trading-symbols",
-          { body: { limit: 1000, debug: true, selectedSymbol } },
+          "get-broker-symbol",
+          { body: { debug: true, selectedSymbol: normalizedSelectedSymbol } },
         );
 
         if (invErr) {
@@ -90,6 +95,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
           setIsLive(false);
           setLoaded(false);
           setSelectedSymbolValid(false);
+          setSelectedSymbolInfo(null);
+          setTick(null);
           setError(invErr.message ?? "Broker symbols could not be loaded. Please refresh.");
           return;
         }
@@ -98,16 +105,22 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
 
         if (data?.success === true) {
           const list = Array.isArray(data.symbols) ? data.symbols : [];
-          setSymbols(list.length > 0 ? list.map(enrich) : FALLBACK_SYMBOLS);
+          const enriched = list.length > 0 ? list.map(enrich) : FALLBACK_SYMBOLS;
+          setSymbols(enriched);
           setIsLive(list.length > 0);
-          setLoaded(list.length > 0);
-          setSelectedSymbolValid(Boolean(data.selectedSymbolValid));
-          setError(list.length > 0 ? null : (data?.error ?? "No broker symbols returned."));
+          setLoaded(data.symbolsLoaded === true || list.length > 0);
+          setSelectedSymbolValid(data.selectedSymbolValid === true);
+          setSelectedSymbolInfo(data.selectedSymbolInfo || null);
+          setTick(data.tick || null);
+          setError(null);
         } else {
-          setSymbols(FALLBACK_SYMBOLS);
+          const list = Array.isArray(data?.symbols) ? data.symbols : [];
+          setSymbols(list.length > 0 ? list.map(enrich) : FALLBACK_SYMBOLS);
           setIsLive(false);
-          setLoaded(false);
+          setLoaded(data?.symbolsLoaded === true || list.length > 0);
           setSelectedSymbolValid(false);
+          setSelectedSymbolInfo(null);
+          setTick(null);
           setError(data?.error ?? "Broker symbols could not be loaded. Please refresh.");
         }
       } catch (e: any) {
@@ -116,6 +129,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setIsLive(false);
         setLoaded(false);
         setSelectedSymbolValid(false);
+        setSelectedSymbolInfo(null);
+        setTick(null);
         setError(e?.message ?? "Broker symbols could not be loaded. Please refresh.");
       } finally {
         setLoading(false);
@@ -136,11 +151,13 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       loaded,
       error,
       selectedSymbolValid,
+      selectedSymbolInfo,
+      tick,
       lastResponse,
       refresh,
       setSelectedBrokerSymbol,
     }),
-    [symbols, isLive, loading, loaded, error, selectedSymbolValid, lastResponse, refresh],
+    [symbols, isLive, loading, loaded, error, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, refresh],
   );
 
   return <BrokerCtx.Provider value={value}>{children}</BrokerCtx.Provider>;
@@ -156,6 +173,8 @@ export function useBrokerSymbols(): Ctx {
       loaded: false,
       error: null,
       selectedSymbolValid: false,
+      selectedSymbolInfo: null,
+      tick: null,
       lastResponse: null,
       refresh: async () => {},
       setSelectedBrokerSymbol: () => {},
