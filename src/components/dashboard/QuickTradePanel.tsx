@@ -219,7 +219,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   const handlePlace = () => {
     const parsed = tradeSchema.safeParse({
-      symbol,
+      symbol: brokerSymbol,
       side,
       type,
       lots: lotsNum,
@@ -259,7 +259,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       const { data, error } = await supabase.functions.invoke("execute-trade", {
         body: {
           tradeId,
-          symbol,
+          symbol: brokerSymbol,
           side,
           volume: Number(lotsNum.toFixed(2)),
           stopLoss: slNum ? Number(slNum) : null,
