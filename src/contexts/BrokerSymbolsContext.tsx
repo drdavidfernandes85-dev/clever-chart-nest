@@ -75,7 +75,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   // Fetch full broker symbols list via the new get-mt5-symbols function.
   const refresh = useCallback(
     async (_overrideSelected?: string) => {
-      if (!connected) {
+      if (!user) {
         setSymbols(FALLBACK_SYMBOLS);
         setIsLive(false);
         setLoaded(false);
@@ -119,7 +119,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [connected],
+    [user],
   );
 
   useEffect(() => {
