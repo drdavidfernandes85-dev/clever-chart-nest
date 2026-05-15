@@ -1136,6 +1136,7 @@ const translations = {
     "social.backToLeaderboard": "Volver al ranking",
     // Sidebar / mobile nav
     "sidebar.dashboard": "Panel",
+    "sidebar.tradingRoom": "Sala de Trading",
     "sidebar.liveWebinars": "Webinars en Vivo",
     "sidebar.liveCharts": "Gráficos en Vivo",
     "sidebar.signals": "Ideas de Trading",
