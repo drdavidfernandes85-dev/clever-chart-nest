@@ -77,13 +77,13 @@ const KpiStrip = () => {
     const pnlPct = baselineEquity && baselineEquity !== 0 ? (pnlToday / baselineEquity) * 100 : 0;
 
     // Volume traded = sum of open volume (lots)
-    const volume = positions.reduce((sum, p) => sum + Number(p.volume ?? 0), 0);
+    const volume = openPositions.reduce((sum: number, p: any) => sum + Number(p.volume ?? 0), 0);
 
     // Win rate from open positions (winners / total)
-    const winners = positions.filter((p) => Number(p.profit ?? 0) > 0).length;
-    const winRate = positions.length > 0 ? (winners / positions.length) * 100 : 0;
+    const winners = openPositions.filter((p: any) => Number(p.profit ?? 0) > 0).length;
+    const winRate = openPositions.length > 0 ? (winners / openPositions.length) * 100 : 0;
 
-    // Win streak from open positions (consecutive winners from most recent)
+    // Win streak from open positions (consecutive winners from most recent) — only available from MT.
     const sorted = [...positions].sort(
       (a, b) => new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime(),
     );
@@ -107,7 +107,7 @@ const KpiStrip = () => {
       {
         label: t("kpi.winRate"),
         value: `${winRate.toFixed(1)}%`,
-        delta: `${winners}/${positions.length} ${t("kpi.winners")}`,
+        delta: `${winners}/${openPositions.length} ${t("kpi.winners")}`,
         deltaDir: winRate >= 50 ? "up" : "down",
         icon: Target,
         spark: [],
@@ -116,7 +116,7 @@ const KpiStrip = () => {
       {
         label: t("kpi.volumeOpen"),
         value: `${volume.toFixed(2)} lots`,
-        delta: `${positions.length} ${t("kpi.positions")}`,
+        delta: `${openPositions.length} ${t("kpi.positions")}`,
         deltaDir: "up",
         icon: Activity,
         spark: [],
@@ -132,7 +132,7 @@ const KpiStrip = () => {
         accent: "gold",
       },
     ];
-  }, [isConnected, account, positions, snapshots, t]);
+  }, [isConnected, account, positions, snapshots, liveAccount, livePositions, t]);
 
   const items = useMemo(
     () =>
