@@ -32,6 +32,25 @@ function mapSymbol(item: any) {
   };
 }
 
+function extractList(data: any): any[] {
+  const d = data?.data ?? data;
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.symbols)) return d.symbols;
+  if (Array.isArray(d?.items)) return d.items;
+  if (Array.isArray(d?.data)) return d.data;
+  return [];
+}
+
+function dedupeSymbols(list: any[]) {
+  const mapped = list.map(mapSymbol).filter(Boolean) as ReturnType<typeof mapSymbol>[];
+  const seen = new Map<string, any>();
+  for (const item of mapped) {
+    const key = String(item?.brokerSymbol || item?.name || item?.symbol || "").toUpperCase();
+    if (key && !seen.has(key)) seen.set(key, item);
+  }
+  return Array.from(seen.values());
+}
+
 async function tlGet(path: string) {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "GET",
@@ -97,26 +116,46 @@ serve(async (req) => {
     }
 
     const attempts: any[] = [];
+    const accountPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols`;
     const candidatePaths = [
-      `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols`,
-      `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols/all`,
-      `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols?all=true`,
+      `${accountPath}?limit=5000`,
+      `${accountPath}?limit=2000`,
+      `${accountPath}?limit=1000`,
+      `${accountPath}?all=true&limit=5000`,
+      `${accountPath}/all`,
+      accountPath,
     ];
 
     let rawList: any[] = [];
     let usedPath: string | null = null;
     for (const p of candidatePaths) {
       const r = await tlGet(p);
-      attempts.push({ path: p, status: r.status, ok: r.ok });
-      if (r.ok) {
-        const d = r.data?.data ?? r.data;
-        if (Array.isArray(d)) { rawList = d; usedPath = p; break; }
-        if (Array.isArray(d?.symbols)) { rawList = d.symbols; usedPath = p; break; }
-        if (Array.isArray(d?.items)) { rawList = d.items; usedPath = p; break; }
+      const list = r.ok ? extractList(r.data) : [];
+      attempts.push({ path: p, status: r.status, ok: r.ok, count: list.length });
+      if (r.ok && list.length > rawList.length) {
+        rawList = list;
+        usedPath = p;
       }
     }
 
-    const symbols = rawList.map(mapSymbol).filter(Boolean);
+    if (rawList.length > 0 && rawList.length % 20 === 0) {
+      const paged: any[] = [];
+      for (let offset = 0; offset < 5000; offset += 1000) {
+        const p = `${accountPath}?limit=1000&offset=${offset}`;
+        const r = await tlGet(p);
+        const list = r.ok ? extractList(r.data) : [];
+        attempts.push({ path: p, status: r.status, ok: r.ok, count: list.length, pagination: "offset" });
+        if (!r.ok || list.length === 0) break;
+        paged.push(...list);
+        if (list.length < 1000) break;
+      }
+      if (paged.length > rawList.length) {
+        rawList = paged;
+        usedPath = `${accountPath}?limit=1000&offset=*`;
+      }
+    }
+
+    const symbols = dedupeSymbols(rawList);
 
     return json({
       success: true,
