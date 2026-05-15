@@ -259,24 +259,50 @@ const Leaderboard = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-1 rounded-2xl border-2 border-border/60 bg-card p-1.5 shadow-lg">
-            {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
-                  period === p
-                    ? "bg-primary text-primary-foreground shadow-md scale-105"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-1 rounded-2xl border-2 border-border/60 bg-card p-1.5 shadow-lg">
+              {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                    period === p
+                      ? "bg-primary text-primary-foreground shadow-md scale-105"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {PERIOD_LABELS_T[p]}
+                </button>
+              ))}
+            </div>
+
+            <label className="flex items-center gap-2 rounded-2xl border-2 border-border/60 bg-card px-3 py-2 shadow-lg">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sort</span>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="bg-transparent text-xs font-bold uppercase tracking-wider text-foreground focus:outline-none cursor-pointer"
               >
-                {PERIOD_LABELS_T[p]}
-              </button>
-            ))}
+                {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                  <option key={k} value={k} className="bg-card text-foreground">
+                    {SORT_LABELS[k]}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-red-500/30 bg-red-500/5">
+            <Trophy className="h-10 w-10 text-red-400/70 mb-3" />
+            <p className="text-sm text-foreground font-semibold">Couldn't load ranking</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+            <Button size="sm" variant="outline" className="mt-4" onClick={load}>
+              Retry
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-6">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-72 rounded-3xl" />
