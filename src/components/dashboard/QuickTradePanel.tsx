@@ -383,7 +383,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               className="flex h-12 w-full items-center justify-between rounded-xl border border-border/50 bg-background/60 px-3.5 text-left transition-colors hover:border-primary/40"
             >
               <span className="font-heading text-base font-bold text-foreground">
-                {symbol}
+                {symbolDisplay}
               </span>
               <ChevronDown
                 className={`h-4 w-4 text-muted-foreground transition-transform ${
@@ -393,23 +393,31 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             </button>
             {openSymbols && (
               <ul className="absolute left-0 right-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-xl border border-border/50 bg-popover shadow-xl">
-                {SYMBOLS.map((s) => (
-                  <li key={s}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCtxSymbol(s);
-                        onSymbolChange?.(s);
-                        setOpenSymbols(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
-                        s === symbol ? "text-primary bg-primary/5" : "text-foreground"
-                      }`}
-                    >
-                      <span>{s}</span>
-                    </button>
-                  </li>
-                ))}
+                {SYMBOL_ITEMS.map((it) => {
+                  const isActive = it.brokerSymbol === brokerSymbol;
+                  return (
+                    <li key={it.brokerSymbol}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCtxSymbol(it.displayName);
+                          onSymbolChange?.(it.displayName);
+                          setOpenSymbols(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
+                          isActive ? "text-primary bg-primary/5" : "text-foreground"
+                        }`}
+                      >
+                        <span>{it.displayName}</span>
+                        {it.displayName !== it.brokerSymbol && (
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {it.brokerSymbol}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
