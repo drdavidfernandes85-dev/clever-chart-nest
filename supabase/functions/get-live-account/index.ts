@@ -156,6 +156,7 @@ Deno.serve(async (req) => {
 
     // Canonical account shape (camelCase) — preferred by UI widgets.
     const accountOut = {
+      traderId,
       login: account.login,
       server: account.server_name,
       status: account.status, // "connected" when live
@@ -172,8 +173,11 @@ Deno.serve(async (req) => {
 
     return json(200, {
       success: true,
+      step: "live_account_loaded",
+      accountConnected: true,
       account: accountOut,
       positions: mappedPositions,
+      timestamp: new Date().toISOString(),
       // Backwards-compatible flat snake_case payload.
       data: {
         balance,
