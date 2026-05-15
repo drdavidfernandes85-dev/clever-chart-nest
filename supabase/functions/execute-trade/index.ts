@@ -191,8 +191,8 @@ serve(async (req) => {
     }
 
     const { data: account, error: accountError } = await supabase
-      .from("user_mt5_accounts")
-      .select("trading_layer_trader_id, account_number, server, status")
+      .from("user_mt_accounts")
+      .select("metaapi_account_id, login, server_name, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -210,7 +210,7 @@ serve(async (req) => {
       );
     }
 
-    if (!account?.trading_layer_trader_id) {
+    if (!account?.metaapi_account_id) {
       return json(
         {
           success: false,
@@ -221,7 +221,7 @@ serve(async (req) => {
       );
     }
 
-    const accountId = account.trading_layer_trader_id;
+    const accountId = account.metaapi_account_id;
     const idempotencyKey = `trade-${tradeId}-${user.id}`;
 
     const orderPayload: Record<string, unknown> = {
@@ -304,20 +304,20 @@ serve(async (req) => {
 
     const { error: logError } = await supabase.from("trade_execution_logs").insert({
       user_id: user.id,
-      trading_layer_trader_id: accountId,
-      trade_id: tradeId,
+      signal_id: tradeId,
       symbol,
       side,
       volume,
       stop_loss: stopLoss ?? null,
       take_profit: takeProfit ?? null,
-      idempotency_key: idempotencyKey,
       classification: classification || null,
       retcode,
-      retcode_name: retcodeName,
       retcode_description: brokerMessage,
-      raw_response: tradeData,
+      request_payload: orderPayload,
+      response_payload: tradeData,
+      http_status: tradeResponse.status,
       status: finalStatus,
+      error_message: isAccepted ? null : brokerMessage,
     });
 
     if (logError) {
