@@ -8,7 +8,7 @@ import {
   Trophy,
   Video,
   BarChart3,
-  
+  Activity,
   ChevronLeft,
   ChevronRight,
   User,
