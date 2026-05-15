@@ -102,11 +102,6 @@ Deno.serve(async (req) => {
       return json(200, { success: false, error: "Connected account is missing a Trading Layer trader id." });
     }
 
-    const tlHeaders = {
-      "Authorization": `Bearer ${TRADING_LAYER_API_KEY}`,
-      "Content-Type": "application/json",
-    };
-
     const [traderRes, posRes] = await Promise.all([
       fetch(`${TL_BASE}/traders/${encodeURIComponent(traderId)}`, { headers: tlHeaders }),
       fetch(`${TL_BASE}/accounts/${encodeURIComponent(traderId)}/positions`, { headers: tlHeaders }),
