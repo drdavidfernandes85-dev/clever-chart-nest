@@ -1981,6 +1981,7 @@ const translations = {
     "social.backToLeaderboard": "Voltar ao ranking",
     // Sidebar / mobile nav
     "sidebar.dashboard": "Painel",
+    "sidebar.tradingRoom": "Sala de Trading",
     "sidebar.liveWebinars": "Webinars Ao Vivo",
     "sidebar.liveCharts": "Gráficos Ao Vivo",
     "sidebar.signals": "Ideias de Trading",
