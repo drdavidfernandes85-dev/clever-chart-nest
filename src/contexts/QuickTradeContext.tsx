@@ -27,7 +27,7 @@ const QuickTradeContext = createContext<QuickTradeContextValue | null>(null);
 
 export const QuickTradeProvider = ({ children }: { children: ReactNode }) => {
   const [open, setOpen] = useState(false);
-  const [symbol, setSymbol] = useState("EUR/USD");
+  const [symbol, setSymbol] = useState("XAUUSD");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [prefill, setPrefill] = useState<QuickTradePrefill | null>(null);
   const [prefillNonce, setPrefillNonce] = useState(0);
