@@ -22,6 +22,15 @@ import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 type Period = "pnl_7d" | "pnl_30d" | "total_pnl";
+type SortKey = "score" | "win_rate" | "profit_factor" | "win_streak" | "followers";
+
+const SORT_LABELS: Record<SortKey, string> = {
+  score: "Score (P&L)",
+  win_rate: "Win Rate",
+  profit_factor: "Profit Factor",
+  win_streak: "Win Streak",
+  followers: "Followers",
+};
 
 interface LeaderRow {
   user_id: string;
