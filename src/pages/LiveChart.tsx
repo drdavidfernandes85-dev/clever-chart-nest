@@ -409,4 +409,12 @@ const LiveChart = () => {
   );
 };
 
-export default LiveChart;
+const LiveChartWithProviders = () => (
+  <LiveAccountProvider>
+    <BrokerSymbolsProvider>
+      <LiveChart />
+    </BrokerSymbolsProvider>
+  </LiveAccountProvider>
+);
+
+export default LiveChartWithProviders;
