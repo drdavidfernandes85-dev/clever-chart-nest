@@ -24,6 +24,7 @@ const Navbar = () => {
   const { t } = useLanguage();
   const { user, profile, signOut } = useAuth();
   const { theme } = useTheme();
+  const { connected, liveAccount } = useLiveAccount();
   const navigate = useNavigate();
   const infinoxLogo = sidebarLogo;
 
