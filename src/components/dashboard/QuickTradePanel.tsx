@@ -260,6 +260,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       setConfirming(false);
       return;
     }
+    // Validate broker symbol against the live broker symbols list.
+    if (brokerSymbolsLive && brokerSymbols.length > 0) {
+      const exists = brokerSymbols.some(
+        (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
+      );
+      if (!exists) {
+        const msg = `Symbol "${brokerSymbol}" is not available on your broker. Pick one from the live symbols list.`;
+        toast.error("Invalid broker symbol", { description: msg });
+        setResultState({ type: "failed", message: msg });
+        setConfirming(false);
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       const tradeId = tradeIdSrc ?? crypto.randomUUID();
@@ -660,14 +673,37 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                     </div>
                   </div>
                   <div className="px-5 py-4 space-y-2.5 text-xs">
-                    <ConfirmRow
-                      label="Symbol"
-                      value={
-                        symbolDisplay !== brokerSymbol
-                          ? `${symbolDisplay} (${brokerSymbol})`
-                          : brokerSymbol
-                      }
-                    />
+                    {/* Prominent broker symbol that will actually be sent */}
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5">
+                      <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-0.5">
+                        Broker symbol sent to execute-trade
+                      </div>
+                      <div className="font-heading text-lg font-bold tabular-nums text-primary">
+                        {brokerSymbol}
+                      </div>
+                      {symbolDisplay !== brokerSymbol && (
+                        <div className="text-[10px] font-mono text-muted-foreground mt-0.5">
+                          Displayed as {symbolDisplay}
+                        </div>
+                      )}
+                      {brokerSymbolsLive && brokerSymbols.length > 0 && (
+                        <div
+                          className={`mt-1 text-[10px] font-mono uppercase tracking-widest ${
+                            brokerSymbols.some(
+                              (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
+                            )
+                              ? "text-emerald-400"
+                              : "text-red-400"
+                          }`}
+                        >
+                          {brokerSymbols.some(
+                            (s) => s.symbol.toUpperCase() === brokerSymbol.toUpperCase(),
+                          )
+                            ? "✓ Validated against broker symbols"
+                            : "✗ Not in broker symbols list"}
+                        </div>
+                      )}
+                    </div>
                     <ConfirmRow
                       label="Direction"
                       value={isBuy ? "BUY" : "SELL"}
