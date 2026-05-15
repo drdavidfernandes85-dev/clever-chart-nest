@@ -215,15 +215,39 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
-  // Always send the exact broker symbol (no slashes). Prefer brokerSymbol,
-  // fall back to a `symbol` field, then strip "/" from the display label.
-  const brokerSymbol = (
+  // Raw broker symbol candidate (no slashes, uppercase).
+  const rawBrokerSymbol = (
     (selectedItem as any)?.brokerSymbol ||
     (selectedItem as any)?.symbol ||
     (selectedItem as any)?.label?.replace(/\//g, "") ||
     selectedItem?.displayName?.replace(/\//g, "") ||
     toBrokerSymbol(ctxSymbol)
   ).toUpperCase();
+
+  // Resolve against the live broker symbols list (handles aliases + suffixes).
+  // If matched, this is the EXACT string we'll send to execute-trade.
+  const resolvedBrokerSymbol = resolveBrokerSymbol(rawBrokerSymbol, brokerSymbols);
+
+  // Validation state for the symbol that will be sent.
+  const symbolValidation: { ok: boolean; sentSymbol: string; reason: string } = (() => {
+    if (!brokerSymbolsLive || brokerSymbols.length === 0) {
+      return {
+        ok: false,
+        sentSymbol: rawBrokerSymbol,
+        reason: "Live broker symbols list hasn't loaded yet. Connect MT5 or wait for symbols to sync before trading.",
+      };
+    }
+    if (!resolvedBrokerSymbol) {
+      return {
+        ok: false,
+        sentSymbol: rawBrokerSymbol,
+        reason: `"${rawBrokerSymbol}" is not available on your broker. Pick a symbol from the live list.`,
+      };
+    }
+    return { ok: true, sentSymbol: resolvedBrokerSymbol, reason: "" };
+  })();
+
+  const brokerSymbol = symbolValidation.sentSymbol;
   const side = ctxSide;
   const isBuy = side === "buy";
 
