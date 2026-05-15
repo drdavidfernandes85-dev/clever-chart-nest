@@ -22,6 +22,15 @@ import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 type Period = "pnl_7d" | "pnl_30d" | "total_pnl";
+type SortKey = "score" | "win_rate" | "profit_factor" | "win_streak" | "followers";
+
+const SORT_LABELS: Record<SortKey, string> = {
+  score: "Score (P&L)",
+  win_rate: "Win Rate",
+  profit_factor: "Profit Factor",
+  win_streak: "Win Streak",
+  followers: "Followers",
+};
 
 interface LeaderRow {
   user_id: string;
@@ -166,7 +175,9 @@ const Leaderboard = () => {
   const { t } = useLanguage();
   const [rows, setRows] = useState<LeaderRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period>("pnl_30d");
+  const [sortKey, setSortKey] = useState<SortKey>("score");
 
   const PERIOD_LABELS_T: Record<Period, string> = {
     pnl_7d: t("leaderboard.last7"),
@@ -174,25 +185,36 @@ const Leaderboard = () => {
     total_pnl: t("leaderboard.allTime"),
   };
 
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    const { data, error: err } = await supabase
+      .from("leaderboard_stats" as any)
+      .select("*")
+      .order(period, { ascending: false })
+      .limit(50);
+    if (err) {
+      setError(err.message || "Failed to load ranking");
+    } else if (data) {
+      setRows(data as unknown as LeaderRow[]);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("leaderboard_stats" as any)
-        .select("*")
-        .order(period, { ascending: false })
-        .limit(50);
-      if (!error && data) setRows(data as unknown as LeaderRow[]);
-      setLoading(false);
-    };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
   const realRanked = rows.filter((r) => r.total_trades > 0);
-  const usingDemo = realRanked.length === 0 && !loading;
-  // Re-sort demo dataset by selected period
-  const demoSorted = [...DEMO_TRADERS].sort((a, b) => (b[period] as number) - (a[period] as number));
-  const ranked: DemoRow[] = usingDemo ? demoSorted : (realRanked as DemoRow[]);
+  const usingDemo = realRanked.length === 0 && !loading && !error;
+  const baseList: DemoRow[] = usingDemo ? [...DEMO_TRADERS] : (realRanked as DemoRow[]);
+
+  const sortValue = (r: DemoRow): number => {
+    if (sortKey === "score") return (r[period] as number) ?? 0;
+    return (r[sortKey] as number) ?? 0;
+  };
+  const ranked: DemoRow[] = [...baseList].sort((a, b) => sortValue(b) - sortValue(a));
 
   const top3 = ranked.slice(0, 3);
   const rest = ranked.slice(3, 10);
@@ -237,24 +259,50 @@ const Leaderboard = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-1 rounded-2xl border-2 border-border/60 bg-card p-1.5 shadow-lg">
-            {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
-                  period === p
-                    ? "bg-primary text-primary-foreground shadow-md scale-105"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center gap-1 rounded-2xl border-2 border-border/60 bg-card p-1.5 shadow-lg">
+              {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all ${
+                    period === p
+                      ? "bg-primary text-primary-foreground shadow-md scale-105"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {PERIOD_LABELS_T[p]}
+                </button>
+              ))}
+            </div>
+
+            <label className="flex items-center gap-2 rounded-2xl border-2 border-border/60 bg-card px-3 py-2 shadow-lg">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Sort</span>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="bg-transparent text-xs font-bold uppercase tracking-wider text-foreground focus:outline-none cursor-pointer"
               >
-                {PERIOD_LABELS_T[p]}
-              </button>
-            ))}
+                {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                  <option key={k} value={k} className="bg-card text-foreground">
+                    {SORT_LABELS[k]}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-red-500/30 bg-red-500/5">
+            <Trophy className="h-10 w-10 text-red-400/70 mb-3" />
+            <p className="text-sm text-foreground font-semibold">Couldn't load ranking</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+            <Button size="sm" variant="outline" className="mt-4" onClick={load}>
+              Retry
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-6">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-72 rounded-3xl" />

@@ -45,19 +45,27 @@ const TradingSignals = () => {
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"active" | "closed">("active");
   const [view, setView] = useState<"cards" | "grid">("cards");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchSignals = async () => {
+    setError(null);
+    const { data, error: err } = await supabase
+      .from("trading_signals")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (err) {
+      setError(err.message || "Failed to load trade ideas");
+    } else if (data) {
+      setSignals(data);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchSignals = async () => {
-      const { data } = await supabase
-        .from("trading_signals")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (data) setSignals(data);
-      setLoading(false);
-    };
     fetchSignals();
 
     const channel = supabase
@@ -69,6 +77,9 @@ const TradingSignals = () => {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Reset visible page when switching tabs
+  useEffect(() => { setPageSize(10); }, [tab]);
 
   useEffect(() => {
     if (!user) return;
@@ -85,7 +96,9 @@ const TradingSignals = () => {
 
   const activeSignals = signals.filter((s) => s.status === "active");
   const closedSignals = signals.filter((s) => s.status !== "active");
-  const displayed = tab === "active" ? activeSignals : closedSignals;
+  const fullList = tab === "active" ? activeSignals : closedSignals;
+  const displayed = fullList.slice(0, pageSize);
+  const hasMore = fullList.length > displayed.length;
 
   // P&L calculations — TP Hit = always positive pips, SL Hit = always negative
   const pnlStats = closedSignals.reduce(
@@ -292,7 +305,16 @@ const TradingSignals = () => {
         </div>
 
         {/* Signals */}
-        {loading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-red-500/30 bg-red-500/5">
+            <ShieldAlert className="h-10 w-10 text-red-400/70 mb-3" />
+            <p className="text-sm text-foreground font-semibold">Couldn't load trade ideas</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">{error}</p>
+            <Button size="sm" variant="outline" className="mt-4" onClick={() => { setLoading(true); fetchSignals(); }}>
+              Retry
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="rounded-2xl border border-border/30 bg-card p-5 space-y-3">
@@ -617,6 +639,15 @@ const TradingSignals = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Pagination "Show more" */}
+        {!error && !loading && hasMore && (
+          <div className="mt-6 flex justify-center">
+            <Button variant="outline" size="sm" onClick={() => setPageSize((s) => s + 10)}>
+              Show more ({fullList.length - displayed.length} remaining)
+            </Button>
           </div>
         )}
 
