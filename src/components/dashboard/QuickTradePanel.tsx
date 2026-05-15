@@ -34,6 +34,12 @@ import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsCont
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { fetchMarketQuotes } from "@/lib/markets";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  validateStops,
+  getEffectiveStops,
+  matchQuote,
+} from "@/lib/quick-trade-validation";
+import { RefreshCw } from "lucide-react";
 
 // Broker-safe defaults — used until get-trading-symbols returns the
 // connected broker's live symbol list.
