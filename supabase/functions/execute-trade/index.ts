@@ -58,29 +58,37 @@ function toNullableNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function getValue(obj: any, paths: string[], fallback: any = null) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getValue(obj: unknown, paths: string[], fallback: unknown = null): unknown {
   for (const path of paths) {
-    const value = path.split(".").reduce((acc, key) => acc?.[key], obj);
+    const value = path
+      .split(".")
+      .reduce<unknown>((acc, key) => (isRecord(acc) ? acc[key] : undefined), obj);
     if (value !== undefined && value !== null) return value;
   }
 
   return fallback;
 }
 
-function getBrokerMessage(payload: any): string {
+function getBrokerMessage(payload: unknown): string {
   const message =
-    payload?.error?.message ||
-    payload?.error ||
-    payload?.message ||
-    payload?.detail ||
-    payload?.title ||
-    payload?.data?.message ||
-    payload?.data?.error?.message ||
-    payload?.data?.retcode_description ||
-    payload?.data?.retcodeDescription ||
-    payload?.retcode_description ||
-    payload?.retcodeDescription ||
-    payload?.comment;
+    getValue(payload, [
+      "error.message",
+      "error",
+      "message",
+      "detail",
+      "title",
+      "data.message",
+      "data.error.message",
+      "data.retcode_description",
+      "data.retcodeDescription",
+      "retcode_description",
+      "retcodeDescription",
+      "comment",
+    ]);
 
   if (!message) {
     return "Trade execution failed.";
@@ -257,7 +265,7 @@ serve(async (req) => {
 
     const tradeText = await tradeResponse.text();
 
-    let tradeData: any;
+    let tradeData: unknown;
     try {
       tradeData = JSON.parse(tradeText);
     } catch {
