@@ -167,7 +167,16 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   // Symbol universe: prop > broker symbols (live) > fallback.
   // Each item carries both a displayName (e.g. "EUR/USD") and the exact
   // broker symbol (e.g. "EURUSD") that must be sent to execute-trade.
-  const { symbols: brokerSymbols, isLive: brokerSymbolsLive, loading: brokerSymbolsLoading, error: brokerSymbolsError, lastResponse: brokerSymbolsLastResponse, refresh: refreshBrokerSymbols } = useBrokerSymbols();
+  const {
+    symbols: brokerSymbols,
+    isLive: brokerSymbolsLive,
+    loading: brokerSymbolsLoading,
+    error: brokerSymbolsError,
+    lastResponse: brokerSymbolsLastResponse,
+    refresh: refreshBrokerSymbols,
+    selectedSymbolValid: ctxSelectedSymbolValid,
+    setSelectedBrokerSymbol,
+  } = useBrokerSymbols();
   const { isAdmin } = useIsAdmin();
   const showDebug = isAdmin || import.meta.env.DEV;
   const SYMBOL_ITEMS = useMemo<SymbolItem[]>(() => {
@@ -248,6 +257,10 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       .toUpperCase() === normalizedSymbol,
   );
   const symbolsLoaded = brokerSymbolsLive && brokerSymbols.length > 0;
+
+  useEffect(() => {
+    if (normalizedSymbol) setSelectedBrokerSymbol(normalizedSymbol);
+  }, [normalizedSymbol, setSelectedBrokerSymbol]);
 
   const symbolValidation: { ok: boolean; sentSymbol: string; reason: string; canRetry?: boolean } = (() => {
     if (accountConnected !== true) {
@@ -893,6 +906,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 <div>selected display symbol: <span className="text-foreground">{symbolDisplay}</span></div>
                 <div>selected broker symbol: <span className="text-foreground">{normalizedSymbol}</span></div>
                 <div>symbol exists in broker list: <span className="text-foreground">{String(existsInBrokerSymbols)}</span></div>
+                <div>selectedSymbolValid: <span className="text-foreground">{String(ctxSelectedSymbolValid)}</span></div>
                 <div>accountConnected: <span className="text-foreground">{String(accountConnected)}</span></div>
                 {brokerSymbolsError && (
                   <div>error: <span className="text-red-400">{brokerSymbolsError}</span></div>
