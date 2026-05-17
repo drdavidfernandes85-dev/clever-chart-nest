@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Briefcase, TrendingUp, TrendingDown, X, Loader2, RefreshCw } from "lucide-react";
 import { useLiveAccount, type LivePosition } from "@/contexts/LiveAccountContext";
-import { useMTAccount } from "@/hooks/useMTAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
