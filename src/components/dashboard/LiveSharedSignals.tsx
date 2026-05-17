@@ -66,9 +66,9 @@ const LiveSharedSignals = () => {
     const qs = new URLSearchParams({
       symbol: sym,
       side: isBuy ? "buy" : "sell",
-      lots: "0.01",
       signalId: s.id,
     });
+    if (s.author_name) qs.set("mentor", s.author_name);
     if (s.entry_price != null) qs.set("entry", String(s.entry_price));
     if (s.stop_loss != null) qs.set("sl", String(s.stop_loss));
     if (s.take_profit != null) qs.set("tp", String(s.take_profit));
