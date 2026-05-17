@@ -15,11 +15,11 @@ import SEO from "@/components/SEO";
 import HeroSection from "@/components/HeroSection";
 import ScrollReveal from "@/components/ScrollReveal";
 import DeferredSection from "@/components/DeferredSection";
+import Scrollspy from "@/components/home/Scrollspy";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const SITE_URL = "https://elitelivetradingroom.com";
 const SponsorsSection = lazy(() => import("@/components/SponsorsSection"));
-const FeaturesSection = lazy(() => import("@/components/FeaturesSection"));
 const TeamSection = lazy(() => import("@/components/TeamSection"));
 const MentoringSection = lazy(() => import("@/components/MentoringSection"));
 const TrustpilotSection = lazy(() => import("@/components/TrustpilotSection"));
@@ -140,12 +140,20 @@ const Index = () => {
         jsonLd={jsonLd}
       />
       <Navbar />
+      <Scrollspy
+        items={[
+          { id: "pilares", label: "Pilares" },
+          { id: "equipo", label: "Equipo" },
+          { id: "mentoria", label: "Mentoría" },
+          { id: "faq", label: "FAQ" },
+          { id: "compliance", label: "Legal" },
+        ]}
+      />
       <main>
       <HeroSection />
-      {/* Narrativa educativa: 1) Respaldo Infinox → 2) Qué ofrecemos → 3) Capacidades → 4) Equipo → 5) Mentoría (CTA) → 6) Prueba social → 7) Dudas → 8) Descubre más → 9) Claridad legal → 10) Contacto / Newsletter */}
+      {/* Narrativa educativa sin duplicar capacidades: 1) Respaldo Infinox → 2) Pilares (Terminal/Comunidad/Webinars/Educación) → 3) Equipo → 4) Mentoría 1:1 → 5) Prueba social → 6) Dudas → 7) Descubre más → 8) Claridad legal → 9) Contacto / Newsletter */}
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
       <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
-      <LazyHomeSection minHeight={520} delay={100}><FeaturesSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><MentoringSection /></LazyHomeSection>
       <LazyHomeSection minHeight={320} delay={100}><TrustpilotSection /></LazyHomeSection>

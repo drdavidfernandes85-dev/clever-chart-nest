@@ -25,8 +25,9 @@ const items = [
 
 const ComplianceBlock = () => (
   <section
+    id="compliance"
     aria-labelledby="compliance-title"
-    className="relative mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
+    className="relative mx-auto w-full max-w-7xl px-4 py-16 scroll-mt-32 sm:px-6 lg:px-8"
   >
     <div className="rounded-3xl border border-primary/20 bg-card/40 p-6 backdrop-blur-2xl shadow-[0_30px_120px_-60px_hsl(45_100%_50%/0.35)] md:p-10">
       <div className="mx-auto max-w-3xl text-center">

@@ -293,8 +293,9 @@ const PlatformPillars = () => {
 
   return (
     <section
+      id="pilares"
       aria-labelledby="platform-pillars-title"
-      className="relative mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 lg:px-8"
+      className="relative mx-auto w-full max-w-7xl px-4 py-20 scroll-mt-32 sm:px-6 lg:px-8"
     >
       <SectionHeader
         eyebrow="La Plataforma"

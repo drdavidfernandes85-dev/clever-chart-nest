@@ -23,7 +23,7 @@ const FAQSection = () => {
   const { t } = useLanguage();
 
   return (
-    <section id="faq" className="relative py-28">
+    <section id="faq" className="relative py-28 scroll-mt-32">
       <div className="absolute inset-0 bg-radial-glow opacity-20" />
       <div className="container relative">
         <ScrollReveal>

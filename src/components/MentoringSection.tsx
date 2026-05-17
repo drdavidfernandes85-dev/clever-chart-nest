@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { GraduationCap, ArrowLeft, Send, CheckCircle, Play } from "lucide-react";
-import { Link } from "react-router-dom";
+import { GraduationCap, ArrowLeft, Send, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ScrollReveal from "@/components/ScrollReveal";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { BookMentoringCTA } from "@/components/home/CTAButtons";
 
 const MentoringSection = () => {
   const [showForm, setShowForm] = useState(false);
@@ -35,7 +35,9 @@ const MentoringSection = () => {
   };
 
   return (
-    <section id="education" className="relative py-28">
+    <section id="mentoria" className="relative py-28 scroll-mt-32">
+      <a id="mentoria_form" className="sr-only" aria-hidden="true" />
+
       <div className="absolute inset-0 bg-secondary/20" />
       <div className="absolute inset-0 bg-grid-pattern opacity-10" />
       <div className="absolute top-0 left-0 right-0 cyber-line" />
@@ -57,25 +59,15 @@ const MentoringSection = () => {
                   {t("mentoring.desc")}
                 </p>
                 <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-                  <Button
-                    size="lg"
-                    className="bg-primary text-primary-foreground hover:bg-primary/80 h-12 px-8 text-sm font-semibold rounded-full"
+                  <BookMentoringCTA
+                    section="mentoring"
+                    label={t("mentoring.book")}
                     onClick={() => setShowForm(true)}
-                  >
-                    {t("mentoring.book")}
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-12 gap-2 rounded-full px-7 text-sm font-semibold border-primary/60 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md"
-                    asChild
-                  >
-                    <Link to="/webinars">
-                      <Play className="h-4 w-4 fill-current" />
-                      Watch Free Live Webinar
-                    </Link>
-                  </Button>
+                  />
                 </div>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Sesiones 1:1 con mentores certificados — contenido educativo, sin recomendaciones de inversión.
+                </p>
               </>
             )}
 
