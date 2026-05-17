@@ -359,6 +359,7 @@ const BottomTabs = () => {
             { v: "executions", l: "Execution Log" },
             { v: "account", l: "Account" },
             { v: "journal", l: "Journal" },
+            { v: "coach", l: "AI Coach" },
           ].map((t) => (
             <TabsTrigger
               key={t.v}
