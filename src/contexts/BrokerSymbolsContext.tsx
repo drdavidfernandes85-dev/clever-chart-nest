@@ -211,7 +211,9 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     setSelectedSymbolInfo(null);
     setSelectedSymbolValid(false);
     fetchOnce(true);
-    const id = window.setInterval(() => fetchOnce(false), 10000);
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") fetchOnce(false);
+    }, 4000);
     return () => {
       cancelled = true;
       window.clearInterval(id);

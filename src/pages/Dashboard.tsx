@@ -434,7 +434,7 @@ const BottomTabs = () => {
 
 const DashboardInner = () => {
   const { t } = useLanguage();
-  const { symbols } = useBrokerSymbols();
+  const { symbols, setSelectedBrokerSymbol } = useBrokerSymbols();
   const { setSymbol: setCtxSymbol } = useQuickTrade();
   const [active, setActive] = useState<string>("EURUSD");
   const [interval, setInterval] = useState("15");
@@ -456,7 +456,8 @@ const DashboardInner = () => {
   // Sync to QuickTrade context so Order Entry trades the chart symbol.
   useEffect(() => {
     setCtxSymbol(active);
-  }, [active, setCtxSymbol]);
+    setSelectedBrokerSymbol(active);
+  }, [active, setCtxSymbol, setSelectedBrokerSymbol]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-neutral-100">
