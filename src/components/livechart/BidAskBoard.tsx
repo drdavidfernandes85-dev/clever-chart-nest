@@ -70,12 +70,18 @@ const BidAskBoard = ({ symbols, onSelect }: Props) => {
     };
 
     const loadAll = async () => {
-      await Promise.all(symbols.map(loadOne));
+      // Sequential with a small gap to avoid hammering the broker API
+      // (120 req/min limit). 10 symbols * 400ms ≈ 4s per cycle.
+      for (const sym of symbols) {
+        if (cancelled) return;
+        await loadOne(sym);
+        await new Promise((r) => setTimeout(r, 400));
+      }
       if (!cancelled) setLoading(false);
     };
 
     loadAll();
-    const id = window.setInterval(loadAll, 5000);
+    const id = window.setInterval(loadAll, 15000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
