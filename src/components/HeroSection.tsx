@@ -141,14 +141,19 @@ const HeroSection = () => {
             {/* Headline */}
             <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
               <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
-                {t("hero.headline.brand")}
+                IX Sala de Trading
               </span>{" "}
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.headline.tail")}</span>
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">en Vivo</span>
             </h1>
 
             {/* Sub-headline */}
             <p className="max-w-xl text-base md:text-lg leading-relaxed font-sans text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-              {t("hero.subheadline")}
+              Educación profesional, comunidad real y herramientas avanzadas para traders de INFINOX.
+            </p>
+
+            {/* Educational positioning */}
+            <p className="max-w-xl text-sm font-semibold text-primary/90">
+              Herramientas y conocimiento — sin señales ni consejos financieros.
             </p>
 
             {/* Live online counter — prominent */}
