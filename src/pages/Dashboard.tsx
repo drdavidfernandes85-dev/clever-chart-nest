@@ -1,61 +1,534 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  BarChart3,
-  MessageSquare,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  PanelRightClose,
-  PanelRightOpen,
-  Zap,
-  X,
-  GraduationCap,
-  Users,
-  Video,
-} from "lucide-react";
-import SEO from "@/components/SEO";
-import KeywordCrossLinks from "@/components/seo/KeywordCrossLinks";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
-import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
-import KpiStrip from "@/components/dashboard/KpiStrip";
+import {
+  Search,
+  RefreshCw,
+  Loader2,
+  Activity,
+  User,
+  ChevronDown,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SEO from "@/components/SEO";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
-
-import AccountSnapshot from "@/components/dashboard/AccountSnapshot";
-import PortfolioOverview from "@/components/dashboard/PortfolioOverview";
-import Watchlist from "@/components/dashboard/Watchlist";
-
-
-import MarketMovers from "@/components/dashboard/MarketMovers";
+import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
-import RiskMeter from "@/components/dashboard/RiskMeter";
-import RecentActivity from "@/components/dashboard/RecentActivity";
-
-
-
-import WebinarHeroBanner from "@/components/webinars/WebinarHeroBanner";
-import { useQuickTrade } from "@/contexts/QuickTradeContext";
-import { useMTAccount } from "@/hooks/useMTAccount";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { useDashboardLayout } from "@/hooks/useDashboardLayout";
-import CustomizableDashboardGrid from "@/components/dashboard/customize/CustomizableDashboardGrid";
-import CustomizeToolbar from "@/components/dashboard/customize/CustomizeToolbar";
-import type { WidgetId } from "@/components/dashboard/customize/presets";
-import { useAuth } from "@/contexts/AuthContext";
-import { useMentorTierProgress } from "@/hooks/useMentorTierProgress";
-import MentorTierBanner from "@/components/social/MentorTierBanner";
-import MentorTierCelebration from "@/components/social/MentorTierCelebration";
-import SmartInsights from "@/components/ai/SmartInsights";
-import AICopilot from "@/components/ai/AICopilot";
-import OpenAccountBanner from "@/components/dashboard/OpenAccountBanner";
-import LivePortfolioWidget from "@/components/dashboard/LivePortfolioWidget";
+import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWidget";
-import LiveAccountDebugPanel from "@/components/dashboard/LiveAccountDebugPanel";
-import { supabase } from "@/integrations/supabase/client";
-import { LiveAccountProvider, useLiveAccount } from "@/contexts/LiveAccountContext";
-import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
+import TradeJournal from "@/components/dashboard/TradeJournal";
+import {
+  LiveAccountProvider,
+  useLiveAccount,
+  fmtMoney,
+} from "@/contexts/LiveAccountContext";
+import {
+  BrokerSymbolsProvider,
+  useBrokerSymbols,
+} from "@/contexts/BrokerSymbolsContext";
+import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { MARKET_UNIVERSE } from "@/lib/markets";
+import { useLanguage } from "@/i18n/LanguageContext";
+
+const TIMEFRAMES = [
+  { label: "1m", value: "1" },
+  { label: "5m", value: "5" },
+  { label: "15m", value: "15" },
+  { label: "1H", value: "60" },
+  { label: "4H", value: "240" },
+  { label: "1D", value: "D" },
+];
+
+/** Map broker symbol → TradingView symbol. */
+function brokerToTv(sym: string): string {
+  const u = sym.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const direct = MARKET_UNIVERSE.find(
+    (m) => m.symbol.toUpperCase().replace(/[^A-Z0-9]/g, "") === u,
+  );
+  if (direct) return direct.tv;
+  if (u === "XAUUSD" || u === "GOLD") return "OANDA:XAUUSD";
+  if (u === "XAGUSD" || u === "SILVER") return "OANDA:XAGUSD";
+  if (u === "BTCUSD") return "BINANCE:BTCUSDT";
+  if (u === "ETHUSD") return "BINANCE:ETHUSDT";
+  if (u === "US30" || u === "DJ30") return "TVC:DJI";
+  if (u === "NAS100" || u === "USTEC") return "TVC:NDX";
+  if (u === "SPX500" || u === "US500") return "TVC:SPX";
+  if (u === "GER40" || u === "DAX40") return "TVC:DAX";
+  if (/^[A-Z]{6}$/.test(u)) return `FX:${u}`;
+  if (u.endsWith("USDT")) return `BINANCE:${u}`;
+  if (/^[A-Z]{1,5}$/.test(u)) return `NASDAQ:${u}`;
+  return u;
+}
+
+const HeaderStat = ({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "positive" | "negative" | "primary";
+}) => (
+  <div className="flex flex-col leading-tight">
+    <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-neutral-500">
+      {label}
+    </span>
+    <span
+      className={`font-mono text-[12px] font-bold tabular-nums ${
+        tone === "positive"
+          ? "text-emerald-400"
+          : tone === "negative"
+            ? "text-red-400"
+            : tone === "primary"
+              ? "text-[#FFCD05]"
+              : "text-neutral-100"
+      }`}
+    >
+      {value}
+    </span>
+  </div>
+);
+
+const TerminalHeader = () => {
+  const { liveAccount, connected, refreshing, refresh } = useLiveAccount();
+  const c = liveAccount?.currency ?? "USD";
+  const pnl = liveAccount?.profit ?? 0;
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-neutral-800/80 bg-[#0a0a0a]/95 backdrop-blur-xl">
+      <div className="flex h-11 items-center gap-3 px-3 sm:px-4 pl-14 lg:pl-4">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-[#FFCD05] text-black">
+            <Activity className="h-3.5 w-3.5" strokeWidth={3} />
+          </div>
+          <span className="font-heading text-[13px] font-bold tracking-[0.14em] text-neutral-100">
+            INFINOX <span className="text-[#FFCD05]">IX</span> TERMINAL
+          </span>
+        </div>
+
+        {connected && liveAccount ? (
+          <div className="flex items-center gap-4 ml-2 pl-3 border-l border-neutral-800 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400">
+                MT5 LIVE
+              </span>
+            </div>
+            <HeaderStat label="Account" value={`#${liveAccount.login}`} />
+            <HeaderStat label="Server" value={liveAccount.server || "—"} />
+            <HeaderStat label="Balance" value={fmtMoney(liveAccount.balance, c)} />
+            <HeaderStat
+              label="Equity"
+              value={fmtMoney(liveAccount.equity, c)}
+              tone="primary"
+            />
+            <HeaderStat
+              label="Floating P&L"
+              value={fmtMoney(pnl, c)}
+              tone={pnl >= 0 ? "positive" : "negative"}
+            />
+            <HeaderStat label="Margin" value={fmtMoney(liveAccount.margin, c)} />
+            <HeaderStat
+              label="Free Margin"
+              value={fmtMoney(liveAccount.marginFree, c)}
+              tone="positive"
+            />
+          </div>
+        ) : (
+          <span className="ml-2 pl-3 border-l border-neutral-800 font-mono text-[10px] uppercase tracking-widest text-neutral-500">
+            ● MT5 disconnected
+          </span>
+        )}
+
+        <div className="ml-auto flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => refresh()}
+            disabled={refreshing}
+            title="Refresh account"
+            className="flex h-7 w-7 items-center justify-center rounded border border-neutral-800 bg-[#0f0f0f] text-neutral-400 hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+          <NotificationsBell />
+          <Link
+            to="/profile"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFCD05] text-[11px] font-bold text-black hover:bg-[#FFCD05]/85 transition-colors"
+            aria-label="Profile"
+          >
+            <User className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const MarketWatchPanel = ({
+  active,
+  onSelect,
+}: {
+  active: string;
+  onSelect: (sym: string) => void;
+}) => {
+  const { symbols, loading, isLive } = useBrokerSymbols();
+  const [query, setQuery] = useState("");
+  const [tab, setTab] = useState<"all" | string>("all");
+
+  const assetClasses = useMemo(() => {
+    const set = new Set<string>();
+    symbols.forEach((s) => {
+      const c = (s.assetClass || "").trim();
+      if (c) set.add(c);
+    });
+    return ["all", ...Array.from(set).sort()];
+  }, [symbols]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toUpperCase();
+    return symbols
+      .filter((s) => (tab === "all" ? true : (s.assetClass || "") === tab))
+      .filter((s) => {
+        if (!q) return true;
+        return (
+          (s.brokerSymbol || s.symbol).toUpperCase().includes(q) ||
+          (s.description || "").toUpperCase().includes(q)
+        );
+      })
+      .slice(0, 500);
+  }, [symbols, query, tab]);
+
+  return (
+    <aside className="hidden lg:flex flex-col rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden h-[calc(100vh-7rem)]">
+      <div className="flex items-center justify-between border-b border-neutral-800/80 px-3 py-2">
+        <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
+          Market Watch
+        </h2>
+        <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-500">
+          {isLive ? (
+            <span className="text-emerald-400">● {symbols.length}</span>
+          ) : loading ? (
+            <Loader2 className="h-3 w-3 animate-spin text-[#FFCD05]" />
+          ) : (
+            <span className="text-neutral-500">—</span>
+          )}
+        </span>
+      </div>
+      <div className="px-2 py-2 border-b border-neutral-800/80">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-500" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search symbols…"
+            className="h-7 pl-7 bg-[#050505] border-neutral-800 text-[11px] font-mono placeholder:text-neutral-600 focus-visible:ring-[#FFCD05]/40 rounded"
+          />
+        </div>
+        {assetClasses.length > 1 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {assetClasses.slice(0, 6).map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setTab(c)}
+                className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest border transition-colors ${
+                  tab === c
+                    ? "bg-[#FFCD05]/15 border-[#FFCD05]/40 text-[#FFCD05]"
+                    : "border-neutral-800 text-neutral-500 hover:text-neutral-300"
+                }`}
+              >
+                {c === "all" ? "All" : c}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-neutral-800/80 bg-[#0a0a0a] px-3 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+        <span>Symbol</span>
+        <span>Digits</span>
+      </div>
+      <ul className="flex-1 overflow-y-auto divide-y divide-neutral-800/60">
+        {loading && filtered.length === 0 && (
+          <li className="px-3 py-5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin" /> Loading broker symbols…
+          </li>
+        )}
+        {!loading && filtered.length === 0 && (
+          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">
+            No matches.
+          </li>
+        )}
+        {filtered.map((s) => {
+          const sym = s.brokerSymbol || s.symbol;
+          const isActive = sym.toUpperCase() === active.toUpperCase();
+          return (
+            <li key={sym}>
+              <button
+                type="button"
+                onClick={() => onSelect(sym)}
+                className={`w-full grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-1.5 text-left transition-colors ${
+                  isActive
+                    ? "bg-[#FFCD05]/10 text-[#FFCD05]"
+                    : "text-neutral-200 hover:bg-neutral-900/60"
+                }`}
+              >
+                <div className="min-w-0">
+                  <div className="font-mono text-[11px] font-bold truncate">{sym}</div>
+                  {s.description && (
+                    <div className="text-[9px] text-neutral-500 truncate">
+                      {s.description}
+                    </div>
+                  )}
+                </div>
+                <span className="font-mono text-[9px] tabular-nums text-neutral-500">
+                  {s.digits ?? "—"}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </aside>
+  );
+};
+
+const ChartBidAskHeader = () => {
+  const { tick, selectedSymbolInfo } = useBrokerSymbols();
+  const digits = Number(selectedSymbolInfo?.digits) || 5;
+  const fmt = (v: number | null | undefined) =>
+    v == null
+      ? "—"
+      : Number(v).toLocaleString("en-US", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+  const bid = tick?.bid != null ? Number(tick.bid) : null;
+  const ask = tick?.ask != null ? Number(tick.ask) : null;
+  const spread = bid != null && ask != null ? Math.max(0, ask - bid) : null;
+  const spreadPts =
+    spread != null && selectedSymbolInfo?.point
+      ? spread / Number(selectedSymbolInfo.point)
+      : null;
+
+  return (
+    <div className="flex items-center gap-6">
+      <div className="flex flex-col leading-tight">
+        <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-red-400/80">
+          Bid
+        </span>
+        <span className="font-mono text-[18px] font-bold tabular-nums text-red-400">
+          {fmt(bid)}
+        </span>
+      </div>
+      <div className="flex flex-col leading-tight">
+        <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-emerald-400/80">
+          Ask
+        </span>
+        <span className="font-mono text-[18px] font-bold tabular-nums text-emerald-400">
+          {fmt(ask)}
+        </span>
+      </div>
+      <div className="flex flex-col leading-tight">
+        <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+          Spread
+        </span>
+        <span className="font-mono text-[12px] tabular-nums text-neutral-300">
+          {spreadPts != null ? `${spreadPts.toFixed(1)} pts` : "—"}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const BottomTabs = () => {
+  const { liveAccount, connected } = useLiveAccount();
+  const c = liveAccount?.currency ?? "USD";
+
+  return (
+    <div className="rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden">
+      <Tabs defaultValue="positions" className="w-full">
+        <TabsList className="w-full justify-start rounded-none border-b border-neutral-800/80 bg-[#0a0a0a] h-9 p-0">
+          {[
+            { v: "positions", l: "Positions" },
+            { v: "orders", l: "Orders" },
+            { v: "executions", l: "Execution Log" },
+            { v: "account", l: "Account" },
+            { v: "journal", l: "Journal" },
+          ].map((t) => (
+            <TabsTrigger
+              key={t.v}
+              value={t.v}
+              className="rounded-none border-r border-neutral-800/80 h-9 px-4 text-[10px] font-mono font-semibold uppercase tracking-[0.18em] text-neutral-400 data-[state=active]:bg-[#0f0f0f] data-[state=active]:text-[#FFCD05] data-[state=active]:border-b-2 data-[state=active]:border-b-[#FFCD05]"
+            >
+              {t.l}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="positions" className="m-0 p-0">
+          <OpenPositionsPanel />
+        </TabsContent>
+
+        <TabsContent value="orders" className="m-0 p-6">
+          <div className="text-center text-[11px] font-mono uppercase tracking-widest text-neutral-500">
+            No pending orders.
+          </div>
+        </TabsContent>
+
+        <TabsContent value="executions" className="m-0 p-3">
+          <TradeExecutionLogWidget />
+        </TabsContent>
+
+        <TabsContent value="account" className="m-0 p-4">
+          {!connected || !liveAccount ? (
+            <div className="text-center text-[11px] font-mono uppercase tracking-widest text-neutral-500">
+              MT5 account not connected.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                ["Login", `#${liveAccount.login}`],
+                ["Server", liveAccount.server || "—"],
+                ["Currency", liveAccount.currency || "USD"],
+                ["Leverage", liveAccount.leverage ? `1:${liveAccount.leverage}` : "—"],
+                ["Balance", fmtMoney(liveAccount.balance, c)],
+                ["Equity", fmtMoney(liveAccount.equity, c)],
+                ["Margin", fmtMoney(liveAccount.margin, c)],
+                ["Free Margin", fmtMoney(liveAccount.marginFree, c)],
+                ["Floating P&L", fmtMoney(liveAccount.profit, c)],
+                ["Open Positions", String(liveAccount.openPositionsCount)],
+                ["Status", liveAccount.status],
+                [
+                  "Last Sync",
+                  liveAccount.lastSynced
+                    ? new Date(liveAccount.lastSynced).toLocaleTimeString()
+                    : "—",
+                ],
+              ].map(([k, v]) => (
+                <div
+                  key={k}
+                  className="rounded border border-neutral-800/80 bg-[#0a0a0a] px-3 py-2"
+                >
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+                    {k}
+                  </div>
+                  <div className="font-mono text-[12px] font-bold tabular-nums text-neutral-100 mt-0.5">
+                    {v}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="journal" className="m-0 p-3">
+          <TradeJournal />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+const DashboardInner = () => {
+  const { t } = useLanguage();
+  const { symbols } = useBrokerSymbols();
+  const { setSymbol: setCtxSymbol } = useQuickTrade();
+  const [active, setActive] = useState<string>("EURUSD");
+  const [interval, setInterval] = useState("15");
+
+  // Default to first available broker symbol once loaded
+  useEffect(() => {
+    if (!symbols.length) return;
+    const pick =
+      symbols.find((s) => (s.brokerSymbol || s.symbol).toUpperCase() === "EURUSD")
+        ?.brokerSymbol ||
+      symbols[0].brokerSymbol ||
+      symbols[0].symbol;
+    setActive(pick);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbols.length]);
+
+  const tvSymbol = useMemo(() => brokerToTv(active), [active]);
+
+  // Sync to QuickTrade context so Order Entry trades the chart symbol.
+  useEffect(() => {
+    setCtxSymbol(active);
+  }, [active, setCtxSymbol]);
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-neutral-100">
+      <SEO
+        title={t("dash.seo.title")}
+        description={t("dash.seo.desc")}
+        keywords={t("dash.seo.keywords")}
+        canonical="https://www.salatradingelite.com/dashboard"
+      />
+
+      <TerminalHeader />
+
+      <div className="p-2 lg:p-3">
+        <div className="grid gap-2 lg:gap-3 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
+          {/* LEFT — Market Watch */}
+          <MarketWatchPanel active={active} onSelect={setActive} />
+
+          {/* CENTER — Bid/Ask + Chart + Tabs */}
+          <section className="flex flex-col gap-2 lg:gap-3 min-w-0">
+            <div className="rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden">
+              {/* Chart toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800/80 px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-heading text-[14px] font-bold tracking-wide text-neutral-100">
+                    {active}
+                  </span>
+                  <ChartBidAskHeader />
+                </div>
+                <div className="flex items-center gap-0.5 rounded border border-neutral-800 bg-[#050505] p-0.5">
+                  {TIMEFRAMES.map((tf) => (
+                    <button
+                      key={tf.value}
+                      onClick={() => setInterval(tf.value)}
+                      className={`rounded px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors ${
+                        interval === tf.value
+                          ? "bg-[#FFCD05] text-black"
+                          : "text-neutral-400 hover:text-neutral-100"
+                      }`}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Chart canvas */}
+              <div className="relative h-[60vh] lg:h-[calc(100vh-22rem)]">
+                <TradingViewAdvancedIframe
+                  key={`${tvSymbol}-${interval}`}
+                  symbol={tvSymbol}
+                  interval={interval}
+                  height="100%"
+                  allowSymbolChange={false}
+                  hideSideToolbar={false}
+                  withDateRanges={true}
+                  saveImage={true}
+                />
+              </div>
+            </div>
+
+            {/* Bottom tabs */}
+            <BottomTabs />
+          </section>
+
+          {/* RIGHT — Order Entry */}
+          <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5">
+            <QuickTradePanel />
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = () => (
   <LiveAccountProvider>
@@ -64,492 +537,5 @@ const Dashboard = () => (
     </BrokerSymbolsProvider>
   </LiveAccountProvider>
 );
-
-const DashboardInner = () => {
-  const [tickerOpen, setTickerOpen] = useState(false);
-  const [railOpen, setRailOpen] = useState(true);
-  const [editingLayout, setEditingLayout] = useState(false);
-  const { open: tradeOpen, openTrade, close: closeTrade } = useQuickTrade();
-  const { account } = useMTAccount();
-  const { t, locale } = useLanguage();
-  const { user, session, ready, isRefreshing } = useAuth();
-  const { currentTier, newlyUnlocked, acknowledge } = useMentorTierProgress();
-
-  // Live account connection state — sourced from LiveAccountProvider (which calls get-live-account).
-  const { connected: accountConnected, liveAccount, positions: livePositions } = useLiveAccount();
-  const isConnected = accountConnected;
-
-  const {
-    preset,
-    layouts,
-    dirty,
-    saving,
-    onLayoutChange,
-    applyPreset,
-    resetDefault,
-    save,
-  } = useDashboardLayout();
-
-  // Map widget id → renderable node (memoized so RGL doesn't re-mount widgets)
-  const widgets = useMemo<Record<WidgetId, React.ReactNode>>(
-    () => ({
-      portfolio: <PortfolioOverview />,
-      risk: <RiskMeter />,
-      watchlist: <Watchlist />,
-      marketMovers: <MarketMovers />,
-      recentActivity: <RecentActivity />,
-    }),
-    [],
-  );
-
-  // Persist rail state
-  useEffect(() => {
-    const saved = localStorage.getItem("eltr.rail.open");
-    if (saved !== null) setRailOpen(saved === "1");
-  }, []);
-  useEffect(() => {
-    console.log("Current session state on dashboard load", {
-      ready,
-      isRefreshing,
-      hasUser: !!user,
-      hasSession: !!session,
-      expiresAt: session?.expires_at ?? null,
-    });
-  }, [ready, isRefreshing, user, session]);
-  useEffect(() => {
-    localStorage.setItem("eltr.rail.open", railOpen ? "1" : "0");
-  }, [railOpen]);
-
-  // Lock body scroll only when the desktop Quick Trade is opened on mobile
-  // (mobile bottom sheet). The shared layout handles drawer locking.
-  useEffect(() => {
-    const isMobile =
-      typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
-    const lock = tradeOpen && isMobile;
-    document.body.style.overflow = lock ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [tradeOpen]);
-
-  const jsonLd = useMemo(
-    () => [
-      {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        name: t("dash.seo.title"),
-        description: t("dash.seo.desc"),
-        applicationCategory: "FinanceApplication",
-        operatingSystem: "Web",
-        inLanguage: locale === "pt" ? "pt-BR" : locale,
-        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-      },
-      {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.salatradingelite.com/" },
-          { "@type": "ListItem", position: 2, name: t("dash.h1"), item: "https://www.salatradingelite.com/dashboard" },
-        ],
-      },
-    ],
-    [t, locale],
-  );
-
-  return (
-    <>
-      <SEO
-        title={t("dash.seo.title")}
-        description={t("dash.seo.desc")}
-        keywords={t("dash.seo.keywords")}
-        canonical="https://www.salatradingelite.com/dashboard"
-        type="website"
-        jsonLd={jsonLd}
-      />
-      {/* Main shell */}
-      <div className="relative flex-1 min-w-0 flex flex-col">
-        {/* Top header — clean fiery glass, no halo */}
-        <header className="relative z-40 sticky top-0 border-b border-primary/20 bg-black/70 backdrop-blur-2xl">
-          <div className="flex h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-6 lg:px-12 pl-14 lg:pl-6">
-            <h1 className="hidden xl:block font-proxima text-sm font-semibold text-foreground shrink-0">
-              {t("dash.commandTitle1")} <span className="text-primary">{t("dash.commandTitle2")}</span>
-            </h1>
-
-            {/* Global search */}
-            <div className="relative flex-1 max-w-lg ml-auto xl:ml-8 min-w-0">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder={t("dash.search")}
-                className="h-9 pl-10 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40 rounded-xl"
-              />
-            </div>
-
-            <div className="flex items-center gap-1 sm:gap-2 ml-auto xl:ml-0 shrink-0">
-              <div className="hidden sm:block">
-                <AccountSnapshot />
-              </div>
-
-              {/* Connected MT5 — compact status pill */}
-              {isConnected && (
-                <span
-                  className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-[hsl(145_65%_50%)]/30 bg-[hsl(145_65%_50%)]/10 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-[hsl(145_65%_50%)]"
-                  title={`MT5 #${account?.login} • Connected MT5 account`}
-                >
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-60" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[hsl(145_65%_50%)]" />
-                  </span>
-                  MT5 · #{account?.login}
-                </span>
-              )}
-
-              {/* Launch Advanced Trading Terminal — secondary header CTA */}
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="hidden lg:inline-flex h-9 px-3 border-primary/40 bg-primary/5 text-primary hover:bg-primary/15 hover:text-primary font-bold text-xs uppercase tracking-wider rounded-lg"
-              >
-                <Link to="/live-chart" className="flex items-center gap-1.5">
-                  <BarChart3 className="h-3.5 w-3.5" />
-                  {t("dash.terminal")}
-                </Link>
-              </Button>
-
-              {/* TRADE — primary header CTA, prominent */}
-              <Button
-                onClick={() => openTrade()}
-                size="sm"
-                className="hidden sm:inline-flex h-10 px-4 bg-primary text-primary-foreground hover:bg-primary font-bold text-xs uppercase tracking-[0.18em] rounded-lg shadow-[0_10px_30px_-10px_hsl(48_100%_51%/0.7)] hover:shadow-[0_14px_40px_-10px_hsl(48_100%_51%/0.9)] hover:-translate-y-px transition-all"
-              >
-                <Zap className="h-4 w-4 mr-1.5" />
-                {t("dash.trade")}
-              </Button>
-
-              <button
-                onClick={() => setTickerOpen((v) => !v)}
-                className="hidden lg:inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/50 px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
-                aria-expanded={tickerOpen}
-                aria-label="Toggle market ticker"
-              >
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                </span>
-                {t("dash.markets")}
-                {tickerOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </button>
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="hidden md:inline-flex text-muted-foreground hover:text-primary"
-              >
-                <Link to="/chatroom" aria-label="Chatroom">
-                  <MessageSquare className="h-4 w-4" />
-                </Link>
-              </Button>
-              <NotificationsBell />
-              <button
-                onClick={() => setRailOpen((v) => !v)}
-                className="hidden xl:inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                aria-expanded={railOpen}
-                aria-label={railOpen ? "Hide community" : "Show community"}
-              >
-                {railOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-              </button>
-              <Link
-                to="/profile"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground hover:bg-primary/85 transition-colors"
-                aria-label="Profile"
-              >
-                A
-              </Link>
-            </div>
-          </div>
-
-          {/* Collapsible live ticker */}
-          <AnimatePresence initial={false}>
-            {tickerOpen && (
-              <motion.div
-                key="ticker"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="overflow-hidden"
-              >
-                <ForexTickerBar />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </header>
-
-        {/* Page body */}
-        <main className="relative z-10 flex-1 px-3 sm:px-8 lg:px-14 py-8 sm:py-12 lg:py-14 space-y-10 sm:space-y-12 lg:space-y-14 pb-28 lg:pb-16">
-          {/* SEO H1 — visually subtle but semantically primary */}
-          <header className="sr-only">
-            <h1>{t("dash.h1")}</h1>
-            <p>{t("dash.intro")}</p>
-          </header>
-
-          {/* Live Portfolio — real-time MT5 account snapshot */}
-          <LivePortfolioWidget />
-
-          {/* TEMP: Live Account Debug — dev-only raw response viewer */}
-          <LiveAccountDebugPanel />
-
-          {/* Trade Execution Log — recent execute-trade results */}
-          <TradeExecutionLogWidget />
-
-          {/* Prominent Open Infinox Account banner — shown to users without a connected live account */}
-          <OpenAccountBanner show={!isConnected} />
-
-          {/* Mentor tier banner — celebrates current rank, dismissible per-tier */}
-          <MentorTierBanner tier={currentTier} userId={user?.id ?? null} />
-          {/* 0. Flagship — Daily Live Webinar banner */}
-          <WebinarHeroBanner />
-
-          {/* 1b. AI Smart Insights — flagship intelligence card */}
-          <SmartInsights />
-
-          {/* 2. Customization toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="font-proxima text-base sm:text-lg font-bold text-foreground">
-                {t("dash.commandTitle1")}{" "}
-                <span className="text-primary">{t("dash.commandTitle2")}</span>
-              </h2>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                {editingLayout ? t("dash.editor.editing") : t("dash.editor.idle")}
-              </p>
-            </div>
-            <CustomizeToolbar
-              editing={editingLayout}
-              setEditing={setEditingLayout}
-              preset={preset}
-              applyPreset={applyPreset}
-              save={save}
-              resetDefault={resetDefault}
-              dirty={dirty}
-              saving={saving}
-            />
-          </div>
-
-          {/* 2b. Top KPI row — first item under Command Center */}
-          <KpiStrip />
-
-          {/* 3. Customizable widget grid */}
-          <CustomizableDashboardGrid
-            editing={editingLayout}
-            layouts={layouts}
-            onLayoutChange={onLayoutChange}
-            widgets={widgets}
-          />
-
-          {/* 3b. SEO content — keyword-rich H2/H3 block, indexable but visually elegant */}
-          <section
-            aria-labelledby="dash-seo-section-title"
-            className="rounded-3xl border border-primary/15 bg-gradient-to-br from-card/40 via-card/20 to-transparent backdrop-blur-2xl p-6 md:p-10"
-          >
-            <header className="mb-6 max-w-3xl">
-              <h2
-                id="dash-seo-section-title"
-                className="font-heading text-xl md:text-3xl font-bold text-foreground"
-              >
-                {t("dash.seo.sectionTitle")}
-              </h2>
-              <p className="text-sm md:text-base text-muted-foreground mt-2 leading-relaxed">
-                {t("dash.seo.sectionDesc")}
-              </p>
-            </header>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                { t: t("dash.seo.f1Title"), d: t("dash.seo.f1Desc") },
-                { t: t("dash.seo.f2Title"), d: t("dash.seo.f2Desc") },
-                { t: t("dash.seo.f3Title"), d: t("dash.seo.f3Desc") },
-                { t: t("dash.seo.f4Title"), d: t("dash.seo.f4Desc") },
-                { t: t("dash.seo.f5Title"), d: t("dash.seo.f5Desc") },
-                { t: t("dash.seo.f6Title"), d: t("dash.seo.f6Desc") },
-              ].map((f) => (
-                <article
-                  key={f.t}
-                  className="rounded-2xl border border-border/40 bg-card/40 p-5 hover:border-primary/30 transition-colors"
-                >
-                  <h3 className="font-proxima text-sm md:text-base font-bold text-foreground">
-                    {f.t}
-                  </h3>
-                  <p className="text-xs md:text-sm text-muted-foreground mt-2 leading-relaxed">
-                    {f.d}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          {/* 4. Related — internal-link block (SEO + UX) */}
-          <section
-            aria-labelledby="dash-related-title"
-            className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/[0.06] via-card/40 to-transparent backdrop-blur-2xl p-6 md:p-8"
-          >
-            <div className="mb-5">
-              <h2
-                id="dash-related-title"
-                className="font-heading text-xl md:text-2xl font-bold text-foreground"
-              >
-                {t("dash.related.title")}
-              </h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {t("dash.related.desc")}
-              </p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <Link
-                to="/education"
-                className="group flex items-start gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 hover:border-primary/40 hover:bg-primary/5 transition"
-              >
-                <div className="rounded-xl bg-primary/15 p-2.5 shrink-0">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-proxima text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                    {t("dash.related.education")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    {t("dash.related.educationDesc")}
-                  </p>
-                </div>
-              </Link>
-              <Link
-                to="/chatroom"
-                className="group flex items-start gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 hover:border-primary/40 hover:bg-primary/5 transition"
-              >
-                <div className="rounded-xl bg-primary/15 p-2.5 shrink-0">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-proxima text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                    {t("dash.related.community")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    {t("dash.related.communityDesc")}
-                  </p>
-                </div>
-              </Link>
-              <Link
-                to="/webinars"
-                className="group flex items-start gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 hover:border-primary/40 hover:bg-primary/5 transition"
-              >
-                <div className="rounded-xl bg-primary/15 p-2.5 shrink-0">
-                  <Video className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-proxima text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                    {t("dash.related.webinars")}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    {t("dash.related.webinarsDesc")}
-                  </p>
-                </div>
-              </Link>
-            </div>
-          </section>
-
-          <KeywordCrossLinks current="dashboard" />
-
-        </main>
-      </div>
-
-      {/* Floating Quick Trade FAB — mobile / tablet only */}
-      <button
-        onClick={() => openTrade()}
-        aria-label="Open Quick Trade"
-        className="lg:hidden fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_15px_40px_-8px_hsl(48_100%_51%/0.7)] hover:scale-110 active:scale-95 transition-transform"
-      >
-        <Zap className="h-6 w-6" />
-        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background" />
-        </span>
-      </button>
-
-      {/* Quick Trade — mobile bottom sheet + desktop centered dialog */}
-      <AnimatePresence>
-        {tradeOpen && (
-          <>
-            {/* Backdrop (both) */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={closeTrade}
-              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm"
-            />
-
-            {/* Mobile bottom sheet */}
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="lg:hidden fixed inset-x-0 bottom-0 z-50 max-h-[92vh] overflow-y-auto rounded-t-3xl bg-card border-t border-border/40 shadow-2xl"
-              style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-            >
-              <div className="sticky top-0 z-10 flex items-center justify-between bg-card/95 backdrop-blur-xl border-b border-border/30 px-4 py-3">
-                <div className="mx-auto h-1 w-10 rounded-full bg-muted-foreground/30 absolute left-1/2 -translate-x-1/2 top-1.5" />
-                <h3 className="font-heading text-sm font-bold text-foreground mt-1">
-                  {t("dash.quickTrade")}
-                </h3>
-                <button
-                  onClick={closeTrade}
-                  aria-label={t("common.close")}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40 mt-1"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="p-3">
-                <QuickTradePanel compact />
-              </div>
-            </motion.div>
-
-            {/* Desktop centered dialog */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 8 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="hidden lg:flex fixed inset-0 z-50 items-center justify-center p-6 pointer-events-none"
-            >
-              <div className="pointer-events-auto w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-card border border-border/50 shadow-2xl">
-                <div className="sticky top-0 z-10 flex items-center justify-between bg-card/95 backdrop-blur-xl border-b border-border/40 px-5 py-3">
-                  <h3 className="font-heading text-sm font-bold text-foreground">
-                    {t("dash.quickTrade")}
-                  </h3>
-                  <button
-                    onClick={closeTrade}
-                    aria-label={t("common.close")}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="p-4">
-                  <QuickTradePanel compact />
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Floating AI Assistant — bottom-right glowing yellow */}
-      <AICopilot />
-
-      {/* Tier-up celebration — only fires once per tier per user */}
-      <MentorTierCelebration tier={newlyUnlocked} onClose={acknowledge} />
-    </>
-  );
-};
 
 export default Dashboard;
