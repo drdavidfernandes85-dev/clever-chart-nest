@@ -331,7 +331,16 @@ const PlatformPillars = () => {
                     asChild
                     className="h-11 gap-2 rounded-full bg-[#FFCD05] px-6 font-bold text-black hover:bg-[#FFE066] shadow-[0_0_30px_hsl(45_100%_50%/0.35)]"
                   >
-                    <Link to={p.cta.to}>
+                    <Link
+                      to={p.cta.to}
+                      onClick={() =>
+                        track("cta_click", {
+                          cta: p.cta.label,
+                          section: `pillar_${p.eyebrow.toLowerCase().replace(/\s+/g, "_")}`,
+                          destination: p.cta.to,
+                        })
+                      }
+                    >
                       <p.cta.icon className="h-4 w-4" /> {p.cta.label}{" "}
                       <ArrowRight className="h-4 w-4" />
                     </Link>
