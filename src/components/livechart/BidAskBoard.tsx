@@ -1,71 +1,86 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Layers, Loader2 } from "lucide-react";
-import { fetchMarketQuotes, type LiveQuote } from "@/lib/markets";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
-  symbols: string[]; // display labels
+  /** Broker symbol names (e.g. "EURUSD", "XAUUSD"). */
+  symbols: string[];
   onSelect?: (label: string) => void;
 }
 
-/**
- * Multi-pair Bid/Ask board (Nelogica BlackArrow style).
- * Uses live `fetch-market-quotes` prices and derives a typical spread per
- * asset class for display. Refreshes every 3s.
- */
-const SPREADS: Record<string, number> = {
-  // pip / point fraction by symbol family — typical broker spread
-  forex: 0.00008,
-  jpy: 0.008,
-  metal: 0.15,
-  index: 0.5,
-  crypto: 0.5,
-  stock: 0.02,
-};
-
-function classify(label: string): keyof typeof SPREADS {
-  const u = label.toUpperCase();
-  if (u.includes("JPY")) return "jpy";
-  if (u.includes("XAU") || u.includes("GOLD") || u.includes("XAG") || u.includes("SILVER")) return "metal";
-  if (/^(US30|NAS100|SPX500|GER40|DAX|S&P|NASDAQ|DOW|FTSE|NIKKEI)/i.test(label)) return "index";
-  if (u.includes("BTC") || u.includes("ETH") || u.includes("SOL") || u.includes("USDT")) return "crypto";
-  if (/^[A-Z]{3}\/?[A-Z]{3}$/i.test(label)) return "forex";
-  return "stock";
+interface TickRow {
+  bid: number | null;
+  ask: number | null;
+  last: number | null;
+  digits: number;
 }
 
+/**
+ * Multi-pair Bid/Ask board powered by get-mt5-symbol-data.
+ * Fetches a fresh tick per symbol every 5s from the connected MT5 account.
+ */
 const BidAskBoard = ({ symbols, onSelect }: Props) => {
-  const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
+  const [rows, setRows] = useState<Record<string, TickRow>>({});
   const [loading, setLoading] = useState(true);
   const [flash, setFlash] = useState<Record<string, "up" | "down" | null>>({});
+  const prevPrice = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    let cancelled = false;
-    let prev: Record<string, number> = {};
-    const load = async () => {
-      const list = await fetchMarketQuotes();
-      if (cancelled) return;
-      const map: Record<string, LiveQuote> = {};
-      const fl: Record<string, "up" | "down" | null> = {};
-      for (const q of list) {
-        const k = q.symbol.toUpperCase();
-        map[k] = q;
-        if (prev[k] != null && q.price != null) {
-          if (q.price > prev[k]) fl[k] = "up";
-          else if (q.price < prev[k]) fl[k] = "down";
-        }
-        if (q.price != null) prev[k] = q.price;
-      }
-      setQuotes(map);
-      setFlash(fl);
+    if (!symbols.length) {
       setLoading(false);
-      window.setTimeout(() => setFlash({}), 700);
+      return;
+    }
+    let cancelled = false;
+
+    const loadOne = async (sym: string) => {
+      try {
+        const { data } = await supabase.functions.invoke("get-mt5-symbol-data", {
+          body: { selectedSymbol: sym },
+        });
+        if (cancelled) return;
+        if (data?.success && data?.tick) {
+          const tick = data.tick;
+          const info = data.selectedSymbolInfo;
+          const bid = tick.bid != null ? Number(tick.bid) : null;
+          const ask = tick.ask != null ? Number(tick.ask) : null;
+          const last = tick.last != null ? Number(tick.last) : bid != null && ask != null ? (bid + ask) / 2 : null;
+          const digits = Number(info?.digits) || 5;
+          setRows((r) => ({ ...r, [sym]: { bid, ask, last, digits } }));
+          if (last != null) {
+            const prev = prevPrice.current[sym];
+            if (prev != null && prev !== last) {
+              const dir = last > prev ? "up" : "down";
+              setFlash((f) => ({ ...f, [sym]: dir }));
+              window.setTimeout(
+                () =>
+                  setFlash((f) => {
+                    const n = { ...f };
+                    delete n[sym];
+                    return n;
+                  }),
+                700,
+              );
+            }
+            prevPrice.current[sym] = last;
+          }
+        }
+      } catch {
+        /* ignore individual symbol errors */
+      }
     };
-    load();
-    const id = window.setInterval(load, 3000);
+
+    const loadAll = async () => {
+      await Promise.all(symbols.map(loadOne));
+      if (!cancelled) setLoading(false);
+    };
+
+    loadAll();
+    const id = window.setInterval(loadAll, 5000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, []);
+  }, [symbols.join(",")]);
 
   return (
     <div className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl overflow-hidden">
@@ -76,40 +91,57 @@ const BidAskBoard = ({ symbols, onSelect }: Props) => {
             Bid / Ask Board
           </h3>
         </div>
-        {loading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+        {loading ? (
+          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+        ) : (
+          <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400">
+            ● live
+          </span>
+        )}
       </div>
-      {/* Header */}
       <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 border-b border-border/30 bg-background/40 px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
         <span>Symbol</span>
-        <span className="w-16 text-right text-red-400">Bid</span>
-        <span className="w-16 text-center text-foreground">Last</span>
-        <span className="w-16 text-right text-emerald-400">Ask</span>
+        <span className="w-20 text-right text-red-400">Bid</span>
+        <span className="w-20 text-center text-foreground">Last</span>
+        <span className="w-20 text-right text-emerald-400">Ask</span>
       </div>
-      <ul className="divide-y divide-border/20 max-h-[260px] overflow-y-auto">
-        {symbols.map((label) => {
-          const q = quotes[label.toUpperCase()];
-          const price = q?.price ?? null;
-          const cls = classify(label);
-          const spread = SPREADS[cls];
-          const bid = price != null ? price - spread / 2 : null;
-          const ask = price != null ? price + spread / 2 : null;
-          const decimals =
-            cls === "forex" ? 5 : cls === "jpy" ? 3 : cls === "crypto" ? 2 : 2;
-          const fmt = (v: number | null) =>
-            v == null ? "—" : v.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-          const f = flash[label.toUpperCase()];
+      <ul className="divide-y divide-border/20 max-h-[280px] overflow-y-auto">
+        {symbols.length === 0 && (
+          <li className="px-3 py-4 text-center text-[11px] font-mono text-muted-foreground">
+            Loading broker symbols…
+          </li>
+        )}
+        {symbols.map((sym) => {
+          const r = rows[sym];
+          const digits = r?.digits ?? 5;
+          const fmt = (v: number | null | undefined) =>
+            v == null
+              ? "—"
+              : v.toLocaleString("en-US", {
+                  minimumFractionDigits: digits,
+                  maximumFractionDigits: digits,
+                });
+          const f = flash[sym];
           return (
             <li
-              key={label}
+              key={sym}
+              onClick={() => onSelect?.(sym)}
               className={`grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted/30 transition-colors ${
                 f === "up" ? "bg-emerald-500/10" : f === "down" ? "bg-red-500/10" : ""
               }`}
-              onClick={() => onSelect?.(label)}
             >
-              <span className="font-mono text-[11px] font-semibold text-foreground">{label}</span>
-              <span className="w-16 text-right font-mono text-[11px] tabular-nums text-red-400">{fmt(bid)}</span>
-              <span className="w-16 text-center font-mono text-[10px] tabular-nums text-muted-foreground">{fmt(price)}</span>
-              <span className="w-16 text-right font-mono text-[11px] tabular-nums text-emerald-400">{fmt(ask)}</span>
+              <span className="font-mono text-[11px] font-semibold text-foreground">
+                {sym}
+              </span>
+              <span className="w-20 text-right font-mono text-[11px] tabular-nums text-red-400">
+                {fmt(r?.bid)}
+              </span>
+              <span className="w-20 text-center font-mono text-[10px] tabular-nums text-muted-foreground">
+                {fmt(r?.last)}
+              </span>
+              <span className="w-20 text-right font-mono text-[11px] tabular-nums text-emerald-400">
+                {fmt(r?.ask)}
+              </span>
             </li>
           );
         })}
