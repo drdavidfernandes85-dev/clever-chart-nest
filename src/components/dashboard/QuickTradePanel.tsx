@@ -234,6 +234,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   const accountEquity =
     accountConnected && account?.equity != null ? Number(account.equity) : 0;
+  const accountFreeMargin =
+    accountConnected && account?.marginFree != null ? Number(account.marginFree) : 0;
   const accountCurrency = account?.currency || "USD";
 
   const [type, setType] = useState<"market" | "limit">("market");
