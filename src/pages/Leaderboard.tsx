@@ -247,20 +247,9 @@ const Leaderboard = () => {
       </header>
 
       <div className="container max-w-6xl py-8 px-4">
-        {/* Become a Mentor CTA */}
-        <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-[#FFCD05]/30 bg-gradient-to-r from-[#FFCD05]/10 via-[#FFCD05]/5 to-transparent p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFCD05]/20 text-[#FFCD05]">
-              <GraduationCap className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-heading text-sm font-bold text-white">Become a Mentor</p>
-              <p className="text-xs text-white/60">Submit your application — an admin will review and approve it.</p>
-            </div>
-          </div>
-          <Button size="sm" onClick={() => setMentorOpen(true)} className="bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-semibold">
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Apply Now
-          </Button>
+        {/* Mentor verification + Apply CTA */}
+        <div className="mb-6">
+          <MentorTierProgression onApply={() => setMentorOpen(true)} />
         </div>
 
         {/* Title + period tabs */}
