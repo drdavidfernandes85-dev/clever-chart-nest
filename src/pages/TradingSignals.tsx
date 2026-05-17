@@ -49,7 +49,6 @@ const TradingSignals = () => {
     const qs = new URLSearchParams({
       symbol: sym,
       side: isBuy ? "buy" : "sell",
-      lots: "0.01",
       signalId: signal.id,
     });
     if (signal.entry_price != null) qs.set("entry", String(signal.entry_price));
