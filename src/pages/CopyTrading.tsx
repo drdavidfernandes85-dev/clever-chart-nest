@@ -475,7 +475,53 @@ const CopyTrading = () => {
                     </div>
                   </div>
 
-                  {/* P&L breakdown */}
+                  {/* Original mentor signal comparison */}
+                  {openSignal && (
+                    <div className="rounded-xl border border-[#FFCD05]/25 bg-[#FFCD05]/[0.04] p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#FFCD05] mb-2 flex items-center gap-1.5">
+                        <Copy className="h-3 w-3" /> vs Original signal · {openSignal.mentor_name}
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 text-[11px] font-mono tabular-nums">
+                        <div>
+                          <p className="text-[9px] uppercase text-white/40">Entry</p>
+                          <p className="text-white">{fmt(openSignal.entry_price)}</p>
+                          {entry != null && (
+                            <p className={`text-[9px] mt-0.5 ${
+                              Math.abs(Number(entry) - openSignal.entry_price) < 0.0001 * Math.max(1, openSignal.entry_price)
+                                ? "text-emerald-400" : "text-amber-400"
+                            }`}>
+                              Δ {(Number(entry) - openSignal.entry_price).toFixed(5)}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase text-white/40">SL</p>
+                          <p className="text-red-400/90">{fmt(openSignal.stop_loss)}</p>
+                          {sl != null && openSignal.stop_loss != null && (
+                            <p className="text-[9px] text-white/40 mt-0.5">
+                              yours {fmt(sl)}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase text-white/40">TP</p>
+                          <p className="text-emerald-400/90">{fmt(openSignal.take_profit)}</p>
+                          {tp != null && openSignal.take_profit != null && (
+                            <p className="text-[9px] text-white/40 mt-0.5">
+                              yours {fmt(tp)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[10px] text-white/40">
+                        Signal status:{" "}
+                        <span className={openSignal.status === "active" ? "text-emerald-400" : "text-white/60"}>
+                          {openSignal.status.toUpperCase()}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+
                   <div className="rounded-xl border border-white/10 bg-[#0F0F0F] p-3">
                     <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 flex items-center gap-1.5">
                       <Zap className="h-3 w-3" /> P&L breakdown
