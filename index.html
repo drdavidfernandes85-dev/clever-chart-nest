@@ -12,6 +12,12 @@
     <meta name="google-site-verification" content="zt3OnsVl7SpCFA-pYtoTMX0Q7Wm_AyGfMPWnETlvf3Q" />
     <link rel="canonical" href="https://ixsalatrading.com/" />
 
+    <!-- hreflang — international SEO (es default, pt-BR, en) -->
+    <link rel="alternate" hreflang="es" href="https://ixsalatrading.com/" />
+    <link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/?lang=pt-BR" />
+    <link rel="alternate" hreflang="en" href="https://ixsalatrading.com/?lang=en" />
+    <link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/" />
+
     <!-- Inter loaded with full weight range. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -54,15 +60,19 @@
       "description": "Comunidad educativa de trading para INFINOX LATAM: terminal profesional, webinars gratuitos, análisis en vivo y herramientas de gestión de riesgo. Contenido 100% educativo.",
       "areaServed": "LATAM",
       "knowsLanguage": ["es", "pt-BR", "en"],
-      "educationalCredentialAwarded": "Certificado de finalización de módulos educativos de trading",
+      "educationalCredentialAwarded": {
+        "@type": "EducationalOccupationalCredential",
+        "name": "Certificado de finalización de módulos educativos de trading",
+        "credentialCategory": "certificate"
+      },
       "hasOfferCatalog": {
         "@type": "OfferCatalog",
         "name": "Programa Educativo IX",
         "itemListElement": [
-          { "@type": "Course", "name": "Análisis Técnico", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading" } },
-          { "@type": "Course", "name": "Gestión de Riesgo", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading" } },
-          { "@type": "Course", "name": "Psicología del Trading", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading" } },
-          { "@type": "Course", "name": "Macro y Fundamentales", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading" } }
+          { "@type": "Course", "name": "Análisis Técnico", "description": "Lectura de gráficos, patrones, indicadores y estructura de mercado aplicada a forex, índices y materias primas.", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading", "sameAs": "https://ixsalatrading.com" } },
+          { "@type": "Course", "name": "Gestión de Riesgo", "description": "Tamaño de posición, ratio riesgo/beneficio, control de drawdown y disciplina operativa.", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading", "sameAs": "https://ixsalatrading.com" } },
+          { "@type": "Course", "name": "Psicología del Trading", "description": "Sesgos cognitivos, control emocional y construcción de rutinas profesionales.", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading", "sameAs": "https://ixsalatrading.com" } },
+          { "@type": "Course", "name": "Macro y Fundamentales", "description": "Bancos centrales, calendario económico y lectura de catalizadores macro en tiempo real.", "provider": { "@type": "EducationalOrganization", "name": "IX Sala de Trading", "sameAs": "https://ixsalatrading.com" } }
         ]
       },
       "sameAs": []
@@ -74,11 +84,60 @@
       "@type": "WebSite",
       "name": "IX Sala de Trading",
       "url": "https://ixsalatrading.com",
+      "inLanguage": ["es", "pt-BR", "en"],
       "potentialAction": {
         "@type": "SearchAction",
         "target": "https://ixsalatrading.com/?q={search_term_string}",
         "query-input": "required name=search_term_string"
       }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "¿Qué es el Centro de Educación de IX Sala de Trading?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Es un currículo estructurado con más de 35 módulos sobre análisis técnico, gestión de riesgo, psicología del trading y macroeconomía. Todo el contenido es 100% educativo, sin señales ni recomendaciones financieras."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿El acceso al Centro de Educación tiene costo?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Los módulos educativos y los webinars en vivo son gratuitos para todos los miembros registrados de la comunidad INFINOX LATAM."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Qué incluye el Terminal Profesional de IX?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Charting avanzado, order entry con stop loss y take profit, gestión de posiciones en vivo, journal automático y métricas de rendimiento — todo conectado a tu cuenta MT4/MT5 de INFINOX."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿Necesito una cuenta INFINOX para usar el Terminal?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Sí. El Terminal se conecta vía MetaApi o EA Webhook a tu cuenta MT4/MT5 de INFINOX. Los webinars y el contenido educativo están disponibles sin cuenta de broker."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "¿IX Sala de Trading ofrece señales o recomendaciones de inversión?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Somos una comunidad educativa. Mentores y miembros comparten ideas y análisis con fines formativos. Cada trader es responsable de sus propias decisiones. El trading conlleva riesgo significativo."
+          }
+        }
+      ]
     }
     </script>
 
