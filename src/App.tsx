@@ -38,6 +38,7 @@ const EducationModule = lazy(() => import("./pages/EducationModule"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const HeroQA = lazy(() => import("./pages/HeroQA"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const CopyTrading = lazy(() => import("./pages/CopyTrading"));
 const LiveChart = lazy(() => import("./pages/LiveChart"));
 const Login = lazy(() => import("./pages/Login"));
 const News = lazy(() => import("./pages/News"));
