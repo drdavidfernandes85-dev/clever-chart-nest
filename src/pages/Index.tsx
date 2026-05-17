@@ -168,6 +168,13 @@ const Index = () => {
                 <Link
                   key={to}
                   to={to}
+                  onClick={() =>
+                    track("internal_link_click", {
+                      section: "home_internal_links",
+                      destination: to,
+                      label,
+                    })
+                  }
                   className="group flex items-center gap-3 rounded-xl border border-primary/20 bg-background/40 px-4 py-3 text-sm font-medium text-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
