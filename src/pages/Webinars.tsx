@@ -207,7 +207,52 @@ const Webinars = () => {
       <SEO
         title="Live Webinars & Upcoming Sessions | IX Sala de Trading"
         description="Daily live webinars hosted by INFINOX mentors plus all upcoming sessions and recordings — searchable by date, topic and mentor."
-        canonical="https://elitelivetradingroom.com/webinars"
+        canonical="https://ixsalatrading.com/webinars"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "IX Sala de Trading",
+            url: "https://ixsalatrading.com/",
+            logo: "https://ixsalatrading.com/og-image.jpg",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "IX Sala de Trading",
+            url: "https://ixsalatrading.com/",
+            inLanguage: ["es", "pt-BR", "en"],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://ixsalatrading.com/" },
+              { "@type": "ListItem", position: 2, name: "Webinars", item: "https://ixsalatrading.com/webinars" },
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "¿Los webinars son en vivo o grabados?",
+                acceptedAnswer: { "@type": "Answer", text: "Ofrecemos sesiones en vivo diarias con mentores INFINOX y todas quedan disponibles como grabación en la biblioteca de videos." },
+              },
+              {
+                "@type": "Question",
+                name: "¿Necesito ser cliente de INFINOX para asistir?",
+                acceptedAnswer: { "@type": "Answer", text: "El acceso completo está reservado a traders activos de INFINOX LATAM. Algunas sesiones introductorias son abiertas." },
+              },
+              {
+                "@type": "Question",
+                name: "¿En qué idioma se imparten?",
+                acceptedAnswer: { "@type": "Answer", text: "Español y portugués (Brasil), con sesiones puntuales en inglés." },
+              },
+            ],
+          },
+        ]}
       />
 
       <header className="sticky top-0 z-40 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
