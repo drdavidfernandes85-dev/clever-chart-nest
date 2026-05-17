@@ -59,11 +59,30 @@ const Education = () => {
     () => [
       {
         "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "IX Sala de Trading",
+        url: "https://ixsalatrading.com/",
+        logo: "https://ixsalatrading.com/og-image.jpg",
+        sameAs: ["https://www.infinox.com/"],
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "IX Sala de Trading",
+        url: "https://ixsalatrading.com/",
+        inLanguage: ["es", "pt-BR", "en"],
+      },
+      {
+        "@context": "https://schema.org",
         "@type": "Course",
         name: t("edu.seo.title"),
         description: t("edu.seo.desc"),
         inLanguage: locale === "pt" ? "pt-BR" : locale,
-        provider: { "@type": "Organization", name: "IX Sala de Trading" },
+        provider: {
+          "@type": "Organization",
+          name: "IX Sala de Trading",
+          sameAs: "https://ixsalatrading.com/",
+        },
         hasCourseInstance: MODULES.map((m) => ({
           "@type": "CourseInstance",
           name: m.shortTitle,
@@ -79,15 +98,45 @@ const Education = () => {
           "@type": "ListItem",
           position: i + 1,
           name: m.shortTitle,
-          url: `https://www.salatradingelite.com/education/${m.slug}`,
+          url: `https://ixsalatrading.com/education/${m.slug}`,
         })),
       },
       {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: "https://www.salatradingelite.com/" },
-          { "@type": "ListItem", position: 2, name: t("edu.eyebrow"), item: "https://www.salatradingelite.com/education" },
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://ixsalatrading.com/" },
+          { "@type": "ListItem", position: 2, name: t("edu.eyebrow"), item: "https://ixsalatrading.com/education" },
+        ],
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Qué incluye el Centro de Educación?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Módulos progresivos de análisis técnico, gestión de riesgo, psicología y macro, con seguimiento de progreso y certificación al completar.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿La educación es gratuita?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Sí, todos los módulos son gratuitos para traders activos de INFINOX LATAM.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Necesito experiencia previa?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. El plan está diseñado desde nivel inicial hasta estrategias avanzadas.",
+            },
+          },
         ],
       },
     ],
@@ -123,7 +172,7 @@ const Education = () => {
         title={t("edu.seo.title")}
         description={t("edu.seo.desc")}
         keywords={t("edu.seo.keywords")}
-        canonical="https://www.salatradingelite.com/education"
+        canonical="https://ixsalatrading.com/education"
         type="article"
         jsonLd={jsonLd}
       />

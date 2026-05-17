@@ -58,7 +58,55 @@ const VideoLibrary = () => {
       <SEO
         title="Video Library | IX Sala de Trading"
         description="On-demand webinars, tutorials and market analysis from IX Sala de Trading mentors."
-        canonical="https://elitelivetradingroom.com/videos"
+        canonical="https://ixsalatrading.com/videos"
+        jsonLd={[
+          {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "IX Sala de Trading",
+            url: "https://ixsalatrading.com/",
+            logo: "https://ixsalatrading.com/og-image.jpg",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "IX Sala de Trading",
+            url: "https://ixsalatrading.com/",
+            inLanguage: ["es", "pt-BR", "en"],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Video Library",
+            url: "https://ixsalatrading.com/videos",
+            inLanguage: ["es", "pt-BR", "en"],
+            about: "Webinars grabados, tutoriales y análisis de mercado",
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: "https://ixsalatrading.com/" },
+              { "@type": "ListItem", position: 2, name: "Videos", item: "https://ixsalatrading.com/videos" },
+            ],
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "¿Cómo se organizan los videos?",
+                acceptedAnswer: { "@type": "Answer", text: "Por categoría: webinars en vivo, tutoriales paso a paso y análisis de mercado." },
+              },
+              {
+                "@type": "Question",
+                name: "¿Puedo descargar los videos?",
+                acceptedAnswer: { "@type": "Answer", text: "Los videos se reproducen en streaming dentro de la plataforma; no se ofrece descarga directa." },
+              },
+            ],
+          },
+        ]}
       />
       <div className="container max-w-6xl py-24">
         <div className="mb-2">

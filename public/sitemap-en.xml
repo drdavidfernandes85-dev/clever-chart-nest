@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://ixsalatrading.com/?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/" />
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/register?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/register" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/register?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/register?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/register" />
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/login?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/login" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/login?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/login?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/login" />
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/webinars?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/webinars" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/webinars?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/webinars?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/webinars" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/webinar?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/webinar" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/webinar?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/webinar?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/webinar" />
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/education?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/education" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/education?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/education?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/education" />
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/videos?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/videos" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/videos?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/videos?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/videos" />
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/leaderboard?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/leaderboard" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/leaderboard?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/leaderboard?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/leaderboard" />
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/community/guidelines?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/community/guidelines" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/community/guidelines?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/community/guidelines?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/community/guidelines" />
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/forgot-password?lang=en</loc>
+    <xhtml:link rel="alternate" hreflang="es" href="https://ixsalatrading.com/forgot-password" />
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://ixsalatrading.com/forgot-password?lang=pt-BR" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://ixsalatrading.com/forgot-password?lang=en" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://ixsalatrading.com/forgot-password" />
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+</urlset>
