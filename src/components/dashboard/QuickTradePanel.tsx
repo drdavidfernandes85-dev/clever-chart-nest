@@ -259,6 +259,11 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const [flash, setFlash] = useState(false);
   const [copiedFromMentor, setCopiedFromMentor] = useState<string | null>(null);
   const [copyRiskPct, setCopyRiskPct] = useState<number>(0.01);
+  // When a Copy Trade prefill needs exact lot sizing from broker specs,
+  // we stash the inputs here and recompute once symbolSpecs + equity arrive.
+  const [pendingCopySize, setPendingCopySize] = useState<
+    { sl: number; entry: number; riskPct: number } | null
+  >(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
@@ -362,18 +367,18 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   useEffect(() => {
     if (!prefill) return;
 
-    // Compute risk-aware lot size when caller did not provide one but we have
-    // SL distance + entry/current price + account equity. Uses 1% default risk.
     const riskPct = prefill.riskPct && prefill.riskPct > 0 ? prefill.riskPct : 0.01;
     setCopyRiskPct(riskPct);
 
+    // Initial rough lot calc — refined by the spec-aware effect below
+    // once broker tickValue/tickSize for this symbol arrives.
     let lotsToSet = prefill.lots ?? null;
     const slNum = prefill.sl ? Number(prefill.sl) : NaN;
     const entryNum = prefill.entry ? Number(prefill.entry) : NaN;
     if (!lotsToSet && Number.isFinite(slNum) && Number.isFinite(entryNum) && accountEquity > 0) {
       const sym = (prefill.symbol || normalizedSymbol || "").toUpperCase();
       const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
-      const valuePerPipPerLot = sym.includes("XAU") ? 10 : 10;
+      const valuePerPipPerLot = 10;
       const slPips = Math.abs(entryNum - slNum) / pipSize;
       if (slPips > 0) {
         const riskTarget = accountEquity * riskPct;
@@ -381,6 +386,14 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         l = Math.max(0.01, Math.min(10, parseFloat(l.toFixed(2))));
         lotsToSet = String(l);
       }
+      // Queue precise recompute using broker tick specs.
+      if (Number.isFinite(slNum) && Number.isFinite(entryNum)) {
+        setPendingCopySize({ sl: slNum, entry: entryNum, riskPct });
+      }
+    } else if (!prefill.lots && Number.isFinite(slNum) && Number.isFinite(entryNum)) {
+      setPendingCopySize({ sl: slNum, entry: entryNum, riskPct });
+    } else {
+      setPendingCopySize(null);
     }
     if (lotsToSet) setLots(lotsToSet);
 
@@ -533,6 +546,24 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   const canCalculateRisk =
     accountEquity > 0 && slValid && symbolSpecs !== null;
+
+  // Precise risk-aware lot sizing using broker tickValue/tickSize.
+  // Runs when symbolSpecs + equity finally arrive after a Copy Trade prefill.
+  useEffect(() => {
+    if (!pendingCopySize) return;
+    if (!symbolSpecs || accountEquity <= 0) return;
+    const { sl: pSl, entry: pEntry, riskPct } = pendingCopySize;
+    const priceDist = Math.abs(pEntry - pSl);
+    if (!(priceDist > 0)) { setPendingCopySize(null); return; }
+    const ticks = priceDist / symbolSpecs.tickSize;
+    const valuePerLot = ticks * symbolSpecs.tickValue;
+    if (!(valuePerLot > 0)) { setPendingCopySize(null); return; }
+    const riskTarget = accountEquity * riskPct;
+    let l = riskTarget / valuePerLot;
+    l = Math.max(0.01, Math.min(100, parseFloat(l.toFixed(2))));
+    setLots(l.toFixed(2));
+    setPendingCopySize(null);
+  }, [pendingCopySize, symbolSpecs, accountEquity]);
 
   const adjustLots = (delta: number) => {
     const next = Math.max(0.01, Math.min(100, +(lotsNum + delta).toFixed(2)));
@@ -751,15 +782,20 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                   if (!lotsN || !slN || !entN || accountEquity <= 0) return (
                     <p className="mt-0.5 text-[10px] text-muted-foreground">Auto-scaled to your account</p>
                   );
-                  const sym = normalizedSymbol;
-                  const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
-                  const valuePerPip = sym.includes("XAU") ? 10 : 10;
-                  const slPips = Math.abs(entN - slN) / pipSize;
-                  const riskUsd = slPips * valuePerPip * lotsN;
+                  let riskUsd: number;
+                  if (symbolSpecs) {
+                    const ticks = Math.abs(entN - slN) / symbolSpecs.tickSize;
+                    riskUsd = ticks * symbolSpecs.tickValue * lotsN;
+                  } else {
+                    const sym = normalizedSymbol;
+                    const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
+                    riskUsd = (Math.abs(entN - slN) / pipSize) * 10 * lotsN;
+                  }
                   const pctOfEq = (riskUsd / accountEquity) * 100;
+                  const target = (copyRiskPct * 100).toFixed(2);
                   return (
                     <p className="mt-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
-                      Risks <span className="text-red-400 font-bold">${riskUsd.toFixed(2)}</span> ({pctOfEq.toFixed(2)}% of equity)
+                      Risks <span className="text-red-400 font-bold">${riskUsd.toFixed(2)}</span> ({pctOfEq.toFixed(2)}% of equity · target {target}%)
                     </p>
                   );
                 })()}
