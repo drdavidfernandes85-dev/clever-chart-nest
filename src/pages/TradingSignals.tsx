@@ -43,6 +43,20 @@ const TradingSignals = () => {
   const { user } = useAuth();
   const copied = useCopiedSignals();
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
+  const navigate = useNavigate();
+  const takeInTerminal = (signal: Signal, isBuy: boolean) => {
+    const sym = (signal.pair || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const qs = new URLSearchParams({
+      symbol: sym,
+      side: isBuy ? "buy" : "sell",
+      lots: "0.01",
+      signalId: signal.id,
+    });
+    if (signal.entry_price != null) qs.set("entry", String(signal.entry_price));
+    if (signal.stop_loss != null) qs.set("sl", String(signal.stop_loss));
+    if (signal.take_profit != null) qs.set("tp", String(signal.take_profit));
+    navigate(`/live-chart?${qs.toString()}`);
+  };
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
