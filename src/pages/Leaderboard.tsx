@@ -414,6 +414,7 @@ const Leaderboard = () => {
         onCopy={() => detail && handleCopy(detail)} />
 
       <MentorApplyDialog open={mentorOpen} onOpenChange={setMentorOpen} userId={user?.id} />
+      <AICopilot />
     </div>
   );
 };
