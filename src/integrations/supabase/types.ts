@@ -95,6 +95,36 @@ export type Database = {
         }
         Relationships: []
       }
+      copy_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          risk_multiplier: number
+          status: string
+          subscriber_id: string
+          trader_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          risk_multiplier?: number
+          status?: string
+          subscriber_id: string
+          trader_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          risk_multiplier?: number
+          status?: string
+          subscriber_id?: string
+          trader_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       education_modules_completed: {
         Row: {
           completed_at: string
@@ -137,6 +167,45 @@ export type Database = {
           follower_id?: string
           following_id?: string
           id?: string
+        }
+        Relationships: []
+      }
+      mentor_applications: {
+        Row: {
+          bio: string
+          created_at: string
+          experience_years: number
+          full_name: string
+          id: string
+          pairs: string | null
+          status: string
+          trading_style: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio: string
+          created_at?: string
+          experience_years?: number
+          full_name: string
+          id?: string
+          pairs?: string | null
+          status?: string
+          trading_style?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string
+          created_at?: string
+          experience_years?: number
+          full_name?: string
+          id?: string
+          pairs?: string | null
+          status?: string
+          trading_style?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
