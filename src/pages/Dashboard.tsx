@@ -429,6 +429,10 @@ const BottomTabs = () => {
           )}
         </TabsContent>
 
+        <TabsContent value="copy" className="m-0 p-3">
+          <CopiedTradesPerformance />
+        </TabsContent>
+
         <TabsContent value="journal" className="m-0 p-3">
           <TradeJournal />
         </TabsContent>
