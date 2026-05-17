@@ -734,6 +734,47 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
           )}
         </div>
 
+        {copiedFromMentor && (
+          <div className="border-b border-primary/30 bg-gradient-to-r from-primary/15 via-primary/8 to-transparent px-4 py-2.5 flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-background">
+                <Zap className="h-3 w-3" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-heading text-[11px] font-bold uppercase tracking-wider text-primary leading-none">
+                  Copied from {copiedFromMentor}
+                </p>
+                {(() => {
+                  const lotsN = parseFloat(lots) || 0;
+                  const slN = parseFloat(sl);
+                  const entN = parseFloat(entry) || (currentPrice ?? 0);
+                  if (!lotsN || !slN || !entN || accountEquity <= 0) return (
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">Auto-scaled to your account</p>
+                  );
+                  const sym = normalizedSymbol;
+                  const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
+                  const valuePerPip = sym.includes("XAU") ? 10 : 10;
+                  const slPips = Math.abs(entN - slN) / pipSize;
+                  const riskUsd = slPips * valuePerPip * lotsN;
+                  const pctOfEq = (riskUsd / accountEquity) * 100;
+                  return (
+                    <p className="mt-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
+                      Risks <span className="text-red-400 font-bold">${riskUsd.toFixed(2)}</span> ({pctOfEq.toFixed(2)}% of equity)
+                    </p>
+                  );
+                })()}
+              </div>
+            </div>
+            <button
+              onClick={() => setCopiedFromMentor(null)}
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Clear mentor copy"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         <div className="p-4 space-y-3.5 bg-card/60">
           {/* Symbol selector */}
           <div className="relative">
