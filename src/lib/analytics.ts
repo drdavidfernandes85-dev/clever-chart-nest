@@ -38,6 +38,13 @@ export type TrackEvent =
   | "webinar_confirmation_email_sent"
   | "webinar_confirmation_email_error"
   | "lead_persist_error"
+  | "contact_submit"
+  | "contact_submit_success"
+  | "contact_submit_error"
+  | "newsletter_submit"
+  | "newsletter_submit_success"
+  | "newsletter_submit_error"
+  | "internal_link_click"
   | "language_change";
 
 export const track = (event: TrackEvent, params: Record<string, unknown> = {}) => {
