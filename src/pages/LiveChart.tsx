@@ -36,6 +36,7 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import MarketWatch from "@/components/livechart/MarketWatch";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
+import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { LiveAccountProvider, useLiveAccount, fmtMoney } from "@/contexts/LiveAccountContext";
@@ -426,6 +427,8 @@ const LiveChartInner = () => {
               symbols={topBoardSymbols}
               onSelect={(sym) => setActiveBroker(sym)}
             />
+
+            <OpenPositionsPanel />
 
             <QuickTradePanel />
           </aside>
