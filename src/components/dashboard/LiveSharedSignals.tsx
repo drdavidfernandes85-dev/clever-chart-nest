@@ -289,18 +289,7 @@ const LiveSharedSignals = () => {
                 {/* CTA */}
                 {["active", "open"].includes(s.status) && (
                   <button
-                    onClick={() => {
-                      setRequest({
-                        signalId: s.id,
-                        pair: s.pair,
-                        side: isBuy ? "buy" : "sell",
-                        entry: Number(s.entry_price),
-                        sl: s.stop_loss != null ? Number(s.stop_loss) : null,
-                        tp: s.take_profit != null ? Number(s.take_profit) : null,
-                        authorName: s.author_name,
-                        authorTierId: tier?.id ?? null,
-                      });
-                    }}
+                    onClick={() => takeSignalInTerminal(s, isBuy)}
                     className={`group/btn relative w-full inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all overflow-hidden ${
                       wasCopied
                         ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
