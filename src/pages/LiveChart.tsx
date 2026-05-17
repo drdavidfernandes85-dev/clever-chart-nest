@@ -164,6 +164,40 @@ const LiveChartInner = () => {
     setCtxSymbol(displayLabel);
   }, [displayLabel, setCtxSymbol]);
 
+  // Read prefill from URL (?symbol=EURUSD&side=buy&sl=1.07&tp=1.09&lots=0.01&signalId=...)
+  // Sent by "Take This Signal" buttons across the app.
+  useEffect(() => {
+    const sym = searchParams.get("symbol");
+    if (!sym) return;
+    const norm = sym.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const match =
+      allBrokerLabels.find((s) => s.toUpperCase().replace(/[^A-Z0-9]/g, "") === norm) ?? norm;
+    setActiveBroker(match);
+    const side = searchParams.get("side")?.toLowerCase() === "sell" ? "sell" : "buy";
+    openTrade({
+      symbol: brokerToDisplay(match),
+      side,
+      lots: searchParams.get("lots") ?? "0.01",
+      sl: searchParams.get("sl") ?? undefined,
+      tp: searchParams.get("tp") ?? undefined,
+      entry: searchParams.get("entry") ?? undefined,
+      signalId: searchParams.get("signalId"),
+    });
+    // Clear so a refresh doesn't re-trigger and we don't double-fire.
+    const next = new URLSearchParams(searchParams);
+    ["symbol", "side", "lots", "sl", "tp", "entry", "signalId"].forEach((k) => next.delete(k));
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, allBrokerLabels.length]);
+
+  // Pulse highlight on the Quick Trade ticket whenever it's prefilled.
+  useEffect(() => {
+    if (prefillNonce === 0) return;
+    setHighlightTicket(true);
+    const t = setTimeout(() => setHighlightTicket(false), 2400);
+    return () => clearTimeout(t);
+  }, [prefillNonce]);
+
   useEffect(() => {
     const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onChange);
