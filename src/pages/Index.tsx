@@ -188,7 +188,6 @@ const Index = () => {
         </section>
 
       <LazyHomeSection minHeight={420}><ComplianceBlock /></LazyHomeSection>
-      <LazyHomeSection minHeight={320}><CTASection /></LazyHomeSection>
       <LazyHomeSection minHeight={560}><ContactSection /></LazyHomeSection>
       <LazyHomeSection minHeight={360}><NewsletterSection /></LazyHomeSection>
       </main>
