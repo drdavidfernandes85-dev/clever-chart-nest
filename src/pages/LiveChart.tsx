@@ -428,6 +428,8 @@ const LiveChartInner = () => {
               onSelect={(sym) => setActiveBroker(sym)}
             />
 
+            <OpenPositionsPanel />
+
             <QuickTradePanel />
           </aside>
         </div>
