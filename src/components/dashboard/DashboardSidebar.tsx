@@ -18,6 +18,7 @@ import {
   Newspaper,
   CalendarDays,
   GraduationCap,
+  Copy,
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
 import sidebarLogo from "@/assets/logo-sidebar.png";
