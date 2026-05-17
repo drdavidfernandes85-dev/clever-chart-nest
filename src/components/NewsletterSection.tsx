@@ -5,6 +5,7 @@ import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { track } from "@/lib/analytics";
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState("");
