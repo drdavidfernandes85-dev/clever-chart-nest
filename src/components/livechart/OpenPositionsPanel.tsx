@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Briefcase, TrendingUp, TrendingDown, X, Loader2, RefreshCw } from "lucide-react";
 import { useLiveAccount, type LivePosition } from "@/contexts/LiveAccountContext";
-import { useMTAccount } from "@/hooks/useMTAccount";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -38,34 +37,34 @@ const FlashCell = ({ value, positive }: { value: number; positive: boolean }) =>
 
 const OpenPositionsPanel = () => {
   const { liveAccount, positions, connected, loading, refreshing, refresh } = useLiveAccount();
-  const { account: mtAccount } = useMTAccount();
   const [closing, setClosing] = useState<string | null>(null);
 
   const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
   const currency = liveAccount?.currency ?? "USD";
 
   const closePosition = async (pos: LivePosition) => {
-    if (!mtAccount) {
-      toast.error("Trading account unavailable for close orders");
-      return;
-    }
     const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
     setClosing(key);
     try {
-      const { error } = await supabase.from("mt_pending_orders").insert({
-        user_id: mtAccount.user_id,
-        account_id: mtAccount.id,
-        symbol: pos.symbol,
-        side: pos.side === "buy" ? "sell" : "buy",
-        order_type: "market",
-        volume: Number(pos.volume),
-        ea_message: `close:${pos.ticket ?? ""}`,
+      const { data, error } = await supabase.functions.invoke("execute-trade", {
+        body: {
+          symbol: pos.symbol,
+          side: pos.side === "buy" ? "sell" : "buy",
+          volume: Number(pos.volume),
+          tradeId: `close-${pos.ticket ?? key}-${Date.now()}`,
+          comment: `Close #${pos.ticket ?? ""}`.trim(),
+          positionId: pos.ticket ?? undefined,
+        },
       });
       if (error) throw error;
-      toast.success(`Close queued for #${pos.ticket ?? pos.symbol}`);
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || "Broker rejected the close order");
+      }
+      toast.success(`Close order sent for ${pos.symbol} #${pos.ticket ?? ""}`);
+      window.dispatchEvent(new Event("trade-executed"));
       refresh();
     } catch (e: any) {
-      toast.error("Could not queue close", { description: e?.message });
+      toast.error("Could not close position", { description: e?.message });
     } finally {
       setClosing(null);
     }
