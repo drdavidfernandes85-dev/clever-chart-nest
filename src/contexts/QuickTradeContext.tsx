@@ -8,6 +8,8 @@ export interface QuickTradePrefill {
   sl?: string;
   tp?: string;
   signalId?: string | null;
+  mentor?: string | null;
+  riskPct?: number;
 }
 
 interface QuickTradeContextValue {
