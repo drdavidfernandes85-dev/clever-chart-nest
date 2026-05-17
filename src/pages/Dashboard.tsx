@@ -563,6 +563,7 @@ const DashboardInner = () => {
           </aside>
         </div>
       </div>
+      <AICopilot />
     </div>
   );
 };
