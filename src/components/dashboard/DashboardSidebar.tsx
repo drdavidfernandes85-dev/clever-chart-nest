@@ -139,7 +139,7 @@ const DashboardSidebar = () => {
                       isWebinars && "text-primary"
                     )}
                   />
-                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                  {!collapsed && <span className="truncate">{item.label ?? t(item.labelKey)}</span>}
                   {!collapsed && showBadge && (
                     <span
                       className={cn(
