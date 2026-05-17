@@ -308,7 +308,7 @@ const CopyTrading = () => {
           <CopiedTradesPerformance />
         </div>
 
-
+        <div className="mb-4 flex items-center gap-1 rounded-xl border border-white/10 bg-[#0F0F0F] p-1 w-fit">
           {([
             { k: "trades", label: "Copied Trades" },
             { k: "mentors", label: "Followed Mentors" },
