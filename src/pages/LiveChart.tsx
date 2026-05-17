@@ -116,6 +116,25 @@ const LiveChartInner = () => {
     [brokerSymbols],
   );
 
+  // Top 10 symbols for the Bid/Ask board — favour majors when present, else
+  // fall back to the first 10 returned by the broker.
+  const topBoardSymbols = useMemo(() => {
+    if (!allBrokerLabels.length) return [];
+    const preferred = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF", "NZDUSD", "XAUUSD", "BTCUSD", "ETHUSD"];
+    const upper = allBrokerLabels.map((s) => s.toUpperCase());
+    const picks: string[] = [];
+    for (const p of preferred) {
+      const idx = upper.indexOf(p);
+      if (idx >= 0) picks.push(allBrokerLabels[idx]);
+    }
+    for (const s of allBrokerLabels) {
+      if (picks.length >= 10) break;
+      if (!picks.includes(s)) picks.push(s);
+    }
+    return picks.slice(0, 10);
+  }, [allBrokerLabels]);
+
+
   // Default selection
   const [activeBroker, setActiveBroker] = useState<string>("EURUSD");
   useEffect(() => {
