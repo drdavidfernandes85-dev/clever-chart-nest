@@ -130,13 +130,14 @@ const Admin = () => {
         </h1>
 
         <Tabs defaultValue="webinars">
-          <TabsList className="grid w-full grid-cols-6 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-7 max-w-4xl">
             <TabsTrigger value="webinars"><Radio className="h-3.5 w-3.5 mr-1.5" /> Webinars</TabsTrigger>
             <TabsTrigger value="channels"><Hash className="h-3.5 w-3.5 mr-1.5" /> Channels</TabsTrigger>
             <TabsTrigger value="messages"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Messages</TabsTrigger>
             <TabsTrigger value="mutes"><UserX className="h-3.5 w-3.5 mr-1.5" /> Mutes</TabsTrigger>
             <TabsTrigger value="mentors"><GraduationCap className="h-3.5 w-3.5 mr-1.5" /> Mentors</TabsTrigger>
             <TabsTrigger value="announce"><Megaphone className="h-3.5 w-3.5 mr-1.5" /> Banner</TabsTrigger>
+            <TabsTrigger value="analytics"><BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Analytics</TabsTrigger>
           </TabsList>
 
           {/* WEBINARS */}
