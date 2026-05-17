@@ -257,6 +257,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     message: string;
   } | null>(null);
   const [flash, setFlash] = useState(false);
+  const [copiedFromMentor, setCopiedFromMentor] = useState<string | null>(null);
+  const [copyRiskPct, setCopyRiskPct] = useState<number>(0.01);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
