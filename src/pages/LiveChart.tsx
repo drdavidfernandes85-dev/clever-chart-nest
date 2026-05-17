@@ -247,7 +247,6 @@ const LiveChartInner = () => {
         <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/" className="flex items-center gap-2">
-              <img src={infinoxLogo} alt="INFINOX" className="h-5 shrink-0" />
               <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
                 <span className="text-primary">Pro</span> Terminal
               </span>
