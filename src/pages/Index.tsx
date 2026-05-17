@@ -27,6 +27,7 @@ const CTASection = lazy(() => import("@/components/CTASection"));
 const ContactSection = lazy(() => import("@/components/ContactSection"));
 const NewsletterSection = lazy(() => import("@/components/NewsletterSection"));
 const Footer = lazy(() => import("@/components/Footer"));
+const PlatformPillars = lazy(() => import("@/components/home/PlatformPillars"));
 
 const LazyHomeSection = ({
   children,
@@ -139,6 +140,7 @@ const Index = () => {
       <Navbar />
       <main>
       <HeroSection />
+      <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><FeaturesSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>

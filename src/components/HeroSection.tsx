@@ -141,14 +141,19 @@ const HeroSection = () => {
             {/* Headline */}
             <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
               <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
-                {t("hero.headline.brand")}
+                IX Sala de Trading
               </span>{" "}
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.headline.tail")}</span>
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">en Vivo</span>
             </h1>
 
             {/* Sub-headline */}
             <p className="max-w-xl text-base md:text-lg leading-relaxed font-sans text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-              {t("hero.subheadline")}
+              Educación profesional, comunidad real y herramientas avanzadas para traders de INFINOX.
+            </p>
+
+            {/* Educational positioning */}
+            <p className="max-w-xl text-sm font-semibold text-primary/90">
+              Herramientas y conocimiento — sin señales ni consejos financieros.
             </p>
 
             {/* Live online counter — prominent */}
@@ -162,7 +167,7 @@ const HeroSection = () => {
               </p>
             </div>
 
-            {/* CTAs — primary: Open Infinox Account · secondary: Connect existing MT5 */}
+            {/* CTAs — primary: Trading Terminal · secondary: Free Webinars */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <MagneticButton strength={0.25}>
                 <Button
@@ -170,14 +175,9 @@ const HeroSection = () => {
                   className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] cta-pulse shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
                   asChild
                 >
-                  <a
-                    href="https://myaccount.infinox.com/es/links/go/9926281"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={t("hero.cta.openAccount")}
-                  >
-                    {t("hero.cta.openAccount")} <ArrowRight className="h-4 w-4" />
-                  </a>
+                  <Link to="/dashboard" aria-label="Acceder al Terminal de Trading">
+                    <LayoutDashboard className="h-4 w-4" /> Acceder al Terminal de Trading <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
               </MagneticButton>
               <MagneticButton strength={0.22}>
@@ -187,8 +187,8 @@ const HeroSection = () => {
                   className="h-14 gap-2 rounded-full bg-[#FFCD05]/10 border-primary/60 px-7 text-base font-bold text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
                   asChild
                 >
-                  <Link to="/connect" aria-label={t("hero.cta.connectExisting")}>
-                    {t("hero.cta.connectExisting")}
+                  <Link to="/webinars" aria-label="Ver Webinars Gratuitos">
+                    <PlayCircle className="h-4 w-4" /> Ver Webinars Gratuitos
                   </Link>
                 </Button>
               </MagneticButton>
