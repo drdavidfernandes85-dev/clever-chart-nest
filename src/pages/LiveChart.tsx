@@ -467,7 +467,15 @@ const LiveChartInner = () => {
           <aside className="flex flex-col gap-2 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
             <OpenPositionsPanel />
 
-            <QuickTradePanel />
+            <div
+              className={`rounded-2xl transition-all duration-500 ${
+                highlightTicket
+                  ? "ring-2 ring-primary/60 shadow-[0_0_0_6px_hsl(48_100%_51%/0.12)] animate-pulse"
+                  : ""
+              }`}
+            >
+              <QuickTradePanel />
+            </div>
           </aside>
         </div>
       </div>
