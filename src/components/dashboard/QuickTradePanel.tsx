@@ -147,6 +147,11 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       if (error) throw error;
       if ((data as any)?.success === true) {
         const acc = (data as any).account ?? (data as any).data ?? null;
+        if (acc) {
+          acc.marginFree = Number(
+            acc.marginFree ?? acc.margin_free ?? acc.free_margin ?? acc.free ?? 0,
+          );
+        }
         setAccount(acc);
         setAccountConnected(true);
       } else {
