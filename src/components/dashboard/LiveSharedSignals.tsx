@@ -290,26 +290,40 @@ const LiveSharedSignals = () => {
 
                 {/* CTA */}
                 {["active", "open"].includes(s.status) && (
-                  <button
-                    onClick={() => takeSignalInTerminal(s, isBuy)}
-                    className={`group/btn relative w-full inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all overflow-hidden ${
-                      wasCopied
-                        ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
-                        : "bg-primary text-background hover:bg-primary/90 shadow-[0_4px_18px_-4px_hsl(48_100%_51%/0.6)] hover:shadow-[0_6px_22px_-2px_hsl(48_100%_51%/0.8)]"
-                    }`}
-                  >
-                    {wasCopied ? (
-                      <>
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        Copied · Copy Again
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-3.5 w-3.5" />
-                        Copy Trade
-                      </>
-                    )}
-                  </button>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => takeSignalInTerminal(s, isBuy)}
+                      className={`group/btn relative flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all overflow-hidden ${
+                        wasCopied
+                          ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
+                          : "bg-primary text-background hover:bg-primary/90 shadow-[0_4px_18px_-4px_hsl(48_100%_51%/0.6)] hover:shadow-[0_6px_22px_-2px_hsl(48_100%_51%/0.8)]"
+                      }`}
+                    >
+                      {wasCopied ? (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Copied · Copy Again
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-3.5 w-3.5" />
+                          Copy Trade
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() =>
+                        openAIAssistant(
+                          `Explain this signal: ${s.pair} ${String(s.direction).toUpperCase()} @ ${s.entry_price}, SL ${s.stop_loss ?? "n/a"}, TP ${s.take_profit ?? "n/a"} (by ${s.author_name || "mentor"}). Give R:R, macro context, and what to watch for.`,
+                        )
+                      }
+                      title="Ask AI Assistant about this signal"
+                      aria-label="Ask AI Assistant"
+                      className="inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-2.5 text-primary hover:bg-primary/20 transition"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 )}
               </li>
             );
