@@ -50,7 +50,7 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
   { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
-  { to: "/copy-trading", labelKey: "sidebar.dashboard", icon: Copy },
+  { to: "/copy-trading", labelKey: "sidebar.dashboard", icon: Copy, label: "Copy Trading" },
   { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
   { to: "/education", labelKey: "sidebar.education", icon: GraduationCap },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
