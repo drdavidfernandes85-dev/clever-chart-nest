@@ -31,6 +31,7 @@ import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
 import AICopilot from "@/components/ai/AICopilot";
 import PerformanceCoach from "@/components/ai/PerformanceCoach";
+import CopiedTradesPerformance from "@/components/copytrade/CopiedTradesPerformance";
 
 const TIMEFRAMES = [
   { label: "1m", value: "1" },
@@ -358,6 +359,7 @@ const BottomTabs = () => {
             { v: "orders", l: "Orders" },
             { v: "executions", l: "Execution Log" },
             { v: "account", l: "Account" },
+            { v: "copy", l: "Copy P&L" },
             { v: "journal", l: "Journal" },
             { v: "coach", l: "AI Coach" },
           ].map((t) => (
@@ -425,6 +427,10 @@ const BottomTabs = () => {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="copy" className="m-0 p-3">
+          <CopiedTradesPerformance />
         </TabsContent>
 
         <TabsContent value="journal" className="m-0 p-3">

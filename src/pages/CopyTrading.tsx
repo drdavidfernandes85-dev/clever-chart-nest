@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import CopiedTradesPerformance from "@/components/copytrade/CopiedTradesPerformance";
+import MentorTierProgression from "@/components/social/MentorTierProgression";
 
 interface CopiedOrder {
   id: string;
@@ -93,6 +95,7 @@ const CopyTrading = () => {
   const [openTradeLogs, setOpenTradeLogs] = useState<ExecLogRow[]>([]);
   const [openTradePosition, setOpenTradePosition] = useState<PositionRow | null>(null);
   const [openTradeLoading, setOpenTradeLoading] = useState(false);
+  const [openSignal, setOpenSignal] = useState<{ entry_price: number; stop_loss: number | null; take_profit: number | null; status: string; mentor_name: string } | null>(null);
 
   const loadAll = async () => {
     if (!user) { setLoading(false); return; }
@@ -166,7 +169,7 @@ const CopyTrading = () => {
   // Load execution log + position details when a trade row is opened.
   useEffect(() => {
     if (!openTrade || !user) {
-      setOpenTradeLogs([]); setOpenTradePosition(null); return;
+      setOpenTradeLogs([]); setOpenTradePosition(null); setOpenSignal(null); return;
     }
     let cancelled = false;
     (async () => {
@@ -191,6 +194,30 @@ const CopyTrading = () => {
       if (cancelled) return;
       setOpenTradeLogs((logs || []) as ExecLogRow[]);
       setOpenTradePosition((pos || null) as PositionRow | null);
+
+      // Fetch the original mentor signal for performance comparison.
+      if (openTrade.signal_id) {
+        const { data: sig } = await supabase.from("trading_signals")
+          .select("entry_price, stop_loss, take_profit, status, author_id")
+          .eq("id", openTrade.signal_id).maybeSingle();
+        if (sig) {
+          let mentorName = "Mentor";
+          if (sig.author_id) {
+            const { data: prof } = await supabase.from("profiles")
+              .select("display_name").eq("user_id", sig.author_id).maybeSingle();
+            mentorName = prof?.display_name || "Mentor";
+          }
+          if (!cancelled) setOpenSignal({
+            entry_price: Number(sig.entry_price),
+            stop_loss: sig.stop_loss != null ? Number(sig.stop_loss) : null,
+            take_profit: sig.take_profit != null ? Number(sig.take_profit) : null,
+            status: sig.status,
+            mentor_name: mentorName,
+          });
+        } else if (!cancelled) {
+          setOpenSignal(null);
+        }
+      }
       setOpenTradeLoading(false);
     })();
     return () => { cancelled = true; };
@@ -301,6 +328,11 @@ const CopyTrading = () => {
           <Tile label="Following" value={String(mentors.filter(m => m.is_following).length)} icon={<Users className="h-3.5 w-3.5" />} />
         </div>
 
+        {/* Performance snapshot of copied trades */}
+        <div className="mb-6">
+          <CopiedTradesPerformance />
+        </div>
+
         <div className="mb-4 flex items-center gap-1 rounded-xl border border-white/10 bg-[#0F0F0F] p-1 w-fit">
           {([
             { k: "trades", label: "Copied Trades" },
@@ -371,6 +403,8 @@ const CopyTrading = () => {
           )
         ) : (
           <div className="space-y-4">
+            <MentorTierProgression />
+
             {mentors.length === 0 ? (
               <EmptyState
                 title="No mentors yet"
@@ -441,7 +475,53 @@ const CopyTrading = () => {
                     </div>
                   </div>
 
-                  {/* P&L breakdown */}
+                  {/* Original mentor signal comparison */}
+                  {openSignal && (
+                    <div className="rounded-xl border border-[#FFCD05]/25 bg-[#FFCD05]/[0.04] p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-[#FFCD05] mb-2 flex items-center gap-1.5">
+                        <Copy className="h-3 w-3" /> vs Original signal · {openSignal.mentor_name}
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 text-[11px] font-mono tabular-nums">
+                        <div>
+                          <p className="text-[9px] uppercase text-white/40">Entry</p>
+                          <p className="text-white">{fmt(openSignal.entry_price)}</p>
+                          {entry != null && (
+                            <p className={`text-[9px] mt-0.5 ${
+                              Math.abs(Number(entry) - openSignal.entry_price) < 0.0001 * Math.max(1, openSignal.entry_price)
+                                ? "text-emerald-400" : "text-amber-400"
+                            }`}>
+                              Δ {(Number(entry) - openSignal.entry_price).toFixed(5)}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase text-white/40">SL</p>
+                          <p className="text-red-400/90">{fmt(openSignal.stop_loss)}</p>
+                          {sl != null && openSignal.stop_loss != null && (
+                            <p className="text-[9px] text-white/40 mt-0.5">
+                              yours {fmt(sl)}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase text-white/40">TP</p>
+                          <p className="text-emerald-400/90">{fmt(openSignal.take_profit)}</p>
+                          {tp != null && openSignal.take_profit != null && (
+                            <p className="text-[9px] text-white/40 mt-0.5">
+                              yours {fmt(tp)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="mt-2 text-[10px] text-white/40">
+                        Signal status:{" "}
+                        <span className={openSignal.status === "active" ? "text-emerald-400" : "text-white/60"}>
+                          {openSignal.status.toUpperCase()}
+                        </span>
+                      </p>
+                    </div>
+                  )}
+
                   <div className="rounded-xl border border-white/10 bg-[#0F0F0F] p-3">
                     <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2 flex items-center gap-1.5">
                       <Zap className="h-3 w-3" /> P&L breakdown
