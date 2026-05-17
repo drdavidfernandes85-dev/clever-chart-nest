@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   TrendingUp,
   TrendingDown,
@@ -59,6 +59,21 @@ const formatPrice = (n: number, pair: string) =>
 const LiveSharedSignals = () => {
   const [signals, setSignals] = useState<SharedSignal[]>([]);
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
+  const navigate = useNavigate();
+
+  const takeSignalInTerminal = (s: SharedSignal, isBuy: boolean) => {
+    const sym = (s.pair || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const qs = new URLSearchParams({
+      symbol: sym,
+      side: isBuy ? "buy" : "sell",
+      lots: "0.01",
+      signalId: s.id,
+    });
+    if (s.entry_price != null) qs.set("entry", String(s.entry_price));
+    if (s.stop_loss != null) qs.set("sl", String(s.stop_loss));
+    if (s.take_profit != null) qs.set("tp", String(s.take_profit));
+    navigate(`/live-chart?${qs.toString()}`);
+  };
   const copied = useCopiedSignals();
 
   useEffect(() => {
@@ -274,18 +289,7 @@ const LiveSharedSignals = () => {
                 {/* CTA */}
                 {["active", "open"].includes(s.status) && (
                   <button
-                    onClick={() => {
-                      setRequest({
-                        signalId: s.id,
-                        pair: s.pair,
-                        side: isBuy ? "buy" : "sell",
-                        entry: Number(s.entry_price),
-                        sl: s.stop_loss != null ? Number(s.stop_loss) : null,
-                        tp: s.take_profit != null ? Number(s.take_profit) : null,
-                        authorName: s.author_name,
-                        authorTierId: tier?.id ?? null,
-                      });
-                    }}
+                    onClick={() => takeSignalInTerminal(s, isBuy)}
                     className={`group/btn relative w-full inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-wider transition-all overflow-hidden ${
                       wasCopied
                         ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"

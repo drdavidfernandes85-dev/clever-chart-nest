@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3, Zap, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,20 @@ const TradingSignals = () => {
   const { user } = useAuth();
   const copied = useCopiedSignals();
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
+  const navigate = useNavigate();
+  const takeInTerminal = (signal: Signal, isBuy: boolean) => {
+    const sym = (signal.pair || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const qs = new URLSearchParams({
+      symbol: sym,
+      side: isBuy ? "buy" : "sell",
+      lots: "0.01",
+      signalId: signal.id,
+    });
+    if (signal.entry_price != null) qs.set("entry", String(signal.entry_price));
+    if (signal.stop_loss != null) qs.set("sl", String(signal.stop_loss));
+    if (signal.take_profit != null) qs.set("tp", String(signal.take_profit));
+    navigate(`/live-chart?${qs.toString()}`);
+  };
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -422,16 +436,7 @@ const TradingSignals = () => {
                         <TableCell className="py-2 text-center">
                           {signal.status === "active" && (
                             <button
-                              onClick={() =>
-                                setRequest({
-                                  signalId: signal.id,
-                                  pair: signal.pair,
-                                  side: isBuy ? "buy" : "sell",
-                                  entry: Number(signal.entry_price),
-                                  sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
-                                  tp: signal.take_profit != null ? Number(signal.take_profit) : null,
-                                })
-                              }
+                              onClick={() => takeInTerminal(signal, isBuy)}
                               className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
                                 copied.has(signal.id)
                                   ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
@@ -601,16 +606,7 @@ const TradingSignals = () => {
                     {signal.status === "active" && (
                       copied.has(signal.id) ? (
                         <button
-                          onClick={() =>
-                            setRequest({
-                              signalId: signal.id,
-                              pair: signal.pair,
-                              side: isBuy ? "buy" : "sell",
-                              entry: Number(signal.entry_price),
-                              sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
-                              tp: signal.take_profit != null ? Number(signal.take_profit) : null,
-                            })
-                          }
+                          onClick={() => takeInTerminal(signal, isBuy)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-colors"
                         >
                           <CheckCircle2 className="h-3 w-3" />
@@ -618,16 +614,7 @@ const TradingSignals = () => {
                         </button>
                       ) : (
                         <button
-                          onClick={() =>
-                            setRequest({
-                              signalId: signal.id,
-                              pair: signal.pair,
-                              side: isBuy ? "buy" : "sell",
-                              entry: Number(signal.entry_price),
-                              sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
-                              tp: signal.take_profit != null ? Number(signal.take_profit) : null,
-                            })
-                          }
+                          onClick={() => takeInTerminal(signal, isBuy)}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] transition-colors"
                         >
                           <Zap className="h-3 w-3" />
