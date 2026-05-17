@@ -17,4 +17,4 @@ Disallow: /profile
 Disallow: /chatroom
 Disallow: /live-chart
 
-Sitemap: https://elitelivetradingroom.com/sitemap.xml
+Sitemap: https://ixsalatrading.com/sitemap.xml
