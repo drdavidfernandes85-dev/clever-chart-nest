@@ -447,10 +447,56 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     noStops,
   });
 
-  // Symbol specs (contract size, tick value/size) are not yet exposed by
-  // Trading Layer — until they are we cannot calculate accurate P&L or risk.
-  const symbolSpecs: { tickValue: number; tickSize: number; contractSize: number } | null =
-    null;
+  // Symbol specs from get-mt5-symbol-data — tick value/size + contract size.
+  const symbolSpecs = useMemo(() => {
+    const info: any = ctxSelectedSymbolInfo;
+    if (!info) return null;
+    const tickValue = Number(info.tickValue);
+    const tickSize = Number(info.tickSize);
+    const contractSize = Number(info.contractSize);
+    if (!isFinite(tickValue) || !isFinite(tickSize) || tickSize <= 0) return null;
+    return {
+      tickValue,
+      tickSize,
+      contractSize: isFinite(contractSize) ? contractSize : 0,
+      digits: Number(info.digits) || 5,
+    };
+  }, [ctxSelectedSymbolInfo]);
+
+  // Live bid/ask from tick stream (refreshed every 4s by BrokerSymbolsContext).
+  const liveBid = ctxTick?.bid != null ? Number(ctxTick.bid) : null;
+  const liveAsk = ctxTick?.ask != null ? Number(ctxTick.ask) : null;
+  const liveSpread =
+    liveBid != null && liveAsk != null ? Math.max(0, liveAsk - liveBid) : null;
+  const refPrice = isBuy ? liveAsk : liveBid;
+
+  // Approximate margin (broker leverage not exposed → assume 1:100).
+  const ASSUMED_LEVERAGE = 100;
+  const marginRequired =
+    symbolSpecs && refPrice != null && lotsNum > 0 && symbolSpecs.contractSize > 0
+      ? (lotsNum * symbolSpecs.contractSize * refPrice) / ASSUMED_LEVERAGE
+      : null;
+
+  const potentialPnl =
+    symbolSpecs && refPrice != null && tpValid && lotsNum > 0
+      ? ((isBuy ? tpNum! - refPrice : refPrice - tpNum!) /
+          symbolSpecs.tickSize) *
+        symbolSpecs.tickValue *
+        lotsNum
+      : null;
+  const riskAmount =
+    symbolSpecs && refPrice != null && slValid && lotsNum > 0
+      ? Math.abs(
+          ((isBuy ? refPrice - slNum! : slNum! - refPrice) /
+            symbolSpecs.tickSize) *
+            symbolSpecs.tickValue *
+            lotsNum,
+        )
+      : null;
+  const riskPct =
+    riskAmount != null && accountEquity > 0
+      ? (riskAmount / accountEquity) * 100
+      : null;
 
   const canCalculateRisk =
     accountEquity > 0 && slValid && symbolSpecs !== null;
