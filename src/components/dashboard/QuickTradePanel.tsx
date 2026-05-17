@@ -358,10 +358,32 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const side = ctxSide;
   const isBuy = side === "buy";
 
-  // Apply prefill from Take This Trade buttons.
+  // Apply prefill from Take/Copy Trade buttons.
   useEffect(() => {
     if (!prefill) return;
-    if (prefill.lots) setLots(prefill.lots);
+
+    // Compute risk-aware lot size when caller did not provide one but we have
+    // SL distance + entry/current price + account equity. Uses 1% default risk.
+    const riskPct = prefill.riskPct && prefill.riskPct > 0 ? prefill.riskPct : 0.01;
+    setCopyRiskPct(riskPct);
+
+    let lotsToSet = prefill.lots ?? null;
+    const slNum = prefill.sl ? Number(prefill.sl) : NaN;
+    const entryNum = prefill.entry ? Number(prefill.entry) : NaN;
+    if (!lotsToSet && Number.isFinite(slNum) && Number.isFinite(entryNum) && accountEquity > 0) {
+      const sym = (prefill.symbol || normalizedSymbol || "").toUpperCase();
+      const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
+      const valuePerPipPerLot = sym.includes("XAU") ? 10 : 10;
+      const slPips = Math.abs(entryNum - slNum) / pipSize;
+      if (slPips > 0) {
+        const riskTarget = accountEquity * riskPct;
+        let l = riskTarget / (slPips * valuePerPipPerLot);
+        l = Math.max(0.01, Math.min(10, parseFloat(l.toFixed(2))));
+        lotsToSet = String(l);
+      }
+    }
+    if (lotsToSet) setLots(lotsToSet);
+
     if (prefill.entry) {
       setEntry(prefill.entry);
       setType("limit");
@@ -372,10 +394,11 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     setSl(prefill.sl ?? "");
     setTp(prefill.tp ?? "");
     setTradeIdSrc(prefill.signalId ?? null);
+    setCopiedFromMentor(prefill.mentor ?? null);
     if (typeof window !== "undefined") {
       rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       setFlash(true);
-      const t = window.setTimeout(() => setFlash(false), 1200);
+      const t = window.setTimeout(() => setFlash(false), 1800);
       return () => window.clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
