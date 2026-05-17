@@ -345,3 +345,9 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
 };
 
 export default AICopilot;
+
+/** Open the floating AI Assistant from anywhere, optionally with a pre-filled prompt to auto-send. */
+export const openAIAssistant = (prompt?: string) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("infinox:ai-assistant", { detail: { prompt } }));
+};
