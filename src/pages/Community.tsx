@@ -1,23 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Users,
-  Hash,
   MessageSquare,
   Radio,
-  Sparkles,
+  Send,
+  Trophy,
   ArrowRight,
-  Activity,
-  Flame,
+  Hash,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import SEO from "@/components/SEO";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import OnlineTraders from "@/components/chatroom/OnlineTraders";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Channel {
   id: string;
@@ -25,14 +26,63 @@ interface Channel {
   category: string;
 }
 
-const formatChannelName = (name: string) =>
-  name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+interface ChatMsg {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  channel_id: string;
+  profiles?: { display_name: string; avatar_url: string | null } | null;
+}
+
+interface LeaderRow {
+  user_id: string;
+  display_name: string;
+  total_xp: number;
+  level: number;
+}
+
+const initialsOf = (n?: string | null) =>
+  (n || "TR")
+    .split(/[\s._-]+/)
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() || "TR";
+
+const colorFor = (id: string) => {
+  const palette = [
+    "bg-teal-600/30 text-teal-200",
+    "bg-blue-600/30 text-blue-200",
+    "bg-indigo-600/30 text-indigo-200",
+    "bg-purple-600/30 text-purple-200",
+    "bg-orange-600/30 text-orange-200",
+    "bg-pink-600/30 text-pink-200",
+    "bg-cyan-600/30 text-cyan-200",
+  ];
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
+  return palette[Math.abs(h) % palette.length];
+};
+
+const formatTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 const Community = () => {
   const { t, locale } = useLanguage();
-  const [onlineCount, setOnlineCount] = useState(184);
-  const [channels, setChannels] = useState<Channel[]>([]);
+  const { user, profile } = useAuth();
+  const navigate = useNavigate();
 
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [leaders, setLeaders] = useState<LeaderRow[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load channels
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -40,335 +90,354 @@ const Community = () => {
         .from("channels")
         .select("id, name, category")
         .order("created_at");
-      if (!cancelled && data) setChannels(data);
+      if (cancelled || !data) return;
+      setChannels(data);
+      const first =
+        data.find((c) => c.name === "general") || data[0];
+      if (first) setActiveChannelId(first.id);
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Simulated live online counter (same heuristic used elsewhere in the app).
+  // Load + subscribe to messages
   useEffect(() => {
-    const tick = setInterval(() => {
-      setOnlineCount((n) =>
-        Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))),
+    if (!activeChannelId) return;
+    let cancelled = false;
+
+    const load = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select(
+          "id, content, created_at, user_id, channel_id, profiles!messages_user_id_profiles_fkey(display_name, avatar_url)",
+        )
+        .eq("channel_id", activeChannelId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .limit(80);
+      if (!cancelled && data) setMessages(data as unknown as ChatMsg[]);
+    };
+    load();
+
+    const ch = supabase
+      .channel(`community-msgs:${activeChannelId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `channel_id=eq.${activeChannelId}`,
+        },
+        async (payload) => {
+          const row = payload.new as ChatMsg;
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("user_id", row.user_id)
+            .single();
+          setMessages((prev) => [...prev, { ...row, profiles: prof }]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(ch);
+    };
+  }, [activeChannelId]);
+
+  // Auto-scroll to bottom on new messages
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  // Leaderboard teaser
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: xp } = await supabase
+        .from("user_xp")
+        .select("user_id, total_xp, level")
+        .order("total_xp", { ascending: false })
+        .limit(5);
+      if (cancelled || !xp?.length) return;
+      const ids = xp.map((x) => x.user_id);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", ids);
+      const nameMap = new Map(
+        (profs || []).map((p) => [p.user_id, p.display_name]),
       );
-    }, 5000);
-    return () => clearInterval(tick);
+      setLeaders(
+        xp.map((x) => ({
+          user_id: x.user_id,
+          display_name: nameMap.get(x.user_id) || "Trader",
+          total_xp: x.total_xp,
+          level: x.level,
+        })),
+      );
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const groupedChannels = useMemo(
-    () =>
-      channels.reduce<Record<string, Channel[]>>((acc, ch) => {
-        (acc[ch.category] ??= []).push(ch);
-        return acc;
-      }, {}),
-    [channels],
+  const activeChannel = useMemo(
+    () => channels.find((c) => c.id === activeChannelId) ?? null,
+    [channels, activeChannelId],
   );
+
+  const handleSend = async () => {
+    if (!draft.trim() || !activeChannelId || !user?.id) return;
+    setSending(true);
+    const { error } = await supabase.from("messages").insert({
+      content: draft.trim(),
+      channel_id: activeChannelId,
+      user_id: user.id,
+    });
+    if (error) {
+      toast.error("Failed to send");
+    } else {
+      setDraft("");
+    }
+    setSending(false);
+  };
 
   const seoLang =
     locale === "pt" ? "pt-BR" : locale === "es" ? "es-ES" : "en-US";
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "DiscussionForumPosting",
-    headline: t("community.seo.title"),
-    description: t("community.seo.desc"),
-    inLanguage: seoLang,
-    url: "https://elitelivetradingroom.com/community",
-  };
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+    <main className="relative min-h-screen bg-[#050505] text-foreground">
       <SEO
-        title={t("community.seo.title")}
-        description={t("community.seo.desc")}
-        keywords={t("community.seo.keywords")}
-        canonical="https://elitelivetradingroom.com/community"
-        jsonLd={jsonLd}
+        title="Community Hub | IX Sala de Trading"
+        description="Professional trading community: live chat, shared signals, and top traders. Real-time collaboration with mentors and peers."
+        canonical="https://ixsalatrading.com/community"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "DiscussionForumPosting",
+          headline: "Community Hub",
+          inLanguage: seoLang,
+          url: "https://ixsalatrading.com/community",
+        }}
       />
 
-      {/* Ambient fiery glow */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-[hsl(45,100%,50%)]/10 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-[hsl(15,90%,55%)]/10 blur-[100px]" />
-      </div>
-
-      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        {/* Top bar */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <Link
-            to="/dashboard"
-            className="text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-primary"
-          >
-            ← {t("nav.dashboard")}
-          </Link>
-          <LanguageSwitcher />
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-white/5 bg-[#0a0a0a]/95 px-4 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-[#FFCD05]" />
+          <h1 className="font-heading text-sm font-bold uppercase tracking-[0.18em] text-foreground">
+            Community Hub
+          </h1>
         </div>
-
-        {/* Hero */}
-        <motion.header
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative mb-8 overflow-hidden rounded-3xl border border-[hsl(45,100%,50%)]/30 bg-gradient-to-br from-card/80 via-card/60 to-background/40 p-6 backdrop-blur-xl shadow-[0_0_60px_-15px_hsl(45,100%,50%/0.35)] sm:p-10"
+        <Link
+          to="/dashboard"
+          className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-[#FFCD05]"
         >
-          <div className="pointer-events-none absolute inset-0 opacity-40">
-            <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[hsl(45,100%,50%)]/15 blur-3xl" />
+          ← Terminal
+        </Link>
+      </header>
+
+      {/* 3-column layout */}
+      <div className="grid h-[calc(100vh-3rem)] grid-cols-1 gap-px bg-white/5 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
+        {/* LEFT — Online Traders */}
+        <aside className="flex flex-col bg-[#0F0F0F]">
+          <div className="flex h-10 items-center gap-2 border-b border-white/5 px-4">
+            <Users className="h-3.5 w-3.5 text-[#FFCD05]" />
+            <span className="font-heading text-[11px] font-bold uppercase tracking-[0.16em] text-foreground">
+              Online Traders
+            </span>
+          </div>
+          <ScrollArea className="flex-1 px-2 py-3">
+            <OnlineTraders />
+          </ScrollArea>
+        </aside>
+
+        {/* CENTER — Live Chatroom */}
+        <section className="flex min-w-0 flex-col bg-[#0a0a0a]">
+          {/* Channel tabs */}
+          <div className="flex h-10 items-center gap-1 overflow-x-auto border-b border-white/5 px-3">
+            {channels.length === 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                Loading channels…
+              </span>
+            )}
+            {channels.slice(0, 8).map((ch) => {
+              const isActive = ch.id === activeChannelId;
+              return (
+                <button
+                  key={ch.id}
+                  onClick={() => setActiveChannelId(ch.id)}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    isActive
+                      ? "bg-[#FFCD05]/15 text-[#FFCD05]"
+                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  }`}
+                >
+                  <Hash className="h-3 w-3" />
+                  {ch.name.replace(/_/g, " ")}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="relative">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[hsl(45,100%,50%)]/40 bg-[hsl(45,100%,50%)]/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[hsl(45,100%,55%)]">
-              <Sparkles className="h-3 w-3" />
-              {t("community.eyebrow")}
-            </div>
-            <h1 className="font-heading text-4xl font-black tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-              {t("community.h1")}
-            </h1>
-            <p className="mt-3 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              {t("community.subheadline")}
-            </p>
-
-            <div className="mt-6 flex flex-wrap items-center gap-4">
-              <div className="inline-flex items-center gap-2.5 rounded-2xl border border-[hsl(145,65%,45%)]/30 bg-[hsl(145,65%,45%)]/10 px-4 py-2.5">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-2.5 w-2.5 animate-ping rounded-full bg-[hsl(145,65%,50%)] opacity-70" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[hsl(145,65%,50%)]" />
-                </span>
-                <span className="font-mono text-base font-bold tabular-nums text-foreground">
-                  {onlineCount}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {t("community.online")}
-                </span>
+          {/* Messages */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3">
+            {messages.length === 0 && (
+              <div className="flex h-full items-center justify-center text-center">
+                <div>
+                  <MessageSquare className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" />
+                  <p className="text-xs text-muted-foreground">
+                    No messages yet. Say hi to the room.
+                  </p>
+                </div>
               </div>
+            )}
+            <ul className="space-y-3">
+              {messages.map((m) => {
+                const name = m.profiles?.display_name || "Trader";
+                return (
+                  <li key={m.id} className="flex items-start gap-2.5">
+                    <div
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${colorFor(
+                        m.user_id,
+                      )}`}
+                    >
+                      {initialsOf(name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xs font-semibold text-foreground">
+                          {name}
+                        </span>
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                          {formatTime(m.created_at)}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 break-words text-sm leading-relaxed text-foreground/90">
+                        {m.content}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
+          {/* Composer */}
+          <div className="border-t border-white/5 bg-[#0F0F0F] p-3">
+            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#050505] px-3 py-1.5 focus-within:border-[#FFCD05]/40">
+              <Input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder={
+                  activeChannel
+                    ? `Message #${activeChannel.name.replace(/_/g, " ")}`
+                    : "Select a channel…"
+                }
+                disabled={!activeChannelId || !user}
+                className="flex-1 border-0 bg-transparent p-0 text-sm text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
+              />
               <Button
-                asChild
-                className="rounded-2xl bg-[hsl(45,100%,50%)] font-bold text-black shadow-[0_10px_30px_-10px_hsl(45,100%,50%/0.7)] hover:bg-[hsl(45,100%,55%)]"
+                size="sm"
+                onClick={handleSend}
+                disabled={sending || !draft.trim() || !activeChannelId}
+                className="h-7 gap-1 rounded-md bg-[#FFCD05] px-2.5 text-[11px] font-bold text-black hover:bg-[#FFD83A]"
               >
-                <Link to="/chatroom">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  {t("community.openChat")}
-                </Link>
+                <Send className="h-3 w-3" />
+                Send
               </Button>
             </div>
+            <p className="mt-1.5 px-1 text-[10px] text-muted-foreground/70">
+              Real-time chat • Be respectful • No financial advice
+            </p>
           </div>
-        </motion.header>
+        </section>
 
-        {/* Main grid */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          {/* Left column */}
-          <div className="space-y-6">
-            {/* Chat rooms */}
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.05 }}
-              className="rounded-3xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl sm:p-6"
-            >
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(45,100%,50%)]/15 text-[hsl(45,100%,55%)]">
-                    <Hash className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h2 className="font-heading text-lg font-bold text-foreground">
-                      {t("community.rooms.title")}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      {t("community.rooms.subtitle")}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  to="/chatroom"
-                  className="hidden text-xs font-semibold uppercase tracking-widest text-[hsl(45,100%,55%)] hover:underline sm:inline"
-                >
-                  {t("community.viewAll")} →
-                </Link>
+        {/* RIGHT — Signals + Leaderboard teaser */}
+        <aside className="flex min-h-0 flex-col bg-[#0F0F0F]">
+          {/* Signals */}
+          <div className="flex min-h-0 flex-1 flex-col border-b border-white/5">
+            <div className="flex h-10 items-center justify-between gap-2 border-b border-white/5 px-4">
+              <div className="flex items-center gap-2">
+                <Radio className="h-3.5 w-3.5 animate-pulse text-[#FFCD05]" />
+                <span className="font-heading text-[11px] font-bold uppercase tracking-[0.16em] text-foreground">
+                  Live Shared Signals
+                </span>
               </div>
+              <Link
+                to="/signals"
+                className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-[#FFCD05]"
+              >
+                All →
+              </Link>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <LiveSharedSignals />
+            </div>
+          </div>
 
-              {Object.keys(groupedChannels).length === 0 ? (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {["general", "market_discussion", "webinars", "trades_room"].map(
-                    (n) => (
-                      <Link
-                        key={n}
-                        to="/chatroom"
-                        className="flex items-center gap-3 rounded-2xl border border-border/40 bg-background/40 p-4 transition-all hover:border-[hsl(45,100%,50%)]/40 hover:bg-[hsl(45,100%,50%)]/5"
-                      >
-                        <Hash className="h-4 w-4 shrink-0 text-[hsl(45,100%,55%)]" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-foreground">
-                            {formatChannelName(n)}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {Math.floor(20 + Math.random() * 60)}{" "}
-                            {t("community.rooms.members")}
-                          </p>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      </Link>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-5">
-                  {Object.entries(groupedChannels).map(([category, list]) => (
-                    <div key={category}>
-                      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-                        {category}
-                      </p>
-                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                        {list.map((ch) => (
-                          <Link
-                            key={ch.id}
-                            to="/chatroom"
-                            className="group flex items-center gap-3 rounded-2xl border border-border/40 bg-background/40 p-3.5 transition-all hover:border-[hsl(45,100%,50%)]/40 hover:bg-[hsl(45,100%,50%)]/5"
-                          >
-                            <Hash className="h-4 w-4 shrink-0 text-[hsl(45,100%,55%)]" />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-foreground">
-                                {formatChannelName(ch.name)}
-                              </p>
-                            </div>
-                            <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-[hsl(45,100%,55%)]" />
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          {/* Leaderboard teaser */}
+          <div className="shrink-0">
+            <div className="flex h-10 items-center justify-between gap-2 border-b border-white/5 px-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-3.5 w-3.5 text-[#FFCD05]" />
+                <span className="font-heading text-[11px] font-bold uppercase tracking-[0.16em] text-foreground">
+                  Top Traders
+                </span>
+              </div>
+              <Link
+                to="/leaderboard"
+                className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-[#FFCD05]"
+              >
+                Full board <ArrowRight className="h-2.5 w-2.5" />
+              </Link>
+            </div>
+            <ul className="divide-y divide-white/5">
+              {leaders.length === 0 && (
+                <li className="px-4 py-3 text-[11px] text-muted-foreground">
+                  No ranking data yet.
+                </li>
               )}
-            </motion.section>
-
-            {/* Shared Market Ideas */}
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="overflow-hidden rounded-3xl border border-[hsl(45,100%,50%)]/30 bg-card/70 backdrop-blur-xl shadow-[0_10px_40px_-15px_hsl(45,100%,50%/0.35)]"
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-border/40 bg-[hsl(45,100%,50%)]/5 px-5 py-3.5">
-                <div className="flex items-center gap-2.5">
-                  <Radio className="h-4 w-4 animate-pulse text-[hsl(45,100%,55%)]" />
-                  <div>
-                    <h2 className="font-heading text-base font-bold text-foreground">
-                      {t("community.ideas.title")}
-                    </h2>
-                    <p className="text-[11px] text-muted-foreground">
-                      {t("community.ideas.subtitle")}
-                    </p>
+              {leaders.map((l, i) => (
+                <li
+                  key={l.user_id}
+                  className="flex items-center gap-2.5 px-4 py-2 hover:bg-white/5"
+                >
+                  <span className="w-5 text-center font-mono text-[11px] font-bold text-[#FFCD05]">
+                    {i + 1}
+                  </span>
+                  <div
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${colorFor(
+                      l.user_id,
+                    )}`}
+                  >
+                    {initialsOf(l.display_name)}
                   </div>
-                </div>
-              </div>
-              <div className="p-2 sm:p-3">
-                <LiveSharedSignals />
-              </div>
-            </motion.section>
-
-            {/* Activity */}
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.15 }}
-              className="rounded-3xl border border-border/50 bg-card/70 p-5 backdrop-blur-xl sm:p-6"
-            >
-              <div className="mb-4 flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(45,100%,50%)]/15 text-[hsl(45,100%,55%)]">
-                  <Activity className="h-4 w-4" />
-                </div>
-                <h2 className="font-heading text-lg font-bold text-foreground">
-                  {t("community.activity.title")}
-                </h2>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-2xl border border-border/40 bg-background/40 p-4 text-center">
-                  <Flame className="mx-auto mb-1.5 h-4 w-4 text-[hsl(45,100%,55%)]" />
-                  <p className="font-mono text-xl font-bold tabular-nums text-foreground">
-                    {onlineCount}
-                  </p>
-                  <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Online
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border/40 bg-background/40 p-4 text-center">
-                  <MessageSquare className="mx-auto mb-1.5 h-4 w-4 text-[hsl(45,100%,55%)]" />
-                  <p className="font-mono text-xl font-bold tabular-nums text-foreground">
-                    {Math.floor(onlineCount * 3.2)}
-                  </p>
-                  <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Messages 24h
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border/40 bg-background/40 p-4 text-center">
-                  <Sparkles className="mx-auto mb-1.5 h-4 w-4 text-[hsl(45,100%,55%)]" />
-                  <p className="font-mono text-xl font-bold tabular-nums text-foreground">
-                    {Math.floor(onlineCount / 6)}
-                  </p>
-                  <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Ideas 24h
-                  </p>
-                </div>
-              </div>
-            </motion.section>
+                  <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">
+                    {l.display_name}
+                  </span>
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                    L{l.level}
+                  </span>
+                  <span className="font-mono text-[11px] font-bold tabular-nums text-foreground">
+                    {l.total_xp.toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          {/* Right column — Online traders */}
-          <motion.aside
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="rounded-3xl border border-border/50 bg-card/70 p-4 backdrop-blur-xl sm:p-5 lg:sticky lg:top-6 lg:self-start"
-          >
-            <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(45,100%,50%)]/15 text-[hsl(45,100%,55%)]">
-                <Users className="h-4 w-4" />
-              </div>
-              <div>
-                <h2 className="font-heading text-base font-bold text-foreground">
-                  {t("community.traders.title")}
-                </h2>
-                <p className="text-[11px] text-muted-foreground">
-                  {t("community.traders.subtitle")}
-                </p>
-              </div>
-            </div>
-            <div className="max-h-[600px] overflow-y-auto pr-1">
-              <OnlineTraders />
-            </div>
-          </motion.aside>
-        </div>
-
-        {/* CTA */}
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-8 flex flex-col items-center gap-4 rounded-3xl border-2 border-[hsl(45,100%,50%)]/40 bg-gradient-to-br from-[hsl(45,100%,50%)]/[0.08] to-transparent p-6 text-center shadow-[0_0_40px_hsl(45,100%,50%/0.18)] sm:p-8"
-        >
-          <h3 className="font-heading text-2xl font-bold text-foreground sm:text-3xl">
-            {t("community.cta.join")}
-          </h3>
-          <p className="max-w-xl text-sm text-muted-foreground">
-            {t("community.cta.desc")}
-          </p>
-          <Button
-            asChild
-            size="lg"
-            className="rounded-2xl bg-[hsl(45,100%,50%)] font-bold text-black shadow-[0_10px_30px_-10px_hsl(45,100%,50%/0.7)] hover:bg-[hsl(45,100%,55%)]"
-          >
-            <Link to="/chatroom">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              {t("community.openChat")}
-            </Link>
-          </Button>
-        </motion.section>
-
-        <p className="mt-8 text-center text-[11px] leading-relaxed text-muted-foreground/70">
-          {t("community.disclaimer")}
-        </p>
+        </aside>
       </div>
     </main>
   );
