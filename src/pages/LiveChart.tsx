@@ -248,7 +248,7 @@ const LiveChartInner = () => {
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/" className="flex items-center gap-2">
               <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-                <span className="text-primary">Pro</span> Terminal
+                Terminal
               </span>
             </Link>
             <Badge variant="secondary" className="hidden md:inline-flex text-[10px] uppercase tracking-wider rounded-full">
