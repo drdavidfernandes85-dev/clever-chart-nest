@@ -615,16 +615,7 @@ const TradingSignals = () => {
                     {signal.status === "active" && (
                       copied.has(signal.id) ? (
                         <button
-                          onClick={() =>
-                            setRequest({
-                              signalId: signal.id,
-                              pair: signal.pair,
-                              side: isBuy ? "buy" : "sell",
-                              entry: Number(signal.entry_price),
-                              sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
-                              tp: signal.take_profit != null ? Number(signal.take_profit) : null,
-                            })
-                          }
+                          onClick={() => takeInTerminal(signal, isBuy)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/15 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-400 transition-colors"
                         >
                           <CheckCircle2 className="h-3 w-3" />
