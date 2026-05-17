@@ -182,6 +182,13 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
           return;
         }
         setLastSymbolDataResponse(data);
+        const rateLimited =
+          (data as any)?.rateLimited === true ||
+          (data as any)?.step === "rate_limited";
+        if (rateLimited) {
+          // Keep existing specs/tick — broker just throttled us.
+          return;
+        }
         if (data?.success === true) {
           setSelectedSymbolValid(data.selectedSymbolValid === true);
           if (data.selectedSymbolInfo) setSelectedSymbolInfo(data.selectedSymbolInfo);
@@ -204,7 +211,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     setSelectedSymbolInfo(null);
     setSelectedSymbolValid(false);
     fetchOnce(true);
-    const id = window.setInterval(() => fetchOnce(false), 4000);
+    const id = window.setInterval(() => fetchOnce(false), 10000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
