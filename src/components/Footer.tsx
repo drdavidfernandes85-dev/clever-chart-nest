@@ -14,28 +14,28 @@ const Footer = () => {
     {
       title: t("footer.quickLinks"),
       links: [
-        { label: t("footer.anchor.dashboard"), to: "/dashboard" },
-        { label: t("footer.anchor.community"), to: "/chatroom" },
+        { label: t("footer.anchor.education"), to: "/education" },
         { label: t("footer.anchor.webinars"), to: "/webinars" },
-        { label: t("footer.anchor.pricing"), to: "/#pricing" },
+        { label: "Video Library", to: "/videos" },
+        { label: "Leaderboard", to: "/leaderboard" },
       ],
     },
     {
       title: t("footer.resources"),
       links: [
-        { label: t("footer.anchor.education"), to: "/education" },
-        { label: t("footer.anchor.analysis"), to: "/signals" },
-        { label: t("footer.anchor.risk"), to: "/dashboard" },
-        { label: t("footer.anchor.connect"), to: "/connect-mt" },
+        { label: "Próximo Webinar", to: "/webinar" },
+        { label: t("footer.anchor.community"), to: "/community/guidelines" },
+        { label: t("footer.anchor.pricing"), to: "/#pricing" },
+        { label: t("footer.anchor.faq"), to: "/#faq" },
       ],
     },
     {
       title: t("footer.support"),
       links: [
-        { label: t("footer.anchor.faq"), to: "/#faq" },
+        { label: "Crear cuenta", to: "/register" },
+        { label: "Iniciar sesión", to: "/login" },
+        { label: "Recuperar contraseña", to: "/forgot-password" },
         { label: t("footer.anchor.contact"), to: "/#contact" },
-        { label: t("footer.privacy"), to: "/#" },
-        { label: t("footer.terms"), to: "/#" },
       ],
     },
   ];
