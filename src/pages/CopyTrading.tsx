@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
+import CopiedTradesPerformance from "@/components/copytrade/CopiedTradesPerformance";
+import MentorTierProgression from "@/components/social/MentorTierProgression";
 
 interface CopiedOrder {
   id: string;
