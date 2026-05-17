@@ -1019,7 +1019,47 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             </div>
           )}
 
-          {/* Live preview metrics — P&L / risk pending symbol specs */}
+          {/* Live bid/ask + execution metrics from get-mt5-symbol-data */}
+          {(liveBid != null || liveAsk != null || symbolSpecs) && (
+            <div className="rounded-xl border border-primary/20 bg-primary/[0.03] overflow-hidden">
+              <div className="grid grid-cols-2 divide-x divide-border/30 border-b border-border/30">
+                <div className="px-3 py-2">
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-red-400/80">Bid</div>
+                  <div className="font-mono text-base font-bold tabular-nums text-red-400">
+                    {liveBid != null
+                      ? liveBid.toLocaleString(undefined, {
+                          minimumFractionDigits: symbolSpecs?.digits ?? 5,
+                          maximumFractionDigits: symbolSpecs?.digits ?? 5,
+                        })
+                      : "—"}
+                  </div>
+                </div>
+                <div className="px-3 py-2 text-right">
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-emerald-400/80">Ask</div>
+                  <div className="font-mono text-base font-bold tabular-nums text-emerald-400">
+                    {liveAsk != null
+                      ? liveAsk.toLocaleString(undefined, {
+                          minimumFractionDigits: symbolSpecs?.digits ?? 5,
+                          maximumFractionDigits: symbolSpecs?.digits ?? 5,
+                        })
+                      : "—"}
+                  </div>
+                </div>
+              </div>
+              {liveSpread != null && (
+                <div className="flex items-center justify-between px-3 py-1 border-b border-border/30 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+                  <span>Spread</span>
+                  <span className="text-foreground tabular-nums">
+                    {liveSpread.toLocaleString(undefined, {
+                      minimumFractionDigits: symbolSpecs?.digits ?? 5,
+                      maximumFractionDigits: symbolSpecs?.digits ?? 5,
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="rounded-xl border border-border/40 bg-background/40 divide-y divide-border/30 overflow-hidden">
             <Row
               label="Equity"
@@ -1030,14 +1070,49 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
               }
             />
             <Row
+              label="Margin Required"
+              value={
+                marginRequired != null
+                  ? `${accountCurrency} ${marginRequired.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                  : "—"
+              }
+              valueClass={marginRequired != null ? "text-foreground tabular-nums" : "text-muted-foreground"}
+            />
+            <Row
               label="Potential P&L"
-              value="Calculated after symbol specs load"
-              valueClass="text-muted-foreground italic text-[11px] normal-case"
+              value={
+                potentialPnl != null
+                  ? `${potentialPnl >= 0 ? "+" : "−"}${accountCurrency} ${Math.abs(potentialPnl).toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+                  : tpValid
+                  ? "—"
+                  : "Set Take Profit"
+              }
+              valueClass={
+                potentialPnl != null
+                  ? potentialPnl >= 0
+                    ? "text-emerald-400 tabular-nums"
+                    : "text-red-400 tabular-nums"
+                  : "text-muted-foreground italic text-[11px] normal-case"
+              }
             />
             <Row
               label="Risk"
-              value={canCalculateRisk ? "—" : "Pending symbol data"}
-              valueClass="text-muted-foreground italic text-[11px] normal-case"
+              value={
+                riskAmount != null
+                  ? `${accountCurrency} ${riskAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}${
+                      riskPct != null ? `  ·  ${riskPct.toFixed(2)}%` : ""
+                    }`
+                  : slValid
+                  ? "—"
+                  : "Set Stop Loss"
+              }
+              valueClass={
+                riskAmount != null
+                  ? riskPct != null && riskPct > 2
+                    ? "text-red-400 tabular-nums"
+                    : "text-amber-300 tabular-nums"
+                  : "text-muted-foreground italic text-[11px] normal-case"
+              }
             />
           </div>
 
