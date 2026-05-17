@@ -237,6 +237,10 @@ const Admin = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="mentors" className="mt-4">
+            <AdminMentorApplicationsTab />
+          </TabsContent>
+
           {/* ANNOUNCEMENT */}
           <TabsContent value="announce" className="mt-4">
             <Card className="p-4">
