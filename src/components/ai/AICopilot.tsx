@@ -314,7 +314,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
         >
           <span className="absolute inset-0 -z-10 rounded-full bg-primary/40 blur-xl animate-pulse" />
           <Sparkles className="h-5 w-5" />
-          <span className="font-bold text-sm tracking-wide">{t("ai.copilot")}</span>
+          <span className="font-bold text-sm tracking-wide">AI Assistant</span>
         </button>
       )}
 
