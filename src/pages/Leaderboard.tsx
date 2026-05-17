@@ -249,7 +249,7 @@ const Leaderboard = () => {
             </div>
             <div>
               <p className="font-heading text-sm font-bold text-white">Become a Mentor</p>
-              <p className="text-xs text-white/60">Approved automatically — share signals and host live rooms.</p>
+              <p className="text-xs text-white/60">Submit your application — an admin will review and approve it.</p>
             </div>
           </div>
           <Button size="sm" onClick={() => setMentorOpen(true)} className="bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-semibold">
@@ -623,12 +623,12 @@ const MentorApplyDialog = ({ open, onOpenChange, userId }: { open: boolean; onOp
       trading_style: style.trim().slice(0, 100) || null,
       pairs: pairs.trim().slice(0, 200) || null,
       bio: bio.trim(),
-      status: "approved",
+      status: "pending",
     });
     setSubmitting(false);
     if (error) { setStatus("error"); toast.error(error.message); return; }
-    setStatus("approved");
-    toast.success("Application approved — you are now a Mentor");
+    setStatus("pending");
+    toast.success("Application submitted — pending admin review");
   };
 
   return (
@@ -637,13 +637,23 @@ const MentorApplyDialog = ({ open, onOpenChange, userId }: { open: boolean; onOp
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2"><GraduationCap className="h-4 w-4 text-[#FFCD05]" /> Become a Mentor</DialogTitle>
           <DialogDescription className="text-white/50 text-xs">
-            Auto-approved. After submitting you'll be granted moderator access and the Mentor badge.
+            Submit your application. An admin will review and approve mentors manually.
           </DialogDescription>
         </DialogHeader>
 
         {status === "approved" && (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" /> You're approved as a Mentor.
+            <CheckCircle2 className="h-4 w-4" /> Your application has been approved — you are now a Mentor.
+          </div>
+        )}
+        {status === "pending" && (
+          <div className="rounded-xl border border-[#FFCD05]/30 bg-[#FFCD05]/10 p-3 text-sm text-[#FFCD05] flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" /> Application pending — an admin will review it shortly.
+          </div>
+        )}
+        {status === "error" && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+            Submission failed. Please try again.
           </div>
         )}
 
@@ -680,8 +690,8 @@ const MentorApplyDialog = ({ open, onOpenChange, userId }: { open: boolean; onOp
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="border-white/15 bg-transparent text-white hover:bg-white/5">Close</Button>
-          <Button onClick={submit} disabled={submitting} className="bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-semibold">
-            {submitting ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Submitting…</> : existing ? "Resubmit" : "Submit Application"}
+          <Button onClick={submit} disabled={submitting || status === "pending" || status === "approved"} className="bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-semibold">
+            {submitting ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Submitting…</> : status === "approved" ? "Approved" : status === "pending" ? "Pending Review" : "Submit Application"}
           </Button>
         </div>
       </DialogContent>
