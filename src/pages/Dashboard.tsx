@@ -430,6 +430,10 @@ const BottomTabs = () => {
         <TabsContent value="journal" className="m-0 p-3">
           <TradeJournal />
         </TabsContent>
+
+        <TabsContent value="coach" className="m-0 p-3">
+          <PerformanceCoach />
+        </TabsContent>
       </Tabs>
     </div>
   );
