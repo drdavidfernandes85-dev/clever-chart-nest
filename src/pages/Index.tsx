@@ -181,6 +181,7 @@ const Index = () => {
       <LazyHomeSection minHeight={320}><CTASection /></LazyHomeSection>
       <LazyHomeSection minHeight={560}><ContactSection /></LazyHomeSection>
       <LazyHomeSection minHeight={360}><NewsletterSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={420}><ComplianceBlock /></LazyHomeSection>
       </main>
       <DeferredSection minHeight={420}>
         <Suspense fallback={<div style={{ minHeight: 420 }} aria-hidden="true" />}>
