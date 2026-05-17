@@ -7,6 +7,7 @@ import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
 import OnlineNowPill from "@/components/social/OnlineNowPill";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { track } from "@/lib/analytics";
 import heroComet from "@/assets/hero-comet.jpg";
 
 // Next webinar — next weekday at 14:00 UTC
