@@ -218,11 +218,14 @@ const Webinars = () => {
               <Sparkles className="h-3 w-3" /> Webinars
             </Badge>
           </Link>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-1.5" /> {t("sidebar.dashboard")}
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <MT5StatusBadge className="hidden sm:inline-flex" />
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/dashboard">
+                <ArrowLeft className="h-4 w-4 mr-1.5" /> {t("sidebar.dashboard")}
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 
