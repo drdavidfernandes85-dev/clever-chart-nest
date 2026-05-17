@@ -249,7 +249,7 @@ const Leaderboard = () => {
             </div>
             <div>
               <p className="font-heading text-sm font-bold text-white">Become a Mentor</p>
-              <p className="text-xs text-white/60">Approved automatically — share signals and host live rooms.</p>
+              <p className="text-xs text-white/60">Submit your application — an admin will review and approve it.</p>
             </div>
           </div>
           <Button size="sm" onClick={() => setMentorOpen(true)} className="bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-semibold">
