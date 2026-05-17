@@ -59,6 +59,21 @@ const formatPrice = (n: number, pair: string) =>
 const LiveSharedSignals = () => {
   const [signals, setSignals] = useState<SharedSignal[]>([]);
   const [request, setRequest] = useState<CopyTradeRequest | null>(null);
+  const navigate = useNavigate();
+
+  const takeSignalInTerminal = (s: SharedSignal, isBuy: boolean) => {
+    const sym = (s.pair || "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    const qs = new URLSearchParams({
+      symbol: sym,
+      side: isBuy ? "buy" : "sell",
+      lots: "0.01",
+      signalId: s.id,
+    });
+    if (s.entry_price != null) qs.set("entry", String(s.entry_price));
+    if (s.stop_loss != null) qs.set("sl", String(s.stop_loss));
+    if (s.take_profit != null) qs.set("tp", String(s.take_profit));
+    navigate(`/live-chart?${qs.toString()}`);
+  };
   const copied = useCopiedSignals();
 
   useEffect(() => {
