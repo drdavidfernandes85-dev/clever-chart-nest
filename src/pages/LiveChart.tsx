@@ -249,7 +249,7 @@ const LiveChartInner = () => {
             <Link to="/" className="flex items-center gap-2">
               <img src={infinoxLogo} alt="INFINOX" className="h-5 shrink-0" />
               <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-                <span className="text-primary">IX</span> Terminal
+                <span className="text-primary">Pro</span> Terminal
               </span>
             </Link>
             <Badge variant="secondary" className="hidden md:inline-flex text-[10px] uppercase tracking-wider rounded-full">
