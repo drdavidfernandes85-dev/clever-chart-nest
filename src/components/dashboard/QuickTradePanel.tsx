@@ -257,6 +257,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     message: string;
   } | null>(null);
   const [flash, setFlash] = useState(false);
+  const [copiedFromMentor, setCopiedFromMentor] = useState<string | null>(null);
+  const [copyRiskPct, setCopyRiskPct] = useState<number>(0.01);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
@@ -356,10 +358,32 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const side = ctxSide;
   const isBuy = side === "buy";
 
-  // Apply prefill from Take This Trade buttons.
+  // Apply prefill from Take/Copy Trade buttons.
   useEffect(() => {
     if (!prefill) return;
-    if (prefill.lots) setLots(prefill.lots);
+
+    // Compute risk-aware lot size when caller did not provide one but we have
+    // SL distance + entry/current price + account equity. Uses 1% default risk.
+    const riskPct = prefill.riskPct && prefill.riskPct > 0 ? prefill.riskPct : 0.01;
+    setCopyRiskPct(riskPct);
+
+    let lotsToSet = prefill.lots ?? null;
+    const slNum = prefill.sl ? Number(prefill.sl) : NaN;
+    const entryNum = prefill.entry ? Number(prefill.entry) : NaN;
+    if (!lotsToSet && Number.isFinite(slNum) && Number.isFinite(entryNum) && accountEquity > 0) {
+      const sym = (prefill.symbol || normalizedSymbol || "").toUpperCase();
+      const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
+      const valuePerPipPerLot = sym.includes("XAU") ? 10 : 10;
+      const slPips = Math.abs(entryNum - slNum) / pipSize;
+      if (slPips > 0) {
+        const riskTarget = accountEquity * riskPct;
+        let l = riskTarget / (slPips * valuePerPipPerLot);
+        l = Math.max(0.01, Math.min(10, parseFloat(l.toFixed(2))));
+        lotsToSet = String(l);
+      }
+    }
+    if (lotsToSet) setLots(lotsToSet);
+
     if (prefill.entry) {
       setEntry(prefill.entry);
       setType("limit");
@@ -370,10 +394,11 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     setSl(prefill.sl ?? "");
     setTp(prefill.tp ?? "");
     setTradeIdSrc(prefill.signalId ?? null);
+    setCopiedFromMentor(prefill.mentor ?? null);
     if (typeof window !== "undefined") {
       rootRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       setFlash(true);
-      const t = window.setTimeout(() => setFlash(false), 1200);
+      const t = window.setTimeout(() => setFlash(false), 1800);
       return () => window.clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -708,6 +733,47 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             </span>
           )}
         </div>
+
+        {copiedFromMentor && (
+          <div className="border-b border-primary/30 bg-gradient-to-r from-primary/15 via-primary/8 to-transparent px-4 py-2.5 flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-background">
+                <Zap className="h-3 w-3" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-heading text-[11px] font-bold uppercase tracking-wider text-primary leading-none">
+                  Copied from {copiedFromMentor}
+                </p>
+                {(() => {
+                  const lotsN = parseFloat(lots) || 0;
+                  const slN = parseFloat(sl);
+                  const entN = parseFloat(entry) || (currentPrice ?? 0);
+                  if (!lotsN || !slN || !entN || accountEquity <= 0) return (
+                    <p className="mt-0.5 text-[10px] text-muted-foreground">Auto-scaled to your account</p>
+                  );
+                  const sym = normalizedSymbol;
+                  const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
+                  const valuePerPip = sym.includes("XAU") ? 10 : 10;
+                  const slPips = Math.abs(entN - slN) / pipSize;
+                  const riskUsd = slPips * valuePerPip * lotsN;
+                  const pctOfEq = (riskUsd / accountEquity) * 100;
+                  return (
+                    <p className="mt-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
+                      Risks <span className="text-red-400 font-bold">${riskUsd.toFixed(2)}</span> ({pctOfEq.toFixed(2)}% of equity)
+                    </p>
+                  );
+                })()}
+              </div>
+            </div>
+            <button
+              onClick={() => setCopiedFromMentor(null)}
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Clear mentor copy"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         <div className="p-4 space-y-3.5 bg-card/60">
           {/* Symbol selector */}

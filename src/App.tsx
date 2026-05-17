@@ -38,6 +38,7 @@ const EducationModule = lazy(() => import("./pages/EducationModule"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const HeroQA = lazy(() => import("./pages/HeroQA"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const CopyTrading = lazy(() => import("./pages/CopyTrading"));
 const LiveChart = lazy(() => import("./pages/LiveChart"));
 const Login = lazy(() => import("./pages/Login"));
 const News = lazy(() => import("./pages/News"));
@@ -111,6 +112,7 @@ const App = () => (
                   <Route path="/chatroom" element={<GatedDashboardShell><Chatroom /></GatedDashboardShell>} />
                   <Route path="/signals" element={<GatedDashboardShell><TradingSignals /></GatedDashboardShell>} />
                   <Route path="/leaderboard" element={<GatedDashboardShell><Leaderboard /></GatedDashboardShell>} />
+                  <Route path="/copy-trading" element={<GatedDashboardShell><CopyTrading /></GatedDashboardShell>} />
                   <Route path="/analytics" element={<GatedDashboardShell><Analytics /></GatedDashboardShell>} />
                   <Route path="/trading-dashboard" element={<Navigate to="/trading-room" replace />} />
                   <Route path="/news" element={<GatedDashboardShell><News /></GatedDashboardShell>} />

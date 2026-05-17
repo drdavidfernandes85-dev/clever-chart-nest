@@ -18,6 +18,7 @@ import {
   Newspaper,
   CalendarDays,
   GraduationCap,
+  Copy,
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
 import sidebarLogo from "@/assets/logo-sidebar.png";
@@ -39,7 +40,7 @@ import { Globe } from "lucide-react";
  * (mobile uses MobileBottomNav). Inspired by top-tier trading platforms.
  */
 
-const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
+const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean; label?: string }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
   { to: "/trading-room", labelKey: "sidebar.tradingRoom", icon: Activity },
   { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
@@ -49,6 +50,7 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
   { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
   { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
+  { to: "/copy-trading", labelKey: "sidebar.dashboard", icon: Copy, label: "Copy Trading" },
   { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
   { to: "/education", labelKey: "sidebar.education", icon: GraduationCap },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
@@ -120,7 +122,7 @@ const DashboardSidebar = () => {
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  title={collapsed ? t(item.labelKey) : undefined}
+                  title={collapsed ? (item.label ?? t(item.labelKey)) : undefined}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
                     active
@@ -137,7 +139,7 @@ const DashboardSidebar = () => {
                       isWebinars && "text-primary"
                     )}
                   />
-                  {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                  {!collapsed && <span className="truncate">{item.label ?? t(item.labelKey)}</span>}
                   {!collapsed && showBadge && (
                     <span
                       className={cn(
