@@ -444,6 +444,7 @@ const Community = () => {
           </div>
         </aside>
       </div>
+      <AICopilot />
     </main>
   );
 };
