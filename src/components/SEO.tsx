@@ -35,27 +35,38 @@ const setLink = (rel: string, href: string) => {
 };
 
 /**
- * Refresh the alternate-language hreflang link tags. The site does not
- * yet use locale-prefixed URLs, so each alternate points at the same URL
- * — this still signals to crawlers that translated content exists at the
- * same address (selected via the in-app switcher / stored preference).
+ * Inject alternate-language hreflang link tags for the supplied canonical.
+ * The site selects locale at runtime via in-app switcher / stored preference,
+ * but we still advertise a stable URL per language using a `?lang=` query so
+ * crawlers (and Search Console's hreflang report) see distinct entries for
+ * es / pt-BR / en plus an x-default.
  */
-const HREFLANG_LOCALES: { hreflang: string }[] = [
-  { hreflang: "en" },
-  { hreflang: "es" },
-  { hreflang: "pt-BR" },
-  { hreflang: "x-default" },
+const HREFLANG_LOCALES: { hreflang: string; query: string | null }[] = [
+  { hreflang: "es", query: null },
+  { hreflang: "pt-BR", query: "pt-BR" },
+  { hreflang: "en", query: "en" },
+  { hreflang: "x-default", query: null },
 ];
+const localeUrl = (canonical: string, query: string | null) => {
+  if (!query) return canonical;
+  try {
+    const u = new URL(canonical);
+    u.searchParams.set("lang", query);
+    return u.toString();
+  } catch {
+    return canonical + (canonical.includes("?") ? "&" : "?") + `lang=${query}`;
+  }
+};
 const setHreflangs = (canonical: string) => {
   // Remove any previously-injected alternates so the set stays clean
   document.head
     .querySelectorAll('link[rel="alternate"][data-i18n="1"]')
     .forEach((n) => n.remove());
-  HREFLANG_LOCALES.forEach(({ hreflang }) => {
+  HREFLANG_LOCALES.forEach(({ hreflang, query }) => {
     const link = document.createElement("link");
     link.setAttribute("rel", "alternate");
     link.setAttribute("hreflang", hreflang);
-    link.setAttribute("href", canonical);
+    link.setAttribute("href", localeUrl(canonical, query));
     link.setAttribute("data-i18n", "1");
     document.head.appendChild(link);
   });
