@@ -37,7 +37,6 @@ const FlashCell = ({ value, positive }: { value: number; positive: boolean }) =>
 
 const OpenPositionsPanel = () => {
   const { liveAccount, positions, connected, loading, refreshing, refresh } = useLiveAccount();
-  const { account: mtAccount } = useMTAccount();
   const [closing, setClosing] = useState<string | null>(null);
 
   const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
