@@ -479,6 +479,7 @@ const LiveChartInner = () => {
           </aside>
         </div>
       </div>
+      <AICopilot />
     </div>
   );
 };
