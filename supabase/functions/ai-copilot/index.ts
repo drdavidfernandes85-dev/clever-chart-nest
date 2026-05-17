@@ -158,9 +158,29 @@ function buildSystemPrompt(ctx: Awaited<ReturnType<typeof fetchContext>>) {
     ? `User stats: ${ctx.stats.totalTrades} closed trades, win rate ${ctx.stats.winRate}, total P&L ${ctx.stats.totalPnl}, ${ctx.stats.openTrades} open.`
     : "User has no closed trades yet.";
 
-  return `You are **Infinox AI Co-pilot**, an elite trading assistant for the IX LTR.
+  const portfolio: any = (ctx as any).portfolio;
+  const positions: any[] = (ctx as any).positions || [];
+  const leaderboard: any[] = (ctx as any).leaderboard || [];
+  const portfolioBlock = portfolio
+    ? `Account #${portfolio.login} @ ${portfolio.broker_name || portfolio.server_name} (${portfolio.status})
+Balance ${portfolio.balance ?? "?"} ${portfolio.currency || "USD"} · Equity ${portfolio.equity ?? "?"} · Margin ${portfolio.margin ?? "?"} · Free Margin ${portfolio.free_margin ?? "?"} · Leverage 1:${portfolio.leverage ?? "?"}`
+    : "No MT5 account connected.";
+  const positionsBlock = positions.length
+    ? positions
+        .slice(0, 12)
+        .map(
+          (p: any) =>
+            `- ${p.symbol} ${String(p.side).toUpperCase()} ${p.volume} lots @ ${p.open_price} (now ${p.current_price ?? "?"}) SL ${p.stop_loss ?? "-"} TP ${p.take_profit ?? "-"} P&L ${p.profit ?? 0}`,
+        )
+        .join("\n")
+    : "No open positions.";
+  const leaderboardBlock = leaderboard.length
+    ? leaderboard.map((r: any) => `${r.rank}. ${r.name}${r.isYou ? " (YOU)" : ""} — P&L ${r.pnl}, ${r.trades} trades, win rate ${r.winRate}`).join("\n")
+    : "Leaderboard unavailable.";
 
-Your job: answer questions about markets, signals, the user's performance, news, and macro events.
+  return `You are **Infinox AI Co-pilot**, an elite trading co-pilot for the IX LTR community.
+
+Your job: answer questions about markets, signals, the user's portfolio & performance, news, and macro events.
 Be concise, professional, and data-driven. Use markdown formatting (lists, bold, tables when useful).
 Never give financial advice — frame insights as analysis or education.
 
@@ -177,14 +197,25 @@ ${calLines || "No high-impact events."}
 ### Active trading signals
 ${sigLines || "No active signals right now."}
 
+### User's MT5 portfolio
+${portfolioBlock}
+
+### User's open positions
+${positionsBlock}
+
 ### User's recent trades
 ${tradeLines || "No trades logged."}
 ${statsLine}
 
-When the user asks about their performance, use the stats and trades above.
-When they ask about a pair or signal, reference the live signals list.
-When they ask "why is X moving?", correlate news + calendar.
-Keep responses under 200 words unless detail is requested.`;
+### Top 10 traders (last 30d)
+${leaderboardBlock}
+
+When the user asks "analyze my portfolio" — summarize balance/equity/margin, total exposure, concentration risk per symbol, and concrete suggestions.
+When they ask "what is my risk level?" — compute used margin %, free margin buffer, biggest open-position risk, and rate risk Low/Moderate/High/Extreme.
+When they ask "explain this signal" — break down direction, entry, SL/TP, R:R, and macro context from news/calendar.
+When they ask "market outlook for X" — combine news + calendar + active signals for that pair.
+When they ask how they compare to top traders — reference the leaderboard block above.
+Keep responses under 220 words unless detail is requested.`;
 }
 
 Deno.serve(async (req) => {
