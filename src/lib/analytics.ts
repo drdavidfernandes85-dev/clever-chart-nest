@@ -1,12 +1,10 @@
 /**
- * Lightweight analytics wrapper for Google Analytics (GA4) and Meta Pixel.
- *
- * Both vendors are loaded as no-op stubs in `index.html`. Replace the
- * placeholder IDs in index.html with real ones and events flow through
- * automatically — no code changes needed.
+ * Lightweight analytics wrapper for Google Analytics (GA4), Meta Pixel,
+ * and the internal Supabase analytics_events table.
  *
  * Calls are wrapped in try/catch so a missing vendor never breaks the UI.
  */
+import { supabase } from "@/integrations/supabase/client";
 
 declare global {
   interface Window {
@@ -15,6 +13,24 @@ declare global {
     dataLayer?: any[];
   }
 }
+
+const persistEvent = (
+  event: string,
+  params: Record<string, unknown>,
+  path?: string,
+) => {
+  try {
+    const section = (params.section as string | undefined) ?? null;
+    void supabase.from("analytics_events").insert({
+      event,
+      section,
+      path: path ?? (typeof window !== "undefined" ? window.location.pathname : null),
+      params: params as never,
+    });
+  } catch {
+    /* noop */
+  }
+};
 
 export type TrackEvent =
   | "login"
@@ -49,13 +65,14 @@ export type TrackEvent =
 
 export const track = (event: TrackEvent, params: Record<string, unknown> = {}) => {
   if (typeof window === "undefined") return;
+  // Persist to internal store first (best-effort)
+  persistEvent(event, params);
   try {
     window.gtag?.("event", event, params);
   } catch {
     /* noop */
   }
   try {
-    // Meta Pixel uses standard events for a few; the rest are custom.
     const standardMap: Partial<Record<TrackEvent, string>> = {
       register: "CompleteRegistration",
       lead_capture: "Lead",
@@ -70,7 +87,6 @@ export const track = (event: TrackEvent, params: Record<string, unknown> = {}) =
   } catch {
     /* noop */
   }
-  // Always log in dev for visibility
   if (import.meta.env.DEV) {
     // eslint-disable-next-line no-console
     console.debug("[analytics]", event, params);
@@ -79,6 +95,7 @@ export const track = (event: TrackEvent, params: Record<string, unknown> = {}) =
 
 export const trackPageView = (path: string) => {
   if (typeof window === "undefined") return;
+  persistEvent("page_view", { section: "navigation", path }, path);
   try {
     window.gtag?.("event", "page_view", { page_path: path });
   } catch {
