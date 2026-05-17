@@ -155,20 +155,25 @@ serve(async (req) => {
     const symbols = selectedSymbolInfo ? [selectedSymbolInfo] : [];
 
     if (!selectedSymbolValid) {
+      const isRateLimited = exactRes.status === 429;
       return json({
         success: false,
-        step: "symbol_validation",
-        error: `${selectedSymbol} is not available on this connected MT5 account.`,
+        step: isRateLimited ? "rate_limited" : "symbol_validation",
+        error: isRateLimited
+          ? "Broker API rate limit hit — retrying shortly."
+          : `${selectedSymbol} is not available on this connected MT5 account.`,
+        rateLimited: isRateLimited,
         accountId,
         accountSource,
         selectedSymbol,
-        selectedSymbolValid: false,
+        // Don't claim the symbol is invalid when the broker just rate-limited us.
+        selectedSymbolValid: isRateLimited ? null : false,
         symbolsLoaded: false,
         count: 0,
         symbols: [],
         attempts,
         raw: debug ? { exactSymbol: exactRes.data } : undefined,
-      }, 400);
+      }, isRateLimited ? 429 : 400);
     }
 
     return json({
