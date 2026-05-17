@@ -5,6 +5,7 @@ import { Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { track } from "@/lib/analytics";
 
 const NewsletterSection = () => {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ const NewsletterSection = () => {
     e.preventDefault();
     if (!email.trim()) return;
 
+    track("newsletter_submit", { section: "newsletter_footer_block" });
     setLoading(true);
     const { error } = await supabase
       .from("newsletter_subscribers")
@@ -23,6 +25,10 @@ const NewsletterSection = () => {
     setLoading(false);
 
     if (error) {
+      track("newsletter_submit_error", {
+        section: "newsletter_footer_block",
+        code: error.code ?? "unknown",
+      });
       if (error.code === "23505") {
         toast.info("You're already subscribed!");
       } else {
@@ -31,6 +37,7 @@ const NewsletterSection = () => {
       return;
     }
 
+    track("newsletter_submit_success", { section: "newsletter_footer_block" });
     toast.success("Successfully subscribed!");
     setEmail("");
   };

@@ -7,6 +7,7 @@ import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
 import OnlineNowPill from "@/components/social/OnlineNowPill";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { track } from "@/lib/analytics";
 import heroComet from "@/assets/hero-comet.jpg";
 
 // Next webinar — next weekday at 14:00 UTC
@@ -175,7 +176,11 @@ const HeroSection = () => {
                   className="h-14 gap-2 rounded-full px-9 text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] cta-pulse shadow-[0_0_0_1px_hsl(45_100%_50%/0.6),0_0_30px_hsl(45_100%_50%/0.6),0_0_70px_hsl(28_100%_55%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.85),0_0_100px_hsl(28_100%_55%/0.65)] transition-shadow"
                   asChild
                 >
-                  <Link to="/dashboard" aria-label="Acceder al Terminal de Trading">
+                  <Link
+                    to="/dashboard"
+                    aria-label="Acceder al Terminal de Trading"
+                    onClick={() => track("cta_click", { cta: "open_terminal", section: "hero", destination: "/dashboard" })}
+                  >
                     <LayoutDashboard className="h-4 w-4" /> Acceder al Terminal de Trading <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -187,7 +192,11 @@ const HeroSection = () => {
                   className="h-14 gap-2 rounded-full bg-[#FFCD05]/10 border-primary/60 px-7 text-base font-bold text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]"
                   asChild
                 >
-                  <Link to="/webinars" aria-label="Ver Webinars Gratuitos">
+                  <Link
+                    to="/webinars"
+                    aria-label="Ver Webinars Gratuitos"
+                    onClick={() => track("cta_click", { cta: "view_webinars", section: "hero", destination: "/webinars" })}
+                  >
                     <PlayCircle className="h-4 w-4" /> Ver Webinars Gratuitos
                   </Link>
                 </Button>
