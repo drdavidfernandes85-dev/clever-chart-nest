@@ -1118,11 +1118,46 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                 riskAmount != null
                   ? riskPct != null && riskPct > 2
                     ? "text-red-400 tabular-nums"
-                    : "text-amber-300 tabular-nums"
+                    : riskPct != null && riskPct >= 1
+                    ? "text-amber-300 tabular-nums"
+                    : "text-emerald-400 tabular-nums"
                   : "text-muted-foreground italic text-[11px] normal-case"
               }
             />
           </div>
+
+          {/* Risk & margin warnings */}
+          {(() => {
+            const warnings: string[] = [];
+            if (riskPct != null && riskPct > 2) {
+              warnings.push(
+                `Risk ${riskPct.toFixed(2)}% exceeds the 2% safe limit. Consider reducing volume or widening stop loss.`,
+              );
+            }
+            if (
+              marginRequired != null &&
+              accountFreeMargin > 0 &&
+              marginRequired > accountFreeMargin
+            ) {
+              warnings.push(
+                `Required margin (${accountCurrency} ${marginRequired.toLocaleString(undefined, { maximumFractionDigits: 2 })}) exceeds free margin (${accountCurrency} ${accountFreeMargin.toLocaleString(undefined, { maximumFractionDigits: 2 })}).`,
+              );
+            }
+            if (warnings.length === 0) return null;
+            return (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-3 py-2 space-y-1">
+                {warnings.map((w, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 text-[11px] text-red-300 leading-snug"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>{w}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           {/* Place trade button */}
           {(() => {
