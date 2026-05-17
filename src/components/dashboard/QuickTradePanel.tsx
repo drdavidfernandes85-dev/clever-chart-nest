@@ -259,6 +259,11 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const [flash, setFlash] = useState(false);
   const [copiedFromMentor, setCopiedFromMentor] = useState<string | null>(null);
   const [copyRiskPct, setCopyRiskPct] = useState<number>(0.01);
+  // When a Copy Trade prefill needs exact lot sizing from broker specs,
+  // we stash the inputs here and recompute once symbolSpecs + equity arrive.
+  const [pendingCopySize, setPendingCopySize] = useState<
+    { sl: number; entry: number; riskPct: number } | null
+  >(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   const symbolDisplay = selectedItem?.displayName ?? ctxSymbol;
