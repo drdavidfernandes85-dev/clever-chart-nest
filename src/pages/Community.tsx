@@ -19,6 +19,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import MT5StatusBadge from "@/components/MT5StatusBadge";
 
 interface Channel {
   id: string;
