@@ -50,6 +50,9 @@ async function fetchContext(supabase: ReturnType<typeof createClient>, userId: s
   // User trade journal (only if logged in)
   let trades: any[] = [];
   let stats: any = null;
+  let portfolio: any = null;
+  let positions: any[] = [];
+  let leaderboard: any[] = [];
   if (userId) {
     const { data } = await supabase
       .from("trade_journal")
@@ -70,9 +73,59 @@ async function fetchContext(supabase: ReturnType<typeof createClient>, userId: s
         openTrades: trades.filter((t) => t.status === "open").length,
       };
     }
+
+    // MT5 portfolio snapshot
+    const { data: acct } = await supabase
+      .from("user_mt_accounts")
+      .select("id, login, server, currency, leverage, balance, equity, margin, margin_free, profit, status, last_synced")
+      .eq("user_id", userId)
+      .order("last_synced", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+    if (acct) {
+      portfolio = acct;
+      const { data: pos } = await supabase
+        .from("mt_positions")
+        .select("symbol, side, volume, open_price, current_price, stop_loss, take_profit, profit, swap, commission")
+        .eq("account_id", acct.id)
+        .order("opened_at", { ascending: false })
+        .limit(20);
+      positions = pos || [];
+    }
+
+    // Top traders leaderboard (last 30d)
+    const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const { data: tj } = await supabase
+      .from("trade_journal")
+      .select("user_id, pnl")
+      .eq("status", "closed")
+      .gte("closed_at", since)
+      .not("pnl", "is", null)
+      .limit(2000);
+    if (tj?.length) {
+      const agg = new Map<string, { pnl: number; trades: number; wins: number }>();
+      for (const r of tj as any[]) {
+        const p = Number(r.pnl) || 0;
+        const cur = agg.get(r.user_id) || { pnl: 0, trades: 0, wins: 0 };
+        cur.pnl += p; cur.trades += 1; if (p > 0) cur.wins += 1;
+        agg.set(r.user_id, cur);
+      }
+      const ranked = [...agg.entries()].map(([uid, v]) => ({ user_id: uid, ...v })).sort((a, b) => b.pnl - a.pnl);
+      const topIds = ranked.slice(0, 10).map((r) => r.user_id);
+      const { data: profs } = await supabase.from("profiles").select("user_id, display_name").in("user_id", topIds);
+      const nameById = new Map((profs || []).map((p: any) => [p.user_id, p.display_name]));
+      leaderboard = ranked.slice(0, 10).map((r, i) => ({
+        rank: i + 1,
+        name: nameById.get(r.user_id) || "Anonymous",
+        pnl: r.pnl.toFixed(2),
+        trades: r.trades,
+        winRate: ((r.wins / r.trades) * 100).toFixed(1) + "%",
+        isYou: r.user_id === userId,
+      }));
+    }
   }
 
-  return { news, calendar, signals: signals || [], trades, stats, language: LANG_NAME[locale] || LANG_NAME.en };
+  return { news, calendar, signals: signals || [], trades, stats, portfolio, positions, leaderboard, language: LANG_NAME[locale] || LANG_NAME.en };
 }
 
 function buildSystemPrompt(ctx: Awaited<ReturnType<typeof fetchContext>>) {
