@@ -359,6 +359,7 @@ const BottomTabs = () => {
             { v: "orders", l: "Orders" },
             { v: "executions", l: "Execution Log" },
             { v: "account", l: "Account" },
+            { v: "copy", l: "Copy P&L" },
             { v: "journal", l: "Journal" },
             { v: "coach", l: "AI Coach" },
           ].map((t) => (
