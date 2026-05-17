@@ -169,7 +169,7 @@ const CopyTrading = () => {
   // Load execution log + position details when a trade row is opened.
   useEffect(() => {
     if (!openTrade || !user) {
-      setOpenTradeLogs([]); setOpenTradePosition(null); return;
+      setOpenTradeLogs([]); setOpenTradePosition(null); setOpenSignal(null); return;
     }
     let cancelled = false;
     (async () => {
