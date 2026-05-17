@@ -18,6 +18,7 @@ import infinoxLogo from "@/assets/infinox-logo-white.png";
 import MT5StatusBadge from "@/components/MT5StatusBadge";
 import AICopilot from "@/components/ai/AICopilot";
 import { toast } from "sonner";
+import MentorTierProgression from "@/components/social/MentorTierProgression";
 
 type PeriodKey = "all" | "month" | "week" | "today";
 const PERIODS: { key: PeriodKey; label: string }[] = [
