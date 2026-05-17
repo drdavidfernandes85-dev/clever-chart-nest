@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
+import { track } from "@/lib/analytics";
 import { Link } from "react-router-dom";
 import {
   LayoutDashboard,
