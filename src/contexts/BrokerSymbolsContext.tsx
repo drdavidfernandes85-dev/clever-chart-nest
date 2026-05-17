@@ -154,7 +154,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // Fetch specs + tick for the currently selected symbol.
-  const lastFetchedSymbol = useRef<string | null>(null);
+  // Initial call resolves specs; a 4s poll keeps the bid/ask tick live.
   useEffect(() => {
     if (!user) {
       setSelectedSymbolValid(false);
@@ -164,10 +164,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     }
     const sym = normalize(selectedBrokerSymbol);
     if (!sym) return;
-    if (lastFetchedSymbol.current === sym) return;
-    lastFetchedSymbol.current = sym;
     let cancelled = false;
-    (async () => {
+    const fetchOnce = async (isInitial: boolean) => {
       try {
         const { data, error: invErr } = await supabase.functions.invoke(
           "get-mt5-symbol-data",
@@ -175,32 +173,41 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         );
         if (cancelled) return;
         if (invErr) {
-          setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
-          setSelectedSymbolValid(false);
-          setSelectedSymbolInfo(null);
-          setTick(null);
+          if (isInitial) {
+            setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
+            setSelectedSymbolValid(false);
+            setSelectedSymbolInfo(null);
+            setTick(null);
+          }
           return;
         }
         setLastSymbolDataResponse(data);
         if (data?.success === true) {
           setSelectedSymbolValid(data.selectedSymbolValid === true);
-          setSelectedSymbolInfo(data.selectedSymbolInfo || null);
-          setTick(data.tick || null);
-        } else {
+          if (data.selectedSymbolInfo) setSelectedSymbolInfo(data.selectedSymbolInfo);
+          if (data.tick) setTick(data.tick);
+        } else if (isInitial) {
           setSelectedSymbolValid(false);
           setSelectedSymbolInfo(null);
           setTick(null);
         }
       } catch (e: any) {
-        if (cancelled) return;
+        if (cancelled || !isInitial) return;
         setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
         setSelectedSymbolValid(false);
         setSelectedSymbolInfo(null);
         setTick(null);
       }
-    })();
+    };
+    // Reset on symbol change
+    setTick(null);
+    setSelectedSymbolInfo(null);
+    setSelectedSymbolValid(false);
+    fetchOnce(true);
+    const id = window.setInterval(() => fetchOnce(false), 4000);
     return () => {
       cancelled = true;
+      window.clearInterval(id);
     };
   }, [user, selectedBrokerSymbol]);
 
