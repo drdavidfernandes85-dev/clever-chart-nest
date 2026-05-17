@@ -547,6 +547,24 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const canCalculateRisk =
     accountEquity > 0 && slValid && symbolSpecs !== null;
 
+  // Precise risk-aware lot sizing using broker tickValue/tickSize.
+  // Runs when symbolSpecs + equity finally arrive after a Copy Trade prefill.
+  useEffect(() => {
+    if (!pendingCopySize) return;
+    if (!symbolSpecs || accountEquity <= 0) return;
+    const { sl: pSl, entry: pEntry, riskPct } = pendingCopySize;
+    const priceDist = Math.abs(pEntry - pSl);
+    if (!(priceDist > 0)) { setPendingCopySize(null); return; }
+    const ticks = priceDist / symbolSpecs.tickSize;
+    const valuePerLot = ticks * symbolSpecs.tickValue;
+    if (!(valuePerLot > 0)) { setPendingCopySize(null); return; }
+    const riskTarget = accountEquity * riskPct;
+    let l = riskTarget / valuePerLot;
+    l = Math.max(0.01, Math.min(100, parseFloat(l.toFixed(2))));
+    setLots(l.toFixed(2));
+    setPendingCopySize(null);
+  }, [pendingCopySize, symbolSpecs, accountEquity]);
+
   const adjustLots = (delta: number) => {
     const next = Math.max(0.01, Math.min(100, +(lotsNum + delta).toFixed(2)));
     setLots(next.toFixed(2));
