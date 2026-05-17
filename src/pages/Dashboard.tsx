@@ -31,6 +31,7 @@ import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
 import AICopilot from "@/components/ai/AICopilot";
 import PerformanceCoach from "@/components/ai/PerformanceCoach";
+import CopiedTradesPerformance from "@/components/copytrade/CopiedTradesPerformance";
 
 const TIMEFRAMES = [
   { label: "1m", value: "1" },
