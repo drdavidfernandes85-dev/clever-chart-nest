@@ -72,7 +72,7 @@ const LiveSharedSignals = () => {
     if (s.entry_price != null) qs.set("entry", String(s.entry_price));
     if (s.stop_loss != null) qs.set("sl", String(s.stop_loss));
     if (s.take_profit != null) qs.set("tp", String(s.take_profit));
-    navigate(`/live-chart?${qs.toString()}`);
+    navigate(`/dashboard?${qs.toString()}`);
   };
   const copied = useCopiedSignals();
 
