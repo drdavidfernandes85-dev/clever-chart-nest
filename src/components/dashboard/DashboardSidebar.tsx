@@ -45,7 +45,6 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/trading-room", labelKey: "sidebar.tradingRoom", icon: Activity },
   { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
-  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
   { to: "/signals", labelKey: "sidebar.signals", icon: Zap },
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
   { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
