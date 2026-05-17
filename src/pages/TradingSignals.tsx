@@ -55,7 +55,7 @@ const TradingSignals = () => {
     if (signal.entry_price != null) qs.set("entry", String(signal.entry_price));
     if (signal.stop_loss != null) qs.set("sl", String(signal.stop_loss));
     if (signal.take_profit != null) qs.set("tp", String(signal.take_profit));
-    navigate(`/live-chart?${qs.toString()}`);
+    navigate(`/dashboard?${qs.toString()}`);
   };
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
