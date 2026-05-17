@@ -112,6 +112,7 @@ interface LiveAccount {
   account_number?: string;
   server?: string;
   equity?: number;
+  marginFree?: number;
   currency?: string;
   symbols?: string[];
 }
