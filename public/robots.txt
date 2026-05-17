@@ -59,3 +59,6 @@ Disallow: /u/
 Disallow: /__qa/
 
 Sitemap: https://ixsalatrading.com/sitemap.xml
+Sitemap: https://ixsalatrading.com/sitemap-es.xml
+Sitemap: https://ixsalatrading.com/sitemap-pt-BR.xml
+Sitemap: https://ixsalatrading.com/sitemap-en.xml
