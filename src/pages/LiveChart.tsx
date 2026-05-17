@@ -423,9 +423,10 @@ const LiveChartInner = () => {
           {/* RIGHT: Bid/Ask Board + Quick Trade ticket */}
           <aside className="flex flex-col gap-2 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
             <BidAskBoard
-              symbols={WATCH_DEFAULT.slice(0, 9)}
-              onSelect={onSelectByLabel}
+              symbols={topBoardSymbols}
+              onSelect={(sym) => setActiveBroker(sym)}
             />
+
             <QuickTradePanel />
           </aside>
         </div>
