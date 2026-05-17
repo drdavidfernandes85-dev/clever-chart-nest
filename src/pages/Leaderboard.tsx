@@ -234,9 +234,12 @@ const Leaderboard = () => {
               <span className="text-[#FFCD05]">IX</span> LEADERBOARD
             </span>
           </Link>
-          <Button variant="ghost" size="sm" asChild className="text-white/60 gap-1.5">
-            <Link to="/community"><ArrowLeft className="h-4 w-4" /> Community</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <MT5StatusBadge className="hidden sm:inline-flex" />
+            <Button variant="ghost" size="sm" asChild className="text-white/60 gap-1.5">
+              <Link to="/community"><ArrowLeft className="h-4 w-4" /> Community</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
