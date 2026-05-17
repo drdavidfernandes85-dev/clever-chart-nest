@@ -28,6 +28,7 @@ const ContactSection = () => {
       return;
     }
 
+    track("contact_submit", { section: "contact_form", subject: formData.subject });
     setSending(true);
 
     try {
@@ -38,9 +39,14 @@ const ContactSection = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      track("contact_submit_success", { section: "contact_form" });
       toast.success("Message sent successfully");
       setFormData(emptyForm);
     } catch (error) {
+      track("contact_submit_error", {
+        section: "contact_form",
+        message: error instanceof Error ? error.message : "unknown",
+      });
       toast.error(error instanceof Error ? error.message : "Failed to send message");
     } finally {
       setSending(false);
