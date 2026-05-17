@@ -254,6 +254,11 @@ const Admin = () => {
               </div>
             </Card>
           </TabsContent>
+
+          {/* ANALYTICS */}
+          <TabsContent value="analytics" className="mt-4">
+            <AdminAnalyticsTab />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
