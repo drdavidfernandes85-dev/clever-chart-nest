@@ -24,7 +24,7 @@ const TeamSection = lazy(() => import("@/components/TeamSection"));
 const MentoringSection = lazy(() => import("@/components/MentoringSection"));
 const TrustpilotSection = lazy(() => import("@/components/TrustpilotSection"));
 const FAQSection = lazy(() => import("@/components/FAQSection"));
-const CTASection = lazy(() => import("@/components/CTASection"));
+
 const ContactSection = lazy(() => import("@/components/ContactSection"));
 const NewsletterSection = lazy(() => import("@/components/NewsletterSection"));
 const Footer = lazy(() => import("@/components/Footer"));
