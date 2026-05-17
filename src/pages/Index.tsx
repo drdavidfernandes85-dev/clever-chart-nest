@@ -140,6 +140,7 @@ const Index = () => {
       <Navbar />
       <main>
       <HeroSection />
+      <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><FeaturesSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>
