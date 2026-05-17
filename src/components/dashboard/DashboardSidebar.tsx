@@ -40,7 +40,7 @@ import { Globe } from "lucide-react";
  * (mobile uses MobileBottomNav). Inspired by top-tier trading platforms.
  */
 
-const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
+const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean; label?: string }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
   { to: "/trading-room", labelKey: "sidebar.tradingRoom", icon: Activity },
   { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
