@@ -13,6 +13,7 @@ import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import AdminWebinarsTab from "@/components/admin/AdminWebinarsTab";
 import AdminMentorApplicationsTab from "@/components/admin/AdminMentorApplicationsTab";
+import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
 
 interface Channel { id: string; name: string; category: string; }
 interface Profile { user_id: string; display_name: string; }
