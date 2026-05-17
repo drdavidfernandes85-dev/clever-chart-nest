@@ -29,6 +29,8 @@ import {
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
+import AICopilot from "@/components/ai/AICopilot";
+import PerformanceCoach from "@/components/ai/PerformanceCoach";
 
 const TIMEFRAMES = [
   { label: "1m", value: "1" },
