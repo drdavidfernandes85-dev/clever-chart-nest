@@ -118,8 +118,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       }
       setLoading(true);
       try {
-        const { data, error: invErr } = await supabase.functions.invoke("get-mt5-symbols", {
-          body: {},
+        const { data, error: invErr } = await supabase.functions.invoke("get-mt5-terminal-data", {
+          body: { includeSymbols: true },
         });
         if (invErr) {
           setLastResponse({ success: false, error: invErr.message ?? String(invErr) });
@@ -168,8 +168,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     const fetchOnce = async (isInitial: boolean) => {
       try {
         const { data, error: invErr } = await supabase.functions.invoke(
-          "get-mt5-symbol-data",
-          { body: { debug: true, selectedSymbol: sym } },
+          "get-mt5-terminal-data",
+          { body: { selectedSymbol: sym } },
         );
         if (cancelled) return;
         if (invErr) {

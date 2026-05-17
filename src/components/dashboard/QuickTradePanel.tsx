@@ -141,8 +141,8 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   const loadAccount = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke("get-live-account", {
-        body: { refresh: true },
+      const { data, error } = await supabase.functions.invoke("get-mt5-terminal-data", {
+        body: {},
       });
       if (error) throw error;
       if ((data as any)?.success === true) {

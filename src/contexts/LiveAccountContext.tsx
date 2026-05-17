@@ -63,8 +63,8 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
     setRefreshing(true);
     try {
       const { data: res, error: invErr } = await supabase.functions.invoke(
-        "get-live-account",
-        { body: { refresh: true, debug: true } },
+        "get-mt5-terminal-data",
+        { body: {} },
       );
       if (invErr) throw invErr;
 
