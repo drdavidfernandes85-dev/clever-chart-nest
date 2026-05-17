@@ -28,6 +28,7 @@ const ContactSection = lazy(() => import("@/components/ContactSection"));
 const NewsletterSection = lazy(() => import("@/components/NewsletterSection"));
 const Footer = lazy(() => import("@/components/Footer"));
 const PlatformPillars = lazy(() => import("@/components/home/PlatformPillars"));
+const ComplianceBlock = lazy(() => import("@/components/home/ComplianceBlock"));
 
 const LazyHomeSection = ({
   children,
