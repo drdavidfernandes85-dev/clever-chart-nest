@@ -109,7 +109,9 @@ const LiveChartInner = () => {
   const { t } = useLanguage();
   const { symbols: brokerSymbols, loading: symbolsLoading } = useBrokerSymbols();
   const { liveAccount, connected } = useLiveAccount();
-  const { setSymbol: setCtxSymbol } = useQuickTrade();
+  const { setSymbol: setCtxSymbol, openTrade, prefillNonce } = useQuickTrade();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [highlightTicket, setHighlightTicket] = useState(false);
 
   // Symbols universe — every broker symbol from get-mt5-symbols.
   const allBrokerLabels = useMemo(
