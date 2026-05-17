@@ -34,6 +34,7 @@ import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+import AICopilot from "@/components/ai/AICopilot";
 import MarketWatch from "@/components/livechart/MarketWatch";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
@@ -478,6 +479,7 @@ const LiveChartInner = () => {
           </aside>
         </div>
       </div>
+      <AICopilot />
     </div>
   );
 };

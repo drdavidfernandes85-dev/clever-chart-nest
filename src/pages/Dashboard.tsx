@@ -29,6 +29,8 @@ import {
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
+import AICopilot from "@/components/ai/AICopilot";
+import PerformanceCoach from "@/components/ai/PerformanceCoach";
 
 const TIMEFRAMES = [
   { label: "1m", value: "1" },
@@ -357,6 +359,7 @@ const BottomTabs = () => {
             { v: "executions", l: "Execution Log" },
             { v: "account", l: "Account" },
             { v: "journal", l: "Journal" },
+            { v: "coach", l: "AI Coach" },
           ].map((t) => (
             <TabsTrigger
               key={t.v}
@@ -426,6 +429,10 @@ const BottomTabs = () => {
 
         <TabsContent value="journal" className="m-0 p-3">
           <TradeJournal />
+        </TabsContent>
+
+        <TabsContent value="coach" className="m-0 p-3">
+          <PerformanceCoach />
         </TabsContent>
       </Tabs>
     </div>
@@ -556,6 +563,7 @@ const DashboardInner = () => {
           </aside>
         </div>
       </div>
+      <AICopilot />
     </div>
   );
 };

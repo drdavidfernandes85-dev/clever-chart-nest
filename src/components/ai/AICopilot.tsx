@@ -35,11 +35,14 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
 
   const SUGGESTIONS = useMemo(
     () => [
+      "Analyze my portfolio",
+      "What is my risk level?",
+      "Market outlook for EURUSD",
+      "How am I performing vs top traders?",
       t("ai.suggest.eurusd"),
       t("ai.suggest.xauusd"),
       t("ai.suggest.events"),
       t("ai.suggest.review"),
-      t("ai.suggest.london"),
       t("ai.suggest.signals"),
     ],
     [t],
@@ -55,6 +58,23 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
     if (embedded || typeof window === "undefined") return;
     localStorage.setItem(OPEN_KEY, open ? "1" : "0");
   }, [open, embedded]);
+
+  // Listen for global "open AI Assistant" events (with optional prefill prompt)
+  useEffect(() => {
+    if (embedded) return;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { prompt?: string } | undefined;
+      setOpen(true);
+      const p = detail?.prompt?.trim();
+      if (p) {
+        // small delay so the panel mounts before we send
+        setTimeout(() => { void send(p); }, 50);
+      }
+    };
+    window.addEventListener("infinox:ai-assistant", handler as EventListener);
+    return () => window.removeEventListener("infinox:ai-assistant", handler as EventListener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -294,7 +314,7 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
         >
           <span className="absolute inset-0 -z-10 rounded-full bg-primary/40 blur-xl animate-pulse" />
           <Sparkles className="h-5 w-5" />
-          <span className="font-bold text-sm tracking-wide">{t("ai.copilot")}</span>
+          <span className="font-bold text-sm tracking-wide">AI Assistant</span>
         </button>
       )}
 
@@ -325,3 +345,9 @@ const AICopilot = ({ embedded = false, collapsed = false, onToggleCollapsed }: A
 };
 
 export default AICopilot;
+
+/** Open the floating AI Assistant from anywhere, optionally with a pre-filled prompt to auto-send. */
+export const openAIAssistant = (prompt?: string) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("infinox:ai-assistant", { detail: { prompt } }));
+};
