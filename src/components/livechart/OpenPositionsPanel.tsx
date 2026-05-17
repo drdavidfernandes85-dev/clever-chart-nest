@@ -45,27 +45,28 @@ const OpenPositionsPanel = () => {
   const currency = liveAccount?.currency ?? "USD";
 
   const closePosition = async (pos: LivePosition) => {
-    if (!mtAccount) {
-      toast.error("Trading account unavailable for close orders");
-      return;
-    }
     const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
     setClosing(key);
     try {
-      const { error } = await supabase.from("mt_pending_orders").insert({
-        user_id: mtAccount.user_id,
-        account_id: mtAccount.id,
-        symbol: pos.symbol,
-        side: pos.side === "buy" ? "sell" : "buy",
-        order_type: "market",
-        volume: Number(pos.volume),
-        ea_message: `close:${pos.ticket ?? ""}`,
+      const { data, error } = await supabase.functions.invoke("execute-trade", {
+        body: {
+          symbol: pos.symbol,
+          side: pos.side === "buy" ? "sell" : "buy",
+          volume: Number(pos.volume),
+          tradeId: `close-${pos.ticket ?? key}-${Date.now()}`,
+          comment: `Close #${pos.ticket ?? ""}`.trim(),
+          positionId: pos.ticket ?? undefined,
+        },
       });
       if (error) throw error;
-      toast.success(`Close queued for #${pos.ticket ?? pos.symbol}`);
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || "Broker rejected the close order");
+      }
+      toast.success(`Close order sent for ${pos.symbol} #${pos.ticket ?? ""}`);
+      window.dispatchEvent(new Event("trade-executed"));
       refresh();
     } catch (e: any) {
-      toast.error("Could not queue close", { description: e?.message });
+      toast.error("Could not close position", { description: e?.message });
     } finally {
       setClosing(null);
     }
