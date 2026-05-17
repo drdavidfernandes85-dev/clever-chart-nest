@@ -303,7 +303,12 @@ const CopyTrading = () => {
           <Tile label="Following" value={String(mentors.filter(m => m.is_following).length)} icon={<Users className="h-3.5 w-3.5" />} />
         </div>
 
-        <div className="mb-4 flex items-center gap-1 rounded-xl border border-white/10 bg-[#0F0F0F] p-1 w-fit">
+        {/* Performance snapshot of copied trades */}
+        <div className="mb-6">
+          <CopiedTradesPerformance />
+        </div>
+
+
           {([
             { k: "trades", label: "Copied Trades" },
             { k: "mentors", label: "Followed Mentors" },
