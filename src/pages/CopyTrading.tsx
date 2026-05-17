@@ -194,6 +194,30 @@ const CopyTrading = () => {
       if (cancelled) return;
       setOpenTradeLogs((logs || []) as ExecLogRow[]);
       setOpenTradePosition((pos || null) as PositionRow | null);
+
+      // Fetch the original mentor signal for performance comparison.
+      if (openTrade.signal_id) {
+        const { data: sig } = await supabase.from("trading_signals")
+          .select("entry_price, stop_loss, take_profit, status, author_id")
+          .eq("id", openTrade.signal_id).maybeSingle();
+        if (sig) {
+          let mentorName = "Mentor";
+          if (sig.author_id) {
+            const { data: prof } = await supabase.from("profiles")
+              .select("display_name").eq("user_id", sig.author_id).maybeSingle();
+            mentorName = prof?.display_name || "Mentor";
+          }
+          if (!cancelled) setOpenSignal({
+            entry_price: Number(sig.entry_price),
+            stop_loss: sig.stop_loss != null ? Number(sig.stop_loss) : null,
+            take_profit: sig.take_profit != null ? Number(sig.take_profit) : null,
+            status: sig.status,
+            mentor_name: mentorName,
+          });
+        } else if (!cancelled) {
+          setOpenSignal(null);
+        }
+      }
       setOpenTradeLoading(false);
     })();
     return () => { cancelled = true; };
