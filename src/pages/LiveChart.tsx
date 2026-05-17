@@ -263,13 +263,19 @@ const LiveChartInner = () => {
 
       {/* Workspace: left rail + chart + right rail */}
       <div className="p-2 lg:p-3">
-        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[220px_minmax(0,1fr)_340px] grid-cols-1">
-          {/* LEFT: Market Watch */}
-          <aside className="hidden lg:block h-[calc(100vh-4.5rem)]">
-            <MarketWatch
-              symbols={WATCH_DEFAULT}
-              active={displayLabel}
-              onSelect={onSelectByLabel}
+        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[260px_minmax(0,1fr)_340px] grid-cols-1">
+          {/* LEFT: Market Watch + Bid/Ask Board */}
+          <aside className="hidden lg:flex flex-col gap-2 lg:gap-3 h-[calc(100vh-4.5rem)] overflow-y-auto pr-0.5">
+            <div className="shrink-0 max-h-[50%] overflow-hidden">
+              <MarketWatch
+                symbols={WATCH_DEFAULT}
+                active={displayLabel}
+                onSelect={onSelectByLabel}
+              />
+            </div>
+            <BidAskBoard
+              symbols={topBoardSymbols}
+              onSelect={(sym) => setActiveBroker(sym)}
             />
           </aside>
 
@@ -421,13 +427,8 @@ const LiveChartInner = () => {
             </div>
           </section>
 
-          {/* RIGHT: Bid/Ask Board + Quick Trade ticket */}
+          {/* RIGHT: Open Positions + Quick Trade ticket */}
           <aside className="flex flex-col gap-2 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
-            <BidAskBoard
-              symbols={topBoardSymbols}
-              onSelect={(sym) => setActiveBroker(sym)}
-            />
-
             <OpenPositionsPanel />
 
             <QuickTradePanel />
