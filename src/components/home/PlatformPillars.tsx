@@ -14,6 +14,7 @@ import {
   Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 const cardBase =
   "group relative overflow-hidden rounded-3xl border border-primary/15 bg-card/40 backdrop-blur-2xl shadow-[0_30px_120px_-60px_hsl(45_100%_50%/0.35)] transition-all hover:border-primary/40 hover:shadow-[0_30px_120px_-40px_hsl(45_100%_50%/0.55)]";
