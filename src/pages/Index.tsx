@@ -141,11 +141,12 @@ const Index = () => {
       <Navbar />
       <main>
       <HeroSection />
-      <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
+      {/* Narrativa educativa: 1) Respaldo Infinox → 2) Qué ofrecemos → 3) Capacidades → 4) Quién enseña → 5) Prueba social → 6) Dudas → 7) Descubre más → 8) Claridad legal → 9) Acción */}
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><FeaturesSection /></LazyHomeSection>
-      <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><MentoringSection /></LazyHomeSection>
+      <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>
       <LazyHomeSection minHeight={320} delay={100}><TrustpilotSection /></LazyHomeSection>
       <LazyHomeSection minHeight={620} delay={100}><FAQSection /></LazyHomeSection>
 
@@ -178,10 +179,10 @@ const Index = () => {
           </div>
         </section>
 
+      <LazyHomeSection minHeight={420}><ComplianceBlock /></LazyHomeSection>
       <LazyHomeSection minHeight={320}><CTASection /></LazyHomeSection>
       <LazyHomeSection minHeight={560}><ContactSection /></LazyHomeSection>
       <LazyHomeSection minHeight={360}><NewsletterSection /></LazyHomeSection>
-      <LazyHomeSection minHeight={420}><ComplianceBlock /></LazyHomeSection>
       </main>
       <DeferredSection minHeight={420}>
         <Suspense fallback={<div style={{ minHeight: 420 }} aria-hidden="true" />}>
