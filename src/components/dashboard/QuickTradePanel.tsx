@@ -782,15 +782,20 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                   if (!lotsN || !slN || !entN || accountEquity <= 0) return (
                     <p className="mt-0.5 text-[10px] text-muted-foreground">Auto-scaled to your account</p>
                   );
-                  const sym = normalizedSymbol;
-                  const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
-                  const valuePerPip = sym.includes("XAU") ? 10 : 10;
-                  const slPips = Math.abs(entN - slN) / pipSize;
-                  const riskUsd = slPips * valuePerPip * lotsN;
+                  let riskUsd: number;
+                  if (symbolSpecs) {
+                    const ticks = Math.abs(entN - slN) / symbolSpecs.tickSize;
+                    riskUsd = ticks * symbolSpecs.tickValue * lotsN;
+                  } else {
+                    const sym = normalizedSymbol;
+                    const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
+                    riskUsd = (Math.abs(entN - slN) / pipSize) * 10 * lotsN;
+                  }
                   const pctOfEq = (riskUsd / accountEquity) * 100;
+                  const target = (copyRiskPct * 100).toFixed(2);
                   return (
                     <p className="mt-0.5 font-mono text-[10px] text-muted-foreground tabular-nums">
-                      Risks <span className="text-red-400 font-bold">${riskUsd.toFixed(2)}</span> ({pctOfEq.toFixed(2)}% of equity)
+                      Risks <span className="text-red-400 font-bold">${riskUsd.toFixed(2)}</span> ({pctOfEq.toFixed(2)}% of equity · target {target}%)
                     </p>
                   );
                 })()}
