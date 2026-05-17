@@ -471,10 +471,12 @@ const DashboardInner = () => {
       sl: searchParams.get("sl") || undefined,
       tp: searchParams.get("tp") || undefined,
       signalId: searchParams.get("signalId"),
+      mentor: searchParams.get("mentor"),
+      riskPct: searchParams.get("riskPct") ? Number(searchParams.get("riskPct")) : undefined,
     });
     // Clean params from URL so refresh doesn't re-apply
     const next = new URLSearchParams(searchParams);
-    ["symbol", "side", "lots", "entry", "sl", "tp", "signalId"].forEach((k) => next.delete(k));
+    ["symbol", "side", "lots", "entry", "sl", "tp", "signalId", "mentor", "riskPct"].forEach((k) => next.delete(k));
     setSearchParams(next, { replace: true });
   }, [searchParams, openTrade, setSearchParams]);
 
