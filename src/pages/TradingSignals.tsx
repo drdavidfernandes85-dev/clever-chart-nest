@@ -623,16 +623,7 @@ const TradingSignals = () => {
                         </button>
                       ) : (
                         <button
-                          onClick={() =>
-                            setRequest({
-                              signalId: signal.id,
-                              pair: signal.pair,
-                              side: isBuy ? "buy" : "sell",
-                              entry: Number(signal.entry_price),
-                              sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
-                              tp: signal.take_profit != null ? Number(signal.take_profit) : null,
-                            })
-                          }
+                          onClick={() => takeInTerminal(signal, isBuy)}
                           className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 shadow-[0_8px_25px_-10px_hsl(48_100%_51%/0.6)] transition-colors"
                         >
                           <Zap className="h-3 w-3" />
