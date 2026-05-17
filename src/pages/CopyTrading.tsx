@@ -95,6 +95,7 @@ const CopyTrading = () => {
   const [openTradeLogs, setOpenTradeLogs] = useState<ExecLogRow[]>([]);
   const [openTradePosition, setOpenTradePosition] = useState<PositionRow | null>(null);
   const [openTradeLoading, setOpenTradeLoading] = useState(false);
+  const [openSignal, setOpenSignal] = useState<{ entry_price: number; stop_loss: number | null; take_profit: number | null; status: string; mentor_name: string } | null>(null);
 
   const loadAll = async () => {
     if (!user) { setLoading(false); return; }
