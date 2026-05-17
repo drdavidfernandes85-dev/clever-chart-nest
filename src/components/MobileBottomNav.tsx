@@ -1,12 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, LineChart, Users, GraduationCap, Video } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, Video } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 
 const items: { to: string; icon: typeof LayoutDashboard; labelKey: TranslationKey }[] = [
   { to: "/dashboard", icon: LayoutDashboard, labelKey: "sidebar.dashboard" },
-  { to: "/live-chart", icon: LineChart, labelKey: "sidebar.charts" },
   { to: "/chatroom", icon: Users, labelKey: "sidebar.community" },
   { to: "/education", icon: GraduationCap, labelKey: "sidebar.education" },
   { to: "/webinars", icon: Video, labelKey: "sidebar.liveWebinars" },
