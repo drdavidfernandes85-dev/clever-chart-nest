@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import SEO from "@/components/SEO";
 import OnlineTraders from "@/components/chatroom/OnlineTraders";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
+import AICopilot from "@/components/ai/AICopilot";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
