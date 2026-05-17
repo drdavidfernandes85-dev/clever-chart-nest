@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import MT5StatusBadge from "@/components/MT5StatusBadge";
 import { useWebinars, useCountdown, type Webinar } from "@/hooks/useWebinars";
 import { useLanguage } from "@/i18n/LanguageContext";
 import UpcomingSessions from "@/components/dashboard/UpcomingSessions";
