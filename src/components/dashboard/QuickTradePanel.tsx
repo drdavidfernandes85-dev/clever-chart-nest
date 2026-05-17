@@ -367,18 +367,18 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   useEffect(() => {
     if (!prefill) return;
 
-    // Compute risk-aware lot size when caller did not provide one but we have
-    // SL distance + entry/current price + account equity. Uses 1% default risk.
     const riskPct = prefill.riskPct && prefill.riskPct > 0 ? prefill.riskPct : 0.01;
     setCopyRiskPct(riskPct);
 
+    // Initial rough lot calc — refined by the spec-aware effect below
+    // once broker tickValue/tickSize for this symbol arrives.
     let lotsToSet = prefill.lots ?? null;
     const slNum = prefill.sl ? Number(prefill.sl) : NaN;
     const entryNum = prefill.entry ? Number(prefill.entry) : NaN;
     if (!lotsToSet && Number.isFinite(slNum) && Number.isFinite(entryNum) && accountEquity > 0) {
       const sym = (prefill.symbol || normalizedSymbol || "").toUpperCase();
       const pipSize = sym.includes("JPY") ? 0.01 : sym.includes("XAU") ? 0.1 : 0.0001;
-      const valuePerPipPerLot = sym.includes("XAU") ? 10 : 10;
+      const valuePerPipPerLot = 10;
       const slPips = Math.abs(entryNum - slNum) / pipSize;
       if (slPips > 0) {
         const riskTarget = accountEquity * riskPct;
@@ -386,6 +386,14 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         l = Math.max(0.01, Math.min(10, parseFloat(l.toFixed(2))));
         lotsToSet = String(l);
       }
+      // Queue precise recompute using broker tick specs.
+      if (Number.isFinite(slNum) && Number.isFinite(entryNum)) {
+        setPendingCopySize({ sl: slNum, entry: entryNum, riskPct });
+      }
+    } else if (!prefill.lots && Number.isFinite(slNum) && Number.isFinite(entryNum)) {
+      setPendingCopySize({ sl: slNum, entry: entryNum, riskPct });
+    } else {
+      setPendingCopySize(null);
     }
     if (lotsToSet) setLots(lotsToSet);
 
