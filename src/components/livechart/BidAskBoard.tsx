@@ -34,7 +34,7 @@ const BidAskBoard = ({ symbols, onSelect }: Props) => {
 
     const loadOne = async (sym: string) => {
       try {
-        const { data } = await supabase.functions.invoke("get-mt5-symbol-data", {
+        const { data } = await supabase.functions.invoke("get-mt5-terminal-data", {
           body: { selectedSymbol: sym },
         });
         if (cancelled) return;
