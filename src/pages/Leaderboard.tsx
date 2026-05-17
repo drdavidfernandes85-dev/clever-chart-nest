@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import MT5StatusBadge from "@/components/MT5StatusBadge";
 import { toast } from "sonner";
 
 type PeriodKey = "all" | "month" | "week" | "today";
