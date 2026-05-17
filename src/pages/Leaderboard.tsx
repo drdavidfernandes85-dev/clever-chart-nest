@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft, Trophy, TrendingUp, TrendingDown, Crown, Medal, Award,
-  Copy, CheckCircle2, Sparkles, GraduationCap, Loader2, X,
+  Copy, CheckCircle2, Sparkles, GraduationCap, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
