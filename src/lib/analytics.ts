@@ -1,12 +1,10 @@
 /**
- * Lightweight analytics wrapper for Google Analytics (GA4) and Meta Pixel.
- *
- * Both vendors are loaded as no-op stubs in `index.html`. Replace the
- * placeholder IDs in index.html with real ones and events flow through
- * automatically — no code changes needed.
+ * Lightweight analytics wrapper for Google Analytics (GA4), Meta Pixel,
+ * and the internal Supabase analytics_events table.
  *
  * Calls are wrapped in try/catch so a missing vendor never breaks the UI.
  */
+import { supabase } from "@/integrations/supabase/client";
 
 declare global {
   interface Window {
@@ -15,6 +13,24 @@ declare global {
     dataLayer?: any[];
   }
 }
+
+const persistEvent = (
+  event: string,
+  params: Record<string, unknown>,
+  path?: string,
+) => {
+  try {
+    const section = (params.section as string | undefined) ?? null;
+    void supabase.from("analytics_events").insert({
+      event,
+      section,
+      path: path ?? (typeof window !== "undefined" ? window.location.pathname : null),
+      params: params as never,
+    });
+  } catch {
+    /* noop */
+  }
+};
 
 export type TrackEvent =
   | "login"
