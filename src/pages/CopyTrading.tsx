@@ -378,6 +378,8 @@ const CopyTrading = () => {
           )
         ) : (
           <div className="space-y-4">
+            <MentorTierProgression />
+
             {mentors.length === 0 ? (
               <EmptyState
                 title="No mentors yet"
