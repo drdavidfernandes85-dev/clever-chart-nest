@@ -77,9 +77,9 @@ async function fetchContext(supabase: ReturnType<typeof createClient>, userId: s
     // MT5 portfolio snapshot
     const { data: acct } = await supabase
       .from("user_mt_accounts")
-      .select("id, login, server, currency, leverage, balance, equity, margin, margin_free, profit, status, last_synced")
+      .select("id, login, server_name, currency, leverage, balance, equity, margin, free_margin, margin_level, status, last_synced_at, broker_name")
       .eq("user_id", userId)
-      .order("last_synced", { ascending: false, nullsFirst: false })
+      .order("last_synced_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
     if (acct) {
