@@ -15,7 +15,7 @@ import NotificationsBell from "@/components/notifications/NotificationsBell";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
-import TradeExecutionLogWidget from "@/components/dashboard/TradeExecutionLogWidget";
+import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import {
   LiveAccountProvider,
@@ -378,8 +378,8 @@ const BottomTabs = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="executions" className="m-0 p-3">
-          <TradeExecutionLogWidget />
+        <TabsContent value="executions" className="m-0 p-0">
+          <TerminalExecutionLog />
         </TabsContent>
 
         <TabsContent value="account" className="m-0 p-4">
