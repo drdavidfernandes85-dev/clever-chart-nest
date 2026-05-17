@@ -122,7 +122,7 @@ const DashboardSidebar = () => {
               <li key={item.to}>
                 <Link
                   to={item.to}
-                  title={collapsed ? t(item.labelKey) : undefined}
+                  title={collapsed ? (item.label ?? t(item.labelKey)) : undefined}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
                     active
