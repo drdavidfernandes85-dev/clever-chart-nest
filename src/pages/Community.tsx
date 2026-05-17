@@ -19,6 +19,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import MT5StatusBadge from "@/components/MT5StatusBadge";
 
 interface Channel {
   id: string;
@@ -234,12 +235,15 @@ const Community = () => {
             Community Hub
           </h1>
         </div>
-        <Link
-          to="/dashboard"
-          className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-[#FFCD05]"
-        >
-          ← Terminal
-        </Link>
+        <div className="flex items-center gap-3">
+          <MT5StatusBadge />
+          <Link
+            to="/dashboard"
+            className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-[#FFCD05]"
+          >
+            ← Terminal
+          </Link>
+        </div>
       </header>
 
       {/* 3-column layout */}

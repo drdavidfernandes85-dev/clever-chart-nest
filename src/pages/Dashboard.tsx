@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
   RefreshCw,
@@ -435,9 +435,11 @@ const BottomTabs = () => {
 const DashboardInner = () => {
   const { t } = useLanguage();
   const { symbols, setSelectedBrokerSymbol } = useBrokerSymbols();
-  const { setSymbol: setCtxSymbol } = useQuickTrade();
+  const { setSymbol: setCtxSymbol, openTrade } = useQuickTrade();
   const [active, setActive] = useState<string>("EURUSD");
   const [interval, setInterval] = useState("15");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const consumedPrefillRef = useRef(false);
 
   // Default to first available broker symbol once loaded
   useEffect(() => {
@@ -447,9 +449,34 @@ const DashboardInner = () => {
         ?.brokerSymbol ||
       symbols[0].brokerSymbol ||
       symbols[0].symbol;
-    setActive(pick);
+    setActive((cur) => (cur === "EURUSD" ? pick : cur));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbols.length]);
+
+  // Apply "Take This Signal" URL params: ?symbol=&side=&lots=&entry=&sl=&tp=&signalId=
+  useEffect(() => {
+    if (consumedPrefillRef.current) return;
+    const symbol = searchParams.get("symbol");
+    if (!symbol) return;
+    consumedPrefillRef.current = true;
+    const sideParam = (searchParams.get("side") || "buy").toLowerCase();
+    const side: "buy" | "sell" = sideParam === "sell" ? "sell" : "buy";
+    const upper = symbol.toUpperCase();
+    setActive(upper);
+    openTrade({
+      symbol: upper,
+      side,
+      lots: searchParams.get("lots") || undefined,
+      entry: searchParams.get("entry") || undefined,
+      sl: searchParams.get("sl") || undefined,
+      tp: searchParams.get("tp") || undefined,
+      signalId: searchParams.get("signalId"),
+    });
+    // Clean params from URL so refresh doesn't re-apply
+    const next = new URLSearchParams(searchParams);
+    ["symbol", "side", "lots", "entry", "sl", "tp", "signalId"].forEach((k) => next.delete(k));
+    setSearchParams(next, { replace: true });
+  }, [searchParams, openTrade, setSearchParams]);
 
   const tvSymbol = useMemo(() => brokerToTv(active), [active]);
 

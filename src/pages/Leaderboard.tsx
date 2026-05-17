@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
+import MT5StatusBadge from "@/components/MT5StatusBadge";
 import { toast } from "sonner";
 
 type PeriodKey = "all" | "month" | "week" | "today";
@@ -234,9 +235,12 @@ const Leaderboard = () => {
               <span className="text-[#FFCD05]">IX</span> LEADERBOARD
             </span>
           </Link>
-          <Button variant="ghost" size="sm" asChild className="text-white/60 gap-1.5">
-            <Link to="/community"><ArrowLeft className="h-4 w-4" /> Community</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <MT5StatusBadge className="hidden sm:inline-flex" />
+            <Button variant="ghost" size="sm" asChild className="text-white/60 gap-1.5">
+              <Link to="/community"><ArrowLeft className="h-4 w-4" /> Community</Link>
+            </Button>
+          </div>
         </div>
       </header>
 
