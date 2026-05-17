@@ -690,8 +690,8 @@ const MentorApplyDialog = ({ open, onOpenChange, userId }: { open: boolean; onOp
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="border-white/15 bg-transparent text-white hover:bg-white/5">Close</Button>
-          <Button onClick={submit} disabled={submitting} className="bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-semibold">
-            {submitting ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Submitting…</> : existing ? "Resubmit" : "Submit Application"}
+          <Button onClick={submit} disabled={submitting || status === "pending" || status === "approved"} className="bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-semibold">
+            {submitting ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Submitting…</> : status === "approved" ? "Approved" : status === "pending" ? "Pending Review" : "Submit Application"}
           </Button>
         </div>
       </DialogContent>
