@@ -436,16 +436,7 @@ const TradingSignals = () => {
                         <TableCell className="py-2 text-center">
                           {signal.status === "active" && (
                             <button
-                              onClick={() =>
-                                setRequest({
-                                  signalId: signal.id,
-                                  pair: signal.pair,
-                                  side: isBuy ? "buy" : "sell",
-                                  entry: Number(signal.entry_price),
-                                  sl: signal.stop_loss != null ? Number(signal.stop_loss) : null,
-                                  tp: signal.take_profit != null ? Number(signal.take_profit) : null,
-                                })
-                              }
+                              onClick={() => takeInTerminal(signal, isBuy)}
                               className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
                                 copied.has(signal.id)
                                   ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15"
