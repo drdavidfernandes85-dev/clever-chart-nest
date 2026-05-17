@@ -1,27 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://elitelivetradingroom.com/</loc>
+    <loc>https://ixsalatrading.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://elitelivetradingroom.com/login</loc>
+    <loc>https://ixsalatrading.com/login</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://elitelivetradingroom.com/register</loc>
+    <loc>https://ixsalatrading.com/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://elitelivetradingroom.com/leaderboard</loc>
+    <loc>https://ixsalatrading.com/forgot-password</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/reset-password</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/webinar</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/webinars</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/community/guidelines</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://ixsalatrading.com/leaderboard</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://elitelivetradingroom.com/videos</loc>
+    <loc>https://ixsalatrading.com/videos</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>

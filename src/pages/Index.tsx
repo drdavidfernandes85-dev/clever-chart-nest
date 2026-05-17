@@ -137,6 +137,7 @@ const Index = () => {
         jsonLd={jsonLd}
       />
       <Navbar />
+      <main>
       <HeroSection />
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><FeaturesSection /></LazyHomeSection>
@@ -177,6 +178,7 @@ const Index = () => {
       <LazyHomeSection minHeight={320}><CTASection /></LazyHomeSection>
       <LazyHomeSection minHeight={560}><ContactSection /></LazyHomeSection>
       <LazyHomeSection minHeight={360}><NewsletterSection /></LazyHomeSection>
+      </main>
       <DeferredSection minHeight={420}>
         <Suspense fallback={<div style={{ minHeight: 420 }} aria-hidden="true" />}>
           <Footer />

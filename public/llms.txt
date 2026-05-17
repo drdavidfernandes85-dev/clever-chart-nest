@@ -1,0 +1,15 @@
+# IX Sala de Trading
+
+> Professional live trading room and community for LATAM traders, powered by INFINOX. Real-time analysis, signals, education, and webinars.
+
+## Pages
+
+- [Home](/): Overview of the IX Sala de Trading community, features, mentors, and pricing.
+- [Register](/register): Create an account to access the live trading room.
+- [Login](/login): Sign in to your account.
+- [Webinar](/webinar): Free live trading webinar landing page.
+- [Community Guidelines](/community/guidelines): Rules and expectations for community members.
+
+## Optional
+
+- [Forgot Password](/forgot-password): Reset your account password.
