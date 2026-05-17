@@ -172,7 +172,7 @@ const Education = () => {
         title={t("edu.seo.title")}
         description={t("edu.seo.desc")}
         keywords={t("edu.seo.keywords")}
-        canonical="https://www.salatradingelite.com/education"
+        canonical="https://ixsalatrading.com/education"
         type="article"
         jsonLd={jsonLd}
       />
