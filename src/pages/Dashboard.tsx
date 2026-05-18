@@ -565,7 +565,7 @@ const DashboardInner = () => {
 
           {/* RIGHT — Order Entry */}
           <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5">
-            <QuickTradePanel />
+            <BlackArrowTradePanel />
           </aside>
         </div>
       </div>
