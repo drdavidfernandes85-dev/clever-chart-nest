@@ -244,8 +244,26 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym } }));
         window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
         refresh();
+        // Highlight executed action
+        setLastExecution({
+          side,
+          symbol: normalizedSym,
+          volume: volNum,
+          ticket: res.ticket,
+          at: Date.now(),
+        });
+        // Always clear SL/TP/pending price
         setSl("");
         setTp("");
+        setPrice("");
+        priceTouched.current = false;
+        // Optional reset of qty/order type
+        if (autoReset) {
+          setVol("0.01");
+          setOrderType("market");
+        }
+        // Focus next control so the trader can immediately stage the next order
+        setTimeout(() => volInputRef.current?.focus(), 50);
       } else {
         const msg =
           res?.retcodeDescription ||
