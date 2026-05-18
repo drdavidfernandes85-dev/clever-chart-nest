@@ -827,7 +827,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <button
             type="button"
             onClick={() => { setSide("buy"); setTimeout(submit, 0); }}
-            disabled={!canSubmit && side !== "buy" ? false : !canSubmit}
+            disabled={!canSubmit}
             className="h-11 rounded-md font-heading text-sm font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_6px_20px_-6px_rgba(16,185,129,0.6)]"
           >
             {submitting && isBuy ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
@@ -836,7 +836,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <button
             type="button"
             onClick={() => { setSide("sell"); setTimeout(submit, 0); }}
-            disabled={!canSubmit && side !== "sell" ? false : !canSubmit}
+            disabled={!canSubmit}
             className="h-11 rounded-md font-heading text-sm font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-red-500 text-white hover:bg-red-600 shadow-[0_6px_20px_-6px_rgba(239,68,68,0.6)]"
           >
             {submitting && !isBuy ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingDown className="h-4 w-4" />}
