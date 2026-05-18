@@ -663,33 +663,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </button>
         </div>
 
-        {/* BIG BUY / SELL selector */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setSide("buy")}
-            className={cn(
-              "h-14 rounded-lg font-heading text-base font-bold tracking-wide transition-all flex items-center justify-center gap-2 border-2",
-              isBuy
-                ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_6px_18px_-4px_rgba(16,185,129,0.55)]"
-                : "bg-background/40 text-muted-foreground border-border/60 hover:text-emerald-400 hover:border-emerald-500/40",
-            )}
-          >
-            <TrendingUp className="h-5 w-5" /> BUY
-          </button>
-          <button
-            type="button"
-            onClick={() => setSide("sell")}
-            className={cn(
-              "h-14 rounded-lg font-heading text-base font-bold tracking-wide transition-all flex items-center justify-center gap-2 border-2",
-              !isBuy
-                ? "bg-red-500 text-white border-red-500 shadow-[0_6px_18px_-4px_rgba(239,68,68,0.55)]"
-                : "bg-background/40 text-muted-foreground border-border/60 hover:text-red-400 hover:border-red-500/40",
-            )}
-          >
-            <TrendingDown className="h-5 w-5" /> SELL
-          </button>
-        </div>
+        {/* (Side already selected via 6-button order-type grid above) */}
 
         {/* Volume */}
         <div className="space-y-1.5">
