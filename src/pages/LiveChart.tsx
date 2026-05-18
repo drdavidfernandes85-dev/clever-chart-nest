@@ -474,7 +474,7 @@ const LiveChartInner = () => {
                   : ""
               }`}
             >
-              <QuickTradePanel />
+              <BlackArrowTradePanel />
             </div>
           </aside>
         </div>
