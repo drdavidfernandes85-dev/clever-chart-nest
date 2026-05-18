@@ -119,8 +119,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       }
       setLoading(true);
       try {
-        const { data, error: invErr } = await supabase.functions.invoke("get-mt5-terminal-data", {
-          body: { includeSymbols: true },
+        const { data, error: invErr } = await supabase.functions.invoke("get-mt5-market-watch", {
+          body: { debug: true },
         });
         if (invErr) {
           setLastResponse({ success: false, error: invErr.message ?? String(invErr) });
@@ -133,7 +133,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
           const enriched = list.length > 0 ? list.map(enrich) : FALLBACK_SYMBOLS;
           setSymbols(enriched);
           setIsLive(list.length > 0);
-          setLoaded(data.symbolsLoaded === true || list.length > 0);
+          setLoaded(list.length > 0);
           setError(list.length === 0 ? "Broker returned no symbols." : null);
           if (list.length > 0) writeCache(user.id, enriched);
         } else {
