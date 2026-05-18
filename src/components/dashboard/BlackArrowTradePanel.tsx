@@ -83,12 +83,41 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [symbolSearch, setSymbolSearch] = useState("");
+  const [autoReset, setAutoReset] = useState(true);
+  const [lastExecution, setLastExecution] = useState<{
+    side: "buy" | "sell";
+    symbol: string;
+    volume: number;
+    ticket?: string | number;
+    at: number;
+  } | null>(null);
 
   const priceTouched = useRef(false);
+  const volInputRef = useRef<HTMLInputElement>(null);
+  const prevSpreadRef = useRef<number | null>(null);
+  const [spreadTrend, setSpreadTrend] = useState<"up" | "down" | "flat">("flat");
 
   const { bid, ask } = pickTick(tick);
   const livePrice = side === "buy" ? ask : bid;
   const digits = Number(selectedSymbolInfo?.digits ?? 5);
+
+  // Spread tracking with trend
+  const spread =
+    Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
+      ? Math.max(0, ask - bid)
+      : null;
+  useEffect(() => {
+    if (spread == null) return;
+    const prev = prevSpreadRef.current;
+    if (prev != null) {
+      const delta = spread - prev;
+      const epsilon = Math.max(1e-9, prev * 0.02);
+      if (delta > epsilon) setSpreadTrend("up");
+      else if (delta < -epsilon) setSpreadTrend("down");
+      else setSpreadTrend("flat");
+    }
+    prevSpreadRef.current = spread;
+  }, [spread]);
 
   useEffect(() => {
     if (orderType !== "market" && !priceTouched.current && livePrice != null) {
