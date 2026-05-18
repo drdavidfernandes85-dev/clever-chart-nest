@@ -667,10 +667,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         ) : null}
 
-        {/* Preview metrics */}
+        {/* Preview metrics — live based on side · order type · price · volume */}
         <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2 space-y-1">
-          <PreviewRow label="Entry" value={fmtPx(entryPrice || null, digits)} />
+          <PreviewRow
+            label={`Entry · ${isBuy ? "BUY" : "SELL"} ${orderType.toUpperCase()}`}
+            value={fmtPx(entryPrice || null, digits)}
+            tone={isBuy ? "pos" : "neg"}
+          />
+          <PreviewRow label="Notional" value={fmt(notional, currency)} />
           <PreviewRow label="Margin req." value={fmt(marginRequired, currency)} />
+          <PreviewRow
+            label="Spread cost"
+            value={
+              spread != null && volNum > 0
+                ? fmt((spread / pipSize) * volNum * valuePerPipPerLot, currency)
+                : "—"
+            }
+            tone={spreadTrend === "up" ? "neg" : undefined}
+          />
           <PreviewRow
             label="Risk"
             value={riskPct ? `${riskPct.toFixed(2)}% · ${fmt(potentialLoss, currency)}` : "—"}
