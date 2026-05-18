@@ -535,7 +535,7 @@ const DashboardInner = () => {
       <div className="p-2 lg:p-3">
         <div className="grid gap-2 lg:gap-3 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
           {/* LEFT — Market Watch */}
-          <MarketWatchPanel active={active} onSelect={setActive} />
+          <MarketWatchPanel active={active} onSelect={selectSymbol} />
 
           {/* CENTER — Bid/Ask + Chart + Tabs */}
           <section className="flex flex-col gap-2 lg:gap-3 min-w-0">
