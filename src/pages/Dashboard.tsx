@@ -33,7 +33,7 @@ import {
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
-import CopiedTradesPerformance from "@/components/copytrade/CopiedTradesPerformance";
+
 
 const TIMEFRAMES = [
   { label: "1m", value: "1" },
