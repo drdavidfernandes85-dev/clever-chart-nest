@@ -183,11 +183,9 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         );
         if (cancelled) return;
         if (invErr) {
+          // Stale-while-revalidate: never blank the panel on a polling error.
           if (isInitial) {
             setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
-            setSelectedSymbolValid(false);
-            setSelectedSymbolInfo(null);
-            setTick(null);
           }
           return;
         }
@@ -195,28 +193,29 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         const rateLimited =
           (data as any)?.rateLimited === true ||
           (data as any)?.step === "rate_limited";
-        if (rateLimited) {
-          // Keep existing specs/tick — broker just throttled us.
-          return;
-        }
+        if (rateLimited) return;
+
         if (data?.success === true) {
-          setSelectedSymbolValid(data.selectedSymbolValid === true);
+          // Only flip "valid" once we have a definitive answer.
+          if (typeof data.selectedSymbolValid === "boolean") {
+            setSelectedSymbolValid(data.selectedSymbolValid);
+          }
           if (data.selectedSymbolInfo) setSelectedSymbolInfo(data.selectedSymbolInfo);
-          if (data.tick) setTick(data.tick);
-        } else if (isInitial) {
-          setSelectedSymbolValid(false);
-          setSelectedSymbolInfo(null);
-          setTick(null);
+          // Only replace tick when the response actually contains one.
+          if (data.tick && (data.tick.bid != null || data.tick.ask != null)) {
+            setTick(data.tick);
+          }
         }
+        // Non-success polling responses: keep previous state visible.
       } catch (e: any) {
-        if (cancelled || !isInitial) return;
-        setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
-        setSelectedSymbolValid(false);
-        setSelectedSymbolInfo(null);
-        setTick(null);
+        if (cancelled) return;
+        if (isInitial) {
+          setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
+        }
+        // Do NOT clear tick/info on polling exceptions.
       }
     };
-    // Reset on symbol change so stale prices never leak across symbols.
+    // Symbol changed — reset to avoid mixing prices across instruments.
     setTick(null);
     setSelectedSymbolInfo(null);
     setSelectedSymbolValid(false);
