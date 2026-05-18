@@ -870,15 +870,15 @@ const DashboardInner = () => {
           </section>
 
           {/* RIGHT — Bid/Ask Board (top 33%) + Order Ticket (bottom 67%) */}
-          <aside className="lg:h-[calc(100vh-7rem)] flex flex-col gap-2 lg:gap-3 min-h-0">
-            <div className="flex-[33] min-h-0 overflow-hidden">
+          <aside className="lg:h-[calc(100vh-6.5rem)] flex flex-col gap-1.5 lg:gap-2 min-h-0 overflow-hidden">
+            <div className="shrink-0 max-h-[38%] overflow-hidden">
               <BidAskBoard
                 symbols={watchBoardSymbols}
                 activeSymbol={active}
                 onSelect={(label) => selectSymbol(label)}
               />
             </div>
-            <div className="flex-[67] min-h-0 overflow-y-auto pr-0.5">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-0.5">
               <BlackArrowTradePanel />
             </div>
           </aside>
