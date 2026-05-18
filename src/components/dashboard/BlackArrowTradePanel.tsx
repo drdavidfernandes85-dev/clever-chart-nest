@@ -263,11 +263,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         : 0.0001;
   const valuePerPipPerLot = 10; // rough USD pip value per 1.00 lot
 
-  const slPips = slNum && entryPrice
-    ? Math.abs(entryPrice - slNum) / pipSize
+  // When "no stops" is active, ignore SL/TP for preview + validation
+  const effectiveSl = noStops ? null : slNum;
+  const effectiveTp = noStops ? null : tpNum;
+
+  const slPips = effectiveSl && entryPrice
+    ? Math.abs(entryPrice - effectiveSl) / pipSize
     : 0;
-  const tpPips = tpNum && entryPrice
-    ? Math.abs(entryPrice - tpNum) / pipSize
+  const tpPips = effectiveTp && entryPrice
+    ? Math.abs(entryPrice - effectiveTp) / pipSize
     : 0;
   const potentialLoss = slPips * volNum * valuePerPipPerLot;
   const potentialProfit = tpPips * volNum * valuePerPipPerLot;
@@ -286,6 +290,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     }
     return null;
   })();
+
+  // Apply a pip-distance preset for SL or TP using current side + entry
+  const applyPipPreset = (kind: "sl" | "tp", pips: number) => {
+    if (!entryPrice || !pipSize) {
+      toast.error("No live price yet — wait for a tick");
+      return;
+    }
+    const dist = pips * pipSize;
+    const buy = side === "buy";
+    let target: number;
+    if (kind === "sl") target = buy ? entryPrice - dist : entryPrice + dist;
+    else target = buy ? entryPrice + dist : entryPrice - dist;
+    const formatted = target.toFixed(digits);
+    if (kind === "sl") setSl(formatted);
+    else setTp(formatted);
+    if (noStops) setNoStops(false);
+  };
 
   const canSubmit =
     !!user &&
