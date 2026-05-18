@@ -119,10 +119,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const livePrice = side === "buy" ? ask : bid;
   const digits = Number(effectiveSelected?.digits ?? selectedSymbolInfo?.digits ?? 5);
 
+  // Prefer selectedQuote.spread; derive from bid/ask only as fallback.
   const spread =
-    Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
-      ? Math.max(0, ask - bid)
-      : null;
+    effectiveSelected?.spread != null && Number.isFinite(Number(effectiveSelected.spread))
+      ? Number(effectiveSelected.spread)
+      : Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
+        ? Math.max(0, ask - bid)
+        : null;
+  const lastPrice =
+    effectiveSelected?.last != null && Number.isFinite(Number(effectiveSelected.last))
+      ? Number(effectiveSelected.last)
+      : bid != null && ask != null
+        ? (bid + ask) / 2
+        : null;
 
   // bid/ask flash
   useEffect(() => {
