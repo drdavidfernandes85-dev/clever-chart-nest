@@ -570,12 +570,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               { s: "buy", t: "limit", label: "Buy Limit" },
               { s: "sell", t: "limit", label: "Sell Limit" },
             ] as { s: "buy" | "sell"; t: OrderType; label: string }[]
-          ).map(({ s, t, label }) => {
+          ).map(({ s, t, label }, idx) => {
             const active = side === s && orderType === t;
             const tone = s === "buy";
             return (
               <button
                 key={label}
+                ref={idx === 0 ? orderTypeBtnRef : undefined}
                 type="button"
                 onClick={() => {
                   setSide(s);
