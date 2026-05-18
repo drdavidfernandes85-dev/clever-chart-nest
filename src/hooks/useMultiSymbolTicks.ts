@@ -80,11 +80,14 @@ export function useMultiSymbolTicks(symbols: string[], periodMs = 5000) {
     const onVisible = () => {
       if (document.visibilityState === "visible" && !cancelled) loadBatch();
     };
+    const onRefresh = () => { if (!cancelled) loadBatch(); };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("mt:refresh-market-watch", onRefresh);
     return () => {
       cancelled = true;
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("mt:refresh-market-watch", onRefresh);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, periodMs]);
