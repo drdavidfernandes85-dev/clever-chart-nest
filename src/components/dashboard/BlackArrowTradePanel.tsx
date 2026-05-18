@@ -280,10 +280,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         res?.retcode_description ||
         res?.brokerMessage ||
         res?.error;
+      const classification = String(res?.classification || res?.status || "").toLowerCase();
+      const knownStates = ["done", "placed", "partial", "rejected", "failed"];
+      const brokerState = knownStates.includes(classification)
+        ? classification
+        : res?.success === true ? "done" : "failed";
 
-      if (res?.success === true) {
+      // Always trigger downstream refreshes regardless of outcome so UI reflects broker state.
+      window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId: payload.tradeId } }));
+      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-market-watch"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
+      refresh();
+
+      if (res?.success === true || brokerState === "done" || brokerState === "placed" || brokerState === "partial") {
         const filledPrice = Number(res.price ?? res.openPrice ?? entryPrice) || entryPrice;
-        toast.success(`${sideArg.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`, {
+        const stateLabel = brokerState.toUpperCase();
+        toast.success(`${stateLabel} · ${sideArg.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`, {
           description: [
             `Px ${fmtPx(filledPrice, digits)}`,
             res.ticket ? `#${res.ticket}` : null,
@@ -291,17 +305,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ].filter(Boolean).join("  ·  "),
           duration: 4000,
         });
-        // Trigger downstream refreshes: terminal data, market watch, exec logs
-        window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId: payload.tradeId } }));
-        window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-        window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
-        window.dispatchEvent(new CustomEvent("mt:refresh-market-watch"));
-        window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
-        refresh();
-        setSl(""); setTp(""); setPrice("");
+        // Order Ticket stays mounted; only clear pending-price helper.
+        setPrice("");
         if (autoReset) { setVol(volumeMin.toFixed(2)); setOrderType("Market"); }
       } else {
-        toast.error("Order rejected", { description: brokerMsg || "Order rejected by broker" });
+        toast.error(`${brokerState.toUpperCase()} · ${sideArg.toUpperCase()} ${normalizedSym}`, {
+          description: brokerMsg || "Order rejected by broker",
+          duration: 5000,
+        });
       }
     } catch (e: any) {
       toast.error(e?.message || "Order failed");
