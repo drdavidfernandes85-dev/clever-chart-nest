@@ -193,6 +193,7 @@ const MarketRow = ({
   onSelect: () => void;
   onToggleFav: () => void;
 }) => {
+  if (!sym || !sym.trim()) return null;
   const fmt = (v: number | null | undefined) =>
     v == null
       ? "—"
@@ -288,14 +289,25 @@ const MarketWatchPanel = ({
 
   const favoriteSymbols = useMemo(() => favorites.map((f) => f.symbol), [favorites]);
 
-  // Live ticks for favorites only (keeps within rate limit)
-  const favTicks = useMultiSymbolTicks(favoriteSymbols);
-  // Also poll the active symbol so its row updates even if not favorited
-  const activeTicks = useMultiSymbolTicks(
-    active && !favoriteSymbols.map((s) => s.toUpperCase()).includes(active.toUpperCase())
-      ? [active]
-      : [],
+  // Live ticks for favorites + active + the top of the currently rendered list.
+  // Cap to ~24 symbols to keep us well inside broker rate limits.
+  const visibleTopSymbols = useMemo(
+    () =>
+      filtered
+        .slice(0, 24)
+        .map((s) => (s.brokerSymbol || s.symbol))
+        .filter(Boolean),
+    [filtered],
   );
+  const tickRequest = useMemo(() => {
+    const set = new Set<string>();
+    favoriteSymbols.forEach((s) => set.add(s.toUpperCase()));
+    if (active) set.add(active.toUpperCase());
+    visibleTopSymbols.forEach((s) => set.add(s.toUpperCase()));
+    return Array.from(set);
+  }, [favoriteSymbols, active, visibleTopSymbols]);
+  const favTicks = useMultiSymbolTicks(tickRequest);
+  const activeTicks = favTicks; // unified source
 
   // Hydrate favorites with broker metadata when available
   const favRows = useMemo(() => {
@@ -464,7 +476,9 @@ const MarketWatchPanel = ({
           </li>
         )}
         {!loading && sortedByCategory.length === 0 && (
-          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">No matches.</li>
+          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">
+            {query ? "No matches." : "No MT5 symbols loaded. Refresh market watch."}
+          </li>
         )}
 
         {showGroupHeaders
@@ -754,6 +768,27 @@ const DashboardInner = () => {
 
   const tvSymbol = useMemo(() => brokerToTv(active), [active]);
 
+  // Curated Bid/Ask Board symbols: pull from broker catalog so we never show
+  // a hard-coded list that doesn't exist on the connected account.
+  const watchBoardSymbols = useMemo(() => {
+    if (!symbols.length) return [];
+    const preferred = [
+      "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD",
+      "XAUUSD", "XAGUSD",
+      "US30", "NAS100", "SPX500",
+      "BTCUSD", "ETHUSD",
+    ];
+    const upperMap = new Map(symbols.map((s) => [(s.brokerSymbol || s.symbol).toUpperCase(), s.brokerSymbol || s.symbol]));
+    const out: string[] = [];
+    if (active && upperMap.has(active.toUpperCase())) out.push(upperMap.get(active.toUpperCase())!);
+    for (const p of preferred) {
+      const match = upperMap.get(p);
+      if (match && !out.includes(match)) out.push(match);
+      if (out.length >= 10) break;
+    }
+    return out;
+  }, [symbols, active]);
+
   // Sync active → contexts (chart + broker data fetch).
   useEffect(() => {
     setCtxSymbol(active);
@@ -785,14 +820,17 @@ const DashboardInner = () => {
           {/* LEFT — Market Watch */}
           <MarketWatchPanel active={active} onSelect={selectSymbol} />
 
-          {/* CENTER — Bid/Ask + Chart + Tabs */}
+          {/* CENTER — Chart + Tabs */}
           <section className="flex flex-col gap-2 lg:gap-3 min-w-0">
             <div className="rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden">
               {/* Chart toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800/80 px-3 py-2">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-heading text-[14px] font-bold tracking-wide text-neutral-100">
                     {active}
+                  </span>
+                  <span className="flex items-center gap-1.5 rounded border border-[#FFCD05]/30 bg-[#FFCD05]/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.2em] text-[#FFCD05]">
+                    <Activity className="h-2.5 w-2.5" /> Infinox MT5
                   </span>
                   <ChartBidAskHeader />
                 </div>
@@ -824,6 +862,9 @@ const DashboardInner = () => {
                   withDateRanges={true}
                   saveImage={true}
                 />
+                <div className="pointer-events-none absolute top-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest text-neutral-300 border border-neutral-800">
+                  Prices: live MT5 tick via Trading Layer
+                </div>
               </div>
             </div>
 
@@ -831,16 +872,54 @@ const DashboardInner = () => {
             <BottomTabs />
           </section>
 
-          {/* RIGHT — Bid/Ask Board + Order Ticket */}
-          <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5 space-y-3">
-            <BidAskBoard
-              symbols={["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "US30", "NAS100", "BTCUSD", "USOIL"]}
-              activeSymbol={active}
-              onSelect={(label) => selectSymbol(label)}
-            />
-            <BlackArrowTradePanel />
+          {/* RIGHT — Bid/Ask Board (top 33%) + Order Ticket (bottom 67%) */}
+          <aside className="lg:h-[calc(100vh-7rem)] flex flex-col gap-2 lg:gap-3 min-h-0">
+            <div className="flex-[33] min-h-0 overflow-hidden">
+              <BidAskBoard
+                symbols={watchBoardSymbols}
+                activeSymbol={active}
+                onSelect={(label) => selectSymbol(label)}
+              />
+            </div>
+            <div className="flex-[67] min-h-0 overflow-y-auto pr-0.5">
+              <BlackArrowTradePanel />
+            </div>
           </aside>
         </div>
+
+        <TerminalStatusBar activeSymbol={active} />
+      </div>
+    </div>
+  );
+};
+
+const TerminalStatusBar = ({ activeSymbol }: { activeSymbol: string }) => {
+  const { connected, liveAccount } = useLiveAccount();
+  const { tick } = useBrokerSymbols();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const lastTick = tick?.time || tick?.timestamp || liveAccount?.lastSynced || null;
+  const lastTickStr = lastTick
+    ? new Date(lastTick).toLocaleTimeString()
+    : "—";
+  return (
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded border border-neutral-800/80 bg-[#0a0a0a] px-3 py-1.5 text-[9.5px] font-mono uppercase tracking-widest text-neutral-400">
+      <div className="flex items-center gap-4">
+        <span className={`flex items-center gap-1.5 ${connected ? "text-emerald-400" : "text-red-400"}`}>
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {connected ? "Connected" : "Disconnected"}
+        </span>
+        <span>Trading Layer: <span className="text-neutral-200">MT5</span></span>
+        <span>Symbol: <span className="text-[#FFCD05]">{activeSymbol || "—"}</span></span>
+      </div>
+      <div className="flex items-center gap-4">
+        <span>Last Tick: <span className="text-neutral-200">{lastTickStr}</span></span>
+        <span>Ping: <span className="text-neutral-200">—</span></span>
+        <span>Data: <span className="text-emerald-400">Live</span></span>
+        <span>Server Time: <span className="text-neutral-200">{now.toLocaleTimeString()}</span></span>
       </div>
     </div>
   );

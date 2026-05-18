@@ -43,10 +43,14 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
         <span className="text-right">Bid</span>
         <span className="text-right">Last</span>
         <span className="text-right">Ask</span>
-        <span className="text-right">24H %</span>
+        <span className="text-right">Spread</span>
       </div>
-      <ul className="divide-y divide-neutral-800/60 max-h-[280px] overflow-y-auto">
-        {symbols.map((sym) => {
+      <ul className="divide-y divide-neutral-800/60 overflow-y-auto">
+        {symbols.length === 0 ? (
+          <li className="px-3 py-4 text-center text-[10px] font-mono text-neutral-500">
+            No MT5 symbols loaded. Refresh market watch.
+          </li>
+        ) : symbols.map((sym) => {
           const r = rows[sym];
           const digits = r?.digits ?? 5;
           const isActive = activeSymbol?.toUpperCase() === sym.toUpperCase();
@@ -57,20 +61,14 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   minimumFractionDigits: digits,
                   maximumFractionDigits: digits,
                 });
-          const pct = r?.changePct;
-          const pctClass =
-            pct == null
-              ? "text-neutral-500"
-              : pct >= 0
-                ? "text-emerald-400"
-                : "text-red-400";
+          const spread = r?.spread;
           return (
             <li key={sym}>
               <button
                 type="button"
                 onClick={() => onSelect?.(sym)}
                 className={`w-full grid grid-cols-[1fr_72px_72px_72px_56px] items-center gap-1 px-3 py-1.5 text-left transition-colors ${
-                  isActive ? "bg-[#FFCD05]/10" : "hover:bg-neutral-900/60"
+                  isActive ? "bg-[#FFCD05]/10 ring-1 ring-[#FFCD05]/40" : "hover:bg-neutral-900/60"
                 }`}
               >
                 <span className={`font-mono text-[11px] font-semibold ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
@@ -85,8 +83,8 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                 <span className="text-right font-mono text-[11px] tabular-nums text-emerald-400">
                   {fmt(r?.ask)}
                 </span>
-                <span className={`text-right font-mono text-[10px] tabular-nums ${pctClass}`}>
-                  {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
+                <span className="text-right font-mono text-[10px] tabular-nums text-neutral-300">
+                  {spread == null ? "—" : spread.toFixed(Math.min(digits, 5))}
                 </span>
               </button>
             </li>

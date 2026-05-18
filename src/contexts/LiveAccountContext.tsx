@@ -9,11 +9,11 @@ export interface LiveAccount {
   status: string;
   currency: string;
   leverage: number | null;
-  balance: number;
-  equity: number;
-  margin: number;
-  marginFree: number;
-  profit: number;
+  balance: number | null;
+  equity: number | null;
+  margin: number | null;
+  marginFree: number | null;
+  profit: number | null;
   openPositionsCount: number;
   lastSynced: string | null;
 }
@@ -42,7 +42,10 @@ interface LiveAccountCtx {
 
 const Ctx = createContext<LiveAccountCtx | null>(null);
 
-const REFRESH_MS = 2_000;
+const REFRESH_MS = 10_000;
+
+const num = (v: any): number | null =>
+  v === null || v === undefined || v === "" || Number.isNaN(Number(v)) ? null : Number(v);
 
 export function LiveAccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -84,11 +87,11 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
           status: String(a?.status ?? d?.status ?? "connected"),
           currency: a?.currency ?? d?.currency ?? "USD",
           leverage: a?.leverage ?? d?.leverage ?? null,
-          balance: Number(a?.balance ?? d?.balance ?? 0),
-          equity: Number(a?.equity ?? d?.equity ?? 0),
-          margin: Number(a?.margin ?? d?.margin ?? 0),
-          marginFree: Number(a?.marginFree ?? d?.free_margin ?? 0),
-          profit: Number(a?.profit ?? d?.floating_pnl ?? 0),
+          balance: num(a?.balance ?? d?.balance),
+          equity: num(a?.equity ?? d?.equity),
+          margin: num(a?.margin ?? d?.margin),
+          marginFree: num(a?.marginFree ?? d?.free_margin),
+          profit: num(a?.profit ?? d?.floating_pnl),
           openPositionsCount: Number(
             a?.openPositionsCount ?? d?.open_positions ?? 0,
           ),
