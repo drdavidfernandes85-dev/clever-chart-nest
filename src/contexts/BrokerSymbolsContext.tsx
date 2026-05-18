@@ -280,6 +280,8 @@ export function useBrokerSymbols(): Ctx {
       selectedSymbolValid: false,
       selectedSymbolInfo: null,
       tick: null,
+      tickUpdatedAt: null,
+      tickError: null,
       lastResponse: null,
       lastSymbolDataResponse: null,
       refresh: async () => {},
