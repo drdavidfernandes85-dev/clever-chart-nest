@@ -177,6 +177,34 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     prevSpreadRef.current = spread;
   }, [spread]);
 
+  // Bid / Ask price-move flash cues (auto-clear)
+  useEffect(() => {
+    if (bid == null || !Number.isFinite(bid)) return;
+    const prev = prevBidRef.current;
+    if (prev != null && prev !== bid) {
+      setBidFlash(bid > prev ? "up" : "down");
+    }
+    prevBidRef.current = bid;
+  }, [bid]);
+  useEffect(() => {
+    if (ask == null || !Number.isFinite(ask)) return;
+    const prev = prevAskRef.current;
+    if (prev != null && prev !== ask) {
+      setAskFlash(ask > prev ? "up" : "down");
+    }
+    prevAskRef.current = ask;
+  }, [ask]);
+  useEffect(() => {
+    if (!bidFlash) return;
+    const t = setTimeout(() => setBidFlash(null), 450);
+    return () => clearTimeout(t);
+  }, [bidFlash]);
+  useEffect(() => {
+    if (!askFlash) return;
+    const t = setTimeout(() => setAskFlash(null), 450);
+    return () => clearTimeout(t);
+  }, [askFlash]);
+
   useEffect(() => {
     if (orderType !== "market" && !priceTouched.current && livePrice != null) {
       setPrice(livePrice.toFixed(digits));
