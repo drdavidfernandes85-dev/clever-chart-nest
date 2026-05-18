@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import AnalyticsFilteredView from "@/components/dashboard/AnalyticsFilteredView";
-import PerformanceCoach from "@/components/ai/PerformanceCoach";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { localizeWeeklySummary } from "@/i18n/summary";
@@ -100,7 +99,6 @@ const Analytics = () => {
         <AnalyticsFilteredView />
 
         {/* AI Performance Coach — personalized analysis */}
-        <PerformanceCoach />
 
         <section className="space-y-3">
           <h2 className="font-heading text-lg font-semibold text-foreground">{t("analytics.aiReports")}</h2>

@@ -12,7 +12,6 @@ import CopyTradeModal, { CopyTradeRequest } from "@/components/copytrade/CopyTra
 import { useCopiedSignals } from "@/hooks/useCopiedSignals";
 import { computeMentorTier, MentorTier } from "@/lib/mentor-tier";
 import MentorBadge from "@/components/social/MentorBadge";
-import { AIScorePanel } from "@/components/ai/AIScoreBadge";
 
 type SharedSignal = {
   id: string;
