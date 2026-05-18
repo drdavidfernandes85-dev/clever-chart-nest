@@ -200,7 +200,7 @@ serve(async (req) => {
 
     const { data: account, error: accountError } = await supabase
       .from("user_mt_accounts")
-      .select("metaapi_account_id, login, server_name, status")
+      .select("id, metaapi_account_id, login, server_name, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
