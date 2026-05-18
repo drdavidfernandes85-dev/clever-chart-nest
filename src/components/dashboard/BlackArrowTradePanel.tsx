@@ -565,7 +565,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               disabled={noStops}
               inputMode="decimal"
               placeholder="—"
-              className="w-full h-6 rounded border border-red-500/30 bg-background/60 px-1.5 text-[11px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+              className="w-full h-6 rounded-sm border border-red-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
             />
             <div className="grid grid-cols-3 gap-1">
               {[10, 20, 50].map((p) => (
