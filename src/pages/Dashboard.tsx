@@ -237,22 +237,32 @@ const MarketRow = ({
           className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-700 hover:text-neutral-400"}`}
         />
       </button>
-      <button type="button" onClick={onSelect} className="min-w-0 text-left">
-        <div className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
+      <button type="button" onClick={onSelect} className="min-w-0 text-left flex items-center gap-1">
+        {stale && (
+          <span
+            className="h-1 w-1 rounded-full bg-neutral-600 shrink-0"
+            title="Awaiting price update"
+            aria-label="stale"
+          />
+        )}
+        <span
+          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : stale ? "text-neutral-400" : "text-neutral-100"}`}
+          title={description ?? sym}
+        >
           {sym}
-        </div>
+        </span>
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10px] tabular-nums text-red-400"
+        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-red-400/50" : "text-red-400"}`}
       >
         {fmt(tick?.bid)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10px] tabular-nums text-emerald-400"
+        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-emerald-400/50" : "text-emerald-400"}`}
       >
         {fmt(tick?.ask)}
       </button>
