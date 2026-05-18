@@ -469,7 +469,7 @@ const MarketWatchPanel = ({
 
         {showGroupHeaders
           ? grouped.map(([cat, rows]) => (
-              <div key={cat}>
+              <Fragment key={cat}>
                 <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 bg-[#0a0a0a]/60 border-y border-neutral-800/60">
                   {cat}
                 </li>
@@ -489,7 +489,7 @@ const MarketWatchPanel = ({
                     />
                   );
                 })}
-              </div>
+              </Fragment>
             ))
           : sortedByCategory.map((s) => {
               const sym = s.brokerSymbol || s.symbol;
