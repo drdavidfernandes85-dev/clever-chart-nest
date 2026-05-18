@@ -1,135 +1,55 @@
-import { useEffect, useRef, useState } from "react";
-import { Layers, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Bookmark, Loader2 } from "lucide-react";
+import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
 
 interface Props {
   /** Broker symbol names (e.g. "EURUSD", "XAUUSD"). */
   symbols: string[];
   onSelect?: (label: string) => void;
-}
-
-interface TickRow {
-  bid: number | null;
-  ask: number | null;
-  last: number | null;
-  digits: number;
+  activeSymbol?: string;
 }
 
 /**
- * Multi-pair Bid/Ask board powered by get-mt5-symbol-data.
- * Fetches a fresh tick per symbol every 5s from the connected MT5 account.
+ * Compact institutional Bid / Ask / Last / 24h % board.
+ * Powered by the shared useMultiSymbolTicks hook which polls
+ * `get-mt5-terminal-data` sequentially every 2.5s.
  */
-const BidAskBoard = ({ symbols, onSelect }: Props) => {
-  const [rows, setRows] = useState<Record<string, TickRow>>({});
-  const [loading, setLoading] = useState(true);
-  const [flash, setFlash] = useState<Record<string, "up" | "down" | null>>({});
-  const prevPrice = useRef<Record<string, number>>({});
-
-  useEffect(() => {
-    if (!symbols.length) {
-      setLoading(false);
-      return;
-    }
-    let cancelled = false;
-
-    const loadOne = async (sym: string) => {
-      try {
-        const { data } = await supabase.functions.invoke("get-mt5-terminal-data", {
-          body: { selectedSymbol: sym },
-        });
-        if (cancelled) return;
-        if (data?.success && data?.tick) {
-          const tick = data.tick;
-          const info = data.selectedSymbolInfo;
-          const bid = tick.bid != null ? Number(tick.bid) : null;
-          const ask = tick.ask != null ? Number(tick.ask) : null;
-          const last = tick.last != null ? Number(tick.last) : bid != null && ask != null ? (bid + ask) / 2 : null;
-          const digits = Number(info?.digits) || 5;
-          setRows((r) => ({ ...r, [sym]: { bid, ask, last, digits } }));
-          if (last != null) {
-            const prev = prevPrice.current[sym];
-            if (prev != null && prev !== last) {
-              const dir = last > prev ? "up" : "down";
-              setFlash((f) => ({ ...f, [sym]: dir }));
-              window.setTimeout(
-                () =>
-                  setFlash((f) => {
-                    const n = { ...f };
-                    delete n[sym];
-                    return n;
-                  }),
-                700,
-              );
-            }
-            prevPrice.current[sym] = last;
-          }
-        }
-      } catch {
-        /* ignore individual symbol errors */
-      }
-    };
-
-    const loadAll = async () => {
-      // Sequential with a small gap to avoid hammering the broker API
-      // (120 req/min limit). 10 symbols * 400ms ≈ 4s per cycle.
-      for (const sym of symbols) {
-        if (cancelled) return;
-        await loadOne(sym);
-        await new Promise((r) => setTimeout(r, 400));
-      }
-      if (!cancelled) setLoading(false);
-    };
-
-    loadAll();
-    // Aggressive refresh — keep the board ticking continuously.
-    // Each cycle is sequential with a 400ms gap to respect the broker rate
-    // limit (120 req/min), so effective cadence ≈ symbols * 0.4s + 2s.
-    const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") loadAll();
-    }, 2000);
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled) loadAll();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [symbols.join(",")]);
+const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
+  const rows = useMultiSymbolTicks(symbols);
+  const anyLoaded = Object.keys(rows).length > 0;
 
   return (
-    <div className="rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl overflow-hidden">
-      <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
+    <div className="rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden">
+      <div className="flex items-center justify-between border-b border-neutral-800/80 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Layers className="h-3.5 w-3.5 text-primary" />
-          <h3 className="font-heading text-[11px] font-bold uppercase tracking-[0.2em] text-foreground">
+          <Bookmark className="h-3.5 w-3.5 text-[#FFCD05]" />
+          <h3 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
             Bid / Ask Board
           </h3>
         </div>
-        {loading ? (
-          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-        ) : (
-          <span className="text-[9px] font-mono uppercase tracking-widest text-emerald-400">
-            ● live
+        {anyLoaded ? (
+          <span className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest text-emerald-400">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </span>
+            Live
           </span>
+        ) : (
+          <Loader2 className="h-3 w-3 animate-spin text-[#FFCD05]" />
         )}
       </div>
-      <div className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 border-b border-border/30 bg-background/40 px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+      <div className="grid grid-cols-[1fr_72px_72px_72px_56px] items-center gap-1 border-b border-neutral-800/80 bg-[#0a0a0a] px-3 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
         <span>Symbol</span>
-        <span className="w-20 text-right text-red-400">Bid</span>
-        <span className="w-20 text-center text-foreground">Last</span>
-        <span className="w-20 text-right text-emerald-400">Ask</span>
+        <span className="text-right">Bid</span>
+        <span className="text-right">Last</span>
+        <span className="text-right">Ask</span>
+        <span className="text-right">24H %</span>
       </div>
-      <ul className="divide-y divide-border/20 max-h-[280px] overflow-y-auto">
-        {symbols.length === 0 && (
-          <li className="px-3 py-4 text-center text-[11px] font-mono text-muted-foreground">
-            Loading broker symbols…
-          </li>
-        )}
+      <ul className="divide-y divide-neutral-800/60 max-h-[280px] overflow-y-auto">
         {symbols.map((sym) => {
           const r = rows[sym];
           const digits = r?.digits ?? 5;
+          const isActive = activeSymbol?.toUpperCase() === sym.toUpperCase();
           const fmt = (v: number | null | undefined) =>
             v == null
               ? "—"
@@ -137,27 +57,38 @@ const BidAskBoard = ({ symbols, onSelect }: Props) => {
                   minimumFractionDigits: digits,
                   maximumFractionDigits: digits,
                 });
-          const f = flash[sym];
+          const pct = r?.changePct;
+          const pctClass =
+            pct == null
+              ? "text-neutral-500"
+              : pct >= 0
+                ? "text-emerald-400"
+                : "text-red-400";
           return (
-            <li
-              key={sym}
-              onClick={() => onSelect?.(sym)}
-              className={`grid grid-cols-[1fr_auto_auto_auto] items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-muted/30 transition-colors ${
-                f === "up" ? "bg-emerald-500/10" : f === "down" ? "bg-red-500/10" : ""
-              }`}
-            >
-              <span className="font-mono text-[11px] font-semibold text-foreground">
-                {sym}
-              </span>
-              <span className="w-20 text-right font-mono text-[11px] tabular-nums text-red-400">
-                {fmt(r?.bid)}
-              </span>
-              <span className="w-20 text-center font-mono text-[10px] tabular-nums text-muted-foreground">
-                {fmt(r?.last)}
-              </span>
-              <span className="w-20 text-right font-mono text-[11px] tabular-nums text-emerald-400">
-                {fmt(r?.ask)}
-              </span>
+            <li key={sym}>
+              <button
+                type="button"
+                onClick={() => onSelect?.(sym)}
+                className={`w-full grid grid-cols-[1fr_72px_72px_72px_56px] items-center gap-1 px-3 py-1.5 text-left transition-colors ${
+                  isActive ? "bg-[#FFCD05]/10" : "hover:bg-neutral-900/60"
+                }`}
+              >
+                <span className={`font-mono text-[11px] font-semibold ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
+                  {sym}
+                </span>
+                <span className="text-right font-mono text-[11px] tabular-nums text-red-400">
+                  {fmt(r?.bid)}
+                </span>
+                <span className="text-right font-mono text-[10px] tabular-nums text-neutral-400">
+                  {fmt(r?.last)}
+                </span>
+                <span className="text-right font-mono text-[11px] tabular-nums text-emerald-400">
+                  {fmt(r?.ask)}
+                </span>
+                <span className={`text-right font-mono text-[10px] tabular-nums ${pctClass}`}>
+                  {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
+                </span>
+              </button>
             </li>
           );
         })}
