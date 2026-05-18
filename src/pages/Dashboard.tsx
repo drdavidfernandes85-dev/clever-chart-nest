@@ -325,12 +325,12 @@ const MarketWatchPanel = ({
 
   const favoriteSymbols = useMemo(() => favorites.map((f) => f.symbol), [favorites]);
 
-  // Subscribe to live ticks for everything currently visible (cap at 120 to
-  // stay friendly to the broker batch endpoint while covering the whole panel).
+  // Subscribe to live ticks for everything currently visible (cap at 40 to
+  // match the get-mt5-quotes batch endpoint).
   const visibleTopSymbols = useMemo(
     () =>
       filtered
-        .slice(0, 120)
+        .slice(0, 40)
         .map((s) => (s.brokerSymbol || s.symbol))
         .filter(Boolean),
     [filtered],
@@ -340,10 +340,70 @@ const MarketWatchPanel = ({
     favoriteSymbols.forEach((s) => set.add(s.toUpperCase()));
     if (active) set.add(active.toUpperCase());
     visibleTopSymbols.forEach((s) => set.add(s.toUpperCase()));
-    return Array.from(set);
+    return Array.from(set).slice(0, 40);
   }, [favoriteSymbols, active, visibleTopSymbols]);
-  const favTicks = useMultiSymbolTicks(tickRequest);
-  const activeTicks = favTicks; // unified source
+
+  // --- Bid/Ask via get-mt5-quotes (stale-while-revalidate) ---
+  type QuoteRow = { bid: number | null; ask: number | null; spread: number | null; last?: number | null };
+  const [quotes, setQuotes] = useState<Record<string, QuoteRow>>({});
+  const lastGoodQuotesRef = useRef<Record<string, QuoteRow>>({});
+  const [lastGoodQuotes, setLastGoodQuotes] = useState<Record<string, QuoteRow>>({});
+  const [dataDelayed, setDataDelayed] = useState(false);
+  const [hasEverLoaded, setHasEverLoaded] = useState(false);
+
+  useEffect(() => {
+    if (tickRequest.length === 0) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase.functions.invoke("get-mt5-quotes", {
+          body: { selectedSymbol: active, symbols: tickRequest, debug: false },
+        });
+        if (cancelled) return;
+        if (error || !data?.success || !Array.isArray(data?.quotes) || data.quotes.length === 0) {
+          // Keep lastGoodQuotes; flag delayed.
+          setDataDelayed(true);
+          return;
+        }
+        const next: Record<string, QuoteRow> = {};
+        for (const q of data.quotes) {
+          const sym = String(q?.symbol || "").toUpperCase();
+          if (!sym) continue;
+          const bid = q?.bid != null ? Number(q.bid) : null;
+          const ask = q?.ask != null ? Number(q.ask) : null;
+          const spread =
+            q?.spread != null
+              ? Number(q.spread)
+              : bid != null && ask != null
+                ? Math.max(0, ask - bid)
+                : null;
+          if (bid == null && ask == null && spread == null) continue;
+          next[sym] = { bid, ask, spread, last: q?.last != null ? Number(q.last) : null };
+        }
+        if (Object.keys(next).length === 0) {
+          setDataDelayed(true);
+          return;
+        }
+        // Merge into lastGood so previously-known symbols persist across batches.
+        const merged = { ...lastGoodQuotesRef.current, ...next };
+        lastGoodQuotesRef.current = merged;
+        setLastGoodQuotes(merged);
+        setQuotes(next);
+        setDataDelayed(false);
+        setHasEverLoaded(true);
+      } catch {
+        if (!cancelled) setDataDelayed(true);
+      }
+    };
+    load();
+    const id = window.setInterval(load, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [tickRequest, active]);
+
 
   // Hydrate favorites with broker metadata when available
   const favRows = useMemo(() => {
