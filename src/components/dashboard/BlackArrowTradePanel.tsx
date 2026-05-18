@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
  * - Cancel Ord. | Invert | Close row
  */
 
-const QUICK_VOLS = [0.01, 0.1, 0.5, 1.0];
+const QUICK_VOLS = [0.01, 0.1, 0.5, 1.0, 2.0];
 
 const pickTick = (tick: any) => {
   if (!tick) return { bid: null, ask: null };
