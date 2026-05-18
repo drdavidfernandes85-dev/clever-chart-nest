@@ -411,15 +411,20 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const pendingDisabled = true; // Limit/Stop pending orders not yet supported by backend
   const priceInputDisabled = orderType === "Market";
 
-  // "Data delayed" must ONLY appear when we truly have nothing usable:
-  // no bid AND no ask on the selected symbol, AND the last tick refresh failed.
-  // A valid bid OR ask (live tick or last-good info) suppresses the badge.
+  // "Data delayed" surfaces when:
+  //   (a) the selected symbol has NO usable bid AND NO usable ask anywhere
+  //       (live tick, get-mt5-quotes selectedQuote, last-good broker info)
+  //       AND the last tick refresh failed, OR
+  //   (b) get-mt5-quotes failed to return a fresh selectedQuote but a
+  //       last-good snapshot is keeping the Order Ticket alive.
   const selectedTickAvailable =
     Number.isFinite(Number(bid)) ||
     Number.isFinite(Number(ask)) ||
+    Number.isFinite(Number(effectiveSelected?.bid)) ||
+    Number.isFinite(Number(effectiveSelected?.ask)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.bid)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.ask));
-  const tickStale = !selectedTickAvailable && !!tickError;
+  const tickStale = (!selectedTickAvailable && !!tickError) || showDataDelayed;
 
   return (
     <div className={cn(
