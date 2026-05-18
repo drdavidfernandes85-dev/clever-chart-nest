@@ -207,6 +207,7 @@ const MarketRow = ({
   onSelect: () => void;
   onToggleFav: () => void;
 }) => {
+  // Guard: never render a row without a real symbol.
   if (!sym || !sym.trim()) return null;
   const fmt = (v: number | null | undefined) =>
     v == null
@@ -218,6 +219,8 @@ const MarketRow = ({
   const pct = tick?.changePct;
   const pctClass =
     pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
+  // Subtle "stale" marker when we have no bid/ask at all for this row.
+  const stale = tick == null || (tick.bid == null && tick.ask == null);
   return (
     <li
       className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
