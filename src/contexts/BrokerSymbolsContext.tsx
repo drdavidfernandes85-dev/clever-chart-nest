@@ -94,6 +94,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   const [selectedSymbolValid, setSelectedSymbolValid] = useState(false);
   const [selectedSymbolInfo, setSelectedSymbolInfo] = useState<any>(null);
   const [tick, setTick] = useState<any>(null);
+  const [tickUpdatedAt, setTickUpdatedAt] = useState<number | null>(null);
+  const [tickError, setTickError] = useState<string | null>(null);
   const [selectedBrokerSymbol, setSelectedBrokerSymbol] = useState<string>("EURUSD");
 
   // Fetch full broker symbols list via the new get-mt5-symbols function.
