@@ -468,6 +468,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           })}
         </div>
 
+        {/* Live Spread indicator */}
+        <SpreadIndicator
+          spread={spread}
+          pipSize={pipSize}
+          trend={spreadTrend}
+          digits={digits}
+        />
+
         {/* Live Bid / Ask strip */}
         <div className="grid grid-cols-2 gap-2">
           <button
