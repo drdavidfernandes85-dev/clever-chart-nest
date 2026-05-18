@@ -422,7 +422,7 @@ const MarketWatchPanel = ({
 
   const getTick = (sym: string) => {
     const u = sym.toUpperCase();
-    return favTicks[u] || favTicks[sym] || activeTicks[u] || activeTicks[sym];
+    return quotes[u] || lastGoodQuotes[u];
   };
 
   // Order non-favorites by category: Forex → Commodities → Indices → Crypto → others
