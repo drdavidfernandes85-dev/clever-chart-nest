@@ -17,6 +17,8 @@ export interface MultiTickMeta {
   rows: Record<string, MultiTick>;
   lastUpdatedAt: number | null;
   lastError: string | null;
+  /** Count of consecutive failed/empty refreshes. Resets to 0 on success. */
+  consecutiveErrors: number;
   refreshing: boolean;
 }
 
@@ -31,6 +33,7 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
   const [rows, setRows] = useState<Record<string, MultiTick>>({});
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const sessionOpen = useRef<Record<string, number>>({});
 
@@ -53,11 +56,13 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
         if (cancelled) return;
         if (error || !data?.success) {
           setLastError(error?.message || data?.error || "Refresh failed");
+          setConsecutiveErrors((n) => n + 1);
           return;
         }
         const instruments: any[] = Array.isArray(data.instruments) ? data.instruments : [];
         if (instruments.length === 0) {
           setLastError("Empty payload");
+          setConsecutiveErrors((n) => n + 1);
           return;
         }
         setRows((prev) => {
@@ -88,8 +93,12 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
         });
         setLastUpdatedAt(Date.now());
         setLastError(null);
+        setConsecutiveErrors(0);
       } catch (e: any) {
-        if (!cancelled) setLastError(e?.message || "Network error");
+        if (!cancelled) {
+          setLastError(e?.message || "Network error");
+          setConsecutiveErrors((n) => n + 1);
+        }
       } finally {
         if (!cancelled) setRefreshing(false);
       }
@@ -114,7 +123,7 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, periodMs]);
 
-  return { rows, lastUpdatedAt, lastError, refreshing };
+  return { rows, lastUpdatedAt, lastError, consecutiveErrors, refreshing };
 }
 
 /** Backwards-compatible: returns just the rows map. */

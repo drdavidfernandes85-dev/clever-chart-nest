@@ -14,15 +14,23 @@ interface Props {
  */
 
 const COLS = "grid-cols-[minmax(0,1fr)_64px_64px_64px_52px]";
-const STALE_MS = 15_000;
+// "Data delayed" thresholds — chosen to absorb intermittent transport errors
+// (rate limits, brief 5xx) without flickering. We require BOTH a sustained
+// failure pattern AND/OR a clear stale window.
+const STALE_MS = 25_000;            // no successful refresh for 25s
+const MIN_CONSECUTIVE_ERRORS = 2;   // two failed cycles in a row
 
 const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
-  const { rows, lastUpdatedAt, lastError, refreshing } = useMultiSymbolTicksWithMeta(symbols);
+  const { rows, lastUpdatedAt, consecutiveErrors, refreshing } =
+    useMultiSymbolTicksWithMeta(symbols);
   const anyLoaded = Object.keys(rows).length > 0;
   const now = Date.now();
+  // Delayed only after CONFIRMED failures (≥2 in a row) or genuine staleness.
+  // A single transient error never trips the badge.
   const isDelayed =
-    !!lastError ||
-    (lastUpdatedAt != null && now - lastUpdatedAt > STALE_MS);
+    anyLoaded &&
+    (consecutiveErrors >= MIN_CONSECUTIVE_ERRORS ||
+      (lastUpdatedAt != null && now - lastUpdatedAt > STALE_MS));
 
   // Only render symbols that have valid tick data (live or last-good).
   const visible = symbols.filter((sym) => {
