@@ -7,7 +7,6 @@ import {
   Activity,
   User,
   Star,
-  Star,
 } from "lucide-react";
 import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
