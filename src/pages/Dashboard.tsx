@@ -418,7 +418,7 @@ const MarketWatchPanel = ({
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[18px_1fr_64px_64px_52px] items-center gap-1.5 border-b border-neutral-800/80 bg-[#0a0a0a] px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+      <div className="grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-1.5 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
         <span />
         <span>Symbol</span>
         <span className="text-right text-red-400/80">Bid</span>
