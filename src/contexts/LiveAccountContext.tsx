@@ -9,11 +9,11 @@ export interface LiveAccount {
   status: string;
   currency: string;
   leverage: number | null;
-  balance: number;
-  equity: number;
-  margin: number;
-  marginFree: number;
-  profit: number;
+  balance: number | null;
+  equity: number | null;
+  margin: number | null;
+  marginFree: number | null;
+  profit: number | null;
   openPositionsCount: number;
   lastSynced: string | null;
 }
