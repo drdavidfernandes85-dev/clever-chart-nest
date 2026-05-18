@@ -816,7 +816,7 @@ const DashboardInner = () => {
       <TerminalHeader />
 
       <div className="p-2 lg:p-3">
-        <div className="grid gap-2 lg:gap-3 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
+        <div className="grid gap-1.5 lg:gap-2 grid-cols-1 lg:grid-cols-[210px_minmax(0,1fr)_310px]">
           {/* LEFT — Market Watch */}
           <MarketWatchPanel active={active} onSelect={selectSymbol} />
 
