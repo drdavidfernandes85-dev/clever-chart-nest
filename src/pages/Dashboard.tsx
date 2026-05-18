@@ -114,7 +114,6 @@ const TerminalHeader = () => {
           <div className="flex items-center gap-4 ml-2 pl-3 border-l border-neutral-800 overflow-x-auto scrollbar-none">
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </span>
               <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400">
