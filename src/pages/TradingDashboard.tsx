@@ -688,6 +688,7 @@ const TradeIdeaCards = ({
         else if (status === "placed") toast.success("Trade placed");
         else if (status === "partial") toast.success("Trade partially filled");
         else toast.success("Trade executed");
+        window.dispatchEvent(new Event("mt:refresh-positions"));
       } else {
         toast.error(res?.error || "Trade execution failed");
       }

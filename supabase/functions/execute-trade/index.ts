@@ -404,7 +404,37 @@ serve(async (req) => {
 
     // ---- After-trade sync: populate mt_positions + trade_journal so the
     // Positions and Journal tabs reflect this trade immediately. Best-effort:
-    // any failure here is logged but does NOT fail the trade response.
+    // any failure here is logged to `trade_execution_logs.sync_meta` but does
+    // NOT fail the trade response.
+    const syncMeta: Record<string, unknown> = {
+      started_at: new Date().toISOString(),
+      steps: [] as Array<Record<string, unknown>>,
+    };
+    const recordStep = (step: Record<string, unknown>) => {
+      (syncMeta.steps as Array<Record<string, unknown>>).push({
+        at: new Date().toISOString(),
+        ...step,
+      });
+    };
+
+    // Extract authoritative broker identifiers from the trade response.
+    const orderTicket = (() => {
+      const v = getValue(result, [
+        "deal.ticket", "order.ticket", "ticket",
+        "data.deal.ticket", "data.order.ticket",
+        "order_id", "orderId", "deal_id", "dealId",
+      ], null);
+      return v != null ? String(v) : null;
+    })();
+    const positionId = (() => {
+      const v = getValue(result, [
+        "position.id", "position_id", "positionId",
+        "deal.position_id", "order.position_id",
+        "data.position.id", "data.position_id",
+      ], null);
+      return v != null ? String(v) : null;
+    })();
+
     try {
       const dealPrice = toNullableNumber(
         getValue(result, [
@@ -413,104 +443,209 @@ serve(async (req) => {
           "result.price", "trade.price",
         ], null),
       );
-      const dealTicket = getValue(result, [
-        "deal.ticket", "order.ticket", "ticket", "order_id", "orderId",
-        "data.deal.ticket", "data.order.ticket",
-      ], null);
       const dealVolume = toNullableNumber(
         getValue(result, ["deal.volume", "order.volume", "volume"], null),
       ) ?? volume;
       const direction = side === "sell" ? "short" : "long";
 
-      // 1) Insert an OPEN row in the journal so the user sees the trade now.
-      //    We leave pnl/exit blank until the position closes (will be filled
-      //    by sync or EA flows). Idempotent on (user, notes ticket) — we use
-      //    a "Ticket #" marker so subsequent syncs won't duplicate.
-      const journalNotes = dealTicket
-        ? `Auto-logged from terminal trade. Ticket #${dealTicket}.`
-        : `Auto-logged from terminal trade.`;
+      // 1) JOURNAL — idempotent via unique index on (user_id, broker_ticket).
+      const journalRow = {
+        user_id: user.id,
+        pair: symbol,
+        direction,
+        entry_price: dealPrice ?? 0,
+        position_size: dealVolume,
+        stop_loss: stopLoss ?? null,
+        take_profit: takeProfit ?? null,
+        status: "open",
+        opened_at: new Date().toISOString(),
+        setup_tag: "terminal",
+        broker_ticket: orderTicket,
+        broker_position_id: positionId,
+        notes: orderTicket
+          ? `Auto-logged from terminal trade. Ticket #${orderTicket}.`
+          : `Auto-logged from terminal trade.`,
+      };
 
-      let alreadyJournaled = false;
-      if (dealTicket) {
-        const { data: existing } = await supabase
-          .from("trade_journal")
-          .select("id")
-          .eq("user_id", user.id)
-          .like("notes", `%Ticket #${dealTicket}.%`)
-          .maybeSingle();
-        alreadyJournaled = !!existing;
-      }
+      const { data: jIns, error: jErr } = await supabase
+        .from("trade_journal")
+        .upsert(journalRow, {
+          onConflict: "user_id,broker_ticket",
+          ignoreDuplicates: true,
+        })
+        .select("id")
+        .maybeSingle();
 
-      if (!alreadyJournaled) {
-        await supabase.from("trade_journal").insert({
-          user_id: user.id,
-          pair: symbol,
-          direction,
-          entry_price: dealPrice ?? 0,
-          position_size: dealVolume,
-          stop_loss: stopLoss ?? null,
-          take_profit: takeProfit ?? null,
-          status: "open",
-          opened_at: new Date().toISOString(),
-          setup_tag: "terminal",
-          notes: journalNotes,
-        });
-      }
+      recordStep({
+        step: "journal_upsert",
+        ok: !jErr,
+        ticket: orderTicket,
+        position_id: positionId,
+        inserted_id: jIns?.id ?? null,
+        error: jErr?.message ?? null,
+      });
 
-      // 2) Sync mt_positions from Trading Layer so the Positions tab updates.
+      // 2) POSITIONS sync — fetch from Trading Layer with retry + backoff.
       if (account?.id) {
-        const posRes = await fetch(
-          `${BASE_URL}/api/v1/accounts/${accountId}/positions`,
-          { headers: { Authorization: `Bearer ${TRADING_LAYER_KEY}` } },
-        );
-        if (posRes.ok) {
-          const posJson: any = await posRes.json().catch(() => ({}));
-          const positions: any[] =
-            (Array.isArray(posJson?.data) ? posJson.data
-              : Array.isArray(posJson?.data?.positions) ? posJson.data.positions
-              : Array.isArray(posJson?.positions) ? posJson.positions
-              : []) ?? [];
+        const positionsUrl = `${BASE_URL}/api/v1/accounts/${accountId}/positions`;
+        let positions: any[] | null = null;
+        let lastStatus = 0;
+        let lastError: string | null = null;
+        const maxAttempts = 3;
 
-          // Replace open positions for this account
-          await supabase.from("mt_positions").delete().eq("account_id", account.id);
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          try {
+            const posRes = await fetch(positionsUrl, {
+              headers: { Authorization: `Bearer ${TRADING_LAYER_KEY}` },
+            });
+            lastStatus = posRes.status;
+            const posText = await posRes.text();
+            let posJson: any = {};
+            try { posJson = JSON.parse(posText); } catch { posJson = { raw: posText }; }
 
-          if (positions.length > 0) {
-            const rows = positions.map((p: any) => {
-              const t = String(p.ticket ?? p.position_id ?? p.id ?? "");
-              const sideStr = String(p.side ?? p.type ?? "").toLowerCase();
-              const normSide = sideStr === "sell" || sideStr === "short" || sideStr === "1"
-                ? "short" : "long";
-              return {
-                user_id: user.id,
-                account_id: account.id,
-                ticket: t,
-                symbol: String(p.symbol ?? ""),
-                side: normSide,
-                volume: Number(p.volume ?? p.lots ?? 0),
-                open_price: Number(p.open_price ?? p.price_open ?? p.entry ?? 0),
-                current_price: p.current_price != null ? Number(p.current_price) : null,
-                stop_loss: p.sl != null ? Number(p.sl) : p.stop_loss != null ? Number(p.stop_loss) : null,
-                take_profit: p.tp != null ? Number(p.tp) : p.take_profit != null ? Number(p.take_profit) : null,
-                profit: p.profit != null ? Number(p.profit) : 0,
-                swap: p.swap != null ? Number(p.swap) : null,
-                commission: p.commission != null ? Number(p.commission) : null,
-                opened_at: p.time
-                  ? (Number(p.time) > 0 ? new Date(Number(p.time) * 1000).toISOString() : new Date(p.time).toISOString())
-                  : p.opened_at ?? new Date().toISOString(),
-              };
-            }).filter((r) => r.ticket);
-
-            if (rows.length > 0) {
-              await supabase.from("mt_positions").insert(rows);
+            if (posRes.ok) {
+              positions =
+                (Array.isArray(posJson?.data) ? posJson.data
+                  : Array.isArray(posJson?.data?.positions) ? posJson.data.positions
+                  : Array.isArray(posJson?.positions) ? posJson.positions
+                  : []) ?? [];
+              recordStep({
+                step: "positions_fetch",
+                endpoint: positionsUrl,
+                ok: true,
+                status: posRes.status,
+                attempts: attempt,
+                count: positions.length,
+              });
+              break;
             }
+
+            lastError = typeof posJson?.error === "string"
+              ? posJson.error
+              : (posJson?.message ?? posText?.slice(0, 300) ?? `HTTP ${posRes.status}`);
+            const retryable = posRes.status >= 500 || posRes.status === 429;
+            recordStep({
+              step: "positions_fetch_failed",
+              endpoint: positionsUrl,
+              attempt,
+              status: posRes.status,
+              error: lastError,
+              retryable,
+            });
+            if (!retryable) break;
+          } catch (fetchErr) {
+            lastError = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+            recordStep({
+              step: "positions_fetch_exception",
+              endpoint: positionsUrl,
+              attempt,
+              error: lastError,
+            });
           }
-        } else {
-          console.warn("execute-trade: positions sync HTTP", posRes.status);
+
+          if (attempt < maxAttempts) {
+            // Exponential backoff: ~400ms, 1200ms
+            await new Promise((r) => setTimeout(r, 400 * Math.pow(3, attempt - 1)));
+          }
         }
+
+        if (positions === null) {
+          recordStep({
+            step: "positions_sync_skipped",
+            reason: "all_retries_failed",
+            last_status: lastStatus,
+            last_error: lastError,
+          });
+        } else {
+          const { error: delErr } = await supabase
+            .from("mt_positions")
+            .delete()
+            .eq("account_id", account.id);
+          if (delErr) {
+            recordStep({ step: "positions_delete_failed", error: delErr.message });
+          }
+
+          const rows = positions.map((p: any) => {
+            // Ticket mapping: Trading Layer uses `position_id` for the
+            // persistent position identifier and `ticket` for the original
+            // order. Prefer position_id so it matches the order's returned
+            // position id; fall back to ticket / id.
+            const t = String(
+              p.position_id ?? p.positionId ?? p.ticket ?? p.id ?? p.deal_id ?? "",
+            );
+            const sideStr = String(p.side ?? p.type ?? "").toLowerCase();
+            const normSide = sideStr === "sell" || sideStr === "short" || sideStr === "1"
+              ? "short" : "long";
+            return {
+              user_id: user.id,
+              account_id: account.id,
+              ticket: t,
+              symbol: String(p.symbol ?? ""),
+              side: normSide,
+              volume: Number(p.volume ?? p.lots ?? 0),
+              open_price: Number(p.open_price ?? p.price_open ?? p.entry ?? 0),
+              current_price: p.current_price != null ? Number(p.current_price) : null,
+              stop_loss: p.sl != null ? Number(p.sl) : p.stop_loss != null ? Number(p.stop_loss) : null,
+              take_profit: p.tp != null ? Number(p.tp) : p.take_profit != null ? Number(p.take_profit) : null,
+              profit: p.profit != null ? Number(p.profit) : 0,
+              swap: p.swap != null ? Number(p.swap) : null,
+              commission: p.commission != null ? Number(p.commission) : null,
+              opened_at: p.time
+                ? (Number(p.time) > 0 ? new Date(Number(p.time) * 1000).toISOString() : new Date(p.time).toISOString())
+                : p.opened_at ?? new Date().toISOString(),
+            };
+          }).filter((r) => r.ticket);
+
+          if (rows.length > 0) {
+            const { error: insErr } = await supabase
+              .from("mt_positions")
+              .insert(rows);
+            recordStep({
+              step: "positions_insert",
+              count: rows.length,
+              ok: !insErr,
+              error: insErr?.message ?? null,
+            });
+
+            // Backfill broker_position_id on the journal row if missing.
+            if (orderTicket && !positionId) {
+              const matched = rows.find((r) => r.ticket === orderTicket);
+              if (matched) {
+                await supabase
+                  .from("trade_journal")
+                  .update({ broker_position_id: matched.ticket })
+                  .eq("user_id", user.id)
+                  .eq("broker_ticket", orderTicket);
+              }
+            }
+          } else {
+            recordStep({ step: "positions_insert_skipped", reason: "no_rows" });
+          }
+        }
+      } else {
+        recordStep({ step: "positions_sync_skipped", reason: "no_account_id" });
       }
     } catch (syncErr) {
-      console.warn("execute-trade: post-trade sync failed", syncErr);
+      recordStep({
+        step: "sync_exception",
+        error: syncErr instanceof Error ? syncErr.message : String(syncErr),
+      });
+      console.error("execute-trade: post-trade sync failed", syncErr);
     }
+
+    (syncMeta as any).finished_at = new Date().toISOString();
+
+    // Persist sync diagnostics on the execution log row we created above.
+    try {
+      await supabase
+        .from("trade_execution_logs")
+        .update({ sync_meta: syncMeta })
+        .eq("user_id", user.id)
+        .eq("signal_id", tradeId);
+    } catch (metaErr) {
+      console.warn("execute-trade: could not persist sync_meta", metaErr);
+    }
+
 
     return json(
       {
@@ -523,6 +658,9 @@ serve(async (req) => {
         retcodeName,
         retcodeDescription: brokerMessage,
         payloadSent: orderPayload,
+        ticket: orderTicket,
+        positionId,
+        sync: syncMeta,
         raw: tradeData,
       },
       200,

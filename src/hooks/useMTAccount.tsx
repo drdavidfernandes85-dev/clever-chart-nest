@@ -125,6 +125,25 @@ export function useMTAccount() {
     refresh();
   }, [refresh]);
 
+  // Immediate refresh trigger after a trade is executed, so the Positions
+  // tab updates even if the realtime subscription is delayed. Components
+  // dispatch `mt:refresh-positions` (or the legacy `trade-executed` event)
+  // after calling the execute-trade function.
+  useEffect(() => {
+    const handler = () => {
+      // Small delay lets the edge function finish its post-trade sync
+      // (insert into mt_positions) before we re-read.
+      setTimeout(() => { void refresh(); }, 250);
+      setTimeout(() => { void refresh(); }, 1500);
+    };
+    window.addEventListener("mt:refresh-positions", handler);
+    window.addEventListener("trade-executed", handler);
+    return () => {
+      window.removeEventListener("mt:refresh-positions", handler);
+      window.removeEventListener("trade-executed", handler);
+    };
+  }, [refresh]);
+
   const sync = useCallback(
     async (accountId?: string) => {
       const id = accountId ?? account?.id;
