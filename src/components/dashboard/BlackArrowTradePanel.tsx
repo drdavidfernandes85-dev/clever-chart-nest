@@ -535,6 +535,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Volume</label>
             <input
+              ref={volInputRef}
               value={vol}
               onChange={(e) => setVol(e.target.value)}
               inputMode="decimal"
