@@ -7,7 +7,10 @@ import {
   Activity,
   User,
   ChevronDown,
+  Star,
 } from "lucide-react";
+import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
+import { useFavorites, inferCategory } from "@/hooks/useFavorites";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SEO from "@/components/SEO";
