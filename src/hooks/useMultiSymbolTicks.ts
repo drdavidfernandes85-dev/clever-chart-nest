@@ -17,6 +17,8 @@ export interface MultiTickMeta {
   rows: Record<string, MultiTick>;
   lastUpdatedAt: number | null;
   lastError: string | null;
+  /** Count of consecutive failed/empty refreshes. Resets to 0 on success. */
+  consecutiveErrors: number;
   refreshing: boolean;
 }
 
