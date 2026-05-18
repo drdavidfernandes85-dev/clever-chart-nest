@@ -117,7 +117,7 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, periodMs]);
 
-  return { rows, lastUpdatedAt, lastError, refreshing };
+  return { rows, lastUpdatedAt, lastError, consecutiveErrors, refreshing };
 }
 
 /** Backwards-compatible: returns just the rows map. */
