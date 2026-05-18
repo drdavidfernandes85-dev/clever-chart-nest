@@ -208,7 +208,7 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
               </div>
               {/* Body — naturally sized; no inner scroll unless viewport is tiny */}
               <div className="flex-1 overflow-y-auto p-2">
-                <QuickTradePanel compact symbols={symbols} onSymbolChange={onSymbolChange} />
+                <BlackArrowTradePanel />
               </div>
             </motion.div>
           ) : (
