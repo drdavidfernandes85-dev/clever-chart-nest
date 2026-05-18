@@ -273,18 +273,6 @@ const LiveSharedSignals = () => {
                   </div>
                 </div>
 
-                {/* AI Analysis */}
-                <div className="mb-2">
-                  <AIScorePanel
-                    signalId={s.id}
-                    pair={s.pair}
-                    direction={s.direction}
-                    entry_price={Number(s.entry_price)}
-                    stop_loss={s.stop_loss != null ? Number(s.stop_loss) : null}
-                    take_profit={s.take_profit != null ? Number(s.take_profit) : null}
-                    author={s.author_name}
-                  />
-                </div>
 
                 {/* CTA */}
                 {["active", "open"].includes(s.status) && (
