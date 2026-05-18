@@ -206,8 +206,8 @@ const MarketRow = ({
     pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
   return (
     <li
-      className={`grid grid-cols-[18px_1fr_64px_64px_52px] items-center gap-1.5 px-2 py-1.5 transition-colors ${
-        isActive ? "bg-[#FFCD05]/10" : "hover:bg-neutral-900/60"
+      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 px-1.5 py-[3px] border-b border-neutral-900/80 transition-colors ${
+        isActive ? "bg-[#FFCD05]/12 border-l-2 border-l-[#FFCD05]" : "hover:bg-neutral-900/40"
       }`}
     >
       <button
@@ -217,35 +217,32 @@ const MarketRow = ({
         aria-label={isFav ? "Remove favorite" : "Add favorite"}
       >
         <Star
-          className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-600 hover:text-neutral-400"}`}
+          className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-700 hover:text-neutral-400"}`}
         />
       </button>
       <button type="button" onClick={onSelect} className="min-w-0 text-left">
-        <div className={`font-mono text-[11px] font-bold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
+        <div className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
           {sym}
         </div>
-        {description && (
-          <div className="text-[9px] text-neutral-500 truncate">{description}</div>
-        )}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10.5px] tabular-nums text-red-400"
+        className="text-right font-mono text-[10px] tabular-nums text-red-400"
       >
         {fmt(tick?.bid)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10.5px] tabular-nums text-emerald-400"
+        className="text-right font-mono text-[10px] tabular-nums text-emerald-400"
       >
         {fmt(tick?.ask)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[10px] tabular-nums ${pctClass}`}
+        className={`text-right font-mono text-[9.5px] tabular-nums ${pctClass}`}
       >
         {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
       </button>
