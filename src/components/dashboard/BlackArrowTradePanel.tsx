@@ -486,6 +486,52 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ))}
         </div>
 
+        {/* Bid/Ask tiles — large institutional click-to-side targets */}
+        <div className="grid grid-cols-2 gap-1">
+          <button
+            type="button"
+            onClick={() => setSide("sell")}
+            className={cn(
+              "group flex flex-col items-stretch rounded-sm border px-2 py-1 text-left transition-colors",
+              side === "sell"
+                ? "border-red-500/70 bg-red-500/10"
+                : "border-neutral-800 bg-[#0a0a0a] hover:border-red-500/40",
+            )}
+          >
+            <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.18em] text-red-400/80">
+              <span>Sell</span><span>Bid</span>
+            </span>
+            <span className={cn(
+              "font-mono tabular-nums text-[15px] leading-tight font-semibold text-red-400 transition-colors",
+              bidFlash === "up" && "text-red-300",
+              bidFlash === "down" && "text-red-500",
+            )}>
+              {fmtPx(bid, digits)}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSide("buy")}
+            className={cn(
+              "group flex flex-col items-stretch rounded-sm border px-2 py-1 text-left transition-colors",
+              side === "buy"
+                ? "border-emerald-500/70 bg-emerald-500/10"
+                : "border-neutral-800 bg-[#0a0a0a] hover:border-emerald-500/40",
+            )}
+          >
+            <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.18em] text-emerald-400/80">
+              <span>Buy</span><span>Ask</span>
+            </span>
+            <span className={cn(
+              "font-mono tabular-nums text-[15px] leading-tight font-semibold text-emerald-400 transition-colors",
+              askFlash === "up" && "text-emerald-300",
+              askFlash === "down" && "text-emerald-500",
+            )}>
+              {fmtPx(ask, digits)}
+            </span>
+          </button>
+        </div>
+
         {/* Market buttons — primary */}
         <div className="grid grid-cols-2 gap-1">
           <SideBtn tone="buy" disabled={!canSubmitMarket} loading={submitting && side === "buy"} onClick={() => submitMarket("buy")}>
@@ -519,7 +565,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               disabled={noStops}
               inputMode="decimal"
               placeholder="—"
-              className="w-full h-6 rounded border border-red-500/30 bg-background/60 px-1.5 text-[11px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+              className="w-full h-6 rounded-sm border border-red-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
             />
             <div className="grid grid-cols-3 gap-1">
               {[10, 20, 50].map((p) => (
@@ -548,7 +594,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               disabled={noStops}
               inputMode="decimal"
               placeholder="—"
-              className="w-full h-6 rounded border border-emerald-500/30 bg-background/60 px-1.5 text-[11px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+              className="w-full h-6 rounded-sm border border-emerald-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
             />
             <div className="grid grid-cols-3 gap-1">
               {[20, 40, 100].map((p) => (
@@ -636,16 +682,16 @@ const DenseSelect = ({
   label, value, onChange, options,
 }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) => (
   <div className="space-y-0.5">
-    <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="text-[8.5px] font-semibold uppercase tracking-wider text-neutral-500">{label}</div>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-7 rounded border border-border/60 bg-background/60 px-1.5 pr-5 text-[11px] appearance-none focus:outline-none focus:ring-1 focus:ring-primary"
+        className="w-full h-6 rounded-sm border border-neutral-800 bg-[#0a0a0a] px-1.5 pr-5 text-[10.5px] text-neutral-100 appearance-none focus:outline-none focus:ring-1 focus:ring-[#FFCD05]/60 focus:border-[#FFCD05]/60"
       >
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
-      <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+      <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-500 pointer-events-none" />
     </div>
   </div>
 );
@@ -654,14 +700,14 @@ const DenseInput = ({
   label, value, onChange, disabled, mono,
 }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean; mono?: boolean }) => (
   <div className="space-y-0.5">
-    <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="text-[8.5px] font-semibold uppercase tracking-wider text-neutral-500">{label}</div>
     <input
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       inputMode="decimal"
       className={cn(
-        "w-full h-7 rounded border border-border/60 bg-background/60 px-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60",
+        "w-full h-6 rounded-sm border border-neutral-800 bg-[#0a0a0a] px-1.5 text-[10.5px] text-neutral-100 focus:outline-none focus:ring-1 focus:ring-[#FFCD05]/60 focus:border-[#FFCD05]/60 disabled:opacity-60",
         mono && "font-mono tabular-nums text-right",
       )}
     />
@@ -727,10 +773,10 @@ const ToolBtn = ({
     type="button"
     onClick={onClick}
     className={cn(
-      "h-7 rounded border text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors",
+      "h-6 rounded-sm border text-[10px] font-semibold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors",
       danger
         ? "border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-        : "border-border/60 bg-background/60 text-foreground hover:bg-background/80",
+        : "border-neutral-800 bg-[#0a0a0a] text-neutral-300 hover:border-neutral-700 hover:text-neutral-100",
     )}
   >
     {icon} {label}
