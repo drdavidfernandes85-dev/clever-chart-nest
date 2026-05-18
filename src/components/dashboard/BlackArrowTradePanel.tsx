@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   X,
   RotateCcw,
+  CheckCircle2,
+  Activity,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -81,12 +83,41 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [symbolSearch, setSymbolSearch] = useState("");
+  const [autoReset, setAutoReset] = useState(true);
+  const [lastExecution, setLastExecution] = useState<{
+    side: "buy" | "sell";
+    symbol: string;
+    volume: number;
+    ticket?: string | number;
+    at: number;
+  } | null>(null);
 
   const priceTouched = useRef(false);
+  const volInputRef = useRef<HTMLInputElement>(null);
+  const prevSpreadRef = useRef<number | null>(null);
+  const [spreadTrend, setSpreadTrend] = useState<"up" | "down" | "flat">("flat");
 
   const { bid, ask } = pickTick(tick);
   const livePrice = side === "buy" ? ask : bid;
   const digits = Number(selectedSymbolInfo?.digits ?? 5);
+
+  // Spread tracking with trend
+  const spread =
+    Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
+      ? Math.max(0, ask - bid)
+      : null;
+  useEffect(() => {
+    if (spread == null) return;
+    const prev = prevSpreadRef.current;
+    if (prev != null) {
+      const delta = spread - prev;
+      const epsilon = Math.max(1e-9, prev * 0.02);
+      if (delta > epsilon) setSpreadTrend("up");
+      else if (delta < -epsilon) setSpreadTrend("down");
+      else setSpreadTrend("flat");
+    }
+    prevSpreadRef.current = spread;
+  }, [spread]);
 
   useEffect(() => {
     if (orderType !== "market" && !priceTouched.current && livePrice != null) {
@@ -101,6 +132,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   useEffect(() => {
     priceTouched.current = false;
   }, [ctxSymbol]);
+
+  // Auto-clear execution highlight
+  useEffect(() => {
+    if (!lastExecution) return;
+    const t = setTimeout(() => setLastExecution(null), 4000);
+    return () => clearTimeout(t);
+  }, [lastExecution]);
 
   const volNum = Number(vol) || 0;
   const entryPrice =
@@ -213,8 +251,26 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym } }));
         window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
         refresh();
+        // Highlight executed action
+        setLastExecution({
+          side,
+          symbol: normalizedSym,
+          volume: volNum,
+          ticket: res.ticket,
+          at: Date.now(),
+        });
+        // Always clear SL/TP/pending price
         setSl("");
         setTp("");
+        setPrice("");
+        priceTouched.current = false;
+        // Optional reset of qty/order type
+        if (autoReset) {
+          setVol("0.01");
+          setOrderType("market");
+        }
+        // Focus next control so the trader can immediately stage the next order
+        setTimeout(() => volInputRef.current?.focus(), 50);
       } else {
         const msg =
           res?.retcodeDescription ||
@@ -373,6 +429,30 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ) : null}
         </div>
 
+        {/* Executed action highlight */}
+        {lastExecution ? (
+          <div
+            className={cn(
+              "rounded-md border px-2.5 py-1.5 flex items-center gap-2 text-[11px] font-semibold animate-in fade-in slide-in-from-top-1 duration-300",
+              lastExecution.side === "buy"
+                ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
+                : "border-red-500/50 bg-red-500/15 text-red-300",
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="uppercase tracking-wider">
+              {lastExecution.side} {lastExecution.symbol} · {lastExecution.volume.toFixed(2)} lots
+            </span>
+            {lastExecution.ticket ? (
+              <span className="ml-auto font-mono tabular-nums opacity-80">
+                #{lastExecution.ticket}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         {/* Order type quick grid — 6 buttons (BlackArrow-style) */}
         <div className="grid grid-cols-3 gap-1.5">
           {(
@@ -411,6 +491,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             );
           })}
         </div>
+
+        {/* Live Spread indicator */}
+        <SpreadIndicator
+          spread={spread}
+          pipSize={pipSize}
+          trend={spreadTrend}
+          digits={digits}
+        />
 
         {/* Live Bid / Ask strip */}
         <div className="grid grid-cols-2 gap-2">
@@ -479,6 +567,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Volume</label>
             <input
+              ref={volInputRef}
               value={vol}
               onChange={(e) => setVol(e.target.value)}
               inputMode="decimal"
@@ -553,14 +642,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
-          <Checkbox
-            checked={noStops}
-            onCheckedChange={(v) => setNoStops(v === true)}
-            className="h-3.5 w-3.5"
-          />
-          Place without SL / TP
-        </label>
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={noStops}
+              onCheckedChange={(v) => setNoStops(v === true)}
+              className="h-3.5 w-3.5"
+            />
+            Place without SL / TP
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={autoReset}
+              onCheckedChange={(v) => setAutoReset(v === true)}
+              className="h-3.5 w-3.5"
+            />
+            Reset after fill
+          </label>
+        </div>
 
         {slTpError ? (
           <div className="flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-[11px] text-red-400">
@@ -568,10 +667,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         ) : null}
 
-        {/* Preview metrics */}
+        {/* Preview metrics — live based on side · order type · price · volume */}
         <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2 space-y-1">
-          <PreviewRow label="Entry" value={fmtPx(entryPrice || null, digits)} />
+          <PreviewRow
+            label={`Entry · ${isBuy ? "BUY" : "SELL"} ${orderType.toUpperCase()}`}
+            value={fmtPx(entryPrice || null, digits)}
+            tone={isBuy ? "pos" : "neg"}
+          />
+          <PreviewRow label="Notional" value={fmt(notional, currency)} />
           <PreviewRow label="Margin req." value={fmt(marginRequired, currency)} />
+          <PreviewRow
+            label="Spread cost"
+            value={
+              spread != null && volNum > 0
+                ? fmt((spread / pipSize) * volNum * valuePerPipPerLot, currency)
+                : "—"
+            }
+            tone={spreadTrend === "up" ? "neg" : undefined}
+          />
           <PreviewRow
             label="Risk"
             value={riskPct ? `${riskPct.toFixed(2)}% · ${fmt(potentialLoss, currency)}` : "—"}
@@ -693,5 +806,79 @@ const ToolBtn = ({
     {icon} {label}
   </button>
 );
+
+const SpreadIndicator = ({
+  spread,
+  pipSize,
+  trend,
+  digits,
+}: {
+  spread: number | null;
+  pipSize: number;
+  trend: "up" | "down" | "flat";
+  digits: number;
+}) => {
+  const pips = spread != null && pipSize > 0 ? spread / pipSize : null;
+  // Color cue: tight=emerald, normal=primary, wide=red
+  const tone =
+    pips == null
+      ? "muted"
+      : pips < 1
+        ? "tight"
+        : pips < 3
+          ? "normal"
+          : "wide";
+  const toneClasses: Record<string, string> = {
+    muted: "border-border/60 bg-background/40 text-muted-foreground",
+    tight: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+    normal: "border-primary/40 bg-primary/10 text-primary",
+    wide: "border-red-500/40 bg-red-500/10 text-red-400",
+  };
+  const trendIcon =
+    trend === "up" ? (
+      <TrendingUp className="h-3 w-3 text-red-400" />
+    ) : trend === "down" ? (
+      <TrendingDown className="h-3 w-3 text-emerald-400" />
+    ) : (
+      <Activity className="h-3 w-3 opacity-70" />
+    );
+  // Visual width bar — clamp 0..6 pips for the bar fill
+  const pct =
+    pips == null ? 0 : Math.max(4, Math.min(100, (pips / 6) * 100));
+  return (
+    <div
+      className={cn(
+        "rounded-md border px-2.5 py-1.5 flex items-center gap-2 transition-colors",
+        toneClasses[tone],
+      )}
+    >
+      {trendIcon}
+      <div className="flex items-baseline gap-1.5 min-w-0">
+        <span className="text-[10px] uppercase tracking-wider font-semibold opacity-80">
+          Spread
+        </span>
+        <span className="font-mono tabular-nums text-[12px] font-bold">
+          {pips != null ? pips.toFixed(pips < 1 ? 2 : 1) : "—"}
+          <span className="text-[9px] opacity-70 ml-0.5">pips</span>
+        </span>
+        <span className="font-mono tabular-nums text-[10px] opacity-70 truncate">
+          ({spread != null ? spread.toFixed(digits) : "—"})
+        </span>
+      </div>
+      <div className="ml-auto h-1.5 w-16 rounded-full bg-background/60 overflow-hidden">
+        <div
+          className={cn(
+            "h-full transition-all duration-300",
+            tone === "tight" && "bg-emerald-400",
+            tone === "normal" && "bg-primary",
+            tone === "wide" && "bg-red-400",
+            tone === "muted" && "bg-muted-foreground/40",
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
 export default BlackArrowTradePanel;
