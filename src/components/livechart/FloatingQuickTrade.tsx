@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Zap, GripVertical, Minus, X } from "lucide-react";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 
@@ -208,7 +208,7 @@ const FloatingQuickTrade = ({ symbols, onSymbolChange }: FloatingQuickTradeProps
               </div>
               {/* Body — naturally sized; no inner scroll unless viewport is tiny */}
               <div className="flex-1 overflow-y-auto p-2">
-                <QuickTradePanel compact symbols={symbols} onSymbolChange={onSymbolChange} />
+                <BlackArrowTradePanel />
               </div>
             </motion.div>
           ) : (

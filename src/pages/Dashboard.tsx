@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SEO from "@/components/SEO";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
-import QuickTradePanel from "@/components/dashboard/QuickTradePanel";
+import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import TradeJournal from "@/components/dashboard/TradeJournal";
@@ -565,7 +565,7 @@ const DashboardInner = () => {
 
           {/* RIGHT — Order Entry */}
           <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5">
-            <QuickTradePanel />
+            <BlackArrowTradePanel />
           </aside>
         </div>
       </div>
