@@ -42,6 +42,7 @@ interface Ctx {
   loading: boolean;
   loaded: boolean;
   error: string | null;
+  selectedBrokerSymbol: string;
   selectedSymbolValid: boolean;
   selectedSymbolInfo: any;
   tick: any;
