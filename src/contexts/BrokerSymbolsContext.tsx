@@ -207,7 +207,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setTick(null);
       }
     };
-    // Reset on symbol change
+    // Reset on symbol change so stale prices never leak across symbols.
     setTick(null);
     setSelectedSymbolInfo(null);
     setSelectedSymbolValid(false);
@@ -215,9 +215,14 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     const id = window.setInterval(() => {
       if (document.visibilityState === "visible") fetchOnce(false);
     }, 2000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && !cancelled) fetchOnce(false);
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [user, selectedBrokerSymbol]);
 

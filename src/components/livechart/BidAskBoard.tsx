@@ -87,9 +87,14 @@ const BidAskBoard = ({ symbols, onSelect }: Props) => {
     const id = window.setInterval(() => {
       if (document.visibilityState === "visible") loadAll();
     }, 2000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && !cancelled) loadAll();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [symbols.join(",")]);
 
