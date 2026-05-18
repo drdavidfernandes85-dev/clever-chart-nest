@@ -741,7 +741,8 @@ const DashboardInner = () => {
           {/* RIGHT — Bid/Ask Board + Order Ticket */}
           <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5 space-y-3">
             <BidAskBoard
-              symbols={["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", "US30", "NAS100", "SPX500"]}
+              symbols={["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "US30", "NAS100", "BTCUSD", "USOIL"]}
+              activeSymbol={active}
               onSelect={(label) => selectSymbol(label)}
             />
             <BlackArrowTradePanel />
