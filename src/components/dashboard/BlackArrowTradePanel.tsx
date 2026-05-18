@@ -639,7 +639,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             type="button"
             onClick={() => setSide("buy")}
             className={cn(
-              "rounded-lg border p-2 text-center transition-colors duration-300",
+              "rounded-md border px-2 py-1.5 text-center transition-colors duration-300",
               isBuy
                 ? "border-emerald-500/60 bg-emerald-500/15"
                 : "border-border/60 bg-background/40 hover:border-emerald-500/40",
