@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 
 export interface LiveAccount {
   login: string;
@@ -45,12 +46,14 @@ const REFRESH_MS = 2_000;
 
 export function LiveAccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { selectedBrokerSymbol } = useBrokerSymbols();
   const [liveAccount, setLiveAccount] = useState<LiveAccount | null>(null);
   const [positions, setPositions] = useState<LivePosition[]>([]);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -145,36 +148,84 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
     const onTrade = () => refresh();
     window.addEventListener("trade-executed", onTrade);
 
-    // Realtime: refresh instantly when our MT account row or positions change.
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    if (user) {
-      channel = supabase
-        .channel(`live-account-${user.id}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "user_mt_accounts", filter: `user_id=eq.${user.id}` },
-          () => refresh(),
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "mt_positions", filter: `user_id=eq.${user.id}` },
-          () => refresh(),
-        )
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "trade_execution_logs", filter: `user_id=eq.${user.id}` },
-          () => refresh(),
-        )
-        .subscribe();
-    }
-
     return () => {
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("trade-executed", onTrade);
-      if (channel) supabase.removeChannel(channel);
     };
   }, [refresh, user]);
+
+  // Resolve the user's MT account UUID so we can scope realtime filters.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setAccountId(null);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("user_mt_accounts")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setAccountId(data?.id ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, liveAccount?.login]);
+
+  // Realtime: subscribe scoped to the current account and selected symbol.
+  // Resubscribes whenever account or symbol changes.
+  useEffect(() => {
+    if (!user) return;
+    const sym = (selectedBrokerSymbol || "").toUpperCase();
+    const channelName = `live-account-${user.id}-${accountId ?? "none"}-${sym || "all"}`;
+    let ch = supabase.channel(channelName);
+
+    if (accountId) {
+      ch = ch.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_mt_accounts", filter: `id=eq.${accountId}` },
+        () => refresh(),
+      );
+      const posFilter = sym
+        ? `account_id=eq.${accountId}` // postgres_changes supports only a single filter; symbol filtered client-side via refresh
+        : `account_id=eq.${accountId}`;
+      ch = ch.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mt_positions", filter: posFilter },
+        (payload: any) => {
+          if (!sym) return refresh();
+          const row = payload.new ?? payload.old ?? {};
+          if (String(row.symbol ?? "").toUpperCase() === sym) refresh();
+        },
+      );
+      ch = ch.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trade_execution_logs", filter: `account_id=eq.${accountId}` },
+        (payload: any) => {
+          if (!sym) return refresh();
+          const row = payload.new ?? payload.old ?? {};
+          if (String(row.symbol ?? "").toUpperCase() === sym) refresh();
+        },
+      );
+    } else {
+      // No account yet — fall back to user-scoped account changes only.
+      ch = ch.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "user_mt_accounts", filter: `user_id=eq.${user.id}` },
+        () => refresh(),
+      );
+    }
+
+    ch.subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [user, accountId, selectedBrokerSymbol, refresh]);
 
   const value = useMemo<LiveAccountCtx>(
     () => ({ liveAccount, positions, connected, loading, refreshing, error, refresh }),

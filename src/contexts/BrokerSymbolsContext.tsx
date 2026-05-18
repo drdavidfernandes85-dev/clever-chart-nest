@@ -42,6 +42,7 @@ interface Ctx {
   loading: boolean;
   loaded: boolean;
   error: string | null;
+  selectedBrokerSymbol: string;
   selectedSymbolValid: boolean;
   selectedSymbolInfo: any;
   tick: any;
@@ -227,6 +228,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       loading,
       loaded,
       error,
+      selectedBrokerSymbol,
       selectedSymbolValid,
       selectedSymbolInfo,
       tick,
@@ -235,7 +237,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       refresh,
       setSelectedBrokerSymbol,
     }),
-    [symbols, isLive, loading, loaded, error, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, lastSymbolDataResponse, refresh],
+    [symbols, isLive, loading, loaded, error, selectedBrokerSymbol, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, lastSymbolDataResponse, refresh],
   );
 
   return <BrokerCtx.Provider value={value}>{children}</BrokerCtx.Provider>;
@@ -250,6 +252,7 @@ export function useBrokerSymbols(): Ctx {
       loading: false,
       loaded: false,
       error: null,
+      selectedBrokerSymbol: "",
       selectedSymbolValid: false,
       selectedSymbolInfo: null,
       tick: null,
