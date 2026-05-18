@@ -33,6 +33,7 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
   const [rows, setRows] = useState<Record<string, MultiTick>>({});
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
+  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const sessionOpen = useRef<Record<string, number>>({});
 
