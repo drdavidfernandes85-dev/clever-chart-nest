@@ -58,9 +58,9 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   maximumFractionDigits: digits,
                 });
           const spread = r?.spread;
-          // Spread tightness colour: tight (<= 2pt) emerald, normal neutral, wide (> 10pt) amber.
-          const spreadPts =
-            spread != null && r?.point ? spread / Number(r.point) : null;
+          // Approximate spread in points using digits (point = 10^-digits).
+          const point = Math.pow(10, -digits);
+          const spreadPts = spread != null ? spread / point : null;
           const spreadColor =
             spreadPts == null
               ? "text-neutral-500"
