@@ -375,11 +375,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const pendingDisabled = true; // Limit/Stop pending orders not yet supported by backend
   const priceInputDisabled = orderType === "Market";
 
-  // Tick is "delayed" if the polling layer reported an error, or if no
-  // successful tick has arrived within ~15s. Last-good bid/ask still render.
-  const tickStale =
-    !!tickError ||
-    (tickUpdatedAt != null && Date.now() - tickUpdatedAt > 15_000);
+  // "Data delayed" must ONLY appear when we truly have nothing usable:
+  // no bid AND no ask on the selected symbol, AND the last tick refresh failed.
+  // A valid bid OR ask (live tick or last-good info) suppresses the badge.
+  const selectedTickAvailable =
+    Number.isFinite(Number(bid)) ||
+    Number.isFinite(Number(ask)) ||
+    Number.isFinite(Number((selectedSymbolInfo as any)?.bid)) ||
+    Number.isFinite(Number((selectedSymbolInfo as any)?.ask));
+  const tickStale = !selectedTickAvailable && !!tickError;
 
   return (
     <div className={cn(
