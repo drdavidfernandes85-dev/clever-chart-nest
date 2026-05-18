@@ -311,18 +311,6 @@ const LiveSharedSignals = () => {
                         </>
                       )}
                     </button>
-                    <button
-                      onClick={() =>
-                        openAIAssistant(
-                          `Explain this signal: ${s.pair} ${String(s.direction).toUpperCase()} @ ${s.entry_price}, SL ${s.stop_loss ?? "n/a"}, TP ${s.take_profit ?? "n/a"} (by ${s.author_name || "mentor"}). Give R:R, macro context, and what to watch for.`,
-                        )
-                      }
-                      title="Ask AI Assistant about this signal"
-                      aria-label="Ask AI Assistant"
-                      className="inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-2.5 text-primary hover:bg-primary/20 transition"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                    </button>
                   </div>
                 )}
               </li>
