@@ -331,9 +331,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
       }
       if (res?.success === true) {
-        toast.success(`${side.toUpperCase()} ${normalizedSym} ${volNum.toFixed(2)}`, {
-          description: res.ticket ? `Ticket #${res.ticket}` : undefined,
-        });
+        const filledPrice = Number(res.price ?? res.openPrice ?? entryPrice) || entryPrice;
+        const spreadCostStr =
+          spread != null && volNum > 0
+            ? fmt((spread / pipSize) * volNum * valuePerPipPerLot, currency)
+            : "—";
+        toast.success(
+          `${side.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`,
+          {
+            description: [
+              `Px ${fmtPx(filledPrice, digits)}`,
+              `Spread ${spreadCostStr}`,
+              res.ticket ? `#${res.ticket}` : null,
+            ]
+              .filter(Boolean)
+              .join("  ·  "),
+            duration: 5000,
+          },
+        );
         window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym } }));
         window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
         refresh();
@@ -350,13 +365,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         setTp("");
         setPrice("");
         priceTouched.current = false;
-        // Optional reset of qty/order type
+        // Optional reset of qty/order type to PREFERRED defaults
         if (autoReset) {
-          setVol("0.01");
-          setOrderType("market");
+          setVol(initialPrefs.current.vol);
+          setOrderType(initialPrefs.current.orderType);
+          setSide(initialPrefs.current.side);
         }
-        // Focus next control so the trader can immediately stage the next order
-        setTimeout(() => volInputRef.current?.focus(), 50);
+        // Focus the user-chosen control
+        setTimeout(() => {
+          if (focusTarget === "price") priceInputRef.current?.focus();
+          else if (focusTarget === "orderType") orderTypeBtnRef.current?.focus();
+          else volInputRef.current?.focus();
+        }, 50);
       } else {
         const msg =
           res?.retcodeDescription ||
