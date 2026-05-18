@@ -474,7 +474,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             className="w-full flex items-center justify-between rounded-md border border-border/60 bg-background/60 px-2.5 py-1.5 hover:bg-background/80"
           >
             <div className="flex flex-col items-start">
-              <span className="font-heading text-lg font-bold leading-tight">
+              <span className="font-heading text-base font-bold leading-tight">
                 {normalizedSym || "—"}
               </span>
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
