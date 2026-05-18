@@ -6,7 +6,7 @@ import {
   Loader2,
   Activity,
   User,
-  ChevronDown,
+  Star,
   Star,
 } from "lucide-react";
 import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
