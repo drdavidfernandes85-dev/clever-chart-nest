@@ -929,6 +929,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_favorite_instruments: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          display_name: string | null
+          id: string
+          sort_order: number
+          symbol: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          display_name?: string | null
+          id?: string
+          sort_order?: number
+          symbol: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          display_name?: string | null
+          id?: string
+          sort_order?: number
+          symbol?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_mt_accounts: {
         Row: {
           account_type: string
