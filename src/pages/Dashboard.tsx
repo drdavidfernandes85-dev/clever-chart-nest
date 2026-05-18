@@ -893,11 +893,9 @@ const DashboardInner = () => {
                   withDateRanges={true}
                   saveImage={true}
                 />
-                <div className="pointer-events-none absolute top-2 left-2 flex items-center gap-1.5 rounded-sm border border-[#FFCD05]/30 bg-black/75 px-2 py-1 text-[9px] font-mono uppercase tracking-widest backdrop-blur-sm">
-                  <span className="text-neutral-400">Chart feed: indicative</span>
-                  <span className="text-neutral-700">·</span>
-                  <span className="inline-flex h-1.5 w-1.5 rounded-full bg-[#FFCD05]" />
-                  <span className="text-[#FFCD05] font-bold">Execution: Live MT5 price</span>
+                <div className="pointer-events-none absolute top-2 left-2 flex flex-col gap-0.5 rounded-sm border border-[#FFCD05]/30 bg-black/80 px-2 py-1 text-[9px] font-mono uppercase tracking-widest backdrop-blur-sm">
+                  <span className="text-[#FFCD05] font-bold">{active} · Infinox MT5</span>
+                  <span className="text-neutral-400 normal-case tracking-wider">Live MT5 tick via Trading Layer</span>
                 </div>
               </div>
             </div>
