@@ -155,12 +155,46 @@ serve(async (req) => {
         limited.indexOf(String(b.symbol).toUpperCase()),
     );
 
+    // Build selectedQuote: tick + symbol specification.
+    let selectedQuote: any = null;
+    if (selectedSymbol) {
+      const baseQuote = quotes.find(
+        (q) => String(q.symbol).toUpperCase() === selectedSymbol,
+      ) || null;
+      const specRes = await tlGet(`${accountPath}/${encodeURIComponent(selectedSymbol)}`);
+      const spec = specRes.ok ? specRes.data?.data : null;
+      if (baseQuote || spec) {
+        selectedQuote = {
+          symbol: selectedSymbol,
+          bid: baseQuote?.bid ?? null,
+          ask: baseQuote?.ask ?? null,
+          last: baseQuote?.last ?? null,
+          spread: baseQuote?.spread ?? null,
+          digits: spec?.digits ?? baseQuote?.digits ?? null,
+          point: spec?.point ?? null,
+          description: spec?.description ?? null,
+          contractSize: spec?.trade_contract_size ?? null,
+          tickValue: spec?.trade_tick_value ?? null,
+          tickSize: spec?.trade_tick_size ?? null,
+          volumeMin: spec?.volume_min ?? null,
+          volumeMax: spec?.volume_max ?? null,
+          volumeStep: spec?.volume_step ?? null,
+          currencyBase: spec?.currency_base ?? null,
+          currencyProfit: spec?.currency_profit ?? null,
+          currencyMargin: spec?.currency_margin ?? null,
+          valid: !!baseQuote || !!spec,
+        };
+      }
+    }
+
     return json({
       success: true,
       accountConnected: true,
       accountId,
       quotes,
       count: quotes.length,
+      selectedSymbol: selectedSymbol || null,
+      selectedQuote,
       debug: debug ? { selectedSymbol, requested, limited } : undefined,
       timestamp: new Date().toISOString(),
     });

@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
+import { useSelectedQuote } from "@/hooks/useSelectedQuote";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +70,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   } = useBrokerSymbols();
   const { liveAccount, positions, connected, refresh } = useLiveAccount();
 
+  // get-mt5-quotes drives the selected symbol's live price + specs
+  // (stale-while-revalidate). Order Ticket never blanks on a transient
+  // refresh failure — we always fall back to lastGoodSelectedSymbolData.
+  const {
+    selectedQuote,
+    lastGoodSelectedSymbolData,
+    dataDelayed: selectedDataDelayed,
+  } = useSelectedQuote(ctxSymbol);
+  const effectiveSelected = selectedQuote ?? lastGoodSelectedSymbolData;
+
+
   const [strategy, setStrategy] = useState<Strategy>("Standard");
   const [orderType, setOrderType] = useState<OrderTypeLabel>("Market");
   const [vol, setVol] = useState<string>("0.01");
@@ -94,9 +106,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   }, [connected]);
   const showAsConnected = connected || everConnected;
 
-  const { bid, ask } = pickTick(tick);
+  // Prefer get-mt5-quotes selectedQuote → lastGoodSelectedSymbolData → broker tick.
+  const fallbackTick = pickTick(tick);
+  const bid =
+    effectiveSelected?.bid != null
+      ? Number(effectiveSelected.bid)
+      : fallbackTick.bid;
+  const ask =
+    effectiveSelected?.ask != null
+      ? Number(effectiveSelected.ask)
+      : fallbackTick.ask;
   const livePrice = side === "buy" ? ask : bid;
-  const digits = Number(selectedSymbolInfo?.digits ?? 5);
+  const digits = Number(effectiveSelected?.digits ?? selectedSymbolInfo?.digits ?? 5);
 
   const spread =
     Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
@@ -150,7 +171,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const sessionPnl = equity - balance;
   const currency = liveAccount?.currency || "USD";
   const leverage = Number(liveAccount?.leverage ?? 100) || 100;
-  const contractSize = Number(selectedSymbolInfo?.contractSize ?? 100000) || 100000;
+  const contractSize =
+    Number(effectiveSelected?.contractSize ?? selectedSymbolInfo?.contractSize ?? 100000) ||
+    100000;
   const notional = entryPrice * volNum * contractSize;
   const marginRequired = leverage > 0 ? notional / leverage : 0;
 
@@ -205,9 +228,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const symbolPnl = symbolPositions.reduce((s, p) => s + Number(p.profit || 0), 0);
 
   // ---- Volume specs from broker ----
-  const volumeMin = Number(selectedSymbolInfo?.volumeMin ?? 0.01) || 0.01;
-  const volumeMax = Number(selectedSymbolInfo?.volumeMax ?? 0) || 0;
-  const volumeStep = Number(selectedSymbolInfo?.volumeStep ?? 0.01) || 0.01;
+  // ---- Volume specs (prefer selectedQuote, fall back to broker info) ----
+  const volumeMin =
+    Number(effectiveSelected?.volumeMin ?? selectedSymbolInfo?.volumeMin ?? 0.01) || 0.01;
+  const volumeMax =
+    Number(effectiveSelected?.volumeMax ?? selectedSymbolInfo?.volumeMax ?? 0) || 0;
+  const volumeStep =
+    Number(effectiveSelected?.volumeStep ?? selectedSymbolInfo?.volumeStep ?? 0.01) || 0.01;
 
   // Reject anything that doesn't look like a real broker symbol (alphanum, 3-15 chars)
   const isBrokerSymbol = /^[A-Z0-9._]{3,15}$/.test(normalizedSym);
@@ -232,14 +259,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const hasValidBidAsk =
     Number.isFinite(Number(bid)) ||
     Number.isFinite(Number(ask)) ||
+    Number.isFinite(Number(effectiveSelected?.bid)) ||
+    Number.isFinite(Number(effectiveSelected?.ask)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.bid)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.ask));
+
+  // selectedSymbolValid: broker confirmation OR a usable selectedQuote.
+  const symbolValid = selectedSymbolValid === true || !!effectiveSelected?.valid;
+
+  // "Data delayed" surfaces when get-mt5-quotes failed to return a fresh
+  // selectedQuote but a last-good snapshot is still keeping the ticket alive.
+  const showDataDelayed = selectedDataDelayed && !!effectiveSelected;
 
   const canSubmitMarket =
     !!user &&
     connected === true &&
     isBrokerSymbol &&
-    selectedSymbolValid === true &&
+    symbolValid &&
     !!normalizedSym &&
     hasValidBidAsk &&
     volNum > 0 &&
@@ -250,7 +286,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     if (!canSubmitMarket) {
       if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
-      else if (selectedSymbolValid !== true) toast.error("Symbol not available on broker");
+      else if (!symbolValid) toast.error("Symbol not available on broker");
       else if (volumeError) toast.error(volumeError);
       else if (slTpError) toast.error(slTpError);
       return;
@@ -375,15 +411,20 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const pendingDisabled = true; // Limit/Stop pending orders not yet supported by backend
   const priceInputDisabled = orderType === "Market";
 
-  // "Data delayed" must ONLY appear when we truly have nothing usable:
-  // no bid AND no ask on the selected symbol, AND the last tick refresh failed.
-  // A valid bid OR ask (live tick or last-good info) suppresses the badge.
+  // "Data delayed" surfaces when:
+  //   (a) the selected symbol has NO usable bid AND NO usable ask anywhere
+  //       (live tick, get-mt5-quotes selectedQuote, last-good broker info)
+  //       AND the last tick refresh failed, OR
+  //   (b) get-mt5-quotes failed to return a fresh selectedQuote but a
+  //       last-good snapshot is keeping the Order Ticket alive.
   const selectedTickAvailable =
     Number.isFinite(Number(bid)) ||
     Number.isFinite(Number(ask)) ||
+    Number.isFinite(Number(effectiveSelected?.bid)) ||
+    Number.isFinite(Number(effectiveSelected?.ask)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.bid)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.ask));
-  const tickStale = !selectedTickAvailable && !!tickError;
+  const tickStale = (!selectedTickAvailable && !!tickError) || showDataDelayed;
 
   return (
     <div className={cn(
