@@ -56,11 +56,13 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
         if (cancelled) return;
         if (error || !data?.success) {
           setLastError(error?.message || data?.error || "Refresh failed");
+          setConsecutiveErrors((n) => n + 1);
           return;
         }
         const instruments: any[] = Array.isArray(data.instruments) ? data.instruments : [];
         if (instruments.length === 0) {
           setLastError("Empty payload");
+          setConsecutiveErrors((n) => n + 1);
           return;
         }
         setRows((prev) => {
@@ -91,8 +93,12 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
         });
         setLastUpdatedAt(Date.now());
         setLastError(null);
+        setConsecutiveErrors(0);
       } catch (e: any) {
-        if (!cancelled) setLastError(e?.message || "Network error");
+        if (!cancelled) {
+          setLastError(e?.message || "Network error");
+          setConsecutiveErrors((n) => n + 1);
+        }
       } finally {
         if (!cancelled) setRefreshing(false);
       }
