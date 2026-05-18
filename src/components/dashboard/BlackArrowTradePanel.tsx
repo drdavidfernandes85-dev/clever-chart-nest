@@ -429,6 +429,30 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ) : null}
         </div>
 
+        {/* Executed action highlight */}
+        {lastExecution ? (
+          <div
+            className={cn(
+              "rounded-md border px-2.5 py-1.5 flex items-center gap-2 text-[11px] font-semibold animate-in fade-in slide-in-from-top-1 duration-300",
+              lastExecution.side === "buy"
+                ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-300"
+                : "border-red-500/50 bg-red-500/15 text-red-300",
+            )}
+            role="status"
+            aria-live="polite"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="uppercase tracking-wider">
+              {lastExecution.side} {lastExecution.symbol} · {lastExecution.volume.toFixed(2)} lots
+            </span>
+            {lastExecution.ticket ? (
+              <span className="ml-auto font-mono tabular-nums opacity-80">
+                #{lastExecution.ticket}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         {/* Order type quick grid — 6 buttons (BlackArrow-style) */}
         <div className="grid grid-cols-3 gap-1.5">
           {(
