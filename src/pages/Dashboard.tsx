@@ -288,14 +288,25 @@ const MarketWatchPanel = ({
 
   const favoriteSymbols = useMemo(() => favorites.map((f) => f.symbol), [favorites]);
 
-  // Live ticks for favorites only (keeps within rate limit)
-  const favTicks = useMultiSymbolTicks(favoriteSymbols);
-  // Also poll the active symbol so its row updates even if not favorited
-  const activeTicks = useMultiSymbolTicks(
-    active && !favoriteSymbols.map((s) => s.toUpperCase()).includes(active.toUpperCase())
-      ? [active]
-      : [],
+  // Live ticks for favorites + active + the top of the currently rendered list.
+  // Cap to ~24 symbols to keep us well inside broker rate limits.
+  const visibleTopSymbols = useMemo(
+    () =>
+      filtered
+        .slice(0, 24)
+        .map((s) => (s.brokerSymbol || s.symbol))
+        .filter(Boolean),
+    [filtered],
   );
+  const tickRequest = useMemo(() => {
+    const set = new Set<string>();
+    favoriteSymbols.forEach((s) => set.add(s.toUpperCase()));
+    if (active) set.add(active.toUpperCase());
+    visibleTopSymbols.forEach((s) => set.add(s.toUpperCase()));
+    return Array.from(set);
+  }, [favoriteSymbols, active, visibleTopSymbols]);
+  const favTicks = useMultiSymbolTicks(tickRequest);
+  const activeTicks = favTicks; // unified source
 
   // Hydrate favorites with broker metadata when available
   const favRows = useMemo(() => {
