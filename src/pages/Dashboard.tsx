@@ -373,7 +373,7 @@ const MarketWatchPanel = ({
   };
 
   return (
-    <aside className="hidden lg:flex flex-col rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden h-[calc(100vh-7rem)]">
+    <aside className="hidden lg:flex flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden h-[calc(100vh-6.5rem)]">
       <div className="flex items-center justify-between border-b border-neutral-800/80 px-3 py-2">
         <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
           Market Watch
