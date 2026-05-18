@@ -465,7 +465,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </span>
       </div>
 
-      <div className="p-3 space-y-3">
+      <div className="p-2.5 space-y-2">
         {/* Symbol selector */}
         <div className="relative">
           <button
