@@ -41,7 +41,7 @@ interface LiveAccountCtx {
 
 const Ctx = createContext<LiveAccountCtx | null>(null);
 
-const REFRESH_MS = 4_000;
+const REFRESH_MS = 2_000;
 
 export function LiveAccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
