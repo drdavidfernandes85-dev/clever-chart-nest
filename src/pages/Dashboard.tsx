@@ -449,23 +449,33 @@ const BottomTabs = () => {
 const DashboardInner = () => {
   const { t } = useLanguage();
   const { symbols, setSelectedBrokerSymbol } = useBrokerSymbols();
-  const { setSymbol: setCtxSymbol, openTrade } = useQuickTrade();
-  const [active, setActive] = useState<string>("EURUSD");
+  const { symbol: ctxSymbol, setSymbol: setCtxSymbol, openTrade } = useQuickTrade();
+  const [active, setActive] = useState<string>(ctxSymbol || "EURUSD");
   const [interval, setInterval] = useState("15");
   const [searchParams, setSearchParams] = useSearchParams();
   const consumedPrefillRef = useRef(false);
 
-  // Default to first available broker symbol once loaded
+  // Default to first available broker symbol once loaded (only if user hasn't picked one yet)
+  const userPickedRef = useRef(false);
   useEffect(() => {
-    if (!symbols.length) return;
+    if (!symbols.length || userPickedRef.current) return;
     const pick =
-      symbols.find((s) => (s.brokerSymbol || s.symbol).toUpperCase() === "EURUSD")
+      symbols.find((s) => (s.brokerSymbol || s.symbol).toUpperCase() === active.toUpperCase())
         ?.brokerSymbol ||
+      symbols.find((s) => (s.brokerSymbol || s.symbol).toUpperCase() === "EURUSD")?.brokerSymbol ||
       symbols[0].brokerSymbol ||
       symbols[0].symbol;
-    setActive((cur) => (cur === "EURUSD" ? pick : cur));
+    setActive(pick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbols.length]);
+
+  const selectSymbol = (sym: string) => {
+    if (!sym) return;
+    userPickedRef.current = true;
+    setActive(sym);
+    setCtxSymbol(sym);
+    setSelectedBrokerSymbol(sym);
+  };
 
   // Apply "Take This Signal" URL params: ?symbol=&side=&lots=&entry=&sl=&tp=&signalId=
   useEffect(() => {
@@ -476,7 +486,7 @@ const DashboardInner = () => {
     const sideParam = (searchParams.get("side") || "buy").toLowerCase();
     const side: "buy" | "sell" = sideParam === "sell" ? "sell" : "buy";
     const upper = symbol.toUpperCase();
-    setActive(upper);
+    selectSymbol(upper);
     openTrade({
       symbol: upper,
       side,
@@ -488,19 +498,28 @@ const DashboardInner = () => {
       mentor: searchParams.get("mentor"),
       riskPct: searchParams.get("riskPct") ? Number(searchParams.get("riskPct")) : undefined,
     });
-    // Clean params from URL so refresh doesn't re-apply
     const next = new URLSearchParams(searchParams);
     ["symbol", "side", "lots", "entry", "sl", "tp", "signalId", "mentor", "riskPct"].forEach((k) => next.delete(k));
     setSearchParams(next, { replace: true });
-  }, [searchParams, openTrade, setSearchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const tvSymbol = useMemo(() => brokerToTv(active), [active]);
 
-  // Sync to QuickTrade context so Order Entry trades the chart symbol.
+  // Sync active → contexts (chart + broker data fetch).
   useEffect(() => {
     setCtxSymbol(active);
     setSelectedBrokerSymbol(active);
   }, [active, setCtxSymbol, setSelectedBrokerSymbol]);
+
+  // Mirror ctxSymbol changes (e.g. from Order Ticket dropdown) back into active.
+  useEffect(() => {
+    if (ctxSymbol && ctxSymbol.toUpperCase() !== active.toUpperCase()) {
+      userPickedRef.current = true;
+      setActive(ctxSymbol);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctxSymbol]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-neutral-100">
@@ -516,7 +535,7 @@ const DashboardInner = () => {
       <div className="p-2 lg:p-3">
         <div className="grid gap-2 lg:gap-3 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
           {/* LEFT — Market Watch */}
-          <MarketWatchPanel active={active} onSelect={setActive} />
+          <MarketWatchPanel active={active} onSelect={selectSymbol} />
 
           {/* CENTER — Bid/Ask + Chart + Tabs */}
           <section className="flex flex-col gap-2 lg:gap-3 min-w-0">
@@ -568,7 +587,7 @@ const DashboardInner = () => {
           <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5 space-y-3">
             <BidAskBoard
               symbols={["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", "US30", "NAS100", "SPX500"]}
-              onSelect={(label) => setCtxSymbol(label)}
+              onSelect={(label) => selectSymbol(label)}
             />
             <BlackArrowTradePanel />
           </aside>
