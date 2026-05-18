@@ -286,7 +286,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     if (!canSubmitMarket) {
       if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
-      else if (selectedSymbolValid !== true) toast.error("Symbol not available on broker");
+      else if (!symbolValid) toast.error("Symbol not available on broker");
       else if (volumeError) toast.error(volumeError);
       else if (slTpError) toast.error(slTpError);
       return;
