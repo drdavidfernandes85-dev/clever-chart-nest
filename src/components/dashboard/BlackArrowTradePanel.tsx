@@ -707,6 +707,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               Price
             </label>
             <input
+              ref={priceInputRef}
               value={price}
               onChange={(e) => {
                 priceTouched.current = true;
