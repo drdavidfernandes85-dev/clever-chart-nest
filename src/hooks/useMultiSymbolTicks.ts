@@ -13,6 +13,13 @@ export interface MultiTick {
   open: number | null;
 }
 
+export interface MultiTickMeta {
+  rows: Record<string, MultiTick>;
+  lastUpdatedAt: number | null;
+  lastError: string | null;
+  refreshing: boolean;
+}
+
 /**
  * Batched market-watch tick poller.
  * Calls `get-mt5-market-watch` once per cycle (default 5s) with the
@@ -20,8 +27,11 @@ export interface MultiTick {
  *
  * Pauses while the tab is hidden and resumes immediately on visibility.
  */
-export function useMultiSymbolTicks(symbols: string[], periodMs = 5000) {
+export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000): MultiTickMeta {
   const [rows, setRows] = useState<Record<string, MultiTick>>({});
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const sessionOpen = useRef<Record<string, number>>({});
 
   const key = symbols.map((s) => s.toUpperCase()).sort().join(",");
@@ -35,13 +45,21 @@ export function useMultiSymbolTicks(symbols: string[], periodMs = 5000) {
     let cancelled = false;
 
     const loadBatch = async () => {
+      setRefreshing(true);
       try {
-        const { data } = await supabase.functions.invoke("get-mt5-market-watch", {
+        const { data, error } = await supabase.functions.invoke("get-mt5-market-watch", {
           body: { symbols, debug: false },
         });
-        if (cancelled || !data?.success) return;
+        if (cancelled) return;
+        if (error || !data?.success) {
+          setLastError(error?.message || data?.error || "Refresh failed");
+          return;
+        }
         const instruments: any[] = Array.isArray(data.instruments) ? data.instruments : [];
-        if (instruments.length === 0) return;
+        if (instruments.length === 0) {
+          setLastError("Empty payload");
+          return;
+        }
         setRows((prev) => {
           const next = { ...prev };
           for (const inst of instruments) {
@@ -56,7 +74,6 @@ export function useMultiSymbolTicks(symbols: string[], periodMs = 5000) {
               ? Number(inst.spread)
               : bid != null && ask != null ? Math.max(0, ask - bid) : null;
             const digits = Number(inst.digits) || 5;
-            // Track session open to derive a 24h % change client-side.
             if (sessionOpen.current[sym] == null && last != null) {
               sessionOpen.current[sym] = last;
             }
@@ -69,8 +86,12 @@ export function useMultiSymbolTicks(symbols: string[], periodMs = 5000) {
           }
           return next;
         });
-      } catch {
-        /* ignore */
+        setLastUpdatedAt(Date.now());
+        setLastError(null);
+      } catch (e: any) {
+        if (!cancelled) setLastError(e?.message || "Network error");
+      } finally {
+        if (!cancelled) setRefreshing(false);
       }
     };
 
@@ -93,5 +114,10 @@ export function useMultiSymbolTicks(symbols: string[], periodMs = 5000) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, periodMs]);
 
-  return rows;
+  return { rows, lastUpdatedAt, lastError, refreshing };
+}
+
+/** Backwards-compatible: returns just the rows map. */
+export function useMultiSymbolTicks(symbols: string[], periodMs = 5000): Record<string, MultiTick> {
+  return useMultiSymbolTicksWithMeta(symbols, periodMs).rows;
 }
