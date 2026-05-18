@@ -193,6 +193,7 @@ const MarketRow = ({
   onSelect: () => void;
   onToggleFav: () => void;
 }) => {
+  if (!sym || !sym.trim()) return null;
   const fmt = (v: number | null | undefined) =>
     v == null
       ? "—"
