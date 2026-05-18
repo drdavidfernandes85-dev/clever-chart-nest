@@ -58,17 +58,8 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   maximumFractionDigits: digits,
                 });
           const spread = r?.spread;
-          // Approximate spread in points using digits (point = 10^-digits).
           const point = Math.pow(10, -digits);
           const spreadPts = spread != null ? spread / point : null;
-          const spreadColor =
-            spreadPts == null
-              ? "text-neutral-500"
-              : spreadPts <= 2
-                ? "text-emerald-400/80"
-                : spreadPts > 10
-                  ? "text-amber-400/80"
-                  : "text-neutral-400";
           return (
             <li key={sym}>
               <button
