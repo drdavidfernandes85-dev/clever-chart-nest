@@ -580,11 +580,11 @@ const DashboardInner = () => {
 };
 
 const Dashboard = () => (
-  <LiveAccountProvider>
-    <BrokerSymbolsProvider>
+  <BrokerSymbolsProvider>
+    <LiveAccountProvider>
       <DashboardInner />
-    </BrokerSymbolsProvider>
-  </LiveAccountProvider>
+    </LiveAccountProvider>
+  </BrokerSymbolsProvider>
 );
 
 export default Dashboard;
