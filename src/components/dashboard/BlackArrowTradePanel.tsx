@@ -226,15 +226,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     return null;
   })();
 
-  // Spec: disable buy/sell ONLY when account is not connected, the symbol
-  // isn't valid, the volume is invalid, or a submission is already in flight.
-  // SL/TP errors are surfaced via the input and via a toast on click — they
-  // do not disable the buttons.
+  // Execution gating must NOT depend on Bid/Ask Board freshness or
+  // "Data delayed" badge — only on real broker/account state and a
+  // usable bid OR ask on the selected symbol.
+  const hasValidBidAsk =
+    Number.isFinite(Number(bid)) ||
+    Number.isFinite(Number(ask)) ||
+    Number.isFinite(Number((selectedSymbolInfo as any)?.bid)) ||
+    Number.isFinite(Number((selectedSymbolInfo as any)?.ask));
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
     isBrokerSymbol &&
     selectedSymbolValid === true &&
+    !!normalizedSym &&
+    hasValidBidAsk &&
+    volNum > 0 &&
     !volumeError &&
     !submitting;
 
