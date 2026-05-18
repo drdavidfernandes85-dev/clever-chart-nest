@@ -286,24 +286,81 @@ const MarketWatchPanel = ({
       .slice(0, 500);
   }, [categorized, query, tab]);
 
+  const favoriteSymbols = useMemo(() => favorites.map((f) => f.symbol), [favorites]);
+
   // Live ticks for favorites only (keeps within rate limit)
-  const favTicks = useMultiSymbolTicks(favorites);
-  // Also poll the active symbol so its row in the visible list updates
+  const favTicks = useMultiSymbolTicks(favoriteSymbols);
+  // Also poll the active symbol so its row updates even if not favorited
   const activeTicks = useMultiSymbolTicks(
-    active && !favorites.map((s) => s.toUpperCase()).includes(active.toUpperCase()) ? [active] : [],
+    active && !favoriteSymbols.map((s) => s.toUpperCase()).includes(active.toUpperCase())
+      ? [active]
+      : [],
   );
 
-  const favSymbols = useMemo(() => {
-    const set = new Map<string, (typeof categorized)[number]>();
-    for (const s of categorized) set.set((s.brokerSymbol || s.symbol).toUpperCase(), s);
-    return favorites
-      .map((f) => set.get(f.toUpperCase()))
-      .filter((s): s is (typeof categorized)[number] => Boolean(s));
-  }, [categorized, favorites]);
+  // Hydrate favorites with broker metadata when available
+  const favRows = useMemo(() => {
+    const byUpper = new Map<string, (typeof categorized)[number]>();
+    for (const s of categorized) byUpper.set((s.brokerSymbol || s.symbol).toUpperCase(), s);
+    return favorites.map((f) => {
+      const broker = byUpper.get(f.symbol.toUpperCase());
+      return {
+        sym: f.symbol,
+        description: broker?.description ?? f.description ?? null,
+        digits: Number(broker?.digits) || 5,
+        category: broker?._cat || f.category || inferCategory(f.symbol),
+      };
+    });
+  }, [favorites, categorized]);
 
   const getTick = (sym: string) => {
     const u = sym.toUpperCase();
     return favTicks[u] || favTicks[sym] || activeTicks[u] || activeTicks[sym];
+  };
+
+  // Order non-favorites by category: Forex → Commodities → Indices → Crypto → others
+  const CATEGORY_ORDER: Record<string, number> = {
+    Forex: 0,
+    Commodities: 1,
+    Indices: 2,
+    Crypto: 3,
+    Stocks: 4,
+  };
+  const sortedByCategory = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const ao = CATEGORY_ORDER[a._cat] ?? 99;
+      const bo = CATEGORY_ORDER[b._cat] ?? 99;
+      if (ao !== bo) return ao - bo;
+      return (a.brokerSymbol || a.symbol).localeCompare(b.brokerSymbol || b.symbol);
+    });
+  }, [filtered]);
+
+  // Group rows by category for section headers (only when tab is "All" and not searching)
+  const grouped = useMemo(() => {
+    const map = new Map<string, typeof sortedByCategory>();
+    for (const s of sortedByCategory) {
+      const c = s._cat;
+      if (!map.has(c)) map.set(c, []);
+      map.get(c)!.push(s);
+    }
+    // Order keys
+    const ordered: Array<[string, typeof sortedByCategory]> = [];
+    ["Forex", "Commodities", "Indices", "Crypto", "Stocks"].forEach((k) => {
+      if (map.has(k)) ordered.push([k, map.get(k)!]);
+    });
+    for (const [k, v] of map.entries()) if (!ordered.find((e) => e[0] === k)) ordered.push([k, v]);
+    return ordered;
+  }, [sortedByCategory]);
+
+  const showGroupHeaders = tab === "All" && !query;
+
+  const toggleFromBroker = (s: (typeof categorized)[number] | { brokerSymbol?: string; symbol: string; description?: string | null; displayName?: string; _cat?: string }) => {
+    const sym = (s as any).brokerSymbol || s.symbol;
+    toggle({
+      symbol: sym,
+      display_name: (s as any).displayName || sym,
+      description: s.description ?? null,
+      category: (s as any)._cat || inferCategory(sym),
+    });
   };
 
   return (
@@ -361,58 +418,95 @@ const MarketWatchPanel = ({
       </div>
 
       <ul className="flex-1 overflow-y-auto">
-        {/* Favorites */}
-        {favSymbols.length > 0 && tab === "All" && !query && (
+        {/* Favorites — always shown at the top when not actively filtering by another tab */}
+        {tab === "All" && !query && (
           <>
-            <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-[#FFCD05]/70 bg-[#0a0a0a]/60 border-b border-neutral-800/60 flex items-center gap-1.5">
+            <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-[#FFCD05]/80 bg-[#0a0a0a]/60 border-b border-neutral-800/60 flex items-center gap-1.5">
               <Star className="h-2.5 w-2.5 fill-[#FFCD05] text-[#FFCD05]" /> Favorites
             </li>
-            {favSymbols.map((s) => {
+            {favRows.length === 0 ? (
+              <li className="px-3 py-3 text-[10px] text-neutral-500 italic">
+                No favorites yet. Star an instrument to add it here.
+              </li>
+            ) : (
+              favRows.map((f) => {
+                const broker = categorized.find(
+                  (s) => (s.brokerSymbol || s.symbol).toUpperCase() === f.sym.toUpperCase(),
+                );
+                return (
+                  <MarketRow
+                    key={`fav-${f.sym}`}
+                    sym={f.sym}
+                    description={f.description}
+                    digits={f.digits}
+                    tick={getTick(f.sym)}
+                    isActive={f.sym.toUpperCase() === active.toUpperCase()}
+                    isFav
+                    onSelect={() => onSelect(f.sym)}
+                    onToggleFav={() =>
+                      toggle({
+                        symbol: f.sym,
+                        display_name: broker?.displayName || f.sym,
+                        description: f.description ?? null,
+                        category: f.category,
+                      })
+                    }
+                  />
+                );
+              })
+            )}
+          </>
+        )}
+
+        {loading && sortedByCategory.length === 0 && (
+          <li className="px-3 py-5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin" /> Loading broker symbols…
+          </li>
+        )}
+        {!loading && sortedByCategory.length === 0 && (
+          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">No matches.</li>
+        )}
+
+        {showGroupHeaders
+          ? grouped.map(([cat, rows]) => (
+              <div key={cat}>
+                <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 bg-[#0a0a0a]/60 border-y border-neutral-800/60">
+                  {cat}
+                </li>
+                {rows.map((s) => {
+                  const sym = s.brokerSymbol || s.symbol;
+                  return (
+                    <MarketRow
+                      key={sym}
+                      sym={sym}
+                      description={s.description}
+                      digits={Number(s.digits) || 5}
+                      tick={getTick(sym)}
+                      isActive={sym.toUpperCase() === active.toUpperCase()}
+                      isFav={isFavorite(sym)}
+                      onSelect={() => onSelect(sym)}
+                      onToggleFav={() => toggleFromBroker(s)}
+                    />
+                  );
+                })}
+              </div>
+            ))
+          : sortedByCategory.map((s) => {
               const sym = s.brokerSymbol || s.symbol;
               return (
                 <MarketRow
-                  key={`fav-${sym}`}
+                  key={sym}
                   sym={sym}
                   description={s.description}
                   digits={Number(s.digits) || 5}
                   tick={getTick(sym)}
                   isActive={sym.toUpperCase() === active.toUpperCase()}
-                  isFav
+                  isFav={isFavorite(sym)}
                   onSelect={() => onSelect(sym)}
-                  onToggleFav={() => toggle(sym)}
+                  onToggleFav={() => toggleFromBroker(s)}
                 />
               );
             })}
-            <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 bg-[#0a0a0a]/60 border-y border-neutral-800/60">
-              {tab}
-            </li>
-          </>
-        )}
-
-        {loading && filtered.length === 0 && (
-          <li className="px-3 py-5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
-            <Loader2 className="h-3 w-3 animate-spin" /> Loading broker symbols…
-          </li>
-        )}
-        {!loading && filtered.length === 0 && (
-          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">No matches.</li>
-        )}
-        {filtered.map((s) => {
-          const sym = s.brokerSymbol || s.symbol;
-          return (
-            <MarketRow
-              key={sym}
-              sym={sym}
-              description={s.description}
-              digits={Number(s.digits) || 5}
-              tick={getTick(sym)}
-              isActive={sym.toUpperCase() === active.toUpperCase()}
-              isFav={isFavorite(sym)}
-              onSelect={() => onSelect(sym)}
-              onToggleFav={() => toggle(sym)}
-            />
-          );
-        })}
       </ul>
     </aside>
   );
