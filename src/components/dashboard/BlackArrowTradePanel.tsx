@@ -74,8 +74,37 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   } = useBrokerSymbols();
   const { liveAccount, positions, connected, refresh } = useLiveAccount();
 
-  const [orderType, setOrderType] = useState<OrderType>("market");
-  const [vol, setVol] = useState<string>("0.01");
+  // ---- Persisted preferences ----
+  const PREFS_KEY = "ba-ticket-prefs";
+  type FocusTarget = "volume" | "price" | "orderType";
+  type Prefs = {
+    side: "buy" | "sell";
+    orderType: OrderType;
+    vol: string;
+    focusTarget: FocusTarget;
+    autoReset: boolean;
+  };
+  const defaultPrefs: Prefs = {
+    side: "buy",
+    orderType: "market",
+    vol: "0.01",
+    focusTarget: "volume",
+    autoReset: true,
+  };
+  const loadPrefs = (): Prefs => {
+    if (typeof window === "undefined") return defaultPrefs;
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (!raw) return defaultPrefs;
+      return { ...defaultPrefs, ...JSON.parse(raw) };
+    } catch {
+      return defaultPrefs;
+    }
+  };
+  const initialPrefs = useRef<Prefs>(loadPrefs());
+
+  const [orderType, setOrderType] = useState<OrderType>(initialPrefs.current.orderType);
+  const [vol, setVol] = useState<string>(initialPrefs.current.vol);
   const [price, setPrice] = useState<string>("");
   const [sl, setSl] = useState<string>("");
   const [tp, setTp] = useState<string>("");
@@ -83,7 +112,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [symbolSearch, setSymbolSearch] = useState("");
-  const [autoReset, setAutoReset] = useState(true);
+  const [autoReset, setAutoReset] = useState(initialPrefs.current.autoReset);
+  const [focusTarget, setFocusTarget] = useState<FocusTarget>(
+    initialPrefs.current.focusTarget,
+  );
   const [lastExecution, setLastExecution] = useState<{
     side: "buy" | "sell";
     symbol: string;
@@ -94,8 +126,34 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   const priceTouched = useRef(false);
   const volInputRef = useRef<HTMLInputElement>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
+  const orderTypeBtnRef = useRef<HTMLButtonElement>(null);
   const prevSpreadRef = useRef<number | null>(null);
+  const prevBidRef = useRef<number | null>(null);
+  const prevAskRef = useRef<number | null>(null);
   const [spreadTrend, setSpreadTrend] = useState<"up" | "down" | "flat">("flat");
+  const [bidFlash, setBidFlash] = useState<"up" | "down" | null>(null);
+  const [askFlash, setAskFlash] = useState<"up" | "down" | null>(null);
+
+  // Apply initial preferred side once
+  const initialSideRef = useRef(false);
+  useEffect(() => {
+    if (!initialSideRef.current) {
+      initialSideRef.current = true;
+      setSide(initialPrefs.current.side);
+    }
+  }, [setSide]);
+
+  // Persist prefs on change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ side, orderType, vol, focusTarget, autoReset }),
+      );
+    } catch { /* ignore */ }
+  }, [side, orderType, vol, focusTarget, autoReset]);
 
   const { bid, ask } = pickTick(tick);
   const livePrice = side === "buy" ? ask : bid;
