@@ -29,6 +29,7 @@ import {
   BrokerSymbolsProvider,
   useBrokerSymbols,
 } from "@/contexts/BrokerSymbolsContext";
+import { TerminalStateProvider } from "@/contexts/TerminalStateContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
