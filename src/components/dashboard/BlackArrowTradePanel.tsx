@@ -106,9 +106,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   }, [connected]);
   const showAsConnected = connected || everConnected;
 
-  const { bid, ask } = pickTick(tick);
+  // Prefer get-mt5-quotes selectedQuote → lastGoodSelectedSymbolData → broker tick.
+  const fallbackTick = pickTick(tick);
+  const bid =
+    effectiveSelected?.bid != null
+      ? Number(effectiveSelected.bid)
+      : fallbackTick.bid;
+  const ask =
+    effectiveSelected?.ask != null
+      ? Number(effectiveSelected.ask)
+      : fallbackTick.ask;
   const livePrice = side === "buy" ? ask : bid;
-  const digits = Number(selectedSymbolInfo?.digits ?? 5);
+  const digits = Number(effectiveSelected?.digits ?? selectedSymbolInfo?.digits ?? 5);
 
   const spread =
     Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
