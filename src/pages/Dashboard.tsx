@@ -925,7 +925,9 @@ const TerminalStatusBar = ({ activeSymbol }: { activeSymbol: string }) => {
 const Dashboard = () => (
   <BrokerSymbolsProvider>
     <LiveAccountProvider>
-      <DashboardInner />
+      <TerminalStateProvider>
+        <DashboardInner />
+      </TerminalStateProvider>
     </LiveAccountProvider>
   </BrokerSymbolsProvider>
 );
