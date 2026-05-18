@@ -70,6 +70,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   } = useBrokerSymbols();
   const { liveAccount, positions, connected, refresh } = useLiveAccount();
 
+  // get-mt5-quotes drives the selected symbol's live price + specs
+  // (stale-while-revalidate). Order Ticket never blanks on a transient
+  // refresh failure — we always fall back to lastGoodSelectedSymbolData.
+  const {
+    selectedQuote,
+    lastGoodSelectedSymbolData,
+    dataDelayed: selectedDataDelayed,
+  } = useSelectedQuote(ctxSymbol);
+  const effectiveSelected = selectedQuote ?? lastGoodSelectedSymbolData;
+
+
   const [strategy, setStrategy] = useState<Strategy>("Standard");
   const [orderType, setOrderType] = useState<OrderTypeLabel>("Market");
   const [vol, setVol] = useState<string>("0.01");
