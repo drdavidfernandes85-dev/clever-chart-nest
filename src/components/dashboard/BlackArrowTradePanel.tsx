@@ -640,10 +640,11 @@ const DenseInput = ({
 );
 
 const SideBtn = ({
-  tone, outline, disabled, loading, onClick, title, children,
+  tone, outline, small, disabled, loading, onClick, title, children,
 }: {
   tone: "buy" | "sell";
   outline?: boolean;
+  small?: boolean;
   disabled?: boolean;
   loading?: boolean;
   onClick?: () => void;
@@ -658,14 +659,15 @@ const SideBtn = ({
       onClick={onClick}
       title={title}
       className={cn(
-        "h-8 rounded text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
+        "rounded-sm font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed",
+        small ? "h-6 text-[9.5px]" : "h-8 text-[11px]",
         outline
           ? buy
-            ? "border border-emerald-500/40 bg-emerald-500/5 text-emerald-300 hover:bg-emerald-500/15"
-            : "border border-red-500/40 bg-red-500/5 text-red-300 hover:bg-red-500/15"
+            ? "border border-emerald-600/50 bg-emerald-600/10 text-emerald-300 hover:bg-emerald-600/20"
+            : "border border-red-600/50 bg-red-600/10 text-red-300 hover:bg-red-600/20"
           : buy
-            ? "bg-emerald-500 text-white border border-emerald-500 hover:bg-emerald-600"
-            : "bg-red-500 text-white border border-red-500 hover:bg-red-600",
+            ? "bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500"
+            : "bg-red-600 text-white border border-red-500 hover:bg-red-500",
       )}
     >
       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
