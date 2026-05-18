@@ -356,6 +356,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const pendingDisabled = true; // Limit/Stop pending orders not yet supported by backend
   const priceInputDisabled = orderType === "Market";
 
+  // Tick is "delayed" if the polling layer reported an error, or if no
+  // successful tick has arrived within ~15s. Last-good bid/ask still render.
+  const tickStale =
+    !!tickError ||
+    (tickUpdatedAt != null && Date.now() - tickUpdatedAt > 15_000);
+
   return (
     <div className={cn(
       "rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden text-neutral-100 text-[11px]",
@@ -363,7 +369,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     )}>
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-neutral-800 bg-[#0a0a0a]">
-        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">Order Ticket</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">Order Ticket</span>
+          {tickStale ? (
+            <span className="flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-[1px] text-[8.5px] font-mono uppercase tracking-widest text-amber-400">
+              <span className="inline-flex h-1 w-1 rounded-full bg-amber-400" />
+              Data delayed
+            </span>
+          ) : null}
+        </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
           <span className="text-neutral-500">{liveAccount?.login ? `#${liveAccount.login}` : "—"}</span>
           <span className="text-neutral-700">·</span>
@@ -372,6 +386,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </span>
         </div>
       </div>
+
+
 
       <div className="p-1.5 space-y-1">
         {/* Symbol block */}
