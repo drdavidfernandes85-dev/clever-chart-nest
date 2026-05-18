@@ -1,44 +1,98 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
-const KEY = "ixterminal.favorites.v1";
-const DEFAULTS = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "US30", "NAS100", "BTCUSD"];
+export interface FavoriteInstrument {
+  symbol: string;
+  display_name: string | null;
+  description: string | null;
+  category: string | null;
+  sort_order: number;
+}
 
-const read = (): string[] => {
-  if (typeof window === "undefined") return DEFAULTS;
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return DEFAULTS;
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) && arr.every((s) => typeof s === "string") ? arr : DEFAULTS;
-  } catch {
-    return DEFAULTS;
-  }
-};
-
+/**
+ * Per-user favorite instruments, persisted in `user_favorite_instruments`.
+ * Prices are NEVER stored — only the symbol identity + display metadata.
+ */
 export function useFavorites() {
-  const [favorites, setFavorites] = useState<string[]>(read);
+  const { user } = useAuth();
+  const [favorites, setFavorites] = useState<FavoriteInstrument[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    if (!user) {
+      setFavorites([]);
+      setLoading(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("user_favorite_instruments")
+      .select("symbol, display_name, description, category, sort_order")
+      .order("sort_order", { ascending: true })
+      .order("symbol", { ascending: true });
+    if (!error && data) {
+      setFavorites(data as FavoriteInstrument[]);
+    }
+    setLoading(false);
+  }, [user]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(favorites));
-    } catch {
-      /* ignore */
-    }
-  }, [favorites]);
+    load();
+  }, [load]);
 
-  const toggle = (sym: string) => {
-    const u = sym.toUpperCase();
-    setFavorites((f) =>
-      f.map((s) => s.toUpperCase()).includes(u)
-        ? f.filter((s) => s.toUpperCase() !== u)
-        : [...f, sym],
-    );
-  };
+  const isFavorite = useCallback(
+    (sym: string) =>
+      favorites.some((f) => f.symbol.toUpperCase() === sym.toUpperCase()),
+    [favorites],
+  );
 
-  const isFavorite = (sym: string) =>
-    favorites.map((s) => s.toUpperCase()).includes(sym.toUpperCase());
+  const add = useCallback(
+    async (meta: Omit<FavoriteInstrument, "sort_order"> & { sort_order?: number }) => {
+      if (!user) return;
+      const sort_order = meta.sort_order ?? favorites.length;
+      // Optimistic
+      setFavorites((f) =>
+        f.some((x) => x.symbol.toUpperCase() === meta.symbol.toUpperCase())
+          ? f
+          : [...f, { ...meta, sort_order } as FavoriteInstrument],
+      );
+      const { error } = await supabase.from("user_favorite_instruments").insert({
+        user_id: user.id,
+        symbol: meta.symbol,
+        display_name: meta.display_name,
+        description: meta.description,
+        category: meta.category,
+        sort_order,
+      });
+      if (error) await load();
+    },
+    [user, favorites.length, load],
+  );
 
-  return { favorites, isFavorite, toggle };
+  const remove = useCallback(
+    async (sym: string) => {
+      if (!user) return;
+      const prev = favorites;
+      setFavorites((f) => f.filter((x) => x.symbol.toUpperCase() !== sym.toUpperCase()));
+      const { error } = await supabase
+        .from("user_favorite_instruments")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("symbol", sym);
+      if (error) setFavorites(prev);
+    },
+    [user, favorites],
+  );
+
+  const toggle = useCallback(
+    async (meta: Omit<FavoriteInstrument, "sort_order">) => {
+      if (isFavorite(meta.symbol)) await remove(meta.symbol);
+      else await add(meta);
+    },
+    [isFavorite, add, remove],
+  );
+
+  return { favorites, loading, isFavorite, add, remove, toggle, reload: load };
 }
 
 /** Infer a friendly asset class from a symbol when broker metadata is missing. */
