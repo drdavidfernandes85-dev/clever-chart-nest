@@ -420,7 +420,7 @@ const MarketWatchPanel = ({
 };
 
 const ChartBidAskHeader = () => {
-  const { tick, selectedSymbolInfo } = useBrokerSymbols();
+  const { tick, selectedSymbolInfo, selectedBrokerSymbol } = useBrokerSymbols();
   const digits = Number(selectedSymbolInfo?.digits) || 5;
   const fmt = (v: number | null | undefined) =>
     v == null
@@ -436,33 +436,76 @@ const ChartBidAskHeader = () => {
     spread != null && selectedSymbolInfo?.point
       ? spread / Number(selectedSymbolInfo.point)
       : null;
+  const high = tick?.high != null ? Number(tick.high) : null;
+  const low = tick?.low != null ? Number(tick.low) : null;
+  const open = tick?.open != null ? Number(tick.open) : null;
+  const last = tick?.last != null ? Number(tick.last) : bid != null && ask != null ? (bid + ask) / 2 : null;
+  const change = open != null && last != null ? last - open : null;
+  const changePct = open != null && last != null && open !== 0 ? ((last - open) / open) * 100 : null;
+  const changeColor =
+    change == null ? "text-neutral-400" : change >= 0 ? "text-emerald-400" : "text-red-400";
 
   return (
-    <div className="flex items-center gap-6">
-      <div className="flex flex-col leading-tight">
-        <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-red-400/80">
-          Bid
-        </span>
-        <span className="font-mono text-[18px] font-bold tabular-nums text-red-400">
-          {fmt(bid)}
-        </span>
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center rounded border border-red-500/40 bg-red-500/15 px-3 py-1.5 leading-tight">
+        <div className="flex flex-col items-center">
+          <span className="font-mono text-[14px] font-bold tabular-nums text-red-300">
+            {fmt(bid)}
+          </span>
+          <span className="text-[8.5px] font-mono uppercase tracking-[0.22em] text-red-300/80">
+            Sell
+          </span>
+        </div>
       </div>
-      <div className="flex flex-col leading-tight">
-        <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-emerald-400/80">
-          Ask
-        </span>
-        <span className="font-mono text-[18px] font-bold tabular-nums text-emerald-400">
-          {fmt(ask)}
-        </span>
+      <div className="rounded border border-neutral-800 bg-[#0a0a0a] px-2 py-1 text-center">
+        <div className="font-mono text-[10px] tabular-nums text-neutral-300">
+          {spreadPts != null ? spreadPts.toFixed(2) : "—"}
+        </div>
       </div>
-      <div className="flex flex-col leading-tight">
-        <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
-          Spread
-        </span>
-        <span className="font-mono text-[12px] tabular-nums text-neutral-300">
-          {spreadPts != null ? `${spreadPts.toFixed(1)} pts` : "—"}
-        </span>
+      <div className="flex items-center rounded border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 leading-tight">
+        <div className="flex flex-col items-center">
+          <span className="font-mono text-[14px] font-bold tabular-nums text-emerald-300">
+            {fmt(ask)}
+          </span>
+          <span className="text-[8.5px] font-mono uppercase tracking-[0.22em] text-emerald-300/80">
+            Buy
+          </span>
+        </div>
       </div>
+
+      <div className="flex items-center gap-5 pl-2 ml-1 border-l border-neutral-800">
+        <div className="flex flex-col leading-tight">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+            24H Change
+          </span>
+          <span className={`font-mono text-[12px] font-bold tabular-nums ${changeColor}`}>
+            {change == null ? "—" : `${change >= 0 ? "+" : ""}${change.toFixed(digits)}`}
+            {changePct != null && (
+              <span className="ml-1 text-[10px]">
+                ({changePct >= 0 ? "+" : ""}
+                {changePct.toFixed(2)}%)
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="flex flex-col leading-tight">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+            High
+          </span>
+          <span className="font-mono text-[12px] font-bold tabular-nums text-neutral-200">
+            {fmt(high)}
+          </span>
+        </div>
+        <div className="flex flex-col leading-tight">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+            Low
+          </span>
+          <span className="font-mono text-[12px] font-bold tabular-nums text-neutral-200">
+            {fmt(low)}
+          </span>
+        </div>
+      </div>
+      {selectedBrokerSymbol ? <span className="sr-only">{selectedBrokerSymbol}</span> : null}
     </div>
   );
 };
