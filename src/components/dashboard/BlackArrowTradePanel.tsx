@@ -226,13 +226,16 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     return null;
   })();
 
+  // Spec: disable buy/sell ONLY when account is not connected, the symbol
+  // isn't valid, the volume is invalid, or a submission is already in flight.
+  // SL/TP errors are surfaced via the input and via a toast on click — they
+  // do not disable the buttons.
   const canSubmitMarket =
     !!user &&
     connected === true &&
     isBrokerSymbol &&
     selectedSymbolValid === true &&
     !volumeError &&
-    !slTpError &&
     !submitting;
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
