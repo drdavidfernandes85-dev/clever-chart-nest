@@ -293,10 +293,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   // Apply a pip-distance preset for SL or TP using current side + entry
   const applyPipPreset = (kind: "sl" | "tp", pips: number) => {
-    if (!entryPrice || !pipSize) {
-      toast.error("No live price yet — wait for a tick");
-      return;
-    }
+    if (!entryPrice || !pipSize) return;
     const dist = pips * pipSize;
     const buy = side === "buy";
     let target: number;
