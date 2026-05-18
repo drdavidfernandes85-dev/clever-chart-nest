@@ -228,9 +228,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const symbolPnl = symbolPositions.reduce((s, p) => s + Number(p.profit || 0), 0);
 
   // ---- Volume specs from broker ----
-  const volumeMin = Number(selectedSymbolInfo?.volumeMin ?? 0.01) || 0.01;
-  const volumeMax = Number(selectedSymbolInfo?.volumeMax ?? 0) || 0;
-  const volumeStep = Number(selectedSymbolInfo?.volumeStep ?? 0.01) || 0.01;
+  // ---- Volume specs (prefer selectedQuote, fall back to broker info) ----
+  const volumeMin =
+    Number(effectiveSelected?.volumeMin ?? selectedSymbolInfo?.volumeMin ?? 0.01) || 0.01;
+  const volumeMax =
+    Number(effectiveSelected?.volumeMax ?? selectedSymbolInfo?.volumeMax ?? 0) || 0;
+  const volumeStep =
+    Number(effectiveSelected?.volumeStep ?? selectedSymbolInfo?.volumeStep ?? 0.01) || 0.01;
 
   // Reject anything that doesn't look like a real broker symbol (alphanum, 3-15 chars)
   const isBrokerSymbol = /^[A-Z0-9._]{3,15}$/.test(normalizedSym);
