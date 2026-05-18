@@ -46,12 +46,14 @@ const REFRESH_MS = 2_000;
 
 export function LiveAccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { selectedBrokerSymbol } = useBrokerSymbols();
   const [liveAccount, setLiveAccount] = useState<LiveAccount | null>(null);
   const [positions, setPositions] = useState<LivePosition[]>([]);
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) {
