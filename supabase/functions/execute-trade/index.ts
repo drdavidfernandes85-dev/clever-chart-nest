@@ -200,7 +200,7 @@ serve(async (req) => {
 
     const { data: account, error: accountError } = await supabase
       .from("user_mt_accounts")
-      .select("metaapi_account_id, login, server_name, status")
+      .select("id, metaapi_account_id, login, server_name, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -400,6 +400,116 @@ serve(async (req) => {
         },
         200,
       );
+    }
+
+    // ---- After-trade sync: populate mt_positions + trade_journal so the
+    // Positions and Journal tabs reflect this trade immediately. Best-effort:
+    // any failure here is logged but does NOT fail the trade response.
+    try {
+      const dealPrice = toNullableNumber(
+        getValue(result, [
+          "deal.price", "order.price", "price",
+          "data.deal.price", "data.order.price",
+          "result.price", "trade.price",
+        ], null),
+      );
+      const dealTicket = getValue(result, [
+        "deal.ticket", "order.ticket", "ticket", "order_id", "orderId",
+        "data.deal.ticket", "data.order.ticket",
+      ], null);
+      const dealVolume = toNullableNumber(
+        getValue(result, ["deal.volume", "order.volume", "volume"], null),
+      ) ?? volume;
+      const direction = side === "sell" ? "short" : "long";
+
+      // 1) Insert an OPEN row in the journal so the user sees the trade now.
+      //    We leave pnl/exit blank until the position closes (will be filled
+      //    by sync or EA flows). Idempotent on (user, notes ticket) — we use
+      //    a "Ticket #" marker so subsequent syncs won't duplicate.
+      const journalNotes = dealTicket
+        ? `Auto-logged from terminal trade. Ticket #${dealTicket}.`
+        : `Auto-logged from terminal trade.`;
+
+      let alreadyJournaled = false;
+      if (dealTicket) {
+        const { data: existing } = await supabase
+          .from("trade_journal")
+          .select("id")
+          .eq("user_id", user.id)
+          .like("notes", `%Ticket #${dealTicket}.%`)
+          .maybeSingle();
+        alreadyJournaled = !!existing;
+      }
+
+      if (!alreadyJournaled) {
+        await supabase.from("trade_journal").insert({
+          user_id: user.id,
+          pair: symbol,
+          direction,
+          entry_price: dealPrice ?? 0,
+          position_size: dealVolume,
+          stop_loss: stopLoss ?? null,
+          take_profit: takeProfit ?? null,
+          status: "open",
+          opened_at: new Date().toISOString(),
+          setup_tag: "terminal",
+          notes: journalNotes,
+        });
+      }
+
+      // 2) Sync mt_positions from Trading Layer so the Positions tab updates.
+      if (account?.id) {
+        const posRes = await fetch(
+          `${BASE_URL}/api/v1/accounts/${accountId}/positions`,
+          { headers: { Authorization: `Bearer ${TRADING_LAYER_KEY}` } },
+        );
+        if (posRes.ok) {
+          const posJson: any = await posRes.json().catch(() => ({}));
+          const positions: any[] =
+            (Array.isArray(posJson?.data) ? posJson.data
+              : Array.isArray(posJson?.data?.positions) ? posJson.data.positions
+              : Array.isArray(posJson?.positions) ? posJson.positions
+              : []) ?? [];
+
+          // Replace open positions for this account
+          await supabase.from("mt_positions").delete().eq("account_id", account.id);
+
+          if (positions.length > 0) {
+            const rows = positions.map((p: any) => {
+              const t = String(p.ticket ?? p.position_id ?? p.id ?? "");
+              const sideStr = String(p.side ?? p.type ?? "").toLowerCase();
+              const normSide = sideStr === "sell" || sideStr === "short" || sideStr === "1"
+                ? "short" : "long";
+              return {
+                user_id: user.id,
+                account_id: account.id,
+                ticket: t,
+                symbol: String(p.symbol ?? ""),
+                side: normSide,
+                volume: Number(p.volume ?? p.lots ?? 0),
+                open_price: Number(p.open_price ?? p.price_open ?? p.entry ?? 0),
+                current_price: p.current_price != null ? Number(p.current_price) : null,
+                stop_loss: p.sl != null ? Number(p.sl) : p.stop_loss != null ? Number(p.stop_loss) : null,
+                take_profit: p.tp != null ? Number(p.tp) : p.take_profit != null ? Number(p.take_profit) : null,
+                profit: p.profit != null ? Number(p.profit) : 0,
+                swap: p.swap != null ? Number(p.swap) : null,
+                commission: p.commission != null ? Number(p.commission) : null,
+                opened_at: p.time
+                  ? (Number(p.time) > 0 ? new Date(Number(p.time) * 1000).toISOString() : new Date(p.time).toISOString())
+                  : p.opened_at ?? new Date().toISOString(),
+              };
+            }).filter((r) => r.ticket);
+
+            if (rows.length > 0) {
+              await supabase.from("mt_positions").insert(rows);
+            }
+          }
+        } else {
+          console.warn("execute-trade: positions sync HTTP", posRes.status);
+        }
+      }
+    } catch (syncErr) {
+      console.warn("execute-trade: post-trade sync failed", syncErr);
     }
 
     return json(
