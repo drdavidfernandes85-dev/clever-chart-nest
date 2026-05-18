@@ -278,10 +278,17 @@ const MarketWatchPanel = ({
 
   // Build category map (memoized)
   const categorized = useMemo(() => {
-    return symbols.map((s) => ({
-      ...s,
-      _cat: inferCategory(s.brokerSymbol || s.symbol, s.assetClass),
-    }));
+    // Drop any malformed broker entries (no symbol) so the list never renders
+    // blank rows with just a star + dashes.
+    return symbols
+      .filter((s) => {
+        const sym = (s.brokerSymbol || s.symbol || "").trim();
+        return sym.length > 0;
+      })
+      .map((s) => ({
+        ...s,
+        _cat: inferCategory(s.brokerSymbol || s.symbol, s.assetClass),
+      }));
   }, [symbols]);
 
   const filtered = useMemo(() => {
@@ -300,12 +307,12 @@ const MarketWatchPanel = ({
 
   const favoriteSymbols = useMemo(() => favorites.map((f) => f.symbol), [favorites]);
 
-  // Live ticks for favorites + active + the top of the currently rendered list.
-  // Cap to ~24 symbols to keep us well inside broker rate limits.
+  // Subscribe to live ticks for everything currently visible (cap at 120 to
+  // stay friendly to the broker batch endpoint while covering the whole panel).
   const visibleTopSymbols = useMemo(
     () =>
       filtered
-        .slice(0, 24)
+        .slice(0, 120)
         .map((s) => (s.brokerSymbol || s.symbol))
         .filter(Boolean),
     [filtered],
