@@ -60,28 +60,31 @@ const getMessage = (l: LogRow): string => {
 };
 
 const TerminalExecutionLog = () => {
+  const { selectedBrokerSymbol } = useBrokerSymbols();
   const [rows, setRows] = useState<LogRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    const { data: auth } = await supabase.auth.getUser();
-    if (!auth?.user) {
-      setLoading(false);
-      return;
-    }
-    const { data } = await supabase
-      .from("trade_execution_logs")
-      .select(
-        "id, created_at, symbol, side, volume, status, classification, retcode_description, comment, error_message, ticket, response_payload",
-      )
-      .eq("user_id", auth.user.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
-    setRows((data ?? []) as LogRow[]);
-    setLoading(false);
-  };
+  const sym = (selectedBrokerSymbol || "").toUpperCase();
 
   useEffect(() => {
+    const load = async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth?.user) {
+        setLoading(false);
+        return;
+      }
+      let q = supabase
+        .from("trade_execution_logs")
+        .select(
+          "id, created_at, symbol, side, volume, status, classification, retcode_description, comment, error_message, ticket, response_payload",
+        )
+        .eq("user_id", auth.user.id);
+      if (sym) q = q.eq("symbol", sym);
+      const { data } = await q.order("created_at", { ascending: false }).limit(20);
+      setRows((data ?? []) as LogRow[]);
+      setLoading(false);
+    };
+
     load();
     const id = setInterval(load, 15_000);
     const onTrade = () => load();
@@ -92,11 +95,15 @@ const TerminalExecutionLog = () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth?.user) return;
       channel = supabase
-        .channel(`exec-log-${auth.user.id}`)
+        .channel(`exec-log-${auth.user.id}-${sym || "all"}`)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "trade_execution_logs", filter: `user_id=eq.${auth.user.id}` },
-          () => load(),
+          (payload: any) => {
+            if (!sym) return load();
+            const row = payload.new ?? payload.old ?? {};
+            if (String(row.symbol ?? "").toUpperCase() === sym) load();
+          },
         )
         .subscribe();
     })();
@@ -106,7 +113,7 @@ const TerminalExecutionLog = () => {
       window.removeEventListener("trade-executed", onTrade);
       if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [sym]);
 
   if (loading) {
     return (
