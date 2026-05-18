@@ -171,7 +171,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const sessionPnl = equity - balance;
   const currency = liveAccount?.currency || "USD";
   const leverage = Number(liveAccount?.leverage ?? 100) || 100;
-  const contractSize = Number(selectedSymbolInfo?.contractSize ?? 100000) || 100000;
+  const contractSize =
+    Number(effectiveSelected?.contractSize ?? selectedSymbolInfo?.contractSize ?? 100000) ||
+    100000;
   const notional = entryPrice * volNum * contractSize;
   const marginRequired = leverage > 0 ? notional / leverage : 0;
 
