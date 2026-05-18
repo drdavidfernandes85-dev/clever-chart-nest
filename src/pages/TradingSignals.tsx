@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3, Zap, CheckCircle2, Sparkles } from "lucide-react";
-import { openAIAssistant } from "@/components/ai/AICopilot";
+import { ArrowLeft, TrendingUp, TrendingDown, Target, ShieldAlert, CheckCircle, XCircle, Clock, MoreHorizontal, LayoutGrid, Rows3, Zap, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -622,18 +621,6 @@ const TradingSignals = () => {
                         </button>
                       )
                     )}
-                    <button
-                      onClick={() =>
-                        openAIAssistant(
-                          `Explain this signal: ${signal.pair} ${String(signal.direction).toUpperCase()} @ ${signal.entry_price}, SL ${signal.stop_loss ?? "n/a"}, TP ${signal.take_profit ?? "n/a"}. Give R:R, macro context, and what to watch for.`,
-                        )
-                      }
-                      title="Ask AI Assistant about this signal"
-                      aria-label="Ask AI Assistant"
-                      className="ml-1 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-primary/10 px-2 py-1.5 text-primary hover:bg-primary/20 transition-colors"
-                    >
-                      <Sparkles className="h-3 w-3" />
-                    </button>
                   </div>
                 </div>
               );
