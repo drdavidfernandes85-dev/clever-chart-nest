@@ -682,16 +682,16 @@ const DenseSelect = ({
   label, value, onChange, options,
 }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) => (
   <div className="space-y-0.5">
-    <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="text-[8.5px] font-semibold uppercase tracking-wider text-neutral-500">{label}</div>
     <div className="relative">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full h-7 rounded border border-border/60 bg-background/60 px-1.5 pr-5 text-[11px] appearance-none focus:outline-none focus:ring-1 focus:ring-primary"
+        className="w-full h-6 rounded-sm border border-neutral-800 bg-[#0a0a0a] px-1.5 pr-5 text-[10.5px] text-neutral-100 appearance-none focus:outline-none focus:ring-1 focus:ring-[#FFCD05]/60 focus:border-[#FFCD05]/60"
       >
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
-      <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+      <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-500 pointer-events-none" />
     </div>
   </div>
 );
@@ -700,14 +700,14 @@ const DenseInput = ({
   label, value, onChange, disabled, mono,
 }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean; mono?: boolean }) => (
   <div className="space-y-0.5">
-    <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+    <div className="text-[8.5px] font-semibold uppercase tracking-wider text-neutral-500">{label}</div>
     <input
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       inputMode="decimal"
       className={cn(
-        "w-full h-7 rounded border border-border/60 bg-background/60 px-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-60",
+        "w-full h-6 rounded-sm border border-neutral-800 bg-[#0a0a0a] px-1.5 text-[10.5px] text-neutral-100 focus:outline-none focus:ring-1 focus:ring-[#FFCD05]/60 focus:border-[#FFCD05]/60 disabled:opacity-60",
         mono && "font-mono tabular-nums text-right",
       )}
     />
