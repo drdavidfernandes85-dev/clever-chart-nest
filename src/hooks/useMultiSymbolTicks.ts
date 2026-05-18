@@ -28,7 +28,8 @@ export function useMultiSymbolTicks(symbols: string[], periodMs = 5000) {
 
   useEffect(() => {
     if (!symbols.length) {
-      setRows({});
+      // Keep previous rows on screen — symbol list may be temporarily empty
+      // during a refresh cycle. Just stop polling until it returns.
       return;
     }
     let cancelled = false;
