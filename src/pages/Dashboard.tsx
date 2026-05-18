@@ -207,6 +207,7 @@ const MarketRow = ({
   onSelect: () => void;
   onToggleFav: () => void;
 }) => {
+  // Guard: never render a row without a real symbol.
   if (!sym || !sym.trim()) return null;
   const fmt = (v: number | null | undefined) =>
     v == null
@@ -218,6 +219,8 @@ const MarketRow = ({
   const pct = tick?.changePct;
   const pctClass =
     pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
+  // Subtle "stale" marker when we have no bid/ask at all for this row.
+  const stale = tick == null || (tick.bid == null && tick.ask == null);
   return (
     <li
       className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
@@ -234,22 +237,32 @@ const MarketRow = ({
           className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-700 hover:text-neutral-400"}`}
         />
       </button>
-      <button type="button" onClick={onSelect} className="min-w-0 text-left">
-        <div className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
+      <button type="button" onClick={onSelect} className="min-w-0 text-left flex items-center gap-1">
+        {stale && (
+          <span
+            className="h-1 w-1 rounded-full bg-neutral-600 shrink-0"
+            title="Awaiting price update"
+            aria-label="stale"
+          />
+        )}
+        <span
+          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : stale ? "text-neutral-400" : "text-neutral-100"}`}
+          title={description ?? sym}
+        >
           {sym}
-        </div>
+        </span>
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10px] tabular-nums text-red-400"
+        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-red-400/50" : "text-red-400"}`}
       >
         {fmt(tick?.bid)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10px] tabular-nums text-emerald-400"
+        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-emerald-400/50" : "text-emerald-400"}`}
       >
         {fmt(tick?.ask)}
       </button>
@@ -278,10 +291,17 @@ const MarketWatchPanel = ({
 
   // Build category map (memoized)
   const categorized = useMemo(() => {
-    return symbols.map((s) => ({
-      ...s,
-      _cat: inferCategory(s.brokerSymbol || s.symbol, s.assetClass),
-    }));
+    // Drop any malformed broker entries (no symbol) so the list never renders
+    // blank rows with just a star + dashes.
+    return symbols
+      .filter((s) => {
+        const sym = (s.brokerSymbol || s.symbol || "").trim();
+        return sym.length > 0;
+      })
+      .map((s) => ({
+        ...s,
+        _cat: inferCategory(s.brokerSymbol || s.symbol, s.assetClass),
+      }));
   }, [symbols]);
 
   const filtered = useMemo(() => {
@@ -300,12 +320,12 @@ const MarketWatchPanel = ({
 
   const favoriteSymbols = useMemo(() => favorites.map((f) => f.symbol), [favorites]);
 
-  // Live ticks for favorites + active + the top of the currently rendered list.
-  // Cap to ~24 symbols to keep us well inside broker rate limits.
+  // Subscribe to live ticks for everything currently visible (cap at 120 to
+  // stay friendly to the broker batch endpoint while covering the whole panel).
   const visibleTopSymbols = useMemo(
     () =>
       filtered
-        .slice(0, 24)
+        .slice(0, 120)
         .map((s) => (s.brokerSymbol || s.symbol))
         .filter(Boolean),
     [filtered],
