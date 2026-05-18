@@ -642,14 +642,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
-          <Checkbox
-            checked={noStops}
-            onCheckedChange={(v) => setNoStops(v === true)}
-            className="h-3.5 w-3.5"
-          />
-          Place without SL / TP
-        </label>
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={noStops}
+              onCheckedChange={(v) => setNoStops(v === true)}
+              className="h-3.5 w-3.5"
+            />
+            Place without SL / TP
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={autoReset}
+              onCheckedChange={(v) => setAutoReset(v === true)}
+              className="h-3.5 w-3.5"
+            />
+            Reset after fill
+          </label>
+        </div>
 
         {slTpError ? (
           <div className="flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-[11px] text-red-400">
