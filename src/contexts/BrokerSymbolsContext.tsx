@@ -213,7 +213,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     fetchOnce(true);
     const id = window.setInterval(() => {
       if (document.visibilityState === "visible") fetchOnce(false);
-    }, 4000);
+    }, 2000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
