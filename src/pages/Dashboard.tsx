@@ -477,7 +477,12 @@ const MarketWatchPanel = ({
         <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
           Market Watch
         </h2>
-        <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-500">
+        <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-500 flex items-center gap-1.5">
+          {dataDelayed && (
+            <span className="px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[8.5px]">
+              Data delayed
+            </span>
+          )}
           {isLive ? (
             <span className="text-emerald-400">● {symbols.length}</span>
           ) : loading ? (
