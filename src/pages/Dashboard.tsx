@@ -95,9 +95,16 @@ const HeaderStat = ({
 );
 
 const TerminalHeader = () => {
-  const { liveAccount, connected, refreshing, refresh } = useLiveAccount();
+  const { liveAccount, connected, refreshing, refresh, error } = useLiveAccount();
   const c = liveAccount?.currency ?? "USD";
-  const pnl = liveAccount?.profit ?? 0;
+  // Never fake 0 — keep null so fmtMoney renders "—".
+  const pnl = liveAccount?.profit ?? null;
+  const pnlTone =
+    pnl == null ? "default" : pnl >= 0 ? "positive" : "negative";
+
+  // "Ever connected" = we have a lastGood account snapshot to keep on screen
+  // even if a refresh momentarily failed.
+  const hasEverLoaded = !!liveAccount;
 
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-800/80 bg-[#0a0a0a]/95 backdrop-blur-xl">
@@ -111,18 +118,21 @@ const TerminalHeader = () => {
           </span>
         </div>
 
-        {connected && liveAccount ? (
+        {hasEverLoaded ? (
           <div className="flex items-center gap-4 ml-2 pl-3 border-l border-neutral-800 overflow-x-auto scrollbar-none">
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400">
-                MT5 LIVE
+              <span className={`inline-flex h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-amber-500"}`} />
+              <span className={`font-mono text-[10px] uppercase tracking-widest ${connected ? "text-emerald-400" : "text-amber-400"}`}>
+                {connected ? "MT5 LIVE" : "DATA DELAYED"}
               </span>
             </div>
-            <HeaderStat label="Account" value={`#${liveAccount.login}`} />
+            <HeaderStat label="Account" value={liveAccount.login ? `#${liveAccount.login}` : "—"} />
             <HeaderStat label="Server" value={liveAccount.server || "—"} />
+            <HeaderStat label="Status" value={liveAccount.status || "—"} />
+            <HeaderStat
+              label="Leverage"
+              value={liveAccount.leverage ? `1:${liveAccount.leverage}` : "—"}
+            />
             <HeaderStat label="Balance" value={fmtMoney(liveAccount.balance, c)} />
             <HeaderStat
               label="Equity"
@@ -132,7 +142,7 @@ const TerminalHeader = () => {
             <HeaderStat
               label="Floating P&L"
               value={fmtMoney(pnl, c)}
-              tone={pnl >= 0 ? "positive" : "negative"}
+              tone={pnlTone}
             />
             <HeaderStat label="Margin" value={fmtMoney(liveAccount.margin, c)} />
             <HeaderStat
@@ -142,9 +152,13 @@ const TerminalHeader = () => {
             />
           </div>
         ) : (
-          <span className="ml-2 pl-3 border-l border-neutral-800 font-mono text-[10px] uppercase tracking-widest text-neutral-500">
-            ● MT5 disconnected
-          </span>
+          <Link
+            to="/connect-mt"
+            className="ml-2 pl-3 border-l border-neutral-800 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#FFCD05] hover:text-[#FFCD05]/80"
+          >
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+            Connect MT5 Account
+          </Link>
         )}
 
         <div className="ml-auto flex items-center gap-1.5 shrink-0">
