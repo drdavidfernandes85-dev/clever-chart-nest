@@ -81,7 +81,12 @@ const BidAskBoard = ({ symbols, onSelect }: Props) => {
     };
 
     loadAll();
-    const id = window.setInterval(loadAll, 15000);
+    // Aggressive refresh — keep the board ticking continuously.
+    // Each cycle is sequential with a 400ms gap to respect the broker rate
+    // limit (120 req/min), so effective cadence ≈ symbols * 0.4s + 2s.
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") loadAll();
+    }, 2000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
