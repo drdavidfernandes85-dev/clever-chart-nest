@@ -555,10 +555,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         ) : null}
 
         {/* Summary */}
-        <div className="rounded border border-border/60 bg-background/40 px-2 py-1.5 space-y-0.5">
+        <div className="rounded-sm border border-neutral-800 bg-[#0a0a0a] px-2 py-1 space-y-[1px]">
           <SummaryRow label="Entry" value={fmtPx(entryPrice || null, digits)} tone={side === "buy" ? "pos" : "neg"} />
           <SummaryRow label="Notional" value={fmt(notional, currency)} />
-          <SummaryRow label="Margin Required" value={fmt(marginRequired, currency)} />
+          <SummaryRow label="Margin" value={fmt(marginRequired, currency)} />
           <SummaryRow label="Spread Cost" value={spreadCost != null ? fmt(spreadCost, currency) : "—"} />
           <SummaryRow
             label="Risk"
