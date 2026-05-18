@@ -133,6 +133,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     priceTouched.current = false;
   }, [ctxSymbol]);
 
+  // Auto-clear execution highlight
+  useEffect(() => {
+    if (!lastExecution) return;
+    const t = setTimeout(() => setLastExecution(null), 4000);
+    return () => clearTimeout(t);
+  }, [lastExecution]);
+
   const volNum = Number(vol) || 0;
   const entryPrice =
     orderType === "market" ? livePrice ?? 0 : Number(price) || livePrice || 0;
