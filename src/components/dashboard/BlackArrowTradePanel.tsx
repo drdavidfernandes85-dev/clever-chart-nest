@@ -773,10 +773,10 @@ const ToolBtn = ({
     type="button"
     onClick={onClick}
     className={cn(
-      "h-7 rounded border text-[10px] font-semibold flex items-center justify-center gap-1 transition-colors",
+      "h-6 rounded-sm border text-[10px] font-semibold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors",
       danger
         ? "border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-        : "border-border/60 bg-background/60 text-foreground hover:bg-background/80",
+        : "border-neutral-800 bg-[#0a0a0a] text-neutral-300 hover:border-neutral-700 hover:text-neutral-100",
     )}
   >
     {icon} {label}
