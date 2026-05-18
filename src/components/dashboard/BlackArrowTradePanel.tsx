@@ -263,11 +263,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         : 0.0001;
   const valuePerPipPerLot = 10; // rough USD pip value per 1.00 lot
 
-  const slPips = slNum && entryPrice
-    ? Math.abs(entryPrice - slNum) / pipSize
+  // When "no stops" is active, ignore SL/TP for preview + validation
+  const effectiveSl = noStops ? null : slNum;
+  const effectiveTp = noStops ? null : tpNum;
+
+  const slPips = effectiveSl && entryPrice
+    ? Math.abs(entryPrice - effectiveSl) / pipSize
     : 0;
-  const tpPips = tpNum && entryPrice
-    ? Math.abs(entryPrice - tpNum) / pipSize
+  const tpPips = effectiveTp && entryPrice
+    ? Math.abs(entryPrice - effectiveTp) / pipSize
     : 0;
   const potentialLoss = slPips * volNum * valuePerPipPerLot;
   const potentialProfit = tpPips * volNum * valuePerPipPerLot;
@@ -286,6 +290,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     }
     return null;
   })();
+
+  // Apply a pip-distance preset for SL or TP using current side + entry
+  const applyPipPreset = (kind: "sl" | "tp", pips: number) => {
+    if (!entryPrice || !pipSize) {
+      toast.error("No live price yet — wait for a tick");
+      return;
+    }
+    const dist = pips * pipSize;
+    const buy = side === "buy";
+    let target: number;
+    if (kind === "sl") target = buy ? entryPrice - dist : entryPrice + dist;
+    else target = buy ? entryPrice + dist : entryPrice - dist;
+    const formatted = target.toFixed(digits);
+    if (kind === "sl") setSl(formatted);
+    else setTp(formatted);
+    if (noStops) setNoStops(false);
+  };
 
   const canSubmit =
     !!user &&
@@ -716,33 +737,73 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         ) : null}
 
-        {/* SL / TP */}
+        {/* SL / TP — compact two-column with pip presets */}
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-red-400/80">
-              Stop Loss
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-red-400/80">
+                Stop Loss
+              </label>
+              {slPips > 0 && !noStops ? (
+                <span className="text-[9px] font-mono tabular-nums text-red-400/70">
+                  {slPips.toFixed(0)}p
+                </span>
+              ) : null}
+            </div>
             <input
               value={sl}
               onChange={(e) => setSl(e.target.value)}
               disabled={noStops}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
-              className="w-full h-7 rounded border border-red-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+              className="w-full h-7 rounded border border-red-500/30 bg-background/60 px-2 text-[11px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
             />
+            <div className="grid grid-cols-3 gap-1">
+              {[10, 20, 50].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  disabled={noStops}
+                  onClick={() => applyPipPreset("sl", p)}
+                  className="h-5 rounded border border-red-500/25 bg-red-500/5 text-[9.5px] font-mono tabular-nums text-red-300 hover:bg-red-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {p}p
+                </button>
+              ))}
+            </div>
           </div>
           <div className="space-y-1">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400/80">
-              Take Profit
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400/80">
+                Take Profit
+              </label>
+              {tpPips > 0 && !noStops ? (
+                <span className="text-[9px] font-mono tabular-nums text-emerald-400/70">
+                  {tpPips.toFixed(0)}p
+                </span>
+              ) : null}
+            </div>
             <input
               value={tp}
               onChange={(e) => setTp(e.target.value)}
               disabled={noStops}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
-              className="w-full h-7 rounded border border-emerald-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+              className="w-full h-7 rounded border border-emerald-500/30 bg-background/60 px-2 text-[11px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
             />
+            <div className="grid grid-cols-3 gap-1">
+              {[20, 40, 100].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  disabled={noStops}
+                  onClick={() => applyPipPreset("tp", p)}
+                  className="h-5 rounded border border-emerald-500/25 bg-emerald-500/5 text-[9.5px] font-mono tabular-nums text-emerald-300 hover:bg-emerald-500/15 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {p}p
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
