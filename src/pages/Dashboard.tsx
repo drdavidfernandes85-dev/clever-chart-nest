@@ -201,7 +201,7 @@ const MarketRow = ({
   sym: string;
   description?: string | null;
   digits: number;
-  tick?: { bid: number | null; ask: number | null; changePct: number | null };
+  tick?: { bid: number | null; ask: number | null; spread: number | null };
   isActive: boolean;
   isFav: boolean;
   onSelect: () => void;
@@ -209,6 +209,11 @@ const MarketRow = ({
 }) => {
   // Guard: never render a row without a real symbol.
   if (!sym || !sym.trim()) return null;
+  const bid = tick?.bid ?? null;
+  const ask = tick?.ask ?? null;
+  const spread = tick?.spread ?? (bid != null && ask != null ? Math.max(0, ask - bid) : null);
+  // Drop rows with no meaningful data (only dashes).
+  if (bid == null && ask == null && spread == null) return null;
   const fmt = (v: number | null | undefined) =>
     v == null
       ? "—"
@@ -216,14 +221,10 @@ const MarketRow = ({
           minimumFractionDigits: digits,
           maximumFractionDigits: digits,
         });
-  const pct = tick?.changePct;
-  const pctClass =
-    pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
-  // Subtle "stale" marker when we have no bid/ask at all for this row.
-  const stale = tick == null || (tick.bid == null && tick.ask == null);
+  const spreadDigits = Math.max(digits, 1);
   return (
     <li
-      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
+      className={`grid grid-cols-[16px_1fr_56px_56px_48px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
         isActive ? "bg-[#FFCD05]/12 border-l-[#FFCD05] pl-[6px]" : "border-l-transparent pl-1.5 hover:bg-neutral-900/40"
       }`}
     >
@@ -237,41 +238,45 @@ const MarketRow = ({
           className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-700 hover:text-neutral-400"}`}
         />
       </button>
-      <button type="button" onClick={onSelect} className="min-w-0 text-left flex items-center gap-1">
-        {stale && (
-          <span
-            className="h-1 w-1 rounded-full bg-neutral-600 shrink-0"
-            title="Awaiting price update"
-            aria-label="stale"
-          />
-        )}
+      <button type="button" onClick={onSelect} className="min-w-0 text-left flex flex-col leading-tight">
         <span
-          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : stale ? "text-neutral-400" : "text-neutral-100"}`}
+          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}
           title={description ?? sym}
         >
           {sym}
         </span>
+        {description ? (
+          <span className="font-mono text-[8.5px] text-neutral-500 truncate" title={description}>
+            {description}
+          </span>
+        ) : null}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-red-400/50" : "text-red-400"}`}
+        className="text-right font-mono text-[10px] tabular-nums text-red-400"
       >
-        {fmt(tick?.bid)}
+        {fmt(bid)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-emerald-400/50" : "text-emerald-400"}`}
+        className="text-right font-mono text-[10px] tabular-nums text-emerald-400"
       >
-        {fmt(tick?.ask)}
+        {fmt(ask)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[9.5px] tabular-nums ${pctClass}`}
+        className="text-right font-mono text-[9.5px] tabular-nums text-neutral-300"
+        title="Spread"
       >
-        {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
+        {spread == null
+          ? "—"
+          : spread.toLocaleString("en-US", {
+              minimumFractionDigits: spreadDigits,
+              maximumFractionDigits: spreadDigits,
+            })}
       </button>
     </li>
   );
