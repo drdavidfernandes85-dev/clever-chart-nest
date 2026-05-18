@@ -1,0 +1,284 @@
+/* BlackArrow-style IX Trading Terminal — scoped under .ba-terminal */
+.ba-terminal {
+  --ba-bg: #070808;
+  --ba-panel: #1d1f20;
+  --ba-panel-2: #262828;
+  --ba-line: #383c3d;
+  --ba-text: #d4d7d8;
+  --ba-muted: #8e9698;
+  --ba-green: #03a566;
+  --ba-red: #d42d23;
+  --ba-amber: #d89900;
+  --ba-blue: #2a8bdc;
+
+  height: 100%;
+  min-height: 700px;
+  display: grid;
+  grid-template-rows: 32px 37px 1fr;
+  background: radial-gradient(circle at 48% 20%, rgba(18,28,28,.55), transparent 32%), #080909;
+  color: var(--ba-text);
+  font: 12px/1.25 "Segoe UI", Arial, sans-serif;
+  overflow: hidden;
+}
+
+.ba-terminal * { box-sizing: border-box; }
+
+.ba-terminal button,
+.ba-terminal select,
+.ba-terminal input { font: inherit; color: inherit; }
+
+.ba-terminal button {
+  border: 1px solid #171818;
+  background: linear-gradient(#3d4142, #242728);
+  cursor: pointer;
+  color: var(--ba-text);
+}
+.ba-terminal button:hover { filter: brightness(1.15); }
+
+.ba-terminal .topbar {
+  display: grid;
+  grid-template-columns: 260px 1fr 330px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-bottom: 1px solid #242626;
+  background: linear-gradient(#171818, #0d0e0f);
+}
+
+.ba-terminal .brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ba-terminal .mark {
+  width: 25px; height: 25px; display: grid; place-items: center;
+  color: white; background: #202426; border: 1px solid #4b5153; font-weight: 800;
+}
+.ba-terminal .brand strong { display: block; font-size: 13px; }
+.ba-terminal .brand span { color: var(--ba-muted); font-size: 10px; display: block; }
+
+.ba-terminal .tool-strip { display: flex; gap: 4px; justify-content: center; }
+.ba-terminal .tool-strip button,
+.ba-terminal .mini-tools button {
+  min-width: 23px; height: 22px; padding: 0 6px; color: #aeb6b8;
+}
+
+.ba-terminal .top-status {
+  justify-self: end; display: flex; align-items: center; gap: 8px;
+  color: #aeb5b7; font-variant-numeric: tabular-nums;
+}
+
+.ba-terminal .connection-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #7b2723; box-shadow: 0 0 7px rgba(226,58,48,.45);
+}
+.ba-terminal .connection-dot.online {
+  background: #04bd75; box-shadow: 0 0 8px rgba(4,189,117,.6);
+}
+
+.ba-terminal .clock { color: #aeb5b7; font-variant-numeric: tabular-nums; }
+
+.ba-terminal .ticker-tape {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(120px, 1fr));
+  overflow: hidden;
+  border-bottom: 1px solid #242626;
+  background: #111313;
+}
+.ba-terminal .ticker-tape > div { padding: 4px 10px; border-right: 1px solid #272b2c; min-width: 0; cursor: pointer; }
+.ba-terminal .ticker-tape b { display: block; color: #bfc6c8; font-size: 11px; }
+.ba-terminal .ticker-tape span { display: block; font-variant-numeric: tabular-nums; }
+
+.ba-terminal .up { color: #2fc786; }
+.ba-terminal .down { color: #ee4c45; }
+
+.ba-terminal .workspace {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 355px minmax(520px, 1fr) 600px;
+  gap: 4px; padding: 4px;
+}
+
+.ba-terminal .left-stack, .ba-terminal .right-rail { min-height: 0; display: grid; gap: 4px; }
+.ba-terminal .left-stack { grid-template-rows: 40% 60%; }
+.ba-terminal .right-rail { grid-template-rows: minmax(420px, 1.35fr) 355px 185px; overflow-y: auto; }
+
+.ba-terminal .panel,
+.ba-terminal .chart-panel {
+  min-height: 0; overflow: hidden;
+  background: var(--ba-panel);
+  border: 1px solid #2d3031;
+  box-shadow: inset 0 1px rgba(255,255,255,.035);
+}
+.ba-terminal .right-rail .panel { overflow: auto; }
+
+.ba-terminal .panel-head {
+  height: 28px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6px; border-bottom: 1px solid #343838;
+  background: linear-gradient(#272a2b, #202223);
+}
+.ba-terminal h2 { margin: 0; font-size: 12px; font-weight: 700; color: #cbd0d1; }
+
+.ba-terminal .table-head,
+.ba-terminal .watch-row {
+  display: grid; grid-template-columns: 76px 1fr 72px 50px;
+  align-items: center; gap: 6px; height: 24px; padding: 0 7px;
+  border-bottom: 1px solid #292c2d; font-variant-numeric: tabular-nums;
+}
+.ba-terminal .table-head { height: 25px; color: #98a0a2; background: #181a1b; }
+.ba-terminal .watch-row { width: 100%; background: #202323; color: var(--ba-text); text-align: left; }
+.ba-terminal .watch-row:nth-child(2n) { background: #191b1c; }
+.ba-terminal .watch-row.selected {
+  border-color: #59706c;
+  background: linear-gradient(90deg, rgba(7,128,85,.45), #202323 58%);
+}
+.ba-terminal .spark { width: 100%; height: 20px; border-left: 1px solid #333; border-right: 1px solid #333; }
+.ba-terminal .watch-rows { overflow-y: auto; max-height: calc(100% - 50px); }
+
+.ba-terminal .mini-grid {
+  height: calc(100% - 28px);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; overflow: hidden;
+}
+.ba-terminal .mini-card {
+  min-height: 0; border: 1px solid #343838; background: #111313;
+  color: var(--ba-text); padding: 0; text-align: left;
+}
+.ba-terminal .mini-title {
+  height: 22px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 5px; color: #e5e7e8; font-weight: 700;
+}
+.ba-terminal .mini-card canvas { width: 100%; height: calc(100% - 22px); display: block; }
+
+.ba-terminal .chart-panel { display: grid; grid-template-rows: 31px 1fr 28px; background: #090a0a; }
+.ba-terminal .chart-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px; border-bottom: 1px solid #202223; background: #151717;
+}
+.ba-terminal .chart-head span { margin-left: 8px; color: #98a0a2; }
+.ba-terminal .chart-head .up { color: #23bd7f; }
+.ba-terminal .ohlc { color: #7f898b; font-variant-numeric: tabular-nums; }
+
+.ba-terminal .chart-wrap { min-height: 0; position: relative; }
+.ba-terminal #ba-mainChart { width: 100%; height: 100%; display: block; }
+.ba-terminal .price-badge {
+  position: absolute; right: 8px; padding: 2px 8px;
+  color: #111; background: #c5c8ca; font-weight: 700;
+  border-radius: 10px 0 0 10px; font-variant-numeric: tabular-nums;
+}
+.ba-terminal .price-badge.top { top: 16px; }
+.ba-terminal .price-badge.mid { top: 104px; background: #aeb2b4; }
+
+.ba-terminal .layout-tabs { display: flex; gap: 1px; padding: 3px 5px; background: #202223; }
+.ba-terminal .layout-tabs button { min-width: 66px; height: 22px; color: #aeb5b7; }
+.ba-terminal .layout-tabs .active { color: white; background: #2e3233; }
+
+.ba-terminal .account-row {
+  height: 30px; display: grid; grid-template-columns: 58px 1fr 82px;
+  align-items: center; gap: 4px; padding: 3px 6px; background: #1a1c1d;
+}
+.ba-terminal .connect-button { height: 23px; color: #dce2e3; background: linear-gradient(#384041, #202425); }
+.ba-terminal label { color: #b5bcbe; }
+.ba-terminal select, .ba-terminal input {
+  width: 100%; height: 23px; border: 1px solid #0c0d0d;
+  background: #070808; color: #ccd1d2; padding: 0 6px; outline: none;
+}
+
+.ba-terminal .order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; }
+.ba-terminal .order-card { min-width: 0; background: #191b1c; border: 1px solid #323637; }
+.ba-terminal .order-top {
+  height: 25px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6px; color: #e5e9ea; background: #111313; font-weight: 700;
+}
+.ba-terminal .quote-line { display: grid; grid-template-columns: 1fr 70px 1fr; gap: 2px; padding: 4px 5px; }
+.ba-terminal .quote {
+  min-height: 69px; display: grid; grid-template-rows: 19px 1fr;
+  align-items: center; padding: 4px 8px;
+  background: linear-gradient(145deg, #343839, #202323);
+  font-variant-numeric: tabular-nums; border: 1px solid #181a1b;
+}
+.ba-terminal .quote.sell { background: linear-gradient(145deg, #373939, #242728); }
+.ba-terminal .quote.sell.live { background: linear-gradient(145deg, #db332a, #9e1f1b); }
+.ba-terminal .quote.buy.live { background: linear-gradient(145deg, #09b673, #087649); }
+.ba-terminal .quote label { color: #d1d6d7; text-align: center; font-size: 11px; }
+.ba-terminal .quote strong {
+  text-align: center; font-size: clamp(22px, 1.9vw, 32px);
+  font-weight: 300; color: #e7ecee; line-height: 1;
+}
+.ba-terminal .quote small { font-size: 13px; color: #c3c9ca; }
+
+.ba-terminal .qty-box { display: grid; grid-template-rows: 19px 1fr; gap: 2px; }
+.ba-terminal .qty-box span { text-align: center; color: #b7bec0; }
+.ba-terminal .qty-box input { height: 26px; text-align: right; }
+
+.ba-terminal .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 0 5px 5px; }
+.ba-terminal .card-actions .close { background: linear-gradient(#e23a30, #a7201a); color: white; }
+.ba-terminal .card-actions .invert { color: #111; background: linear-gradient(#d6d8d9, #8f9496); }
+.ba-terminal .bracket-line {
+  display: grid; grid-template-columns: 55px 1fr 24px;
+  gap: 3px; align-items: center; padding: 0 5px 6px;
+}
+.ba-terminal .add-tile {
+  width: 50px; height: 42px; margin: 0 auto 6px; display: block;
+  font-size: 26px; color: #e0e3e4; background: #444849;
+}
+
+.ba-terminal .ticket .status {
+  padding: 2px 8px; color: #ffd5d2; background: #6e211d; border: 1px solid #9f332d;
+}
+.ba-terminal .ticket .status.online {
+  color: #ceffe9; background: #11513a; border-color: #0a8557;
+}
+
+.ba-terminal .ticket-body { display: grid; gap: 7px; padding: 8px; background: #222526; }
+.ba-terminal .ticket-body label { display: grid; grid-template-columns: 65px 1fr; align-items: center; gap: 6px; }
+.ba-terminal .size-row, .ba-terminal .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.ba-terminal .size-row button { height: 27px; color: #111; font-weight: 800; background: linear-gradient(#d6d8d9, #919698); }
+.ba-terminal .total-row, .ba-terminal .pnl div {
+  display: flex; justify-content: space-between; color: #c7cccd; font-variant-numeric: tabular-nums;
+}
+.ba-terminal .action-grid { grid-template-columns: 1fr 1fr; }
+.ba-terminal .action-grid button, .ba-terminal .danger { height: 27px; font-weight: 700; }
+.ba-terminal .buy-warn { background: linear-gradient(#e2a500, #a06d00); color: #111; }
+.ba-terminal .sell-green { background: linear-gradient(#0da96b, #087044); color: white; }
+.ba-terminal .neutral { background: linear-gradient(#d4d7d8, #8f9496); color: #111; }
+.ba-terminal .danger { width: 100%; background: linear-gradient(#e23a30, #a7201a); color: white; }
+
+.ba-terminal .pnl { display: grid; gap: 7px; padding-top: 2px; }
+
+.ba-terminal .trade-log {
+  min-height: 78px; display: grid; align-content: start; gap: 4px;
+  padding-top: 4px; border-top: 1px solid #343838;
+}
+.ba-terminal .trade-log > div {
+  display: grid; grid-template-columns: 58px 1fr; gap: 6px;
+  color: #aeb5b7; font-size: 11px;
+}
+.ba-terminal .trade-log b { font-weight: 600; color: #dce1e2; }
+.ba-terminal .trade-log .ok b { color: #32d39a; }
+.ba-terminal .trade-log .bad b { color: #ff6a62; }
+
+.ba-terminal .variation .panel-head span { font-weight: 700; color: #d9dddd; }
+.ba-terminal .heat-row {
+  display: grid; grid-template-columns: 32% 1fr;
+  height: 25px; align-items: center; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.ba-terminal .heat-row span { text-align: center; }
+.ba-terminal .heat-row b { padding-left: 22px; color: #101414; }
+.ba-terminal .heat-row.green { background: linear-gradient(90deg, #00a75f 32%, #5aba7b); }
+.ba-terminal .heat-row.yellow { background: linear-gradient(90deg, #08a963 32%, #e2de77); }
+.ba-terminal .heat-row.base { background: #080909; color: #e7e9ea; }
+.ba-terminal .heat-row.base b { color: #e7e9ea; }
+.ba-terminal .heat-row.red.soft { background: linear-gradient(90deg, #e33b31 32%, #ffc17a); }
+.ba-terminal .heat-row.red { background: linear-gradient(90deg, #c92821 32%, #ff9979); }
+
+@media (max-width: 1320px) {
+  .ba-terminal .topbar { grid-template-columns: 230px 1fr 300px; }
+  .ba-terminal .workspace { grid-template-columns: 280px minmax(460px, 1fr) 470px; }
+  .ba-terminal .right-rail { grid-template-rows: minmax(360px, 1fr) 335px 170px; }
+  .ba-terminal .quote-line { grid-template-columns: 1fr 56px 1fr; }
+  .ba-terminal .quote strong { font-size: 24px; }
+}
+
+@media (max-width: 980px) {
+  .ba-terminal { height: auto; overflow: auto; }
+  .ba-terminal .workspace { grid-template-columns: 1fr; grid-auto-rows: minmax(360px, auto); }
+  .ba-terminal .left-stack, .ba-terminal .right-rail { grid-template-rows: auto; }
+  .ba-terminal .chart-panel { min-height: 460px; }
+  .ba-terminal .ticker-tape { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+}
