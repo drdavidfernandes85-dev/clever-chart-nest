@@ -7,6 +7,14 @@ interface Props {
   activeSymbol?: string;
 }
 
+/**
+ * Institutional price ladder.
+ * Fixed-width tabular columns, consistent alignment, color-coded spread.
+ * Active row mirrors Market Watch exactly: yellow left bar + yellow text + faint yellow tint.
+ */
+
+const COLS = "grid-cols-[minmax(0,1fr)_64px_64px_64px_52px]";
+
 const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
   const rows = useMultiSymbolTicks(symbols);
   const anyLoaded = Object.keys(rows).length > 0;
@@ -19,22 +27,19 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
         </h3>
         {anyLoaded ? (
           <span className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest text-emerald-400">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            </span>
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             Live
           </span>
         ) : (
-          <Loader2 className="h-3 w-3 animate-spin text-[#FFCD05]" />
+          <Loader2 className="h-3 w-3 animate-spin text-neutral-500" />
         )}
       </div>
-      <div className="grid grid-cols-[1fr_60px_60px_60px_48px] items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 shrink-0">
+      <div className={`grid ${COLS} items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 shrink-0`}>
         <span>Symbol</span>
-        <span className="text-right text-red-400/80">Bid</span>
+        <span className="text-right text-red-400/70">Bid</span>
         <span className="text-right">Last</span>
-        <span className="text-right text-emerald-400/80">Ask</span>
-        <span className="text-right">Spread</span>
+        <span className="text-right text-emerald-400/70">Ask</span>
+        <span className="text-right">Sprd</span>
       </div>
       <ul className="flex-1 overflow-y-auto">
         {symbols.length === 0 ? (
@@ -53,18 +58,20 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   maximumFractionDigits: digits,
                 });
           const spread = r?.spread;
+          const point = Math.pow(10, -digits);
+          const spreadPts = spread != null ? spread / point : null;
           return (
             <li key={sym}>
               <button
                 type="button"
                 onClick={() => onSelect?.(sym)}
-                className={`w-full grid grid-cols-[1fr_60px_60px_60px_48px] items-center gap-1 px-2 py-[3px] text-left border-b border-neutral-900/80 transition-colors ${
+                className={`w-full grid ${COLS} items-center gap-1 px-2 py-[3px] text-left border-b border-neutral-900/80 transition-colors ${
                   isActive
-                    ? "bg-[#FFCD05]/12 border-l-2 border-l-[#FFCD05]"
-                    : "hover:bg-neutral-900/40"
+                    ? "bg-[#FFCD05]/12 border-l-2 border-l-[#FFCD05] pl-[6px]"
+                    : "hover:bg-neutral-900/40 border-l-2 border-l-transparent"
                 }`}
               >
-                <span className={`font-mono text-[10.5px] font-semibold ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
+                <span className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
                   {sym}
                 </span>
                 <span className="text-right font-mono text-[10px] tabular-nums text-red-400">
@@ -77,7 +84,7 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   {fmt(r?.ask)}
                 </span>
                 <span className="text-right font-mono text-[9.5px] tabular-nums text-neutral-400">
-                  {spread == null ? "—" : spread.toFixed(Math.min(digits, 5))}
+                  {spread == null ? "—" : spreadPts != null ? spreadPts.toFixed(1) : spread.toFixed(Math.min(digits, 5))}
                 </span>
               </button>
             </li>

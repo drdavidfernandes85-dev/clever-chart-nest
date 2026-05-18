@@ -114,7 +114,6 @@ const TerminalHeader = () => {
           <div className="flex items-center gap-4 ml-2 pl-3 border-l border-neutral-800 overflow-x-auto scrollbar-none">
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </span>
               <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-400">
@@ -206,8 +205,8 @@ const MarketRow = ({
     pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
   return (
     <li
-      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 px-1.5 py-[3px] border-b border-neutral-900/80 transition-colors ${
-        isActive ? "bg-[#FFCD05]/12 border-l-2 border-l-[#FFCD05]" : "hover:bg-neutral-900/40"
+      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
+        isActive ? "bg-[#FFCD05]/12 border-l-[#FFCD05] pl-[6px]" : "border-l-transparent pl-1.5 hover:bg-neutral-900/40"
       }`}
     >
       <button
@@ -869,16 +868,17 @@ const DashboardInner = () => {
             <BottomTabs />
           </section>
 
-          {/* RIGHT — Bid/Ask Board (top 33%) + Order Ticket (bottom 67%) */}
-          <aside className="lg:h-[calc(100vh-6.5rem)] flex flex-col gap-1.5 lg:gap-2 min-h-0 overflow-hidden">
-            <div className="shrink-0 max-h-[38%] overflow-hidden">
+          {/* RIGHT — Bid/Ask Board (top 38%) + Order Ticket (bottom).
+              On small screens, panels stack naturally; never overflow the viewport. */}
+          <aside className="flex flex-col gap-1.5 lg:gap-2 min-w-0 lg:min-h-0 lg:h-[calc(100vh-6.5rem)] lg:overflow-hidden">
+            <div className="lg:shrink-0 lg:max-h-[38%] lg:overflow-hidden h-[320px] lg:h-auto">
               <BidAskBoard
                 symbols={watchBoardSymbols}
                 activeSymbol={active}
                 onSelect={(label) => selectSymbol(label)}
               />
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto pr-0.5">
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-0.5">
               <BlackArrowTradePanel />
             </div>
           </aside>
