@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
  * - Cancel Ord. | Invert | Close row
  */
 
-const QUICK_VOLS = [0.01, 0.1, 0.5, 1.0];
+const QUICK_VOLS = [0.01, 0.1, 0.5, 1.0, 2.0];
 
 const pickTick = (tick: any) => {
   if (!tick) return { bid: null, ask: null };
@@ -373,51 +373,105 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ) : null}
         </div>
 
-        {/* BUY / SELL toggle */}
+        {/* Order type quick grid — 6 buttons (BlackArrow-style) */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {(
+            [
+              { s: "buy", t: "market", label: "Buy @ Mkt" },
+              { s: "sell", t: "market", label: "Sell @ Mkt" },
+              { s: "buy", t: "stop", label: "Buy Stop" },
+              { s: "sell", t: "stop", label: "Sell Stop" },
+              { s: "buy", t: "limit", label: "Buy Limit" },
+              { s: "sell", t: "limit", label: "Sell Limit" },
+            ] as { s: "buy" | "sell"; t: OrderType; label: string }[]
+          ).map(({ s, t, label }) => {
+            const active = side === s && orderType === t;
+            const tone = s === "buy";
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  setSide(s);
+                  setOrderType(t);
+                }}
+                className={cn(
+                  "h-9 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all",
+                  active
+                    ? tone
+                      ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_4px_12px_-4px_rgba(16,185,129,0.5)]"
+                      : "bg-red-500 text-white border-red-500 shadow-[0_4px_12px_-4px_rgba(239,68,68,0.5)]"
+                    : tone
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                      : "bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20",
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Live Bid / Ask strip */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setSide("sell")}
+            className={cn(
+              "rounded-lg border p-2 text-center transition-all",
+              !isBuy
+                ? "border-red-500/60 bg-red-500/15"
+                : "border-border/60 bg-background/40 hover:border-red-500/40",
+            )}
+          >
+            <div className="text-[10px] uppercase tracking-wider text-red-400/80 font-semibold">Sell · Bid</div>
+            <div className="font-mono tabular-nums text-lg font-bold text-red-400 leading-tight">
+              {fmtPx(bid, digits)}
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSide("buy")}
+            className={cn(
+              "rounded-lg border p-2 text-center transition-all",
+              isBuy
+                ? "border-emerald-500/60 bg-emerald-500/15"
+                : "border-border/60 bg-background/40 hover:border-emerald-500/40",
+            )}
+          >
+            <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 font-semibold">Buy · Ask</div>
+            <div className="font-mono tabular-nums text-lg font-bold text-emerald-400 leading-tight">
+              {fmtPx(ask, digits)}
+            </div>
+          </button>
+        </div>
+
+        {/* BIG BUY / SELL selector */}
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setSide("buy")}
             className={cn(
-              "h-11 rounded-lg font-heading text-sm font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 border",
+              "h-14 rounded-lg font-heading text-base font-bold tracking-wide transition-all flex items-center justify-center gap-2 border-2",
               isBuy
-                ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_4px_14px_-4px_rgba(16,185,129,0.5)]"
+                ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_6px_18px_-4px_rgba(16,185,129,0.55)]"
                 : "bg-background/40 text-muted-foreground border-border/60 hover:text-emerald-400 hover:border-emerald-500/40",
             )}
           >
-            <TrendingUp className="h-4 w-4" /> BUY
+            <TrendingUp className="h-5 w-5" /> BUY
           </button>
           <button
             type="button"
             onClick={() => setSide("sell")}
             className={cn(
-              "h-11 rounded-lg font-heading text-sm font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 border",
+              "h-14 rounded-lg font-heading text-base font-bold tracking-wide transition-all flex items-center justify-center gap-2 border-2",
               !isBuy
-                ? "bg-red-500 text-white border-red-500 shadow-[0_4px_14px_-4px_rgba(239,68,68,0.5)]"
+                ? "bg-red-500 text-white border-red-500 shadow-[0_6px_18px_-4px_rgba(239,68,68,0.55)]"
                 : "bg-background/40 text-muted-foreground border-border/60 hover:text-red-400 hover:border-red-500/40",
             )}
           >
-            <TrendingDown className="h-4 w-4" /> SELL
+            <TrendingDown className="h-5 w-5" /> SELL
           </button>
-        </div>
-
-        {/* Order type segmented */}
-        <div className="grid grid-cols-3 gap-1 rounded-lg border border-border/60 bg-background/40 p-1">
-          {(["market", "stop", "limit"] as OrderType[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setOrderType(t)}
-              className={cn(
-                "h-7 rounded text-[11px] font-semibold uppercase tracking-wider transition-colors",
-                orderType === t
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {isBuy ? "Buy" : "Sell"} {t === "market" ? "@ Mkt" : t === "stop" ? "Stop" : "Limit"}
-            </button>
-          ))}
         </div>
 
         {/* Volume */}
@@ -431,7 +485,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               className="w-20 h-7 rounded border border-border/60 bg-background/60 px-2 text-right text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-5 gap-1.5">
             {QUICK_VOLS.map((q) => (
               <button
                 key={q}
