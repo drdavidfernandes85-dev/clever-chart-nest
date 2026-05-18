@@ -564,8 +564,18 @@ const DashboardInner = () => {
             <BottomTabs />
           </section>
 
-          {/* RIGHT — Order Entry */}
-          <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5">
+          {/* RIGHT — Bid/Ask Board + Order Ticket */}
+          <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5 space-y-3">
+            <BidAskBoard
+              symbols={["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", "US30", "NAS100", "SPX500"]}
+              onSelect={(label) => {
+                // wire chosen symbol into the order ticket via QuickTrade ctx
+                // (handled inside BlackArrowTradePanel through QuickTradeContext)
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new CustomEvent("eltr:set-symbol", { detail: { symbol: label } }));
+                }
+              }}
+            />
             <BlackArrowTradePanel />
           </aside>
         </div>
