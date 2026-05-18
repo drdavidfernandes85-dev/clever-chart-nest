@@ -46,6 +46,10 @@ interface Ctx {
   selectedSymbolValid: boolean;
   selectedSymbolInfo: any;
   tick: any;
+  /** Epoch ms of the last successful tick update for the selected symbol. */
+  tickUpdatedAt: number | null;
+  /** Last polling error message for the selected symbol, or null when healthy. */
+  tickError: string | null;
   /** Last raw response from get-mt5-symbols (debug). */
   lastResponse: unknown;
   /** Last raw response from get-mt5-symbol-data (debug). */
@@ -90,6 +94,8 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   const [selectedSymbolValid, setSelectedSymbolValid] = useState(false);
   const [selectedSymbolInfo, setSelectedSymbolInfo] = useState<any>(null);
   const [tick, setTick] = useState<any>(null);
+  const [tickUpdatedAt, setTickUpdatedAt] = useState<number | null>(null);
+  const [tickError, setTickError] = useState<string | null>(null);
   const [selectedBrokerSymbol, setSelectedBrokerSymbol] = useState<string>("EURUSD");
 
   // Fetch full broker symbols list via the new get-mt5-symbols function.
@@ -184,6 +190,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         if (invErr) {
           // Stale-while-revalidate: never blank the panel on a polling error.
+          setTickError(invErr.message ?? String(invErr));
           if (isInitial) {
             setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
           }
@@ -193,30 +200,37 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         const rateLimited =
           (data as any)?.rateLimited === true ||
           (data as any)?.step === "rate_limited";
-        if (rateLimited) return;
+        if (rateLimited) {
+          setTickError("Rate limited");
+          return;
+        }
 
         if (data?.success === true) {
-          // Only flip "valid" once we have a definitive answer.
           if (typeof data.selectedSymbolValid === "boolean") {
             setSelectedSymbolValid(data.selectedSymbolValid);
           }
           if (data.selectedSymbolInfo) setSelectedSymbolInfo(data.selectedSymbolInfo);
-          // Only replace tick when the response actually contains one.
           if (data.tick && (data.tick.bid != null || data.tick.ask != null)) {
             setTick(data.tick);
+            setTickUpdatedAt(Date.now());
+            setTickError(null);
           }
+        } else {
+          setTickError((data as any)?.error || "Refresh failed");
         }
-        // Non-success polling responses: keep previous state visible.
       } catch (e: any) {
         if (cancelled) return;
+        setTickError(e?.message || "Network error");
         if (isInitial) {
           setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
         }
         // Do NOT clear tick/info on polling exceptions.
       }
     };
-    // Symbol changed — reset to avoid mixing prices across instruments.
+    // Symbol changed — reset prices, but allow next successful response to fill in.
     setTick(null);
+    setTickUpdatedAt(null);
+    setTickError(null);
     setSelectedSymbolInfo(null);
     setSelectedSymbolValid(false);
     fetchOnce(true);
@@ -248,12 +262,14 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       selectedSymbolValid,
       selectedSymbolInfo,
       tick,
+      tickUpdatedAt,
+      tickError,
       lastResponse,
       lastSymbolDataResponse,
       refresh,
       setSelectedBrokerSymbol,
     }),
-    [symbols, isLive, loading, loaded, error, selectedBrokerSymbol, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, lastSymbolDataResponse, refresh],
+    [symbols, isLive, loading, loaded, error, selectedBrokerSymbol, selectedSymbolValid, selectedSymbolInfo, tick, tickUpdatedAt, tickError, lastResponse, lastSymbolDataResponse, refresh],
   );
 
   return <BrokerCtx.Provider value={value}>{children}</BrokerCtx.Provider>;
@@ -272,6 +288,8 @@ export function useBrokerSymbols(): Ctx {
       selectedSymbolValid: false,
       selectedSymbolInfo: null,
       tick: null,
+      tickUpdatedAt: null,
+      tickError: null,
       lastResponse: null,
       lastSymbolDataResponse: null,
       refresh: async () => {},
