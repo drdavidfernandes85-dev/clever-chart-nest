@@ -473,7 +473,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             <div className="flex flex-col items-start min-w-0">
               <span className="font-heading text-[12px] font-bold leading-tight">{normalizedSym || "—"}</span>
               <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[160px]">
-                {selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
+                {effectiveSelected?.description || selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
