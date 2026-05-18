@@ -9,6 +9,8 @@ import {
   AlertTriangle,
   X,
   RotateCcw,
+  CheckCircle2,
+  Activity,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
