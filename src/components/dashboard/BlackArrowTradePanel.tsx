@@ -345,49 +345,47 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   return (
     <div className={cn(
-      "rounded-lg border border-border/60 bg-card/95 overflow-hidden text-foreground text-[11px]",
+      "rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden text-neutral-100 text-[11px]",
       className,
     )}>
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-border/60 bg-background/60">
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Order Ticket</span>
-        <div className="flex items-center gap-2 text-[10px] font-mono tabular-nums">
-          <span className="text-muted-foreground">{liveAccount?.login ? `#${liveAccount.login}` : "—"}</span>
-          <span className="text-muted-foreground">·</span>
-          <span className={cn(sessionPnl > 0 ? "text-emerald-400" : sessionPnl < 0 ? "text-red-400" : "text-foreground")}>
+      <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-neutral-800 bg-[#0a0a0a]">
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">Order Ticket</span>
+        <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
+          <span className="text-neutral-500">{liveAccount?.login ? `#${liveAccount.login}` : "—"}</span>
+          <span className="text-neutral-700">·</span>
+          <span className={cn(sessionPnl > 0 ? "text-emerald-400" : sessionPnl < 0 ? "text-red-400" : "text-neutral-100")}>
             {sessionPnl >= 0 ? "+" : ""}{fmt(sessionPnl, currency)}
           </span>
-          <span className="text-muted-foreground">·</span>
-          <span className="text-foreground">{fmt(equity, currency)}</span>
         </div>
       </div>
 
-      <div className="p-2 space-y-1.5">
+      <div className="p-1.5 space-y-1">
         {/* Symbol block */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setSymbolOpen((v) => !v)}
-            className="w-full flex items-center justify-between rounded border border-border/60 bg-background/60 px-2 py-1.5 hover:bg-background/80"
+            className="w-full flex items-center justify-between rounded-sm border border-neutral-800 bg-[#0a0a0a] px-2 py-1 hover:border-neutral-700"
           >
             <div className="flex flex-col items-start min-w-0">
-              <span className="font-heading text-sm font-bold leading-tight">{normalizedSym || "—"}</span>
-              <span className="text-[9px] text-muted-foreground uppercase tracking-wider truncate max-w-[180px]">
+              <span className="font-heading text-[12px] font-bold leading-tight">{normalizedSym || "—"}</span>
+              <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[160px]">
                 {selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <div className="text-right font-mono tabular-nums leading-tight">
                 <div className="text-[10px] text-red-400">{fmtPx(bid, digits)}</div>
                 <div className="text-[10px] text-emerald-400">{fmtPx(ask, digits)}</div>
               </div>
-              <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", symbolOpen && "rotate-180")} />
+              <ChevronDown className={cn("h-3 w-3 text-neutral-500 transition-transform", symbolOpen && "rotate-180")} />
             </div>
           </button>
           {symbolOpen ? (
-            <div className="absolute z-30 mt-1 w-full rounded border border-border/60 bg-popover shadow-xl overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-border/60 px-2 py-1.5">
-                <Search className="h-3 w-3 text-muted-foreground" />
+            <div className="absolute z-30 mt-1 w-full rounded-sm border border-neutral-800 bg-[#0a0a0a] shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2 border-b border-neutral-800 px-2 py-1.5">
+                <Search className="h-3 w-3 text-neutral-500" />
                 <input
                   autoFocus
                   value={symbolSearch}
@@ -398,7 +396,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               </div>
               <div className="max-h-60 overflow-y-auto">
                 {symbolList.length === 0 ? (
-                  <div className="px-3 py-2 text-[11px] text-muted-foreground">No symbols found</div>
+                  <div className="px-3 py-2 text-[11px] text-neutral-500">No symbols found</div>
                 ) : (
                   symbolList.slice(0, 60).map((s) => (
                     <button
@@ -410,12 +408,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                         setSymbolSearch("");
                       }}
                       className={cn(
-                        "w-full flex items-center justify-between px-2.5 py-1 text-[11px] hover:bg-muted/40",
-                        s.symbol === normalizedSym && "bg-primary/10 text-primary",
+                        "w-full flex items-center justify-between px-2 py-1 text-[11px] hover:bg-neutral-900",
+                        s.symbol === normalizedSym && "bg-[#FFCD05]/10 text-[#FFCD05]",
                       )}
                     >
                       <span className="font-mono">{s.symbol}</span>
-                      <span className="text-[10px] text-muted-foreground truncate ml-2 max-w-[55%]">
+                      <span className="text-[10px] text-neutral-500 truncate ml-2 max-w-[55%]">
                         {s.description || s.assetClass || ""}
                       </span>
                     </button>
@@ -441,17 +439,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Quick volume chips */}
-        <div className="grid grid-cols-6 gap-1">
+        <div className="grid grid-cols-6 gap-0.5">
           {QUICK_VOLS.map((q) => (
             <button
               key={q}
               type="button"
               onClick={() => setVol(q.toFixed(2))}
               className={cn(
-                "h-6 rounded border text-[10px] font-mono tabular-nums transition-colors",
+                "h-5 rounded-sm border text-[10px] font-mono tabular-nums transition-colors",
                 vol === q.toFixed(2)
-                  ? "border-primary/70 bg-primary/20 text-primary"
-                  : "border-border/60 bg-background/60 hover:bg-background/80",
+                  ? "border-[#FFCD05] bg-[#FFCD05]/15 text-[#FFCD05]"
+                  : "border-neutral-800 bg-[#0a0a0a] text-neutral-300 hover:border-neutral-700",
               )}
             >
               {q.toFixed(2)}
@@ -459,54 +457,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ))}
         </div>
 
-        {/* 3 rows × 2 cols of order buttons */}
-        <div className="space-y-1">
-          <div className="grid grid-cols-2 gap-1">
-            <SideBtn tone="buy" disabled={!canSubmitMarket} loading={submitting && side === "buy"} onClick={() => submitMarket("buy")}>
-              Buy @ MKT
-            </SideBtn>
-            <SideBtn tone="sell" disabled={!canSubmitMarket} loading={submitting && side === "sell"} onClick={() => submitMarket("sell")}>
-              Sell @ MKT
-            </SideBtn>
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            <SideBtn tone="buy" outline disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
-            <SideBtn tone="sell" outline disabled={pendingDisabled} title="Pending orders coming soon">Sell Stop</SideBtn>
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            <SideBtn tone="buy" outline disabled={pendingDisabled} title="Pending orders coming soon">Buy Limit</SideBtn>
-            <SideBtn tone="sell" outline disabled={pendingDisabled} title="Pending orders coming soon">Sell Limit</SideBtn>
-          </div>
+        {/* Market buttons — primary */}
+        <div className="grid grid-cols-2 gap-1">
+          <SideBtn tone="buy" disabled={!canSubmitMarket} loading={submitting && side === "buy"} onClick={() => submitMarket("buy")}>
+            Buy @ MKT
+          </SideBtn>
+          <SideBtn tone="sell" disabled={!canSubmitMarket} loading={submitting && side === "sell"} onClick={() => submitMarket("sell")}>
+            Sell @ MKT
+          </SideBtn>
         </div>
 
-        {/* Bid/Ask tiles */}
-        <div className="grid grid-cols-2 gap-1">
-          <button
-            type="button"
-            onClick={() => setSide("sell")}
-            className={cn(
-              "rounded border px-2 py-1.5 text-center transition-colors",
-              side === "sell" ? "border-red-500/70 bg-red-500/15" : "border-border/60 bg-background/40 hover:border-red-500/40",
-              bidFlash === "up" && "ring-1 ring-emerald-400/60",
-              bidFlash === "down" && "ring-1 ring-red-400/60",
-            )}
-          >
-            <div className="text-[9px] uppercase tracking-wider text-red-400/80 font-semibold">Sell · Bid</div>
-            <div className="font-mono tabular-nums text-sm font-bold leading-tight text-red-400">{fmtPx(bid, digits)}</div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setSide("buy")}
-            className={cn(
-              "rounded border px-2 py-1.5 text-center transition-colors",
-              side === "buy" ? "border-emerald-500/70 bg-emerald-500/15" : "border-border/60 bg-background/40 hover:border-emerald-500/40",
-              askFlash === "up" && "ring-1 ring-emerald-400/60",
-              askFlash === "down" && "ring-1 ring-red-400/60",
-            )}
-          >
-            <div className="text-[9px] uppercase tracking-wider text-emerald-400/80 font-semibold">Buy · Ask</div>
-            <div className="font-mono tabular-nums text-sm font-bold leading-tight text-emerald-400">{fmtPx(ask, digits)}</div>
-          </button>
+        {/* Pending — single condensed row */}
+        <div className="grid grid-cols-4 gap-1">
+          <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
+          <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Stop</SideBtn>
+          <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Lmt</SideBtn>
+          <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Lmt</SideBtn>
         </div>
 
         {/* SL / TP */}
@@ -589,10 +555,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         ) : null}
 
         {/* Summary */}
-        <div className="rounded border border-border/60 bg-background/40 px-2 py-1.5 space-y-0.5">
+        <div className="rounded-sm border border-neutral-800 bg-[#0a0a0a] px-2 py-1 space-y-[1px]">
           <SummaryRow label="Entry" value={fmtPx(entryPrice || null, digits)} tone={side === "buy" ? "pos" : "neg"} />
           <SummaryRow label="Notional" value={fmt(notional, currency)} />
-          <SummaryRow label="Margin Required" value={fmt(marginRequired, currency)} />
+          <SummaryRow label="Margin" value={fmt(marginRequired, currency)} />
           <SummaryRow label="Spread Cost" value={spreadCost != null ? fmt(spreadCost, currency) : "—"} />
           <SummaryRow
             label="Risk"
@@ -674,10 +640,11 @@ const DenseInput = ({
 );
 
 const SideBtn = ({
-  tone, outline, disabled, loading, onClick, title, children,
+  tone, outline, small, disabled, loading, onClick, title, children,
 }: {
   tone: "buy" | "sell";
   outline?: boolean;
+  small?: boolean;
   disabled?: boolean;
   loading?: boolean;
   onClick?: () => void;
@@ -692,14 +659,15 @@ const SideBtn = ({
       onClick={onClick}
       title={title}
       className={cn(
-        "h-8 rounded text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed",
+        "rounded-sm font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed",
+        small ? "h-6 text-[9.5px]" : "h-8 text-[11px]",
         outline
           ? buy
-            ? "border border-emerald-500/40 bg-emerald-500/5 text-emerald-300 hover:bg-emerald-500/15"
-            : "border border-red-500/40 bg-red-500/5 text-red-300 hover:bg-red-500/15"
+            ? "border border-emerald-600/50 bg-emerald-600/10 text-emerald-300 hover:bg-emerald-600/20"
+            : "border border-red-600/50 bg-red-600/10 text-red-300 hover:bg-red-600/20"
           : buy
-            ? "bg-emerald-500 text-white border border-emerald-500 hover:bg-emerald-600"
-            : "bg-red-500 text-white border border-red-500 hover:bg-red-600",
+            ? "bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500"
+            : "bg-red-600 text-white border border-red-500 hover:bg-red-500",
       )}
     >
       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}

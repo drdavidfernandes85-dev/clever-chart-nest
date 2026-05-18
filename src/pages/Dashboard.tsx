@@ -206,8 +206,8 @@ const MarketRow = ({
     pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
   return (
     <li
-      className={`grid grid-cols-[18px_1fr_64px_64px_52px] items-center gap-1.5 px-2 py-1.5 transition-colors ${
-        isActive ? "bg-[#FFCD05]/10" : "hover:bg-neutral-900/60"
+      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 px-1.5 py-[3px] border-b border-neutral-900/80 transition-colors ${
+        isActive ? "bg-[#FFCD05]/12 border-l-2 border-l-[#FFCD05]" : "hover:bg-neutral-900/40"
       }`}
     >
       <button
@@ -217,35 +217,32 @@ const MarketRow = ({
         aria-label={isFav ? "Remove favorite" : "Add favorite"}
       >
         <Star
-          className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-600 hover:text-neutral-400"}`}
+          className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-700 hover:text-neutral-400"}`}
         />
       </button>
       <button type="button" onClick={onSelect} className="min-w-0 text-left">
-        <div className={`font-mono text-[11px] font-bold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
+        <div className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
           {sym}
         </div>
-        {description && (
-          <div className="text-[9px] text-neutral-500 truncate">{description}</div>
-        )}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10.5px] tabular-nums text-red-400"
+        className="text-right font-mono text-[10px] tabular-nums text-red-400"
       >
         {fmt(tick?.bid)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10.5px] tabular-nums text-emerald-400"
+        className="text-right font-mono text-[10px] tabular-nums text-emerald-400"
       >
         {fmt(tick?.ask)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[10px] tabular-nums ${pctClass}`}
+        className={`text-right font-mono text-[9.5px] tabular-nums ${pctClass}`}
       >
         {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
       </button>
@@ -376,7 +373,7 @@ const MarketWatchPanel = ({
   };
 
   return (
-    <aside className="hidden lg:flex flex-col rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden h-[calc(100vh-7rem)]">
+    <aside className="hidden lg:flex flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden h-[calc(100vh-6.5rem)]">
       <div className="flex items-center justify-between border-b border-neutral-800/80 px-3 py-2">
         <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
           Market Watch
@@ -421,7 +418,7 @@ const MarketWatchPanel = ({
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[18px_1fr_64px_64px_52px] items-center gap-1.5 border-b border-neutral-800/80 bg-[#0a0a0a] px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+      <div className="grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-1.5 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
         <span />
         <span>Symbol</span>
         <span className="text-right text-red-400/80">Bid</span>
@@ -816,7 +813,7 @@ const DashboardInner = () => {
       <TerminalHeader />
 
       <div className="p-2 lg:p-3">
-        <div className="grid gap-2 lg:gap-3 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_340px]">
+        <div className="grid gap-1.5 lg:gap-2 grid-cols-1 lg:grid-cols-[210px_minmax(0,1fr)_310px]">
           {/* LEFT — Market Watch */}
           <MarketWatchPanel active={active} onSelect={selectSymbol} />
 
@@ -873,15 +870,15 @@ const DashboardInner = () => {
           </section>
 
           {/* RIGHT — Bid/Ask Board (top 33%) + Order Ticket (bottom 67%) */}
-          <aside className="lg:h-[calc(100vh-7rem)] flex flex-col gap-2 lg:gap-3 min-h-0">
-            <div className="flex-[33] min-h-0 overflow-hidden">
+          <aside className="lg:h-[calc(100vh-6.5rem)] flex flex-col gap-1.5 lg:gap-2 min-h-0 overflow-hidden">
+            <div className="shrink-0 max-h-[38%] overflow-hidden">
               <BidAskBoard
                 symbols={watchBoardSymbols}
                 activeSymbol={active}
                 onSelect={(label) => selectSymbol(label)}
               />
             </div>
-            <div className="flex-[67] min-h-0 overflow-y-auto pr-0.5">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-0.5">
               <BlackArrowTradePanel />
             </div>
           </aside>
