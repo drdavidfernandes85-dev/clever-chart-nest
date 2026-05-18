@@ -8,7 +8,7 @@ import {
   User,
   Star,
 } from "lucide-react";
-import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
+
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -201,7 +201,7 @@ const MarketRow = ({
   sym: string;
   description?: string | null;
   digits: number;
-  tick?: { bid: number | null; ask: number | null; changePct: number | null };
+  tick?: { bid: number | null; ask: number | null; spread: number | null };
   isActive: boolean;
   isFav: boolean;
   onSelect: () => void;
@@ -209,6 +209,11 @@ const MarketRow = ({
 }) => {
   // Guard: never render a row without a real symbol.
   if (!sym || !sym.trim()) return null;
+  const bid = tick?.bid ?? null;
+  const ask = tick?.ask ?? null;
+  const spread = tick?.spread ?? (bid != null && ask != null ? Math.max(0, ask - bid) : null);
+  // Drop rows with no meaningful data (only dashes).
+  if (bid == null && ask == null && spread == null) return null;
   const fmt = (v: number | null | undefined) =>
     v == null
       ? "—"
@@ -216,14 +221,10 @@ const MarketRow = ({
           minimumFractionDigits: digits,
           maximumFractionDigits: digits,
         });
-  const pct = tick?.changePct;
-  const pctClass =
-    pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
-  // Subtle "stale" marker when we have no bid/ask at all for this row.
-  const stale = tick == null || (tick.bid == null && tick.ask == null);
+  const spreadDigits = Math.max(digits, 1);
   return (
     <li
-      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
+      className={`grid grid-cols-[16px_1fr_56px_56px_48px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
         isActive ? "bg-[#FFCD05]/12 border-l-[#FFCD05] pl-[6px]" : "border-l-transparent pl-1.5 hover:bg-neutral-900/40"
       }`}
     >
@@ -237,41 +238,45 @@ const MarketRow = ({
           className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-700 hover:text-neutral-400"}`}
         />
       </button>
-      <button type="button" onClick={onSelect} className="min-w-0 text-left flex items-center gap-1">
-        {stale && (
-          <span
-            className="h-1 w-1 rounded-full bg-neutral-600 shrink-0"
-            title="Awaiting price update"
-            aria-label="stale"
-          />
-        )}
+      <button type="button" onClick={onSelect} className="min-w-0 text-left flex flex-col leading-tight">
         <span
-          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : stale ? "text-neutral-400" : "text-neutral-100"}`}
+          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}
           title={description ?? sym}
         >
           {sym}
         </span>
+        {description ? (
+          <span className="font-mono text-[8.5px] text-neutral-500 truncate" title={description}>
+            {description}
+          </span>
+        ) : null}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-red-400/50" : "text-red-400"}`}
+        className="text-right font-mono text-[10px] tabular-nums text-red-400"
       >
-        {fmt(tick?.bid)}
+        {fmt(bid)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[10px] tabular-nums ${stale ? "text-emerald-400/50" : "text-emerald-400"}`}
+        className="text-right font-mono text-[10px] tabular-nums text-emerald-400"
       >
-        {fmt(tick?.ask)}
+        {fmt(ask)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className={`text-right font-mono text-[9.5px] tabular-nums ${pctClass}`}
+        className="text-right font-mono text-[9.5px] tabular-nums text-neutral-300"
+        title="Spread"
       >
-        {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
+        {spread == null
+          ? "—"
+          : spread.toLocaleString("en-US", {
+              minimumFractionDigits: spreadDigits,
+              maximumFractionDigits: spreadDigits,
+            })}
       </button>
     </li>
   );
@@ -320,12 +325,12 @@ const MarketWatchPanel = ({
 
   const favoriteSymbols = useMemo(() => favorites.map((f) => f.symbol), [favorites]);
 
-  // Subscribe to live ticks for everything currently visible (cap at 120 to
-  // stay friendly to the broker batch endpoint while covering the whole panel).
+  // Subscribe to live ticks for everything currently visible (cap at 40 to
+  // match the get-mt5-quotes batch endpoint).
   const visibleTopSymbols = useMemo(
     () =>
       filtered
-        .slice(0, 120)
+        .slice(0, 40)
         .map((s) => (s.brokerSymbol || s.symbol))
         .filter(Boolean),
     [filtered],
@@ -335,10 +340,70 @@ const MarketWatchPanel = ({
     favoriteSymbols.forEach((s) => set.add(s.toUpperCase()));
     if (active) set.add(active.toUpperCase());
     visibleTopSymbols.forEach((s) => set.add(s.toUpperCase()));
-    return Array.from(set);
+    return Array.from(set).slice(0, 40);
   }, [favoriteSymbols, active, visibleTopSymbols]);
-  const favTicks = useMultiSymbolTicks(tickRequest);
-  const activeTicks = favTicks; // unified source
+
+  // --- Bid/Ask via get-mt5-quotes (stale-while-revalidate) ---
+  type QuoteRow = { bid: number | null; ask: number | null; spread: number | null; last?: number | null };
+  const [quotes, setQuotes] = useState<Record<string, QuoteRow>>({});
+  const lastGoodQuotesRef = useRef<Record<string, QuoteRow>>({});
+  const [lastGoodQuotes, setLastGoodQuotes] = useState<Record<string, QuoteRow>>({});
+  const [dataDelayed, setDataDelayed] = useState(false);
+  const [hasEverLoaded, setHasEverLoaded] = useState(false);
+
+  useEffect(() => {
+    if (tickRequest.length === 0) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data, error } = await supabase.functions.invoke("get-mt5-quotes", {
+          body: { selectedSymbol: active, symbols: tickRequest, debug: false },
+        });
+        if (cancelled) return;
+        if (error || !data?.success || !Array.isArray(data?.quotes) || data.quotes.length === 0) {
+          // Keep lastGoodQuotes; flag delayed.
+          setDataDelayed(true);
+          return;
+        }
+        const next: Record<string, QuoteRow> = {};
+        for (const q of data.quotes) {
+          const sym = String(q?.symbol || "").toUpperCase();
+          if (!sym) continue;
+          const bid = q?.bid != null ? Number(q.bid) : null;
+          const ask = q?.ask != null ? Number(q.ask) : null;
+          const spread =
+            q?.spread != null
+              ? Number(q.spread)
+              : bid != null && ask != null
+                ? Math.max(0, ask - bid)
+                : null;
+          if (bid == null && ask == null && spread == null) continue;
+          next[sym] = { bid, ask, spread, last: q?.last != null ? Number(q.last) : null };
+        }
+        if (Object.keys(next).length === 0) {
+          setDataDelayed(true);
+          return;
+        }
+        // Merge into lastGood so previously-known symbols persist across batches.
+        const merged = { ...lastGoodQuotesRef.current, ...next };
+        lastGoodQuotesRef.current = merged;
+        setLastGoodQuotes(merged);
+        setQuotes(next);
+        setDataDelayed(false);
+        setHasEverLoaded(true);
+      } catch {
+        if (!cancelled) setDataDelayed(true);
+      }
+    };
+    load();
+    const id = window.setInterval(load, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [tickRequest, active]);
+
 
   // Hydrate favorites with broker metadata when available
   const favRows = useMemo(() => {
@@ -357,7 +422,7 @@ const MarketWatchPanel = ({
 
   const getTick = (sym: string) => {
     const u = sym.toUpperCase();
-    return favTicks[u] || favTicks[sym] || activeTicks[u] || activeTicks[sym];
+    return quotes[u] || lastGoodQuotes[u];
   };
 
   // Order non-favorites by category: Forex → Commodities → Indices → Crypto → others
@@ -412,7 +477,12 @@ const MarketWatchPanel = ({
         <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
           Market Watch
         </h2>
-        <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-500">
+        <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-500 flex items-center gap-1.5">
+          {dataDelayed && (
+            <span className="px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[8.5px]">
+              Data delayed
+            </span>
+          )}
           {isLive ? (
             <span className="text-emerald-400">● {symbols.length}</span>
           ) : loading ? (
@@ -452,12 +522,12 @@ const MarketWatchPanel = ({
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-1.5 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+      <div className="grid grid-cols-[16px_1fr_56px_56px_48px] items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-1.5 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
         <span />
         <span>Symbol</span>
         <span className="text-right text-red-400/80">Bid</span>
         <span className="text-right text-emerald-400/80">Ask</span>
-        <span className="text-right">%</span>
+        <span className="text-right">Spread</span>
       </div>
 
       <ul className="flex-1 overflow-y-auto">
@@ -508,7 +578,11 @@ const MarketWatchPanel = ({
         )}
         {!loading && sortedByCategory.length === 0 && (
           <li className="px-3 py-5 text-center text-[11px] text-neutral-500">
-            {query ? "No matches." : "No MT5 symbols loaded. Refresh market watch."}
+            {query
+              ? "No matches."
+              : !hasEverLoaded
+                ? "No MT5 symbols loaded. Refresh Market Watch."
+                : "No MT5 symbols loaded. Refresh Market Watch."}
           </li>
         )}
 
