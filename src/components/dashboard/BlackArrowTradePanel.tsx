@@ -119,10 +119,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const livePrice = side === "buy" ? ask : bid;
   const digits = Number(effectiveSelected?.digits ?? selectedSymbolInfo?.digits ?? 5);
 
+  // Prefer selectedQuote.spread; derive from bid/ask only as fallback.
   const spread =
-    Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
-      ? Math.max(0, ask - bid)
-      : null;
+    effectiveSelected?.spread != null && Number.isFinite(Number(effectiveSelected.spread))
+      ? Number(effectiveSelected.spread)
+      : Number.isFinite(bid) && Number.isFinite(ask) && bid != null && ask != null
+        ? Math.max(0, ask - bid)
+        : null;
+  const lastPrice =
+    effectiveSelected?.last != null && Number.isFinite(Number(effectiveSelected.last))
+      ? Number(effectiveSelected.last)
+      : bid != null && ask != null
+        ? (bid + ask) / 2
+        : null;
 
   // bid/ask flash
   useEffect(() => {
@@ -464,7 +473,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             <div className="flex flex-col items-start min-w-0">
               <span className="font-heading text-[12px] font-bold leading-tight">{normalizedSym || "—"}</span>
               <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[160px]">
-                {selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
+                {effectiveSelected?.description || selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
