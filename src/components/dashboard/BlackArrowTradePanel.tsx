@@ -60,6 +60,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const { symbol: ctxSymbol, side, setSide, setSymbol: setCtxSymbol } = useQuickTrade();
   const {
     tick,
+    tickUpdatedAt,
+    tickError,
     selectedSymbolValid,
     selectedSymbolInfo,
     symbols: brokerSymbols,
