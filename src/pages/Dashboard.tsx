@@ -475,7 +475,9 @@ const MarketWatchPanel = ({
           </li>
         )}
         {!loading && sortedByCategory.length === 0 && (
-          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">No matches.</li>
+          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">
+            {query ? "No matches." : "No MT5 symbols loaded. Refresh market watch."}
+          </li>
         )}
 
         {showGroupHeaders
