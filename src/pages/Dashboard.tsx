@@ -205,8 +205,8 @@ const MarketRow = ({
     pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
   return (
     <li
-      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 px-1.5 py-[3px] border-b border-neutral-900/80 transition-colors ${
-        isActive ? "bg-[#FFCD05]/12 border-l-2 border-l-[#FFCD05]" : "hover:bg-neutral-900/40"
+      className={`grid grid-cols-[16px_1fr_56px_56px_44px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
+        isActive ? "bg-[#FFCD05]/12 border-l-[#FFCD05] pl-[6px]" : "border-l-transparent pl-1.5 hover:bg-neutral-900/40"
       }`}
     >
       <button
