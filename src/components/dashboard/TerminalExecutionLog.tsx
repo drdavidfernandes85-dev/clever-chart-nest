@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 
 interface LogRow {
   id: string;
