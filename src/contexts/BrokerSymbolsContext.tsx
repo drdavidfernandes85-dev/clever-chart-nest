@@ -218,11 +218,14 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     const onVisible = () => {
       if (document.visibilityState === "visible" && !cancelled) fetchOnce(false);
     };
+    const onRefresh = () => { if (!cancelled) fetchOnce(false); };
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("mt:refresh-terminal-data", onRefresh);
     return () => {
       cancelled = true;
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("mt:refresh-terminal-data", onRefresh);
     };
   }, [user, selectedBrokerSymbol]);
 
