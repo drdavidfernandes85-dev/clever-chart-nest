@@ -613,14 +613,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             type="button"
             onClick={() => setSide("sell")}
             className={cn(
-              "rounded-lg border p-2 text-center transition-all",
+              "rounded-lg border p-2 text-center transition-colors duration-300",
               !isBuy
                 ? "border-red-500/60 bg-red-500/15"
                 : "border-border/60 bg-background/40 hover:border-red-500/40",
+              bidFlash === "up" && "ring-1 ring-emerald-400/60",
+              bidFlash === "down" && "ring-1 ring-red-400/60",
             )}
           >
             <div className="text-[10px] uppercase tracking-wider text-red-400/80 font-semibold">Sell · Bid</div>
-            <div className="font-mono tabular-nums text-lg font-bold text-red-400 leading-tight">
+            <div
+              className={cn(
+                "font-mono tabular-nums text-lg font-bold leading-tight transition-colors duration-500",
+                bidFlash === "up"
+                  ? "text-emerald-400"
+                  : bidFlash === "down"
+                    ? "text-red-400"
+                    : "text-red-400",
+              )}
+            >
               {fmtPx(bid, digits)}
             </div>
           </button>
@@ -628,14 +639,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             type="button"
             onClick={() => setSide("buy")}
             className={cn(
-              "rounded-lg border p-2 text-center transition-all",
+              "rounded-lg border p-2 text-center transition-colors duration-300",
               isBuy
                 ? "border-emerald-500/60 bg-emerald-500/15"
                 : "border-border/60 bg-background/40 hover:border-emerald-500/40",
+              askFlash === "up" && "ring-1 ring-emerald-400/60",
+              askFlash === "down" && "ring-1 ring-red-400/60",
             )}
           >
             <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 font-semibold">Buy · Ask</div>
-            <div className="font-mono tabular-nums text-lg font-bold text-emerald-400 leading-tight">
+            <div
+              className={cn(
+                "font-mono tabular-nums text-lg font-bold leading-tight transition-colors duration-500",
+                askFlash === "up"
+                  ? "text-emerald-400"
+                  : askFlash === "down"
+                    ? "text-red-400"
+                    : "text-emerald-400",
+              )}
+            >
               {fmtPx(ask, digits)}
             </div>
           </button>
