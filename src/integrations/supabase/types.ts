@@ -705,6 +705,7 @@ export type Database = {
           status: string
           stop_loss: number | null
           symbol: string
+          sync_meta: Json | null
           take_profit: number | null
           ticket: string | null
           user_id: string
@@ -727,6 +728,7 @@ export type Database = {
           status?: string
           stop_loss?: number | null
           symbol: string
+          sync_meta?: Json | null
           take_profit?: number | null
           ticket?: string | null
           user_id: string
@@ -749,6 +751,7 @@ export type Database = {
           status?: string
           stop_loss?: number | null
           symbol?: string
+          sync_meta?: Json | null
           take_profit?: number | null
           ticket?: string | null
           user_id?: string
@@ -758,6 +761,8 @@ export type Database = {
       }
       trade_journal: {
         Row: {
+          broker_position_id: string | null
+          broker_ticket: string | null
           closed_at: string | null
           created_at: string
           direction: string
@@ -779,6 +784,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          broker_position_id?: string | null
+          broker_ticket?: string | null
           closed_at?: string | null
           created_at?: string
           direction: string
@@ -800,6 +807,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          broker_position_id?: string | null
+          broker_ticket?: string | null
           closed_at?: string | null
           created_at?: string
           direction?: string
