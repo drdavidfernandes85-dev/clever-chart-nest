@@ -84,6 +84,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const prevBidRef = useRef<number | null>(null);
   const prevAskRef = useRef<number | null>(null);
 
+  // Latch "ever connected" so a transient polling failure cannot replace
+  // the entire Order Ticket with the disconnected screen.
+  const [everConnected, setEverConnected] = useState(false);
+  useEffect(() => {
+    if (connected) setEverConnected(true);
+  }, [connected]);
+  const showAsConnected = connected || everConnected;
+
   const { bid, ask } = pickTick(tick);
   const livePrice = side === "buy" ? ask : bid;
   const digits = Number(selectedSymbolInfo?.digits ?? 5);
