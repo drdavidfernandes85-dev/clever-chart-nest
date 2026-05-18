@@ -768,6 +768,27 @@ const DashboardInner = () => {
 
   const tvSymbol = useMemo(() => brokerToTv(active), [active]);
 
+  // Curated Bid/Ask Board symbols: pull from broker catalog so we never show
+  // a hard-coded list that doesn't exist on the connected account.
+  const watchBoardSymbols = useMemo(() => {
+    if (!symbols.length) return [];
+    const preferred = [
+      "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD",
+      "XAUUSD", "XAGUSD",
+      "US30", "NAS100", "SPX500",
+      "BTCUSD", "ETHUSD",
+    ];
+    const upperMap = new Map(symbols.map((s) => [(s.brokerSymbol || s.symbol).toUpperCase(), s.brokerSymbol || s.symbol]));
+    const out: string[] = [];
+    if (active && upperMap.has(active.toUpperCase())) out.push(upperMap.get(active.toUpperCase())!);
+    for (const p of preferred) {
+      const match = upperMap.get(p);
+      if (match && !out.includes(match)) out.push(match);
+      if (out.length >= 10) break;
+    }
+    return out;
+  }, [symbols, active]);
+
   // Sync active → contexts (chart + broker data fetch).
   useEffect(() => {
     setCtxSymbol(active);
