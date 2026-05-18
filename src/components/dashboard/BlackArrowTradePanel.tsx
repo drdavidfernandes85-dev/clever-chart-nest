@@ -194,22 +194,61 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   );
   const symbolPnl = symbolPositions.reduce((s, p) => s + Number(p.profit || 0), 0);
 
+  // ---- Volume specs from broker ----
+  const volumeMin = Number(selectedSymbolInfo?.volumeMin ?? 0.01) || 0.01;
+  const volumeMax = Number(selectedSymbolInfo?.volumeMax ?? 0) || 0;
+  const volumeStep = Number(selectedSymbolInfo?.volumeStep ?? 0.01) || 0.01;
+
+  // Reject anything that doesn't look like a real broker symbol (alphanum, 3-15 chars)
+  const isBrokerSymbol = /^[A-Z0-9._]{3,15}$/.test(normalizedSym);
+
+  const volumeError = (() => {
+    if (volNum <= 0) return "Volume must be > 0";
+    if (volNum < volumeMin) return `Min volume ${volumeMin}`;
+    if (volumeMax > 0 && volNum > volumeMax) return `Max volume ${volumeMax}`;
+    if (volumeStep > 0) {
+      // Snap-check on volume step (1e-6 tolerance for float math)
+      const steps = volNum / volumeStep;
+      if (Math.abs(steps - Math.round(steps)) > 1e-6) {
+        return `Volume must be a multiple of ${volumeStep}`;
+      }
+    }
+    return null;
+  })();
+
   const canSubmitMarket =
-    !!user && connected && selectedSymbolValid !== false && volNum > 0 && !slTpError && !submitting;
+    !!user &&
+    connected === true &&
+    isBrokerSymbol &&
+    selectedSymbolValid === true &&
+    !volumeError &&
+    !slTpError &&
+    !submitting;
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
-    if (!canSubmitMarket) return;
+    if (!canSubmitMarket) {
+      if (!connected) toast.error("Account not connected");
+      else if (!isBrokerSymbol) toast.error("Invalid symbol");
+      else if (selectedSymbolValid !== true) toast.error("Symbol not available on broker");
+      else if (volumeError) toast.error(volumeError);
+      else if (slTpError) toast.error(slTpError);
+      return;
+    }
     setSide(sideArg);
     setSubmitting(true);
     try {
-      const body: Record<string, unknown> = {
+      const payload = {
+        tradeId:
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         symbol: normalizedSym,
         side: sideArg,
         volume: Number(volNum.toFixed(2)),
-        stopLoss: noStops ? null : slNum,
-        takeProfit: noStops ? null : tpNum,
+        stopLoss: noStops ? null : (sl ? Number(sl) : null),
+        takeProfit: noStops ? null : (tp ? Number(tp) : null),
       };
-      const { data, error } = await supabase.functions.invoke("execute-trade", { body });
+      const { data, error } = await supabase.functions.invoke("execute-trade", { body: payload });
       let res: any = data;
       if (error) {
         try {
@@ -222,24 +261,34 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           return;
         }
       }
+      const brokerMsg =
+        res?.message ||
+        res?.retcodeDescription ||
+        res?.retcode_description ||
+        res?.brokerMessage ||
+        res?.error;
+
       if (res?.success === true) {
         const filledPrice = Number(res.price ?? res.openPrice ?? entryPrice) || entryPrice;
         toast.success(`${sideArg.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`, {
           description: [
             `Px ${fmtPx(filledPrice, digits)}`,
             res.ticket ? `#${res.ticket}` : null,
+            brokerMsg && brokerMsg !== "Order executed" ? brokerMsg : null,
           ].filter(Boolean).join("  ·  "),
           duration: 4000,
         });
-        window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym } }));
+        // Trigger downstream refreshes: terminal data, market watch, exec logs
+        window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId: payload.tradeId } }));
         window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+        window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+        window.dispatchEvent(new CustomEvent("mt:refresh-market-watch"));
+        window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
         refresh();
         setSl(""); setTp(""); setPrice("");
-        if (autoReset) { setVol("0.01"); setOrderType("Market"); }
+        if (autoReset) { setVol(volumeMin.toFixed(2)); setOrderType("Market"); }
       } else {
-        toast.error("Order failed", {
-          description: res?.retcodeDescription || res?.retcode_description || res?.error || "Order rejected",
-        });
+        toast.error("Order rejected", { description: brokerMsg || "Order rejected by broker" });
       }
     } catch (e: any) {
       toast.error(e?.message || "Order failed");
@@ -533,9 +582,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </label>
         </div>
 
-        {slTpError ? (
+        {(volumeError || slTpError) ? (
           <div className="flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
-            <AlertTriangle className="h-3 w-3 shrink-0" /> {slTpError}
+            <AlertTriangle className="h-3 w-3 shrink-0" /> {volumeError || slTpError}
           </div>
         ) : null}
 
