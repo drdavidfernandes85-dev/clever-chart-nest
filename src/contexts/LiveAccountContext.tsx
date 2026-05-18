@@ -42,7 +42,10 @@ interface LiveAccountCtx {
 
 const Ctx = createContext<LiveAccountCtx | null>(null);
 
-const REFRESH_MS = 2_000;
+const REFRESH_MS = 10_000;
+
+const num = (v: any): number | null =>
+  v === null || v === undefined || v === "" || Number.isNaN(Number(v)) ? null : Number(v);
 
 export function LiveAccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
