@@ -759,4 +759,78 @@ const ToolBtn = ({
   </button>
 );
 
+const SpreadIndicator = ({
+  spread,
+  pipSize,
+  trend,
+  digits,
+}: {
+  spread: number | null;
+  pipSize: number;
+  trend: "up" | "down" | "flat";
+  digits: number;
+}) => {
+  const pips = spread != null && pipSize > 0 ? spread / pipSize : null;
+  // Color cue: tight=emerald, normal=primary, wide=red
+  const tone =
+    pips == null
+      ? "muted"
+      : pips < 1
+        ? "tight"
+        : pips < 3
+          ? "normal"
+          : "wide";
+  const toneClasses: Record<string, string> = {
+    muted: "border-border/60 bg-background/40 text-muted-foreground",
+    tight: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+    normal: "border-primary/40 bg-primary/10 text-primary",
+    wide: "border-red-500/40 bg-red-500/10 text-red-400",
+  };
+  const trendIcon =
+    trend === "up" ? (
+      <TrendingUp className="h-3 w-3 text-red-400" />
+    ) : trend === "down" ? (
+      <TrendingDown className="h-3 w-3 text-emerald-400" />
+    ) : (
+      <Activity className="h-3 w-3 opacity-70" />
+    );
+  // Visual width bar — clamp 0..6 pips for the bar fill
+  const pct =
+    pips == null ? 0 : Math.max(4, Math.min(100, (pips / 6) * 100));
+  return (
+    <div
+      className={cn(
+        "rounded-md border px-2.5 py-1.5 flex items-center gap-2 transition-colors",
+        toneClasses[tone],
+      )}
+    >
+      {trendIcon}
+      <div className="flex items-baseline gap-1.5 min-w-0">
+        <span className="text-[10px] uppercase tracking-wider font-semibold opacity-80">
+          Spread
+        </span>
+        <span className="font-mono tabular-nums text-[12px] font-bold">
+          {pips != null ? pips.toFixed(pips < 1 ? 2 : 1) : "—"}
+          <span className="text-[9px] opacity-70 ml-0.5">pips</span>
+        </span>
+        <span className="font-mono tabular-nums text-[10px] opacity-70 truncate">
+          ({spread != null ? spread.toFixed(digits) : "—"})
+        </span>
+      </div>
+      <div className="ml-auto h-1.5 w-16 rounded-full bg-background/60 overflow-hidden">
+        <div
+          className={cn(
+            "h-full transition-all duration-300",
+            tone === "tight" && "bg-emerald-400",
+            tone === "normal" && "bg-primary",
+            tone === "wide" && "bg-red-400",
+            tone === "muted" && "bg-muted-foreground/40",
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
 export default BlackArrowTradePanel;
