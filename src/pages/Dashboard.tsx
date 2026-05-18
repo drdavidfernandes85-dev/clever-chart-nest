@@ -893,6 +893,38 @@ const DashboardInner = () => {
   );
 };
 
+const TerminalStatusBar = ({ activeSymbol }: { activeSymbol: string }) => {
+  const { connected, liveAccount } = useLiveAccount();
+  const { tick } = useBrokerSymbols();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const lastTick = tick?.time || tick?.timestamp || liveAccount?.lastSynced || null;
+  const lastTickStr = lastTick
+    ? new Date(lastTick).toLocaleTimeString()
+    : "—";
+  return (
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded border border-neutral-800/80 bg-[#0a0a0a] px-3 py-1.5 text-[9.5px] font-mono uppercase tracking-widest text-neutral-400">
+      <div className="flex items-center gap-4">
+        <span className={`flex items-center gap-1.5 ${connected ? "text-emerald-400" : "text-red-400"}`}>
+          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          {connected ? "Connected" : "Disconnected"}
+        </span>
+        <span>Trading Layer: <span className="text-neutral-200">MT5</span></span>
+        <span>Symbol: <span className="text-[#FFCD05]">{activeSymbol || "—"}</span></span>
+      </div>
+      <div className="flex items-center gap-4">
+        <span>Last Tick: <span className="text-neutral-200">{lastTickStr}</span></span>
+        <span>Ping: <span className="text-neutral-200">—</span></span>
+        <span>Data: <span className="text-emerald-400">Live</span></span>
+        <span>Server Time: <span className="text-neutral-200">{now.toLocaleTimeString()}</span></span>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => (
   <BrokerSymbolsProvider>
     <LiveAccountProvider>
