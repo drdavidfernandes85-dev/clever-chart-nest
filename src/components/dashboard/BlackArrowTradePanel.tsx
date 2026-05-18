@@ -486,6 +486,52 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ))}
         </div>
 
+        {/* Bid/Ask tiles — large institutional click-to-side targets */}
+        <div className="grid grid-cols-2 gap-1">
+          <button
+            type="button"
+            onClick={() => setSide("sell")}
+            className={cn(
+              "group flex flex-col items-stretch rounded-sm border px-2 py-1 text-left transition-colors",
+              side === "sell"
+                ? "border-red-500/70 bg-red-500/10"
+                : "border-neutral-800 bg-[#0a0a0a] hover:border-red-500/40",
+            )}
+          >
+            <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.18em] text-red-400/80">
+              <span>Sell</span><span>Bid</span>
+            </span>
+            <span className={cn(
+              "font-mono tabular-nums text-[15px] leading-tight font-semibold text-red-400 transition-colors",
+              bidFlash === "up" && "text-red-300",
+              bidFlash === "down" && "text-red-500",
+            )}>
+              {fmtPx(bid, digits)}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSide("buy")}
+            className={cn(
+              "group flex flex-col items-stretch rounded-sm border px-2 py-1 text-left transition-colors",
+              side === "buy"
+                ? "border-emerald-500/70 bg-emerald-500/10"
+                : "border-neutral-800 bg-[#0a0a0a] hover:border-emerald-500/40",
+            )}
+          >
+            <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.18em] text-emerald-400/80">
+              <span>Buy</span><span>Ask</span>
+            </span>
+            <span className={cn(
+              "font-mono tabular-nums text-[15px] leading-tight font-semibold text-emerald-400 transition-colors",
+              askFlash === "up" && "text-emerald-300",
+              askFlash === "down" && "text-emerald-500",
+            )}>
+              {fmtPx(ask, digits)}
+            </span>
+          </button>
+        </div>
+
         {/* Market buttons — primary */}
         <div className="grid grid-cols-2 gap-1">
           <SideBtn tone="buy" disabled={!canSubmitMarket} loading={submitting && side === "buy"} onClick={() => submitMarket("buy")}>
