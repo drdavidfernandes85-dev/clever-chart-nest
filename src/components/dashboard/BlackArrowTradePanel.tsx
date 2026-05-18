@@ -666,25 +666,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         {/* (Side already selected via 6-button order-type grid above) */}
 
         {/* Volume */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Volume</label>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Volume</label>
             <input
               ref={volInputRef}
               value={vol}
               onChange={(e) => setVol(e.target.value)}
               inputMode="decimal"
-              className="w-20 h-7 rounded border border-border/60 bg-background/60 px-2 text-right text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-20 h-6 rounded border border-border/60 bg-background/60 px-2 text-right text-[11px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-5 gap-1">
             {QUICK_VOLS.map((q) => (
               <button
                 key={q}
                 type="button"
                 onClick={() => setVol(q.toFixed(2))}
                 className={cn(
-                  "h-7 rounded border text-[11px] font-mono tabular-nums transition-colors",
+                  "h-6 rounded border text-[10.5px] font-mono tabular-nums transition-colors",
                   vol === q.toFixed(2)
                     ? "border-primary/60 bg-primary/15 text-primary"
                     : "border-border/60 bg-background/60 hover:bg-background/80",
