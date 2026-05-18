@@ -252,6 +252,7 @@ export function useBrokerSymbols(): Ctx {
       loading: false,
       loaded: false,
       error: null,
+      selectedBrokerSymbol: "",
       selectedSymbolValid: false,
       selectedSymbolInfo: null,
       tick: null,
