@@ -82,7 +82,7 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
       if (isConnected) {
         const a = res.account ?? null;
         const d = res.data ?? {};
-        const merged: LiveAccount = {
+        const incoming: LiveAccount = {
           login: String(a?.login ?? d?.account_number ?? ""),
           server: String(a?.server ?? d?.server ?? ""),
           status: String(a?.status ?? d?.status ?? "connected"),
@@ -91,28 +91,63 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
           balance: num(a?.balance ?? d?.balance),
           equity: num(a?.equity ?? d?.equity),
           margin: num(a?.margin ?? d?.margin),
-          marginFree: num(a?.marginFree ?? d?.free_margin),
+          marginFree: num(a?.marginFree ?? a?.free_margin ?? d?.free_margin),
           profit: num(a?.profit ?? d?.floating_pnl),
           openPositionsCount: Number(
             a?.openPositionsCount ?? d?.open_positions ?? 0,
           ),
           lastSynced: a?.lastSynced ?? d?.last_synced ?? null,
         };
-        // Stale-while-revalidate: only replace if response is non-empty.
-        const hasMeaningfulData =
-          merged.login !== "" ||
-          merged.balance != null ||
-          merged.equity != null;
-        if (hasMeaningfulData) {
-          setLiveAccount(merged);
-          setConnected(true);
-        }
+
+        // Stale-while-revalidate: never overwrite a known-good snapshot with
+        // an empty/all-zero refresh. A response with no login AND zero/null
+        // balance, equity, and margin is treated as "no data this tick".
+        const incomingHasFigures =
+          (incoming.balance != null && incoming.balance !== 0) ||
+          (incoming.equity != null && incoming.equity !== 0) ||
+          (incoming.margin != null && incoming.margin !== 0) ||
+          (incoming.marginFree != null && incoming.marginFree !== 0) ||
+          (incoming.profit != null && incoming.profit !== 0);
+        const incomingHasIdentity = incoming.login !== "" || incoming.server !== "";
+
+        setLiveAccount((prev) => {
+          if (!prev) {
+            // First snapshot — always accept, even if all zeros (could be a real flat account).
+            return incoming;
+          }
+          // Field-level merge: prefer incoming values when meaningful,
+          // otherwise keep last good. This prevents flicker to $0.00.
+          const pickNum = (next: number | null, last: number | null) =>
+            next != null && next !== 0 ? next : (next === 0 && last == null ? 0 : last);
+          const pickStr = (next: string, last: string) => (next ? next : last);
+          if (!incomingHasFigures && !incomingHasIdentity) {
+            // Nothing useful — keep last good entirely.
+            return prev;
+          }
+          return {
+            login: pickStr(incoming.login, prev.login),
+            server: pickStr(incoming.server, prev.server),
+            status: pickStr(incoming.status, prev.status),
+            currency: incoming.currency || prev.currency,
+            leverage: incoming.leverage ?? prev.leverage,
+            balance: pickNum(incoming.balance, prev.balance),
+            equity: pickNum(incoming.equity, prev.equity),
+            margin: pickNum(incoming.margin, prev.margin),
+            marginFree: pickNum(incoming.marginFree, prev.marginFree),
+            profit: incoming.profit ?? prev.profit,
+            openPositionsCount: incoming.openPositionsCount,
+            lastSynced: incoming.lastSynced ?? prev.lastSynced,
+          };
+        });
+        setConnected(true);
+
         const nextPositions = (res.positions ?? d?.positions ?? []) as LivePosition[];
         if (Array.isArray(nextPositions)) {
           // Always set positions array (empty array IS valid info — no open positions).
           setPositions(nextPositions);
         }
         setError(null);
+
       } else {
         // Not connected per broker. Keep last known good account/positions visible.
         // Only surface the error message; never blank the panel during polling.
