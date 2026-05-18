@@ -333,15 +333,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     }
   };
 
-  if (connected === false) {
+  if (!showAsConnected) {
     return (
-      <div className={cn("rounded-lg border border-border/60 bg-card/80 p-5 text-center", className)}>
-        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-primary">
+      <div className={cn("rounded-sm border border-neutral-800 bg-[#0c0c0c] p-5 text-center", className)}>
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[#FFCD05]/15 text-[#FFCD05]">
           <Plug className="h-5 w-5" />
         </div>
         <h3 className="font-heading text-sm font-bold mb-1">MT5 account not connected</h3>
         <p className="text-xs text-muted-foreground mb-3">Connect your trading account to place orders.</p>
-        <Link to="/connect-mt" className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90">
+        <Link to="/connect-mt" className="inline-flex items-center justify-center rounded-md bg-[#FFCD05] px-3 py-1.5 text-xs font-semibold text-black hover:opacity-90">
           Connect account
         </Link>
       </div>
