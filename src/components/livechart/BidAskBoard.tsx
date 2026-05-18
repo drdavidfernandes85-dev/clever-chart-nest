@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
+import { useMultiSymbolTicksWithMeta } from "@/hooks/useMultiSymbolTicks";
 
 interface Props {
   symbols: string[];
@@ -9,15 +9,32 @@ interface Props {
 
 /**
  * Institutional price ladder.
- * Fixed-width tabular columns, consistent alignment, color-coded spread.
- * Active row mirrors Market Watch exactly: yellow left bar + yellow text + faint yellow tint.
+ * Always mounted. Keeps last-good rows during refresh; never blanks on poll failure.
+ * Rows without any tick data are filtered out (no empty dash rows).
  */
 
 const COLS = "grid-cols-[minmax(0,1fr)_64px_64px_64px_52px]";
+const STALE_MS = 15_000;
 
 const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
-  const rows = useMultiSymbolTicks(symbols);
+  const { rows, lastUpdatedAt, lastError, refreshing } = useMultiSymbolTicksWithMeta(symbols);
   const anyLoaded = Object.keys(rows).length > 0;
+  const now = Date.now();
+  const isDelayed =
+    !!lastError ||
+    (lastUpdatedAt != null && now - lastUpdatedAt > STALE_MS);
+
+  // Only render symbols that have valid tick data (live or last-good).
+  const visible = symbols.filter((sym) => {
+    const r = rows[sym.toUpperCase()] || rows[sym];
+    return r && (r.bid != null || r.ask != null || r.last != null);
+  });
+
+  const statusLabel = !anyLoaded
+    ? null
+    : isDelayed
+      ? { text: "Data delayed", dot: "bg-amber-500", color: "text-amber-400" }
+      : { text: "Live", dot: "bg-emerald-500", color: "text-emerald-400" };
 
   return (
     <div className="flex h-full flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden">
@@ -25,10 +42,10 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
         <h3 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
           Bid / Ask Board
         </h3>
-        {anyLoaded ? (
-          <span className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest text-emerald-400">
-            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Live
+        {statusLabel ? (
+          <span className={`flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest ${statusLabel.color}`}>
+            <span className={`inline-flex h-1.5 w-1.5 rounded-full ${statusLabel.dot}`} />
+            {statusLabel.text}
           </span>
         ) : (
           <Loader2 className="h-3 w-3 animate-spin text-neutral-500" />
@@ -46,9 +63,13 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
           <li className="px-3 py-4 text-center text-[10px] font-mono text-neutral-500">
             No MT5 symbols loaded.
           </li>
-        ) : symbols.map((sym) => {
-          const r = rows[sym];
-          const digits = r?.digits ?? 5;
+        ) : visible.length === 0 ? (
+          <li className="px-3 py-4 text-center text-[10px] font-mono text-neutral-500">
+            {refreshing ? "Loading market data…" : "Waiting for tick data…"}
+          </li>
+        ) : visible.map((sym) => {
+          const r = rows[sym.toUpperCase()] || rows[sym]!;
+          const digits = r.digits ?? 5;
           const isActive = activeSymbol?.toUpperCase() === sym.toUpperCase();
           const fmt = (v: number | null | undefined) =>
             v == null
@@ -57,7 +78,7 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   minimumFractionDigits: digits,
                   maximumFractionDigits: digits,
                 });
-          const spread = r?.spread;
+          const spread = r.spread;
           const point = Math.pow(10, -digits);
           const spreadPts = spread != null ? spread / point : null;
           return (
@@ -75,13 +96,13 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   {sym}
                 </span>
                 <span className="text-right font-mono text-[10px] tabular-nums text-red-400">
-                  {fmt(r?.bid)}
+                  {fmt(r.bid)}
                 </span>
                 <span className="text-right font-mono text-[9.5px] tabular-nums text-neutral-400">
-                  {fmt(r?.last)}
+                  {fmt(r.last)}
                 </span>
                 <span className="text-right font-mono text-[10px] tabular-nums text-emerald-400">
-                  {fmt(r?.ask)}
+                  {fmt(r.ask)}
                 </span>
                 <span className="text-right font-mono text-[9.5px] tabular-nums text-neutral-400">
                   {spread == null ? "—" : spreadPts != null ? spreadPts.toFixed(1) : spread.toFixed(Math.min(digits, 5))}
