@@ -624,7 +624,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             <div className="text-[10px] uppercase tracking-wider text-red-400/80 font-semibold">Sell · Bid</div>
             <div
               className={cn(
-                "font-mono tabular-nums text-lg font-bold leading-tight transition-colors duration-500",
+                "font-mono tabular-nums text-base font-bold leading-tight transition-colors duration-500",
                 bidFlash === "up"
                   ? "text-emerald-400"
                   : bidFlash === "down"
