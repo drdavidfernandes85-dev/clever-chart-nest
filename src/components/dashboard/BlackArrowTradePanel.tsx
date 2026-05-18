@@ -465,16 +465,16 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </span>
       </div>
 
-      <div className="p-3 space-y-3">
+      <div className="p-2.5 space-y-2">
         {/* Symbol selector */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setSymbolOpen((v) => !v)}
-            className="w-full flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2.5 hover:bg-background/80"
+            className="w-full flex items-center justify-between rounded-md border border-border/60 bg-background/60 px-2.5 py-1.5 hover:bg-background/80"
           >
             <div className="flex flex-col items-start">
-              <span className="font-heading text-lg font-bold leading-tight">
+              <span className="font-heading text-base font-bold leading-tight">
                 {normalizedSym || "—"}
               </span>
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -583,7 +583,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   setOrderType(t);
                 }}
                 className={cn(
-                  "h-9 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all",
+                  "h-8 rounded-md border text-[10.5px] font-bold uppercase tracking-wider transition-all",
                   active
                     ? tone
                       ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_4px_12px_-4px_rgba(16,185,129,0.5)]"
@@ -613,7 +613,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             type="button"
             onClick={() => setSide("sell")}
             className={cn(
-              "rounded-lg border p-2 text-center transition-colors duration-300",
+              "rounded-md border px-2 py-1.5 text-center transition-colors duration-300",
               !isBuy
                 ? "border-red-500/60 bg-red-500/15"
                 : "border-border/60 bg-background/40 hover:border-red-500/40",
@@ -624,7 +624,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             <div className="text-[10px] uppercase tracking-wider text-red-400/80 font-semibold">Sell · Bid</div>
             <div
               className={cn(
-                "font-mono tabular-nums text-lg font-bold leading-tight transition-colors duration-500",
+                "font-mono tabular-nums text-base font-bold leading-tight transition-colors duration-500",
                 bidFlash === "up"
                   ? "text-emerald-400"
                   : bidFlash === "down"
@@ -639,7 +639,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             type="button"
             onClick={() => setSide("buy")}
             className={cn(
-              "rounded-lg border p-2 text-center transition-colors duration-300",
+              "rounded-md border px-2 py-1.5 text-center transition-colors duration-300",
               isBuy
                 ? "border-emerald-500/60 bg-emerald-500/15"
                 : "border-border/60 bg-background/40 hover:border-emerald-500/40",
@@ -650,7 +650,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 font-semibold">Buy · Ask</div>
             <div
               className={cn(
-                "font-mono tabular-nums text-lg font-bold leading-tight transition-colors duration-500",
+                "font-mono tabular-nums text-base font-bold leading-tight transition-colors duration-500",
                 askFlash === "up"
                   ? "text-emerald-400"
                   : askFlash === "down"
@@ -663,54 +663,28 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </button>
         </div>
 
-        {/* BIG BUY / SELL selector */}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setSide("buy")}
-            className={cn(
-              "h-14 rounded-lg font-heading text-base font-bold tracking-wide transition-all flex items-center justify-center gap-2 border-2",
-              isBuy
-                ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_6px_18px_-4px_rgba(16,185,129,0.55)]"
-                : "bg-background/40 text-muted-foreground border-border/60 hover:text-emerald-400 hover:border-emerald-500/40",
-            )}
-          >
-            <TrendingUp className="h-5 w-5" /> BUY
-          </button>
-          <button
-            type="button"
-            onClick={() => setSide("sell")}
-            className={cn(
-              "h-14 rounded-lg font-heading text-base font-bold tracking-wide transition-all flex items-center justify-center gap-2 border-2",
-              !isBuy
-                ? "bg-red-500 text-white border-red-500 shadow-[0_6px_18px_-4px_rgba(239,68,68,0.55)]"
-                : "bg-background/40 text-muted-foreground border-border/60 hover:text-red-400 hover:border-red-500/40",
-            )}
-          >
-            <TrendingDown className="h-5 w-5" /> SELL
-          </button>
-        </div>
+        {/* (Side already selected via 6-button order-type grid above) */}
 
         {/* Volume */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Volume</label>
+            <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Volume</label>
             <input
               ref={volInputRef}
               value={vol}
               onChange={(e) => setVol(e.target.value)}
               inputMode="decimal"
-              className="w-20 h-7 rounded border border-border/60 bg-background/60 px-2 text-right text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-20 h-6 rounded border border-border/60 bg-background/60 px-2 text-right text-[11px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-5 gap-1">
             {QUICK_VOLS.map((q) => (
               <button
                 key={q}
                 type="button"
                 onClick={() => setVol(q.toFixed(2))}
                 className={cn(
-                  "h-7 rounded border text-[11px] font-mono tabular-nums transition-colors",
+                  "h-6 rounded border text-[10.5px] font-mono tabular-nums transition-colors",
                   vol === q.toFixed(2)
                     ? "border-primary/60 bg-primary/15 text-primary"
                     : "border-border/60 bg-background/60 hover:bg-background/80",
@@ -737,7 +711,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               }}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "0.00000"}
-              className="w-full h-8 rounded border border-border/60 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-7 rounded border border-border/60 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         ) : null}
@@ -754,7 +728,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               disabled={noStops}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
-              className="w-full h-8 rounded border border-red-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+              className="w-full h-7 rounded border border-red-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
             />
           </div>
           <div className="space-y-1">
@@ -767,7 +741,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               disabled={noStops}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
-              className="w-full h-8 rounded border border-emerald-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+              className="w-full h-7 rounded border border-emerald-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
             />
           </div>
         </div>
@@ -848,21 +822,27 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           />
         </div>
 
-        {/* CONFIRM */}
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          className={cn(
-            "w-full h-12 rounded-lg font-heading text-sm font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
-            isBuy
-              ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_6px_20px_-6px_rgba(16,185,129,0.6)]"
-              : "bg-red-500 text-white hover:bg-red-600 shadow-[0_6px_20px_-6px_rgba(239,68,68,0.6)]",
-          )}
-        >
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Confirm {isBuy ? "Buy" : "Sell"} · {volNum.toFixed(2)} lots
-        </button>
+        {/* CONFIRM — split BUY / SELL */}
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => { setSide("buy"); setTimeout(submit, 0); }}
+            disabled={!canSubmit}
+            className="h-11 rounded-md font-heading text-sm font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_6px_20px_-6px_rgba(16,185,129,0.6)]"
+          >
+            {submitting && isBuy ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
+            BUY {volNum.toFixed(2)}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSide("sell"); setTimeout(submit, 0); }}
+            disabled={!canSubmit}
+            className="h-11 rounded-md font-heading text-sm font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-red-500 text-white hover:bg-red-600 shadow-[0_6px_20px_-6px_rgba(239,68,68,0.6)]"
+          >
+            {submitting && !isBuy ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingDown className="h-4 w-4" />}
+            SELL {volNum.toFixed(2)}
+          </button>
+        </div>
 
         {/* Bottom row */}
         <div className="grid grid-cols-3 gap-1.5">
