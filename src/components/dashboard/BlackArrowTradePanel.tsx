@@ -769,6 +769,27 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </label>
         </div>
 
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span>Focus after fill</span>
+          <div className="flex items-center gap-1">
+            {(["volume", "price", "orderType"] as const).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setFocusTarget(opt)}
+                className={cn(
+                  "h-6 px-2 rounded border text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                  focusTarget === opt
+                    ? "border-primary/60 bg-primary/15 text-primary"
+                    : "border-border/60 bg-background/60 hover:bg-background/80",
+                )}
+              >
+                {opt === "orderType" ? "Type" : opt === "volume" ? "Vol" : "Price"}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {slTpError ? (
           <div className="flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-[11px] text-red-400">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {slTpError}
