@@ -711,7 +711,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               }}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "0.00000"}
-              className="w-full h-8 rounded border border-border/60 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-7 rounded border border-border/60 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
         ) : null}
@@ -728,7 +728,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               disabled={noStops}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
-              className="w-full h-8 rounded border border-red-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+              className="w-full h-7 rounded border border-red-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
             />
           </div>
           <div className="space-y-1">
@@ -741,7 +741,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               disabled={noStops}
               inputMode="decimal"
               placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
-              className="w-full h-8 rounded border border-emerald-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+              className="w-full h-7 rounded border border-emerald-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
             />
           </div>
         </div>
