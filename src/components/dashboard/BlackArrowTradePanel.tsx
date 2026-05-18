@@ -582,9 +582,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </label>
         </div>
 
-        {slTpError ? (
+        {(volumeError || slTpError) ? (
           <div className="flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
-            <AlertTriangle className="h-3 w-3 shrink-0" /> {slTpError}
+            <AlertTriangle className="h-3 w-3 shrink-0" /> {volumeError || slTpError}
           </div>
         ) : null}
 
