@@ -1,5 +1,15 @@
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useMultiSymbolTicksWithMeta } from "@/hooks/useMultiSymbolTicks";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Quote {
+  symbol: string;
+  bid: number | null;
+  ask: number | null;
+  last: number | null;
+  spread: number | null;
+  digits: number | null;
+}
 
 interface Props {
   symbols: string[];
@@ -7,42 +17,83 @@ interface Props {
   activeSymbol?: string;
 }
 
-/**
- * Institutional price ladder.
- * Always mounted. Keeps last-good rows during refresh; never blanks on poll failure.
- * Rows without any tick data are filtered out (no empty dash rows).
- */
-
 const COLS = "grid-cols-[minmax(0,1fr)_64px_64px_64px_52px]";
-// "Data delayed" thresholds — chosen to absorb intermittent transport errors
-// (rate limits, brief 5xx) without flickering. We require BOTH a sustained
-// failure pattern AND/OR a clear stale window.
-const STALE_MS = 25_000;            // no successful refresh for 25s
-const MIN_CONSECUTIVE_ERRORS = 2;   // two failed cycles in a row
+const POLL_MS = 5000;
 
 const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
-  const { rows, lastUpdatedAt, consecutiveErrors, refreshing } =
-    useMultiSymbolTicksWithMeta(symbols);
-  const anyLoaded = Object.keys(rows).length > 0;
-  const now = Date.now();
-  // Delayed only after CONFIRMED failures (≥2 in a row) or genuine staleness.
-  // A single transient error never trips the badge.
-  const isDelayed =
-    anyLoaded &&
-    (consecutiveErrors >= MIN_CONSECUTIVE_ERRORS ||
-      (lastUpdatedAt != null && now - lastUpdatedAt > STALE_MS));
+  const [bidAskBoardData, setBidAskBoardData] = useState<Quote[]>([]);
+  const lastGoodRef = useRef<Quote[]>([]);
+  const [lastGoodBidAskBoardData, setLastGoodBidAskBoardData] = useState<Quote[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  // Only render symbols that have valid tick data (live or last-good).
-  const visible = symbols.filter((sym) => {
-    const r = rows[sym.toUpperCase()] || rows[sym];
-    return r && (r.bid != null || r.ask != null || r.last != null);
-  });
+  const selectedSymbol = activeSymbol || "";
 
-  const statusLabel = !anyLoaded
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setRefreshing(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("get-mt5-quotes", {
+          body: { selectedSymbol, symbols, debug: true },
+        });
+        if (cancelled) return;
+        if (error || !data?.success || !Array.isArray(data?.quotes) || data.quotes.length === 0) {
+          // Rule 2 & 4: keep lastGood; never clear
+          setFailed(true);
+          return;
+        }
+        // Rule 1: update both
+        setBidAskBoardData(data.quotes);
+        lastGoodRef.current = data.quotes;
+        setLastGoodBidAskBoardData(data.quotes);
+        setFailed(false);
+      } catch {
+        if (!cancelled) setFailed(true);
+      } finally {
+        if (!cancelled) {
+          setRefreshing(false);
+          setHasFetched(true);
+        }
+      }
+    };
+
+    load();
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "visible") load();
+    }, POLL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && !cancelled) load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [selectedSymbol, symbols.join(",")]);
+
+  // Render source: live if present, else lastGood. Never blank during refresh.
+  const visible: Quote[] =
+    bidAskBoardData.length > 0
+      ? bidAskBoardData
+      : lastGoodBidAskBoardData.length > 0
+        ? lastGoodBidAskBoardData
+        : [];
+
+  const hasLastGood = lastGoodBidAskBoardData.length > 0;
+  // "Data delayed" only when refresh failed AND we have nothing fresh; if we
+  // have lastGood we still flag delayed so the user knows the feed is stale.
+  const isDelayed = failed && hasLastGood;
+  const statusLabel = !hasFetched
     ? null
     : isDelayed
       ? { text: "Data delayed", dot: "bg-amber-500", color: "text-amber-400" }
-      : { text: "Live", dot: "bg-emerald-500", color: "text-emerald-400" };
+      : visible.length > 0
+        ? { text: "Live", dot: "bg-emerald-500", color: "text-emerald-400" }
+        : null;
 
   return (
     <div className="flex h-full flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden">
@@ -67,18 +118,14 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
         <span className="text-right">Sprd</span>
       </div>
       <ul className="flex-1 overflow-y-auto">
-        {symbols.length === 0 ? (
-          <li className="px-3 py-4 text-center text-[10px] font-mono text-neutral-500">
-            No MT5 symbols loaded.
-          </li>
-        ) : visible.length === 0 ? (
+        {visible.length === 0 ? (
           <li className="px-3 py-4 text-center text-[10px] font-mono text-neutral-500">
             {refreshing ? "Loading market data…" : "Waiting for tick data…"}
           </li>
-        ) : visible.map((sym) => {
-          const r = rows[sym.toUpperCase()] || rows[sym]!;
-          const digits = r.digits ?? 5;
-          const isActive = activeSymbol?.toUpperCase() === sym.toUpperCase();
+        ) : visible.map((q) => {
+          const digits = q.digits ?? 5;
+          const symUpper = q.symbol.toUpperCase();
+          const isActive = selectedSymbol.toUpperCase() === symUpper;
           const fmt = (v: number | null | undefined) =>
             v == null
               ? "—"
@@ -86,14 +133,13 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                   minimumFractionDigits: digits,
                   maximumFractionDigits: digits,
                 });
-          const spread = r.spread;
           const point = Math.pow(10, -digits);
-          const spreadPts = spread != null ? spread / point : null;
+          const spreadPts = q.spread != null ? q.spread / point : null;
           return (
-            <li key={sym}>
+            <li key={q.symbol}>
               <button
                 type="button"
-                onClick={() => onSelect?.(sym)}
+                onClick={() => onSelect?.(q.symbol)}
                 className={`w-full grid ${COLS} items-center gap-1 px-2 py-[3px] text-left border-b border-neutral-900/80 transition-colors ${
                   isActive
                     ? "bg-[#FFCD05]/12 border-l-2 border-l-[#FFCD05] pl-[6px]"
@@ -101,19 +147,19 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                 }`}
               >
                 <span className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
-                  {sym}
+                  {q.symbol}
                 </span>
                 <span className="text-right font-mono text-[10px] tabular-nums text-red-400">
-                  {fmt(r.bid)}
+                  {fmt(q.bid)}
                 </span>
                 <span className="text-right font-mono text-[9.5px] tabular-nums text-neutral-400">
-                  {fmt(r.last)}
+                  {fmt(q.last)}
                 </span>
                 <span className="text-right font-mono text-[10px] tabular-nums text-emerald-400">
-                  {fmt(r.ask)}
+                  {fmt(q.ask)}
                 </span>
                 <span className="text-right font-mono text-[9.5px] tabular-nums text-neutral-400">
-                  {spread == null ? "—" : spreadPts != null ? spreadPts.toFixed(1) : spread.toFixed(Math.min(digits, 5))}
+                  {q.spread == null ? "—" : spreadPts != null ? spreadPts.toFixed(1) : q.spread.toFixed(Math.min(digits, 5))}
                 </span>
               </button>
             </li>
