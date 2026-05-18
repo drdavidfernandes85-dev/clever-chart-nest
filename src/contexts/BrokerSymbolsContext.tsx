@@ -228,6 +228,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       loading,
       loaded,
       error,
+      selectedBrokerSymbol,
       selectedSymbolValid,
       selectedSymbolInfo,
       tick,
@@ -236,7 +237,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
       refresh,
       setSelectedBrokerSymbol,
     }),
-    [symbols, isLive, loading, loaded, error, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, lastSymbolDataResponse, refresh],
+    [symbols, isLive, loading, loaded, error, selectedBrokerSymbol, selectedSymbolValid, selectedSymbolInfo, tick, lastResponse, lastSymbolDataResponse, refresh],
   );
 
   return <BrokerCtx.Provider value={value}>{children}</BrokerCtx.Provider>;
