@@ -60,10 +60,12 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!user) {
+      // Real logout — safe to clear.
       setConnected(false);
       setLiveAccount(null);
       setPositions([]);
       setLoading(false);
+      setError(null);
       return;
     }
     setRefreshing(true);
@@ -78,7 +80,6 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
         res?.success === true || res?.accountConnected === true;
 
       if (isConnected) {
-        // Prefer canonical camelCase `account`; otherwise synthesize from `data`.
         const a = res.account ?? null;
         const d = res.data ?? {};
         const merged: LiveAccount = {
@@ -97,20 +98,28 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
           ),
           lastSynced: a?.lastSynced ?? d?.last_synced ?? null,
         };
-        setLiveAccount(merged);
-        setPositions((res.positions ?? d?.positions ?? []) as LivePosition[]);
-        setConnected(true);
+        // Stale-while-revalidate: only replace if response is non-empty.
+        const hasMeaningfulData =
+          merged.login !== "" ||
+          merged.balance != null ||
+          merged.equity != null;
+        if (hasMeaningfulData) {
+          setLiveAccount(merged);
+          setConnected(true);
+        }
+        const nextPositions = (res.positions ?? d?.positions ?? []) as LivePosition[];
+        if (Array.isArray(nextPositions)) {
+          // Always set positions array (empty array IS valid info — no open positions).
+          setPositions(nextPositions);
+        }
         setError(null);
       } else {
-        setLiveAccount(null);
-        setPositions([]);
-        setConnected(false);
-        setError(res?.error ?? null);
+        // Not connected per broker. Keep last known good account/positions visible.
+        // Only surface the error message; never blank the panel during polling.
+        setError(res?.error ?? "Trading service did not return account data.");
       }
     } catch (e: any) {
-      setLiveAccount(null);
-      setPositions([]);
-      setConnected(false);
+      // Network / function error — keep previous data on screen (stale-while-revalidate).
       setError(e?.message ?? "Failed to reach the trading service.");
     } finally {
       setLoading(false);

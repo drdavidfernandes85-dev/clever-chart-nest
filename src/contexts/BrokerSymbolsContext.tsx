@@ -96,6 +96,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(
     async (_overrideSelected?: string, opts?: { force?: boolean }) => {
       if (!user) {
+        // Real logout — fall back to the static list.
         setSymbols(FALLBACK_SYMBOLS);
         setIsLive(false);
         setLoaded(false);
@@ -112,7 +113,6 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
           setLoaded(true);
           setError(null);
           if (Date.now() - cached.ts < CACHE_TTL_MS) {
-            // Cache fresh — skip network.
             return;
           }
         }
@@ -123,6 +123,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
           body: { debug: true },
         });
         if (invErr) {
+          // Keep the previous symbol list visible (stale-while-revalidate).
           setLastResponse({ success: false, error: invErr.message ?? String(invErr) });
           setError(invErr.message ?? "Broker symbols could not be loaded. Please refresh.");
           return;
@@ -130,16 +131,24 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         setLastResponse(data);
         if (data?.success === true) {
           const list = Array.isArray(data.symbols) ? data.symbols : [];
-          const enriched = list.length > 0 ? list.map(enrich) : FALLBACK_SYMBOLS;
-          setSymbols(enriched);
-          setIsLive(list.length > 0);
-          setLoaded(list.length > 0);
-          setError(list.length === 0 ? "Broker returned no symbols." : null);
-          if (list.length > 0) writeCache(user.id, enriched);
+          if (list.length > 0) {
+            // Only replace when we got a non-empty valid list.
+            const enriched = list.map(enrich);
+            setSymbols(enriched);
+            setIsLive(true);
+            setLoaded(true);
+            setError(null);
+            writeCache(user.id, enriched);
+          } else {
+            // Empty payload — keep previous list, surface a soft error only.
+            setError("Broker returned no symbols. Showing last known list.");
+          }
         } else {
+          // API said failure — keep previous list, just record the error.
           setError(data?.error ?? "Broker symbols could not be loaded. Please refresh.");
         }
       } catch (e: any) {
+        // Network exception — keep previous list (stale-while-revalidate).
         setLastResponse({ success: false, error: e?.message ?? String(e) });
         setError(e?.message ?? "Broker symbols could not be loaded. Please refresh.");
       } finally {
@@ -174,11 +183,9 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         );
         if (cancelled) return;
         if (invErr) {
+          // Stale-while-revalidate: never blank the panel on a polling error.
           if (isInitial) {
             setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
-            setSelectedSymbolValid(false);
-            setSelectedSymbolInfo(null);
-            setTick(null);
           }
           return;
         }
@@ -186,28 +193,29 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         const rateLimited =
           (data as any)?.rateLimited === true ||
           (data as any)?.step === "rate_limited";
-        if (rateLimited) {
-          // Keep existing specs/tick — broker just throttled us.
-          return;
-        }
+        if (rateLimited) return;
+
         if (data?.success === true) {
-          setSelectedSymbolValid(data.selectedSymbolValid === true);
+          // Only flip "valid" once we have a definitive answer.
+          if (typeof data.selectedSymbolValid === "boolean") {
+            setSelectedSymbolValid(data.selectedSymbolValid);
+          }
           if (data.selectedSymbolInfo) setSelectedSymbolInfo(data.selectedSymbolInfo);
-          if (data.tick) setTick(data.tick);
-        } else if (isInitial) {
-          setSelectedSymbolValid(false);
-          setSelectedSymbolInfo(null);
-          setTick(null);
+          // Only replace tick when the response actually contains one.
+          if (data.tick && (data.tick.bid != null || data.tick.ask != null)) {
+            setTick(data.tick);
+          }
         }
+        // Non-success polling responses: keep previous state visible.
       } catch (e: any) {
-        if (cancelled || !isInitial) return;
-        setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
-        setSelectedSymbolValid(false);
-        setSelectedSymbolInfo(null);
-        setTick(null);
+        if (cancelled) return;
+        if (isInitial) {
+          setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
+        }
+        // Do NOT clear tick/info on polling exceptions.
       }
     };
-    // Reset on symbol change so stale prices never leak across symbols.
+    // Symbol changed — reset to avoid mixing prices across instruments.
     setTick(null);
     setSelectedSymbolInfo(null);
     setSelectedSymbolValid(false);
