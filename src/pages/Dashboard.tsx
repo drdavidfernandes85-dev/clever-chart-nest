@@ -14,6 +14,7 @@ import SEO from "@/components/SEO";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
+import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import TradeJournal from "@/components/dashboard/TradeJournal";
@@ -563,8 +564,12 @@ const DashboardInner = () => {
             <BottomTabs />
           </section>
 
-          {/* RIGHT — Order Entry */}
-          <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5">
+          {/* RIGHT — Bid/Ask Board + Order Ticket */}
+          <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5 space-y-3">
+            <BidAskBoard
+              symbols={["EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "BTCUSD", "US30", "NAS100", "SPX500"]}
+              onSelect={(label) => setCtxSymbol(label)}
+            />
             <BlackArrowTradePanel />
           </aside>
         </div>

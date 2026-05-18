@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Loader2, Plug, Settings2 } from "lucide-react";
+import {
+  ChevronDown,
+  Loader2,
+  Plug,
+  Search,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  X,
+  RotateCcw,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,29 +17,32 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 /**
- * BlackArrow-inspired trade panel.
- * Single compact widget with Bracket, Price, Qty, quick-qty buttons,
- * Buy/Sell action grid, Close, and a live PnL block.
+ * Advanced BlackArrow-style order ticket.
+ * - Symbol selector, big BUY/SELL toggle
+ * - Order type segmented control (Market / Stop / Limit)
+ * - Volume quick chips + manual input
+ * - SL / TP with current price reference + "no stops" checkbox
+ * - Live Margin / Risk% / Potential P&L preview
+ * - Big CONFIRM ORDER button
+ * - Cancel Ord. | Invert | Close row
  */
 
-const QUICK_QTYS = [0.2, 0.4, 0.6];
+const QUICK_VOLS = [0.01, 0.1, 0.5, 1.0];
 
-const pickTickPrice = (tick: any, side: "buy" | "sell"): number | null => {
-  if (!tick) return null;
-  const bid = Number(tick.bid ?? tick.Bid ?? tick.b ?? tick.last ?? NaN);
-  const ask = Number(tick.ask ?? tick.Ask ?? tick.a ?? tick.last ?? NaN);
-  if (side === "buy" && Number.isFinite(ask)) return ask;
-  if (side === "sell" && Number.isFinite(bid)) return bid;
-  if (Number.isFinite(ask)) return ask;
-  if (Number.isFinite(bid)) return bid;
-  return null;
+const pickTick = (tick: any) => {
+  if (!tick) return { bid: null, ask: null };
+  return {
+    bid: Number(tick.bid ?? tick.Bid ?? tick.b ?? NaN),
+    ask: Number(tick.ask ?? tick.Ask ?? tick.a ?? NaN),
+  };
 };
 
-const fmtMoney = (n: number | null | undefined, currency = "USD") => {
-  if (n === null || n === undefined || Number.isNaN(n)) return "$ 0.00";
+const fmt = (n: number | null | undefined, currency = "USD") => {
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: currency || "USD",
@@ -38,59 +51,148 @@ const fmtMoney = (n: number | null | undefined, currency = "USD") => {
   }).format(n);
 };
 
+const fmtPx = (n: number | null | undefined, digits = 5) =>
+  n === null || n === undefined || Number.isNaN(n) ? "—" : n.toFixed(digits);
+
+type OrderType = "market" | "stop" | "limit";
+
 interface Props {
   className?: string;
 }
 
 const BlackArrowTradePanel = ({ className }: Props) => {
   const { user } = useAuth();
-  const { symbol: ctxSymbol, side, setSide } = useQuickTrade();
-  const { tick, selectedSymbolValid } = useBrokerSymbols();
+  const { symbol: ctxSymbol, side, setSide, setSymbol: setCtxSymbol } = useQuickTrade();
+  const {
+    tick,
+    selectedSymbolValid,
+    selectedSymbolInfo,
+    symbols: brokerSymbols,
+    isLive,
+  } = useBrokerSymbols();
   const { liveAccount, positions, connected, refresh } = useLiveAccount();
 
-  const [bracket] = useState<string>("None");
-  const [qty, setQty] = useState<string>("0.20");
+  const [orderType, setOrderType] = useState<OrderType>("market");
+  const [vol, setVol] = useState<string>("0.01");
   const [price, setPrice] = useState<string>("");
-  const [pnlMode, setPnlMode] = useState<"$" | "%">("$");
-  const [submitting, setSubmitting] = useState<null | string>(null);
+  const [sl, setSl] = useState<string>("");
+  const [tp, setTp] = useState<string>("");
+  const [noStops, setNoStops] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [symbolOpen, setSymbolOpen] = useState(false);
+  const [symbolSearch, setSymbolSearch] = useState("");
 
   const priceTouched = useRef(false);
-  const liveBuy = pickTickPrice(tick, "buy");
-  const liveSell = pickTickPrice(tick, "sell");
-  const livePrice = side === "buy" ? liveBuy : liveSell;
 
-  // Auto-fill price input with live price when user hasn't typed.
+  const { bid, ask } = pickTick(tick);
+  const livePrice = side === "buy" ? ask : bid;
+  const digits = Number(selectedSymbolInfo?.digits ?? 5);
+
   useEffect(() => {
-    if (priceTouched.current) return;
-    if (livePrice != null) setPrice(livePrice.toFixed(5));
-  }, [livePrice]);
+    if (orderType !== "market" && !priceTouched.current && livePrice != null) {
+      setPrice(livePrice.toFixed(digits));
+    }
+    if (orderType === "market") {
+      setPrice("");
+      priceTouched.current = false;
+    }
+  }, [livePrice, orderType, digits]);
 
-  // Reset touched flag when symbol changes.
   useEffect(() => {
     priceTouched.current = false;
   }, [ctxSymbol]);
 
-  const qtyNum = Number(qty) || 0;
-  const priceNum = Number(price) || livePrice || 0;
-  const total = qtyNum * priceNum;
+  const volNum = Number(vol) || 0;
+  const entryPrice =
+    orderType === "market" ? livePrice ?? 0 : Number(price) || livePrice || 0;
+  const slNum = sl ? Number(sl) : null;
+  const tpNum = tp ? Number(tp) : null;
 
-  // Positions filtered to the active symbol.
-  const symbolPositions = useMemo(
-    () => positions.filter((p) => (p.symbol || "").toUpperCase().includes((ctxSymbol || "").toUpperCase().replace(/\//g, ""))),
-    [positions, ctxSymbol],
-  );
-  const openPnl = symbolPositions.reduce((s, p) => s + Number(p.profit || 0), 0);
-  const totalPositionsPnl = positions.reduce((s, p) => s + Number(p.profit || 0), 0);
-  const avgEntry =
-    symbolPositions.length === 0
-      ? 0
-      : symbolPositions.reduce((s, p) => s + Number(p.entry_price || 0), 0) / symbolPositions.length;
-  const symbolQty = symbolPositions.reduce((s, p) => s + Number(p.volume || 0), 0);
+  // Symbol picker list
+  const normalizedSym = (ctxSymbol || "").replace(/\//g, "").toUpperCase();
+  const symbolList = useMemo(() => {
+    return brokerSymbols.slice(0, 800).filter((s) => {
+      const q = symbolSearch.trim().toUpperCase();
+      if (!q) return true;
+      return (
+        s.symbol.includes(q) ||
+        (s.displayName || "").toUpperCase().includes(q)
+      );
+    });
+  }, [brokerSymbols, symbolSearch]);
+
+  // Quick metrics
+  const equity = Number(liveAccount?.equity ?? 0);
   const currency = liveAccount?.currency || "USD";
+  const leverage = Number(liveAccount?.leverage ?? 100) || 100;
+  const contractSize = Number(selectedSymbolInfo?.contractSize ?? 100000) || 100000;
+  const notional = entryPrice * volNum * contractSize;
+  const marginRequired = leverage > 0 ? notional / leverage : 0;
 
-  const callExecute = async (body: Record<string, unknown>, label: string) => {
-    setSubmitting(label);
+  // Pip size heuristic
+  const pipSize = normalizedSym.includes("JPY")
+    ? 0.01
+    : normalizedSym.includes("XAU")
+      ? 0.1
+      : normalizedSym.includes("BTC")
+        ? 1
+        : 0.0001;
+  const valuePerPipPerLot = 10; // rough USD pip value per 1.00 lot
+
+  const slPips = slNum && entryPrice
+    ? Math.abs(entryPrice - slNum) / pipSize
+    : 0;
+  const tpPips = tpNum && entryPrice
+    ? Math.abs(entryPrice - tpNum) / pipSize
+    : 0;
+  const potentialLoss = slPips * volNum * valuePerPipPerLot;
+  const potentialProfit = tpPips * volNum * valuePerPipPerLot;
+  const riskPct = equity > 0 && potentialLoss > 0 ? (potentialLoss / equity) * 100 : 0;
+
+  // Validation
+  const slTpError = (() => {
+    if (noStops) return null;
+    if (!entryPrice) return null;
+    if (side === "buy") {
+      if (slNum && slNum >= entryPrice) return "SL must be below entry for BUY";
+      if (tpNum && tpNum <= entryPrice) return "TP must be above entry for BUY";
+    } else {
+      if (slNum && slNum <= entryPrice) return "SL must be above entry for SELL";
+      if (tpNum && tpNum >= entryPrice) return "TP must be below entry for SELL";
+    }
+    return null;
+  })();
+
+  const canSubmit =
+    !!user &&
+    connected &&
+    selectedSymbolValid !== false &&
+    volNum > 0 &&
+    !slTpError &&
+    !submitting &&
+    (orderType === "market" || Number(price) > 0);
+
+  // Open positions on this symbol
+  const symbolPositions = positions.filter((p) =>
+    (p.symbol || "").toUpperCase().includes(normalizedSym),
+  );
+  const symbolPnl = symbolPositions.reduce((s, p) => s + Number(p.profit || 0), 0);
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
     try {
+      const body: Record<string, unknown> = {
+        symbol: normalizedSym,
+        side,
+        volume: Number(volNum.toFixed(2)),
+        stopLoss: noStops ? null : slNum,
+        takeProfit: noStops ? null : tpNum,
+      };
+      if (orderType !== "market") {
+        body.type = orderType;
+        body.entry = Number(price);
+      }
       const { data, error } = await supabase.functions.invoke("execute-trade", { body });
       let res: any = data;
       if (error) {
@@ -100,89 +202,42 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           else if (ctx?.text) res = JSON.parse(await ctx.text());
         } catch { /* ignore */ }
         if (!res) {
-          toast.error((error as any)?.message || `${label} failed`);
+          toast.error((error as any)?.message || "Order failed");
           return;
         }
       }
       if (res?.success === true) {
-        toast.success(`${label} sent`, {
+        toast.success(`${side.toUpperCase()} ${normalizedSym} ${volNum.toFixed(2)}`, {
           description: res.ticket ? `Ticket #${res.ticket}` : undefined,
         });
-        window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: ctxSymbol } }));
+        window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym } }));
         window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
         refresh();
+        setSl("");
+        setTp("");
       } else {
         const msg =
           res?.retcodeDescription ||
           res?.retcode_description ||
           res?.error ||
-          `${label} rejected`;
-        toast.error(`${label} failed`, { description: msg });
+          "Order rejected";
+        toast.error("Order failed", { description: msg });
       }
     } catch (e: any) {
-      toast.error(e?.message || `${label} failed`);
+      toast.error(e?.message || "Order failed");
     } finally {
-      setSubmitting(null);
+      setSubmitting(false);
     }
   };
 
-  const normalizedSymbol = (ctxSymbol || "").replace(/\//g, "").toUpperCase();
-
-  const requireAuth = () => {
-    if (!user) {
-      toast.error("Sign in to trade");
-      return false;
-    }
-    if (!connected) {
-      toast.error("Connect your MT5 account first");
-      return false;
-    }
-    if (selectedSymbolValid === false) {
-      toast.error("Symbol not tradable on this account");
-      return false;
-    }
-    if (!(qtyNum > 0)) {
-      toast.error("Quantity must be greater than 0");
-      return false;
-    }
-    return true;
-  };
-
-  const placeMarket = (s: "buy" | "sell") => {
-    if (!requireAuth()) return;
-    setSide(s);
-    callExecute(
-      { symbol: normalizedSymbol, side: s, volume: Number(qtyNum.toFixed(2)) },
-      s === "buy" ? "Buy @ Mkt" : "Sell @ Mkt",
-    );
-  };
-
-  const placePending = (s: "buy" | "sell", type: "stop" | "limit") => {
-    if (!requireAuth()) return;
-    if (!(priceNum > 0)) return toast.error("Set a price for the pending order");
-    setSide(s);
-    callExecute(
-      {
-        symbol: normalizedSymbol,
-        side: s,
-        volume: Number(qtyNum.toFixed(2)),
-        type,
-        entry: priceNum,
-      },
-      s === "buy" ? "Buy Stop" : "Sell Limit",
-    );
-  };
-
-  const closeAll = async (symbolOnly: boolean) => {
-    if (!requireAuth()) return;
-    const targets = symbolOnly ? symbolPositions : positions;
-    if (targets.length === 0) {
-      toast.info("No open positions to close");
+  const closeSymbolPositions = async () => {
+    if (symbolPositions.length === 0) {
+      toast.info("No open positions on this symbol");
       return;
     }
-    setSubmitting("Close");
+    setSubmitting(true);
     try {
-      for (const p of targets) {
+      for (const p of symbolPositions) {
         const opposite: "buy" | "sell" = p.side === "buy" ? "sell" : "buy";
         await supabase.functions.invoke("execute-trade", {
           body: {
@@ -193,17 +248,16 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           },
         });
       }
-      toast.success(`Closed ${targets.length} position${targets.length > 1 ? "s" : ""}`);
+      toast.success(`Closed ${symbolPositions.length} position(s)`);
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
       refresh();
     } catch (e: any) {
       toast.error(e?.message || "Close failed");
     } finally {
-      setSubmitting(null);
+      setSubmitting(false);
     }
   };
 
-  // ----- not connected -----
   if (connected === false) {
     return (
       <div
@@ -217,7 +271,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
         <h3 className="font-heading text-sm font-bold mb-1">MT5 account not connected</h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Connect your trading account to enable order entry.
+          Connect your trading account to place orders.
         </p>
         <Link
           to="/connect-mt"
@@ -229,58 +283,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     );
   }
 
-  const Row = ({ label, value, tone }: { label: string; value: string; tone?: "pos" | "neg" }) => (
-    <div className="flex items-center justify-between py-1 text-[12px]">
-      <span className="text-muted-foreground">{label}</span>
-      <span
-        className={cn(
-          "font-mono tabular-nums",
-          tone === "pos" && "text-emerald-400",
-          tone === "neg" && "text-red-400",
-          !tone && "text-foreground",
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-
-  const ActionBtn = ({
-    children,
-    onClick,
-    variant,
-    disabled,
-    loading,
-  }: {
-    children: React.ReactNode;
-    onClick: () => void;
-    variant: "buy" | "sell" | "neutral" | "danger";
-    disabled?: boolean;
-    loading?: boolean;
-  }) => {
-    const styles: Record<string, string> = {
-      buy: "bg-primary text-primary-foreground hover:bg-primary/90 border-primary/40",
-      sell: "bg-red-500 text-white hover:bg-red-500/90 border-red-500/40",
-      neutral:
-        "bg-muted/40 text-foreground hover:bg-muted/60 border-border/60",
-      danger:
-        "bg-red-600/90 text-white hover:bg-red-600 border-red-600/40",
-    };
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled || !!submitting}
-        className={cn(
-          "h-9 rounded-md border text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
-          styles[variant],
-        )}
-      >
-        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-        {children}
-      </button>
-    );
-  };
+  const isBuy = side === "buy";
+  const accentColor = isBuy ? "emerald" : "red";
 
   return (
     <div
@@ -289,41 +293,169 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         className,
       )}
     >
-      {/* Account header chip */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/60 bg-background/40">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
-            Live
-          </span>
-          <span className="truncate text-xs font-medium">
-            {liveAccount?.login ? `${liveAccount.login}` : "MT5"}{" "}
-            <span className="text-muted-foreground">· {liveAccount?.server || "—"}</span>
-          </span>
-        </div>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          Order Ticket
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {liveAccount?.login ? `#${liveAccount.login}` : "—"} · {fmt(equity, currency)}
+        </span>
       </div>
 
       <div className="p-3 space-y-3">
-        {/* Bracket / Price / Qty */}
-        <div className="space-y-1.5">
-          <FieldRow label="Bracket">
-            <button
-              type="button"
-              className="flex-1 h-7 rounded border border-border/60 bg-background/60 px-2 text-left text-[12px] flex items-center justify-between"
-            >
-              <span>&lt;{bracket}&gt;</span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
-            </button>
-            <button
-              type="button"
-              className="h-7 w-7 rounded border border-border/60 bg-background/60 flex items-center justify-center hover:bg-background/80"
-              aria-label="Bracket settings"
-            >
-              <Settings2 className="h-3.5 w-3.5" />
-            </button>
-          </FieldRow>
+        {/* Symbol selector */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setSymbolOpen((v) => !v)}
+            className="w-full flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2.5 hover:bg-background/80"
+          >
+            <div className="flex flex-col items-start">
+              <span className="font-heading text-lg font-bold leading-tight">
+                {normalizedSym || "—"}
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                {selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="font-mono tabular-nums text-[11px] text-red-400">
+                  Bid {fmtPx(bid, digits)}
+                </div>
+                <div className="font-mono tabular-nums text-[11px] text-emerald-400">
+                  Ask {fmtPx(ask, digits)}
+                </div>
+              </div>
+              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", symbolOpen && "rotate-180")} />
+            </div>
+          </button>
+          {symbolOpen ? (
+            <div className="absolute z-30 mt-1 w-full rounded-lg border border-border/60 bg-popover shadow-xl overflow-hidden">
+              <div className="flex items-center gap-2 border-b border-border/60 px-2 py-1.5">
+                <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  autoFocus
+                  value={symbolSearch}
+                  onChange={(e) => setSymbolSearch(e.target.value)}
+                  placeholder="Search symbol…"
+                  className="flex-1 bg-transparent text-xs focus:outline-none"
+                />
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {symbolList.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">No symbols found</div>
+                ) : (
+                  symbolList.slice(0, 60).map((s) => (
+                    <button
+                      key={s.symbol}
+                      type="button"
+                      onClick={() => {
+                        setCtxSymbol(s.displayName || s.symbol);
+                        setSymbolOpen(false);
+                        setSymbolSearch("");
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-muted/40",
+                        s.symbol === normalizedSym && "bg-primary/10 text-primary",
+                      )}
+                    >
+                      <span className="font-mono">{s.symbol}</span>
+                      <span className="text-[10px] text-muted-foreground truncate ml-2 max-w-[55%]">
+                        {s.description || s.assetClass || ""}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          ) : null}
+        </div>
 
-          <FieldRow label="Price">
+        {/* BUY / SELL toggle */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setSide("buy")}
+            className={cn(
+              "h-11 rounded-lg font-heading text-sm font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 border",
+              isBuy
+                ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_4px_14px_-4px_rgba(16,185,129,0.5)]"
+                : "bg-background/40 text-muted-foreground border-border/60 hover:text-emerald-400 hover:border-emerald-500/40",
+            )}
+          >
+            <TrendingUp className="h-4 w-4" /> BUY
+          </button>
+          <button
+            type="button"
+            onClick={() => setSide("sell")}
+            className={cn(
+              "h-11 rounded-lg font-heading text-sm font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 border",
+              !isBuy
+                ? "bg-red-500 text-white border-red-500 shadow-[0_4px_14px_-4px_rgba(239,68,68,0.5)]"
+                : "bg-background/40 text-muted-foreground border-border/60 hover:text-red-400 hover:border-red-500/40",
+            )}
+          >
+            <TrendingDown className="h-4 w-4" /> SELL
+          </button>
+        </div>
+
+        {/* Order type segmented */}
+        <div className="grid grid-cols-3 gap-1 rounded-lg border border-border/60 bg-background/40 p-1">
+          {(["market", "stop", "limit"] as OrderType[]).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setOrderType(t)}
+              className={cn(
+                "h-7 rounded text-[11px] font-semibold uppercase tracking-wider transition-colors",
+                orderType === t
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {isBuy ? "Buy" : "Sell"} {t === "market" ? "@ Mkt" : t === "stop" ? "Stop" : "Limit"}
+            </button>
+          ))}
+        </div>
+
+        {/* Volume */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Volume</label>
+            <input
+              value={vol}
+              onChange={(e) => setVol(e.target.value)}
+              inputMode="decimal"
+              className="w-20 h-7 rounded border border-border/60 bg-background/60 px-2 text-right text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {QUICK_VOLS.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => setVol(q.toFixed(2))}
+                className={cn(
+                  "h-7 rounded border text-[11px] font-mono tabular-nums transition-colors",
+                  vol === q.toFixed(2)
+                    ? "border-primary/60 bg-primary/15 text-primary"
+                    : "border-border/60 bg-background/60 hover:bg-background/80",
+                )}
+              >
+                {q.toFixed(2)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Pending price */}
+        {orderType !== "market" ? (
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Price
+            </label>
             <input
               value={price}
               onChange={(e) => {
@@ -331,172 +463,181 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 setPrice(e.target.value);
               }}
               inputMode="decimal"
-              className="flex-1 h-7 rounded border border-border/60 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder={livePrice ? livePrice.toFixed(digits) : "0.00000"}
+              className="w-full h-8 rounded border border-border/60 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
-          </FieldRow>
+          </div>
+        ) : null}
 
-          <FieldRow label="Qty">
+        {/* SL / TP */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-red-400/80">
+              Stop Loss
+            </label>
             <input
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
+              value={sl}
+              onChange={(e) => setSl(e.target.value)}
+              disabled={noStops}
               inputMode="decimal"
-              className="flex-1 h-7 rounded border border-border/60 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
+              className="w-full h-8 rounded border border-red-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
             />
-          </FieldRow>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400/80">
+              Take Profit
+            </label>
+            <input
+              value={tp}
+              onChange={(e) => setTp(e.target.value)}
+              disabled={noStops}
+              inputMode="decimal"
+              placeholder={livePrice ? livePrice.toFixed(digits) : "—"}
+              className="w-full h-8 rounded border border-emerald-500/30 bg-background/60 px-2 text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+            />
+          </div>
         </div>
 
-        {/* Quick qty buttons */}
+        <label className="flex items-center gap-2 text-[11px] text-muted-foreground cursor-pointer select-none">
+          <Checkbox
+            checked={noStops}
+            onCheckedChange={(v) => setNoStops(v === true)}
+            className="h-3.5 w-3.5"
+          />
+          Place without SL / TP
+        </label>
+
+        {slTpError ? (
+          <div className="flex items-center gap-1.5 rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-[11px] text-red-400">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {slTpError}
+          </div>
+        ) : null}
+
+        {/* Preview metrics */}
+        <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-2 space-y-1">
+          <PreviewRow label="Entry" value={fmtPx(entryPrice || null, digits)} />
+          <PreviewRow label="Margin req." value={fmt(marginRequired, currency)} />
+          <PreviewRow
+            label="Risk"
+            value={riskPct ? `${riskPct.toFixed(2)}% · ${fmt(potentialLoss, currency)}` : "—"}
+            tone={riskPct > 2 ? "neg" : undefined}
+          />
+          <PreviewRow
+            label="Potential P&L"
+            value={potentialProfit ? `+${fmt(potentialProfit, currency)}` : "—"}
+            tone="pos"
+          />
+        </div>
+
+        {/* CONFIRM */}
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!canSubmit}
+          className={cn(
+            "w-full h-12 rounded-lg font-heading text-sm font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+            isBuy
+              ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_6px_20px_-6px_rgba(16,185,129,0.6)]"
+              : "bg-red-500 text-white hover:bg-red-600 shadow-[0_6px_20px_-6px_rgba(239,68,68,0.6)]",
+          )}
+        >
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          Confirm {isBuy ? "Buy" : "Sell"} · {volNum.toFixed(2)} lots
+        </button>
+
+        {/* Bottom row */}
         <div className="grid grid-cols-3 gap-1.5">
-          {QUICK_QTYS.map((q) => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => setQty(q.toFixed(2))}
+          <ToolBtn
+            onClick={() => {
+              setSl("");
+              setTp("");
+              setPrice("");
+              setNoStops(false);
+              priceTouched.current = false;
+            }}
+            icon={<X className="h-3.5 w-3.5" />}
+            label="Cancel Ord."
+          />
+          <ToolBtn
+            onClick={() => setSide(isBuy ? "sell" : "buy")}
+            icon={<RotateCcw className="h-3.5 w-3.5" />}
+            label="Invert"
+          />
+          <ToolBtn
+            onClick={closeSymbolPositions}
+            icon={<X className="h-3.5 w-3.5" />}
+            label="Close"
+            danger
+          />
+        </div>
+
+        {symbolPositions.length > 0 ? (
+          <div className="rounded-md border border-border/60 bg-background/40 px-2.5 py-1.5 flex items-center justify-between text-[11px]">
+            <span className="text-muted-foreground">
+              Open {normalizedSym}: {symbolPositions.length} pos
+            </span>
+            <span
               className={cn(
-                "h-7 rounded border text-[12px] font-mono tabular-nums transition-colors",
-                qty === q.toFixed(2)
-                  ? "border-primary/60 bg-primary/15 text-primary"
-                  : "border-border/60 bg-background/60 hover:bg-background/80",
+                "font-mono tabular-nums",
+                symbolPnl > 0 ? "text-emerald-400" : symbolPnl < 0 ? "text-red-400" : "text-foreground",
               )}
             >
-              {q.toFixed(2)}
-            </button>
-          ))}
-        </div>
-
-        {/* Total */}
-        <div className="flex items-center justify-between rounded border border-border/60 bg-background/40 px-2 py-1.5">
-          <span className="text-[11px] text-muted-foreground">Total</span>
-          <span className="font-mono tabular-nums text-[12px]">
-            {fmtMoney(total, currency)}
-          </span>
-        </div>
-
-        {/* Action grid */}
-        <div className="grid grid-cols-2 gap-1.5">
-          <ActionBtn
-            variant="buy"
-            onClick={() => placePending("buy", "stop")}
-            loading={submitting === "Buy Stop"}
-          >
-            Buy Stop
-          </ActionBtn>
-          <ActionBtn
-            variant="sell"
-            onClick={() => placePending("sell", "limit")}
-            loading={submitting === "Sell Limit"}
-          >
-            Sell Limit
-          </ActionBtn>
-          <ActionBtn
-            variant="buy"
-            onClick={() => placeMarket("buy")}
-            loading={submitting === "Buy @ Mkt"}
-          >
-            Buy at Mkt
-          </ActionBtn>
-          <ActionBtn
-            variant="sell"
-            onClick={() => placeMarket("sell")}
-            loading={submitting === "Sell @ Mkt"}
-          >
-            Sell at Mkt
-          </ActionBtn>
-          <ActionBtn
-            variant="neutral"
-            onClick={() => {
-              setPrice("");
-              priceTouched.current = false;
-              toast.success("Order draft cancelled");
-            }}
-          >
-            Cancel Ord.
-          </ActionBtn>
-          <ActionBtn
-            variant="neutral"
-            onClick={() => setSide(side === "buy" ? "sell" : "buy")}
-          >
-            Invert
-          </ActionBtn>
-        </div>
-
-        <ActionBtn
-          variant="danger"
-          onClick={() => closeAll(true)}
-          loading={submitting === "Close"}
-        >
-          Close
-        </ActionBtn>
-        <ActionBtn variant="danger" onClick={() => closeAll(false)}>
-          Cancel Orders + Close
-        </ActionBtn>
-
-        {/* Profit and Loss */}
-        <div className="rounded border border-border/60 bg-background/40 px-2.5 py-2">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Profit and Loss
+              {fmt(symbolPnl, currency)}
             </span>
-            <div className="flex items-center rounded border border-border/60 overflow-hidden">
-              {(["$", "%"] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setPnlMode(m)}
-                  className={cn(
-                    "px-2 py-0.5 text-[10px]",
-                    pnlMode === m
-                      ? "bg-primary/20 text-primary"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
           </div>
-          <Row label="Qty" value={symbolQty ? symbolQty.toFixed(2) : "—"} />
-          <Row
-            label="Open PnL"
-            value={openPnl === 0 ? "0.00" : fmtMoney(openPnl, currency)}
-            tone={openPnl > 0 ? "pos" : openPnl < 0 ? "neg" : undefined}
-          />
-          <Row
-            label="Daily PnL"
-            value={fmtMoney(liveAccount?.profit ?? 0, currency)}
-            tone={
-              (liveAccount?.profit ?? 0) > 0
-                ? "pos"
-                : (liveAccount?.profit ?? 0) < 0
-                  ? "neg"
-                  : undefined
-            }
-          />
-          <Row label="Avg" value={avgEntry ? avgEntry.toFixed(5) : fmtMoney(0, currency)} />
-          <Row
-            label="Total"
-            value={fmtMoney(totalPositionsPnl, currency)}
-            tone={
-              totalPositionsPnl > 0 ? "pos" : totalPositionsPnl < 0 ? "neg" : undefined
-            }
-          />
-        </div>
+        ) : null}
       </div>
     </div>
   );
 };
 
-const FieldRow = ({
+const PreviewRow = ({
   label,
-  children,
+  value,
+  tone,
 }: {
   label: string;
-  children: React.ReactNode;
+  value: string;
+  tone?: "pos" | "neg";
 }) => (
-  <div className="flex items-center gap-2">
-    <span className="w-14 shrink-0 text-[11px] text-muted-foreground">{label}</span>
-    {children}
+  <div className="flex items-center justify-between text-[11px]">
+    <span className="text-muted-foreground">{label}</span>
+    <span
+      className={cn(
+        "font-mono tabular-nums",
+        tone === "pos" && "text-emerald-400",
+        tone === "neg" && "text-red-400",
+      )}
+    >
+      {value}
+    </span>
   </div>
+);
+
+const ToolBtn = ({
+  onClick,
+  icon,
+  label,
+  danger,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  danger?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={cn(
+      "h-8 rounded border text-[11px] font-semibold flex items-center justify-center gap-1 transition-colors",
+      danger
+        ? "border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+        : "border-border/60 bg-background/60 text-foreground hover:bg-background/80",
+    )}
+  >
+    {icon} {label}
+  </button>
 );
 
 export default BlackArrowTradePanel;
