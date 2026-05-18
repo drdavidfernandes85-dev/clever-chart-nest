@@ -485,7 +485,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               className="w-20 h-7 rounded border border-border/60 bg-background/60 px-2 text-right text-[12px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-5 gap-1.5">
             {QUICK_VOLS.map((q) => (
               <button
                 key={q}
