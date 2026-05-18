@@ -799,14 +799,17 @@ const DashboardInner = () => {
           {/* LEFT — Market Watch */}
           <MarketWatchPanel active={active} onSelect={selectSymbol} />
 
-          {/* CENTER — Bid/Ask + Chart + Tabs */}
+          {/* CENTER — Chart + Tabs */}
           <section className="flex flex-col gap-2 lg:gap-3 min-w-0">
             <div className="rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden">
               {/* Chart toolbar */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800/80 px-3 py-2">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-heading text-[14px] font-bold tracking-wide text-neutral-100">
                     {active}
+                  </span>
+                  <span className="flex items-center gap-1.5 rounded border border-[#FFCD05]/30 bg-[#FFCD05]/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.2em] text-[#FFCD05]">
+                    <Activity className="h-2.5 w-2.5" /> Infinox MT5
                   </span>
                   <ChartBidAskHeader />
                 </div>
@@ -838,6 +841,9 @@ const DashboardInner = () => {
                   withDateRanges={true}
                   saveImage={true}
                 />
+                <div className="pointer-events-none absolute top-2 left-2 rounded bg-black/60 px-2 py-0.5 text-[9px] font-mono uppercase tracking-widest text-neutral-300 border border-neutral-800">
+                  Prices: live MT5 tick via Trading Layer
+                </div>
               </div>
             </div>
 
@@ -845,16 +851,23 @@ const DashboardInner = () => {
             <BottomTabs />
           </section>
 
-          {/* RIGHT — Bid/Ask Board + Order Ticket */}
-          <aside className="lg:h-[calc(100vh-7rem)] lg:overflow-y-auto pr-0.5 space-y-3">
-            <BidAskBoard
-              symbols={["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "US30", "NAS100", "BTCUSD", "USOIL"]}
-              activeSymbol={active}
-              onSelect={(label) => selectSymbol(label)}
-            />
-            <BlackArrowTradePanel />
+          {/* RIGHT — Bid/Ask Board (top 33%) + Order Ticket (bottom 67%) */}
+          <aside className="lg:h-[calc(100vh-7rem)] flex flex-col gap-2 lg:gap-3 min-h-0">
+            <div className="flex-[33] min-h-0 overflow-hidden">
+              <BidAskBoard
+                symbols={watchBoardSymbols}
+                activeSymbol={active}
+                onSelect={(label) => selectSymbol(label)}
+              />
+            </div>
+            <div className="flex-[67] min-h-0 overflow-y-auto pr-0.5">
+              <BlackArrowTradePanel />
+            </div>
           </aside>
         </div>
+
+        <TerminalStatusBar activeSymbol={active} />
+      </div>
       </div>
     </div>
   );
