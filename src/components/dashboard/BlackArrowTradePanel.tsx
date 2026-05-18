@@ -74,8 +74,37 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   } = useBrokerSymbols();
   const { liveAccount, positions, connected, refresh } = useLiveAccount();
 
-  const [orderType, setOrderType] = useState<OrderType>("market");
-  const [vol, setVol] = useState<string>("0.01");
+  // ---- Persisted preferences ----
+  const PREFS_KEY = "ba-ticket-prefs";
+  type FocusTarget = "volume" | "price" | "orderType";
+  type Prefs = {
+    side: "buy" | "sell";
+    orderType: OrderType;
+    vol: string;
+    focusTarget: FocusTarget;
+    autoReset: boolean;
+  };
+  const defaultPrefs: Prefs = {
+    side: "buy",
+    orderType: "market",
+    vol: "0.01",
+    focusTarget: "volume",
+    autoReset: true,
+  };
+  const loadPrefs = (): Prefs => {
+    if (typeof window === "undefined") return defaultPrefs;
+    try {
+      const raw = localStorage.getItem(PREFS_KEY);
+      if (!raw) return defaultPrefs;
+      return { ...defaultPrefs, ...JSON.parse(raw) };
+    } catch {
+      return defaultPrefs;
+    }
+  };
+  const initialPrefs = useRef<Prefs>(loadPrefs());
+
+  const [orderType, setOrderType] = useState<OrderType>(initialPrefs.current.orderType);
+  const [vol, setVol] = useState<string>(initialPrefs.current.vol);
   const [price, setPrice] = useState<string>("");
   const [sl, setSl] = useState<string>("");
   const [tp, setTp] = useState<string>("");
@@ -83,7 +112,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [submitting, setSubmitting] = useState(false);
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [symbolSearch, setSymbolSearch] = useState("");
-  const [autoReset, setAutoReset] = useState(true);
+  const [autoReset, setAutoReset] = useState(initialPrefs.current.autoReset);
+  const [focusTarget, setFocusTarget] = useState<FocusTarget>(
+    initialPrefs.current.focusTarget,
+  );
   const [lastExecution, setLastExecution] = useState<{
     side: "buy" | "sell";
     symbol: string;
@@ -94,8 +126,34 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   const priceTouched = useRef(false);
   const volInputRef = useRef<HTMLInputElement>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
+  const orderTypeBtnRef = useRef<HTMLButtonElement>(null);
   const prevSpreadRef = useRef<number | null>(null);
+  const prevBidRef = useRef<number | null>(null);
+  const prevAskRef = useRef<number | null>(null);
   const [spreadTrend, setSpreadTrend] = useState<"up" | "down" | "flat">("flat");
+  const [bidFlash, setBidFlash] = useState<"up" | "down" | null>(null);
+  const [askFlash, setAskFlash] = useState<"up" | "down" | null>(null);
+
+  // Apply initial preferred side once
+  const initialSideRef = useRef(false);
+  useEffect(() => {
+    if (!initialSideRef.current) {
+      initialSideRef.current = true;
+      setSide(initialPrefs.current.side);
+    }
+  }, [setSide]);
+
+  // Persist prefs on change
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        PREFS_KEY,
+        JSON.stringify({ side, orderType, vol, focusTarget, autoReset }),
+      );
+    } catch { /* ignore */ }
+  }, [side, orderType, vol, focusTarget, autoReset]);
 
   const { bid, ask } = pickTick(tick);
   const livePrice = side === "buy" ? ask : bid;
@@ -118,6 +176,34 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     }
     prevSpreadRef.current = spread;
   }, [spread]);
+
+  // Bid / Ask price-move flash cues (auto-clear)
+  useEffect(() => {
+    if (bid == null || !Number.isFinite(bid)) return;
+    const prev = prevBidRef.current;
+    if (prev != null && prev !== bid) {
+      setBidFlash(bid > prev ? "up" : "down");
+    }
+    prevBidRef.current = bid;
+  }, [bid]);
+  useEffect(() => {
+    if (ask == null || !Number.isFinite(ask)) return;
+    const prev = prevAskRef.current;
+    if (prev != null && prev !== ask) {
+      setAskFlash(ask > prev ? "up" : "down");
+    }
+    prevAskRef.current = ask;
+  }, [ask]);
+  useEffect(() => {
+    if (!bidFlash) return;
+    const t = setTimeout(() => setBidFlash(null), 450);
+    return () => clearTimeout(t);
+  }, [bidFlash]);
+  useEffect(() => {
+    if (!askFlash) return;
+    const t = setTimeout(() => setAskFlash(null), 450);
+    return () => clearTimeout(t);
+  }, [askFlash]);
 
   useEffect(() => {
     if (orderType !== "market" && !priceTouched.current && livePrice != null) {
@@ -245,9 +331,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
       }
       if (res?.success === true) {
-        toast.success(`${side.toUpperCase()} ${normalizedSym} ${volNum.toFixed(2)}`, {
-          description: res.ticket ? `Ticket #${res.ticket}` : undefined,
-        });
+        const filledPrice = Number(res.price ?? res.openPrice ?? entryPrice) || entryPrice;
+        const spreadCostStr =
+          spread != null && volNum > 0
+            ? fmt((spread / pipSize) * volNum * valuePerPipPerLot, currency)
+            : "—";
+        toast.success(
+          `${side.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`,
+          {
+            description: [
+              `Px ${fmtPx(filledPrice, digits)}`,
+              `Spread ${spreadCostStr}`,
+              res.ticket ? `#${res.ticket}` : null,
+            ]
+              .filter(Boolean)
+              .join("  ·  "),
+            duration: 5000,
+          },
+        );
         window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym } }));
         window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
         refresh();
@@ -264,13 +365,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         setTp("");
         setPrice("");
         priceTouched.current = false;
-        // Optional reset of qty/order type
+        // Optional reset of qty/order type to PREFERRED defaults
         if (autoReset) {
-          setVol("0.01");
-          setOrderType("market");
+          setVol(initialPrefs.current.vol);
+          setOrderType(initialPrefs.current.orderType);
+          setSide(initialPrefs.current.side);
         }
-        // Focus next control so the trader can immediately stage the next order
-        setTimeout(() => volInputRef.current?.focus(), 50);
+        // Focus the user-chosen control
+        setTimeout(() => {
+          if (focusTarget === "price") priceInputRef.current?.focus();
+          else if (focusTarget === "orderType") orderTypeBtnRef.current?.focus();
+          else volInputRef.current?.focus();
+        }, 50);
       } else {
         const msg =
           res?.retcodeDescription ||
@@ -464,12 +570,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               { s: "buy", t: "limit", label: "Buy Limit" },
               { s: "sell", t: "limit", label: "Sell Limit" },
             ] as { s: "buy" | "sell"; t: OrderType; label: string }[]
-          ).map(({ s, t, label }) => {
+          ).map(({ s, t, label }, idx) => {
             const active = side === s && orderType === t;
             const tone = s === "buy";
             return (
               <button
                 key={label}
+                ref={idx === 0 ? orderTypeBtnRef : undefined}
                 type="button"
                 onClick={() => {
                   setSide(s);
@@ -506,14 +613,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             type="button"
             onClick={() => setSide("sell")}
             className={cn(
-              "rounded-lg border p-2 text-center transition-all",
+              "rounded-lg border p-2 text-center transition-colors duration-300",
               !isBuy
                 ? "border-red-500/60 bg-red-500/15"
                 : "border-border/60 bg-background/40 hover:border-red-500/40",
+              bidFlash === "up" && "ring-1 ring-emerald-400/60",
+              bidFlash === "down" && "ring-1 ring-red-400/60",
             )}
           >
             <div className="text-[10px] uppercase tracking-wider text-red-400/80 font-semibold">Sell · Bid</div>
-            <div className="font-mono tabular-nums text-lg font-bold text-red-400 leading-tight">
+            <div
+              className={cn(
+                "font-mono tabular-nums text-lg font-bold leading-tight transition-colors duration-500",
+                bidFlash === "up"
+                  ? "text-emerald-400"
+                  : bidFlash === "down"
+                    ? "text-red-400"
+                    : "text-red-400",
+              )}
+            >
               {fmtPx(bid, digits)}
             </div>
           </button>
@@ -521,14 +639,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             type="button"
             onClick={() => setSide("buy")}
             className={cn(
-              "rounded-lg border p-2 text-center transition-all",
+              "rounded-lg border p-2 text-center transition-colors duration-300",
               isBuy
                 ? "border-emerald-500/60 bg-emerald-500/15"
                 : "border-border/60 bg-background/40 hover:border-emerald-500/40",
+              askFlash === "up" && "ring-1 ring-emerald-400/60",
+              askFlash === "down" && "ring-1 ring-red-400/60",
             )}
           >
             <div className="text-[10px] uppercase tracking-wider text-emerald-400/80 font-semibold">Buy · Ask</div>
-            <div className="font-mono tabular-nums text-lg font-bold text-emerald-400 leading-tight">
+            <div
+              className={cn(
+                "font-mono tabular-nums text-lg font-bold leading-tight transition-colors duration-500",
+                askFlash === "up"
+                  ? "text-emerald-400"
+                  : askFlash === "down"
+                    ? "text-red-400"
+                    : "text-emerald-400",
+              )}
+            >
               {fmtPx(ask, digits)}
             </div>
           </button>
@@ -600,6 +729,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               Price
             </label>
             <input
+              ref={priceInputRef}
               value={price}
               onChange={(e) => {
                 priceTouched.current = true;
@@ -659,6 +789,27 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             />
             Reset after fill
           </label>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span>Focus after fill</span>
+          <div className="flex items-center gap-1">
+            {(["volume", "price", "orderType"] as const).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setFocusTarget(opt)}
+                className={cn(
+                  "h-6 px-2 rounded border text-[10px] font-semibold uppercase tracking-wider transition-colors",
+                  focusTarget === opt
+                    ? "border-primary/60 bg-primary/15 text-primary"
+                    : "border-border/60 bg-background/60 hover:bg-background/80",
+                )}
+              >
+                {opt === "orderType" ? "Type" : opt === "volume" ? "Vol" : "Price"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {slTpError ? (
