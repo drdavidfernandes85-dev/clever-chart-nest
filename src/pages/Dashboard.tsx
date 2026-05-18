@@ -869,16 +869,17 @@ const DashboardInner = () => {
             <BottomTabs />
           </section>
 
-          {/* RIGHT — Bid/Ask Board (top 33%) + Order Ticket (bottom 67%) */}
-          <aside className="lg:h-[calc(100vh-6.5rem)] flex flex-col gap-1.5 lg:gap-2 min-h-0 overflow-hidden">
-            <div className="shrink-0 max-h-[38%] overflow-hidden">
+          {/* RIGHT — Bid/Ask Board (top 38%) + Order Ticket (bottom).
+              On small screens, panels stack naturally; never overflow the viewport. */}
+          <aside className="flex flex-col gap-1.5 lg:gap-2 min-w-0 lg:min-h-0 lg:h-[calc(100vh-6.5rem)] lg:overflow-hidden">
+            <div className="lg:shrink-0 lg:max-h-[38%] lg:overflow-hidden h-[320px] lg:h-auto">
               <BidAskBoard
                 symbols={watchBoardSymbols}
                 activeSymbol={active}
                 onSelect={(label) => selectSymbol(label)}
               />
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto pr-0.5">
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-0.5">
               <BlackArrowTradePanel />
             </div>
           </aside>
