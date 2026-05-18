@@ -30,8 +30,6 @@ import {
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
-import AICopilot from "@/components/ai/AICopilot";
-import PerformanceCoach from "@/components/ai/PerformanceCoach";
 import CopiedTradesPerformance from "@/components/copytrade/CopiedTradesPerformance";
 
 const TIMEFRAMES = [
@@ -362,7 +360,6 @@ const BottomTabs = () => {
             { v: "account", l: "Account" },
             { v: "copy", l: "Copy P&L" },
             { v: "journal", l: "Journal" },
-            { v: "coach", l: "AI Coach" },
           ].map((t) => (
             <TabsTrigger
               key={t.v}
@@ -436,10 +433,6 @@ const BottomTabs = () => {
 
         <TabsContent value="journal" className="m-0 p-3">
           <TradeJournal />
-        </TabsContent>
-
-        <TabsContent value="coach" className="m-0 p-3">
-          <PerformanceCoach />
         </TabsContent>
       </Tabs>
     </div>
@@ -593,7 +586,6 @@ const DashboardInner = () => {
           </aside>
         </div>
       </div>
-      <AICopilot />
     </div>
   );
 };
