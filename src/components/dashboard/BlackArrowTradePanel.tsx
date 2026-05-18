@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
+import { useSelectedQuote } from "@/hooks/useSelectedQuote";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
