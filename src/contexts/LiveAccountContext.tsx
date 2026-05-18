@@ -41,7 +41,7 @@ interface LiveAccountCtx {
 
 const Ctx = createContext<LiveAccountCtx | null>(null);
 
-const REFRESH_MS = 4_000;
+const REFRESH_MS = 2_000;
 
 export function LiveAccountProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -145,12 +145,36 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
     const onTrade = () => refresh();
     window.addEventListener("trade-executed", onTrade);
 
+    // Realtime: refresh instantly when our MT account row or positions change.
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    if (user) {
+      channel = supabase
+        .channel(`live-account-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "user_mt_accounts", filter: `user_id=eq.${user.id}` },
+          () => refresh(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "mt_positions", filter: `user_id=eq.${user.id}` },
+          () => refresh(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "trade_execution_logs", filter: `user_id=eq.${user.id}` },
+          () => refresh(),
+        )
+        .subscribe();
+    }
+
     return () => {
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("trade-executed", onTrade);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [refresh]);
+  }, [refresh, user]);
 
   const value = useMemo<LiveAccountCtx>(
     () => ({ liveAccount, positions, connected, loading, refreshing, error, refresh }),

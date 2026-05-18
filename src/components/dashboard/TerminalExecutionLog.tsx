@@ -85,9 +85,25 @@ const TerminalExecutionLog = () => {
     const id = setInterval(load, 15_000);
     const onTrade = () => load();
     window.addEventListener("trade-executed", onTrade);
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth?.user) return;
+      channel = supabase
+        .channel(`exec-log-${auth.user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "trade_execution_logs", filter: `user_id=eq.${auth.user.id}` },
+          () => load(),
+        )
+        .subscribe();
+    })();
+
     return () => {
       clearInterval(id);
       window.removeEventListener("trade-executed", onTrade);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
