@@ -471,7 +471,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <button
             type="button"
             onClick={() => setSymbolOpen((v) => !v)}
-            className="w-full flex items-center justify-between rounded-lg border border-border/60 bg-background/60 px-3 py-2.5 hover:bg-background/80"
+            className="w-full flex items-center justify-between rounded-md border border-border/60 bg-background/60 px-2.5 py-1.5 hover:bg-background/80"
           >
             <div className="flex flex-col items-start">
               <span className="font-heading text-lg font-bold leading-tight">
