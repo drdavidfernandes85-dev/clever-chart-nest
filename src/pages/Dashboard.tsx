@@ -172,6 +172,87 @@ const TerminalHeader = () => {
   );
 };
 
+const CATEGORIES = ["All", "Forex", "Commodities", "Indices", "Crypto"] as const;
+type Category = (typeof CATEGORIES)[number];
+
+const MarketRow = ({
+  sym,
+  description,
+  digits,
+  tick,
+  isActive,
+  isFav,
+  onSelect,
+  onToggleFav,
+}: {
+  sym: string;
+  description?: string | null;
+  digits: number;
+  tick?: { bid: number | null; ask: number | null; changePct: number | null };
+  isActive: boolean;
+  isFav: boolean;
+  onSelect: () => void;
+  onToggleFav: () => void;
+}) => {
+  const fmt = (v: number | null | undefined) =>
+    v == null
+      ? "—"
+      : v.toLocaleString("en-US", {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+  const pct = tick?.changePct;
+  const pctClass =
+    pct == null ? "text-neutral-500" : pct >= 0 ? "text-emerald-400" : "text-red-400";
+  return (
+    <li
+      className={`grid grid-cols-[18px_1fr_64px_64px_52px] items-center gap-1.5 px-2 py-1.5 transition-colors ${
+        isActive ? "bg-[#FFCD05]/10" : "hover:bg-neutral-900/60"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onToggleFav}
+        className="flex h-4 w-4 items-center justify-center"
+        aria-label={isFav ? "Remove favorite" : "Add favorite"}
+      >
+        <Star
+          className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-600 hover:text-neutral-400"}`}
+        />
+      </button>
+      <button type="button" onClick={onSelect} className="min-w-0 text-left">
+        <div className={`font-mono text-[11px] font-bold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}>
+          {sym}
+        </div>
+        {description && (
+          <div className="text-[9px] text-neutral-500 truncate">{description}</div>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onSelect}
+        className="text-right font-mono text-[10.5px] tabular-nums text-red-400"
+      >
+        {fmt(tick?.bid)}
+      </button>
+      <button
+        type="button"
+        onClick={onSelect}
+        className="text-right font-mono text-[10.5px] tabular-nums text-emerald-400"
+      >
+        {fmt(tick?.ask)}
+      </button>
+      <button
+        type="button"
+        onClick={onSelect}
+        className={`text-right font-mono text-[10px] tabular-nums ${pctClass}`}
+      >
+        {pct == null ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`}
+      </button>
+    </li>
+  );
+};
+
 const MarketWatchPanel = ({
   active,
   onSelect,
@@ -180,22 +261,22 @@ const MarketWatchPanel = ({
   onSelect: (sym: string) => void;
 }) => {
   const { symbols, loading, isLive } = useBrokerSymbols();
+  const { favorites, isFavorite, toggle } = useFavorites();
   const [query, setQuery] = useState("");
-  const [tab, setTab] = useState<"all" | string>("all");
+  const [tab, setTab] = useState<Category>("All");
 
-  const assetClasses = useMemo(() => {
-    const set = new Set<string>();
-    symbols.forEach((s) => {
-      const c = (s.assetClass || "").trim();
-      if (c) set.add(c);
-    });
-    return ["all", ...Array.from(set).sort()];
+  // Build category map (memoized)
+  const categorized = useMemo(() => {
+    return symbols.map((s) => ({
+      ...s,
+      _cat: inferCategory(s.brokerSymbol || s.symbol, s.assetClass),
+    }));
   }, [symbols]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toUpperCase();
-    return symbols
-      .filter((s) => (tab === "all" ? true : (s.assetClass || "") === tab))
+    return categorized
+      .filter((s) => (tab === "All" ? true : s._cat === tab))
       .filter((s) => {
         if (!q) return true;
         return (
@@ -204,7 +285,27 @@ const MarketWatchPanel = ({
         );
       })
       .slice(0, 500);
-  }, [symbols, query, tab]);
+  }, [categorized, query, tab]);
+
+  // Live ticks for favorites only (keeps within rate limit)
+  const favTicks = useMultiSymbolTicks(favorites);
+  // Also poll the active symbol so its row in the visible list updates
+  const activeTicks = useMultiSymbolTicks(
+    active && !favorites.map((s) => s.toUpperCase()).includes(active.toUpperCase()) ? [active] : [],
+  );
+
+  const favSymbols = useMemo(() => {
+    const set = new Map<string, (typeof categorized)[number]>();
+    for (const s of categorized) set.set((s.brokerSymbol || s.symbol).toUpperCase(), s);
+    return favorites
+      .map((f) => set.get(f.toUpperCase()))
+      .filter((s): s is (typeof categorized)[number] => Boolean(s));
+  }, [categorized, favorites]);
+
+  const getTick = (sym: string) => {
+    const u = sym.toUpperCase();
+    return favTicks[u] || favTicks[sym] || activeTicks[u] || activeTicks[sym];
+  };
 
   return (
     <aside className="hidden lg:flex flex-col rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden h-[calc(100vh-7rem)]">
@@ -222,77 +323,95 @@ const MarketWatchPanel = ({
           )}
         </span>
       </div>
-      <div className="px-2 py-2 border-b border-neutral-800/80">
+      <div className="px-2 py-2 border-b border-neutral-800/80 space-y-2">
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-500" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search symbols…"
-            className="h-7 pl-7 bg-[#050505] border-neutral-800 text-[11px] font-mono placeholder:text-neutral-600 focus-visible:ring-[#FFCD05]/40 rounded"
+            className="h-7 pl-7 pr-8 bg-[#050505] border-neutral-800 text-[11px] font-mono placeholder:text-neutral-600 focus-visible:ring-[#FFCD05]/40 rounded"
           />
+          <Star className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 fill-[#FFCD05] text-[#FFCD05]" />
         </div>
-        {assetClasses.length > 1 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {assetClasses.slice(0, 6).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setTab(c)}
-                className={`px-1.5 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest border transition-colors ${
-                  tab === c
-                    ? "bg-[#FFCD05]/15 border-[#FFCD05]/40 text-[#FFCD05]"
-                    : "border-neutral-800 text-neutral-500 hover:text-neutral-300"
-                }`}
-              >
-                {c === "all" ? "All" : c}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-1">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setTab(c)}
+              className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest border transition-colors ${
+                tab === c
+                  ? "bg-[#FFCD05]/15 border-[#FFCD05]/40 text-[#FFCD05]"
+                  : "border-neutral-800 text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="grid grid-cols-[1fr_auto] items-center gap-2 border-b border-neutral-800/80 bg-[#0a0a0a] px-3 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+
+      {/* Header row */}
+      <div className="grid grid-cols-[18px_1fr_64px_64px_52px] items-center gap-1.5 border-b border-neutral-800/80 bg-[#0a0a0a] px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+        <span />
         <span>Symbol</span>
-        <span>Digits</span>
+        <span className="text-right text-red-400/80">Bid</span>
+        <span className="text-right text-emerald-400/80">Ask</span>
+        <span className="text-right">%</span>
       </div>
-      <ul className="flex-1 overflow-y-auto divide-y divide-neutral-800/60">
+
+      <ul className="flex-1 overflow-y-auto">
+        {/* Favorites */}
+        {favSymbols.length > 0 && tab === "All" && !query && (
+          <>
+            <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-[#FFCD05]/70 bg-[#0a0a0a]/60 border-b border-neutral-800/60 flex items-center gap-1.5">
+              <Star className="h-2.5 w-2.5 fill-[#FFCD05] text-[#FFCD05]" /> Favorites
+            </li>
+            {favSymbols.map((s) => {
+              const sym = s.brokerSymbol || s.symbol;
+              return (
+                <MarketRow
+                  key={`fav-${sym}`}
+                  sym={sym}
+                  description={s.description}
+                  digits={Number(s.digits) || 5}
+                  tick={getTick(sym)}
+                  isActive={sym.toUpperCase() === active.toUpperCase()}
+                  isFav
+                  onSelect={() => onSelect(sym)}
+                  onToggleFav={() => toggle(sym)}
+                />
+              );
+            })}
+            <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 bg-[#0a0a0a]/60 border-y border-neutral-800/60">
+              {tab}
+            </li>
+          </>
+        )}
+
         {loading && filtered.length === 0 && (
           <li className="px-3 py-5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" /> Loading broker symbols…
           </li>
         )}
         {!loading && filtered.length === 0 && (
-          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">
-            No matches.
-          </li>
+          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">No matches.</li>
         )}
         {filtered.map((s) => {
           const sym = s.brokerSymbol || s.symbol;
-          const isActive = sym.toUpperCase() === active.toUpperCase();
           return (
-            <li key={sym}>
-              <button
-                type="button"
-                onClick={() => onSelect(sym)}
-                className={`w-full grid grid-cols-[1fr_auto] items-center gap-2 px-3 py-1.5 text-left transition-colors ${
-                  isActive
-                    ? "bg-[#FFCD05]/10 text-[#FFCD05]"
-                    : "text-neutral-200 hover:bg-neutral-900/60"
-                }`}
-              >
-                <div className="min-w-0">
-                  <div className="font-mono text-[11px] font-bold truncate">{sym}</div>
-                  {s.description && (
-                    <div className="text-[9px] text-neutral-500 truncate">
-                      {s.description}
-                    </div>
-                  )}
-                </div>
-                <span className="font-mono text-[9px] tabular-nums text-neutral-500">
-                  {s.digits ?? "—"}
-                </span>
-              </button>
-            </li>
+            <MarketRow
+              key={sym}
+              sym={sym}
+              description={s.description}
+              digits={Number(s.digits) || 5}
+              tick={getTick(sym)}
+              isActive={sym.toUpperCase() === active.toUpperCase()}
+              isFav={isFavorite(sym)}
+              onSelect={() => onSelect(sym)}
+              onToggleFav={() => toggle(sym)}
+            />
           );
         })}
       </ul>
