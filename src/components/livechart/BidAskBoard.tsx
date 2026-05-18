@@ -83,7 +83,7 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                 <span className="text-right font-mono text-[10px] tabular-nums text-emerald-400">
                   {fmt(r?.ask)}
                 </span>
-                <span className={`text-right font-mono text-[9.5px] tabular-nums ${spreadColor}`}>
+                <span className="text-right font-mono text-[9.5px] tabular-nums text-neutral-400">
                   {spread == null ? "—" : spreadPts != null ? spreadPts.toFixed(1) : spread.toFixed(Math.min(digits, 5))}
                 </span>
               </button>
