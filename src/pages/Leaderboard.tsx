@@ -16,7 +16,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import MT5StatusBadge from "@/components/MT5StatusBadge";
-import AICopilot from "@/components/ai/AICopilot";
 import { toast } from "sonner";
 import MentorTierProgression from "@/components/social/MentorTierProgression";
 
@@ -404,7 +403,6 @@ const Leaderboard = () => {
         onCopy={() => detail && handleCopy(detail)} />
 
       <MentorApplyDialog open={mentorOpen} onOpenChange={setMentorOpen} userId={user?.id} />
-      <AICopilot />
     </div>
   );
 };

@@ -14,7 +14,6 @@ import { useCopiedSignals } from "@/hooks/useCopiedSignals";
 import { computeMentorTier, MentorTier } from "@/lib/mentor-tier";
 import MentorBadge from "@/components/social/MentorBadge";
 import { AIScorePanel } from "@/components/ai/AIScoreBadge";
-import { openAIAssistant } from "@/components/ai/AICopilot";
 
 type SharedSignal = {
   id: string;

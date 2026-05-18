@@ -39,7 +39,6 @@ import KpiStrip from "@/components/dashboard/KpiStrip";
 import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
 import WebinarHeroBanner from "@/components/webinars/WebinarHeroBanner";
 import SmartInsights from "@/components/ai/SmartInsights";
-import AICopilot from "@/components/ai/AICopilot";
 import OpenAccountBanner from "@/components/dashboard/OpenAccountBanner";
 import MentorTierBanner from "@/components/social/MentorTierBanner";
 import MentorTierCelebration from "@/components/social/MentorTierCelebration";
