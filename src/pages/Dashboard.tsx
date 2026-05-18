@@ -868,7 +868,6 @@ const DashboardInner = () => {
 
         <TerminalStatusBar activeSymbol={active} />
       </div>
-      </div>
     </div>
   );
 };
