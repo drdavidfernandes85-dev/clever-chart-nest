@@ -583,7 +583,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   setOrderType(t);
                 }}
                 className={cn(
-                  "h-9 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all",
+                  "h-8 rounded-md border text-[10.5px] font-bold uppercase tracking-wider transition-all",
                   active
                     ? tone
                       ? "bg-emerald-500 text-white border-emerald-500 shadow-[0_4px_12px_-4px_rgba(16,185,129,0.5)]"
