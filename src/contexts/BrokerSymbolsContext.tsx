@@ -46,6 +46,10 @@ interface Ctx {
   selectedSymbolValid: boolean;
   selectedSymbolInfo: any;
   tick: any;
+  /** Epoch ms of the last successful tick update for the selected symbol. */
+  tickUpdatedAt: number | null;
+  /** Last polling error message for the selected symbol, or null when healthy. */
+  tickError: string | null;
   /** Last raw response from get-mt5-symbols (debug). */
   lastResponse: unknown;
   /** Last raw response from get-mt5-symbol-data (debug). */
