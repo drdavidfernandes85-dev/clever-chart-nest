@@ -259,14 +259,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const hasValidBidAsk =
     Number.isFinite(Number(bid)) ||
     Number.isFinite(Number(ask)) ||
+    Number.isFinite(Number(effectiveSelected?.bid)) ||
+    Number.isFinite(Number(effectiveSelected?.ask)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.bid)) ||
     Number.isFinite(Number((selectedSymbolInfo as any)?.ask));
+
+  // selectedSymbolValid: broker confirmation OR a usable selectedQuote.
+  const symbolValid = selectedSymbolValid === true || !!effectiveSelected?.valid;
+
+  // "Data delayed" surfaces when get-mt5-quotes failed to return a fresh
+  // selectedQuote but a last-good snapshot is still keeping the ticket alive.
+  const showDataDelayed = selectedDataDelayed && !!effectiveSelected;
 
   const canSubmitMarket =
     !!user &&
     connected === true &&
     isBrokerSymbol &&
-    selectedSymbolValid === true &&
+    symbolValid &&
     !!normalizedSym &&
     hasValidBidAsk &&
     volNum > 0 &&
