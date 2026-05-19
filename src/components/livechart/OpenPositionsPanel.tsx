@@ -81,7 +81,6 @@ const OpenPositionsPanel = () => {
     }
   }
 
-  const currency = liveAccount?.currency ?? "USD";
 
   const closePosition = async (pos: LivePosition) => {
     const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
