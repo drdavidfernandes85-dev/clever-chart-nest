@@ -103,50 +103,38 @@ const CompactQuoteHeader = ({ symbol, displayLabel, variant = "compact" }: Props
     );
   }
 
+  // Single-line micro quote strip — 38–44px row.
+  // Layout:  SYMBOL  LIVE  BID xxx  ASK xxx  SPRD x  3s
   return (
-    <div className="rounded-lg bg-[#0A0B0D]/80 px-3 py-2">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex items-center gap-2">
-          <span className="font-heading text-[12px] font-bold tracking-tight text-[#E8E8EA] truncate">
-            {displayLabel || sym}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1 h-4 px-1.5 rounded-sm border font-mono text-[8.5px] uppercase tracking-[0.16em] ${
-              stale
-                ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-            }`}
-          >
-            <span
-              className={`inline-flex h-1 w-1 rounded-full ${
-                stale ? "bg-amber-500" : "bg-emerald-500"
-              }`}
-            />
-            {stale ? "Stale" : "Live"}
-          </span>
-        </div>
-        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#5d6168] tabular-nums shrink-0">
-          {tickAge ? `${tickAge} ago` : "—"}
-        </span>
+    <div className="h-[40px] flex items-center gap-2.5 px-2.5 rounded-md border-b border-neutral-800/80 bg-[#0A0B0D]/90 font-mono text-[10px] uppercase tracking-[0.14em] overflow-hidden">
+      <span className="font-heading text-[11.5px] font-bold tracking-tight text-[#E8E8EA] truncate normal-case">
+        {displayLabel || sym}
+      </span>
+      <span
+        className={`inline-flex items-center gap-1 h-[14px] px-1.5 rounded-sm text-[8.5px] font-bold ${
+          stale
+            ? "bg-amber-500/15 text-amber-400"
+            : "bg-emerald-500/15 text-emerald-400"
+        }`}
+      >
+        <span className={`inline-flex h-1 w-1 rounded-full ${stale ? "bg-amber-500" : "bg-emerald-500"}`} />
+        {stale ? "Stale" : "Live"}
+      </span>
+      <div className="flex items-baseline gap-1 ml-auto min-w-0">
+        <span className="text-[8.5px] text-[#5d6168]">Bid</span>
+        <span className="text-[11px] font-bold tabular-nums text-red-400">{fmt(quote?.bid ?? null)}</span>
       </div>
-
-      <div className="mt-1.5 flex items-baseline justify-between gap-2">
-        <div className="flex items-baseline gap-1.5 min-w-0">
-          <span className="text-[8.5px] font-mono uppercase tracking-[0.18em] text-[#5d6168]">Bid</span>
-          <span className="font-mono text-[12.5px] font-bold tabular-nums text-red-400 truncate">
-            {fmt(quote?.bid ?? null)}
-          </span>
-        </div>
-        <span className="font-mono text-[10px] tabular-nums text-[#8E949C] shrink-0">
-          {spreadPts ?? "—"}
-        </span>
-        <div className="flex items-baseline gap-1.5 min-w-0 justify-end">
-          <span className="font-mono text-[12.5px] font-bold tabular-nums text-emerald-400 truncate">
-            {fmt(quote?.ask ?? null)}
-          </span>
-          <span className="text-[8.5px] font-mono uppercase tracking-[0.18em] text-[#5d6168]">Ask</span>
-        </div>
+      <div className="flex items-baseline gap-1 min-w-0">
+        <span className="text-[8.5px] text-[#5d6168]">Ask</span>
+        <span className="text-[11px] font-bold tabular-nums text-emerald-400">{fmt(quote?.ask ?? null)}</span>
       </div>
+      <div className="flex items-baseline gap-1">
+        <span className="text-[8.5px] text-[#5d6168]">Sprd</span>
+        <span className="text-[10px] tabular-nums text-[#C9CDD2]">{spreadPts ?? "—"}</span>
+      </div>
+      <span className="text-[9px] tabular-nums text-[#5d6168] shrink-0 w-[24px] text-right">
+        {tickAge ?? "—"}
+      </span>
     </div>
   );
 };
