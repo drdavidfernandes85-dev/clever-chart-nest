@@ -191,7 +191,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
     const ch = supabase
       .channel(`copy-perf-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "mt_pending_orders", filter: `user_id=eq.${user.id}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "mt_positions", filter: `user_id=eq.${user.id}` }, load)
+      // mt_positions realtime subscription removed.
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
