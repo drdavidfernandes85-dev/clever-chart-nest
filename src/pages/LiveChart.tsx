@@ -31,7 +31,7 @@ import {
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import SEO from "@/components/SEO";
-import infinoxLogo from "@/assets/infinox-logo-white.png";
+import LtrLogo from "@/components/branding/LtrLogo";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
@@ -244,35 +244,41 @@ const LiveChartInner = () => {
         canonical="https://elitelivetradingroom.com/live-chart"
       />
 
-      {/* App header */}
-      <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
+      {/* App header — LTR Terminal Pro */}
+      <header className="sticky top-0 z-50 border-b border-[#FFCD05]/15 bg-[#050505]/95 backdrop-blur-2xl">
         <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
           <div className="flex items-center gap-3 min-w-0">
-            <Link to="/" className="flex items-center gap-2">
-              <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
-                Terminal
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <LtrLogo variant="icon" className="h-7 w-7" glow />
+              <span className="hidden sm:flex items-baseline gap-1.5 leading-none">
+                <span className="font-heading text-[13px] font-extrabold uppercase tracking-[0.18em] text-[#FFCD05] group-hover:text-[#FFD83A] transition-colors">
+                  LTR
+                </span>
+                <span className="font-heading text-[12px] font-semibold uppercase tracking-[0.22em] text-[#E8E8EA]">
+                  Terminal Pro
+                </span>
               </span>
             </Link>
-            <Badge variant="secondary" className="hidden md:inline-flex text-[10px] uppercase tracking-wider rounded-full">
-              Pro
-            </Badge>
+            <span className="hidden md:inline-flex items-center h-5 rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1.5 text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
+              IX LTR
+            </span>
             {connected && liveAccount && (
-              <div className="hidden lg:flex items-center gap-3 ml-2 pl-3 border-l border-border/40 text-[11px] font-mono">
-                <div>
-                  <span className="text-muted-foreground">EQUITY </span>
-                  <span className="text-foreground font-bold">{fmtMoney(liveAccount.equity, liveAccount.currency)}</span>
+              <div className="hidden lg:flex items-center gap-4 ml-3 pl-3 border-l border-[#2A2D31] text-[10.5px] font-mono uppercase tracking-[0.08em]">
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Equity</span>
+                  <span className="text-[#E8E8EA] font-bold tabular-nums">{fmtMoney(liveAccount.equity, liveAccount.currency)}</span>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">MARGIN </span>
-                  <span className="text-foreground">{fmtMoney(liveAccount.margin, liveAccount.currency)}</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Margin</span>
+                  <span className="text-[#C9CDD2] tabular-nums">{fmtMoney(liveAccount.margin, liveAccount.currency)}</span>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">FREE </span>
-                  <span className="text-emerald-400">{fmtMoney(liveAccount.marginFree, liveAccount.currency)}</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Free</span>
+                  <span className="text-emerald-400 tabular-nums">{fmtMoney(liveAccount.marginFree, liveAccount.currency)}</span>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">P&L </span>
-                  <span className={liveAccount.profit >= 0 ? "text-emerald-400" : "text-red-400"}>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">P&amp;L</span>
+                  <span className={`tabular-nums font-bold ${liveAccount.profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                     {fmtMoney(liveAccount.profit, liveAccount.currency)}
                   </span>
                 </div>
