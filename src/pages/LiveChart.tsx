@@ -357,35 +357,36 @@ const LiveChartInner = () => {
 
       {/* Workspace: left rail + chart + right rail */}
       <div className="p-2 lg:p-3">
-        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[256px_minmax(0,1fr)_360px] grid-cols-1">
-          {/* LEFT: Market Watch + compact Bid/Ask Board.
-              Bid/Ask is intentionally constrained so it never overpowers the order ticket. */}
-          <aside className="hidden lg:flex flex-col gap-2 lg:gap-3 h-[calc(100vh-4.5rem)] overflow-y-auto pr-0.5">
-            <div className="shrink-0 flex-1 min-h-0 overflow-hidden">
-              <MarketWatch
-                symbols={WATCH_DEFAULT}
-                active={displayLabel}
-                onSelect={onSelectByLabel}
-              />
-            </div>
-            <div className="shrink-0 h-[260px]">
-              <BidAskBoard
-                symbols={topBoardSymbols.slice(0, 6)}
-                activeSymbol={activeBroker}
-                onSelect={(sym) => setActiveBroker(sym)}
-              />
-            </div>
+        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[244px_minmax(0,1fr)_360px] grid-cols-1">
+          {/* LEFT: Market Watch only — Bid/Ask board moved to right-rail Quotes tab. */}
+          <aside className="hidden lg:flex flex-col h-[calc(100vh-4.5rem)] overflow-hidden pr-0.5">
+            <MarketWatch
+              symbols={WATCH_DEFAULT}
+              active={displayLabel}
+              onSelect={onSelectByLabel}
+            />
           </aside>
 
-          {/* CENTER: Chart */}
+          {/* CENTER: Instrument quote strip + Chart */}
           <section
             ref={chartShellRef}
             className="relative flex flex-col rounded-2xl border border-border/20 bg-card overflow-hidden h-[70vh] lg:h-[calc(100vh-4.5rem)]"
           >
+            {/* Prominent instrument quote header — Sell | Spread | Buy */}
+            <div className="border-b border-border/15 px-2 pt-2">
+              <CompactQuoteHeader
+                symbol={activeBroker}
+                displayLabel={displayLabel}
+                variant="prominent"
+              />
+            </div>
+
             {/* Top toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/20 px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/15 px-3 py-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <BarChart3 className="h-4 w-4 text-primary" />
+
+
 
 
                 {/* Symbol selector — searchable, broker-driven */}
