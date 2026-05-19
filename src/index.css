@@ -477,6 +477,14 @@
   .text-ltr-silver-400 { color: var(--ltr-silver-400); }
   .text-ltr-silver-500 { color: var(--ltr-silver-500); }
   .text-ltr-gold       { color: var(--ltr-gold); }
+  .text-ltr-gold-deep  { color: var(--ltr-gold-deep); }
+  .text-ltr-buy        { color: var(--ltr-success); }
+  .text-ltr-sell       { color: var(--ltr-danger); }
+  .bg-ltr-terminal     { background-color: var(--ltr-terminal-bg); }
+  .bg-ltr-panel        { background-color: var(--ltr-panel); }
+  .bg-ltr-panel-elev   { background-color: var(--ltr-panel-elev); }
+  .border-ltr-gold     { border-color: var(--ltr-gold-border); }
+
 
   /* Brushed-metal headline (silver gradient) — for terminal section titles */
   .text-metallic {
