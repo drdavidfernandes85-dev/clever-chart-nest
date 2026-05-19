@@ -28,6 +28,8 @@ const STATUS_TONE: Record<string, string> = {
   dry_run: "border-sky-500/50 text-sky-300 bg-sky-500/10",
   placed: "border-amber-500/50 text-amber-300 bg-amber-500/10",
   position_confirmed: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
+  execution_unconfirmed: "border-yellow-500/50 text-yellow-200 bg-yellow-500/10",
+  close_unconfirmed: "border-yellow-500/50 text-yellow-200 bg-yellow-500/10",
   filled: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
   done: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
   protection_modified: "border-cyan-500/50 text-cyan-300 bg-cyan-500/10",
