@@ -893,8 +893,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         digits,
       };
 
-      if (res?.success === true) {
-        const liveOrderSent = res?.liveOrderSent === true || String(res?.step ?? "").toLowerCase() === "execution_result";
+      // Treat broker-accepted / placed_unconfirmed as a confirmation-pending
+      // case (NOT a rejection). The server now returns success=false +
+      // step="execution_unconfirmed" for retcode 10008 with no live position.
+      const brokerAccepted =
+        res?.success === true ||
+        res?.brokerAccepted === true ||
+        res?.liveOrderSent === true ||
+        String(res?.step ?? "").toLowerCase() === "execution_result" ||
+        String(res?.step ?? "").toLowerCase() === "execution_unconfirmed" ||
+        String(res?.classification ?? "").toLowerCase() === "placed_unconfirmed" ||
+        String(res?.classification ?? "").toLowerCase() === "placed_confirmed" ||
+        String(res?.outcome ?? "").toLowerCase() === "broker_accepted_no_position" ||
+        Number(res?.retcode) === 10008 ||
+        Number(res?.retcode) === 10009;
+
+      if (brokerAccepted) {
+        const liveOrderSent = res?.liveOrderSent === true || brokerAccepted;
 
         // NEVER show "ORDER EXECUTED" off the broker response alone.
         // Show pending first; only flip to success after MT5 reconciliation
