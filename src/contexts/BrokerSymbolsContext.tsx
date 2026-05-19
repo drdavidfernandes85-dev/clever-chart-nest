@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
+import { checkAndHandle429 } from "@/lib/tradingLayerControl";
+import { liveMarketDataStore } from "@/lib/liveMarketDataStore";
 
 export interface BrokerSymbol {
   symbol: string;
@@ -170,8 +171,10 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Fetch specs + tick for the currently selected symbol.
-  // Initial call resolves specs; a 4s poll keeps the bid/ask tick live.
+  // Fetch specs ONCE per symbol change (contract size, tick value, volume bounds).
+  // Live bid/ask is now owned by MarketDataService → liveMarketDataStore.
+  // We also subscribe to that store here to keep `tick` / `tickUpdatedAt`
+  // up to date for legacy consumers reading from this context.
   useEffect(() => {
     if (!user) {
       setSelectedSymbolValid(false);
@@ -182,7 +185,16 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     const sym = normalize(selectedBrokerSymbol);
     if (!sym) return;
     let cancelled = false;
-    const fetchOnce = async (isInitial: boolean) => {
+
+    // Symbol changed — reset prices, but keep last good in the store.
+    setTick(null);
+    setTickUpdatedAt(null);
+    setTickError(null);
+    setSelectedSymbolInfo(null);
+    setSelectedSymbolValid(false);
+
+    // One-shot symbol info fetch (specs only — bid/ask comes from the store).
+    (async () => {
       try {
         const { data, error: invErr } = await supabase.functions.invoke(
           "get-mt5-terminal-data",
@@ -191,68 +203,43 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         if (invErr) {
           checkAndHandle429(data, invErr);
-          // Stale-while-revalidate: never blank the panel on a polling error.
           setTickError(invErr.message ?? String(invErr));
-          if (isInitial) {
-            setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
-          }
+          setLastSymbolDataResponse({ success: false, error: invErr.message ?? String(invErr) });
           return;
         }
         setLastSymbolDataResponse(data);
-        const rateLimited =
-          (data as any)?.rateLimited === true ||
-          (data as any)?.step === "rate_limited";
-        if (rateLimited) {
-          checkAndHandle429(data, null);
-          setTickError("Rate limited");
-          return;
-        }
-
         if (data?.success === true) {
           if (typeof data.selectedSymbolValid === "boolean") {
             setSelectedSymbolValid(data.selectedSymbolValid);
           }
           if (data.selectedSymbolInfo) setSelectedSymbolInfo(data.selectedSymbolInfo);
-          if (data.tick && (data.tick.bid != null || data.tick.ask != null)) {
-            setTick(data.tick);
-            setTickUpdatedAt(Date.now());
-            setTickError(null);
-          }
         } else {
-          setTickError((data as any)?.error || "Refresh failed");
+          setTickError((data as any)?.error || "Symbol info refresh failed");
         }
       } catch (e: any) {
         if (cancelled) return;
         setTickError(e?.message || "Network error");
-        if (isInitial) {
-          setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
-        }
-        // Do NOT clear tick/info on polling exceptions.
+        setLastSymbolDataResponse({ success: false, error: e?.message ?? String(e) });
       }
-    };
-    // Symbol changed — reset prices, but allow next successful response to fill in.
-    setTick(null);
-    setTickUpdatedAt(null);
-    setTickError(null);
-    setSelectedSymbolInfo(null);
-    setSelectedSymbolValid(false);
-    fetchOnce(true);
-    const id = window.setInterval(() => {
-      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) fetchOnce(false);
-    }, 2000);
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) fetchOnce(false);
-    };
-    const onRefresh = () => { if (!cancelled) fetchOnce(false); };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("mt:refresh-terminal-data", onRefresh);
+    })();
+
+    // Bridge live quotes from liveMarketDataStore into this context's `tick`.
+    const unsub = liveMarketDataStore.subscribe((s) => {
+      if (cancelled) return;
+      const q = s.quotes[sym.toUpperCase()];
+      if (q && (q.bid != null || q.ask != null)) {
+        setTick({ bid: q.bid, ask: q.ask, last: q.last, time: q.timestamp });
+        setTickUpdatedAt(q.timestamp);
+        setTickError(null);
+      }
+    });
+
     return () => {
       cancelled = true;
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("mt:refresh-terminal-data", onRefresh);
+      unsub();
     };
   }, [user, selectedBrokerSymbol]);
+
 
   const value = useMemo<Ctx>(
     () => ({

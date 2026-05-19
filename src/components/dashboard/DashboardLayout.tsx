@@ -3,6 +3,7 @@ import { Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
 import ConnectedAccountBadge from "./ConnectedAccountBadge";
+import MarketStatusBadge from "./MarketStatusBadge";
 import WelcomeBanner from "@/components/onboarding/WelcomeBanner";
 import { useLanguage } from "@/i18n/LanguageContext";
 
@@ -36,6 +37,9 @@ const DashboardLayout = ({ children }: Props) => {
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <ConnectedAccountBadge />
+      <div className="fixed top-3 right-3 z-40 hidden lg:block">
+        <MarketStatusBadge />
+      </div>
 
       {/* Floating mobile hamburger — visible on every page < lg */}
       <button

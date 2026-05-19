@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
+import { useEffect, useMemo, useRef } from "react";
+import { liveMarketDataStore } from "@/lib/liveMarketDataStore";
+import { MarketDataService } from "@/services/MarketDataService";
+import { useQuotes } from "@/hooks/useLiveMarketData";
 
 export interface MultiTick {
   bid: number | null;
@@ -18,115 +19,62 @@ export interface MultiTickMeta {
   rows: Record<string, MultiTick>;
   lastUpdatedAt: number | null;
   lastError: string | null;
-  /** Count of consecutive failed/empty refreshes. Resets to 0 on success. */
   consecutiveErrors: number;
   refreshing: boolean;
 }
 
 /**
- * Batched market-watch tick poller.
- * Calls `get-mt5-market-watch` once per cycle (default 5s) with the
- * requested symbol set and returns a `{ [SYMBOL_UPPER]: tick }` map.
- *
- * Pauses while the tab is hidden and resumes immediately on visibility.
+ * Reads watchlist ticks from the centralized liveMarketDataStore. No longer
+ * polls Trading Layer directly — registers the symbol list with
+ * MarketDataService which is the only writer.
  */
-export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000): MultiTickMeta {
-  const [rows, setRows] = useState<Record<string, MultiTick>>({});
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [consecutiveErrors, setConsecutiveErrors] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
+export function useMultiSymbolTicksWithMeta(symbols: string[], _periodMs = 5000): MultiTickMeta {
+  const key = symbols.map((s) => s.toUpperCase()).sort().join(",");
   const sessionOpen = useRef<Record<string, number>>({});
 
-  const key = symbols.map((s) => s.toUpperCase()).sort().join(",");
-
+  // Register symbol list with the central service.
   useEffect(() => {
-    if (!symbols.length) {
-      // Keep previous rows on screen — symbol list may be temporarily empty
-      // during a refresh cycle. Just stop polling until it returns.
-      return;
-    }
-    let cancelled = false;
-
-    const loadBatch = async () => {
-      setRefreshing(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("get-mt5-market-watch", {
-          body: { symbols, debug: false },
-        });
-        if (cancelled) return;
-        if (error || !data?.success) {
-          checkAndHandle429(data, error);
-          setLastError(error?.message || data?.error || "Refresh failed");
-          setConsecutiveErrors((n) => n + 1);
-          return;
-        }
-        checkAndHandle429(data, null);
-        const instruments: any[] = Array.isArray(data.instruments) ? data.instruments : [];
-        if (instruments.length === 0) {
-          setLastError("Empty payload");
-          setConsecutiveErrors((n) => n + 1);
-          return;
-        }
-        setRows((prev) => {
-          const next = { ...prev };
-          for (const inst of instruments) {
-            const sym = String(inst.symbol || "").toUpperCase();
-            if (!sym) continue;
-            const bid = inst.bid != null ? Number(inst.bid) : null;
-            const ask = inst.ask != null ? Number(inst.ask) : null;
-            const last = inst.last != null
-              ? Number(inst.last)
-              : bid != null && ask != null ? (bid + ask) / 2 : null;
-            const spread = inst.spread != null
-              ? Number(inst.spread)
-              : bid != null && ask != null ? Math.max(0, ask - bid) : null;
-            const digits = Number(inst.digits) || 5;
-            if (sessionOpen.current[sym] == null && last != null) {
-              sessionOpen.current[sym] = last;
-            }
-            const open = sessionOpen.current[sym] ?? null;
-            const changePct =
-              open != null && last != null && open !== 0
-                ? ((last - open) / open) * 100
-                : null;
-            next[sym] = { bid, ask, last, spread, digits, changePct, high: null, low: null, open };
-          }
-          return next;
-        });
-        setLastUpdatedAt(Date.now());
-        setLastError(null);
-        setConsecutiveErrors(0);
-      } catch (e: any) {
-        if (!cancelled) {
-          setLastError(e?.message || "Network error");
-          setConsecutiveErrors((n) => n + 1);
-        }
-      } finally {
-        if (!cancelled) setRefreshing(false);
-      }
-    };
-
-    if (isAutoRefreshAllowed()) loadBatch();
-    const id = window.setInterval(() => {
-      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) loadBatch();
-    }, periodMs);
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) loadBatch();
-    };
-    const onRefresh = () => { if (!cancelled) loadBatch(); };
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("mt:refresh-market-watch", onRefresh);
+    MarketDataService.setWatchlist(key ? key.split(",") : []);
     return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("mt:refresh-market-watch", onRefresh);
+      // Don't clear globally — other consumers may rely on it.
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, periodMs]);
+  }, [key]);
 
-  return { rows, lastUpdatedAt, lastError, consecutiveErrors, refreshing };
+  const quotes = useQuotes(key ? key.split(",") : []);
+
+  const rows = useMemo(() => {
+    const out: Record<string, MultiTick> = {};
+    for (const sym of Object.keys(quotes)) {
+      const q = quotes[sym];
+      if (!q) continue;
+      const last = q.last ?? (q.bid != null && q.ask != null ? (q.bid + q.ask) / 2 : null);
+      if (sessionOpen.current[sym] == null && last != null) sessionOpen.current[sym] = last;
+      const open = sessionOpen.current[sym] ?? null;
+      const changePct =
+        open != null && last != null && open !== 0 ? ((last - open) / open) * 100 : null;
+      out[sym] = {
+        bid: q.bid,
+        ask: q.ask,
+        last,
+        spread: q.spread,
+        digits: q.digits ?? 5,
+        changePct,
+        high: null,
+        low: null,
+        open,
+      };
+    }
+    return out;
+  }, [quotes]);
+
+  const state = liveMarketDataStore.getState();
+  return {
+    rows,
+    lastUpdatedAt: state.diagnostics.lastTickAt,
+    lastError: state.lastError,
+    consecutiveErrors: 0,
+    refreshing: false,
+  };
 }
 
 /** Backwards-compatible: returns just the rows map. */
