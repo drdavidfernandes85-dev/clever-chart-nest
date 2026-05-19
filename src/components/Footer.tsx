@@ -52,8 +52,8 @@ const Footer = () => {
       <div className="container">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <Link to="/" className="inline-flex items-center" aria-label="LTR Terminal Pro — Home">
-              <LtrLogo variant="full" className="h-8 w-auto" />
+            <Link to="/" className="inline-flex items-center" aria-label="IX LTR — Home">
+              <LtrLogo variant="wordmark" className="text-base" />
             </Link>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}
