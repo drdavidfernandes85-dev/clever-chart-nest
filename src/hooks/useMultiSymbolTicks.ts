@@ -112,7 +112,7 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
       if (document.visibilityState === "visible" && isAutoRefreshAllowed()) loadBatch();
     }, periodMs);
     const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled) loadBatch();
+      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) loadBatch();
     };
     const onRefresh = () => { if (!cancelled) loadBatch(); };
     document.addEventListener("visibilitychange", onVisible);
