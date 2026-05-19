@@ -604,7 +604,7 @@ serve(async (req) => {
                 ? (Number(p.time) > 0 ? new Date(Number(p.time) * 1000).toISOString() : new Date(p.time).toISOString())
                 : p.opened_at ?? new Date().toISOString(),
             };
-          }).filter((r) => r.ticket);
+          }).filter((r) => r.ticket && (r.side === "buy" || r.side === "sell"));
 
           if (rows.length > 0) {
             const { error: insErr } = await supabase
