@@ -199,12 +199,12 @@ const Leaderboard = () => {
   };
 
   const handleCopy = async (trader: TraderRow) => {
-    if (!user) { toast.error("Sign in to copy traders"); return; }
-    if (user.id === trader.user_id) { toast.error("You cannot copy yourself"); return; }
+    if (!user) { toast.error("Sign in to follow educators"); return; }
+    if (user.id === trader.user_id) { toast.error("You cannot follow yourself"); return; }
     if (copies.has(trader.user_id)) {
       await supabase.from("copy_subscriptions").update({ status: "paused" }).eq("subscriber_id", user.id).eq("trader_id", trader.user_id);
       setCopies((s) => { const n = new Set(s); n.delete(trader.user_id); return n; });
-      toast.success(`Paused copy-trading ${trader.display_name}`);
+      toast.success(`Stopped following ${trader.display_name}`);
     } else {
       const { error } = await supabase.from("copy_subscriptions").upsert(
         { subscriber_id: user.id, trader_id: trader.user_id, status: "active", risk_multiplier: 1.0 },
@@ -212,7 +212,7 @@ const Leaderboard = () => {
       );
       if (error) return toast.error(error.message);
       setCopies((s) => new Set(s).add(trader.user_id));
-      toast.success(`Copy-trading ${trader.display_name}`);
+      toast.success(`Following ${trader.display_name}`);
     }
   };
 
