@@ -1,0 +1,1 @@
+CREATE POLICY "Users update own execution audit" ON public.execution_audit_events FOR UPDATE TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
