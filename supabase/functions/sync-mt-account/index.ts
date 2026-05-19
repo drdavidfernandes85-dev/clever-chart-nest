@@ -676,28 +676,9 @@ Deno.serve(async (req) => {
       })
       .eq("id", accountId);
 
-    // Replace open positions
-    await admin.from("mt_positions").delete().eq("account_id", accountId);
-    if (positions.length) {
-      await admin.from("mt_positions").insert(
-        positions.map((p) => ({
-          user_id: user.id,
-          account_id: accountId,
-          ticket: String(p.id ?? p.positionId ?? p.platform ?? Date.now()),
-          symbol: p.symbol,
-          side: p.type === "POSITION_TYPE_BUY" ? "buy" : "sell",
-          volume: p.volume ?? 0,
-          open_price: p.openPrice ?? 0,
-          current_price: p.currentPrice ?? null,
-          stop_loss: p.stopLoss ?? null,
-          take_profit: p.takeProfit ?? null,
-          swap: p.swap ?? 0,
-          commission: p.commission ?? 0,
-          profit: p.profit ?? 0,
-          opened_at: p.time ?? new Date().toISOString(),
-        })),
-      );
-    }
+    // mt_positions writes removed — live positions come from Trading Layer
+    // (get-live-account / positions) instead of being mirrored to a table.
+
 
     // Snapshot
     await admin.from("mt_account_snapshots").insert({
