@@ -3,6 +3,8 @@ import { Eye, Loader2, RotateCcw, Search, Star } from "lucide-react";
 import { fetchMarketQuotes, type LiveQuote } from "@/lib/markets";
 import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
+import { useLanguage } from "@/i18n/LanguageContext";
+
 
 interface Props {
   symbols: string[]; // display labels e.g. "EUR/USD"
@@ -29,6 +31,8 @@ const MIN_ROWS = 12; // keep table height stable across filters/empty states
 
 /** Compact Market Watch rail — favorites (per-user), search, category filters, live bid/ask. */
 const MarketWatch = ({ symbols, active, onSelect }: Props) => {
+  const { t } = useLanguage();
+
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
   const [quotesLoading, setQuotesLoading] = useState(true);
   const [query, setQuery] = useState("");
