@@ -8,6 +8,7 @@ import {
   User,
   Star,
 } from "lucide-react";
+import LtrLogo from "@/components/branding/LtrLogo";
 
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
 import { Input } from "@/components/ui/input";
@@ -116,23 +117,21 @@ const TerminalHeader = () => {
   const hasEverLoaded = !!liveAccount;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-neutral-800/80 bg-[#0a0a0a]/95 backdrop-blur-xl">
-      <div className="flex h-11 items-center gap-3 px-3 sm:px-4 pl-14 lg:pl-4">
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-[#FFCD05] text-black">
-            <Activity className="h-3.5 w-3.5" strokeWidth={3} />
+    <header className="sticky top-0 z-50 border-b border-[#FFCD05]/20 bg-gradient-to-b from-[#0B0B0C] to-[#050505]/95 backdrop-blur-xl shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
+      <div className="flex h-12 items-center gap-3 px-3 sm:px-4 pl-14 lg:pl-4">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <div className="relative h-7 w-7 rounded-md border border-[#FFCD05]/40 bg-[#0B0B0C] p-0.5 shadow-[0_0_14px_rgba(255,205,5,0.35)]">
+            <LtrLogo variant="icon" className="h-full w-full" glow={false} />
           </div>
-          <span className="font-heading text-[13px] font-bold tracking-[0.14em] text-neutral-100">
-            INFINOX <span className="text-[#FFCD05]">IX</span> TERMINAL
-          </span>
+          <LtrLogo variant="wordmark" className="hidden sm:inline-block" />
         </div>
 
         {hasEverLoaded ? (
-          <div className="flex items-center gap-4 ml-2 pl-3 border-l border-neutral-800 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-4 ml-2 pl-3 border-l border-[#FFCD05]/15 overflow-x-auto scrollbar-none">
             <div className="flex items-center gap-1.5 shrink-0">
-              <span className={`inline-flex h-1.5 w-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-amber-500"}`} />
-              <span className={`font-mono text-[10px] uppercase tracking-widest ${connected ? "text-emerald-400" : "text-amber-400"}`}>
-                {connected ? "MT5 LIVE" : "DATA DELAYED"}
+              <span className={`inline-flex h-1.5 w-1.5 rounded-full ${connected ? "bg-[#13E6A2] shadow-[0_0_8px_#13E6A2]" : "bg-[#FFB020]"}`} />
+              <span className={`font-mono text-[10px] uppercase tracking-widest ${connected ? "text-[#13E6A2]" : "text-[#FFB020]"}`}>
+                {connected ? "INFINOX MT5 LIVE" : "DATA DELAYED"}
               </span>
             </div>
             <HeaderStat label="Account" value={liveAccount.login ? `#${liveAccount.login}` : "—"} />

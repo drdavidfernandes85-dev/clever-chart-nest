@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
 import sidebarLogo from "@/assets/logo-sidebar.png";
+import LtrLogoBrand from "@/components/branding/LtrLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -86,20 +87,18 @@ const DashboardSidebar = () => {
         collapsed ? "w-[68px]" : "w-[224px]"
       )}
     >
-      {/* Brand */}
-      <div className="flex h-16 items-center justify-between border-b border-primary/10 px-3">
-        <Link to="/" className="flex items-center gap-2 min-w-0 leading-none">
-          <img
-            src={infinoxLogo}
-            alt="INFINOX IX Sala de Trading"
-            className="h-9 w-9 shrink-0 object-contain"
-            draggable={false}
-          />
+      {/* Brand — LTR Terminal Pro */}
+      <div className="flex h-16 items-center justify-between border-b border-[#FFCD05]/15 px-3">
+        <Link to="/dashboard" className="flex items-center gap-2 min-w-0 leading-none">
+          <div className="relative h-9 w-9 shrink-0 rounded-md border border-[#FFCD05]/40 bg-[#0B0B0C] p-0.5 shadow-[0_0_14px_rgba(255,205,5,0.35)]">
+            <LtrLogoBrand variant="icon" className="h-full w-full" glow={false} />
+          </div>
           {!collapsed && (
             <>
-              <span className="h-5 w-px bg-border/50 shrink-0" aria-hidden="true" />
-              <span className="truncate font-heading text-[11px] font-semibold leading-tight text-foreground tracking-tight">
-                <span className="text-primary">IX</span> LTR
+              <span className="h-5 w-px bg-[#FFCD05]/25 shrink-0" aria-hidden="true" />
+              <span className="truncate font-heading text-[11px] font-extrabold uppercase tracking-[0.14em] leading-tight">
+                <span className="text-[#FFCD05]">LTR</span>{" "}
+                <span className="text-[#F5F5F5]">Terminal Pro</span>
               </span>
             </>
           )}
