@@ -261,6 +261,11 @@ const Admin = () => {
           <TabsContent value="analytics" className="mt-4">
             <AdminAnalyticsTab />
           </TabsContent>
+
+          {/* TRANSLATION QA */}
+          <TabsContent value="i18nqa" className="mt-4">
+            <AdminTranslationQATab />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
