@@ -1,5 +1,16 @@
 import { X, CheckCircle2, ShieldAlert, AlertOctagon, Clock, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import StatusBadge, { type ExecStatus } from "@/components/terminal/StatusBadge";
+
+const outcomeToExecStatus = (outcome: ExecutionOutcome): ExecStatus => {
+  switch (outcome) {
+    case "success": return "position_confirmed";
+    case "blocked": return "risk_blocked";
+    case "rejected": return "rejected";
+    case "pending": return "broker_accepted";
+    case "unconfirmed": return "execution_unconfirmed";
+  }
+};
 
 export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed";
 
