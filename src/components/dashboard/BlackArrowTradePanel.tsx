@@ -737,8 +737,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       else if (slTpError) toast.error(slTpError);
       return;
     }
+    if (isExecutionLocked()) { toast.warning("Another execution is in progress."); return; }
     setSide(sideArg);
     setSubmitting(true);
+    lockExecution(`order_${sideArg}`, 30000);
     const clientClickAt = new Date().toISOString();
     const tradeId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
