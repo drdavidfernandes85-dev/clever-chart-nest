@@ -104,12 +104,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [execResult, setExecResult] = useState<ExecutionResultPayload | null>(null);
   const [debugInfo, setDebugInfo] = useState<{
     functionUsed: string;
-    payload: any;
+    payload?: any;
     response?: any;
     error?: string;
-    rawEdgeFunctionResponse?: any;
-    edgeFunctionError?: string | null;
-    validationError?: string;
+    status?: number;
     at: string;
   } | null>(null);
 
@@ -376,8 +374,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
       }
 
-      // Canary check — submit-best-execution-order must NOT forward to
-      // execute-trade while we're still in dry-run validation mode.
+      // Guard — submit-best-execution-order must NOT forward to execute-trade
+      // while we're still in dry-run validation mode.
       const stepStr = String(res?.step ?? "").toLowerCase();
       if (stepStr === "trade_execution") {
         // eslint-disable-next-line no-console
@@ -385,7 +383,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         toast.error("⚠️ Live execution path triggered (step: trade_execution). Stopping.");
         return;
       }
-      if (stepStr && stepStr !== "dry_run" && stepStr !== "canary_dry_run_no_trading_layer_call") {
+      if (stepStr && stepStr !== "dry_run" && stepStr !== "deploy_verify_submit_best_execution_order") {
         // eslint-disable-next-line no-console
         console.warn("[OrderTicket] Unexpected step in dry-run mode:", res?.step);
         toast.warning(`Unexpected response step: ${res?.step}`);
@@ -737,43 +735,35 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   clientClickAt: new Date().toISOString(),
                 };
                 console.log("[OrderTicket] Dry Run:", payload);
-                setDebugInfo({
-                  functionUsed: "submit-best-execution-order",
-                  payload,
-                  rawEdgeFunctionResponse: undefined,
-                  edgeFunctionError: null,
-                  at: new Date().toISOString(),
-                });
                 try {
-                  const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
-                    body: payload
+                  const { data: sessionData } = await supabase.auth.getSession();
+                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order`, {
+                    method: "POST",
+                    cache: "no-store",
+                    headers: {
+                      "Content-Type": "application/json",
+                      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                      Authorization: `Bearer ${sessionData.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                    },
+                    body: JSON.stringify(payload),
                   });
+                  const data = await res.json();
+                  const error = res.ok ? undefined : (data?.error || data?.message || res.statusText);
                   console.log("[OrderTicket] Dry Run response:", { data, error });
-                  const edgeFunctionError = error?.message || null;
-                  const validationError =
-                    data?.step === "deploy_verify_submit_best_execution_order" &&
-                    data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
-                      ? undefined
-                      : "Frontend is not showing the real Edge Function response.";
-                  if (validationError) toast.error(validationError);
                   setDebugInfo({
                     functionUsed: "submit-best-execution-order",
                     payload,
-                    rawEdgeFunctionResponse: data,
-                    edgeFunctionError,
-                    validationError,
+                    response: data,
+                    error,
+                    status: res.status,
                     at: new Date().toISOString(),
                   });
                   window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
                 } catch (e: any) {
-                  const validationError = "Frontend is not showing the real Edge Function response.";
-                  toast.error(validationError);
                   setDebugInfo({
                     functionUsed: "submit-best-execution-order",
                     payload,
-                    rawEdgeFunctionResponse: null,
-                    edgeFunctionError: e?.message || String(e),
-                    validationError,
+                    error: e?.message || String(e),
                     at: new Date().toISOString(),
                   });
                 }
@@ -934,46 +924,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </button>
           </div>
           <div className="p-2 space-y-1.5">
-            {!('rawEdgeFunctionResponse' in debugInfo) && (
-              <>
-                <div className="text-neutral-500">at {debugInfo.at}</div>
-                <div>
-                  <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
-                  <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+            <div className="text-neutral-500">at {debugInfo.at}</div>
+            {debugInfo.status !== undefined && (
+              <div className="text-neutral-500">status {debugInfo.status}</div>
+            )}
+            {debugInfo.payload !== undefined && (
+              <div>
+                <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
+                <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
 {JSON.stringify(debugInfo.payload, null, 2)}
-                  </pre>
-                </div>
-              </>
+                </pre>
+              </div>
             )}
             {debugInfo.error && (
               <div>
                 <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Error</div>
                 <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
 {debugInfo.error}
-                </pre>
-              </div>
-            )}
-            {debugInfo.validationError && (
-              <div>
-                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Validation Error</div>
-                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
-{debugInfo.validationError}
-                </pre>
-              </div>
-            )}
-            {"rawEdgeFunctionResponse" in debugInfo && (
-              <div>
-                <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">rawEdgeFunctionResponse</div>
-                <pre className="max-h-[180px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
-{JSON.stringify(debugInfo.rawEdgeFunctionResponse, null, 2)}
-                </pre>
-              </div>
-            )}
-            {"edgeFunctionError" in debugInfo && (
-              <div>
-                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">edgeFunctionError</div>
-                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
-{JSON.stringify(debugInfo.edgeFunctionError, null, 2)}
                 </pre>
               </div>
             )}

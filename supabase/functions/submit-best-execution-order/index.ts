@@ -93,12 +93,12 @@ Deno.serve(async (req) => {
 
   // ---------------------------------------------------------------------------
   // DRY RUN — short-circuit before any Trading Layer call.
-  // Returns canary marker so frontend can verify no live execution happened.
   // ---------------------------------------------------------------------------
   if (dryRun === true) {
     return json({
       success: true,
-      step: "canary_dry_run_no_trading_layer_call",
+      step: "deploy_verify_submit_best_execution_order",
+      version: "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049",
       dryRun: true,
       tradeId: tradeId ?? null,
       symbol,
@@ -114,12 +114,10 @@ Deno.serve(async (req) => {
           : null,
       clientLatencyMs,
       serverLatencyMs: Date.now() - startedAt,
-      brokerMessage: "Dry run — no order sent to broker.",
       executedPrice: null,
       slippage: null,
       status: "dry_run",
       outcome: "dry_run",
-      note: "submit-best-execution-order did NOT invoke execute-trade or Trading Layer.",
     });
   }
 
