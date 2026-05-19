@@ -306,8 +306,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             side: payload.side,
             volume: payload.volume,
             startedAt: Date.now(),
+            brokerAccepted: true,
+            mt5Confirmed: false,
+            confirmationStatus: "pending",
           });
-          toast.success("Order placed — confirming position...");
+          toast.success("Order placed — confirming position in MT5...");
           runPostTradeConfirmation({
             symbol: payload.symbol,
             side: payload.side,
