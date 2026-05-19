@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio, GraduationCap, BarChart3 } from "lucide-react";
+import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio, GraduationCap, BarChart3, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
