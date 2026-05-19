@@ -85,7 +85,7 @@ export function notifyCloseResult(
   ticket?: string | number | null,
 ) {
   if (outcome === "closed") {
-    toast.success("Position closed", { description: `#${ticket ?? ""} ${symbol}`.trim() });
+    toast.success("Position closed successfully", { description: `#${ticket ?? ""} ${symbol}`.trim() });
   } else {
     toast.warning("Close requested — confirmation pending", {
       description: "Position still visible. Verify in MT5 if it does not disappear shortly.",
