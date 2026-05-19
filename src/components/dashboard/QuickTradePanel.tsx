@@ -627,10 +627,12 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     }
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("execute-trade", {
+      const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
         body: {
+          tradeId: tradeIdSrc || `qt-${Date.now()}`,
           symbol: brokerSymbol,
           side,
+          orderType: "market",
           volume: Number(lotsNum.toFixed(2)),
           stopLoss: effectiveSl,
           takeProfit: effectiveTp,
