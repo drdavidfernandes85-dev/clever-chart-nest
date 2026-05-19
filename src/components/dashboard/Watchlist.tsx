@@ -11,6 +11,7 @@ import {
   type MarketSymbol,
   type AssetClass,
 } from "@/lib/markets";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 import {
   Popover,
   PopoverContent,
