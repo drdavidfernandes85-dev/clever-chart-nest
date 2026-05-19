@@ -1416,10 +1416,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="text-right font-mono tabular-nums leading-tight">
-                <div className="text-[10px] text-red-400 font-semibold">{fmtPx(bid, digits)}</div>
-                <div className="text-[10px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 font-mono tabular-nums leading-none">
+                <span className="text-[7.5px] uppercase tracking-[0.18em] text-neutral-600">Bid</span>
+                <span className="text-[10.5px] text-red-400 font-semibold">{fmtPx(bid, digits)}</span>
+              </div>
+              <div className="flex items-center gap-1 font-mono tabular-nums leading-none">
+                <span className="text-[7.5px] uppercase tracking-[0.18em] text-neutral-600">Ask</span>
+                <span className="text-[10.5px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</span>
               </div>
               <ChevronDown className={cn("h-3 w-3 text-neutral-500 transition-transform", symbolOpen && "rotate-180")} />
             </div>
@@ -1515,7 +1519,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 <span>Sell</span><span>Bid</span>
               </span>
               <span className={cn(
-                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-red-400",
+                "font-mono tabular-nums text-[20px] leading-none font-bold text-red-400",
                 bidFlash === "up" && "text-red-300",
                 bidFlash === "down" && "text-red-500",
               )}>
@@ -1542,7 +1546,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 <span>Ask</span><span>Buy</span>
               </span>
               <span className={cn(
-                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-emerald-400 text-right",
+                "font-mono tabular-nums text-[20px] leading-none font-bold text-emerald-400 text-right",
                 askFlash === "up" && "text-emerald-300",
                 askFlash === "down" && "text-emerald-500",
               )}>
