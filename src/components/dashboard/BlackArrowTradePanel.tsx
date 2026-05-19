@@ -966,6 +966,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ) : null}
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setDevMode(!devEnabled)}
+              title="Toggle developer panels (admin only)"
+              className={cn(
+                "rounded-sm border px-1.5 py-[1px] text-[8.5px] font-bold uppercase tracking-widest transition-colors",
+                devEnabled
+                  ? "border-[#FFCD05] bg-[#FFCD05]/15 text-[#FFCD05]"
+                  : "border-neutral-700 bg-transparent text-neutral-500 hover:text-neutral-200",
+              )}
+            >
+              {devEnabled ? "Dev On" : "Dev Off"}
+            </button>
+          )}
           <span className="text-neutral-500">{liveAccount?.login ? `#${liveAccount.login}` : "—"}</span>
           <span className="text-neutral-700">·</span>
           <span className={cn(sessionPnl > 0 ? "text-emerald-400" : sessionPnl < 0 ? "text-red-400" : "text-neutral-100")}>
