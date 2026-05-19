@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio, GraduationCap, BarChart3 } from "lucide-react";
+import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio, GraduationCap, BarChart3, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import infinoxLogo from "@/assets/infinox-logo-white.png";
 import AdminWebinarsTab from "@/components/admin/AdminWebinarsTab";
 import AdminMentorApplicationsTab from "@/components/admin/AdminMentorApplicationsTab";
 import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
+import AdminTranslationQATab from "@/components/admin/AdminTranslationQATab";
 
 interface Channel { id: string; name: string; category: string; }
 interface Profile { user_id: string; display_name: string; }
@@ -130,7 +131,7 @@ const Admin = () => {
         </h1>
 
         <Tabs defaultValue="webinars">
-          <TabsList className="grid w-full grid-cols-7 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-8 max-w-5xl">
             <TabsTrigger value="webinars"><Radio className="h-3.5 w-3.5 mr-1.5" /> Webinars</TabsTrigger>
             <TabsTrigger value="channels"><Hash className="h-3.5 w-3.5 mr-1.5" /> Channels</TabsTrigger>
             <TabsTrigger value="messages"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Messages</TabsTrigger>
@@ -138,6 +139,7 @@ const Admin = () => {
             <TabsTrigger value="mentors"><GraduationCap className="h-3.5 w-3.5 mr-1.5" /> Mentors</TabsTrigger>
             <TabsTrigger value="announce"><Megaphone className="h-3.5 w-3.5 mr-1.5" /> Banner</TabsTrigger>
             <TabsTrigger value="analytics"><BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Analytics</TabsTrigger>
+            <TabsTrigger value="i18nqa"><Languages className="h-3.5 w-3.5 mr-1.5" /> Translation QA</TabsTrigger>
           </TabsList>
 
           {/* WEBINARS */}
@@ -258,6 +260,11 @@ const Admin = () => {
           {/* ANALYTICS */}
           <TabsContent value="analytics" className="mt-4">
             <AdminAnalyticsTab />
+          </TabsContent>
+
+          {/* TRANSLATION QA */}
+          <TabsContent value="i18nqa" className="mt-4">
+            <AdminTranslationQATab />
           </TabsContent>
         </Tabs>
       </div>
