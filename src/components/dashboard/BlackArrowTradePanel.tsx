@@ -104,12 +104,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [execResult, setExecResult] = useState<ExecutionResultPayload | null>(null);
   const [debugInfo, setDebugInfo] = useState<{
     functionUsed: string;
-    payload: any;
     response?: any;
     error?: string;
-    rawEdgeFunctionResponse?: any;
-    edgeFunctionError?: string | null;
-    validationError?: string;
     at: string;
   } | null>(null);
 
