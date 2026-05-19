@@ -230,6 +230,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     try {
       const { requestUrl, httpStatus, responseOk, data } = await directFetchSubmitBestExecutionOrder(payload);
 
+      if (httpStatus === 429 || (data && (data.retryAfter || data.tradingLayerStatus === 429))) {
+        triggerRateLimitCooldown(Number(data?.retryAfter) > 0 ? Number(data.retryAfter) : 60);
+      } else {
+        checkAndHandle429(data, null);
+      }
+
+
       const expectedLiveResponse =
         data?.version === BEST_EXEC_VERSION &&
         ((data?.step === "execution_result" && data?.liveOrderSent === true) ||
