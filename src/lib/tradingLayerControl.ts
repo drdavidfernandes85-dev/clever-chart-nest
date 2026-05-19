@@ -39,7 +39,7 @@ export function triggerRateLimitCooldown(seconds = 60) {
     /* ignore */
   }
   try {
-    toast.warning(`Rate limit reached. Retrying in ${seconds} seconds.`);
+    toast.warning(`Rate limit reached. Retrying after ${seconds} seconds.`);
   } catch {
     /* ignore */
   }
