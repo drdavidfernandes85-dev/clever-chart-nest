@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Activity, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
+import { useLanguage } from "@/i18n/LanguageContext";
+
 
 interface Quote {
   symbol: string;
@@ -22,6 +24,8 @@ const COLS = "grid-cols-[minmax(0,1fr)_64px_64px_64px_52px]";
 const POLL_MS = 5000;
 
 const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
+  const { t } = useLanguage();
+
   const [bidAskBoardData, setBidAskBoardData] = useState<Quote[]>([]);
   const lastGoodRef = useRef<Quote[]>([]);
   const [lastGoodBidAskBoardData, setLastGoodBidAskBoardData] = useState<Quote[]>([]);
