@@ -119,11 +119,11 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
       checkAndHandle429(data, null);
       if (!r.ok || data?.success === false) {
-        toast.error(errMessageFrom(data), { description: String(data?.brokerMessage ?? "") });
-        broadcastExec("Modify Failed");
+        toast.error(errMessageFrom(data), { description: safeStr(data?.brokerMessage) });
+        broadcastExec("SL/TP Failed");
       } else {
-        toast.success("Protection updated", { description: `#${ticket} ${position.symbol}` });
-        broadcastExec("Protection Updated");
+        toast.success("SL/TP updated successfully", { description: `#${ticket} ${position.symbol}` });
+        broadcastExec("SL/TP Updated");
         setOpenModify(false);
       }
     } catch (e: any) {
