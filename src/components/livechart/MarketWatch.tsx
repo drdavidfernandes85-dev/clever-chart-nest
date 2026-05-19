@@ -188,7 +188,7 @@ const MarketWatch = ({ symbols, active, onSelect }: Props) => {
         <div className="flex items-center gap-1.5">
           <Eye className="h-3 w-3 text-[#FFCD05]" />
           <h3 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
-            Market Watch
+            {t("terminal.marketWatch" as never)}
           </h3>
         </div>
         <div className="flex items-center gap-1.5">
@@ -196,13 +196,14 @@ const MarketWatch = ({ symbols, active, onSelect }: Props) => {
             <button
               type="button"
               onClick={resetFavorites}
-              title="Reset all favorites"
+              title={t("terminal.resetFavorites" as never)}
               className="inline-flex items-center gap-0.5 rounded-sm px-1 py-[1px] text-[8.5px] font-mono uppercase tracking-widest text-neutral-500 hover:text-[#FFCD05] hover:bg-[#FFCD05]/5 transition-colors"
             >
               <RotateCcw className="h-2.5 w-2.5" />
-              Reset
+              {t("terminal.reset" as never)}
             </button>
           )}
+
           {quotesLoading ? (
             <Loader2 className="h-3 w-3 animate-spin text-neutral-500" />
           ) : (
