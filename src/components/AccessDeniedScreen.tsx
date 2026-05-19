@@ -87,7 +87,7 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
 
             {/* Contextual reason — softer, non-restrictive tone */}
             <div className="mx-auto mt-5 max-w-lg rounded-2xl border border-primary/20 bg-background/40 p-4 text-left text-sm text-muted-foreground backdrop-blur-md">
-              {t(reasonKey)}
+              {eligibilityCopy(locale, t(reasonKey))}
               {reason === "low_balance" && balance != null && (
                 <div className="mt-2 text-xs text-foreground/75">
                   {t("access.balance.current")}:{" "}
