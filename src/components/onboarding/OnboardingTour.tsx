@@ -48,7 +48,7 @@ const STEPS: Step[] = [
     body: "Real-time chat with mentors and traders. Mention with @, reply, react.",
   },
   {
-    route: "/signals",
+    route: "/ideas",
     title: "Trade Ideas",
     body: "Live and historical trade ideas from the moderators with full entry/SL/TP context.",
   },

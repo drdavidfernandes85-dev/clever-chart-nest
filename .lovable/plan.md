@@ -1,83 +1,82 @@
-## Goal
+# Compliance Cleanup for Broker Approval
 
-Stop every widget from polling Trading Layer on its own. Route all live prices, account, and positions through a single in-app store with controlled polling, 429 protection, and a status badge.
+This is a large multi-area task. Before I start touching ~50+ files, I want to confirm scope and a few key decisions so the result actually passes Compliance review.
 
-## Architecture
+## What I will do
 
-```
-                     ┌──────────────────────────────┐
-                     │   liveMarketDataStore        │
-                     │  (single source of truth)    │
-                     │   quotes / account /         │
-                     │   positions / status         │
-                     └──────────────┬───────────────┘
-                                    │ subscribe()
-        ┌────────────┬──────────────┼──────────────┬─────────────┐
-        ▼            ▼              ▼              ▼             ▼
-   Market Watch  Bid/Ask Board  Order Ticket  Chart header  Account / Positions widgets
-                                    ▲
-                        only one writer:
-                  MarketDataService (controlled polling
-                  or stream if Trading Layer supports it)
-```
+### 1. Branding & attribution
+- Add a small `PoweredByTradingLayer` component (logo + text) and place it in:
+  - Trading room header / footer
+  - Ideas tab header
+  - Copy / Follow panels
+  - Execution confirmation modals
+- Remove any "Powered by INFINOX" or broker-as-operator wording in the trading room.
+- Add neutral wording: "The broker provides the MT5 trading account connection only…"
 
-## What we'll build
+### 2. Rename Signals → Ideas (frontend only)
+- Global search/replace in user-facing strings only:
+  - Routes: `/signals` → `/ideas` (with redirect from old route)
+  - Files: `TradingSignals.tsx` → `TradingIdeas.tsx`, `NewSignalForm.tsx` → `NewIdeaForm.tsx`, `SymbolIntelligence` "Trade Ideas" already OK
+  - Navbar, MobileBottomNav, Dashboard tabs, toasts, modal titles, button labels
+  - i18n translation files (EN/ES/PT)
+- Backend tables (`trading_signals`), edge functions (`execute-signal`), and DB columns stay — no user sees them. Internal variable names stay.
 
-1. `src/lib/liveMarketDataStore.ts` — vanilla pub/sub store: `getState()`, `subscribe()`, internal setters. Holds:
-   - `quotes: Record<symbol, { bid, ask, spread, last, timestamp, source }>`
-   - `account` (balance/equity/margin/free/profit/currency/leverage/login/server)
-   - `positions[]`
-   - `status: "live_stream" | "live_polling" | "stale" | "rate_limited" | "disconnected"`
-   - `rateLimit: { active, resumesAt }`
-   - `diagnostics: { activeLoops, lastTickAt, polledSymbols[], requestsPerMinute }`
+### 3. Combine Trade Ideas + Copy Trading into single "Ideas" tab
+- New page `/ideas` with two sections: "Trade Ideas" and "Follow / Copy Tools"
+- Old `/copy-trading` and `/signals` redirect to `/ideas`
+- Top-of-page compliance disclaimer block
 
-2. `src/services/MarketDataService.ts` — the only writer. Runs three controlled loops:
-   - Selected symbol: 1.5 s
-   - Watchlist symbols (batched): 7 s
-   - Account: 7 s · Positions: 10 s (boosted to 3 s for 30 s after `trade-executed` event)
-   - 429 handler: pause all loops 60 s, set `status="rate_limited"`, emit countdown, keep cached prices.
-   - Reads from existing `get-live-account` and `get-quotes` (whichever exists; if streaming endpoint exists later, swap in here only).
+### 4. Remove risky wording
+- Scan all user-facing files for: guaranteed, risk-free, sure trade, best signal, expert signal, copy our trades, automatic profits, financial advice, investment recommendation, broker signals, INFINOX copy trading, etc.
+- Replace with the approved compliant phrases.
 
-3. `src/hooks/useLiveMarketData.ts` + selectors (`useQuote(symbol)`, `useAccount()`, `usePositions()`, `useMarketStatus()`).
+### 5. Global risk footer
+- Add `ComplianceFooter` component, render in `Footer.tsx` and inside the dashboard shell so it appears on every authenticated page too.
 
-4. Refactor `LiveAccountContext` to be a thin wrapper that reads from the store (keep the existing API surface so we don't break callers). Delete its own `setInterval`.
+### 6. Ideas tab disclaimer
+- Persistent banner at top of `/ideas`.
 
-5. Disable independent polling in these files (turn each `setInterval`/`setTimeout` loop into a no-op and replace data source with the store):
-   - `BrokerSymbolsContext.tsx`
-   - `hooks/useMultiSymbolTicks.ts`
-   - `hooks/useSelectedQuote.ts`
-   - `hooks/useMTAccount.tsx` (keep only event-driven refresh)
-   - `dashboard/Watchlist.tsx` · `MarketMovers.tsx` · `ForexTickerBar.tsx`
-   - `dashboard/LightweightCandlestickChart.tsx` (chart header price only — keep candle fetch as-is)
-   - `dashboard/LiveTradingViewChart.tsx` · `QuickTradePanel.tsx` · `OrderBook.tsx`
-   - `BlackArrowTradePanel.tsx` bid/ask reads switch to `useQuote()`
-   - Leave non-Trading-Layer pollers alone (news, webinars, smart alerts, execution log).
+### 7. Copy / Follow confirmation checkbox
+- Add a required checkbox in `CopyTradeModal` and any "Execute Idea" / "Use This Idea" flow.
+- Rename buttons: Take/Copy/Follow Signal → Review Idea / Execute Idea / Use This Idea.
 
-6. `MarketStatusBadge` component rendering: LIVE STREAM / LIVE POLLING / STALE / RATE LIMITED / DISCONNECTED, with a countdown when rate-limited. Place in dashboard header.
+### 8. First-visit trading room disclaimer modal
+- `TradingRoomDisclaimerModal` shown once, persisted in localStorage key `trading-room-disclaimer-ack-v1`.
+- Triggered on first visit to `/dashboard` (and `/ideas`).
 
-7. Order ticket behavior: always render cached bid/ask. On submit, `submit-best-execution-order` continues to fetch its own server-side fresh tick — no change. Document with a comment that frontend cache must never be the execution source.
+### 9. `/terms` page — full Terms & Conditions with all 16 sections listed.
 
-8. Dev Mode diagnostics panel `MarketDataDiagnosticsPanel.tsx` added under the existing dev panels in `BlackArrowTradePanel`:
-   - active polling loops
-   - last tick timestamp (overall + per-symbol)
-   - symbols currently polled
-   - requests-per-minute estimate (rolling 60 s)
-   - rate-limit status + resumesAt
+### 10. `/risk-disclosure` page — all 10 sections.
 
-## Out of scope
+### 11. Privacy / data note
+- Short component embedded in `/connect-mt` and `/terms`.
 
-- No backend changes (no new edge functions, no server-side rate limiting — per project rule).
-- True WebSocket streaming: stub the interface in `MarketDataService` so we can plug it in later if Trading Layer adds it. Default runtime path = controlled polling.
-- We are not removing unrelated 60s pollers (news, webinars, etc.).
+### 12. Broker separation wording
+- Add to Terms, Risk Disclosure, Ideas tab footer, Connect-MT page.
 
-## Validation
+### 13. Header/footer labels
+- "Powered by Trading Layer" badge in dashboard header.
+- Remove broker-implying wording.
 
-- Open `/dashboard`, confirm only the service's loops appear in the Dev diagnostics panel and per-widget intervals are gone.
-- Force a 429 by temporarily lowering intervals → badge flips to RATE LIMITED, prices stay visible, countdown ticks, resumes after 60 s.
-- Place an order → positions loop boosts for 30 s, then relaxes.
+### 14. Execution safety wording
+- Add confirmation text in `BlackArrowTradePanel` open flow and `PositionActions` close flow (above the existing button or in an AlertDialog).
+
+### 15. Compliance review checklist page
+- `/compliance-review` (admin or dev-mode visible) showing all 16 items with status indicators.
+
+### 16. Final UI scan
+- Run `rg` for the banned terms after edits and report results.
 
 ## Technical notes
+- Logo: I'll need the Trading Layer logo file. **You mentioned an attached logo but I don't see an attachment in this message.** I'll create a placeholder text-only "Powered by Trading Layer" badge for now using the existing yellow brand token, and swap in the real SVG/PNG as soon as you upload it.
+- i18n: I'll update EN strings and mirror to ES/PT where existing keys exist; new compliance copy will be added to all three locales.
+- Routes added: `/ideas`, `/terms`, `/risk-disclosure`, `/compliance-review`. Old `/signals` and `/copy-trading` will 301-redirect via `<Navigate>` to `/ideas`.
+- DB: no migrations needed. All rename work is UI-only. `trading_signals` table keeps its name.
+- Files touched (estimate): ~40 files (new pages, new components, navbar, footer, dashboard tabs, copy trade modal, trade panel, i18n).
 
-- Store is framework-agnostic (no React) so the service can run outside component lifecycles. React layer uses `useSyncExternalStore`.
-- Service is a singleton started once from `LiveAccountProvider` mount (already top-level under the app).
-- Existing custom events (`mt:refresh-positions`, `trade-executed`) are kept and routed into the service's manual-refresh path so existing call sites keep working.
+## Confirm before I start
+
+1. **Trading Layer logo** — please attach it, or confirm I should ship a text-only "Powered by Trading Layer" badge and you'll drop the logo in later.
+2. **Broker name in disclaimers** — should I write "INFINOX" explicitly, or keep it generic as "the broker"? Compliance text above uses "the broker", I'll follow that unless you say otherwise.
+3. **Route redirects** — OK to keep `/signals` and `/copy-trading` as redirects (so old links work), or do you want them returning 404?
+4. **First-visit modal scope** — trigger on `/dashboard` only, or any authenticated trading-room route?

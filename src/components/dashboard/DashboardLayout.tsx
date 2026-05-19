@@ -5,6 +5,9 @@ import MobileSidebarDrawer from "./MobileSidebarDrawer";
 import ConnectedAccountBadge from "./ConnectedAccountBadge";
 import MarketStatusBadge from "./MarketStatusBadge";
 import WelcomeBanner from "@/components/onboarding/WelcomeBanner";
+import ComplianceFooter from "@/components/ComplianceFooter";
+import TradingRoomDisclaimerModal from "@/components/TradingRoomDisclaimerModal";
+import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Props {
@@ -37,7 +40,8 @@ const DashboardLayout = ({ children }: Props) => {
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <ConnectedAccountBadge />
-      <div className="fixed top-3 right-3 z-40 hidden lg:block">
+      <div className="fixed top-3 right-3 z-40 hidden lg:flex items-center gap-2">
+        <PoweredByTradingLayer />
         <MarketStatusBadge />
       </div>
 
@@ -55,7 +59,10 @@ const DashboardLayout = ({ children }: Props) => {
           <WelcomeBanner />
         </div>
         {children}
+        <ComplianceFooter />
       </div>
+
+      <TradingRoomDisclaimerModal />
     </div>
   );
 };

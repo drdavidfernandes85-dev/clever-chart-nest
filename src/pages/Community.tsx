@@ -380,7 +380,7 @@ const Community = () => {
                 </span>
               </div>
               <Link
-                to="/signals"
+                to="/ideas"
                 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-[#FFCD05]"
               >
                 All →

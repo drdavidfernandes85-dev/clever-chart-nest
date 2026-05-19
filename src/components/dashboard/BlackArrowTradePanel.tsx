@@ -1517,6 +1517,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             Sell @ MKT
           </SideBtn>
         </div>
+        <p className="px-1 pt-1 text-[10px] leading-snug text-muted-foreground/70">
+          This sends a real order to your connected MT5 account. You are solely
+          responsible for this trading decision. Not investment advice.
+        </p>
 
         {/* Dev-only dry-run best-execution test */}
         {devMode && (
