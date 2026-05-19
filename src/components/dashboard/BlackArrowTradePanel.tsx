@@ -1746,25 +1746,47 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Utility action bar — small, muted, never stronger than Buy/Sell */}
-        <div role="toolbar" aria-label="Ticket actions" className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-1">
-          <ToolBtn
-            onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); }}
-            label="Cancel"
-            ariaLabel="Cancel and reset ticket fields"
-          />
-          <ToolBtn
-            onClick={() => setSide(side === "buy" ? "sell" : "buy")}
-            label="Invert"
-            ariaLabel="Invert order side"
-          />
-          <ToolBtn onClick={closeSymbolPositions} label="Close" danger ariaLabel="Close open positions for this symbol" />
-          <ToolBtn
-            onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); closeSymbolPositions(); }}
-            label="Close+Cxl"
-            danger
-            ariaLabel="Close positions and cancel ticket"
-          />
-        </div>
+        {(() => {
+          const hasExposure = symbolPositions.length > 0;
+          const hasStaged = Boolean(sl || tp || price || noStops);
+          return (
+            <div role="toolbar" aria-label="Ticket actions" className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-1">
+              <ToolBtn
+                onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); }}
+                label="Cancel"
+                disabled={!hasStaged}
+                title={hasStaged ? "Clear staged ticket fields" : "No staged order to cancel"}
+                ariaLabel="Cancel and reset ticket fields"
+              />
+              <ToolBtn
+                onClick={() => setSide(side === "buy" ? "sell" : "buy")}
+                label="Invert"
+                title="Flip order side (buy ↔ sell)"
+                ariaLabel="Invert order side"
+              />
+              <ToolBtn
+                onClick={closeSymbolPositions}
+                label="Close"
+                danger
+                disabled={!hasExposure}
+                title={hasExposure ? `Close ${symbolPositions.length} open position(s) on ${normalizedSym}` : "No open exposure on selected symbol"}
+                ariaLabel="Close open positions for this symbol"
+              />
+              <ToolBtn
+                onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); closeSymbolPositions(); }}
+                label="Close+Cxl"
+                danger
+                disabled={!hasExposure && !hasStaged}
+                title={
+                  !hasExposure && !hasStaged
+                    ? "Nothing to close or cancel"
+                    : "Close open positions and clear ticket"
+                }
+                ariaLabel="Close positions and cancel ticket"
+              />
+            </div>
+          );
+        })()}
 
       </div>
 
@@ -1958,13 +1980,15 @@ const SummaryRow = ({
 );
 
 const ToolBtn = ({
-  onClick, icon, label, danger, disabled, ariaLabel,
-}: { onClick: () => void; icon?: React.ReactNode; label: string; danger?: boolean; disabled?: boolean; ariaLabel?: string }) => (
+  onClick, icon, label, danger, disabled, ariaLabel, title,
+}: { onClick: () => void; icon?: React.ReactNode; label: string; danger?: boolean; disabled?: boolean; ariaLabel?: string; title?: string }) => (
   <button
     type="button"
     onClick={onClick}
     disabled={disabled}
+    title={title}
     aria-label={ariaLabel ?? label}
+    aria-disabled={disabled || undefined}
     className={cn(
       "h-[20px] rounded-sm text-[9.5px] font-semibold uppercase tracking-[0.08em] flex items-center justify-center gap-1 transition-colors border border-transparent active:translate-y-px focus:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0a0a0a] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:translate-y-0",
       danger
