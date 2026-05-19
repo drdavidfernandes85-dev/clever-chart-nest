@@ -300,11 +300,10 @@ export const ExecutionResultModal = ({
               <Row
                 label="Status"
                 value={
-                  effective.outcome === "pending"
-                    ? "ORDER SENT — WAITING FOR MT5"
-                    : "NO MATCHING MT5 POSITION"
+                  <StatusBadge
+                    status={effective.outcome === "pending" ? "broker_accepted" : "execution_unconfirmed"}
+                  />
                 }
-                accent="text-yellow-300"
               />
               <Row
                 label="Broker Message"
