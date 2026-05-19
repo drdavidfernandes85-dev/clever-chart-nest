@@ -1,9 +1,12 @@
 import { cn } from "@/lib/utils";
 import ltrIcon from "@/assets/ltr-icon.png";
+import ltrFullLogo from "@/assets/ltr-terminal-pro-logo.png";
 
 interface Props {
   /**
-   * "full"     — horizontal logo + "LTR Terminal Pro" wordmark image
+   * "full"     — horizontal logo + "LTR Terminal Pro" wordmark (uses the
+   *              brand PNG exactly as designed: gold-rimmed LTR badge,
+   *              vertical gold stripe, gold/silver wordmark, soft glow).
    * "icon"     — compact LTR monogram only (square gold-rimmed mark)
    * "wordmark" — small inline wordmark for sidebars/footers (text-only)
    */
@@ -15,10 +18,9 @@ interface Props {
 
 /**
  * Brand mark for **LTR Terminal Pro** — the premium professional trading
- * terminal. Replaces the legacy "INFINOX IX Terminal" lockup wherever the
- * product is named. Broker attribution ("Connected to INFINOX MT5") is
- * handled separately so the broker is never presented as the technology
- * provider.
+ * terminal. The "full" variant renders the official horizontal lockup
+ * PNG verbatim; size it with Tailwind height utilities (e.g. `h-10`,
+ * `h-14`) — width is auto from the natural ~6.5:1 aspect ratio.
  */
 const LtrLogo = ({ variant = "full", className, glow = true }: Props) => {
   if (variant === "wordmark") {
@@ -50,33 +52,21 @@ const LtrLogo = ({ variant = "full", className, glow = true }: Props) => {
     );
   }
 
-  // "full" — compose the transparent icon mark + crisp wordmark text.
-  // Avoids using the wide PNG (which truncates in narrow headers and
-  // carries baked-in padding/checker artifacts).
+  // "full" — official horizontal lockup PNG, transparent background.
+  // Default to a sensible height so it never collapses; consumers can
+  // override via className (e.g. "h-10 w-auto", "h-14 w-auto").
   return (
-    <span
+    <img
+      src={ltrFullLogo}
+      alt="LTR Terminal Pro"
+      draggable={false}
       className={cn(
-        "inline-flex items-center gap-2.5 leading-none whitespace-nowrap",
+        "h-10 w-auto select-none object-contain",
+        glow && "drop-shadow-[0_0_18px_rgba(255,205,5,0.35)]",
         className,
       )}
-    >
-      <img
-        src={ltrIcon}
-        alt=""
-        aria-hidden
-        draggable={false}
-        className={cn(
-          "h-[1.4em] w-[1.4em] shrink-0 select-none object-contain",
-          glow && "drop-shadow-[0_0_14px_rgba(255,205,5,0.45)]",
-        )}
-      />
-      <span className="font-heading text-[1em] font-extrabold uppercase tracking-[0.14em]">
-        <span className="text-[#FFCD05]">LTR</span>{" "}
-        <span className="text-[#F5F5F5]">Terminal Pro</span>
-      </span>
-    </span>
+    />
   );
-
 };
 
 export default LtrLogo;
