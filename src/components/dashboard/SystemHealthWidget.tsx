@@ -38,8 +38,10 @@ const Row = ({
 );
 
 const SystemHealthWidget = () => {
+  const { t } = useLanguage();
   const { liveAccount, positions, connected, loading, refreshing, lastSyncAt } =
     useLiveAccount() as any;
+
   const { rateLimited, cooldownSec, locked, reason } = useExecutionLock();
   const [lastExec, setLastExec] = useState<{ status: string; at: string } | null>(null);
   const [, force] = useState(0);
@@ -70,8 +72,9 @@ const SystemHealthWidget = () => {
         <div className="flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5 text-[#FFCD05]" />
           <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-neutral-400">
-            System Health
+            {t("terminal.systemHealth" as never)}
           </span>
+
         </div>
         {refreshing ? (
           <Loader2 className="h-3 w-3 animate-spin text-neutral-500" />
