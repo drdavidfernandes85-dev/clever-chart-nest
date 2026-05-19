@@ -250,20 +250,10 @@ const LiveChartInner = () => {
       <header className="sticky top-0 z-50 border-b border-[#FFCD05]/15 bg-[#050505]/95 backdrop-blur-2xl">
         <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
           <div className="flex items-center gap-3 min-w-0">
-            <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-              <LtrLogo variant="icon" className="h-7 w-7" glow />
-              <span className="hidden sm:flex flex-col leading-none gap-0.5">
-                <span className="flex items-baseline gap-1.5">
-                  <span className="font-heading text-[13px] font-extrabold uppercase tracking-[0.18em] text-[#FFCD05] group-hover:text-[#FFD83A] transition-colors">
-                    LTR
-                  </span>
-                  <span className="font-heading text-[12px] font-semibold uppercase tracking-[0.22em] text-[#E8E8EA]">
-                    Terminal Pro
-                  </span>
-                </span>
-                <span className="hidden xl:inline font-mono text-[8px] uppercase tracking-[0.22em] text-[#8E949C]">
-                  Powered by Trading Layer
-                </span>
+            <Link to="/" className="flex items-center gap-2.5 group shrink-0" aria-label="LTR Terminal Pro — Home">
+              <LtrLogo variant="full" className="h-7 sm:h-8 w-auto" />
+              <span className="hidden xl:inline font-mono text-[8px] uppercase tracking-[0.22em] text-[#8E949C]">
+                Powered by Trading Layer
               </span>
             </Link>
 
