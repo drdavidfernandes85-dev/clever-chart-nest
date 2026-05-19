@@ -1644,11 +1644,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-red-400/80">Stop Loss</label>
-                {slPips > 0 && !noStops ? (
-                  <span className="text-[8.5px] font-mono tabular-nums text-red-400/70">{slPips.toFixed(0)}p</span>
-                ) : null}
+              <div className="flex h-[12px] items-center justify-between">
+                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-red-400/80 leading-none">Stop Loss</label>
+                <span className="text-[8.5px] font-mono tabular-nums text-red-400/70 leading-none">
+                  {slPips > 0 && !noStops ? `${slPips.toFixed(0)}p` : "\u00A0"}
+                </span>
               </div>
               <input
                 value={sl}
@@ -1665,7 +1665,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                     type="button"
                     disabled={noStops}
                     onClick={() => applyPipPreset("sl", p)}
-                    className="h-[18px] rounded-sm bg-red-500/[0.06] text-[9px] font-mono tabular-nums text-red-300/90 hover:bg-red-500/15 disabled:opacity-40"
+                    className="h-[18px] rounded-sm bg-red-500/[0.06] text-[9px] font-mono tabular-nums text-red-300/90 hover:bg-red-500/15 disabled:opacity-40 transition-colors"
                   >
                     {p}p
                   </button>
@@ -1673,11 +1673,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               </div>
             </div>
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-emerald-400/80">Take Profit</label>
-                {tpPips > 0 && !noStops ? (
-                  <span className="text-[8.5px] font-mono tabular-nums text-emerald-400/70">{tpPips.toFixed(0)}p</span>
-                ) : null}
+              <div className="flex h-[12px] items-center justify-between">
+                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-emerald-400/80 leading-none">Take Profit</label>
+                <span className="text-[8.5px] font-mono tabular-nums text-emerald-400/70 leading-none">
+                  {tpPips > 0 && !noStops ? `${tpPips.toFixed(0)}p` : "\u00A0"}
+                </span>
               </div>
               <input
                 value={tp}
@@ -1694,7 +1694,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                     type="button"
                     disabled={noStops}
                     onClick={() => applyPipPreset("tp", p)}
-                    className="h-[18px] rounded-sm bg-emerald-500/[0.06] text-[9px] font-mono tabular-nums text-emerald-300/90 hover:bg-emerald-500/15 disabled:opacity-40"
+                    className="h-[18px] rounded-sm bg-emerald-500/[0.06] text-[9px] font-mono tabular-nums text-emerald-300/90 hover:bg-emerald-500/15 disabled:opacity-40 transition-colors"
                   >
                     {p}p
                   </button>
