@@ -1654,13 +1654,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         )}
 
-        {/* Pending — single condensed row */}
-        <div className="grid grid-cols-4 gap-1">
+        {/* Pending orders — 2×2 compact secondary grid */}
+        <div className="grid grid-cols-2 gap-1">
           <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
           <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Stop</SideBtn>
-          <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Lmt</SideBtn>
-          <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Lmt</SideBtn>
+          <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Limit</SideBtn>
+          <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Limit</SideBtn>
         </div>
+
 
         {/* SL / TP — compact dual column */}
         <div className="rounded-sm border border-neutral-800 bg-[#080808] p-1.5 space-y-1.5">
