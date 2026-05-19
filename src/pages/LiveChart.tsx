@@ -521,12 +521,17 @@ const LiveChartInner = () => {
             </div>
           </section>
 
-          {/* RIGHT: Open Positions + Quick Trade ticket */}
-          <aside className="flex flex-col gap-2 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
-            <OpenPositionsPanel />
+          {/* RIGHT RAIL — institutional order flow hierarchy:
+              A. Compact quote header (bid/ask/spread/tick age)
+              B. Order ticket — PRIMARY ACTION, always above the fold
+              C. Open positions
+              D. Secondary controls (execution banner, system health) — collapsed by default
+            */}
+          <aside className="flex flex-col gap-2.5 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
+            {/* A. Compact quote */}
+            <CompactQuoteHeader symbol={activeBroker} displayLabel={displayLabel} />
 
-            <LiveExecutionBanner />
-            <SystemHealthWidget />
+            {/* B. Order ticket — primary action area */}
             <div
               className={`rounded-2xl transition-all duration-500 ${
                 highlightTicket
@@ -537,6 +542,22 @@ const LiveChartInner = () => {
               <BlackArrowTradePanel />
             </div>
 
+            {/* C. Open positions */}
+            <OpenPositionsPanel />
+
+            {/* D. Secondary controls — collapsed by default */}
+            <Collapsible>
+              <CollapsibleTrigger className="group w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#0A0B0D]/60 hover:bg-[#0A0B0D] transition-colors text-left">
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#8E949C] group-hover:text-[#FFCD05]">
+                  System &amp; risk controls
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-[#5d6168] transition-transform group-data-[state=open]:rotate-90" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 flex flex-col gap-2">
+                <LiveExecutionBanner />
+                <SystemHealthWidget />
+              </CollapsibleContent>
+            </Collapsible>
           </aside>
         </div>
 
