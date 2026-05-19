@@ -5,6 +5,7 @@ import LeadCaptureForm from "@/components/lead/LeadCaptureForm";
 import SEO from "@/components/SEO";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { track } from "@/lib/analytics";
+import { eligibilityCopy } from "@/lib/eligibilityCopy";
 
 interface Props {
   reason?:
