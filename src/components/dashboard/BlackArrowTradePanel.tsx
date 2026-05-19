@@ -302,21 +302,28 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     }
     setSide(sideArg);
     setSubmitting(true);
+    const clientClickAt = new Date().toISOString();
+    const tradeId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     try {
       const payload = {
-        tradeId:
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        tradeId,
         symbol: normalizedSym,
         side: sideArg,
+        orderType: "market" as const,
         volume: Number(volNum.toFixed(2)),
         stopLoss: noStops ? null : (sl ? Number(sl) : null),
         takeProfit: noStops ? null : (tp ? Number(tp) : null),
+        clientClickAt,
       };
-      const { data, error } = await supabase.functions.invoke("execute-trade", { body: payload });
+      const { data, error } = await supabase.functions.invoke(
+        "submit-best-execution-order",
+        { body: payload },
+      );
       let res: any = data;
-      if (error) {
+      if (error && !res) {
         try {
           const ctx: any = (error as any)?.context;
           if (ctx?.json) res = await ctx.json();
@@ -327,44 +334,46 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           return;
         }
       }
-      const brokerMsg =
-        res?.message ||
-        res?.retcodeDescription ||
-        res?.retcode_description ||
-        res?.brokerMessage ||
-        res?.error;
-      const classification = String(res?.classification || res?.status || "").toLowerCase();
-      const knownStates = ["done", "placed", "partial", "rejected", "failed"];
-      const brokerState = knownStates.includes(classification)
-        ? classification
-        : res?.success === true ? "done" : "failed";
 
-      // Always trigger downstream refreshes regardless of outcome so UI reflects broker state.
-      window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId: payload.tradeId } }));
+      // Always trigger downstream refreshes regardless of outcome.
+      window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId } }));
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
       window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
       window.dispatchEvent(new CustomEvent("mt:refresh-market-watch"));
       window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-quotes"));
       refresh();
 
-      if (res?.success === true || brokerState === "done" || brokerState === "placed" || brokerState === "partial") {
-        const filledPrice = Number(res.price ?? res.openPrice ?? entryPrice) || entryPrice;
-        const stateLabel = brokerState.toUpperCase();
-        toast.success(`${stateLabel} · ${sideArg.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`, {
+      if (res?.success === true) {
+        const statusLabel = String(res.status || "done").toUpperCase();
+        const reqPx = res.requestedPrice != null ? fmtPx(Number(res.requestedPrice), digits) : "—";
+        const execPx = res.executedPrice != null ? fmtPx(Number(res.executedPrice), digits) : "—";
+        const slipTxt =
+          res.slippage != null
+            ? `${Number(res.slippage) >= 0 ? "+" : ""}${Number(res.slippage).toFixed(digits)}`
+            : "—";
+        const latTxt = res.latencyMs != null ? `${Math.round(Number(res.latencyMs))}ms` : "—";
+        toast.success(`${statusLabel} · ${sideArg.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`, {
           description: [
-            `Px ${fmtPx(filledPrice, digits)}`,
+            `Req ${reqPx} → Exec ${execPx}`,
+            `Slip ${slipTxt}`,
+            `Lat ${latTxt}`,
             res.ticket ? `#${res.ticket}` : null,
-            brokerMsg && brokerMsg !== "Order executed" ? brokerMsg : null,
+            res.brokerMessage && res.brokerMessage !== "Order executed" ? res.brokerMessage : null,
           ].filter(Boolean).join("  ·  "),
-          duration: 4000,
+          duration: 5000,
         });
-        // Order Ticket stays mounted; only clear pending-price helper.
         setPrice("");
         if (autoReset) { setVol(volumeMin.toFixed(2)); setOrderType("Market"); }
       } else {
-        toast.error(`${brokerState.toUpperCase()} · ${sideArg.toUpperCase()} ${normalizedSym}`, {
-          description: brokerMsg || "Order rejected by broker",
-          duration: 5000,
+        const reasons = Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null;
+        toast.error(`${(res?.status || "REJECTED").toString().toUpperCase()} · ${sideArg.toUpperCase()} ${normalizedSym}`, {
+          description: [
+            res?.error,
+            reasons,
+            res?.brokerMessage,
+          ].filter(Boolean).join("  ·  ") || "Order rejected by broker",
+          duration: 6000,
         });
       }
     } catch (e: any) {
@@ -373,6 +382,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       setSubmitting(false);
     }
   };
+
 
   const closeSymbolPositions = async () => {
     if (symbolPositions.length === 0) {
