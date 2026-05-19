@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       user_id: user.id,
       trade_id: `close-${ticket}`,
       symbol,
-      side: "close",
+      side: closeSide,
       volume,
       status,
       outcome,
