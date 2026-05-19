@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { TrendingUp, ChevronRight, ArrowLeft } from "lucide-react";
+import LtrLogo from "@/components/branding/LtrLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,14 +45,11 @@ const ForgotPassword = () => {
 
       <div className="relative z-10 w-full max-w-sm space-y-8">
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <TrendingUp className="h-10 w-10 text-primary" />
-            <span className="font-heading text-2xl font-bold text-foreground uppercase">
-              <span className="text-primary">IX</span>LTR
-            </span>
+          <Link to="/" className="inline-flex flex-col items-center gap-2">
+            <LtrLogo variant="full" className="h-14 w-auto" />
           </Link>
-          <div className="mx-auto mt-4 h-0.5 w-8 bg-primary" />
-          <h1 className="mt-4 font-heading text-2xl font-semibold text-primary uppercase">
+          <div className="mx-auto mt-4 h-0.5 w-8 bg-[#FFCD05]" />
+          <h1 className="mt-4 font-heading text-2xl font-semibold text-[#FFCD05] uppercase tracking-[0.08em]">
             Forgot password
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">

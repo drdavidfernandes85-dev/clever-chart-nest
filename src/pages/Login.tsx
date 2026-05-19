@@ -11,6 +11,7 @@ import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
 import OnlineNowPill from "@/components/social/OnlineNowPill";
 import { track } from "@/lib/analytics";
 import SEO from "@/components/SEO";
+import LtrLogo from "@/components/branding/LtrLogo";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -77,14 +78,11 @@ const Login = () => {
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 lg:flex-none lg:w-1/2">
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center">
-            <Link to="/" className="inline-flex items-center gap-2">
-              <TrendingUp className="h-10 w-10 text-primary" />
-              <span className="font-heading text-2xl font-bold text-foreground uppercase">
-                <span className="text-primary">IX</span>LTR
-              </span>
+            <Link to="/" className="inline-flex flex-col items-center gap-2">
+              <LtrLogo variant="full" className="h-14 w-auto" />
             </Link>
-            <div className="mx-auto mt-4 h-0.5 w-8 bg-primary" />
-            <h1 className="mt-4 font-heading text-2xl font-semibold text-primary uppercase">{t("login.title")}</h1>
+            <div className="mx-auto mt-4 h-0.5 w-8 bg-[#FFCD05]" />
+            <h1 className="mt-4 font-heading text-2xl font-semibold text-[#FFCD05] uppercase tracking-[0.08em]">{t("login.title")}</h1>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
