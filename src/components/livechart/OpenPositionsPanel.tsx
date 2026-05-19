@@ -280,7 +280,7 @@ const OpenPositionsPanel = () => {
                             <button
                               type="button"
                               onClick={() => closeTestTrade(p)}
-                              disabled={!testCloseConfirmed[key] || testClosing === key}
+                              disabled={!testCloseConfirmed[key] || testClosing === key || cooling}
                               title="I understand this will close a live MT5 position."
                               className="inline-flex h-5 items-center gap-1 rounded border border-red-600/70 bg-red-700/30 px-1.5 text-[8px] font-bold uppercase tracking-widest text-red-200 hover:bg-red-700/50 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
