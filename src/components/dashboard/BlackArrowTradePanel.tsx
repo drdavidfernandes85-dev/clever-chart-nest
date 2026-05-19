@@ -1351,15 +1351,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     )}>
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-neutral-800 bg-[#0a0a0a]">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">{t("terminal.orderTicket" as never)}</span>
+          <span className="px-1 py-[1px] rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
+            Dry Run
+          </span>
           {tickStale ? (
-            <span className="flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-[1px] text-[8.5px] font-mono uppercase tracking-widest text-amber-400">
-              <span className="inline-flex h-1 w-1 rounded-full bg-amber-400" />
-              {t("terminal.dataDelayed" as never)}
+            <span className="inline-flex items-center gap-1 px-1 py-[1px] rounded-sm bg-amber-500/15 text-[8px] font-mono uppercase tracking-[0.18em] text-amber-400">
+              <span className="inline-flex h-1 w-1 rounded-full bg-amber-400" /> Stale
             </span>
           ) : null}
-
+          {devMode && (
+            <span className="px-1 py-[1px] rounded-sm border border-neutral-700 bg-neutral-800/60 text-[8px] font-mono uppercase tracking-[0.18em] text-neutral-300">
+              Dev
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
           {isAdmin && (
@@ -1385,38 +1391,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
       </div>
 
-
-
       <div className="p-1.5 space-y-1">
-        {/* Micro quote strip + compact status chips (replaces the bulky DRY-RUN banner) */}
-        <div className="flex items-center justify-between gap-2 rounded-sm border border-neutral-800 bg-[#0a0a0a] px-2 py-1">
-          <div className="flex items-center gap-2 min-w-0 text-[9.5px] font-mono uppercase tracking-[0.16em]">
-            <span className="font-bold text-neutral-100">{normalizedSym || "—"}</span>
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 px-1 rounded-sm",
-                tickStale
-                  ? "bg-amber-500/15 text-amber-300"
-                  : "bg-emerald-500/15 text-emerald-300",
-              )}
-            >
-              <span className={cn("h-1 w-1 rounded-full", tickStale ? "bg-amber-400" : "bg-emerald-400")} />
-              {tickStale ? "Stale" : "Live"}
-            </span>
-            <span className="text-neutral-500">Spr <span className="text-neutral-200 tabular-nums">{spreadPts ?? "—"}</span></span>
-            <span className="text-neutral-500 hidden sm:inline">Age <span className="text-neutral-200 tabular-nums">{tickAgeStr}</span></span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="px-1 py-[1px] rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
-              Dry Run
-            </span>
-            {devMode && (
-              <span className="px-1 py-[1px] rounded-sm border border-neutral-700 bg-neutral-800/60 text-[8px] font-mono uppercase tracking-[0.18em] text-neutral-300">
-                Dev
-              </span>
-            )}
-          </div>
-        </div>
+
 
         {/* Symbol block */}
         <div className="relative">
