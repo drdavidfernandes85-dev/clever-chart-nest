@@ -1980,13 +1980,15 @@ const SummaryRow = ({
 );
 
 const ToolBtn = ({
-  onClick, icon, label, danger, disabled, ariaLabel,
-}: { onClick: () => void; icon?: React.ReactNode; label: string; danger?: boolean; disabled?: boolean; ariaLabel?: string }) => (
+  onClick, icon, label, danger, disabled, ariaLabel, title,
+}: { onClick: () => void; icon?: React.ReactNode; label: string; danger?: boolean; disabled?: boolean; ariaLabel?: string; title?: string }) => (
   <button
     type="button"
     onClick={onClick}
     disabled={disabled}
+    title={title}
     aria-label={ariaLabel ?? label}
+    aria-disabled={disabled || undefined}
     className={cn(
       "h-[20px] rounded-sm text-[9.5px] font-semibold uppercase tracking-[0.08em] flex items-center justify-center gap-1 transition-colors border border-transparent active:translate-y-px focus:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0a0a0a] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:translate-y-0",
       danger
