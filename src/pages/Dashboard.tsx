@@ -633,29 +633,61 @@ const MarketWatchPanel = ({
 
 const ChartBidAskHeader = () => {
   const { tick, selectedSymbolInfo, selectedBrokerSymbol } = useBrokerSymbols();
-  const digits = Number(selectedSymbolInfo?.digits) || 5;
+  const { selectedQuote, lastGoodSelectedSymbolData, dataDelayed } =
+    useSelectedQuote(selectedBrokerSymbol);
+  const eff = selectedQuote ?? lastGoodSelectedSymbolData;
+  const digits = Number(eff?.digits ?? selectedSymbolInfo?.digits) || 5;
   const fmt = (v: number | null | undefined) =>
-    v == null
+    v == null || !Number.isFinite(Number(v))
       ? "—"
       : Number(v).toLocaleString("en-US", {
           minimumFractionDigits: digits,
           maximumFractionDigits: digits,
         });
-  const bid = tick?.bid != null ? Number(tick.bid) : null;
-  const ask = tick?.ask != null ? Number(tick.ask) : null;
-  const spread = bid != null && ask != null ? Math.max(0, ask - bid) : null;
-  const spreadPts =
-    spread != null && selectedSymbolInfo?.point
-      ? spread / Number(selectedSymbolInfo.point)
-      : null;
+  // Trading Layer bid/ask (selectedQuote) is the source of truth.
+  const bid =
+    eff?.bid != null ? Number(eff.bid) : tick?.bid != null ? Number(tick.bid) : null;
+  const ask =
+    eff?.ask != null ? Number(eff.ask) : tick?.ask != null ? Number(tick.ask) : null;
+  const spread =
+    eff?.spread != null
+      ? Number(eff.spread)
+      : bid != null && ask != null
+        ? Math.max(0, ask - bid)
+        : null;
+  const point = Number(eff?.point ?? selectedSymbolInfo?.point) || Math.pow(10, -digits);
+  const spreadPts = spread != null && point ? spread / point : null;
   const high = tick?.high != null ? Number(tick.high) : null;
   const low = tick?.low != null ? Number(tick.low) : null;
   const open = tick?.open != null ? Number(tick.open) : null;
-  const last = tick?.last != null ? Number(tick.last) : bid != null && ask != null ? (bid + ask) / 2 : null;
+  const last =
+    eff?.last != null
+      ? Number(eff.last)
+      : tick?.last != null
+        ? Number(tick.last)
+        : bid != null && ask != null
+          ? (bid + ask) / 2
+          : null;
   const change = open != null && last != null ? last - open : null;
   const changePct = open != null && last != null && open !== 0 ? ((last - open) / open) * 100 : null;
   const changeColor =
     change == null ? "text-neutral-400" : change >= 0 ? "text-emerald-400" : "text-red-400";
+
+  // Last MT5 tick time — bumps whenever the live quote refreshes.
+  const [tickTime, setTickTime] = useState<string>("—");
+  useEffect(() => {
+    if (selectedQuote && (selectedQuote.bid != null || selectedQuote.ask != null)) {
+      const d = new Date();
+      setTickTime(
+        d.toLocaleTimeString("en-US", {
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      );
+    }
+  }, [selectedQuote?.bid, selectedQuote?.ask, selectedQuote?.last]);
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -665,7 +697,7 @@ const ChartBidAskHeader = () => {
             {fmt(bid)}
           </span>
           <span className="text-[8.5px] font-mono uppercase tracking-[0.22em] text-red-300/80">
-            Sell
+            Sell · MT5
           </span>
         </div>
       </div>
@@ -680,7 +712,7 @@ const ChartBidAskHeader = () => {
             {fmt(ask)}
           </span>
           <span className="text-[8.5px] font-mono uppercase tracking-[0.22em] text-emerald-300/80">
-            Buy
+            Buy · MT5
           </span>
         </div>
       </div>
@@ -714,6 +746,20 @@ const ChartBidAskHeader = () => {
           </span>
           <span className="font-mono text-[12px] font-bold tabular-nums text-neutral-200">
             {fmt(low)}
+          </span>
+        </div>
+        <div className="flex flex-col leading-tight">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+            Last MT5 tick
+          </span>
+          <span
+            className={`font-mono text-[11px] tabular-nums ${
+              dataDelayed ? "text-amber-400" : "text-emerald-400"
+            }`}
+            title="Trading Layer / MT5"
+          >
+            {tickTime}
+            {dataDelayed ? " · delayed" : ""}
           </span>
         </div>
       </div>
