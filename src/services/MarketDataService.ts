@@ -429,19 +429,34 @@ class MarketDataServiceImpl {
       }
     } catch (e: any) {
       liveMarketDataStore.setLastError(e?.message || "Network error");
-    } finally {
-      this.maybeRelaxPositionsBoost();
     }
   };
 
   private tickPositions = async () => {
-    // Positions are returned by get-mt5-terminal-data; piggyback on tickAccount
-    // when it ran recently. To minimize independent calls, re-invoke account
-    // when positions cadence is faster than account cadence (boost mode).
-    if (this.currentPositionsInterval < ACCOUNT_INTERVAL_MS) {
-      await this.tickAccount();
+    // Positions piggyback on tickAccount (get-mt5-terminal-data returns
+    // both account + positions). The dedicated loop is here for clarity
+    // and for the post-trade burst schedule.
+    // No-op when the account loop already fired within the interval.
+  };
+
+  private tickSystemHealth = async () => {
+    if (!this.canRun()) return;
+    liveMarketDataStore.recordRequest();
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "trading-layer-health",
+        { body: {} },
+      );
+      if (this.detect429(data, error)) {
+        this.triggerRateLimitPause();
+        return;
+      }
+      // Health result is informational only; the per-tick status flips
+      // (live_polling / stale / rate_limited) are still driven by the
+      // quote + account loops.
+    } catch {
+      /* health errors are non-fatal */
     }
-    // Otherwise nothing extra to fetch — tickAccount already populated positions.
   };
 
   private tickStale = () => {
@@ -454,6 +469,7 @@ class MarketDataServiceImpl {
       liveMarketDataStore.setStatus("live_polling");
     }
   };
+
 
   private normalizePositions(rows: any[]): LivePositionRow[] {
     return rows.map((p) => ({
