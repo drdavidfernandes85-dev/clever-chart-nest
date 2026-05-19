@@ -1213,14 +1213,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
       {liveConfirm && (() => {
         const c = liveConfirm;
+        const isConfirmed = c.phase === "confirmed" && c.ticket != null;
         const headerByPhase: Record<typeof c.phase, { text: string; tone: string }> = {
-          placing: { text: "Order placed — confirming position…", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
-          confirming: { text: "Order placed — confirming position…", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          placing: { text: "Broker accepted/placed the order. Waiting for final position confirmation.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          confirming: { text: "Broker accepted/placed the order. Waiting for final position confirmation.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
           confirmed: { text: "Position confirmed", tone: "border-emerald-500/60 bg-emerald-500/10 text-emerald-300" },
-          pending_verification: { text: "Order was placed by broker, but position confirmation is still pending. Please verify directly in MT5.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-200" },
+          pending_verification: { text: "Order was placed by broker, but final position confirmation is pending. Please verify in MT5.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-200" },
           rejected: { text: "Execution rejected", tone: "border-red-500/60 bg-red-500/10 text-red-300" },
         };
-        // status-based override line
+        // status-based override line (hidden once position is confirmed)
         let statusLine: { text: string; tone: string } | null = null;
         const s = (c.status || "").toLowerCase();
         if (s === "done") statusLine = { text: "Order executed", tone: "text-emerald-300" };
@@ -1233,13 +1234,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               <div className="font-bold uppercase tracking-wider">{h.text}</div>
               <button type="button" onClick={() => setLiveConfirm(null)} className="text-current/70 hover:text-current">×</button>
             </div>
-            {statusLine && c.phase !== "confirmed" && (
+            {statusLine && !isConfirmed && (
               <div className={cn("mt-1", statusLine.tone)}>{statusLine.text}</div>
-            )}
-            {c.retcode === 10008 && (
-              <div className="mt-1 text-yellow-200/90">
-                Broker accepted/placed the order. Waiting for final position confirmation.
-              </div>
             )}
             <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-neutral-200">
               {c.symbol && (<><span className="text-neutral-500">Symbol</span><span>{c.symbol}</span></>)}
