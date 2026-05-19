@@ -357,31 +357,36 @@ const LiveChartInner = () => {
 
       {/* Workspace: left rail + chart + right rail */}
       <div className="p-2 lg:p-3">
-        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[260px_minmax(0,1fr)_340px] grid-cols-1">
-          {/* LEFT: Market Watch + Bid/Ask Board */}
+        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[256px_minmax(0,1fr)_360px] grid-cols-1">
+          {/* LEFT: Market Watch + compact Bid/Ask Board.
+              Bid/Ask is intentionally constrained so it never overpowers the order ticket. */}
           <aside className="hidden lg:flex flex-col gap-2 lg:gap-3 h-[calc(100vh-4.5rem)] overflow-y-auto pr-0.5">
-            <div className="shrink-0 max-h-[50%] overflow-hidden">
+            <div className="shrink-0 flex-1 min-h-0 overflow-hidden">
               <MarketWatch
                 symbols={WATCH_DEFAULT}
                 active={displayLabel}
                 onSelect={onSelectByLabel}
               />
             </div>
-            <BidAskBoard
-              symbols={topBoardSymbols}
-              onSelect={(sym) => setActiveBroker(sym)}
-            />
+            <div className="shrink-0 h-[260px]">
+              <BidAskBoard
+                symbols={topBoardSymbols.slice(0, 6)}
+                activeSymbol={activeBroker}
+                onSelect={(sym) => setActiveBroker(sym)}
+              />
+            </div>
           </aside>
 
           {/* CENTER: Chart */}
           <section
             ref={chartShellRef}
-            className="relative flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[70vh] lg:h-[calc(100vh-4.5rem)]"
+            className="relative flex flex-col rounded-2xl border border-border/20 bg-card overflow-hidden h-[70vh] lg:h-[calc(100vh-4.5rem)]"
           >
             {/* Top toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/30 px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/20 px-3 py-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <BarChart3 className="h-4 w-4 text-primary" />
+
 
                 {/* Symbol selector — searchable, broker-driven */}
                 <Popover open={symbolsOpen} onOpenChange={setSymbolsOpen}>
