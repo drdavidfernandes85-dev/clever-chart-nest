@@ -808,6 +808,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    // Snapshot live MT5 positions BEFORE the order for the reconciliation debug panel.
+    const positionsBeforeSnapshot: any[] = JSON.parse(
+      JSON.stringify((positionsRef.current as any[]) || []),
+    );
     try {
       const payload = {
         tradeId,
