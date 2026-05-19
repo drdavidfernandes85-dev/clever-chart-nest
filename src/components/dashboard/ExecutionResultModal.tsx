@@ -217,8 +217,7 @@ export const ExecutionResultModal = ({
               <Row label="Broker Message" value={effective.brokerMessage || "—"} />
               <Row
                 label="Status"
-                value={(effective.status || "DONE").toString().toUpperCase()}
-                accent="text-emerald-300"
+                value={<StatusBadge status="position_confirmed" />}
               />
               {effective.ticket != null && (
                 <Row label="Ticket" value={`#${effective.ticket}`} />
