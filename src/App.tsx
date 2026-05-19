@@ -144,6 +144,7 @@ const App = () => (
               <FloatingMobileCTA />
               <ExitIntentPopup />
             </Suspense>
+            <ReviewAccessBadge />
             </QuickTradeProvider>
           </AuthProvider>
         </BrowserRouter>
