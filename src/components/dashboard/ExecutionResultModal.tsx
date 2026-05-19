@@ -1,7 +1,7 @@
-import { X, CheckCircle2, ShieldAlert, AlertOctagon } from "lucide-react";
+import { X, CheckCircle2, ShieldAlert, AlertOctagon, Clock, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ExecutionOutcome = "success" | "blocked" | "rejected";
+export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed";
 
 export interface ExecutionResultPayload {
   outcome: ExecutionOutcome;
@@ -9,6 +9,15 @@ export interface ExecutionResultPayload {
   side: "buy" | "sell";
   volume: number;
   digits?: number;
+  // lifecycle (MT5 truth)
+  brokerAccepted?: boolean;
+  mt5Confirmed?: boolean;
+  confirmationStatus?: "pending" | "confirmed" | "not_found" | "failed";
+  confirmedTicket?: number | string | null;
+  confirmedEntryPrice?: number | null;
+  confirmedVolume?: number | null;
+  confirmedAt?: string | null;
+  liveOrderSent?: boolean;
   // success
   requestedPrice?: number | null;
   executedPrice?: number | null;
