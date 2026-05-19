@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import ltrIcon from "@/assets/ltr-icon.png";
-import ltrFullLogo from "@/assets/ltr-terminal-pro-logo.png";
+import ltrTerminalLogo from "@/assets/ltr-terminal-pro-logo.png";
+import ixLtrProLogo from "@/assets/ix-ltr-pro-logo.png";
 
 interface Props {
   /**
