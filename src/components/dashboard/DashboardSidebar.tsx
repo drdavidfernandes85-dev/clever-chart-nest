@@ -89,19 +89,15 @@ const DashboardSidebar = () => {
     >
       {/* Brand — LTR Terminal Pro */}
       <div className="flex h-16 items-center justify-between border-b border-[#FFCD05]/15 px-3">
-        <Link to="/dashboard" className="flex items-center gap-2 min-w-0 leading-none">
-          <LtrLogoBrand variant="icon" className="h-10 w-10 shrink-0" />
-          {!collapsed && (
-            <>
-              <span className="h-5 w-px bg-[#FFCD05]/25 shrink-0" aria-hidden="true" />
-              <span className="truncate font-heading text-[11px] font-extrabold uppercase tracking-[0.14em] leading-tight">
-                <span className="text-[#FFCD05]">LTR</span>{" "}
-                <span className="text-[#F5F5F5]">Terminal Pro</span>
-              </span>
-            </>
+        <Link to="/dashboard" className="flex items-center min-w-0 leading-none" aria-label="LTR Terminal Pro">
+          {collapsed ? (
+            <LtrLogoBrand variant="icon" className="h-9 w-9 shrink-0" />
+          ) : (
+            <LtrLogoBrand variant="full" className="text-[12px]" />
           )}
         </Link>
       </div>
+
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-2 py-3">
