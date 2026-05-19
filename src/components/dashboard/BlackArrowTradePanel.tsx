@@ -1721,7 +1721,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               {riskPct ? `${riskPct.toFixed(2)}% acct` : "—"}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-px px-0.5">
+          <div className="grid grid-cols-2 gap-x-3 px-0.5">
             <SummaryRow label="Entry" value={fmtPx(entryPrice || null, digits)} tone={side === "buy" ? "pos" : "neg"} />
             <SummaryRow label="Notional" value={fmt(notional, currency)} />
             <SummaryRow label="Margin" value={fmt(marginRequired, currency)} />
