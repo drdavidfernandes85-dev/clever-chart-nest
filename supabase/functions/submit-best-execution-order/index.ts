@@ -91,6 +91,38 @@ Deno.serve(async (req) => {
     ? Math.max(0, startedAt - Date.parse(clientClickAt))
     : null;
 
+  // ---------------------------------------------------------------------------
+  // DRY RUN — short-circuit before any Trading Layer call.
+  // Returns canary marker so frontend can verify no live execution happened.
+  // ---------------------------------------------------------------------------
+  if (dryRun === true) {
+    return json({
+      success: true,
+      step: "canary_dry_run_no_trading_layer_call",
+      dryRun: true,
+      tradeId: tradeId ?? null,
+      symbol,
+      side,
+      orderType: "market",
+      volume: Number(volume),
+      requestedPrice,
+      requestedBid,
+      requestedAsk,
+      spread:
+        requestedBid != null && requestedAsk != null
+          ? Math.max(0, requestedAsk - requestedBid)
+          : null,
+      clientLatencyMs,
+      serverLatencyMs: Date.now() - startedAt,
+      brokerMessage: "Dry run — no order sent to broker.",
+      executedPrice: null,
+      slippage: null,
+      status: "dry_run",
+      outcome: "dry_run",
+      note: "submit-best-execution-order did NOT invoke execute-trade or Trading Layer.",
+    });
+  }
+
   // Forward to execute-trade (existing broker integration).
   const { data: execData, error: execError } = await supabase.functions.invoke(
     "execute-trade",
