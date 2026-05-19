@@ -145,6 +145,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       const { data, error } = await supabase.functions.invoke("get-mt5-terminal-data", {
         body: {},
       });
+      checkAndHandle429(data, error);
       if (error) throw error;
       if ((data as any)?.success === true) {
         const acc = (data as any).account ?? (data as any).data ?? null;
