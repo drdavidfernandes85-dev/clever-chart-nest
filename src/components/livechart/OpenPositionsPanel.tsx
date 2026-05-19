@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { X, Loader2, RefreshCw } from "lucide-react";
+import { X, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { useLiveAccount, type LivePosition } from "@/contexts/LiveAccountContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const TEST_CLOSE_MAX_VOLUME = 0.01;
 
 const fmtPrice = (sym: string, v: number | null | undefined) => {
   if (v == null || Number.isNaN(Number(v))) return "—";
