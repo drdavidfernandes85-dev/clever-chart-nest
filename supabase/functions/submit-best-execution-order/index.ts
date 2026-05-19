@@ -424,6 +424,11 @@ Deno.serve(async (req) => {
     livePositionsCountAtReconcile: liveAcctDiag?.openPositionsCount ?? null,
   };
 
+  const confirmedEntryPrice = extractEntryPrice(confirmedPosition);
+  const executedPriceFinal = mt5Confirmed
+    ? (confirmedEntryPrice ?? (executedPrice != null ? Number(executedPrice) : null))
+    : (executedPrice != null ? Number(executedPrice) : null);
+
   // Best-effort audit insert — never block the response.
   try {
     const { data: userData } = await supabase.auth.getUser();
@@ -438,9 +443,7 @@ Deno.serve(async (req) => {
         status,
         outcome,
         requested_price: requestedPrice,
-        executed_price: mt5Confirmed
-          ? Number(confirmedPosition?.entry_price ?? executedPrice ?? 0) || null
-          : (executedPrice != null ? Number(executedPrice) : null),
+        executed_price: executedPriceFinal,
         slippage,
         latency_ms: Math.round(totalLatencyMs),
         spread,
@@ -467,9 +470,14 @@ Deno.serve(async (req) => {
             ? "confirmed"
             : (brokerAccepted ? "not_found" : "failed"),
           confirmedTicket,
-          confirmedEntryPrice: confirmedPosition?.entry_price ?? null,
+          confirmedEntryPrice,
           confirmedVolume: confirmedPosition?.volume ?? null,
           reconciliationAttempts,
+          quote_bid: requestedBid,
+          quote_ask: requestedAsk,
+          quote_spread: spread,
+          quote_timestamp: quoteTimestamp,
+          quote_source: quoteSource,
           diagnostics,
         },
       });
@@ -487,16 +495,14 @@ Deno.serve(async (req) => {
       ? "confirmed"
       : (brokerAccepted ? "not_found" : "failed"),
     confirmedTicket,
-    confirmedEntryPrice: confirmedPosition?.entry_price ?? null,
+    confirmedEntryPrice,
     confirmedVolume: confirmedPosition?.volume ?? null,
     tradeId,
     status,
     outcome,
     classification,
     requestedPrice,
-    executedPrice: mt5Confirmed
-      ? Number(confirmedPosition?.entry_price ?? executedPrice ?? 0) || null
-      : (executedPrice != null ? Number(executedPrice) : null),
+    executedPrice: executedPriceFinal,
     slippage,
     latencyMs: totalLatencyMs,
     clientLatencyMs,
