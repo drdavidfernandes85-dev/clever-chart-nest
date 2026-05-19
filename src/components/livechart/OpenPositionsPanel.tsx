@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { useLiveAccount, type LivePosition } from "@/contexts/LiveAccountContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  checkAndHandle429,
+  getCooldownRemainingMs,
+  triggerRateLimitCooldown,
+} from "@/lib/tradingLayerControl";
 
 const TEST_CLOSE_MAX_VOLUME = 0.01;
 
