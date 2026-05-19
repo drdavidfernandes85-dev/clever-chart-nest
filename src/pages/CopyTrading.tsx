@@ -278,8 +278,8 @@ const CopyTrading = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-foreground pb-16 md:pb-0">
       <SEO
-        title="Copy Trading | IX Sala de Trading"
-        description="Manage your copied trades and followed mentors."
+        title="Idea Tools | IX Trading Room"
+        description="Manage your reviewed market ideas and followed educators."
         canonical="https://ixsalatrading.com/copy-trading"
       />
 
