@@ -154,16 +154,21 @@ Deno.serve(async (req) => {
     String(res?.status || "").toLowerCase() === "rejected" ||
     (retcode != null && retcode >= 10010 && retcode !== 10008);
 
-  let status: "modified" | "modify_failed" | "modify_rejected";
-  let outcome: "success" | "rejected" | "failed";
+  let status:
+    | "protection_modified"
+    | "protection_failed"
+    | "protection_rejected"
+    | "protection_blocked";
+  let outcome: "success" | "rejected" | "failed" | "blocked";
   if (networkError || !httpOk) {
-    status = "modify_failed"; outcome = "failed";
+    if (httpStatus === 429) { status = "protection_blocked"; outcome = "blocked"; }
+    else { status = "protection_failed"; outcome = "failed"; }
   } else if (explicitRejection) {
-    status = "modify_rejected"; outcome = "rejected";
+    status = "protection_rejected"; outcome = "rejected";
   } else if (explicitSuccess || httpOk) {
-    status = "modified"; outcome = "success";
+    status = "protection_modified"; outcome = "success";
   } else {
-    status = "modify_failed"; outcome = "failed";
+    status = "protection_failed"; outcome = "failed";
   }
 
   try {
@@ -181,7 +186,7 @@ Deno.serve(async (req) => {
       latency_ms: latencyMs,
       ticket,
       raw: {
-        classification: "modify_position",
+        classification: "modify_protection",
         version: VERSION,
         tradingLayerStatus: httpStatus,
         request: modifyPayload,
@@ -196,7 +201,7 @@ Deno.serve(async (req) => {
   return json({
     success: outcome === "success",
     version: VERSION,
-    classification: "modify_position",
+    classification: "modify_protection",
     status,
     outcome,
     ticket,
