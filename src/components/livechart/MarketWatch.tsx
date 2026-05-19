@@ -279,7 +279,7 @@ const MarketWatch = ({ symbols, active, onSelect }: Props) => {
                   : "Waiting for market data…"}
               </li>
             )}
-            {placeholderRows()}
+            
           </>
         )}
       </ul>
