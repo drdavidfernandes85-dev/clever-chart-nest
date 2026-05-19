@@ -4,9 +4,9 @@
  */
 export const AUDIT_STATUS_LABELS: Record<string, string> = {
   dry_run: "Dry Run",
-  placed: "Order Placed",
-  position_confirmed: "Position Confirmed",
-  execution_unconfirmed: "Execution Unconfirmed",
+  placed: "Broker Accepted / Confirmation Pending",
+  position_confirmed: "Position Confirmed in MT5",
+  execution_unconfirmed: "Broker Accepted but MT5 Position Not Found",
   filled: "Order Filled",
   done: "Order Filled",
   protection_modified: "SL/TP Updated",
@@ -17,8 +17,8 @@ export const AUDIT_STATUS_LABELS: Record<string, string> = {
   modified: "SL/TP Updated",
   modify_failed: "SL/TP Failed",
   modify_rejected: "SL/TP Rejected",
-  closed: "Position Closed",
-  close_unconfirmed: "Close Unconfirmed",
+  closed: "Position Closed in MT5",
+  close_unconfirmed: "Close Sent but Position Still Open",
   partial_closed: "Partial Close",
   close_failed: "Close Failed",
   close_rejected: "Close Rejected",
