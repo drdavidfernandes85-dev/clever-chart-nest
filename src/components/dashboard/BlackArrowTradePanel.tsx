@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLanguage } from "@/i18n/LanguageContext";
+
 import {
   ChevronDown,
   Loader2,
@@ -100,6 +102,8 @@ function classify(sym: string): string {
 }
 
 const BlackArrowTradePanel = ({ className }: Props) => {
+  const { t } = useLanguage();
+
   const { user } = useAuth();
   const { symbol: ctxSymbol, side, setSide, setSymbol: setCtxSymbol } = useQuickTrade();
   const {
@@ -1334,13 +1338,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-neutral-800 bg-[#0a0a0a]">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">Order Ticket</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">{t("terminal.orderTicket" as never)}</span>
           {tickStale ? (
             <span className="flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-[1px] text-[8.5px] font-mono uppercase tracking-widest text-amber-400">
               <span className="inline-flex h-1 w-1 rounded-full bg-amber-400" />
-              Data delayed
+              {t("terminal.dataDelayed" as never)}
             </span>
           ) : null}
+
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
           {isAdmin && (
