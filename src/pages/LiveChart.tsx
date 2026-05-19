@@ -32,7 +32,7 @@ import {
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import SEO from "@/components/SEO";
-import LtrLogo from "@/components/branding/LtrLogo";
+import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
@@ -250,11 +250,8 @@ const LiveChartInner = () => {
       <header className="sticky top-0 z-50 border-b border-[#FFCD05]/15 bg-[#050505]/95 backdrop-blur-2xl">
         <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
           <div className="flex items-center gap-3 min-w-0">
-            <Link to="/" className="flex items-center gap-2.5 group shrink-0" aria-label="LTR Terminal Pro — Home">
-              <LtrLogo variant="full" className="h-7 sm:h-8 w-auto" />
-              <span className="hidden xl:inline font-mono text-[8px] uppercase tracking-[0.22em] text-[#8E949C]">
-                Powered by Trading Layer
-              </span>
+            <Link to="/" className="flex items-center gap-2.5 group shrink-0" aria-label="INFINOX — Home">
+              <img src={infinoxLogo} alt="INFINOX" className="h-7 sm:h-8 w-auto object-contain" />
             </Link>
 
             <span className="hidden md:inline-flex items-center h-5 rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1.5 text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
