@@ -56,8 +56,10 @@ const fmt = (n: number | null | undefined, currency = "USD") => {
 const fmtPx = (n: number | null | undefined, digits = 5) =>
   n === null || n === undefined || Number.isNaN(n) ? "—" : n.toFixed(digits);
 
-const submitBestExecutionOrderUrl = () =>
-  `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
+const submitBestExecutionOrderUrl = () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  return `${supabaseUrl}/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
+};
 
 interface Props {
   className?: string;
