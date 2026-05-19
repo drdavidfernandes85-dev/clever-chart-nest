@@ -5,6 +5,7 @@ import LeadCaptureForm from "@/components/lead/LeadCaptureForm";
 import SEO from "@/components/SEO";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { track } from "@/lib/analytics";
+import { eligibilityCopy } from "@/lib/eligibilityCopy";
 
 interface Props {
   reason?:
@@ -81,12 +82,12 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
 
             {/* Clear, short eligibility statement */}
             <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-foreground/85 sm:text-base">
-              {t("access.eligibility.short" as any)}
+              {eligibilityCopy(locale, t("access.eligibility.short" as any))}
             </p>
 
             {/* Contextual reason — softer, non-restrictive tone */}
             <div className="mx-auto mt-5 max-w-lg rounded-2xl border border-primary/20 bg-background/40 p-4 text-left text-sm text-muted-foreground backdrop-blur-md">
-              {t(reasonKey)}
+              {eligibilityCopy(locale, t(reasonKey))}
               {reason === "low_balance" && balance != null && (
                 <div className="mt-2 text-xs text-foreground/75">
                   {t("access.balance.current")}:{" "}
@@ -160,7 +161,7 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
             {/* Trust line */}
             <p className="mx-auto mt-6 inline-flex max-w-md items-center justify-center gap-1.5 text-[11px] text-foreground/60">
               <ShieldCheck className="h-3.5 w-3.5 text-primary/80" />
-              {t("hero.eligibility")}
+              {eligibilityCopy(locale, t("hero.eligibility"))}
             </p>
 
             {/* Email capture — get notified + free webinar invites */}
