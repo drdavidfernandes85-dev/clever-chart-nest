@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useRiskSettings, RISK_DEFAULTS, RiskSettings } from "@/hooks/useRiskSettings";
 import { toast } from "sonner";
 import { Shield, AlertOctagon } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Admin/Dev-mode Risk Controls panel.
@@ -12,6 +13,8 @@ import { Shield, AlertOctagon } from "lucide-react";
  * Backend Edge Functions read these same settings before executing any trade.
  */
 const RiskControlsPanel = () => {
+  const { t } = useLanguage();
+
   const { settings, save, loading } = useRiskSettings();
   const [draft, setDraft] = useState<RiskSettings | null>(null);
   const cur: RiskSettings = draft ?? settings;
@@ -40,14 +43,15 @@ const RiskControlsPanel = () => {
     <div className="rounded-md border border-[#FFCD05]/30 bg-[#0a0a0a] p-4 text-[11px] text-neutral-200">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 font-mono uppercase tracking-wider text-[#FFCD05]">
-          <Shield className="h-4 w-4" /> Risk Controls
+          <Shield className="h-4 w-4" /> {t("terminal.riskControls" as never)}
         </div>
         {cur.kill_switch_enabled && (
           <span className="inline-flex items-center gap-1 rounded-sm border border-red-500/50 bg-red-500/10 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wider text-red-300">
-            <AlertOctagon className="h-3 w-3" /> Kill Switch Active
+            <AlertOctagon className="h-3 w-3" /> {t("status.killSwitchActive" as never)}
           </span>
         )}
       </div>
+
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Toggle label="Live Trading Enabled" v={cur.live_trading_enabled} on={(v) => set("live_trading_enabled", v)} />

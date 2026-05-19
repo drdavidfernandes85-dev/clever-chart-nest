@@ -295,9 +295,11 @@ const MarketWatchPanel = ({
   active: string;
   onSelect: (sym: string) => void;
 }) => {
+  const { t } = useLanguage();
   const { symbols, loading, isLive } = useBrokerSymbols();
   const { favorites, isFavorite, toggle } = useFavorites();
   const [query, setQuery] = useState("");
+
   const [tab, setTab] = useState<Category>("All");
 
   // Build category map (memoized)
@@ -494,14 +496,15 @@ const MarketWatchPanel = ({
     <aside className="hidden lg:flex flex-col rounded-sm border border-[color:var(--ltr-gold-border)] bg-[color:var(--ltr-panel)] overflow-hidden h-[calc(100vh-6.5rem)]">
       <div className="flex items-center justify-between border-b border-[color:var(--ltr-gold-border)]/80 px-3 py-2">
         <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-ltr-silver-200">
-          Market Watch
+          {t("terminal.marketWatch" as never)}
         </h2>
         <span className="font-mono text-[9px] uppercase tracking-widest text-ltr-silver-400 flex items-center gap-1.5">
           {dataDelayed && (
             <span className="px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[8.5px]">
-              Data delayed
+              {t("terminal.dataDelayed" as never)}
             </span>
           )}
+
           {isLive ? (
             <span className="text-ltr-buy">● {symbols.length}</span>
           ) : loading ? (
@@ -592,18 +595,17 @@ const MarketWatchPanel = ({
 
         {loading && sortedByCategory.length === 0 && (
           <li className="px-3 py-5 text-center text-[11px] text-ltr-silver-400 flex items-center justify-center gap-1.5">
-            <Loader2 className="h-3 w-3 animate-spin" /> Loading broker symbols…
+            <Loader2 className="h-3 w-3 animate-spin" /> {t("terminal.loadingSymbols" as never)}
           </li>
         )}
         {!loading && sortedByCategory.length === 0 && (
           <li className="px-3 py-5 text-center text-[11px] text-ltr-silver-400">
             {query
-              ? "No matches."
-              : !hasEverLoaded
-                ? "No MT5 symbols loaded. Refresh Market Watch."
-                : "No MT5 symbols loaded. Refresh Market Watch."}
+              ? t("terminal.noMatches" as never)
+              : t("terminal.noSymbols" as never)}
           </li>
         )}
+
 
         {showGroupHeaders
           ? grouped.map(([cat, rows]) => (
@@ -788,6 +790,7 @@ const ChartBidAskHeader = () => {
 };
 
 const BottomTabs = () => {
+  const { t } = useLanguage();
   const { liveAccount, connected } = useLiveAccount();
   const c = liveAccount?.currency ?? "USD";
 
@@ -796,23 +799,24 @@ const BottomTabs = () => {
       <Tabs defaultValue="positions" className="w-full">
         <TabsList className="w-full justify-start rounded-none border-b border-[color:var(--ltr-gold-border)]/80 bg-[color:var(--ltr-terminal-bg)] h-9 p-0">
           {[
-            { v: "positions", l: "Positions" },
-            { v: "orders", l: "Orders" },
-            { v: "executions", l: "Execution Log" },
-            { v: "history", l: "Execution History" },
-            { v: "best-exec", l: "Best Execution" },
-            { v: "account", l: "Account" },
-            { v: "journal", l: "Journal" },
-          ].map((t) => (
+            { v: "positions", l: t("terminal.positions" as never) },
+            { v: "orders", l: t("terminal.orders" as never) },
+            { v: "executions", l: t("terminal.executionLog" as never) },
+            { v: "history", l: t("terminal.executionHistory" as never) },
+            { v: "best-exec", l: t("terminal.bestExecution" as never) },
+            { v: "account", l: t("terminal.account" as never) },
+            { v: "journal", l: t("terminal.journal" as never) },
+          ].map((tab) => (
             <TabsTrigger
-              key={t.v}
-              value={t.v}
+              key={tab.v}
+              value={tab.v}
               className="rounded-none border-r border-[color:var(--ltr-gold-border)]/80 h-9 px-4 text-[10px] font-mono font-semibold uppercase tracking-[0.18em] text-ltr-silver-400 data-[state=active]:bg-[color:var(--ltr-panel-elev)] data-[state=active]:text-[#FFCD05] data-[state=active]:border-b-2 data-[state=active]:border-b-[#FFCD05]"
             >
-              {t.l}
+              {tab.l}
             </TabsTrigger>
           ))}
         </TabsList>
+
 
         <TabsContent value="positions" className="m-0 p-0">
           <OpenPositionsPanel />

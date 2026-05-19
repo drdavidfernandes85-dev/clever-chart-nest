@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Activity, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
+import { useLanguage } from "@/i18n/LanguageContext";
+
 
 interface Quote {
   symbol: string;
@@ -22,6 +24,8 @@ const COLS = "grid-cols-[minmax(0,1fr)_64px_64px_64px_52px]";
 const POLL_MS = 5000;
 
 const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
+  const { t } = useLanguage();
+
   const [bidAskBoardData, setBidAskBoardData] = useState<Quote[]>([]);
   const lastGoodRef = useRef<Quote[]>([]);
   const [lastGoodBidAskBoardData, setLastGoodBidAskBoardData] = useState<Quote[]>([]);
@@ -107,7 +111,7 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
         <div className="flex items-center gap-1.5">
           <Activity className="h-3 w-3 text-[#FFCD05]" />
           <h3 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
-            Bid / Ask Board
+            {t("terminal.bidAskBoard" as never)}
           </h3>
         </div>
         {statusLabel ? (
@@ -120,9 +124,10 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
         )}
       </div>
       <div className={`grid ${COLS} items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 shrink-0`}>
-        <span>Symbol</span>
-        <span className="text-right text-red-400/70">Bid</span>
-        <span className="text-right">Last</span>
+        <span>{t("terminal.symbol" as never)}</span>
+        <span className="text-right text-red-400/70">{t("terminal.bid" as never)}</span>
+        <span className="text-right">{t("terminal.last" as never)}</span>
+
         <span className="text-right text-emerald-400/70">Ask</span>
         <span className="text-right">Sprd</span>
       </div>

@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import { useRateLimit } from "@/hooks/useLiveMarketData";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Compact terminal badges reflecting current risk posture:
@@ -31,17 +32,18 @@ const Pill = ({ tone, children }: { tone: "ok" | "warn" | "danger" | "muted"; ch
 const RiskBadges = ({ className }: { className?: string }) => {
   const { settings, flags } = useRiskSettings();
   const rl = useRateLimit();
+  const { t } = useLanguage();
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
       {flags.killSwitch ? (
-        <Pill tone="danger">Kill Switch Active</Pill>
+        <Pill tone="danger">{t("status.killSwitchActive" as never)}</Pill>
       ) : flags.liveEnabled ? (
-        <Pill tone="ok">Live Enabled</Pill>
+        <Pill tone="ok">{t("status.liveEnabled" as never)}</Pill>
       ) : (
-        <Pill tone="muted">Live Disabled</Pill>
+        <Pill tone="muted">{t("status.liveDisabled" as never)}</Pill>
       )}
-      {settings.testing_mode_enabled && <Pill tone="warn">Testing Mode</Pill>}
-      {rl.active && <Pill tone="danger">Rate Limited</Pill>}
+      {settings.testing_mode_enabled && <Pill tone="warn">{t("status.testingMode" as never)}</Pill>}
+      {rl.active && <Pill tone="danger">{t("status.rateLimited" as never)}</Pill>}
     </div>
   );
 };

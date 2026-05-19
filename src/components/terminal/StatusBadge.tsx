@@ -1,5 +1,6 @@
 import { CheckCircle2, Clock, AlertTriangle, XCircle, ShieldOff, Hourglass, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Canonical execution-lifecycle statuses for LTR Terminal Pro.
@@ -16,47 +17,15 @@ export type ExecStatus =
   | "rejected"
   | "pending";
 
-const MAP: Record<ExecStatus, { label: string; tone: string; Icon: typeof CheckCircle2 }> = {
-  position_confirmed: {
-    label: "Position Confirmed",
-    tone: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
-    Icon: CheckCircle2,
-  },
-  broker_accepted: {
-    label: "Broker Accepted",
-    tone: "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05]",
-    Icon: Hourglass,
-  },
-  execution_unconfirmed: {
-    label: "Execution Unconfirmed",
-    tone: "border-amber-500/40 bg-amber-500/10 text-amber-300",
-    Icon: AlertTriangle,
-  },
-  position_closed: {
-    label: "Position Closed",
-    tone: "border-neutral-700 bg-neutral-800/40 text-neutral-300",
-    Icon: Lock,
-  },
-  rate_limited: {
-    label: "Rate Limited",
-    tone: "border-orange-500/40 bg-orange-500/10 text-orange-300",
-    Icon: Clock,
-  },
-  risk_blocked: {
-    label: "Risk Blocked",
-    tone: "border-red-500/40 bg-red-500/10 text-red-300",
-    Icon: ShieldOff,
-  },
-  rejected: {
-    label: "Rejected",
-    tone: "border-red-500/40 bg-red-500/10 text-red-300",
-    Icon: XCircle,
-  },
-  pending: {
-    label: "Pending",
-    tone: "border-neutral-700 bg-neutral-800/40 text-neutral-300",
-    Icon: Hourglass,
-  },
+const TONE: Record<ExecStatus, { tone: string; Icon: typeof CheckCircle2; key: string }> = {
+  position_confirmed: { tone: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300", Icon: CheckCircle2, key: "status.positionConfirmed" },
+  broker_accepted:    { tone: "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05]",       Icon: Hourglass,    key: "status.brokerAccepted" },
+  execution_unconfirmed: { tone: "border-amber-500/40 bg-amber-500/10 text-amber-300",     Icon: AlertTriangle, key: "status.executionUnconfirmed" },
+  position_closed:    { tone: "border-neutral-700 bg-neutral-800/40 text-neutral-300",     Icon: Lock,         key: "status.positionClosed" },
+  rate_limited:       { tone: "border-orange-500/40 bg-orange-500/10 text-orange-300",     Icon: Clock,        key: "status.rateLimited" },
+  risk_blocked:       { tone: "border-red-500/40 bg-red-500/10 text-red-300",              Icon: ShieldOff,    key: "status.riskBlocked" },
+  rejected:           { tone: "border-red-500/40 bg-red-500/10 text-red-300",              Icon: XCircle,      key: "status.rejected" },
+  pending:            { tone: "border-neutral-700 bg-neutral-800/40 text-neutral-300",     Icon: Hourglass,    key: "status.pending" },
 };
 
 /** Normalize various raw status strings → canonical ExecStatus. */
@@ -81,10 +50,11 @@ interface Props {
 }
 
 const StatusBadge = ({ status, size = "xs", className, withIcon = true }: Props) => {
-  const key = (Object.keys(MAP) as ExecStatus[]).includes(status as ExecStatus)
+  const { t } = useLanguage();
+  const key = (Object.keys(TONE) as ExecStatus[]).includes(status as ExecStatus)
     ? (status as ExecStatus)
     : normalizeExecStatus(status as string);
-  const cfg = MAP[key];
+  const cfg = TONE[key];
   const Icon = cfg.Icon;
   const sizing =
     size === "sm"
@@ -100,7 +70,7 @@ const StatusBadge = ({ status, size = "xs", className, withIcon = true }: Props)
       )}
     >
       {withIcon && <Icon className={size === "sm" ? "h-3 w-3" : "h-2.5 w-2.5"} />}
-      {cfg.label}
+      {t(cfg.key as never)}
     </span>
   );
 };
