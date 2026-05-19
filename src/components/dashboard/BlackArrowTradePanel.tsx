@@ -201,7 +201,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         rawEdgeFunctionResponse: data,
         edgeFunctionError: response.ok ? null : data,
         validationError:
-          data?.version === "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19" &&
+          data?.version === "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19" &&
           data?.step === "dry_run"
             ? null
             : "Wrong Edge Function response or auth/project mismatch.",
