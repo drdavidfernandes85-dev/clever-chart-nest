@@ -11,32 +11,32 @@ const Footer = () => {
     {
       title: t("footer.quickLinks"),
       links: [
-        { label: "Educación de Trading", to: "/education" },
-        { label: "Webinars Gratuitos", to: "/webinars" },
-        { label: "Biblioteca de Videos", to: "/videos" },
-        { label: "Comunidad", to: "/chatroom" },
-        { label: "LTR Terminal Pro", to: "/dashboard" },
-        { label: "Ideas de Mercado", to: "/ideas" },
-        { label: "Leaderboard", to: "/leaderboard" },
+        { label: t("footer.link.education"), to: "/education" },
+        { label: t("footer.link.webinars"), to: "/webinars" },
+        { label: t("footer.link.videos"), to: "/videos" },
+        { label: t("footer.link.community"), to: "/chatroom" },
+        { label: t("footer.link.terminal"), to: "/dashboard" },
+        { label: t("footer.link.ideas"), to: "/ideas" },
+        { label: t("footer.link.leaderboard"), to: "/leaderboard" },
       ],
     },
     {
       title: t("footer.resources"),
       links: [
-        { label: "Próximo Webinar", to: "/webinar" },
+        { label: t("footer.link.nextWebinar"), to: "/webinar" },
         { label: t("footer.anchor.community"), to: "/community/guidelines" },
         { label: t("footer.anchor.pricing"), to: "/#pricing" },
         { label: t("footer.anchor.faq"), to: "/#faq" },
       ],
     },
     {
-      title: "Legal",
+      title: t("footer.col.legal"),
       links: [
-        { label: "Terms & Conditions", to: "/terms" },
-        { label: "Risk Disclosure", to: "/risk-disclosure" },
-        { label: "Privacy Notice", to: "/terms#privacy" },
-        { label: "Community Guidelines", to: "/community/guidelines" },
-        { label: "Contact Compliance", to: "/#contact" },
+        { label: t("footer.link.terms"), to: "/terms" },
+        { label: t("footer.link.risk"), to: "/risk-disclosure" },
+        { label: t("footer.link.privacy"), to: "/terms#privacy" },
+        { label: t("footer.link.guidelines"), to: "/community/guidelines" },
+        { label: t("footer.link.compliance"), to: "/#contact" },
       ],
     },
   ];
@@ -77,10 +77,10 @@ const Footer = () => {
         <div className="mt-12 cyber-line" />
         <div className="mt-6 mx-auto max-w-4xl space-y-2 text-center text-[11px] leading-relaxed text-muted-foreground/80">
           <p>
-            <span className="font-semibold text-foreground/70">Aviso de riesgo:</span> Operar productos apalancados conlleva un riesgo significativo y puede no ser adecuado para todos los inversores. Puede perder más que su inversión inicial. El contenido de IX LTR (incluyendo LTR Terminal Pro, webinars, chatroom e Ideas de Mercado) es exclusivamente educativo e informativo y no constituye asesoría financiera, recomendaciones de inversión ni señales de trading. Cada usuario es responsable de sus propias decisiones.
+            <span className="font-semibold text-foreground/70">{t("footer.risk.label")}</span> {t("footer.risk.body")}
           </p>
           <p className="text-muted-foreground/60">
-            Trading Layer es un proveedor tecnológico independiente. El bróker no es el proveedor de ideas de mercado, herramientas de seguimiento ni tecnología de terceros. El rol del bróker se limita a la provisión de la cuenta de trading y venue de ejecución, sujeto a sus propios términos y permisos regulatorios.
+            {t("footer.tech.body")}
           </p>
         </div>
         <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
