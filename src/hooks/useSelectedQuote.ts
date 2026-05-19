@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 
 export interface SelectedQuote {
   symbol: string;
@@ -64,6 +65,7 @@ export function useSelectedQuote(
           sq &&
           (sq.bid != null || sq.ask != null || sq.last != null || sq.volumeMin != null);
         if (!usable) {
+          checkAndHandle429(data, error);
           setDataDelayed(true);
           return;
         }
@@ -94,11 +96,16 @@ export function useSelectedQuote(
         if (!cancelled) setDataDelayed(true);
       }
     };
-    load();
-    const id = window.setInterval(load, intervalMs);
+    if (isAutoRefreshAllowed()) load();
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) load();
+    }, intervalMs);
+    const onRefresh = () => { if (!cancelled) load(); };
+    window.addEventListener("mt:refresh-quotes", onRefresh);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onRefresh);
     };
   }, [sym, intervalMs]);
 

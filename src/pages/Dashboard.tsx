@@ -19,6 +19,7 @@ import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
+import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
@@ -972,6 +973,7 @@ const DashboardInner = () => {
       />
 
       <TerminalHeader />
+      <TradingLayerPauseBanner />
 
       <div className="p-2 lg:p-3">
         <div className="grid gap-1.5 lg:gap-2 grid-cols-1 lg:grid-cols-[210px_minmax(0,1fr)_310px]">

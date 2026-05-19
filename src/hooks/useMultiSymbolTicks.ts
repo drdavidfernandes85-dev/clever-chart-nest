@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 
 export interface MultiTick {
   bid: number | null;
@@ -55,10 +56,12 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
         });
         if (cancelled) return;
         if (error || !data?.success) {
+          checkAndHandle429(data, error);
           setLastError(error?.message || data?.error || "Refresh failed");
           setConsecutiveErrors((n) => n + 1);
           return;
         }
+        checkAndHandle429(data, null);
         const instruments: any[] = Array.isArray(data.instruments) ? data.instruments : [];
         if (instruments.length === 0) {
           setLastError("Empty payload");
@@ -104,12 +107,12 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
       }
     };
 
-    loadBatch();
+    if (isAutoRefreshAllowed()) loadBatch();
     const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") loadBatch();
+      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) loadBatch();
     }, periodMs);
     const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled) loadBatch();
+      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) loadBatch();
     };
     const onRefresh = () => { if (!cancelled) loadBatch(); };
     document.addEventListener("visibilitychange", onVisible);

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 
 export interface BrokerSymbol {
   symbol: string;
@@ -189,6 +190,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         );
         if (cancelled) return;
         if (invErr) {
+          checkAndHandle429(data, invErr);
           // Stale-while-revalidate: never blank the panel on a polling error.
           setTickError(invErr.message ?? String(invErr));
           if (isInitial) {
@@ -201,6 +203,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
           (data as any)?.rateLimited === true ||
           (data as any)?.step === "rate_limited";
         if (rateLimited) {
+          checkAndHandle429(data, null);
           setTickError("Rate limited");
           return;
         }
@@ -235,10 +238,10 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     setSelectedSymbolValid(false);
     fetchOnce(true);
     const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") fetchOnce(false);
+      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) fetchOnce(false);
     }, 2000);
     const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled) fetchOnce(false);
+      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) fetchOnce(false);
     };
     const onRefresh = () => { if (!cancelled) fetchOnce(false); };
     document.addEventListener("visibilitychange", onVisible);

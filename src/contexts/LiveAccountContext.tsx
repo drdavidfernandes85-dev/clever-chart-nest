@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, R
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 export interface LiveAccount {
   login: string;
@@ -170,7 +171,7 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
     const start = () => {
       if (intervalId !== null) return;
       intervalId = window.setInterval(() => {
-        if (document.visibilityState === "visible") refresh();
+        if (document.visibilityState === "visible" && isAutoRefreshAllowed()) refresh();
       }, REFRESH_MS);
     };
     const stop = () => {

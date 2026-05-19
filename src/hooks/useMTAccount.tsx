@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 export interface MTAccount {
   id: string;
@@ -186,6 +187,7 @@ export function useMTAccount() {
     let cancelled = false;
     const tick = async () => {
       if (cancelled) return;
+      if (!isAutoRefreshAllowed()) return;
       if (isEAWebhook) {
         // Just re-read from DB — the EA already pushed fresh data
         await refresh();
