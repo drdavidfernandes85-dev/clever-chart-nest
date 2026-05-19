@@ -292,23 +292,40 @@ const OpenPositionsPanel = () => {
                             </button>
                           </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => closePosition(p)}
-                          disabled={closing === key}
-                          title="Close position"
-                          aria-label="Close position"
-                          className="inline-flex h-6 items-center gap-1 rounded border border-neutral-800 bg-[#050505] px-2 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-red-500/50 hover:text-red-400 transition-colors disabled:opacity-50"
-                        >
-                          {closing === key ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <>
-                              <X className="h-3 w-3" />
-                              Close
-                            </>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1 rounded border border-neutral-800 bg-[#050505] px-1.5 py-0.5">
+                          <Checkbox
+                            id={`close-confirm-${key}`}
+                            checked={!!closeConfirmed[key]}
+                            onCheckedChange={(v) =>
+                              setCloseConfirmed((m) => ({ ...m, [key]: v === true }))
+                            }
+                            className="h-3 w-3"
+                          />
+                          <label
+                            htmlFor={`close-confirm-${key}`}
+                            className="cursor-pointer text-[8px] uppercase tracking-wider text-neutral-400"
+                            title="I understand this closes a live MT5 position."
+                          >
+                            Confirm
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => closePosition(p)}
+                            disabled={closing === key || !closeConfirmed[key] || cooling}
+                            title={cooling ? `Rate limited (${cooldownSec}s)` : "I understand this closes a live MT5 position."}
+                            aria-label="Close position"
+                            className="inline-flex h-5 items-center gap-1 rounded border border-neutral-800 bg-[#0a0a0a] px-1.5 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-red-500/50 hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {closing === key ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <X className="h-3 w-3" />
+                                {cooling ? `${cooldownSec}s` : "Close"}
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </td>
 
