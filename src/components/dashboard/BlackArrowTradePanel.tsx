@@ -893,19 +893,104 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       };
 
       if (res?.success === true) {
+        const liveOrderSent = res?.liveOrderSent === true || String(res?.step ?? "").toLowerCase() === "execution_result";
+
+        // NEVER show "ORDER EXECUTED" off the broker response alone.
+        // Show pending first; only flip to success after MT5 reconciliation
+        // confirms a matching live position.
         setExecResult({
           ...baseFields,
-          outcome: "success",
+          outcome: "pending",
+          brokerAccepted: true,
+          mt5Confirmed: false,
+          confirmationStatus: "pending",
+          liveOrderSent,
           requestedPrice: res.requestedPrice ?? null,
-          executedPrice: res.executedPrice ?? null,
-          slippage: res.slippage ?? null,
+          executedPrice: null,
+          slippage: null,
           latencyMs: res.latencyMs ?? null,
-          brokerMessage: res.brokerMessage ?? null,
-          status: res.status ?? "done",
-          ticket: res.ticket ?? null,
+          brokerMessage: liveOrderSent
+            ? "Order sent — waiting for MT5 confirmation."
+            : (res.brokerMessage ?? "Order accepted — waiting for MT5 confirmation."),
+          status: "placed",
+          ticket: null,
+          confirmedTicket: null,
+          confirmedEntryPrice: null,
+          confirmedVolume: null,
+          confirmedAt: null,
         });
         setPrice("");
         if (autoReset) { setVol(volumeMin.toFixed(2)); setOrderType("Market"); }
+
+        // Snapshot pre-existing tickets so we only count NEW positions.
+        const preTickets = new Set(
+          ((positionsRef.current as any[]) || []).map((p: any) => String(p?.ticket ?? p?.id ?? "")),
+        );
+        const matchSym = normalizedSym.toUpperCase();
+        const wantSide = sideArg.toLowerCase();
+        const wantVol = Number(volNum.toFixed(2));
+
+        const tryMatch = () => {
+          const list: any[] = (positionsRef.current as any) || [];
+          return list.find((p: any) => {
+            const pTicket = String(p?.ticket ?? p?.id ?? "");
+            if (!pTicket || preTickets.has(pTicket)) return false;
+            const pSym = String(p?.symbol ?? "").toUpperCase();
+            const pSide = String(p?.side ?? p?.type ?? "").toLowerCase();
+            const pVol = Number(p?.volume ?? p?.lots ?? 0);
+            return pSym === matchSym
+              && (pSide === wantSide || pSide.startsWith(wantSide))
+              && Math.abs(pVol - wantVol) < 1e-6;
+          });
+        };
+
+        // Cadence: T+0, +1.5s, +3s, +5s, +8s
+        const cadence = [0, 1500, 1500, 2000, 3000];
+        let matched: any = null;
+        for (let i = 0; i < cadence.length; i++) {
+          if (cadence[i] > 0) await new Promise((r) => setTimeout(r, cadence[i]));
+          try { await refresh(); } catch { /* ignore */ }
+          window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+          window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+          matched = tryMatch();
+          if (matched) break;
+        }
+
+        if (matched) {
+          const confirmedTicket = matched.ticket ?? matched.id ?? null;
+          const confirmedEntry = matched.openPrice ?? matched.entryPrice ?? matched.price_open ?? matched.current_price ?? null;
+          const confirmedVol = Number(matched.volume ?? matched.lots ?? wantVol);
+          setExecResult((prev) => prev ? {
+            ...prev,
+            outcome: "success",
+            brokerAccepted: true,
+            mt5Confirmed: true,
+            confirmationStatus: "confirmed",
+            confirmedTicket,
+            confirmedEntryPrice: confirmedEntry,
+            confirmedVolume: confirmedVol,
+            confirmedAt: new Date().toISOString(),
+            executedPrice: confirmedEntry,
+            ticket: confirmedTicket,
+            status: "position_confirmed",
+            brokerMessage: `Position confirmed in MT5. Ticket: ${confirmedTicket}`,
+          } : prev);
+          toast.success("Position confirmed", { description: `#${confirmedTicket ?? ""} ${normalizedSym}` });
+        } else {
+          setExecResult((prev) => prev ? {
+            ...prev,
+            outcome: "unconfirmed",
+            brokerAccepted: true,
+            mt5Confirmed: false,
+            confirmationStatus: "not_found",
+            status: "execution_unconfirmed",
+            brokerMessage: "Broker accepted/sent order but no matching MT5 position was found.",
+          } : prev);
+          toast.warning("Order accepted but no MT5 position confirmed", {
+            description: "Please verify in MetaTrader.",
+          });
+        }
+        setAuditRefreshKey((k) => k + 1);
       } else {
         // Distinguish pre-trade "blocked" (best-execution control) from broker "rejected".
         const statusStr = String(res?.status || "").toLowerCase();

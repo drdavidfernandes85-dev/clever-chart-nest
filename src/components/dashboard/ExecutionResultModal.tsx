@@ -1,7 +1,7 @@
-import { X, CheckCircle2, ShieldAlert, AlertOctagon } from "lucide-react";
+import { X, CheckCircle2, ShieldAlert, AlertOctagon, Clock, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ExecutionOutcome = "success" | "blocked" | "rejected";
+export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed";
 
 export interface ExecutionResultPayload {
   outcome: ExecutionOutcome;
@@ -9,6 +9,15 @@ export interface ExecutionResultPayload {
   side: "buy" | "sell";
   volume: number;
   digits?: number;
+  // lifecycle (MT5 truth)
+  brokerAccepted?: boolean;
+  mt5Confirmed?: boolean;
+  confirmationStatus?: "pending" | "confirmed" | "not_found" | "failed";
+  confirmedTicket?: number | string | null;
+  confirmedEntryPrice?: number | null;
+  confirmedVolume?: number | null;
+  confirmedAt?: string | null;
+  liveOrderSent?: boolean;
   // success
   requestedPrice?: number | null;
   executedPrice?: number | null;
@@ -79,6 +88,20 @@ const TitleBar = ({
       chip: "bg-red-500/15 text-red-300 border-red-500/40",
       bar: "bg-red-500/70",
     },
+    pending: {
+      title: "Order Sent — Confirmation Pending",
+      Icon: Clock,
+      ring: "border-yellow-500/50",
+      chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
+      bar: "bg-yellow-500/70",
+    },
+    unconfirmed: {
+      title: "Order Accepted but MT5 Position Not Confirmed",
+      Icon: HelpCircle,
+      ring: "border-yellow-500/50",
+      chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
+      bar: "bg-yellow-500/70",
+    },
   }[outcome];
   const { title, Icon, chip, bar } = config;
   return (
@@ -135,6 +158,7 @@ export const ExecutionResultModal = ({
           result.outcome === "success" && "border-emerald-500/30",
           result.outcome === "blocked" && "border-amber-500/30",
           result.outcome === "rejected" && "border-red-500/30",
+          (result.outcome === "pending" || result.outcome === "unconfirmed") && "border-yellow-500/30",
         )}
       >
         <TitleBar outcome={result.outcome} onClose={onClose} />
@@ -210,6 +234,61 @@ export const ExecutionResultModal = ({
               <Row label="Quote Bid" value={fmtPx(result.quoteBid ?? result.bid, digits)} accent="text-red-300" />
               <Row label="Quote Ask" value={fmtPx(result.quoteAsk ?? result.ask, digits)} accent="text-emerald-300" />
               <Row label="Latency" value={fmtMs(result.latencyMs)} />
+            </>
+          )}
+
+          {(result.outcome === "pending" || result.outcome === "unconfirmed") && (
+            <>
+              <Row label="Symbol" value={result.symbol} accent="text-[#FFCD05]" />
+              <Row label="Side" value={sideLabel} accent={sideAccent} />
+              <Row label="Volume" value={result.volume.toFixed(2)} />
+              <Row
+                label="Broker Accepted"
+                value={result.brokerAccepted ? "YES" : "—"}
+                accent={result.brokerAccepted ? "text-emerald-300" : undefined}
+              />
+              <Row
+                label="MT5 Confirmed"
+                value={result.mt5Confirmed ? "YES" : "NO"}
+                accent={result.mt5Confirmed ? "text-emerald-300" : "text-yellow-300"}
+              />
+              <Row
+                label="Confirmation"
+                value={(result.confirmationStatus || "pending").toUpperCase()}
+                accent={
+                  result.confirmationStatus === "confirmed"
+                    ? "text-emerald-300"
+                    : result.confirmationStatus === "not_found" || result.confirmationStatus === "failed"
+                    ? "text-yellow-300"
+                    : "text-yellow-300"
+                }
+              />
+              <Row
+                label="Confirmed Ticket"
+                value={result.confirmedTicket != null ? `#${result.confirmedTicket}` : "—"}
+              />
+              <Row
+                label="Confirmed Entry"
+                value={fmtPx(result.confirmedEntryPrice, digits)}
+              />
+              <Row
+                label="Status"
+                value={
+                  result.outcome === "pending"
+                    ? "ORDER SENT — WAITING FOR MT5"
+                    : "NO MATCHING MT5 POSITION"
+                }
+                accent="text-yellow-300"
+              />
+              <Row
+                label="Broker Message"
+                value={
+                  result.brokerMessage ||
+                  (result.outcome === "pending"
+                    ? "Order sent — waiting for MT5 confirmation."
+                    : "Order was accepted/sent, but no MT5 position was confirmed. Please verify in MetaTrader.")
+                }
+              />
             </>
           )}
         </div>
