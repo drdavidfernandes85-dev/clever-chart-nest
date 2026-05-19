@@ -152,6 +152,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     pnl?: number | null;
     startedAt?: number;
   }
+  const [liveConfirm, setLiveConfirm] = useState<LiveConfirmState | null>(null);
   const positionsRef = useRef(positions);
   useEffect(() => { positionsRef.current = positions; }, [positions]);
   const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
