@@ -118,12 +118,8 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
             .select("id, author_id, entry_price, stop_loss, take_profit, status, direction")
             .in("id", signalIds)
         : Promise.resolve({ data: [] as any[] }),
-      tickets.length
-        ? supabase.from("mt_positions")
-            .select("ticket, open_price, current_price, profit, commission, swap")
-            .eq("user_id", user.id)
-            .in("ticket", tickets)
-        : Promise.resolve({ data: [] as any[] }),
+      Promise.resolve({ data: [] as any[] }), // mt_positions removed — live data sourced from Trading Layer
+
       supabase.from("user_mt_accounts").select("equity").eq("user_id", user.id).limit(1).maybeSingle(),
     ]);
 
