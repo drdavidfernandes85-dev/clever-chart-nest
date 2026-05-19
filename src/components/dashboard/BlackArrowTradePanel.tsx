@@ -933,6 +933,36 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         )}
 
+        {/* Dev-only LIVE CONTROLLED 0.01 test — visually isolated, requires checkbox */}
+        {import.meta.env.DEV && (
+          <div className="mt-2 rounded-md border-2 border-red-600/70 bg-red-950/30 p-2 space-y-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
+              <AlertTriangle className="h-3 w-3" />
+              Live Controlled Test
+            </div>
+            <p className="text-[10px] leading-snug text-red-300">
+              This sends a real market order to the connected MT5 account.
+            </p>
+            <label className="flex items-start gap-1.5 text-[10px] text-red-200 cursor-pointer">
+              <Checkbox
+                checked={liveTestConfirmed}
+                onCheckedChange={(v) => setLiveTestConfirmed(v === true)}
+                className="mt-0.5 border-red-500 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+              />
+              <span>I understand this will send a live 0.01 market order.</span>
+            </label>
+            <button
+              type="button"
+              disabled={!liveTestConfirmed || liveTestSubmitting}
+              onClick={handleLiveTest001}
+              className="w-full h-7 rounded-sm border border-red-500 bg-red-600 px-2 text-[10px] font-mono font-bold uppercase tracking-wider text-white hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            >
+              {liveTestSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
+              LIVE TEST 0.01
+            </button>
+          </div>
+        )}
+
         {/* Pending — single condensed row */}
         <div className="grid grid-cols-4 gap-1">
           <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
