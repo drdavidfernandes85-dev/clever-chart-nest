@@ -155,28 +155,25 @@
 
 @layer base {
   * {
-    border-color: hsl(48 100% 51% / 0.12);
+    border-color: hsl(var(--border));
   }
 
-  /* ── Global fiery dark panel treatment ──
-     Every element using `bg-card` gets a warm yellow border for cohesion
-     with the hero. NO outer halo, NO inner glow — keep crisp & data-first. */
+  /* IX LTR — neutral panel borders by default; gold is reserved for
+     active / hover states (use border-primary or .ltr-panel-hover). */
   :root:not(.light) [class*="bg-card"]:not(body):not(html):not([class*="bg-card/0"]):not([class*="bg-card-foreground"]) {
-    border-color: hsl(48 100% 51% / 0.22);
+    border-color: hsl(var(--border));
   }
 
-  /* Stronger fiery border on any element using `border-border` token */
   :root:not(.light) [class*="border-border"] {
-    border-color: hsl(48 100% 51% / 0.22);
+    border-color: hsl(var(--border));
   }
 
   body {
     @apply text-foreground antialiased;
-    font-family: var(--font-proxima);
+    font-family: var(--font-sans);
     font-weight: 400;
     position: relative;
     overflow-x: hidden;
-    /* Clean deep void — no ambient fiery radial glow */
     background-color: #050505;
     background-attachment: fixed;
   }
@@ -185,10 +182,10 @@
     background-color: #050505;
     background-attachment: fixed;
   }
-  /* Selection in yellow to match brand */
+  /* Brand selection */
   ::selection {
-    background: hsl(48 100% 51% / 0.35);
-    color: hsl(0 0% 8%);
+    background: hsl(48 100% 51% / 0.32);
+    color: hsl(0 0% 4%);
   }
   html.light {
     background-color: hsl(0 0% 100%);
@@ -201,15 +198,25 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-proxima);
+    font-family: var(--font-sans);
     letter-spacing: -0.01em;
   }
 
-  /* Guideline weights */
-  h1, .hero-title { font-weight: 300; }   /* Light for hero */
-  h2, h3 { font-weight: 600; }            /* SemiBold for sections */
+  /* Premium fintech weight hierarchy */
+  h1, .hero-title { font-weight: 600; }
+  h2 { font-weight: 600; }
+  h3 { font-weight: 600; }
   .heading-semibold { font-weight: 600; }
-  .heading-bold { font-weight: 700; }
+  .heading-bold     { font-weight: 700; }
+
+  /* Monospace utility for prices, tickets, account stats, logs.
+     Use class="font-mono-data" anywhere numeric/data text is shown. */
+  .font-mono-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum", "zero", "ss01";
+    letter-spacing: 0;
+  }
 }
 
 @layer utilities {
