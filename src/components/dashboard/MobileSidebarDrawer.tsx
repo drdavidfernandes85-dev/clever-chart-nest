@@ -87,11 +87,8 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
           >
             {/* Brand */}
             <div className="flex h-14 items-center justify-between border-b border-primary/10 px-4">
-              <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2 min-w-0">
-                <img src={infinoxLogo} alt="INFINOX" className="h-5 shrink-0" />
-                <span className="truncate font-proxima text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  IX Room
-                </span>
+              <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2 min-w-0" aria-label="IX LTR PRO — Dashboard">
+                <LtrLogo variant="platform" className="h-8 w-auto shrink-0" />
               </Link>
               <button
                 onClick={onClose}
