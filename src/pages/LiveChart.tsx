@@ -32,7 +32,7 @@ import {
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import { useLanguage } from "@/i18n/LanguageContext";
 import SEO from "@/components/SEO";
-import LtrLogo from "@/components/branding/LtrLogo";
+import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
