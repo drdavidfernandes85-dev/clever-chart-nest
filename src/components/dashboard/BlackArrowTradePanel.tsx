@@ -978,6 +978,43 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           if (matched) break;
         }
 
+        // ── Authoritative server-side reconciliation against Trading Layer ──
+        // Inspects positions + pending orders + history orders + history deals
+        // and returns one of:
+        //   position_confirmed | deal_found_no_open_position |
+        //   order_found_not_filled | execution_unconfirmed
+        let reconcile: any = null;
+        try {
+          const { data: rec } = await supabase.functions.invoke(
+            "reconcile-execution",
+            {
+              body: {
+                tradeId,
+                symbol: normalizedSym,
+                side: sideArg,
+                volume: Number(volNum.toFixed(2)),
+                requestedPrice: res?.requestedPrice ?? null,
+                clientClickAt,
+                brokerRetcode: res?.retcode ?? null,
+                brokerMessage:
+                  res?.brokerMessage ?? res?.retcodeDescription ?? null,
+                rawExecutionResponse: res ?? null,
+              },
+            },
+          );
+          reconcile = rec ?? null;
+        } catch { /* reconcile is best-effort */ }
+
+        // Reconcile is authoritative when it confirms an MT5 position.
+        if (reconcile?.mt5Confirmed === true && reconcile?.confirmedTicket) {
+          matched = matched || {
+            ticket: reconcile.confirmedTicket,
+            entry_price: reconcile.confirmedEntryPrice,
+            price_open: reconcile.confirmedEntryPrice,
+            volume: reconcile.confirmedVolume,
+          };
+        }
+
         // Build a unified broker-result view for the canonical mapper.
         const brokerView = {
           success: res?.success,
