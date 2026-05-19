@@ -3,7 +3,7 @@ import {
   useMarketStatus,
   useRateLimit,
 } from "@/hooks/useLiveMarketData";
-import { marketDataService } from "@/services/MarketDataService";
+import { MarketDataService } from "@/services/MarketDataService";
 import { useEffect, useState } from "react";
 
 /**
