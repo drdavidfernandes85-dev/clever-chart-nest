@@ -131,6 +131,27 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [liveTestConfirmed, setLiveTestConfirmed] = useState(false);
   const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
 
+  // Post-trade confirmation flow state
+  type LiveConfirmPhase = "placing" | "confirming" | "confirmed" | "pending_verification" | "rejected";
+  interface LiveConfirmState {
+    phase: LiveConfirmPhase;
+    status?: string;
+    retcode?: number;
+    brokerMessage?: string;
+    symbol?: string;
+    side?: string;
+    volume?: number;
+    ticket?: number | string | null;
+    entryPrice?: number | null;
+    currentPrice?: number | null;
+    pnl?: number | null;
+    startedAt?: number;
+  }
+  const [liveConfirm, setLiveConfirm] = useState<LiveConfirmState | null>(null);
+  const positionsRef = useRef(positions);
+  useEffect(() => { positionsRef.current = positions; }, [positions]);
+
+
   async function directFetchSubmitBestExecutionOrder(payload: any) {
     const {
       data: { session },
@@ -212,8 +233,50 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
       window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
       window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
-      if (responseOk) toast.success("Live test response received");
-      else toast.error("Live test failed");
+
+      const liveSent = data?.step === "execution_result" && data?.liveOrderSent === true;
+      if (liveSent) {
+        const rawStatus = String(data?.status ?? "").toLowerCase();
+        const retcode = Number(data?.retcode ?? data?.mt5?.retcode ?? NaN);
+        const brokerMessage = String(data?.brokerMessage ?? data?.broker_message ?? data?.mt5?.comment ?? "");
+
+        if (rawStatus === "rejected" || rawStatus === "failed") {
+          setLiveConfirm({
+            phase: "rejected",
+            status: rawStatus,
+            retcode: Number.isFinite(retcode) ? retcode : undefined,
+            brokerMessage,
+            symbol: payload.symbol,
+            side: payload.side,
+            volume: payload.volume,
+            startedAt: Date.now(),
+          });
+          toast.error("Execution rejected");
+        } else {
+          setLiveConfirm({
+            phase: "placing",
+            status: rawStatus || "placed",
+            retcode: Number.isFinite(retcode) ? retcode : undefined,
+            brokerMessage,
+            symbol: payload.symbol,
+            side: payload.side,
+            volume: payload.volume,
+            startedAt: Date.now(),
+          });
+          toast.success("Order placed — confirming execution...");
+          runPostTradeConfirmation({
+            symbol: payload.symbol,
+            side: payload.side,
+            volume: payload.volume,
+            status: rawStatus || "placed",
+            retcode: Number.isFinite(retcode) ? retcode : undefined,
+            brokerMessage,
+          });
+        }
+      } else {
+        if (responseOk) toast.success("Live test response received");
+        else toast.error("Live test failed");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setOrderDebug({
@@ -232,6 +295,72 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       setTimeout(() => setAuditRefreshKey(k => k + 1), 400);
     }
   }
+
+  function findMatchingPosition(symbol: string, side: string, volume: number, sinceMs: number) {
+    const sym = symbol.toUpperCase();
+    const wantSide = side.toLowerCase();
+    const list: any[] = (positionsRef.current as any) || [];
+    return list.find((p: any) => {
+      const pSym = String(p?.symbol ?? "").toUpperCase();
+      const pSide = String(p?.side ?? p?.type ?? "").toLowerCase();
+      const pVol = Number(p?.volume ?? p?.lots ?? 0);
+      const pTime = p?.openTime ? new Date(p.openTime).getTime()
+        : p?.time_open ? new Date(p.time_open).getTime()
+        : p?.time ? Number(p.time) * 1000
+        : Date.now();
+      return pSym === sym
+        && (pSide === wantSide || pSide.startsWith(wantSide))
+        && Math.abs(pVol - volume) < 1e-6
+        && pTime >= sinceMs - 10_000;
+    });
+
+  }
+
+  async function runPostTradeConfirmation(args: {
+    symbol: string; side: string; volume: number;
+    status: string; retcode?: number; brokerMessage?: string;
+  }) {
+    const startedAt = Date.now();
+    const tryMatch = () => {
+      const match = findMatchingPosition(args.symbol, args.side, args.volume, startedAt);
+      if (!match) return false;
+      setLiveConfirm({
+        phase: "confirmed",
+        status: args.status,
+        retcode: args.retcode,
+        brokerMessage: args.brokerMessage,
+        symbol: String(match.symbol ?? args.symbol),
+        side: String(match.side ?? match.type ?? args.side),
+        volume: Number(match.volume ?? match.lots ?? args.volume),
+        ticket: match.ticket ?? match.id ?? null,
+        entryPrice: match.openPrice ?? match.entryPrice ?? match.price_open ?? null,
+        currentPrice: match.currentPrice ?? match.price_current ?? null,
+        pnl: match.profit ?? match.pnl ?? null,
+        startedAt,
+      });
+      return true;
+    };
+
+    // T+1.5s — first refresh
+    await new Promise((r) => setTimeout(r, 1500));
+    try { await refresh(); } catch { /* ignore */ }
+    setAuditRefreshKey(k => k + 1);
+    window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+    if (tryMatch()) return;
+
+    setLiveConfirm((prev) => prev ? { ...prev, phase: "confirming" } : prev);
+
+    // T+4.5s — second refresh
+    await new Promise((r) => setTimeout(r, 3000));
+    try { await refresh(); } catch { /* ignore */ }
+    setAuditRefreshKey(k => k + 1);
+    window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+    if (tryMatch()) return;
+
+    // No match within 5s
+    setLiveConfirm((prev) => prev ? { ...prev, phase: "pending_verification" } : prev);
+  }
+
 
   async function handleBestExecutionDryRun() {
     const selectedSymbol = normalizedSym;
@@ -1073,7 +1202,60 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       </div>
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
 
+      {liveConfirm && (() => {
+        const c = liveConfirm;
+        const headerByPhase: Record<typeof c.phase, { text: string; tone: string }> = {
+          placing: { text: "Order placed — confirming execution…", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          confirming: { text: "Order placed — confirmation pending", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          confirmed: { text: "Position confirmed", tone: "border-emerald-500/60 bg-emerald-500/10 text-emerald-300" },
+          pending_verification: { text: "Order was placed by broker, but final position confirmation is pending. Please verify in MT5.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-200" },
+          rejected: { text: "Execution rejected", tone: "border-red-500/60 bg-red-500/10 text-red-300" },
+        };
+        // status-based override line
+        let statusLine: { text: string; tone: string } | null = null;
+        const s = (c.status || "").toLowerCase();
+        if (s === "done") statusLine = { text: "Order executed", tone: "text-emerald-300" };
+        else if (s === "placed") statusLine = { text: "Order placed — confirmation pending", tone: "text-yellow-300" };
+        else if (s === "rejected" || s === "failed") statusLine = { text: "Execution rejected", tone: "text-red-300" };
+        const h = headerByPhase[c.phase];
+        return (
+          <div className={cn("mt-2 rounded border px-3 py-2 text-[11px] font-mono", h.tone)}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold uppercase tracking-wider">{h.text}</div>
+              <button type="button" onClick={() => setLiveConfirm(null)} className="text-current/70 hover:text-current">×</button>
+            </div>
+            {statusLine && c.phase !== "confirmed" && (
+              <div className={cn("mt-1", statusLine.tone)}>{statusLine.text}</div>
+            )}
+            {c.retcode === 10008 && (
+              <div className="mt-1 text-yellow-200/90">
+                Broker accepted/placed the order. Waiting for final position confirmation.
+              </div>
+            )}
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-neutral-200">
+              {c.symbol && (<><span className="text-neutral-500">Symbol</span><span>{c.symbol}</span></>)}
+              {c.side && (<><span className="text-neutral-500">Side</span><span className="uppercase">{c.side}</span></>)}
+              {c.volume != null && (<><span className="text-neutral-500">Volume</span><span>{c.volume}</span></>)}
+              {c.ticket != null && (<><span className="text-neutral-500">Ticket</span><span>{String(c.ticket)}</span></>)}
+              {c.entryPrice != null && (<><span className="text-neutral-500">Entry</span><span>{c.entryPrice}</span></>)}
+              {c.currentPrice != null && (<><span className="text-neutral-500">Current</span><span>{c.currentPrice}</span></>)}
+              {c.pnl != null && (
+                <>
+                  <span className="text-neutral-500">Floating P&L</span>
+                  <span className={cn(c.pnl > 0 ? "text-emerald-300" : c.pnl < 0 ? "text-red-300" : "")}>
+                    {fmt(c.pnl, currency)}
+                  </span>
+                </>
+              )}
+              {c.brokerMessage && (<><span className="text-neutral-500">Broker</span><span className="truncate">{c.brokerMessage}</span></>)}
+              {c.retcode != null && (<><span className="text-neutral-500">Retcode</span><span>{c.retcode}</span></>)}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Old debugInfo panel removed — only orderDebug.rawEdgeFunctionResponse is rendered below. */}
+
 
       {orderDebug && (
         <div className="mt-2 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
