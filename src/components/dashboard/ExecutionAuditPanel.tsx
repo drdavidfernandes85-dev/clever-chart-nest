@@ -54,10 +54,12 @@ const toneFor = (s?: string | null) =>
 const friendlyMessageFor = (r: AuditRow): string => {
   if (r.broker_message && r.broker_message.trim().length > 0) return r.broker_message;
   if (r.status === "closed" && r.raw?.classification === "close_position") {
-    return "Position closed successfully";
+    return "Position closed. Ticket removed from MT5 positions.";
   }
+  if (r.status === "close_unconfirmed") return "Close request accepted but ticket still exists in MT5 positions.";
+  if (r.status === "execution_unconfirmed") return "Broker accepted order but no matching MT5 position was found.";
   if (r.status === "position_confirmed") return "Position confirmed";
-  if (r.status === "placed") return "Order placed";
+  if (r.status === "placed") return "Order placed — confirmation pending";
   if (r.status === "dry_run") return "Pre-trade check OK (dry run)";
   return "—";
 };
