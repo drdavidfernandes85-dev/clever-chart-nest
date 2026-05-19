@@ -131,6 +131,27 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [liveTestConfirmed, setLiveTestConfirmed] = useState(false);
   const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
 
+  // Post-trade confirmation flow state
+  type LiveConfirmPhase = "placing" | "confirming" | "confirmed" | "pending_verification" | "rejected";
+  interface LiveConfirmState {
+    phase: LiveConfirmPhase;
+    status?: string;
+    retcode?: number;
+    brokerMessage?: string;
+    symbol?: string;
+    side?: string;
+    volume?: number;
+    ticket?: number | string | null;
+    entryPrice?: number | null;
+    currentPrice?: number | null;
+    pnl?: number | null;
+    startedAt?: number;
+  }
+  const [liveConfirm, setLiveConfirm] = useState<LiveConfirmState | null>(null);
+  const positionsRef = useRef(positions);
+  useEffect(() => { positionsRef.current = positions; }, [positions]);
+
+
   async function directFetchSubmitBestExecutionOrder(payload: any) {
     const {
       data: { session },
