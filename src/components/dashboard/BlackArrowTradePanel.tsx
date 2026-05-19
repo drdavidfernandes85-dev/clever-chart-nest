@@ -117,6 +117,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [noStops, setNoStops] = useState(false);
   const [autoReset, setAutoReset] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const { locked: execLocked } = useExecutionLock();
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [symbolSearch, setSymbolSearch] = useState("");
   const [bidFlash, setBidFlash] = useState<"up" | "down" | null>(null);
