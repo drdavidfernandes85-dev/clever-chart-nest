@@ -113,6 +113,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [orderDebug, setOrderDebug] = useState<{
     status: "loading" | "success" | "error";
     functionUsed: string;
+    requestUrl?: string;
     httpStatus?: number;
     payloadSent: any;
     rawEdgeFunctionResponse: any;
@@ -121,21 +122,26 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   } | null>(null);
 
   async function handleBestExecutionDryRun() {
+    const selectedSymbol = normalizedSym;
+    const volume = vol;
     const payload = {
       tradeId: crypto.randomUUID(),
-      symbol: normalizedSym || "XAUUSD",
+      symbol: selectedSymbol || "XAUUSD",
       side: "buy",
       orderType: "market",
-      volume: Number(vol) || 0.01,
+      volume: Number(volume) || 0.01,
       stopLoss: null,
       takeProfit: null,
       dryRun: true,
       clientClickAt: new Date().toISOString(),
     };
 
+    setOrderDebug(null);
+
     setOrderDebug({
       status: "loading",
-      functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+      functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+      requestUrl: `https://qdyrgsnkpoujimocynni.supabase.co/functions/v1/submit-best-execution-order?v=${Date.now()}`,
       payloadSent: payload,
       rawEdgeFunctionResponse: null,
       edgeFunctionError: null,
@@ -150,7 +156,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       if (!session?.access_token) {
         setOrderDebug({
           status: "error",
-          functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+          functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
           payloadSent: payload,
           rawEdgeFunctionResponse: null,
           edgeFunctionError: "No active Supabase session/access token found.",
@@ -159,18 +165,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order?ts=${Date.now()}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session.access_token}`,
-            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const requestUrl =
+        `https://qdyrgsnkpoujimocynni.supabase.co/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
+
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
 
       const text = await response.text();
       let data: any;
@@ -182,20 +189,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
       setOrderDebug({
         status: response.ok ? "success" : "error",
-        functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+        functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+        requestUrl,
         httpStatus: response.status,
         payloadSent: payload,
         rawEdgeFunctionResponse: data,
         edgeFunctionError: response.ok ? null : data,
         validationError:
-          data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
+          data?.version === "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19" &&
+          data?.step === "dry_run"
             ? null
-            : "Frontend is not showing the real Edge Function response.",
+            : "Wrong response. The UI is still not showing the live Edge Function response.",
       });
     } catch (error) {
       setOrderDebug({
         status: "error",
-        functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+        functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
         payloadSent: payload,
         rawEdgeFunctionResponse: null,
         edgeFunctionError: error instanceof Error ? error.message : String(error),
