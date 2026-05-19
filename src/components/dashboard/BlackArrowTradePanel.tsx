@@ -1453,6 +1453,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               )}
               {c.brokerMessage && (<><span className="text-neutral-500">Broker</span><span className="truncate">{c.brokerMessage}</span></>)}
               {c.retcode != null && (<><span className="text-neutral-500">Retcode</span><span>{c.retcode}</span></>)}
+              {c.brokerAccepted != null && (<><span className="text-neutral-500">Broker accepted</span><span>{c.brokerAccepted ? "yes" : "no"}</span></>)}
+              {c.mt5Confirmed != null && (<><span className="text-neutral-500">MT5 confirmed</span><span className={c.mt5Confirmed ? "text-emerald-300" : "text-yellow-300"}>{c.mt5Confirmed ? "yes" : "no"}</span></>)}
+              {c.confirmationStatus && (<><span className="text-neutral-500">Confirmation</span><span className={cn(c.confirmationStatus === "confirmed" ? "text-emerald-300" : c.confirmationStatus === "failed" ? "text-red-300" : "text-yellow-300")}>{c.confirmationStatus}</span></>)}
+              {c.confirmedTicket != null && (<><span className="text-neutral-500">Confirmed ticket</span><span>{String(c.confirmedTicket)}</span></>)}
+              {c.confirmedEntryPrice != null && (<><span className="text-neutral-500">Confirmed entry</span><span>{c.confirmedEntryPrice}</span></>)}
+              {c.confirmedVolume != null && (<><span className="text-neutral-500">Confirmed volume</span><span>{c.confirmedVolume}</span></>)}
             </div>
           </div>
         );
