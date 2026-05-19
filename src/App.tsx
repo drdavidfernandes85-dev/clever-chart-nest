@@ -24,6 +24,7 @@ const FloatingJoinLive = lazy(() => import("@/components/webinars/FloatingJoinLi
 const FloatingMobileCTA = lazy(() => import("@/components/lead/FloatingMobileCTA"));
 const ExitIntentPopup = lazy(() => import("@/components/lead/ExitIntentPopup"));
 const DashboardLayout = lazy(() => import("@/components/dashboard/DashboardLayout"));
+import ReviewAccessBadge from "@/components/ReviewAccessBadge";
 const Admin = lazy(() => import("./pages/Admin"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Chatroom = lazy(() => import("./pages/Chatroom"));
