@@ -1050,14 +1050,9 @@ const DashboardInner = () => {
               4. Secondary tabs (Quotes / Risk / System) tucked below
           */}
           <aside className="flex flex-col gap-2 min-w-0 lg:min-h-0 lg:h-[calc(100vh-6.5rem)] lg:overflow-y-auto pr-0.5">
-            {/* 1. Compact quote snapshot */}
-            <CompactQuoteHeader symbol={active} displayLabel={active} />
-
-            {/* 2. Order Ticket — dominant module */}
+            {/* Order Ticket — dominant module */}
             <BlackArrowTradePanel />
 
-            {/* 3. Selected-symbol exposure (compact summary, NOT the full positions table) */}
-            <SelectedSymbolExposure symbol={active} />
 
 
             {/* 4. Secondary tabs */}
