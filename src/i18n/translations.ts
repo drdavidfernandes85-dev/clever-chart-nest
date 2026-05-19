@@ -53,6 +53,8 @@ const translations = {
     "hero.cta.openAccount": "Open My Infinox Account Now",
     "hero.cta.connectExisting": "Connect My Existing MT5 Account",
     "hero.eligibility": "Full access requires a verified live Infinox account with a minimum net balance of $100 USD.",
+    "hero.eligibilityShort": "Full access may require a verified live INFINOX account and compliance with applicable requirements.",
+    "hero.riskDisclaimer": "Trading leveraged products carries significant risk. Past performance does not guarantee future results. All content is for educational and informational purposes only.",
     "hero.onlineNow": "traders online right now",
     // Announcement
     "announcement.text": "Something big is coming...",
