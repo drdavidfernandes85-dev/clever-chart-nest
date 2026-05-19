@@ -102,6 +102,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const prevBidRef = useRef<number | null>(null);
   const prevAskRef = useRef<number | null>(null);
   const [execResult, setExecResult] = useState<ExecutionResultPayload | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{
+    functionUsed: string;
+    payload: any;
+    response?: any;
+    error?: string;
+    at: string;
+  } | null>(null);
 
   // Latch "ever connected" so a transient polling failure cannot replace
   // the entire Order Ticket with the disconnected screen.
