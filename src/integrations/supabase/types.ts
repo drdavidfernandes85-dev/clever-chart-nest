@@ -906,6 +906,60 @@ export type Database = {
         }
         Relationships: []
       }
+      trading_layer_webhook_events: {
+        Row: {
+          account_id: string | null
+          event_id: string | null
+          event_type: string
+          id: string
+          processed_at: string | null
+          processing_error: string | null
+          processing_status: string
+          raw_headers: Json | null
+          raw_payload: Json
+          received_at: string
+          signal_id: string | null
+          signature_provided: boolean
+          signature_valid: boolean | null
+          ticket: string | null
+          trader_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          event_id?: string | null
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          raw_headers?: Json | null
+          raw_payload: Json
+          received_at?: string
+          signal_id?: string | null
+          signature_provided?: boolean
+          signature_valid?: boolean | null
+          ticket?: string | null
+          trader_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          event_id?: string | null
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_error?: string | null
+          processing_status?: string
+          raw_headers?: Json | null
+          raw_payload?: Json
+          received_at?: string
+          signal_id?: string | null
+          signature_provided?: boolean
+          signature_valid?: boolean | null
+          ticket?: string | null
+          trader_id?: string | null
+        }
+        Relationships: []
+      }
       trading_signals: {
         Row: {
           author_id: string
