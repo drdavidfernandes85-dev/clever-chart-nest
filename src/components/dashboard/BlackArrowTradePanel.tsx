@@ -34,6 +34,7 @@ import {
 } from "@/lib/tradingLayerControl";
 import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useDevMode } from "@/hooks/useDevMode";
+import { getExecutionDisplayState } from "@/lib/executionDisplayState";
 
 const broadcastExec = (status: string) => {
   try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
