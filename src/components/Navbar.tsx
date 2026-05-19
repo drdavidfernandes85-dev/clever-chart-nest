@@ -226,7 +226,7 @@ const Navbar = () => {
               <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
                 <Link to="/connect-mt" onClick={() => { setMobileOpen(false); track("connect_mt_click", { location: "navbar_mobile" }); }}>
                   <Plug className="h-3.5 w-3.5" />
-                  Connect MT5 Account
+                  {t("hero.cta.mt5")}
                 </Link>
               </Button>
             )}
