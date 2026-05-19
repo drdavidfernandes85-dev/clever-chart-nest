@@ -49,8 +49,8 @@ const Footer = () => {
             <Link to="/" className="flex items-center gap-3" aria-label="IX Sala de Trading — Home">
               <img src={infinoxLogo} alt="INFINOX — Online Trading Broker" className="h-6" />
             </Link>
-            <span className="mt-3 inline-block font-heading text-sm font-semibold text-foreground">
-              <span className="text-primary">IX</span> LTR
+            <span className="mt-3 inline-block font-heading text-sm font-extrabold uppercase tracking-[0.12em]">
+              <span className="text-[#FFCD05]">LTR</span> <span className="text-foreground">Terminal Pro</span>
             </span>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}
