@@ -41,7 +41,7 @@ export const MENTOR_TIERS: Record<MentorTierId, MentorTier> = {
   },
   verified_trader: {
     id: "verified_trader",
-    label: "Verified Trader",
+    label: "Verified Community Member",
     short: "Verified",
     icon: ShieldCheck,
     text: "text-sky-300",
@@ -51,8 +51,8 @@ export const MENTOR_TIERS: Record<MentorTierId, MentorTier> = {
   },
   mentor: {
     id: "mentor",
-    label: "Mentor",
-    short: "Mentor",
+    label: "Educator",
+    short: "Educator",
     icon: Crown,
     text: "text-primary",
     bg: "bg-primary/15",
@@ -61,8 +61,8 @@ export const MENTOR_TIERS: Record<MentorTierId, MentorTier> = {
   },
   elite_mentor: {
     id: "elite_mentor",
-    label: "Elite Mentor",
-    short: "Elite",
+    label: "Lead Educator",
+    short: "Lead",
     icon: Sparkles,
     text: "text-fuchsia-300",
     bg: "bg-fuchsia-500/15",

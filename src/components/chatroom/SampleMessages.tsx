@@ -204,7 +204,7 @@ const SampleMessages = () => {
               {m.verified && (
                 <span
                   className="inline-flex items-center gap-0.5 rounded-md bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary"
-                  title="Verified Trader"
+                  title="Verified Community Member"
                 >
                   <CheckCircle2 className="h-2.5 w-2.5" />
                   Verified
@@ -212,7 +212,7 @@ const SampleMessages = () => {
               )}
               {m.mentor && (
                 <span className="rounded-md bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold uppercase text-foreground">
-                  Mentor
+                  Educator
                 </span>
               )}
               <span className="text-xs text-muted-foreground">{formatRel(m.minutesAgo)}</span>
