@@ -349,37 +349,63 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       window.dispatchEvent(new CustomEvent("mt:refresh-quotes"));
       refresh();
 
+      const baseFields = {
+        symbol: normalizedSym,
+        side: sideArg,
+        volume: Number(volNum.toFixed(2)),
+        digits,
+      };
+
       if (res?.success === true) {
-        const statusLabel = String(res.status || "done").toUpperCase();
-        const reqPx = res.requestedPrice != null ? fmtPx(Number(res.requestedPrice), digits) : "—";
-        const execPx = res.executedPrice != null ? fmtPx(Number(res.executedPrice), digits) : "—";
-        const slipTxt =
-          res.slippage != null
-            ? `${Number(res.slippage) >= 0 ? "+" : ""}${Number(res.slippage).toFixed(digits)}`
-            : "—";
-        const latTxt = res.latencyMs != null ? `${Math.round(Number(res.latencyMs))}ms` : "—";
-        toast.success(`${statusLabel} · ${sideArg.toUpperCase()} ${normalizedSym} · ${volNum.toFixed(2)} lots`, {
-          description: [
-            `Req ${reqPx} → Exec ${execPx}`,
-            `Slip ${slipTxt}`,
-            `Lat ${latTxt}`,
-            res.ticket ? `#${res.ticket}` : null,
-            res.brokerMessage && res.brokerMessage !== "Order executed" ? res.brokerMessage : null,
-          ].filter(Boolean).join("  ·  "),
-          duration: 5000,
+        setExecResult({
+          ...baseFields,
+          outcome: "success",
+          requestedPrice: res.requestedPrice ?? null,
+          executedPrice: res.executedPrice ?? null,
+          slippage: res.slippage ?? null,
+          latencyMs: res.latencyMs ?? null,
+          brokerMessage: res.brokerMessage ?? null,
+          status: res.status ?? "done",
+          ticket: res.ticket ?? null,
         });
         setPrice("");
         if (autoReset) { setVol(volumeMin.toFixed(2)); setOrderType("Market"); }
       } else {
+        // Distinguish pre-trade "blocked" (best-execution control) from broker "rejected".
+        const statusStr = String(res?.status || "").toLowerCase();
+        const isBlocked =
+          statusStr === "blocked" ||
+          res?.blocked === true ||
+          (res?.step && String(res.step).toLowerCase().includes("pre")) ||
+          (Array.isArray(res?.reasons) && res.reasons.length > 0 && res.retcode == null);
+
         const reasons = Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null;
-        toast.error(`${(res?.status || "REJECTED").toString().toUpperCase()} · ${sideArg.toUpperCase()} ${normalizedSym}`, {
-          description: [
-            res?.error,
-            reasons,
-            res?.brokerMessage,
-          ].filter(Boolean).join("  ·  ") || "Order rejected by broker",
-          duration: 6000,
-        });
+
+        if (isBlocked) {
+          setExecResult({
+            ...baseFields,
+            outcome: "blocked",
+            reason: res?.error || reasons || "Pre-trade check failed",
+            ruleViolated: res?.ruleViolated || reasons || res?.error || null,
+            bid: res?.bid ?? res?.requestedBid ?? bid ?? null,
+            ask: res?.ask ?? res?.requestedAsk ?? ask ?? null,
+            spread:
+              res?.spread ??
+              (bid != null && ask != null ? Math.max(0, ask - bid) : null),
+            tickAgeMs: res?.tickAgeMs ?? null,
+          });
+        } else {
+          setExecResult({
+            ...baseFields,
+            outcome: "rejected",
+            brokerMessage: res?.brokerMessage || res?.error || "Order rejected",
+            retcode: res?.retcode ?? null,
+            requestedPrice: res?.requestedPrice ?? null,
+            quoteBid: res?.quoteBid ?? res?.bid ?? bid ?? null,
+            quoteAsk: res?.quoteAsk ?? res?.ask ?? ask ?? null,
+            latencyMs: res?.latencyMs ?? null,
+          });
+        }
       }
     } catch (e: any) {
       toast.error(e?.message || "Order failed");
