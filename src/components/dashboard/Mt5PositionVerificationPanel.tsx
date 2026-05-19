@@ -30,12 +30,25 @@ export default function Mt5PositionVerificationPanel() {
   const fmt = (v: number | null | undefined, d = 5) =>
     v == null || Number.isNaN(Number(v)) ? "—" : Number(v).toFixed(d);
 
+  const fmtTime = (p: any) => {
+    const raw =
+      p?.open_time ?? p?.openTime ?? p?.time_open ?? p?.time ?? null;
+    if (raw == null) return "—";
+    try {
+      const d = typeof raw === "number"
+        ? new Date(raw < 1e12 ? raw * 1000 : raw)
+        : new Date(raw);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleTimeString();
+    } catch { return "—"; }
+  };
+
   return (
     <div className="mt-3 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10.5px] font-mono overflow-hidden">
       <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[9px] uppercase tracking-widest text-[#FFCD05]/80">
-            MT5 Position Verification (Dev)
+            Live MT5 Positions — Source of Truth (Dev)
           </span>
           <span className="text-[9px] uppercase tracking-widest text-neutral-500">
             source: get-live-account
@@ -64,6 +77,10 @@ export default function Mt5PositionVerificationPanel() {
         </div>
       </div>
 
+      <div className="border-b border-neutral-900 bg-[#080808] px-2 py-1 text-[9px] uppercase tracking-widest text-yellow-300/80">
+        If the modal says ORDER EXECUTED but the position is not listed here, it is a bug.
+      </div>
+
       {positions.length === 0 ? (
         <div className="px-2 py-3 text-neutral-500">
           No open positions in MT5. (This is the live truth — if your audit shows a
@@ -83,10 +100,11 @@ export default function Mt5PositionVerificationPanel() {
                 <th className="px-2 py-1 text-right">Profit</th>
                 <th className="px-2 py-1 text-right">SL</th>
                 <th className="px-2 py-1 text-right">TP</th>
+                <th className="px-2 py-1 text-right">Open Time</th>
               </tr>
             </thead>
             <tbody>
-              {positions.map((p) => (
+              {positions.map((p: any) => (
                 <tr key={String(p.ticket)} className="border-t border-neutral-900 text-neutral-100">
                   <td className="px-2 py-1">{String(p.ticket ?? "—")}</td>
                   <td className="px-2 py-1">{p.symbol}</td>
@@ -101,6 +119,7 @@ export default function Mt5PositionVerificationPanel() {
                   </td>
                   <td className="px-2 py-1 text-right">{fmt(p.stop_loss)}</td>
                   <td className="px-2 py-1 text-right">{fmt(p.take_profit)}</td>
+                  <td className="px-2 py-1 text-right text-neutral-400">{fmtTime(p)}</td>
                 </tr>
               ))}
             </tbody>
