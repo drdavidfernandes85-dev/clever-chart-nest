@@ -91,32 +91,33 @@ const OpenPositionsPanel = () => {
         <div className="max-h-[320px] overflow-y-auto overflow-x-auto">
           <table className="w-full min-w-[760px] text-[11px] font-mono">
             <thead className="sticky top-0 z-10 bg-[#0a0a0a]">
-              <tr className="text-left text-[9px] uppercase tracking-widest text-neutral-500">
-                <th className="px-3 py-2 font-normal">Symbol</th>
-                <th className="px-2 py-2 font-normal">Side</th>
-                <th className="px-2 py-2 font-normal text-right">Volume</th>
-                <th className="px-2 py-2 font-normal text-right">Entry</th>
-                <th className="px-2 py-2 font-normal text-right">Current</th>
-                <th className="px-2 py-2 font-normal text-right">P&L</th>
-                <th className="px-2 py-2 font-normal text-right">SL</th>
-                <th className="px-2 py-2 font-normal text-right">TP</th>
-                <th className="px-3 py-2 font-normal text-right">&nbsp;</th>
+              <tr className="text-left text-[9px] uppercase tracking-[0.18em] text-neutral-500">
+                <th className="px-3 py-2.5 font-normal">Symbol</th>
+                <th className="px-3 py-2.5 font-normal">Side</th>
+                <th className="px-3 py-2.5 font-normal text-right">Volume</th>
+                <th className="px-3 py-2.5 font-normal text-right">Entry</th>
+                <th className="px-3 py-2.5 font-normal text-right">Current</th>
+                <th className="px-3 py-2.5 font-normal text-right">P&amp;L</th>
+                <th className="px-3 py-2.5 font-normal text-right">SL</th>
+                <th className="px-3 py-2.5 font-normal text-right">TP</th>
+                <th className="sticky right-0 bg-[#0a0a0a] px-3 py-2.5 font-normal text-right">&nbsp;</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-800/70">
+            <tbody className="divide-y divide-neutral-900/70">
               {positions.map((p, i) => {
                 const isBuy = p.side === "buy";
                 const pnl = Number(p.profit) || 0;
+                const vol = Number(p.volume) || 0;
                 const key = String(p.ticket ?? `${p.symbol}-${i}`);
                 return (
                   <tr
                     key={key}
-                    className="tabular-nums hover:bg-neutral-900/60 transition-colors"
+                    className="tabular-nums hover:bg-neutral-900/40 transition-colors"
                   >
-                    <td className="px-3 py-1.5 font-bold text-neutral-100">
+                    <td className="px-3 py-2.5 font-bold text-neutral-100">
                       {p.symbol}
                     </td>
-                    <td className="px-2 py-1.5">
+                    <td className="px-3 py-2.5">
                       <span
                         className={`inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                           isBuy
@@ -127,38 +128,41 @@ const OpenPositionsPanel = () => {
                         {p.side}
                       </span>
                     </td>
-                    <td className="px-2 py-1.5 text-right text-neutral-200">
-                      {Number(p.volume).toFixed(2)}
+                    <td className="px-3 py-2.5 text-right text-neutral-200">
+                      {vol > 0 ? vol.toFixed(2) : "—"}
                     </td>
-                    <td className="px-2 py-1.5 text-right text-neutral-300">
+                    <td className="px-3 py-2.5 text-right text-neutral-400">
                       {fmtPrice(p.symbol, p.entry_price)}
                     </td>
-                    <td className="px-2 py-1.5 text-right text-neutral-100">
+                    <td className="px-3 py-2.5 text-right text-neutral-100">
                       {fmtPrice(p.symbol, p.current_price)}
                     </td>
                     <td
-                      className={`px-2 py-1.5 text-right font-bold ${
-                        pnl >= 0 ? "text-emerald-400" : "text-red-400"
+                      className={`px-3 py-2.5 text-right font-bold ${
+                        pnl > 0
+                          ? "text-emerald-400"
+                          : pnl < 0
+                            ? "text-red-400"
+                            : "text-neutral-500"
                       }`}
                     >
-                      {pnl >= 0 ? "+" : ""}
-                      {pnl.toFixed(2)}
+                      {pnl === 0 ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`}
                     </td>
                     <td
-                      className={`px-2 py-1.5 text-right ${
+                      className={`px-3 py-2.5 text-right ${
                         p.stop_loss ? "text-red-400/80" : "text-neutral-600"
                       }`}
                     >
                       {fmtPrice(p.symbol, p.stop_loss)}
                     </td>
                     <td
-                      className={`px-2 py-1.5 text-right ${
+                      className={`px-3 py-2.5 text-right ${
                         p.take_profit ? "text-emerald-400/80" : "text-neutral-600"
                       }`}
                     >
                       {fmtPrice(p.symbol, p.take_profit)}
                     </td>
-                    <td className="px-3 py-1.5 text-right">
+                    <td className="sticky right-0 bg-[#0c0c0c] px-3 py-2 text-right">
                       <PositionActions
                         position={p}
                         onAfter={async () => { try { await refresh(); } catch { /* ignore */ } }}
@@ -166,8 +170,6 @@ const OpenPositionsPanel = () => {
                         cooldownSec={cooldownSec}
                       />
                     </td>
-
-
                   </tr>
                 );
               })}
