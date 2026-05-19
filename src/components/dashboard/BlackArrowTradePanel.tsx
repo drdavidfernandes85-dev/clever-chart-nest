@@ -33,6 +33,7 @@ import ExecutionAuditPanel from "@/components/dashboard/ExecutionAuditPanel";
 const QUICK_VOLS = [0.01, 0.1, 0.25, 0.5, 1.0, 2.0];
 const STRATEGIES = ["Standard", "Bracket", "None"] as const;
 const ORDER_TYPES = ["Market", "Limit", "Stop"] as const;
+const BEST_EXEC_VERSION = "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19";
 type Strategy = typeof STRATEGIES[number];
 type OrderTypeLabel = typeof ORDER_TYPES[number];
 
@@ -130,6 +131,38 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [liveTestConfirmed, setLiveTestConfirmed] = useState(false);
   const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
 
+  async function directFetchSubmitBestExecutionOrder(payload: any) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error("No active Supabase session/access token found.");
+    }
+
+    const requestUrl = submitBestExecutionOrderUrl();
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await response.text();
+    let data: any;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { rawText: text };
+    }
+
+    return { requestUrl, httpStatus: response.status, responseOk: response.ok, data };
+  }
+
   async function handleLiveTest001() {
     const selectedSymbol = normalizedSym;
     const payload = {
@@ -156,56 +189,30 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     });
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setOrderDebug({
-          status: "error",
-          functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
-          payloadSent: payload,
-          rawEdgeFunctionResponse: null,
-          edgeFunctionError: "No active Supabase session/access token found.",
-          validationError: "User is not authenticated.",
-        });
-        return;
-      }
+      const { requestUrl, httpStatus, responseOk, data } = await directFetchSubmitBestExecutionOrder(payload);
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const requestUrl =
-        `${supabaseUrl}/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
-
-      const response = await fetch(requestUrl, {
-        method: "POST",
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await response.text();
-      let data: any;
-      try { data = JSON.parse(text); } catch { data = { rawText: text }; }
-
-      const ok =
-        response.ok &&
-        data?.version === "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19" &&
-        data?.step === "execution_result" &&
-        data?.liveOrderSent === true;
+      const expectedLiveResponse =
+        data?.version === BEST_EXEC_VERSION &&
+        ((data?.step === "execution_result" && data?.liveOrderSent === true) ||
+          (data?.step === "pretrade_validation" && data?.liveOrderSent === false));
 
       setOrderDebug({
-        status: response.ok ? "success" : "error",
+        status: responseOk ? "success" : "error",
         functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
         requestUrl,
-        httpStatus: response.status,
+        httpStatus,
         payloadSent: payload,
         rawEdgeFunctionResponse: data,
-        edgeFunctionError: response.ok ? null : data,
-        validationError: ok ? null : "Expected execution_result / liveOrderSent=true.",
+        edgeFunctionError: responseOk ? null : data,
+        validationError: data?.version
+          ? expectedLiveResponse ? null : "Unexpected live execution response."
+          : "Wrong live execution handler is still being used.",
       });
 
-      if (response.ok) toast.success("Live test order sent");
+      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
+      if (responseOk) toast.success("Live test response received");
       else toast.error("Live test failed");
     } catch (error) {
       setOrderDebug({
