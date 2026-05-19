@@ -1,10 +1,11 @@
 import { cn } from "@/lib/utils";
-import ltrLogo from "@/assets/ltr-terminal-pro-logo.png";
+import ltrFullLogo from "@/assets/ltr-terminal-pro-logo.png";
+import ltrIcon from "@/assets/ltr-icon.png";
 
 interface Props {
   /**
    * "full"     — horizontal logo + "LTR Terminal Pro" wordmark image
-   * "icon"     — compact LTR monogram only (tight crop of the same image)
+   * "icon"     — compact LTR monogram only (square gold-rimmed mark)
    * "wordmark" — small inline wordmark for sidebars/footers (text-only)
    */
   variant?: "full" | "icon" | "wordmark";
@@ -36,30 +37,23 @@ const LtrLogo = ({ variant = "full", className, glow = true }: Props) => {
   }
 
   if (variant === "icon") {
-    // Crop to the square LTR mark on the left of the source image
     return (
-      <span
+      <img
+        src={ltrIcon}
+        alt="LTR Terminal Pro"
+        draggable={false}
         className={cn(
-          "relative inline-flex shrink-0 overflow-hidden rounded-md",
-          glow && "shadow-[0_0_18px_rgba(255,205,5,0.35)]",
+          "select-none object-contain",
+          glow && "drop-shadow-[0_0_16px_rgba(255,205,5,0.5)]",
           className,
         )}
-        aria-label="LTR Terminal Pro"
-      >
-        <img
-          src={ltrLogo}
-          alt=""
-          draggable={false}
-          className="h-full w-auto object-cover object-left"
-          style={{ aspectRatio: "1 / 1" }}
-        />
-      </span>
+      />
     );
   }
 
   return (
     <img
-      src={ltrLogo}
+      src={ltrFullLogo}
       alt="LTR Terminal Pro"
       draggable={false}
       className={cn(
