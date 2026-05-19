@@ -788,6 +788,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         ) : null}
       </div>
+      <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
     </div>
   );
 };
