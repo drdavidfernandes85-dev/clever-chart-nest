@@ -129,7 +129,6 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   async function handleBestExecutionDryRun() {
     const selectedSymbol = normalizedSym;
     const volume = vol;
-    const requestUrl = submitBestExecutionOrderUrl();
     const payload = {
       tradeId: crypto.randomUUID(),
       symbol: selectedSymbol || "XAUUSD",
@@ -142,12 +141,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       clientClickAt: new Date().toISOString(),
     };
 
-    setOrderDebug(null);
-
     setOrderDebug({
       status: "loading",
       functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
-      requestUrl,
       payloadSent: payload,
       rawEdgeFunctionResponse: null,
       edgeFunctionError: null,
@@ -163,7 +159,6 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         setOrderDebug({
           status: "error",
           functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
-          requestUrl,
           payloadSent: payload,
           rawEdgeFunctionResponse: null,
           edgeFunctionError: "No active Supabase session/access token found.",
@@ -172,13 +167,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         return;
       }
 
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const requestUrl =
+        `${supabaseUrl}/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
+
       const response = await fetch(requestUrl, {
         method: "POST",
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
         },
         body: JSON.stringify(payload),
       });
@@ -203,13 +202,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           data?.version === "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19" &&
           data?.step === "dry_run"
             ? null
-            : "Wrong response. The UI is still not showing the live Edge Function response.",
+            : "Wrong Edge Function response or auth/project mismatch.",
       });
     } catch (error) {
       setOrderDebug({
         status: "error",
         functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
-        requestUrl,
         payloadSent: payload,
         rawEdgeFunctionResponse: null,
         edgeFunctionError: error instanceof Error ? error.message : String(error),
@@ -217,6 +215,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       });
     }
   }
+
 
   // Latch "ever connected" so a transient polling failure cannot replace
   // the entire Order Ticket with the disconnected screen.
