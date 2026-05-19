@@ -858,19 +858,29 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     }
     setSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated.");
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
       for (const p of symbolPositions) {
-        const opposite: "buy" | "sell" = p.side === "buy" ? "sell" : "buy";
-        await supabase.functions.invoke("execute-trade", {
-          body: {
-            symbol: p.symbol,
-            side: opposite,
-            volume: Number(Number(p.volume).toFixed(2)),
-            closeTicket: p.ticket,
+        const closeSide: "buy" | "sell" = p.side === "buy" ? "sell" : "buy";
+        await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
+          body: JSON.stringify({
+            ticket: String(p.ticket),
+            symbol: p.symbol,
+            volume: Number(Number(p.volume).toFixed(2)),
+            side: closeSide,
+          }),
         });
       }
       toast.success(`Closed ${symbolPositions.length} position(s)`);
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
       refresh();
     } catch (e: any) {
       toast.error(e?.message || "Close failed");
