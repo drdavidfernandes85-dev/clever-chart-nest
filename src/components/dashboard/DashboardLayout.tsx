@@ -3,11 +3,9 @@ import { Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
 import ConnectedAccountBadge from "./ConnectedAccountBadge";
-import MarketStatusBadge from "./MarketStatusBadge";
 import WelcomeBanner from "@/components/onboarding/WelcomeBanner";
 import ComplianceFooter from "@/components/ComplianceFooter";
 import TradingRoomDisclaimerModal from "@/components/TradingRoomDisclaimerModal";
-import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Props {
