@@ -145,7 +145,9 @@ Deno.serve(async (req) => {
     String(res?.status || "").toLowerCase() === "rejected" ||
     (retcode != null && retcode >= 10010 && retcode !== 10008);
 
-  let status: "closed" | "close_failed" | "close_rejected";
+  const isPartial =
+    Number.isFinite(openVolume) && openVolume > 0 && volume + 1e-8 < openVolume;
+  let status: "closed" | "partial_closed" | "close_failed" | "close_rejected";
   let outcome: "success" | "rejected" | "failed";
   if (networkError || !httpOk) {
     status = "close_failed";
@@ -154,7 +156,7 @@ Deno.serve(async (req) => {
     status = "close_rejected";
     outcome = "rejected";
   } else if (explicitSuccess || httpOk) {
-    status = "closed";
+    status = isPartial ? "partial_closed" : "closed";
     outcome = "success";
   } else {
     status = "close_failed";
@@ -190,6 +192,10 @@ Deno.serve(async (req) => {
         request: closePayload,
         response: res,
         networkError,
+        closeId,
+        openVolume: Number.isFinite(openVolume) ? openVolume : null,
+        partial: isPartial,
+        clientClickAt: typeof payload?.clientClickAt === "string" ? payload.clientClickAt : null,
       },
     });
   } catch { /* swallow audit errors */ }
@@ -199,7 +205,8 @@ Deno.serve(async (req) => {
     version: VERSION,
     classification: "close_position",
     status,
-    outcome,
+    partial: isPartial,
+    closeId,
     ticket,
     symbol,
     volume,
