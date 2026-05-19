@@ -24,6 +24,36 @@ import { prettyAuditStatus, prettyAuditClassification } from "@/lib/auditLabels"
 const prettyStatus = prettyAuditStatus;
 const prettyClass = prettyAuditClassification;
 
+const STATUS_TONE: Record<string, string> = {
+  dry_run: "border-sky-500/50 text-sky-300 bg-sky-500/10",
+  placed: "border-amber-500/50 text-amber-300 bg-amber-500/10",
+  position_confirmed: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
+  filled: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
+  done: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
+  modified: "border-cyan-500/50 text-cyan-300 bg-cyan-500/10",
+  modify_failed: "border-red-500/50 text-red-300 bg-red-500/10",
+  modify_rejected: "border-red-500/50 text-red-300 bg-red-500/10",
+  closed: "border-zinc-400/50 text-zinc-200 bg-zinc-500/10",
+  close_failed: "border-red-500/50 text-red-300 bg-red-500/10",
+  close_rejected: "border-red-500/50 text-red-300 bg-red-500/10",
+  rejected: "border-red-500/50 text-red-300 bg-red-500/10",
+  rate_limited: "border-orange-500/50 text-orange-300 bg-orange-500/10",
+  blocked: "border-rose-500/50 text-rose-300 bg-rose-500/10",
+};
+const toneFor = (s?: string | null) =>
+  (s && STATUS_TONE[s]) || "border-border/50 text-muted-foreground bg-muted/20";
+
+const friendlyMessageFor = (r: AuditRow): string => {
+  if (r.broker_message && r.broker_message.trim().length > 0) return r.broker_message;
+  if (r.status === "closed" && r.raw?.classification === "close_position") {
+    return "Position closed successfully";
+  }
+  if (r.status === "position_confirmed") return "Position confirmed";
+  if (r.status === "placed") return "Order placed";
+  if (r.status === "dry_run") return "Pre-trade check OK (dry run)";
+  return "—";
+};
+
 
 export default function ExecutionAuditPanel({ refreshKey = 0 }: { refreshKey?: number }) {
   const [rows, setRows] = useState<AuditRow[]>([]);
@@ -90,13 +120,17 @@ export default function ExecutionAuditPanel({ refreshKey = 0 }: { refreshKey?: n
                 <td className="px-2 py-1">{r.symbol}</td>
                 <td className="px-2 py-1">{r.side}</td>
                 <td className="px-2 py-1">{r.volume}</td>
-                <td className="px-2 py-1">{prettyStatus(r.status)}</td>
+                <td className="px-2 py-1">
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${toneFor(r.status)}`}>
+                    {prettyStatus(r.status)}
+                  </span>
+                </td>
                 <td className="px-2 py-1">{prettyClass(r.raw?.classification)}</td>
                 <td className="px-2 py-1">{r.requested_price ?? "—"}</td>
                 <td className="px-2 py-1">{r.bid ?? "—"}</td>
                 <td className="px-2 py-1">{r.ask ?? "—"}</td>
                 <td className="px-2 py-1">{r.spread ?? "—"}</td>
-                <td className="px-2 py-1 max-w-[260px] truncate" title={r.broker_message ?? ""}>{r.broker_message ?? "—"}</td>
+                <td className="px-2 py-1 max-w-[260px] truncate" title={friendlyMessageFor(r)}>{friendlyMessageFor(r)}</td>
               </tr>
             ))}
           </tbody>
