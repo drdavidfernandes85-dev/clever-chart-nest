@@ -6,6 +6,7 @@ export const AUDIT_STATUS_LABELS: Record<string, string> = {
   dry_run: "Dry Run",
   placed: "Order Placed",
   position_confirmed: "Position Confirmed",
+  execution_unconfirmed: "Execution Unconfirmed",
   filled: "Order Filled",
   done: "Order Filled",
   protection_modified: "SL/TP Updated",
@@ -17,6 +18,7 @@ export const AUDIT_STATUS_LABELS: Record<string, string> = {
   modify_failed: "SL/TP Failed",
   modify_rejected: "SL/TP Rejected",
   closed: "Position Closed",
+  close_unconfirmed: "Close Unconfirmed",
   partial_closed: "Partial Close",
   close_failed: "Close Failed",
   close_rejected: "Close Rejected",
@@ -29,6 +31,7 @@ export const AUDIT_CLASSIFICATION_LABELS: Record<string, string> = {
   dry_run: "Dry Run",
   placed: "Order Placed",
   placed_confirmed: "Position Confirmed",
+  placed_unconfirmed: "Placed (Unconfirmed)",
   close_position: "Close Position",
   modify_protection: "Modify SL / TP",
   modify_position: "Modify SL / TP", // legacy

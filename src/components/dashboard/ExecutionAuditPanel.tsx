@@ -28,6 +28,8 @@ const STATUS_TONE: Record<string, string> = {
   dry_run: "border-sky-500/50 text-sky-300 bg-sky-500/10",
   placed: "border-amber-500/50 text-amber-300 bg-amber-500/10",
   position_confirmed: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
+  execution_unconfirmed: "border-yellow-500/50 text-yellow-200 bg-yellow-500/10",
+  close_unconfirmed: "border-yellow-500/50 text-yellow-200 bg-yellow-500/10",
   filled: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
   done: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
   protection_modified: "border-cyan-500/50 text-cyan-300 bg-cyan-500/10",
@@ -52,10 +54,12 @@ const toneFor = (s?: string | null) =>
 const friendlyMessageFor = (r: AuditRow): string => {
   if (r.broker_message && r.broker_message.trim().length > 0) return r.broker_message;
   if (r.status === "closed" && r.raw?.classification === "close_position") {
-    return "Position closed successfully";
+    return "Position closed. Ticket removed from MT5 positions.";
   }
+  if (r.status === "close_unconfirmed") return "Close request accepted but ticket still exists in MT5 positions.";
+  if (r.status === "execution_unconfirmed") return "Broker accepted order but no matching MT5 position was found.";
   if (r.status === "position_confirmed") return "Position confirmed";
-  if (r.status === "placed") return "Order placed";
+  if (r.status === "placed") return "Order placed — confirmation pending";
   if (r.status === "dry_run") return "Pre-trade check OK (dry run)";
   return "—";
 };

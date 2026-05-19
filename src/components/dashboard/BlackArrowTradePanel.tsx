@@ -163,6 +163,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     currentPrice?: number | null;
     pnl?: number | null;
     startedAt?: number;
+    // Lifecycle (MT5 truth)
+    brokerAccepted?: boolean;
+    mt5Confirmed?: boolean;
+    confirmationStatus?: "pending" | "confirmed" | "failed";
+    confirmedTicket?: string | number | null;
+    confirmedEntryPrice?: number | null;
+    confirmedVolume?: number | null;
   }
   const [liveConfirm, setLiveConfirm] = useState<LiveConfirmState | null>(null);
   const positionsRef = useRef(positions);
@@ -299,8 +306,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             side: payload.side,
             volume: payload.volume,
             startedAt: Date.now(),
+            brokerAccepted: true,
+            mt5Confirmed: false,
+            confirmationStatus: "pending",
           });
-          toast.success("Order placed — confirming position...");
+          toast.success("Order placed — confirming position in MT5...");
           runPostTradeConfirmation({
             symbol: payload.symbol,
             side: payload.side,
@@ -427,6 +437,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     const tryMatch = () => {
       const match = findMatchingPosition(args.symbol, args.side, args.volume, startedAt);
       if (!match) return false;
+      const confirmedTicket = match.ticket ?? match.id ?? null;
+      const confirmedEntryPrice = match.openPrice ?? match.entryPrice ?? match.price_open ?? null;
+      const confirmedVolume = Number(match.volume ?? match.lots ?? args.volume);
       setLiveConfirm({
         phase: "confirmed",
         status: args.status,
@@ -434,43 +447,88 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         brokerMessage: args.brokerMessage,
         symbol: String(match.symbol ?? args.symbol),
         side: String(match.side ?? match.type ?? args.side),
-        volume: Number(match.volume ?? match.lots ?? args.volume),
-        ticket: match.ticket ?? match.id ?? null,
-        entryPrice: match.openPrice ?? match.entryPrice ?? match.price_open ?? null,
+        volume: confirmedVolume,
+        ticket: confirmedTicket,
+        entryPrice: confirmedEntryPrice,
         currentPrice: match.currentPrice ?? match.price_current ?? null,
         pnl: match.profit ?? match.pnl ?? null,
         startedAt,
+        brokerAccepted: true,
+        mt5Confirmed: true,
+        confirmationStatus: "confirmed",
+        confirmedTicket,
+        confirmedEntryPrice,
+        confirmedVolume,
       });
+      toast.success("Position confirmed", { description: `#${confirmedTicket ?? ""} ${args.symbol}`.trim() });
       void updateAuditRow(match);
       return true;
     };
 
-    // T+0 — immediate refresh
-    try { await refresh(); } catch { /* ignore */ }
-    window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-    window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
-    setAuditRefreshKey(k => k + 1);
-    if (tryMatch()) { setAuditRefreshKey(k => k + 1); return; }
+    // Cadence: T+0, +1.5s, +3s, +5s, +8s
+    const cadence = [0, 1500, 1500, 2000, 3000];
+    for (let i = 0; i < cadence.length; i++) {
+      if (cadence[i] > 0) await new Promise((r) => setTimeout(r, cadence[i]));
+      try { await refresh(); } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+      setAuditRefreshKey((k) => k + 1);
+      if (i === 1) setLiveConfirm((prev) => prev ? { ...prev, phase: "confirming" } : prev);
+      if (tryMatch()) { setAuditRefreshKey((k) => k + 1); return; }
+    }
 
-    setLiveConfirm((prev) => prev ? { ...prev, phase: "confirming" } : prev);
+    // No match within 8s → write unconfirmed audit row, update UI, warn user.
+    setLiveConfirm((prev) => prev ? {
+      ...prev,
+      phase: "pending_verification",
+      brokerAccepted: true,
+      mt5Confirmed: false,
+      confirmationStatus: "failed",
+    } : prev);
+    toast.warning("Order was accepted by broker but not confirmed in MT5.", {
+      description: "Please verify in MetaTrader.",
+    });
 
-    // T+2s
-    await new Promise((r) => setTimeout(r, 2000));
-    try { await refresh(); } catch { /* ignore */ }
-    window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-    setAuditRefreshKey(k => k + 1);
-    if (tryMatch()) { setAuditRefreshKey(k => k + 1); return; }
-
-    // T+5s (additional 3s)
-    await new Promise((r) => setTimeout(r, 3000));
-    try { await refresh(); } catch { /* ignore */ }
-    window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-    setAuditRefreshKey(k => k + 1);
-    if (tryMatch()) { setAuditRefreshKey(k => k + 1); return; }
-
-    // No match within 5s
-    setLiveConfirm((prev) => prev ? { ...prev, phase: "pending_verification" } : prev);
-    setAuditRefreshKey(k => k + 1);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        let q = supabase
+          .from("execution_audit_events")
+          .select("id, raw")
+          .eq("user_id", user.id)
+          .eq("status", "placed")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (args.tradeId) q = q.eq("trade_id", args.tradeId);
+        else q = q
+          .ilike("symbol", args.symbol)
+          .ilike("side", args.side)
+          .eq("volume", args.volume)
+          .gte("created_at", new Date(startedAt - 60_000).toISOString());
+        const { data: rows } = await q;
+        const target = (rows as any[] | null)?.[0];
+        if (target) {
+          const mergedRaw = {
+            ...(target.raw && typeof target.raw === "object" ? target.raw : {}),
+            classification: "placed_unconfirmed",
+            mt5Confirmed: false,
+            brokerAccepted: true,
+            confirmationStatus: "failed",
+            reconciledAt: new Date().toISOString(),
+          };
+          await supabase
+            .from("execution_audit_events")
+            .update({
+              status: "execution_unconfirmed",
+              outcome: "execution_unconfirmed",
+              broker_message: "Broker accepted order but no matching MT5 position was found.",
+              raw: mergedRaw,
+            })
+            .eq("id", target.id);
+        }
+      }
+    } catch { /* ignore */ }
+    setAuditRefreshKey((k) => k + 1);
   }
 
 
@@ -1395,6 +1453,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               )}
               {c.brokerMessage && (<><span className="text-neutral-500">Broker</span><span className="truncate">{c.brokerMessage}</span></>)}
               {c.retcode != null && (<><span className="text-neutral-500">Retcode</span><span>{c.retcode}</span></>)}
+              {c.brokerAccepted != null && (<><span className="text-neutral-500">Broker accepted</span><span>{c.brokerAccepted ? "yes" : "no"}</span></>)}
+              {c.mt5Confirmed != null && (<><span className="text-neutral-500">MT5 confirmed</span><span className={c.mt5Confirmed ? "text-emerald-300" : "text-yellow-300"}>{c.mt5Confirmed ? "yes" : "no"}</span></>)}
+              {c.confirmationStatus && (<><span className="text-neutral-500">Confirmation</span><span className={cn(c.confirmationStatus === "confirmed" ? "text-emerald-300" : c.confirmationStatus === "failed" ? "text-red-300" : "text-yellow-300")}>{c.confirmationStatus}</span></>)}
+              {c.confirmedTicket != null && (<><span className="text-neutral-500">Confirmed ticket</span><span>{String(c.confirmedTicket)}</span></>)}
+              {c.confirmedEntryPrice != null && (<><span className="text-neutral-500">Confirmed entry</span><span>{c.confirmedEntryPrice}</span></>)}
+              {c.confirmedVolume != null && (<><span className="text-neutral-500">Confirmed volume</span><span>{c.confirmedVolume}</span></>)}
             </div>
           </div>
         );

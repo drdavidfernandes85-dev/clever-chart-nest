@@ -30,9 +30,10 @@ export async function reconcileAfterOpen(
   expectedTicket: string | number | null | undefined,
 ): Promise<"confirmed" | "pending"> {
   const target = expectedTicket != null ? String(expectedTicket) : null;
-  const delays = [1500, 1500, 2000];
+  // Schedule: immediate, +1.5s, +3s, +5s, +8s (deltas: 0, 1500, 1500, 2000, 3000)
+  const delays = [0, 1500, 1500, 2000, 3000];
   for (const d of delays) {
-    await sleep(d);
+    if (d > 0) await sleep(d);
     try { await refresh(); } catch { /* ignore */ }
     fireGlobalRefresh();
     if (target) {
@@ -44,23 +45,29 @@ export async function reconcileAfterOpen(
 }
 
 /**
- * After a close request succeeds, poll positions at 1.5s / 3s.
- * If `ticket` is gone from the list, returns "closed". Otherwise "pending".
+ * Poll positions at 0/1.5/3/5/8s after a close request.
+ * Returns "closed" only once the ticket actually disappears
+ * (or, in partial-close mode, the volume decreases).
  */
 export async function reconcileAfterClose(
   refresh: RefreshFn,
   getTickets: GetTicketsFn,
   ticket: string | number | null | undefined,
-): Promise<"closed" | "pending"> {
+  opts?: { initialVolume?: number; getVolumeForTicket?: (t: string) => number | null },
+): Promise<"closed" | "partial" | "pending"> {
   const target = ticket != null ? String(ticket) : null;
-  const delays = [1500, 1500];
+  const delays = [0, 1500, 1500, 2000, 3000];
   for (const d of delays) {
-    await sleep(d);
+    if (d > 0) await sleep(d);
     try { await refresh(); } catch { /* ignore */ }
     fireGlobalRefresh();
     if (target) {
       const tickets = getTickets().map((t) => (t == null ? "" : String(t)));
       if (!tickets.includes(target)) return "closed";
+      if (opts?.initialVolume != null && opts.getVolumeForTicket) {
+        const v = opts.getVolumeForTicket(target);
+        if (v != null && v + 1e-9 < opts.initialVolume) return "partial";
+      }
     }
   }
   return "pending";
