@@ -689,6 +689,65 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </SideBtn>
         </div>
 
+        {/* Dev-only dry-run best-execution test */}
+        {import.meta.env.DEV && (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={async () => {
+                const clientClickAt = new Date().toISOString();
+                const tradeId =
+                  typeof crypto !== "undefined" && "randomUUID" in crypto
+                    ? crypto.randomUUID()
+                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                const payload = {
+                  tradeId,
+                  symbol: normalizedSym || "GBPUSD",
+                  side: "buy" as const,
+                  orderType: "market" as const,
+                  volume: Number(vol) || 0.01,
+                  stopLoss: null,
+                  takeProfit: null,
+                  dryRun: true,
+                  clientClickAt,
+                };
+                console.log("[OrderTicket] Dry Run:", payload);
+                setDebugInfo({
+                  functionUsed: "submit-best-execution-order",
+                  payload,
+                  at: new Date().toISOString(),
+                });
+                try {
+                  const { data, error } = await supabase.functions.invoke(
+                    "submit-best-execution-order",
+                    { body: payload },
+                  );
+                  console.log("[OrderTicket] Dry Run response:", { data, error });
+                  setDebugInfo((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          response: data ?? null,
+                          error: error ? (error as any)?.message || String(error) : undefined,
+                        }
+                      : prev,
+                  );
+                  window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
+                } catch (e: any) {
+                  setDebugInfo((prev) =>
+                    prev
+                      ? { ...prev, error: e?.message || String(e) }
+                      : prev,
+                  );
+                }
+              }}
+              className="h-5 rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-2 text-[9px] font-mono uppercase tracking-wider text-[#FFCD05] hover:bg-[#FFCD05]/20"
+            >
+              Dry Run Best Execution
+            </button>
+          </div>
+        )}
+
         {/* Pending — single condensed row */}
         <div className="grid grid-cols-4 gap-1">
           <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
