@@ -109,7 +109,6 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
       <div className={`grid ${COLS} items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 shrink-0`}>
         <span>{t("terminal.symbol" as never)}</span>
         <span className="text-right text-red-400/70">{t("terminal.bid" as never)}</span>
-        <span className="text-right">{t("terminal.last" as never)}</span>
         <span className="text-right text-emerald-400/70">Ask</span>
         <span className="text-right">Sprd</span>
       </div>
