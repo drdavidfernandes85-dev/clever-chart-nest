@@ -96,7 +96,7 @@ const TitleBar = ({
       bar: "bg-yellow-500/70",
     },
     unconfirmed: {
-      title: "Order Accepted but MT5 Position Not Confirmed",
+      title: "Order Accepted — Not Confirmed in MT5",
       Icon: HelpCircle,
       ring: "border-yellow-500/50",
       chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
