@@ -1891,7 +1891,7 @@ const DenseInput = ({
 );
 
 const SideBtn = ({
-  tone, outline, small, disabled, loading, onClick, title, children,
+  tone, outline, pending, small, disabled, loading, onClick, title, children,
 }: {
   tone: "buy" | "sell";
   outline?: boolean;
