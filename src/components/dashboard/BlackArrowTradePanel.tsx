@@ -1895,6 +1895,7 @@ const SideBtn = ({
 }: {
   tone: "buy" | "sell";
   outline?: boolean;
+  pending?: boolean;
   small?: boolean;
   disabled?: boolean;
   loading?: boolean;
@@ -1910,15 +1911,19 @@ const SideBtn = ({
       onClick={onClick}
       title={title}
       className={cn(
-        "rounded-sm font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 disabled:opacity-35 disabled:cursor-not-allowed",
-        small ? "h-6 text-[9.5px]" : "h-8 text-[11px]",
-        outline
+        "rounded-sm font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 disabled:cursor-not-allowed",
+        small ? "h-[22px] text-[9.5px]" : "h-7 text-[11px]",
+        pending
           ? buy
-            ? "border border-emerald-600/50 bg-emerald-600/10 text-emerald-300 hover:bg-emerald-600/20"
-            : "border border-red-600/50 bg-red-600/10 text-red-300 hover:bg-red-600/20"
-          : buy
-            ? "bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500"
-            : "bg-red-600 text-white border border-red-500 hover:bg-red-500",
+            ? "bg-emerald-950/40 border border-emerald-700/40 text-emerald-300/90 hover:bg-emerald-900/50 hover:text-emerald-200 disabled:opacity-70"
+            : "bg-red-950/40 border border-red-700/40 text-red-300/90 hover:bg-red-900/50 hover:text-red-200 disabled:opacity-70"
+          : outline
+            ? buy
+              ? "border border-emerald-600/50 bg-emerald-600/10 text-emerald-300 hover:bg-emerald-600/20 disabled:opacity-35"
+              : "border border-red-600/50 bg-red-600/10 text-red-300 hover:bg-red-600/20 disabled:opacity-35"
+            : buy
+              ? "bg-emerald-600 text-white border border-emerald-500 hover:bg-emerald-500 disabled:opacity-35"
+              : "bg-red-600 text-white border border-red-500 hover:bg-red-500 disabled:opacity-35",
       )}
     >
       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
@@ -1930,8 +1935,8 @@ const SideBtn = ({
 const SummaryRow = ({
   label, value, tone,
 }: { label: string; value: string; tone?: "pos" | "neg" }) => (
-  <div className="flex items-center justify-between text-[10.5px]">
-    <span className="text-muted-foreground">{label}</span>
+  <div className="flex items-center justify-between text-[10px]">
+    <span className="text-neutral-500 uppercase tracking-wider text-[8.5px]">{label}</span>
     <span className={cn(
       "font-mono tabular-nums",
       tone === "pos" && "text-emerald-400",
@@ -1944,19 +1949,20 @@ const SummaryRow = ({
 
 const ToolBtn = ({
   onClick, icon, label, danger,
-}: { onClick: () => void; icon: React.ReactNode; label: string; danger?: boolean }) => (
+}: { onClick: () => void; icon?: React.ReactNode; label: string; danger?: boolean }) => (
   <button
     type="button"
     onClick={onClick}
     className={cn(
-      "h-6 rounded-sm border text-[10px] font-semibold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors",
+      "h-[20px] rounded-sm text-[9.5px] font-semibold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors",
       danger
-        ? "border-red-500/40 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-        : "border-neutral-800 bg-[#0a0a0a] text-neutral-300 hover:border-neutral-700 hover:text-neutral-100",
+        ? "bg-red-500/8 text-red-400/90 hover:bg-red-500/15 hover:text-red-300"
+        : "bg-neutral-900/60 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100",
     )}
   >
     {icon} {label}
   </button>
 );
+
 
 export default BlackArrowTradePanel;
