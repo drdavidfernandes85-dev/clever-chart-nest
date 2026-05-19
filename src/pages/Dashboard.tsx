@@ -213,8 +213,7 @@ const MarketRow = ({
   const bid = tick?.bid ?? null;
   const ask = tick?.ask ?? null;
   const spread = tick?.spread ?? (bid != null && ask != null ? Math.max(0, ask - bid) : null);
-  // Drop rows with no meaningful data (only dashes).
-  if (bid == null && ask == null && spread == null) return null;
+  // Always render the symbol name/description; show "—" for prices that haven't ticked yet.
   const fmt = (v: number | null | undefined) =>
     v == null
       ? "—"
