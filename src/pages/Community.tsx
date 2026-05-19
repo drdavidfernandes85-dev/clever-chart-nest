@@ -216,7 +216,7 @@ const Community = () => {
     <main className="relative min-h-screen bg-[#050505] text-foreground">
       <SEO
         title="Community Hub | IX Sala de Trading"
-        description="Professional trading community: live chat, shared signals, and top traders. Real-time collaboration with mentors and peers."
+        description="Professional trading community: live chat, shared educational market ideas, and top community contributors. Real-time collaboration with educators and peers."
         canonical="https://ixsalatrading.com/community"
         jsonLd={{
           "@context": "https://schema.org",
@@ -376,7 +376,7 @@ const Community = () => {
               <div className="flex items-center gap-2">
                 <Radio className="h-3.5 w-3.5 animate-pulse text-[#FFCD05]" />
                 <span className="font-heading text-[11px] font-bold uppercase tracking-[0.16em] text-foreground">
-                  Live Shared Signals
+                  Live Shared Ideas
                 </span>
               </div>
               <Link
