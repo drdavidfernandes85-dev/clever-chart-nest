@@ -301,6 +301,16 @@ Deno.serve(async (req) => {
     (upstreamSuccess && !retcodeFilled && executedPrice == null) ||
     upstreamStatus === "placed";
 
+  // Normalize confirmed entry price from any Trading Layer field shape.
+  const extractEntryPrice = (p: any): number | null => {
+    if (!p || typeof p !== "object") return null;
+    const v =
+      p.entry_price ?? p.price_open ?? p.priceOpen ??
+      p.openPrice ?? p.open_price ?? p.price ?? p.entry ?? null;
+    const n = v == null ? null : Number(v);
+    return n != null && Number.isFinite(n) && n !== 0 ? n : null;
+  };
+
   // ---------------------------------------------------------------------------
   // Reconcile against LIVE MT5 positions when the broker only "accepted".
   // ---------------------------------------------------------------------------
