@@ -9,6 +9,7 @@ import {
   Star,
 } from "lucide-react";
 import LtrLogo from "@/components/branding/LtrLogo";
+import { useQuotes, useMarketStatus, useRateLimit } from "@/hooks/useLiveMarketData";
 
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
 import { Input } from "@/components/ui/input";
@@ -351,80 +352,58 @@ const MarketWatchPanel = ({
     return Array.from(set).slice(0, 40);
   }, [favoriteSymbols, active, visibleTopSymbols]);
 
-  // --- Bid/Ask via get-mt5-quotes (stale-while-revalidate) ---
+  // --- Bid/Ask from the centralized live market data store ---
+  // No independent polling here — the symbol set is registered with
+  // MarketDataService via subscribeWatchlist, which is the only writer
+  // to liveMarketDataStore.
   type QuoteRow = { bid: number | null; ask: number | null; spread: number | null; last?: number | null };
-  const [quotes, setQuotes] = useState<Record<string, QuoteRow>>({});
-  const lastGoodQuotesRef = useRef<Record<string, QuoteRow>>({});
-  const [lastGoodQuotes, setLastGoodQuotes] = useState<Record<string, QuoteRow>>({});
-  const [dataDelayed, setDataDelayed] = useState(false);
-  const [hasEverLoaded, setHasEverLoaded] = useState(false);
 
   useEffect(() => {
-    if (tickRequest.length === 0) return;
+    // Lazy import to keep the page bundle slim and avoid a circular import
+    // through services on first render.
     let cancelled = false;
-    const load = async () => {
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { checkAndHandle429 } = await import("@/lib/tradingLayerControl");
-        const { data, error } = await supabase.functions.invoke("get-mt5-quotes", {
-          body: { selectedSymbol: active, symbols: tickRequest, debug: false },
-        });
-        if (cancelled) return;
-        checkAndHandle429(data, error);
-        if (error || !data?.success || !Array.isArray(data?.quotes) || data.quotes.length === 0) {
-          // Keep lastGoodQuotes; flag delayed.
-          setDataDelayed(true);
-          return;
-        }
-        const next: Record<string, QuoteRow> = {};
-        for (const q of data.quotes) {
-          const sym = String(q?.symbol || "").toUpperCase();
-          if (!sym) continue;
-          const bid = q?.bid != null ? Number(q.bid) : null;
-          const ask = q?.ask != null ? Number(q.ask) : null;
-          const spread =
-            q?.spread != null
-              ? Number(q.spread)
-              : bid != null && ask != null
-                ? Math.max(0, ask - bid)
-                : null;
-          if (bid == null && ask == null && spread == null) continue;
-          next[sym] = { bid, ask, spread, last: q?.last != null ? Number(q.last) : null };
-        }
-        if (Object.keys(next).length === 0) {
-          setDataDelayed(true);
-          return;
-        }
-        // Merge into lastGood so previously-known symbols persist across batches.
-        const merged = { ...lastGoodQuotesRef.current, ...next };
-        lastGoodQuotesRef.current = merged;
-        setLastGoodQuotes(merged);
-        setQuotes(next);
-        setDataDelayed(false);
-        setHasEverLoaded(true);
-      } catch {
-        if (!cancelled) setDataDelayed(true);
-      }
-    };
-    // Initial load only if auto-refresh allowed; manual refresh event always reloads.
-    import("@/lib/tradingLayerControl").then(({ isAutoRefreshAllowed }) => {
-      if (!cancelled && isAutoRefreshAllowed()) load();
-    });
-    const onManualRefresh = () => load();
-    window.addEventListener("mt:refresh-quotes", onManualRefresh);
-    const id = window.setInterval(() => {
-      import("@/lib/tradingLayerControl").then(({ isAutoRefreshAllowed }) => {
-        if (!cancelled && isAutoRefreshAllowed()) load();
-      });
-    }, 4000);
+    (async () => {
+      const { MarketDataService } = await import("@/services/MarketDataService");
+      if (cancelled) return;
+      MarketDataService.subscribeWatchlist("dashboard-symbol-list", tickRequest);
+      if (active) MarketDataService.setSelectedSymbol(active);
+    })();
     return () => {
       cancelled = true;
-      window.clearInterval(id);
-      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
+      import("@/services/MarketDataService").then(({ MarketDataService }) =>
+        MarketDataService.subscribeWatchlist("dashboard-symbol-list", []),
+      );
     };
-  }, [tickRequest, active]);
+  }, [tickRequest.join(","), active]);
 
+  const liveQuotes = useQuotes(tickRequest);
+  const liveStatus = useMarketStatus();
+  const liveRateLimit = useRateLimit();
+  const lastGoodQuotesRef = useRef<Record<string, QuoteRow>>({});
 
+  const quotes = useMemo<Record<string, QuoteRow>>(() => {
+    const next: Record<string, QuoteRow> = {};
+    for (const sym of tickRequest) {
+      const key = sym.toUpperCase();
+      const live = liveQuotes[key];
+      if (live && (live.bid != null || live.ask != null)) {
+        next[key] = {
+          bid: live.bid,
+          ask: live.ask,
+          spread: live.spread,
+          last: live.last,
+        };
+        lastGoodQuotesRef.current[key] = next[key];
+      }
+    }
+    return next;
+  }, [tickRequest.join(","), liveQuotes]);
+
+  const lastGoodQuotes = lastGoodQuotesRef.current;
+  const dataDelayed = liveStatus === "stale" || liveRateLimit.active;
+  const hasEverLoaded =
+    Object.keys(liveQuotes).length > 0 ||
+    Object.keys(lastGoodQuotesRef.current).length > 0;
 
   // Hydrate favorites with broker metadata when available
   const favRows = useMemo(() => {
