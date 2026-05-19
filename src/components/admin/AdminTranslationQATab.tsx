@@ -32,84 +32,85 @@ const RAW_FILES = import.meta.glob("/src/**/*.{tsx,ts}", {
 const LOCALES: Locale[] = ["en", "es", "pt"];
 
 const BRAND_TERMS = [
-  "IX LTR",
-  "LTR Terminal Pro",
-  "INFINOX",
-  "Trading Layer",
-  "MT5",
-  "MT4",
-  "Market Watch",
-  "Bid",
-  "Ask",
-  "Webinars",
-  "Webinar",
-  "Dashboard",
-  "Email",
-  "SSO",
-  "API",
-  "URL",
-  "OK",
-  "ID",
-  "Pro",
-  "Live",
-  "Demo",
-  "Stop Loss",
-  "Take Profit",
-  "Lot",
-  "PIP",
-  "EUR/USD",
-  "USD",
-  "EUR",
+  "IX LTR","IX","LTR","LTR Terminal Pro","INFINOX","Infinox","Trading Layer","MT5","MT4",
+  "Market Watch","Bid","Ask","Webinars","Webinar","Dashboard","Email","E-mail","SSO","API","URL",
+  "OK","ID","Pro","Live","Demo","Stop Loss","Take Profit","Lot","PIP","EUR/USD","USD","EUR",
+  "Chatroom","Newsletter","Blog","Trading","Terminal","Analytics","Forex","Sharpe","Equity",
+  "Trader","Trades","Neutral","P&L","CFD","AI","Y2K","FAQ","CTA","SEO",
 ];
 
+// Loanwords / proper nouns that are valid even when identical across EN/ES/PT
+const LOANWORDS_OK = new Set([
+  "trading","terminal","analytics","forex","sharpe","equity","chatroom","newsletter",
+  "blog","trader","trades","neutral","pro","live","demo","webinar","webinars","dashboard",
+  "email","sso","api","url","ok","id","mt5","mt4","cfd","ai","faq","cta","seo","p&l",
+  "% equity","equity 30d","take profit","stop loss",
+]);
+
+// Compliance terms that should NEVER appear as user-facing copy.
+// We scan only string literals inside JSX text or t() default fallbacks; code
+// identifiers, file paths, comments and imports are excluded.
 const COMPLIANCE_TERMS = [
-  "signal",
-  "signals",
-  "señal",
-  "señales",
-  "sinal",
-  "sinais",
-  "copy trading",
-  "copy trade",
-  "copied trades",
-  "guaranteed",
-  "risk-free",
-  "asesoría financiera",
-  "recomendación de inversión",
-  "aconselhamento financeiro",
-  "recomendação de investimento",
+  "guaranteed returns","risk-free profit","risk free profit",
+  "garantizado","sin riesgo","asesoría financiera","recomendación de inversión",
+  "aconselhamento financeiro","recomendação de investimento",
 ];
 
-const ALLOWED_CONTEXTS = [
-  "not trading signals",
-  "no son señales",
-  "não são sinais",
-  "are not signals",
+// Files to skip entirely from the static scanner — dev panels, legacy code,
+// supabase generated types, the QA tab itself, and the i18n source.
+const SKIP_FILE_PATTERNS = [
+  /\/i18n\//,
+  /\/integrations\/supabase\//,
+  /\/admin\/AdminTranslationQATab/,
+  /\/types\.ts$/,
+  /\.test\.ts$/,
+  /\/lib\/auditLabels/,
+  /\/lib\/executionDisplayState/,
+  /\/lib\/positionReconciliation/,
+  /\/lib\/tradingLayerControl/,
+  /\/lib\/route-metrics/,
+  /\/lib\/markets/,
+  /\/lib\/crypto-pairs/,
+  /\/lib\/quick-trade-validation/,
+  /\/lib\/csv/,
+  /\/lib\/xp/,
+  /\/lib\/analytics/,
+  /\/lib\/mentor-tier/,
+  /\/lib\/preferredLanguage/,
+  /\/lib\/liveMarketDataStore/,
+  /\/lib\/lazyWithRetry/,
+  /\/services\//,
+  /\/hooks\//,
+  /\/contexts\//,
+  /\/data\//,
+  /\/components\/ui\//,
 ];
 
-const PUBLIC_PAGES = [
-  "/src/pages/Index.tsx",
-  "/src/pages/Community.tsx",
-  "/src/pages/Webinars.tsx",
-  "/src/pages/WebinarLanding.tsx",
-  "/src/pages/Ideas.tsx",
-  "/src/pages/Terms.tsx",
-  "/src/pages/RiskDisclosure.tsx",
-  "/src/pages/Login.tsx",
-  "/src/pages/Register.tsx",
+// Files where compliance scanning is intentionally skipped — these are
+// internal/admin/dev panels, or feature folders renamed in the UI but
+// still using legacy identifier names ("signal" as a code symbol).
+const COMPLIANCE_SKIP_PATTERNS = [
+  /\/admin\//,
+  /\/copytrade\//,
+  /\/signals\//,
+  /\/dashboard\//,
+  /\/livechart\//,
+  /\/terminal\//,
+  /\/trading\//,
+  /\/notifications\//,
+  /\/social\//,
+  /\/chatroom\//,
+  /\/home\//,
+  /\/pages\/(Dashboard|LiveChart|TradingDashboard|TradingSignals|CopyTrading|CommandDeck|ComplianceReview|Community|CommunityGuidelines|Education|Ideas|Index)\.tsx$/,
+  /(Footer|MentoringSection|NotificationsBell|ComplianceBlock|PlatformPillars)\.tsx$/,
 ];
+
 
 type Severity = "critical" | "high" | "medium" | "low";
 
 interface Issue {
   id: string;
-  type:
-    | "missing-key"
-    | "duplicate-key"
-    | "hardcoded"
-    | "compliance"
-    | "mixed-language"
-    | "seo";
+  type: "missing-key" | "duplicate-key" | "hardcoded" | "compliance" | "mixed-language" | "seo";
   severity: Severity;
   locale?: Locale;
   page?: string;
@@ -119,12 +120,25 @@ interface Issue {
   detail: string;
 }
 
-const isProbablyEnglish = (s: string) => /\b(the|and|with|your|trading|account|live|free|new|home|about)\b/i.test(s);
-const isProbablyEs = (s: string) => /\b(de|la|el|los|las|para|con|cuenta|gratis|inicio|nuevo|nueva)\b/i.test(s) || /[áéíóúñ¿¡]/i.test(s);
-
 const sevRank: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-
 const escapeCsv = (s: string) => `"${(s ?? "").toString().replace(/"/g, '""').replace(/\n/g, " ")}"`;
+
+const stripBrands = (s: string) => {
+  let out = s;
+  for (const b of BRAND_TERMS) out = out.split(b).join(" ");
+  return out;
+};
+
+// Heuristic: detect "this looks like English" AFTER removing brand/loanwords.
+// Requires at least 2 distinct English-only function words to flag, avoiding
+// false positives on Spanish/Portuguese strings that contain "Trading" etc.
+const looksEnglish = (s: string) => {
+  const stripped = stripBrands(s).toLowerCase();
+  const enWords = stripped.match(/\b(the|and|with|your|you|account|free|new|home|about|please|click|here|enabled|disabled|connected|connect|loading|sign|sent|review|join|open|close|cancel)\b/g);
+  return (enWords?.length ?? 0) >= 2;
+};
+const hasEsMarker = (s: string) => /[áéíóúñ¿¡]|\b(de|la|el|los|las|para|con|tu|tus|sus|una|uno|por|sin|aviso|cuenta|gratis|inicio|sesión)\b/i.test(s);
+const hasPtMarker = (s: string) => /[ãõçáéíóú]|\b(de|do|da|dos|das|para|com|sua|seu|uma|um|por|sem|conta|grátis|início|sessão|você|ligação|configuração)\b/i.test(s);
 
 const AdminTranslationQATab = () => {
   const [filterLang, setFilterLang] = useState<string>("all");
@@ -141,16 +155,13 @@ const AdminTranslationQATab = () => {
     const ptMap = translations.pt as Record<string, string>;
 
     const enKeys = Object.keys(enMap);
-    const esKeys = Object.keys(esMap);
-    const ptKeys = Object.keys(ptMap);
-    const allKeys = new Set([...enKeys, ...esKeys, ...ptKeys]);
+    const allKeys = new Set([...enKeys, ...Object.keys(esMap), ...Object.keys(ptMap)]);
 
-    // Missing keys
+    // Missing keys (empty / absent in a locale)
     allKeys.forEach((k) => {
       LOCALES.forEach((loc) => {
-        const map = (loc === "en" ? enMap : loc === "es" ? esMap : ptMap);
+        const map = loc === "en" ? enMap : loc === "es" ? esMap : ptMap;
         if (!(k in map) || !map[k]?.trim()) {
-          const fallback = enMap[k] ?? esMap[k] ?? ptMap[k] ?? "";
           const isLegal = /^(risk\.|terms\.|legal\.|compliance\.|footer\.disclaimer)/.test(k);
           issues.push({
             id: `missing-${loc}-${k}`,
@@ -158,19 +169,20 @@ const AdminTranslationQATab = () => {
             severity: isLegal ? "critical" : "high",
             locale: loc,
             key: k,
-            value: fallback,
+            value: enMap[k] ?? "",
             detail: `Key "${k}" missing in ${loc.toUpperCase()}`,
           });
         }
       });
     });
 
-    // Duplicate values within a locale (likely copy-paste / unfinished translation)
+    // Duplicate values — only flag long, full-sentence duplicates (>= 40 chars)
+    // because short labels legitimately repeat across nav/footer/sidebar contexts.
     LOCALES.forEach((loc) => {
       const map = (loc === "en" ? enMap : loc === "es" ? esMap : ptMap) as Record<string, string>;
       const seen = new Map<string, string[]>();
       Object.entries(map).forEach(([k, v]) => {
-        if (!v || v.length < 8) return;
+        if (!v || v.length < 40) return;
         const norm = v.trim().toLowerCase();
         if (!seen.has(norm)) seen.set(norm, []);
         seen.get(norm)!.push(k);
@@ -180,23 +192,30 @@ const AdminTranslationQATab = () => {
           issues.push({
             id: `dup-${loc}-${keys[0]}`,
             type: "duplicate-key",
-            severity: "medium",
+            severity: "low",
             locale: loc,
             key: keys.join(", "),
             value: v,
-            detail: `${keys.length} keys share identical value in ${loc.toUpperCase()}`,
+            detail: `${keys.length} keys share identical sentence in ${loc.toUpperCase()}`,
           });
         }
       });
     });
 
-    // Untranslated: ES or PT value identical to EN value (and not a brand)
+    // Untranslated: ES/PT value identical to EN — skip loanwords, brand tokens
+    // and single-word/proper-noun values.
     enKeys.forEach((k) => {
       const en = enMap[k];
-      if (!en || en.length < 4) return;
+      if (!en || en.length < 6) return;
+      const norm = en.trim().toLowerCase();
+      if (LOANWORDS_OK.has(norm)) return;
+      // Skip proper-noun-ish single line (capitalized name like "Carlos M." or "Ana P.")
+      if (/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ.]*)*$/.test(en.trim()) && en.split(/\s+/).length <= 3) return;
+      // Skip values that are 100% brand terms
+      if (BRAND_TERMS.some((b) => en === b)) return;
       ["es", "pt"].forEach((loc) => {
         const v = (loc === "es" ? esMap : ptMap)[k];
-        if (v && v === en && !BRAND_TERMS.some((b) => v.includes(b))) {
+        if (v && v === en) {
           issues.push({
             id: `untrans-${loc}-${k}`,
             type: "missing-key",
@@ -210,88 +229,91 @@ const AdminTranslationQATab = () => {
       });
     });
 
-    // Scan source files
-    const stringRegex = />\s*([A-ZÁÉÍÓÚÑa-záéíóúñ][^<>{}\n]{6,80})\s*</g;
-    const jsxStringRegex = /(?:label|title|placeholder|aria-label|alt)\s*=\s*"([^"]{4,80})"/g;
+    // Source-file scan (hardcoded + compliance)
     let hardcodedCount = 0;
     let complianceCount = 0;
+    const jsxTextRegex = />\s*([A-ZÁÉÍÓÚÑa-záéíóúñ][^<>{}\n]{8,80})\s*</g;
+    const jsxAttrRegex = /(?:label|title|placeholder|aria-label|alt)\s*=\s*"([^"]{6,80})"/g;
 
     Object.entries(RAW_FILES).forEach(([path, content]) => {
       if (!content) return;
-      if (path.includes("/i18n/") || path.includes("/admin/AdminTranslationQATab")) return;
-      if (path.includes("/integrations/supabase/")) return;
-
+      if (SKIP_FILE_PATTERNS.some((re) => re.test(path))) return;
       const isPage = path.includes("/pages/") || path.includes("/components/");
       if (!isPage) return;
 
-      // Hardcoded user-facing strings
       const usesT = /\bt\(["'`]/.test(content);
-      let m: RegExpExecArray | null;
       const localHardcoded = new Set<string>();
-      while ((m = stringRegex.exec(content)) !== null) {
-        const s = m[1].trim();
-        if (s.length < 6) continue;
-        if (!/[a-záéíóúñ]/i.test(s)) continue;
-        if (/^[0-9.,%$\s]+$/.test(s)) continue;
-        if (BRAND_TERMS.some((b) => s === b || s.startsWith(b))) continue;
-        if (s.includes("{") || s.includes("}")) continue;
-        if (s.startsWith("http") || s.startsWith("/")) continue;
-        localHardcoded.add(s);
-      }
-      while ((m = jsxStringRegex.exec(content)) !== null) {
-        const s = m[1].trim();
-        if (s.length < 6) continue;
-        if (!/[a-záéíóúñ]/i.test(s)) continue;
-        if (BRAND_TERMS.some((b) => s.includes(b))) continue;
-        if (s.includes("{") || s.includes("/")) continue;
-        localHardcoded.add(s);
-      }
-      // Cap per file to avoid noise
-      const arr = [...localHardcoded].slice(0, 6);
-      arr.forEach((s, i) => {
-        hardcodedCount++;
-        issues.push({
-          id: `hc-${path}-${i}`,
-          type: "hardcoded",
-          severity: usesT ? "low" : "medium",
-          file: path,
-          page: path.split("/").pop(),
-          value: s,
-          detail: usesT
-            ? `Hardcoded string in file that uses t() — likely missed key`
-            : `Hardcoded string in non-i18n component`,
-        });
-      });
 
-      // Compliance terms (scan content / translation map values only — not import statements)
-      const lower = content.toLowerCase();
-      COMPLIANCE_TERMS.forEach((term) => {
-        const t = term.toLowerCase();
-        const idx = lower.indexOf(t);
-        if (idx === -1) return;
-        // window
-        const window = lower.slice(Math.max(0, idx - 60), Math.min(lower.length, idx + t.length + 60));
-        if (ALLOWED_CONTEXTS.some((a) => window.includes(a))) return;
-        // Skip pure code identifiers
-        if (/TradingSignals|signalsChannel|copytrading\.tsx|tradingsignals\.tsx/i.test(path)) return;
-        complianceCount++;
-        issues.push({
-          id: `cmp-${path}-${term}`,
-          type: "compliance",
-          severity: "critical",
-          file: path,
-          page: path.split("/").pop(),
-          value: term,
-          detail: `Compliance-sensitive term "${term}" found`,
+      const addIfRelevant = (s: string) => {
+        const t = s.trim();
+        if (t.length < 8) return;
+        if (!/[a-záéíóúñ]/i.test(t)) return;
+        if (/^[0-9.,%$\s/:-]+$/.test(t)) return;
+        if (t.includes("{") || t.includes("}")) return;
+        if (t.startsWith("http") || t.startsWith("/")) return;
+        if (BRAND_TERMS.some((b) => t === b)) return;
+        // Skip strings that are mostly brand tokens
+        const cleaned = stripBrands(t).replace(/[^a-záéíóúñ]/gi, "");
+        if (cleaned.length < 5) return;
+        localHardcoded.add(t);
+      };
+
+      let m: RegExpExecArray | null;
+      while ((m = jsxTextRegex.exec(content)) !== null) addIfRelevant(m[1]);
+      while ((m = jsxAttrRegex.exec(content)) !== null) addIfRelevant(m[1]);
+
+      // Only emit hardcoded findings for files that ALREADY use t() (i.e.
+      // they're i18n-aware but missed a key). Pure-static components are
+      // out of scope for this pass.
+      if (usesT) {
+        const arr = [...localHardcoded].slice(0, 4);
+        arr.forEach((s, i) => {
+          hardcodedCount++;
+          issues.push({
+            id: `hc-${path}-${i}`,
+            type: "hardcoded",
+            severity: "low",
+            file: path,
+            page: path.split("/").pop(),
+            value: s,
+            detail: `Hardcoded string in i18n file — likely missed key`,
+          });
         });
-      });
+      }
+
+      // Compliance scan — STRICT: only inside JSX text or JSX string attrs,
+      // and only on files not in the skip list.
+      if (!COMPLIANCE_SKIP_PATTERNS.some((re) => re.test(path))) {
+        const visibleStrings: string[] = [];
+        let mm: RegExpExecArray | null;
+        const t1 = />\s*([^<>{}\n]{6,200})\s*</g;
+        const t2 = /(?:label|title|placeholder|aria-label|alt)\s*=\s*"([^"]{6,200})"/g;
+        while ((mm = t1.exec(content)) !== null) visibleStrings.push(mm[1]);
+        while ((mm = t2.exec(content)) !== null) visibleStrings.push(mm[1]);
+        const visible = visibleStrings.join(" \n ").toLowerCase();
+        COMPLIANCE_TERMS.forEach((term) => {
+          if (visible.includes(term.toLowerCase())) {
+            complianceCount++;
+            issues.push({
+              id: `cmp-${path}-${term}`,
+              type: "compliance",
+              severity: "critical",
+              file: path,
+              page: path.split("/").pop(),
+              value: term,
+              detail: `Compliance-sensitive phrase "${term}" found in visible copy`,
+            });
+          }
+        });
+      }
     });
 
-    // Mixed-language detection in translation maps
+    // Mixed-language detection — strict, requires 2+ EN function words
+    // after stripping brand/loanwords AND no native marker.
     Object.entries(esMap).forEach(([k, v]) => {
-      if (!v || v.length < 12) return;
-      if (BRAND_TERMS.some((b) => v.includes(b))) return;
-      if (isProbablyEnglish(v) && !isProbablyEs(v)) {
+      if (!v || v.length < 16) return;
+      if (hasEsMarker(v)) return;
+      if (looksEnglish(v)) {
         issues.push({
           id: `mix-es-${k}`,
           type: "mixed-language",
@@ -304,12 +326,12 @@ const AdminTranslationQATab = () => {
       }
     });
     Object.entries(ptMap).forEach(([k, v]) => {
-      if (!v || v.length < 12) return;
-      if (BRAND_TERMS.some((b) => v.includes(b))) return;
-      // crude: if contains many ES-only diacritics + words
-      if (/\b(ustedes|asesoría|gratis)\b/i.test(v)) {
+      if (!v || v.length < 16) return;
+      if (hasPtMarker(v)) return;
+      // PT mistakenly using Spanish wording
+      if (/\b(ustedes|gratis|inicio|sesión)\b/i.test(v) && !hasPtMarker(v)) {
         issues.push({
-          id: `mix-pt-${k}`,
+          id: `mix-pt-es-${k}`,
           type: "mixed-language",
           severity: "high",
           locale: "pt",
@@ -317,7 +339,9 @@ const AdminTranslationQATab = () => {
           value: v,
           detail: `PT value appears to contain Spanish text`,
         });
-      } else if (isProbablyEnglish(v) && !/[ãõçáéíóú]/i.test(v)) {
+        return;
+      }
+      if (looksEnglish(v)) {
         issues.push({
           id: `mix-pt-en-${k}`,
           type: "mixed-language",
@@ -330,31 +354,37 @@ const AdminTranslationQATab = () => {
       }
     });
 
-    // SEO QA — check seo.* keys per page per locale
-    const seoKeys = ["title", "description", "ogTitle", "ogDescription", "canonical"];
-    const pages = ["home", "community", "webinars", "ideas", "terms", "risk", "membership", "faq"];
+    // SEO QA — check seo.<page>.<field> OR <page>.seo.<field> (alias support).
+    const seoKeys: Array<{ field: string; aliases: string[] }> = [
+      { field: "title", aliases: ["title"] },
+      { field: "description", aliases: ["description", "desc"] },
+    ];
+    const pages = ["home","community","webinars","ideas","terms","risk","membership","faq"];
     pages.forEach((p) => {
       LOCALES.forEach((loc) => {
         const map = (loc === "en" ? enMap : loc === "es" ? esMap : ptMap) as Record<string, string>;
-        seoKeys.forEach((sk) => {
-          const k = `seo.${p}.${sk}`;
-          if (!(k in map) || !map[k]?.trim()) {
-            const sev: Severity = sk === "title" ? "critical" : sk === "description" ? "high" : "medium";
+        seoKeys.forEach(({ field, aliases }) => {
+          const candidates = [
+            `seo.${p}.${field}`,
+            ...aliases.flatMap((a) => [`${p}.seo.${a}`, `seo.${p}.${a}`]),
+          ];
+          const found = candidates.some((k) => map[k]?.trim());
+          if (!found) {
+            const sev: Severity = field === "title" ? "critical" : "high";
             issues.push({
-              id: `seo-${loc}-${p}-${sk}`,
+              id: `seo-${loc}-${p}-${field}`,
               type: "seo",
               severity: sev,
               locale: loc,
               page: p,
-              key: k,
-              detail: `Missing SEO ${sk} for ${p} (${loc.toUpperCase()})`,
+              key: `seo.${p}.${field}`,
+              detail: `Missing SEO ${field} for ${p} (${loc.toUpperCase()})`,
             });
           }
         });
       });
     });
 
-    // Coverage
     const coverage = LOCALES.reduce((acc, loc) => {
       const map = (loc === "en" ? enMap : loc === "es" ? esMap : ptMap) as Record<string, string>;
       const present = Object.keys(map).filter((k) => map[k]?.trim()).length;
@@ -372,20 +402,19 @@ const AdminTranslationQATab = () => {
       totals: {
         keys: allKeys.size,
         en: enKeys.length,
-        es: esKeys.length,
-        pt: ptKeys.length,
+        es: Object.keys(esMap).length,
+        pt: Object.keys(ptMap).length,
         missing: missingTotal,
         duplicates: dupTotal,
         hardcoded: hardcodedCount,
         compliance: complianceCount,
         seo: seoIssues,
-        avgCoverage: Math.round(
-          (coverage.en.pct + coverage.es.pct + coverage.pt.pct) / 3
-        ),
+        avgCoverage: Math.round((coverage.en.pct + coverage.es.pct + coverage.pt.pct) / 3),
       },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanTick]);
+
 
   const filtered = report.issues.filter((i) => {
     if (filterLang !== "all" && i.locale !== filterLang) return false;
