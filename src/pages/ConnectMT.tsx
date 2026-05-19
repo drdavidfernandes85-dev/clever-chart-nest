@@ -301,7 +301,7 @@ const ConnectMT = () => {
     <div className="relative min-h-screen pb-20" style={{ backgroundColor: "#0F0F0F" }}>
       <SEO
         title="Connect Your Infinox MT5 Account | Elite Live Trading Room"
-        description="Securely link your Infinox MT5 account for real-time portfolio sync, copy trade ideas, and direct trade execution from the trading room."
+        description="Securely link your Infinox MT5 account for real-time portfolio sync, review of educational market ideas, and user-controlled trade execution from the trading room."
         canonical="https://elitelivetradingroom.com/connect-mt"
       />
 

@@ -14,7 +14,7 @@ export const TIER_BENEFITS: Record<MentorTierId, string[]> = {
   mentor: [
     "Premium gold Mentor badge",
     "Your trade ideas are featured in Live Shared Trade Ideas",
-    "Eligible for revenue share on copied trades",
+    "Eligible for revenue share on executed reviewed ideas",
   ],
   elite_mentor: [
     "Legendary purple Elite badge with glow",

@@ -751,7 +751,7 @@ const TradeIdeaCards = ({
                   {busyId === s.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    "Take This Trade"
+                    "Review Idea"
                   )}
                 </Button>
               </div>
