@@ -1067,6 +1067,8 @@ const DashboardInner = () => {
             </div>
             <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-0.5 space-y-2">
               <LiveExecutionBanner />
+              <RiskBadges />
+              {devMode && <RiskControlsPanel />}
               <SystemHealthWidget />
               <BlackArrowTradePanel />
             </div>
