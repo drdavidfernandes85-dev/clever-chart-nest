@@ -33,30 +33,31 @@ const OpenPositionsPanel = () => {
 
 
   return (
-    <div className="bg-[#0f0f0f] text-neutral-100">
-      {/* Header strip */}
-      <div className="flex items-center justify-between border-b border-neutral-800/80 bg-[#0a0a0a] px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-neutral-400">
+    <div className="flex flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden text-neutral-100">
+      {/* Header strip — matches Market Watch / Bid-Ask Board */}
+      <div className="flex items-center justify-between border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1.5 shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Briefcase className="h-3 w-3 text-[#FFCD05]" />
+          <h3 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
             Open Positions
-          </span>
-          <span className="font-mono text-[10px] tabular-nums text-neutral-500">
+          </h3>
+          <span className="font-mono text-[9px] tabular-nums text-neutral-500 border-l border-neutral-800 pl-1.5 ml-0.5">
             {positions.length}
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {positions.length > 0 && (
             <div className="text-right leading-tight">
               <div
-                className={`font-mono text-[11px] font-bold tabular-nums ${
+                className={`font-mono text-[10.5px] font-bold tabular-nums ${
                   totalPnl >= 0 ? "text-emerald-400" : "text-red-400"
                 }`}
               >
                 {totalPnl >= 0 ? "+" : ""}
                 {totalPnl.toFixed(2)} {currency}
               </div>
-              <div className="font-mono text-[8px] uppercase tracking-widest text-neutral-500">
-                Floating P&L
+              <div className="font-mono text-[7.5px] uppercase tracking-[0.22em] text-neutral-500">
+                Floating P&amp;L
               </div>
             </div>
           )}
@@ -65,9 +66,9 @@ const OpenPositionsPanel = () => {
             onClick={() => refresh()}
             disabled={refreshing}
             title="Refresh"
-            className="flex h-6 w-6 items-center justify-center rounded border border-neutral-800 text-neutral-400 hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors disabled:opacity-50"
+            className="flex h-5 w-5 items-center justify-center rounded-sm border border-neutral-800 text-neutral-400 hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-2.5 w-2.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
