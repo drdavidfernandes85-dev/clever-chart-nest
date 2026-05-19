@@ -102,12 +102,8 @@ export function useMTAccount() {
     }
     setAccount(acc as MTAccount);
 
-    const [posRes, snapRes] = await Promise.all([
-      (supabase as any)
-        .from("mt_positions")
-        .select("*")
-        .eq("account_id", acc.id)
-        .order("opened_at", { ascending: false }),
+    // mt_positions removed — positions come from Trading Layer (LiveAccountContext).
+    const [snapRes] = await Promise.all([
       (supabase as any)
         .from("mt_account_snapshots")
         .select("*")
@@ -116,7 +112,7 @@ export function useMTAccount() {
         .limit(60),
     ]);
 
-    setPositions((posRes.data ?? []) as MTPosition[]);
+    setPositions([]);
     setSnapshots((snapRes.data ?? []) as MTSnapshot[]);
     hasLoadedRef.current = true;
     setLoading(false);
