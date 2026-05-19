@@ -138,9 +138,9 @@ const HeroSection = () => {
             {/* Headline — H1 */}
             <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
               <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
-                IX Sala de Trading
+                {t("hero.headline.brand")} {t("hero.title2")}
               </span>{" "}
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">en Vivo</span>
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.title3")}</span>
             </h1>
 
             {/* Sub-headline */}
