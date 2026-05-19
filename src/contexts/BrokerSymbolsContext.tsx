@@ -236,10 +236,10 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
     setSelectedSymbolValid(false);
     fetchOnce(true);
     const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") fetchOnce(false);
+      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) fetchOnce(false);
     }, 2000);
     const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled) fetchOnce(false);
+      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) fetchOnce(false);
     };
     const onRefresh = () => { if (!cancelled) fetchOnce(false); };
     document.addEventListener("visibilitychange", onVisible);
