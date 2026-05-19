@@ -22,6 +22,7 @@ import {
   ExecutionResultModal,
   type ExecutionResultPayload,
 } from "@/components/dashboard/ExecutionResultModal";
+import ExecutionAuditPanel from "@/components/dashboard/ExecutionAuditPanel";
 
 /**
  * Professional BlackArrow-style Order Ticket.
@@ -125,6 +126,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     edgeFunctionError: any;
     validationError: string | null;
   } | null>(null);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
 
   async function handleBestExecutionDryRun() {
     const selectedSymbol = normalizedSym;
@@ -214,7 +216,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         validationError: "Direct Edge Function fetch failed.",
       });
     }
+    // Refresh audit panel after every Dry Run attempt
+    setTimeout(() => setAuditRefreshKey(k => k + 1), 400);
   }
+
 
 
   // Latch "ever connected" so a transient polling failure cannot replace
@@ -1000,7 +1005,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
       )}
+      <div className="mt-3">
+        <ExecutionAuditPanel refreshKey={auditRefreshKey} />
+      </div>
     </div>
+
   );
 };
 

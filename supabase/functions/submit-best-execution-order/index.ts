@@ -95,6 +95,42 @@ Deno.serve(async (req) => {
   // DRY RUN — short-circuit before any Trading Layer call.
   // ---------------------------------------------------------------------------
   if (dryRun === true) {
+    const spreadDry =
+      requestedBid != null && requestedAsk != null
+        ? Math.max(0, requestedAsk - requestedBid)
+        : null;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (uid) {
+        await supabase.from("execution_audit_events").insert({
+          user_id: uid,
+          trade_id: tradeId ?? null,
+          symbol,
+          side,
+          volume: Number(volume),
+          status: "dry_run",
+          outcome: "success",
+          requested_price: requestedPrice,
+          executed_price: null,
+          slippage: null,
+          latency_ms: Math.round(Date.now() - startedAt),
+          spread: spreadDry,
+          bid: requestedBid,
+          ask: requestedAsk,
+          broker_message: "Pre-trade check OK (dry run)",
+          retcode: null,
+          reason: null,
+          rule_violated: null,
+          ticket: null,
+          raw: {
+            classification: "pretrade_check",
+            version: "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19",
+            step: "dry_run",
+          },
+        });
+      }
+    } catch { /* swallow */ }
     return json({
       success: true,
       version: "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19",
