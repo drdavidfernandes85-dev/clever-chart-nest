@@ -167,8 +167,9 @@ const LiveChartInner = () => {
     setCtxSymbol(displayLabel);
   }, [displayLabel, setCtxSymbol]);
 
-  // Read prefill from URL (?symbol=EURUSD&side=buy&sl=1.07&tp=1.09&lots=0.01&signalId=...)
-  // Sent by "Take This Signal" buttons across the app.
+  // Read prefill from URL (?symbol=EURUSD&side=buy&sl=1.07&tp=1.09&lots=0.01&ideaId=...)
+  // Sent by "Review This Idea" buttons across the app. Accepts legacy `signalId`
+  // for back-compat with older links.
   useEffect(() => {
     const sym = searchParams.get("symbol");
     if (!sym) return;
@@ -184,11 +185,11 @@ const LiveChartInner = () => {
       sl: searchParams.get("sl") ?? undefined,
       tp: searchParams.get("tp") ?? undefined,
       entry: searchParams.get("entry") ?? undefined,
-      signalId: searchParams.get("signalId"),
+      signalId: searchParams.get("ideaId") ?? searchParams.get("signalId"),
     });
     // Clear so a refresh doesn't re-trigger and we don't double-fire.
     const next = new URLSearchParams(searchParams);
-    ["symbol", "side", "lots", "sl", "tp", "entry", "signalId"].forEach((k) => next.delete(k));
+    ["symbol", "side", "lots", "sl", "tp", "entry", "ideaId", "signalId"].forEach((k) => next.delete(k));
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, allBrokerLabels.length]);
