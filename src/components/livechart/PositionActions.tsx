@@ -55,10 +55,19 @@ function isRateLimited(status: number, data: any) {
   return false;
 }
 
+function safeStr(v: any): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  try { return JSON.stringify(v); } catch { return ""; }
+}
 function errMessageFrom(data: any) {
-  return typeof data?.error === "string"
-    ? data.error
-    : data?.error?.message || data?.error?.code || "Request failed";
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.error?.message === "string") return data.error.message;
+  if (typeof data?.brokerMessage === "string") return data.brokerMessage;
+  if (typeof data?.message === "string") return data.message;
+  if (typeof data?.error?.code === "string") return data.error.code;
+  return "Request failed";
 }
 
 export default function PositionActions({ position, onAfter, cooling, cooldownSec, disabled }: Props) {
