@@ -104,8 +104,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [execResult, setExecResult] = useState<ExecutionResultPayload | null>(null);
   const [debugInfo, setDebugInfo] = useState<{
     functionUsed: string;
+    payload?: any;
     response?: any;
     error?: string;
+    status?: number;
     at: string;
   } | null>(null);
 
@@ -372,8 +374,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
       }
 
-      // Canary check — submit-best-execution-order must NOT forward to
-      // execute-trade while we're still in dry-run validation mode.
+      // Guard — submit-best-execution-order must NOT forward to execute-trade
+      // while we're still in dry-run validation mode.
       const stepStr = String(res?.step ?? "").toLowerCase();
       if (stepStr === "trade_execution") {
         // eslint-disable-next-line no-console
@@ -381,7 +383,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         toast.error("⚠️ Live execution path triggered (step: trade_execution). Stopping.");
         return;
       }
-      if (stepStr && stepStr !== "dry_run" && stepStr !== "canary_dry_run_no_trading_layer_call") {
+      if (stepStr && stepStr !== "dry_run" && stepStr !== "deploy_verify_submit_best_execution_order") {
         // eslint-disable-next-line no-console
         console.warn("[OrderTicket] Unexpected step in dry-run mode:", res?.step);
         toast.warning(`Unexpected response step: ${res?.step}`);
