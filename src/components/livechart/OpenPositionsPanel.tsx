@@ -238,24 +238,60 @@ const OpenPositionsPanel = () => {
                       {fmtPrice(p.symbol, p.take_profit)}
                     </td>
                     <td className="px-3 py-1.5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => closePosition(p)}
-                        disabled={closing === key}
-                        title="Close position"
-                        aria-label="Close position"
-                        className="inline-flex h-6 items-center gap-1 rounded border border-neutral-800 bg-[#050505] px-2 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-red-500/50 hover:text-red-400 transition-colors disabled:opacity-50"
-                      >
-                        {closing === key ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <>
-                            <X className="h-3 w-3" />
-                            Close
-                          </>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {isDev && Number(p.volume) <= TEST_CLOSE_MAX_VOLUME && p.ticket && (
+                          <div className="flex items-center gap-1.5 rounded border border-red-500/40 bg-red-950/30 px-1.5 py-0.5">
+                            <Checkbox
+                              id={`test-close-${key}`}
+                              checked={!!testCloseConfirmed[key]}
+                              onCheckedChange={(v) =>
+                                setTestCloseConfirmed((m) => ({ ...m, [key]: v === true }))
+                              }
+                              className="h-3 w-3"
+                            />
+                            <label
+                              htmlFor={`test-close-${key}`}
+                              className="cursor-pointer text-[8px] uppercase tracking-wider text-red-300/80"
+                              title="I understand this will close a live MT5 position."
+                            >
+                              <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5" />
+                              Live
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => closeTestTrade(p)}
+                              disabled={!testCloseConfirmed[key] || testClosing === key}
+                              title="I understand this will close a live MT5 position."
+                              className="inline-flex h-5 items-center gap-1 rounded border border-red-600/70 bg-red-700/30 px-1.5 text-[8px] font-bold uppercase tracking-widest text-red-200 hover:bg-red-700/50 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              {testClosing === key ? (
+                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              ) : (
+                                "Close Test Trade"
+                              )}
+                            </button>
+                          </div>
                         )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => closePosition(p)}
+                          disabled={closing === key}
+                          title="Close position"
+                          aria-label="Close position"
+                          className="inline-flex h-6 items-center gap-1 rounded border border-neutral-800 bg-[#050505] px-2 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-red-500/50 hover:text-red-400 transition-colors disabled:opacity-50"
+                        >
+                          {closing === key ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <>
+                              <X className="h-3 w-3" />
+                              Close
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
+
                   </tr>
                 );
               })}
