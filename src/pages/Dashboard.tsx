@@ -21,6 +21,7 @@ import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
+import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
 import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
