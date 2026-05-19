@@ -100,7 +100,9 @@ const OpenAccountBanner = ({ show }: Props) => {
             {c.title}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            {c.body}
+            {reviewAccessModeEnabled
+              ? "Platform access is currently open for review and testing. Certain live trading features may still require a connected and verified MT5 account."
+              : c.body}
           </p>
         </div>
 
