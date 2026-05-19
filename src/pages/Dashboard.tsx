@@ -20,6 +20,7 @@ import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import TradeJournal from "@/components/dashboard/TradeJournal";
+import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
   LiveAccountProvider,
   useLiveAccount,
