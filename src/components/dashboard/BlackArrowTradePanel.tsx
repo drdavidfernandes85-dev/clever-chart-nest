@@ -1004,7 +1004,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
       )}
+      <div className="mt-3">
+        <ExecutionAuditPanel refreshKey={auditRefreshKey} />
+      </div>
     </div>
+
   );
 };
 
