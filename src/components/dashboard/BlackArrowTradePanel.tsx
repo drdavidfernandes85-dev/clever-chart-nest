@@ -924,16 +924,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </button>
           </div>
           <div className="p-2 space-y-1.5">
-            {!('rawEdgeFunctionResponse' in debugInfo) && (
-              <>
-                <div className="text-neutral-500">at {debugInfo.at}</div>
-                <div>
-                  <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
-                  <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+            <div className="text-neutral-500">at {debugInfo.at}</div>
+            {debugInfo.status !== undefined && (
+              <div className="text-neutral-500">status {debugInfo.status}</div>
+            )}
+            {debugInfo.payload !== undefined && (
+              <div>
+                <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
+                <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
 {JSON.stringify(debugInfo.payload, null, 2)}
-                  </pre>
-                </div>
-              </>
+                </pre>
+              </div>
             )}
             {debugInfo.error && (
               <div>
