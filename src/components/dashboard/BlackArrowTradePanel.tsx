@@ -125,6 +125,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     edgeFunctionError: any;
     validationError: string | null;
   } | null>(null);
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
 
   async function handleBestExecutionDryRun() {
     const selectedSymbol = normalizedSym;
