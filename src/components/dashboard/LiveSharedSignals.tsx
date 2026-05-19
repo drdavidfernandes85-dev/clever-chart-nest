@@ -287,12 +287,12 @@ const LiveSharedSignals = () => {
                       {wasCopied ? (
                         <>
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          Copied · Copy Again
+                          Reviewed · Review Again
                         </>
                       ) : (
                         <>
                           <Zap className="h-3.5 w-3.5" />
-                          Copy Trade
+                          Review Idea
                         </>
                       )}
                     </button>

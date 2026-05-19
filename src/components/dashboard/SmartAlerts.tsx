@@ -355,7 +355,7 @@ const AlertRow = ({
         }`}
       >
         {isBuy ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-        Take This Trade
+        Review Idea
       </button>
     </li>
   );

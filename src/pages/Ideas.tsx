@@ -16,7 +16,7 @@ const Ideas = () => {
     <>
       <SEO
         title="Trade Ideas"
-        description="Educational trade ideas and optional follow / copy tools — powered by Trading Layer. Not investment advice."
+        description="Educational market ideas and optional user-controlled review tools — powered by Trading Layer. Not investment advice."
         canonical="https://elitelivetradingroom.com/ideas"
       />
 
@@ -31,7 +31,7 @@ const Ideas = () => {
               <PoweredByTradingLayer />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Educational trade ideas and optional follow / copy tools.
+              Educational market ideas and optional user-controlled review tools.
             </p>
           </div>
         </div>
@@ -90,7 +90,7 @@ const Ideas = () => {
             }`}
           >
             <Users className="h-4 w-4" />
-            Follow / Copy Tools
+            Idea Tools
           </button>
         </div>
 

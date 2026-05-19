@@ -215,7 +215,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
         <div className="flex items-center gap-2">
           <Copy className="h-3.5 w-3.5 text-[#FFCD05]" />
           <h3 className="font-heading text-[11px] font-bold uppercase tracking-[0.2em] text-white">
-            My Copied Trades
+            My Reviewed Ideas
           </h3>
         </div>
         <span className="font-mono text-[10px] uppercase tracking-wider text-white/40">
@@ -226,7 +226,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
       {/* Summary tiles */}
       <div className="grid grid-cols-3 gap-px bg-white/5">
         <SummaryTile
-          label="Total Copy P&L"
+          label="Total Idea P&L"
           value={summary.count ? money(summary.totalPnl) : "—"}
           accent={summary.totalPnl >= 0 ? "green" : "red"}
         />
@@ -249,7 +249,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
         <div className="px-4 py-10 text-center">
           <Inbox className="h-7 w-7 text-white/30 mx-auto mb-2" />
           <p className="text-[12px] text-white/50">
-            No copied trades yet. Tap COPY TRADE on any mentor signal to get started.
+            No reviewed ideas yet. Review educational market ideas from the Community Hub or Ideas page to get started.
           </p>
         </div>
       ) : (
@@ -257,7 +257,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
           <table className="w-full text-left">
             <thead className="sticky top-0 bg-[#0a0a0a] z-10">
               <tr className="border-b border-white/10">
-                {["Mentor", "Symbol", "Dir", "Vol", "Entry", "P&L", "Status"].map((h) => (
+                {["Educator", "Symbol", "Dir", "Vol", "Entry", "P&L", "Status"].map((h) => (
                   <th key={h} className="px-3 py-2 font-mono text-[9px] uppercase tracking-wider text-white/40 font-semibold">
                     {h}
                   </th>

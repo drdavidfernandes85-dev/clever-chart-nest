@@ -108,7 +108,7 @@ const CopiedTradesHistory = ({ signalsOnly = true, limit = 8, compact = false }:
         <div className="flex items-center gap-2">
           <History className="h-3.5 w-3.5 text-primary" />
           <h3 className="font-heading text-[11px] font-bold uppercase tracking-[0.2em] text-foreground">
-            Copied Trades
+            Idea Activity
           </h3>
         </div>
         <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -123,7 +123,7 @@ const CopiedTradesHistory = ({ signalsOnly = true, limit = 8, compact = false }:
           <History className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
           <p className="text-xs text-muted-foreground">
             {signalsOnly
-              ? "No trade ideas copied yet. Tap 'Take This Trade' to start."
+              ? "No reviewed ideas yet. Review educational market ideas from the Community Hub or Ideas page to get started."
               : "No trades placed yet."}
           </p>
         </div>

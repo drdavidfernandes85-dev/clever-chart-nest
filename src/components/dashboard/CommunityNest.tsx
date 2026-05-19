@@ -201,7 +201,7 @@ const CommunityNest = () => {
                 </div>
                 {i < 2 && (
                   <span className="rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-primary">
-                    Mentor
+                    Educator
                   </span>
                 )}
               </li>
@@ -295,7 +295,7 @@ const CommunityNest = () => {
                   className="mt-2 w-full flex items-center justify-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors"
                 >
                   <Zap className="h-3 w-3" />
-                  Take This Trade
+                  Review Idea
                 </button>
               </li>
             );
