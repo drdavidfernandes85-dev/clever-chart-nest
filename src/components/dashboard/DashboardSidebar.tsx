@@ -68,7 +68,6 @@ const DashboardSidebar = () => {
   const { t, locale, setLocale } = useLanguage();
   const localeOrder: Locale[] = ["en", "es", "pt"];
   const { theme } = useTheme();
-  const infinoxLogo = sidebarLogo;
   // "starting soon" = within the next 30 minutes
   const startingSoon =
     !!upcoming &&
