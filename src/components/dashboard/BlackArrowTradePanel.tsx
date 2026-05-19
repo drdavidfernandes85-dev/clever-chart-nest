@@ -127,6 +127,101 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     validationError: string | null;
   } | null>(null);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
+  const [liveTestConfirmed, setLiveTestConfirmed] = useState(false);
+  const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
+
+  async function handleLiveTest001() {
+    const selectedSymbol = normalizedSym;
+    const payload = {
+      tradeId: crypto.randomUUID(),
+      symbol: selectedSymbol || "XAUUSD",
+      side: side || "buy",
+      orderType: "market",
+      volume: 0.01,
+      stopLoss: null,
+      takeProfit: null,
+      dryRun: false,
+      liveExecutionConfirmed: true,
+      clientClickAt: new Date().toISOString(),
+    };
+
+    setLiveTestSubmitting(true);
+    setOrderDebug({
+      status: "loading",
+      functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+      payloadSent: payload,
+      rawEdgeFunctionResponse: null,
+      edgeFunctionError: null,
+      validationError: null,
+    });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setOrderDebug({
+          status: "error",
+          functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+          payloadSent: payload,
+          rawEdgeFunctionResponse: null,
+          edgeFunctionError: "No active Supabase session/access token found.",
+          validationError: "User is not authenticated.",
+        });
+        return;
+      }
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const requestUrl =
+        `${supabaseUrl}/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
+
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await response.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { data = { rawText: text }; }
+
+      const ok =
+        response.ok &&
+        data?.version === "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19" &&
+        data?.step === "execution_result" &&
+        data?.liveOrderSent === true;
+
+      setOrderDebug({
+        status: response.ok ? "success" : "error",
+        functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+        requestUrl,
+        httpStatus: response.status,
+        payloadSent: payload,
+        rawEdgeFunctionResponse: data,
+        edgeFunctionError: response.ok ? null : data,
+        validationError: ok ? null : "Expected execution_result / liveOrderSent=true.",
+      });
+
+      if (response.ok) toast.success("Live test order sent");
+      else toast.error("Live test failed");
+    } catch (error) {
+      setOrderDebug({
+        status: "error",
+        functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+        payloadSent: payload,
+        rawEdgeFunctionResponse: null,
+        edgeFunctionError: error instanceof Error ? error.message : String(error),
+        validationError: "Direct Edge Function fetch failed.",
+      });
+    } finally {
+      setLiveTestSubmitting(false);
+      try { await refresh(); } catch { /* ignore */ }
+      setTimeout(() => setAuditRefreshKey(k => k + 1), 400);
+    }
+  }
 
   async function handleBestExecutionDryRun() {
     const selectedSymbol = normalizedSym;
@@ -201,7 +296,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         rawEdgeFunctionResponse: data,
         edgeFunctionError: response.ok ? null : data,
         validationError:
-          data?.version === "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19" &&
+          data?.version === "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19" &&
           data?.step === "dry_run"
             ? null
             : "Wrong Edge Function response or auth/project mismatch.",
@@ -834,6 +929,36 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               className="h-5 rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-2 text-[9px] font-mono uppercase tracking-wider text-[#FFCD05] hover:bg-[#FFCD05]/20"
             >
               Dry Run Best Execution
+            </button>
+          </div>
+        )}
+
+        {/* Dev-only LIVE CONTROLLED 0.01 test — visually isolated, requires checkbox */}
+        {import.meta.env.DEV && (
+          <div className="mt-2 rounded-md border-2 border-red-600/70 bg-red-950/30 p-2 space-y-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
+              <AlertTriangle className="h-3 w-3" />
+              Live Controlled Test
+            </div>
+            <p className="text-[10px] leading-snug text-red-300">
+              This sends a real market order to the connected MT5 account.
+            </p>
+            <label className="flex items-start gap-1.5 text-[10px] text-red-200 cursor-pointer">
+              <Checkbox
+                checked={liveTestConfirmed}
+                onCheckedChange={(v) => setLiveTestConfirmed(v === true)}
+                className="mt-0.5 border-red-500 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+              />
+              <span>I understand this will send a live 0.01 market order.</span>
+            </label>
+            <button
+              type="button"
+              disabled={!liveTestConfirmed || liveTestSubmitting}
+              onClick={handleLiveTest001}
+              className="w-full h-7 rounded-sm border border-red-500 bg-red-600 px-2 text-[10px] font-mono font-bold uppercase tracking-wider text-white hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+            >
+              {liveTestSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
+              LIVE TEST 0.01
             </button>
           </div>
         )}
