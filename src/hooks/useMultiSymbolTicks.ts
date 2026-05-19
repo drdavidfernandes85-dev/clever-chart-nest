@@ -56,10 +56,12 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
         });
         if (cancelled) return;
         if (error || !data?.success) {
+          checkAndHandle429(data, error);
           setLastError(error?.message || data?.error || "Refresh failed");
           setConsecutiveErrors((n) => n + 1);
           return;
         }
+        checkAndHandle429(data, null);
         const instruments: any[] = Array.isArray(data.instruments) ? data.instruments : [];
         if (instruments.length === 0) {
           setLastError("Empty payload");
