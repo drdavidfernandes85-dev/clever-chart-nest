@@ -71,7 +71,7 @@ const ResetPassword = () => {
       <div className="relative z-10 w-full max-w-sm space-y-8">
         <div className="text-center">
           <Link to="/" className="inline-flex flex-col items-center gap-2">
-            <LtrLogo variant="full" className="h-14 w-auto" />
+            <LtrLogo variant="platform" className="h-14 w-auto" />
           </Link>
           <div className="mx-auto mt-4 h-0.5 w-8 bg-[#FFCD05]" />
           <h1 className="mt-4 font-heading text-2xl font-semibold text-[#FFCD05] uppercase tracking-[0.08em]">
