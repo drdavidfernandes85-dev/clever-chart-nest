@@ -161,7 +161,7 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
             {/* Trust line */}
             <p className="mx-auto mt-6 inline-flex max-w-md items-center justify-center gap-1.5 text-[11px] text-foreground/60">
               <ShieldCheck className="h-3.5 w-3.5 text-primary/80" />
-              {t("hero.eligibility")}
+              {eligibilityCopy(locale, t("hero.eligibility"))}
             </p>
 
             {/* Email capture — get notified + free webinar invites */}
