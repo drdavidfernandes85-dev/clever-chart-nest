@@ -278,16 +278,13 @@ const Chatroom = () => {
 
   const sidebarContent = (
     <>
-      <div className="flex h-14 items-center gap-2 border-b border-[#FFCD05]/20 bg-[#030303] px-4 shadow-[0_0_24px_rgba(255,205,5,0.08)]">
-        <button className="ml-auto md:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-
       <div className="flex items-center gap-1 border-b border-border/50 px-3 py-2">
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Search className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Users className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><AtSign className="h-4 w-4" /></Button>
+        <button className="ml-auto md:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
+          <X className="h-5 w-5" />
+        </button>
       </div>
       <ScrollArea className="flex-1 px-2 py-3">
         {orderedSections.map(({ category, channels: chs }, idx) => (
