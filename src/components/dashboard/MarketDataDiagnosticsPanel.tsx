@@ -80,11 +80,7 @@ const MarketDataDiagnosticsPanel = () => {
         <div>
           <span className="text-neutral-500">rate-limit: </span>
           {rl.active
-            ? `ACTIVE · resumes ${
-                rl.resumesAt
-                  ? new Date(rl.resumesAt).toLocaleTimeString()
-                  : "—"
-              }`
+            ? `ACTIVE · ${rlSecondsLeft}s left`
             : "off"}
         </div>
         <div className="col-span-2 break-words">
