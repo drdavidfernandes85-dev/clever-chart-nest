@@ -735,43 +735,35 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   clientClickAt: new Date().toISOString(),
                 };
                 console.log("[OrderTicket] Dry Run:", payload);
-                setDebugInfo({
-                  functionUsed: "submit-best-execution-order",
-                  payload,
-                  rawEdgeFunctionResponse: undefined,
-                  edgeFunctionError: null,
-                  at: new Date().toISOString(),
-                });
                 try {
-                  const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
-                    body: payload
+                  const { data: sessionData } = await supabase.auth.getSession();
+                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order`, {
+                    method: "POST",
+                    cache: "no-store",
+                    headers: {
+                      "Content-Type": "application/json",
+                      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                      Authorization: `Bearer ${sessionData.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                    },
+                    body: JSON.stringify(payload),
                   });
+                  const data = await res.json();
+                  const error = res.ok ? undefined : (data?.error || data?.message || res.statusText);
                   console.log("[OrderTicket] Dry Run response:", { data, error });
-                  const edgeFunctionError = error?.message || null;
-                  const validationError =
-                    data?.step === "deploy_verify_submit_best_execution_order" &&
-                    data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
-                      ? undefined
-                      : "Frontend is not showing the real Edge Function response.";
-                  if (validationError) toast.error(validationError);
                   setDebugInfo({
                     functionUsed: "submit-best-execution-order",
                     payload,
-                    rawEdgeFunctionResponse: data,
-                    edgeFunctionError,
-                    validationError,
+                    response: data,
+                    error,
+                    status: res.status,
                     at: new Date().toISOString(),
                   });
                   window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
                 } catch (e: any) {
-                  const validationError = "Frontend is not showing the real Edge Function response.";
-                  toast.error(validationError);
                   setDebugInfo({
                     functionUsed: "submit-best-execution-order",
                     payload,
-                    rawEdgeFunctionResponse: null,
-                    edgeFunctionError: e?.message || String(e),
-                    validationError,
+                    error: e?.message || String(e),
                     at: new Date().toISOString(),
                   });
                 }
