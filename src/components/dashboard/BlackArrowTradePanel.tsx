@@ -163,6 +163,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     currentPrice?: number | null;
     pnl?: number | null;
     startedAt?: number;
+    // Lifecycle (MT5 truth)
+    brokerAccepted?: boolean;
+    mt5Confirmed?: boolean;
+    confirmationStatus?: "pending" | "confirmed" | "failed";
+    confirmedTicket?: string | number | null;
+    confirmedEntryPrice?: number | null;
+    confirmedVolume?: number | null;
   }
   const [liveConfirm, setLiveConfirm] = useState<LiveConfirmState | null>(null);
   const positionsRef = useRef(positions);
