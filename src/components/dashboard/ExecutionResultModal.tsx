@@ -68,14 +68,14 @@ const TitleBar = ({
 }) => {
   const config = {
     success: {
-      title: "Order Executed",
+      title: "Position Confirmed",
       Icon: CheckCircle2,
       ring: "border-emerald-500/50",
       chip: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
       bar: "bg-emerald-500/70",
     },
     blocked: {
-      title: "Order Blocked by Best Execution Controls",
+      title: "Risk Blocked — Pre-Trade Controls",
       Icon: ShieldAlert,
       ring: "border-amber-500/50",
       chip: "bg-amber-500/15 text-amber-300 border-amber-500/40",
@@ -89,14 +89,14 @@ const TitleBar = ({
       bar: "bg-red-500/70",
     },
     pending: {
-      title: "Order Sent — Confirmation Pending",
+      title: "Order Accepted — MT5 Confirmation Pending",
       Icon: Clock,
       ring: "border-yellow-500/50",
       chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
       bar: "bg-yellow-500/70",
     },
     unconfirmed: {
-      title: "Order Accepted — Not Confirmed in MT5",
+      title: "Order Accepted — MT5 Confirmation Pending",
       Icon: HelpCircle,
       ring: "border-yellow-500/50",
       chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
