@@ -724,12 +724,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               onClick={async () => {
                 setDebugInfo(null);
                 const selectedSymbol = normalizedSym;
+                const volume = vol;
                 const payload = {
                   tradeId: crypto.randomUUID(),
                   symbol: selectedSymbol || "XAUUSD",
                   side: "buy" as const,
                   orderType: "market" as const,
-                  volume: Number(vol) || 0.01,
+                  volume: Number(volume) || 0.01,
                   stopLoss: null,
                   takeProfit: null,
                   dryRun: true,
@@ -744,10 +745,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   at: new Date().toISOString(),
                 });
                 try {
-                  const { data, error } = await supabase.functions.invoke(
-                    "submit-best-execution-order",
-                    { body: payload },
-                  );
+                  const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
+                    body: payload
+                  });
                   console.log("[OrderTicket] Dry Run response:", { data, error });
                   const edgeFunctionError = error?.message || null;
                   const validationError =
