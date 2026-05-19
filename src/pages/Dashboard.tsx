@@ -798,6 +798,7 @@ const BottomTabs = () => {
             { v: "positions", l: "Positions" },
             { v: "orders", l: "Orders" },
             { v: "executions", l: "Execution Log" },
+            { v: "history", l: "Execution History" },
             { v: "best-exec", l: "Best Execution" },
             { v: "account", l: "Account" },
             { v: "journal", l: "Journal" },
