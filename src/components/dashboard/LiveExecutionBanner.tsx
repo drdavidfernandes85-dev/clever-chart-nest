@@ -1,23 +1,56 @@
-import { AlertTriangle } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 /**
- * Permanent banner reminding the user that the terminal is wired to a real
- * MT5 account. Rendered above execution panels.
+ * Compact status chip row replacing the previous large warning banner.
+ *
+ * Large banners are reserved for blocking states only:
+ *   - Kill Switch Active
+ *   - MT5 Disconnected
+ *   - Rate Limited
+ *   - Trading Disabled
+ *
+ * Routine state (live execution mode, test caps) is shown as quiet chips.
  */
-const LiveExecutionBanner = () => (
-  <div
-    role="alert"
-    className="flex items-start gap-2 rounded-md border border-[#FFCD05]/40 bg-[#FFCD05]/5 px-3 py-2 text-[11px] text-[#FFCD05]"
-  >
-    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-    <div className="leading-snug">
-      <strong className="font-semibold">Live execution</strong> is connected to
-      your MT5 account. Orders and closes are real.
-      <span className="ml-2 rounded border border-[#FFCD05]/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#FFCD05]">
-        Test Mode · max 0.01 lots
+const LiveExecutionBanner = () => {
+  const Chip = ({
+    label,
+    tone,
+    dot,
+  }: {
+    label: string;
+    tone: "emerald" | "amber" | "neutral";
+    dot?: boolean;
+  }) => {
+    const tones = {
+      emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+      amber: "border-amber-500/30 bg-amber-500/10 text-amber-400",
+      neutral: "border-[#1c1f23] bg-[#0A0B0D] text-[#8E949C]",
+    } as const;
+    const dotTone = {
+      emerald: "bg-emerald-500",
+      amber: "bg-amber-500",
+      neutral: "bg-neutral-500",
+    } as const;
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 h-5 px-2 rounded-sm border font-mono text-[9px] uppercase tracking-[0.18em] ${tones[tone]}`}
+      >
+        {dot && (
+          <span className={`inline-flex h-1 w-1 rounded-full ${dotTone[tone]}`} />
+        )}
+        {label}
       </span>
+    );
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-[#0A0B0D]/60">
+      <ShieldCheck className="h-3 w-3 text-[#FFCD05]/70 shrink-0" />
+      <Chip label="LIVE EXEC" tone="emerald" dot />
+      <Chip label="TEST MODE" tone="amber" />
+      <Chip label="MAX 0.01 LOT" tone="neutral" />
     </div>
-  </div>
-);
+  );
+};
 
 export default LiveExecutionBanner;
