@@ -898,7 +898,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       toast.info("No open positions on this symbol");
       return;
     }
+    if (isExecutionLocked()) { toast.warning("Another execution is in progress."); return; }
     setSubmitting(true);
+    lockExecution("close_symbol", 30000);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated.");
@@ -921,15 +923,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         });
       }
       toast.success(`Closed ${symbolPositions.length} position(s)`);
+      broadcastExec("Position Closed");
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
       window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
       refresh();
     } catch (e: any) {
       toast.error(e?.message || "Close failed");
+      broadcastExec("Close Failed");
     } finally {
       setSubmitting(false);
+      unlockExecution();
     }
   };
+
 
   if (!showAsConnected) {
     return (
