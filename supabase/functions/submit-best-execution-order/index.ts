@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
     requestedPrice != null && executedPrice != null
       ? Number(executedPrice) - Number(requestedPrice)
       : null;
-  const brokerMessage =
+  const brokerMessageRaw =
     res.brokerMessage ??
     res.retcodeDescription ??
     res.retcode_description ??
@@ -210,18 +210,139 @@ Deno.serve(async (req) => {
     res.error ??
     null;
 
-  const success = res.success === true;
-  const status = res.status ?? res.classification ?? (success ? "done" : "failed");
-  const outcome = success
-    ? "success"
-    : (String(status).toLowerCase() === "blocked" || res.blocked === true || (Array.isArray(res.reasons) && res.reasons.length > 0 && res.retcode == null))
-      ? "blocked"
-      : "rejected";
+  const retcodeNum = res.retcode != null && Number.isFinite(Number(res.retcode))
+    ? Number(res.retcode)
+    : null;
+
+  // Retcode taxonomy for market orders
+  //   10009 = TRADE_RETCODE_DONE       → filled
+  //   10008 = TRADE_RETCODE_PLACED     → accepted, NOT confirmed
+  const retcodeFilled = retcodeNum === 10009;
+  const retcodeAccepted = retcodeNum === 10008;
+
+  const upstreamSuccess = res.success === true;
+  const upstreamStatus = String(res.status ?? res.classification ?? "").toLowerCase();
+  const isBlocked =
+    upstreamStatus === "blocked" ||
+    res.blocked === true ||
+    (Array.isArray(res.reasons) && res.reasons.length > 0 && retcodeNum == null);
+  const isPlacedOnly =
+    retcodeAccepted ||
+    (upstreamSuccess && !retcodeFilled && executedPrice == null) ||
+    upstreamStatus === "placed";
+
+  // ---------------------------------------------------------------------------
+  // Reconcile against LIVE MT5 positions when the broker only "accepted".
+  // ---------------------------------------------------------------------------
+  let mt5Confirmed = false;
+  let confirmedTicket: string | null = null;
+  let confirmedPosition: any = null;
+  let reconciliationAttempts = 0;
+  let positionsSnapshot: any[] = [];
+  let liveAcctDiag: any = null;
+
+  if (retcodeFilled || isPlacedOnly) {
+    const wantSym = String(symbol).toUpperCase();
+    const wantSide = String(side).toLowerCase();
+    const wantVol = Number(volume);
+    const cadence = [0, 1500, 3000];
+    for (const delay of cadence) {
+      if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+      reconciliationAttempts++;
+      try {
+        const { data: live } = await supabase.functions.invoke("get-live-account", { body: {} });
+        liveAcctDiag = live ? {
+          accountId: live?.account?.traderId ?? null,
+          login: live?.account?.login ?? null,
+          server: live?.account?.server ?? null,
+          openPositionsCount: Array.isArray(live?.positions) ? live.positions.length : null,
+        } : null;
+        const list: any[] = Array.isArray(live?.positions) ? live.positions : [];
+        positionsSnapshot = list;
+        const match = list.find((p: any) => {
+          const pSym = String(p?.symbol ?? "").toUpperCase();
+          const pSide = String(p?.side ?? "").toLowerCase();
+          const pVol = Number(p?.volume ?? 0);
+          return pSym === wantSym && pSide === wantSide && Math.abs(pVol - wantVol) < 1e-6;
+        });
+        if (match) {
+          confirmedPosition = match;
+          confirmedTicket = match.ticket != null ? String(match.ticket) : null;
+          mt5Confirmed = true;
+          break;
+        }
+      } catch { /* ignore reconciliation errors */ }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Final lifecycle determination
+  // ---------------------------------------------------------------------------
+  const brokerAccepted = upstreamSuccess || retcodeFilled || retcodeAccepted || isPlacedOnly;
+  const liveOrderSent = brokerAccepted;
+
+  let success: boolean;
+  let status: string;
+  let outcome: string;
+  let step: string;
+  let classification: string;
+  let brokerMessage = brokerMessageRaw;
+
+  if (mt5Confirmed) {
+    success = true;
+    status = "position_confirmed";
+    outcome = "success";
+    step = "execution_result";
+    classification = "placed_confirmed";
+    brokerMessage = `Position confirmed in MT5. Ticket: ${confirmedTicket}`;
+  } else if (isBlocked) {
+    success = false;
+    status = "blocked";
+    outcome = "blocked";
+    step = "pretrade_validation";
+    classification = "blocked";
+  } else if (brokerAccepted) {
+    // Broker accepted (10008 / placed / success-but-no-fill) but MT5
+    // reconciliation could not find a matching live position.
+    success = false;
+    status = "execution_unconfirmed";
+    outcome = "broker_accepted_no_position";
+    step = "execution_unconfirmed";
+    classification = "placed_unconfirmed";
+    brokerMessage = "Broker accepted the order, but no MT5 position was confirmed.";
+  } else {
+    success = false;
+    status = "rejected";
+    outcome = "rejected";
+    step = "pretrade_validation";
+    classification = "rejected";
+  }
+
   const spread =
     requestedBid != null && requestedAsk != null
       ? Math.max(0, requestedAsk - requestedBid)
       : null;
   const reasonsText = Array.isArray(res.reasons) ? res.reasons.join(" · ") : null;
+
+  // Diagnostic block (always included; surfaced in Dev Mode by the UI).
+  const diagnostics = {
+    payloadSent: {
+      tradeId, symbol, side, orderType, volume: Number(volume),
+      stopLoss, takeProfit,
+    },
+    rawTradingLayerResponse: res,
+    retcode: retcodeNum,
+    retcodeDescription:
+      res.retcodeDescription ?? res.retcode_description ?? brokerMessageRaw ?? null,
+    orderId: res.orderId ?? res.order_id ?? res.order ?? null,
+    dealId: res.dealId ?? res.deal_id ?? res.deal ?? null,
+    positionTicket: confirmedTicket ?? (res.ticket != null ? String(res.ticket) : null),
+    accountId: liveAcctDiag?.accountId ?? null,
+    login: liveAcctDiag?.login ?? null,
+    server: liveAcctDiag?.server ?? null,
+    reconciliationAttempts,
+    livePositionsCountAtReconcile: liveAcctDiag?.openPositionsCount ?? null,
+  };
 
   // Best-effort audit insert — never block the response.
   try {
@@ -237,23 +358,39 @@ Deno.serve(async (req) => {
         status,
         outcome,
         requested_price: requestedPrice,
-        executed_price: executedPrice != null ? Number(executedPrice) : null,
+        executed_price: mt5Confirmed
+          ? Number(confirmedPosition?.entry_price ?? executedPrice ?? 0) || null
+          : (executedPrice != null ? Number(executedPrice) : null),
         slippage,
         latency_ms: Math.round(totalLatencyMs),
         spread,
         bid: requestedBid,
         ask: requestedAsk,
-        broker_message: brokerMessage,
-        retcode: res.retcode != null ? Number(res.retcode) : null,
-        reason: outcome !== "success" ? (res.error || reasonsText || brokerMessage || null) : null,
+        broker_message: classification === "placed_unconfirmed"
+          ? "Broker accepted order but no matching MT5 position was found."
+          : brokerMessage,
+        retcode: retcodeNum,
+        reason: outcome === "blocked" || outcome === "rejected"
+          ? (res.error || reasonsText || brokerMessage || null)
+          : null,
         rule_violated: outcome === "blocked" ? (res.ruleViolated || reasonsText || res.error || null) : null,
-        ticket: res.ticket != null ? String(res.ticket) : null,
+        ticket: confirmedTicket ?? (res.ticket != null ? String(res.ticket) : null),
         raw: {
           ...(res && typeof res === "object" ? res : {}),
-          classification: success ? "placed" : (outcome === "blocked" ? "blocked" : "rejected"),
+          classification,
           version: VERSION,
-          step: success ? "execution_result" : "pretrade_validation",
-          liveOrderSent: success,
+          step,
+          liveOrderSent,
+          brokerAccepted,
+          mt5Confirmed,
+          confirmationStatus: mt5Confirmed
+            ? "confirmed"
+            : (brokerAccepted ? "not_found" : "failed"),
+          confirmedTicket,
+          confirmedEntryPrice: confirmedPosition?.entry_price ?? null,
+          confirmedVolume: confirmedPosition?.volume ?? null,
+          reconciliationAttempts,
+          diagnostics,
         },
       });
     }
@@ -262,13 +399,24 @@ Deno.serve(async (req) => {
   return json({
     success,
     version: VERSION,
-    step: success ? "execution_result" : "pretrade_validation",
-    liveOrderSent: success,
+    step,
+    liveOrderSent,
+    brokerAccepted,
+    mt5Confirmed,
+    confirmationStatus: mt5Confirmed
+      ? "confirmed"
+      : (brokerAccepted ? "not_found" : "failed"),
+    confirmedTicket,
+    confirmedEntryPrice: confirmedPosition?.entry_price ?? null,
+    confirmedVolume: confirmedPosition?.volume ?? null,
     tradeId,
     status,
     outcome,
+    classification,
     requestedPrice,
-    executedPrice: executedPrice != null ? Number(executedPrice) : null,
+    executedPrice: mt5Confirmed
+      ? Number(confirmedPosition?.entry_price ?? executedPrice ?? 0) || null
+      : (executedPrice != null ? Number(executedPrice) : null),
     slippage,
     latencyMs: totalLatencyMs,
     clientLatencyMs,
@@ -277,9 +425,15 @@ Deno.serve(async (req) => {
     bid: requestedBid,
     ask: requestedAsk,
     brokerMessage,
-    ticket: res.ticket ?? null,
-    retcode: res.retcode ?? null,
-    error: success ? null : (res.error || brokerMessage || "Order rejected"),
+    ticket: confirmedTicket ?? (res.ticket ?? null),
+    retcode: retcodeNum,
+    error: success ? null : (
+      classification === "placed_unconfirmed"
+        ? "Broker accepted order but no matching MT5 position was found."
+        : (res.error || brokerMessage || "Order rejected")
+    ),
     reasons: res.reasons ?? null,
+    diagnostics,
   });
 });
+
