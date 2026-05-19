@@ -130,6 +130,7 @@ Deno.serve(async (req) => {
             classification: "pretrade_check",
             version: VERSION,
             step: "dry_run",
+            liveOrderSent: false,
           },
         });
       }
