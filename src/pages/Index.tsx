@@ -141,15 +141,6 @@ const Index = () => {
         jsonLd={jsonLd}
       />
       <Navbar />
-      <Scrollspy
-        items={[
-          { id: "pilares", label: "Pilares" },
-          { id: "equipo", label: "Equipo" },
-          { id: "mentoria", label: "Formación" },
-          { id: "faq", label: "FAQ" },
-          { id: "compliance", label: "Legal" },
-        ]}
-      />
       <main>
       <HeroSection />
       {/* Narrativa educativa sin duplicar capacidades: 1) Respaldo Infinox → 2) Pilares (Terminal/Comunidad/Webinars/Educación) → 3) Equipo → 4) Mentoría 1:1 → 5) Prueba social → 6) Dudas → 7) Descubre más → 8) Claridad legal → 9) Contacto / Newsletter */}
