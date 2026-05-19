@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     clientClickAt,
     dryRun = false,
     liveExecutionConfirmed = false,
+    devModeAllowMissingQuote = false,
   } = payload || {};
 
   if (!symbol || !side || !volume) {
