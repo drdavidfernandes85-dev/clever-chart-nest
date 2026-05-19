@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
     stopLoss = null,
     takeProfit = null,
     clientClickAt,
+    dryRun = false,
   } = payload || {};
 
   if (!symbol || !side || !volume) {
