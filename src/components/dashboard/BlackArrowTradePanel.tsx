@@ -1391,36 +1391,35 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
       </div>
 
-      <div className="p-1.5 space-y-1">
+      <div className="p-1 space-y-[3px]">
 
-
-        {/* Symbol block */}
+        {/* Symbol block — softer, no heavy box */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setSymbolOpen((v) => !v)}
             className={cn(
-              "w-full flex items-center justify-between rounded-sm border bg-[#0a0a0a] px-2 py-1.5 transition-colors",
+              "w-full flex items-center justify-between rounded-sm border bg-[#0a0a0a] px-2 py-1 transition-colors",
               symbolOpen
                 ? "border-[#FFCD05]/50 ring-1 ring-[#FFCD05]/20"
-                : "border-neutral-800 hover:border-[#FFCD05]/30",
+                : "border-neutral-800/60 hover:border-[#FFCD05]/30",
             )}
           >
             <div className="flex items-center gap-2 min-w-0">
-              <span className="inline-flex h-5 items-center rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1 text-[8.5px] font-mono font-bold uppercase tracking-widest text-[#FFCD05]">
+              <span className="inline-flex h-[18px] items-center rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1 text-[8.5px] font-mono font-bold uppercase tracking-widest text-[#FFCD05]">
                 {classify(normalizedSym)}
               </span>
-              <div className="flex flex-col items-start min-w-0">
-                <span className="font-heading text-[12.5px] font-bold leading-tight text-neutral-50 tracking-wide">{normalizedSym || "—"}</span>
-                <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[140px]">
+              <div className="flex flex-col items-start min-w-0 leading-tight">
+                <span className="font-heading text-[12px] font-bold text-neutral-50 tracking-wide">{normalizedSym || "—"}</span>
+                <span className="text-[8.5px] text-neutral-500 uppercase tracking-wider truncate max-w-[150px]">
                   {effectiveSelected?.description || selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="text-right font-mono tabular-nums leading-tight">
-                <div className="text-[10.5px] text-red-400 font-semibold">{fmtPx(bid, digits)}</div>
-                <div className="text-[10.5px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</div>
+                <div className="text-[10px] text-red-400 font-semibold">{fmtPx(bid, digits)}</div>
+                <div className="text-[10px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</div>
               </div>
               <ChevronDown className={cn("h-3 w-3 text-neutral-500 transition-transform", symbolOpen && "rotate-180")} />
             </div>
@@ -1467,7 +1466,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ) : null}
         </div>
 
-        {/* Strategy / Order type / Price / Qty */}
+        {/* Strategy / Type / Price / Lots */}
         <div className="grid grid-cols-4 gap-1">
           <DenseSelect label="Strategy" value={strategy} onChange={(v) => setStrategy(v as Strategy)} options={[...STRATEGIES]} />
           <DenseSelect label="Type" value={orderType} onChange={(v) => setOrderType(v as OrderTypeLabel)} options={[...ORDER_TYPES]} />
@@ -1482,17 +1481,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Quick volume chips */}
-        <div className="grid grid-cols-6 gap-0.5">
+        <div className="grid grid-cols-9 gap-0.5">
           {QUICK_VOLS.map((q) => (
             <button
               key={q}
               type="button"
               onClick={() => setVol(q.toFixed(2))}
               className={cn(
-                "h-5 rounded-sm border text-[10px] font-mono tabular-nums transition-colors",
+                "h-[18px] rounded-sm text-[9.5px] font-mono tabular-nums transition-colors",
                 vol === q.toFixed(2)
-                  ? "border-[#FFCD05] bg-[#FFCD05]/15 text-[#FFCD05]"
-                  : "border-neutral-800 bg-[#0a0a0a] text-neutral-300 hover:border-neutral-700",
+                  ? "border border-[#FFCD05] bg-[#FFCD05]/15 text-[#FFCD05]"
+                  : "border border-neutral-800/60 bg-[#0a0a0a] text-neutral-400 hover:text-neutral-100 hover:border-neutral-700",
               )}
             >
               {q.toFixed(2)}
@@ -1500,34 +1499,59 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ))}
         </div>
 
-        {/* Execution block — BlackArrow-style compound side blocks.
-            Each side stacks: side label · live price · large MKT execution button. */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-1">
-          {/* SELL side */}
-          <div
-            className={cn(
-              "flex flex-col rounded-sm border overflow-hidden transition-colors",
-              side === "sell"
-                ? "border-red-500/70 bg-red-500/[0.06]"
-                : "border-neutral-800 bg-[#0a0a0a]",
-            )}
-          >
+        {/* Flat execution row — quote + MKT buttons in a single unified strip */}
+        <div className="rounded-sm bg-[#080808] border-y border-neutral-800/60 overflow-hidden">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-stretch">
+            {/* SELL */}
             <button
               type="button"
               onClick={() => setSide("sell")}
-              className="flex flex-col items-stretch px-2 py-1 text-left hover:bg-red-500/[0.04]"
+              className={cn(
+                "flex flex-col items-stretch px-2 py-1 text-left transition-colors",
+                side === "sell" ? "bg-red-500/[0.06]" : "hover:bg-red-500/[0.04]",
+              )}
             >
-              <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.2em] text-red-400/80">
+              <span className="flex items-center justify-between text-[8px] font-bold uppercase tracking-[0.22em] text-red-400/70">
                 <span>Sell</span><span>Bid</span>
               </span>
               <span className={cn(
-                "font-mono tabular-nums text-[16px] leading-tight font-semibold text-red-400 transition-colors",
+                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-red-400",
                 bidFlash === "up" && "text-red-300",
                 bidFlash === "down" && "text-red-500",
               )}>
                 {fmtPx(bid, digits)}
               </span>
             </button>
+
+            <div className="flex flex-col items-center justify-center px-1.5 border-x border-neutral-800/60 min-w-[42px]">
+              <span className="text-[7.5px] font-mono uppercase tracking-[0.2em] text-neutral-600">Spr</span>
+              <span className="font-mono tabular-nums text-[10.5px] text-neutral-200">{spreadPts ?? "—"}</span>
+              <span className="text-[7.5px] font-mono uppercase tracking-[0.2em] text-neutral-700">{tickAgeStr}</span>
+            </div>
+
+            {/* BUY */}
+            <button
+              type="button"
+              onClick={() => setSide("buy")}
+              className={cn(
+                "flex flex-col items-stretch px-2 py-1 text-right transition-colors",
+                side === "buy" ? "bg-emerald-500/[0.06]" : "hover:bg-emerald-500/[0.04]",
+              )}
+            >
+              <span className="flex items-center justify-between text-[8px] font-bold uppercase tracking-[0.22em] text-emerald-400/70">
+                <span>Ask</span><span>Buy</span>
+              </span>
+              <span className={cn(
+                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-emerald-400 text-right",
+                askFlash === "up" && "text-emerald-300",
+                askFlash === "down" && "text-emerald-500",
+              )}>
+                {fmtPx(ask, digits)}
+              </span>
+            </button>
+          </div>
+          {/* MKT execution buttons share the strip — primary visual weight */}
+          <div className="grid grid-cols-2 gap-px bg-neutral-800/60">
             <SideBtn
               tone="sell"
               disabled={!canSubmitMarket}
@@ -1536,40 +1560,6 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             >
               Sell @ MKT
             </SideBtn>
-          </div>
-
-          {/* Center spread divider */}
-          <div className="flex flex-col items-center justify-center px-1 text-center min-w-[44px]">
-            <span className="text-[7.5px] font-mono uppercase tracking-[0.22em] text-neutral-500">Spread</span>
-            <span className="font-mono tabular-nums text-[11px] text-neutral-200">{spreadPts ?? "—"}</span>
-            <span className="mt-0.5 text-[7.5px] font-mono uppercase tracking-[0.22em] text-neutral-600">{tickAgeStr}</span>
-          </div>
-
-          {/* BUY side */}
-          <div
-            className={cn(
-              "flex flex-col rounded-sm border overflow-hidden transition-colors",
-              side === "buy"
-                ? "border-emerald-500/70 bg-emerald-500/[0.06]"
-                : "border-neutral-800 bg-[#0a0a0a]",
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => setSide("buy")}
-              className="flex flex-col items-stretch px-2 py-1 text-left hover:bg-emerald-500/[0.04]"
-            >
-              <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
-                <span>Ask</span><span>Buy</span>
-              </span>
-              <span className={cn(
-                "font-mono tabular-nums text-[16px] leading-tight font-semibold text-emerald-400 transition-colors text-right",
-                askFlash === "up" && "text-emerald-300",
-                askFlash === "down" && "text-emerald-500",
-              )}>
-                {fmtPx(ask, digits)}
-              </span>
-            </button>
             <SideBtn
               tone="buy"
               disabled={!canSubmitMarket}
@@ -1581,10 +1571,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
 
-        <p className="px-1 text-[9.5px] leading-snug text-muted-foreground/70">
-          Sends a real order to your connected MT5 account. You are responsible for this decision. Not investment advice.
+        <p className="px-1 text-[8.5px] leading-tight text-neutral-500/80">
+          Real order to connected MT5 account. User remains responsible. Not investment advice.
         </p>
-
 
         {/* Dev-only dry-run best-execution test */}
         {devMode && (
@@ -1599,9 +1588,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         )}
 
-        {/* Dev-only LIVE CONTROLLED 0.01 test — visually isolated, requires checkbox */}
+        {/* Dev-only LIVE CONTROLLED 0.01 test */}
         {devMode && (
-          <div className="mt-2 rounded-md border-2 border-red-600/70 bg-red-950/30 p-2 space-y-2">
+          <div className="mt-1 rounded-sm border-2 border-red-600/70 bg-red-950/30 p-1.5 space-y-1.5">
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
               <AlertTriangle className="h-3 w-3" />
               Live Controlled Test
@@ -1630,23 +1619,35 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         )}
 
-        {/* Pending orders — 2×2 compact secondary grid */}
+        {/* Pending orders — 2×2 filled secondary buttons (usable, not dead) */}
         <div className="grid grid-cols-2 gap-1">
-          <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
-          <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Stop</SideBtn>
-          <SideBtn tone="buy" outline small disabled={pendingDisabled} title="Pending orders coming soon">Buy Limit</SideBtn>
-          <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Limit</SideBtn>
+          <SideBtn tone="buy" pending small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
+          <SideBtn tone="sell" pending small disabled={pendingDisabled} title="Pending orders coming soon">Sell Limit</SideBtn>
+          <SideBtn tone="buy" pending small disabled={pendingDisabled} title="Pending orders coming soon">Buy Limit</SideBtn>
+          <SideBtn tone="sell" pending small disabled={pendingDisabled} title="Pending orders coming soon">Sell Stop</SideBtn>
         </div>
 
-
-        {/* SL / TP — compact dual column */}
-        <div className="rounded-sm border border-neutral-800 bg-[#080808] p-1.5 space-y-1.5">
+        {/* SL / TP — borderless dual column with thin top divider */}
+        <div className="pt-1 border-t border-neutral-800/60 space-y-1">
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-neutral-500">Stops</span>
+            <div className="flex items-center gap-3 text-[9.5px] text-neutral-500">
+              <label className="flex items-center gap-1 cursor-pointer select-none">
+                <Checkbox checked={noStops} onCheckedChange={(v) => setNoStops(v === true)} className="h-3 w-3" />
+                No SL/TP
+              </label>
+              <label className="flex items-center gap-1 cursor-pointer select-none">
+                <Checkbox checked={autoReset} onCheckedChange={(v) => setAutoReset(v === true)} className="h-3 w-3" />
+                Reset
+              </label>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-1.5">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-[9px] font-bold uppercase tracking-[0.16em] text-red-400/80">Stop Loss</label>
+                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-red-400/80">Stop Loss</label>
                 {slPips > 0 && !noStops ? (
-                  <span className="text-[9px] font-mono tabular-nums text-red-400/70">{slPips.toFixed(0)} pips</span>
+                  <span className="text-[8.5px] font-mono tabular-nums text-red-400/70">{slPips.toFixed(0)}p</span>
                 ) : null}
               </div>
               <input
@@ -1655,7 +1656,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 disabled={noStops}
                 inputMode="decimal"
                 placeholder="—"
-                className="w-full h-6 rounded-sm border border-red-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+                className="w-full h-[22px] rounded-sm border border-red-500/25 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
               />
               <div className="grid grid-cols-3 gap-0.5">
                 {[10, 20, 50].map((p) => (
@@ -1664,7 +1665,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                     type="button"
                     disabled={noStops}
                     onClick={() => applyPipPreset("sl", p)}
-                    className="h-5 rounded-sm border border-red-500/25 bg-red-500/5 text-[9px] font-mono tabular-nums text-red-300 hover:bg-red-500/15 disabled:opacity-40"
+                    className="h-[18px] rounded-sm bg-red-500/[0.06] text-[9px] font-mono tabular-nums text-red-300/90 hover:bg-red-500/15 disabled:opacity-40"
                   >
                     {p}p
                   </button>
@@ -1673,9 +1674,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-400/80">Take Profit</label>
+                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-emerald-400/80">Take Profit</label>
                 {tpPips > 0 && !noStops ? (
-                  <span className="text-[9px] font-mono tabular-nums text-emerald-400/70">{tpPips.toFixed(0)} pips</span>
+                  <span className="text-[8.5px] font-mono tabular-nums text-emerald-400/70">{tpPips.toFixed(0)}p</span>
                 ) : null}
               </div>
               <input
@@ -1684,7 +1685,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 disabled={noStops}
                 inputMode="decimal"
                 placeholder="—"
-                className="w-full h-6 rounded-sm border border-emerald-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+                className="w-full h-[22px] rounded-sm border border-emerald-500/25 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50"
               />
               <div className="grid grid-cols-3 gap-0.5">
                 {[20, 40, 100].map((p) => (
@@ -1693,7 +1694,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                     type="button"
                     disabled={noStops}
                     onClick={() => applyPipPreset("tp", p)}
-                    className="h-5 rounded-sm border border-emerald-500/25 bg-emerald-500/5 text-[9px] font-mono tabular-nums text-emerald-300 hover:bg-emerald-500/15 disabled:opacity-40"
+                    className="h-[18px] rounded-sm bg-emerald-500/[0.06] text-[9px] font-mono tabular-nums text-emerald-300/90 hover:bg-emerald-500/15 disabled:opacity-40"
                   >
                     {p}p
                   </button>
@@ -1701,28 +1702,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               </div>
             </div>
           </div>
-
-          <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground border-t border-neutral-900 pt-1">
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <Checkbox checked={noStops} onCheckedChange={(v) => setNoStops(v === true)} className="h-3 w-3" />
-              No SL/TP
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <Checkbox checked={autoReset} onCheckedChange={(v) => setAutoReset(v === true)} className="h-3 w-3" />
-              Reset after fill
-            </label>
-          </div>
         </div>
 
         {(volumeError || slTpError) ? (
-          <div className="flex items-center gap-1.5 rounded border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
+          <div className="flex items-center gap-1.5 rounded-sm border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
             <AlertTriangle className="h-3 w-3 shrink-0" /> {volumeError || slTpError}
           </div>
         ) : null}
 
-        {/* Risk metrics summary — denser, two-column tabular layout */}
-        <div className="rounded-sm border border-neutral-800 bg-[#0a0a0a]">
-          <div className="flex items-center justify-between px-2 py-0.5 border-b border-neutral-900 bg-[#070707]">
+        {/* Risk metrics — borderless tabular summary */}
+        <div className="pt-1 border-t border-neutral-800/60">
+          <div className="flex items-center justify-between px-0.5 mb-0.5">
             <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-neutral-500">Risk Metrics</span>
             <span className={cn(
               "text-[9px] font-mono tabular-nums",
@@ -1731,7 +1721,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               {riskPct ? `${riskPct.toFixed(2)}% acct` : "—"}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-[1px] px-2 py-1">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-px px-0.5">
             <SummaryRow label="Entry" value={fmtPx(entryPrice || null, digits)} tone={side === "buy" ? "pos" : "neg"} />
             <SummaryRow label="Notional" value={fmt(notional, currency)} />
             <SummaryRow label="Margin" value={fmt(marginRequired, currency)} />
@@ -1749,32 +1739,26 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
 
-        {/* Bottom row */}
-        {/* Utility action bar — muted, never stronger than Buy/Sell */}
-        <div className="grid grid-cols-4 gap-1">
+        {/* Utility action bar — small, muted, never stronger than Buy/Sell */}
+        <div className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-1">
           <ToolBtn
             onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); }}
-            icon={<X className="h-3 w-3" />}
             label="Cancel"
           />
           <ToolBtn
             onClick={() => setSide(side === "buy" ? "sell" : "buy")}
-            icon={<RotateCcw className="h-3 w-3" />}
             label="Invert"
           />
-          <ToolBtn onClick={closeSymbolPositions} icon={<X className="h-3 w-3" />} label="Close" danger />
+          <ToolBtn onClick={closeSymbolPositions} label="Close" danger />
           <ToolBtn
             onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); closeSymbolPositions(); }}
-            icon={<X className="h-3 w-3" />}
-            label="Close + Cancel"
+            label="Close+Cxl"
             danger
           />
         </div>
 
-
-        {/* Symbol exposure footer removed — handled by SelectedSymbolExposure in the right rail. */}
-
       </div>
+
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
 
       {liveConfirm && (() => {
