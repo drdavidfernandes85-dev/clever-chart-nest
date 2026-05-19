@@ -1202,7 +1202,60 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       </div>
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
 
+      {liveConfirm && (() => {
+        const c = liveConfirm;
+        const headerByPhase: Record<typeof c.phase, { text: string; tone: string }> = {
+          placing: { text: "Order placed — confirming execution…", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          confirming: { text: "Order placed — confirmation pending", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          confirmed: { text: "Position confirmed", tone: "border-emerald-500/60 bg-emerald-500/10 text-emerald-300" },
+          pending_verification: { text: "Order was placed by broker, but final position confirmation is pending. Please verify in MT5.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-200" },
+          rejected: { text: "Execution rejected", tone: "border-red-500/60 bg-red-500/10 text-red-300" },
+        };
+        // status-based override line
+        let statusLine: { text: string; tone: string } | null = null;
+        const s = (c.status || "").toLowerCase();
+        if (s === "done") statusLine = { text: "Order executed", tone: "text-emerald-300" };
+        else if (s === "placed") statusLine = { text: "Order placed — confirmation pending", tone: "text-yellow-300" };
+        else if (s === "rejected" || s === "failed") statusLine = { text: "Execution rejected", tone: "text-red-300" };
+        const h = headerByPhase[c.phase];
+        return (
+          <div className={cn("mt-2 rounded border px-3 py-2 text-[11px] font-mono", h.tone)}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold uppercase tracking-wider">{h.text}</div>
+              <button type="button" onClick={() => setLiveConfirm(null)} className="text-current/70 hover:text-current">×</button>
+            </div>
+            {statusLine && c.phase !== "confirmed" && (
+              <div className={cn("mt-1", statusLine.tone)}>{statusLine.text}</div>
+            )}
+            {c.retcode === 10008 && (
+              <div className="mt-1 text-yellow-200/90">
+                Broker accepted/placed the order. Waiting for final position confirmation.
+              </div>
+            )}
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-neutral-200">
+              {c.symbol && (<><span className="text-neutral-500">Symbol</span><span>{c.symbol}</span></>)}
+              {c.side && (<><span className="text-neutral-500">Side</span><span className="uppercase">{c.side}</span></>)}
+              {c.volume != null && (<><span className="text-neutral-500">Volume</span><span>{c.volume}</span></>)}
+              {c.ticket != null && (<><span className="text-neutral-500">Ticket</span><span>{String(c.ticket)}</span></>)}
+              {c.entryPrice != null && (<><span className="text-neutral-500">Entry</span><span>{c.entryPrice}</span></>)}
+              {c.currentPrice != null && (<><span className="text-neutral-500">Current</span><span>{c.currentPrice}</span></>)}
+              {c.pnl != null && (
+                <>
+                  <span className="text-neutral-500">Floating P&L</span>
+                  <span className={cn(c.pnl > 0 ? "text-emerald-300" : c.pnl < 0 ? "text-red-300" : "")}>
+                    {fmt(c.pnl, currency)}
+                  </span>
+                </>
+              )}
+              {c.brokerMessage && (<><span className="text-neutral-500">Broker</span><span className="truncate">{c.brokerMessage}</span></>)}
+              {c.retcode != null && (<><span className="text-neutral-500">Retcode</span><span>{c.retcode}</span></>)}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Old debugInfo panel removed — only orderDebug.rawEdgeFunctionResponse is rendered below. */}
+
 
       {orderDebug && (
         <div className="mt-2 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
