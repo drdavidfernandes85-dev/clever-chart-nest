@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Activity, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 
@@ -104,9 +104,12 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
   return (
     <div className="flex h-full flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden">
       <div className="flex items-center justify-between border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1.5 shrink-0">
-        <h3 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
-          Bid / Ask Board
-        </h3>
+        <div className="flex items-center gap-1.5">
+          <Activity className="h-3 w-3 text-[#FFCD05]" />
+          <h3 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
+            Bid / Ask Board
+          </h3>
+        </div>
         {statusLabel ? (
           <span className={`flex items-center gap-1 text-[9px] font-mono uppercase tracking-widest ${statusLabel.color}`}>
             <span className={`inline-flex h-1.5 w-1.5 rounded-full ${statusLabel.dot}`} />
@@ -172,6 +175,9 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
           );
         })}
       </ul>
+      <div className="shrink-0 border-t border-neutral-900 bg-[#070707] px-2 py-[3px] text-[8px] font-mono uppercase tracking-[0.22em] text-[#5d6168] text-center">
+        Powered by Trading Layer
+      </div>
     </div>
   );
 };
