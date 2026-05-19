@@ -65,8 +65,9 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
   const [openPartial, setOpenPartial] = useState(false);
   const [openFull, setOpenFull] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const { locked } = useExecutionLock();
 
-  const busy = submitting || cooling || disabled;
+  const busy = submitting || cooling || disabled || locked;
   const ticket = position.ticket != null ? String(position.ticket) : null;
 
   async function refreshAll() {
@@ -75,6 +76,12 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
     window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
   }
+
+  function broadcastExec(status: string) {
+    try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
+    catch { /* ignore */ }
+  }
+
 
   async function submitModify(stopLoss: number | null, takeProfit: number | null) {
     if (!ticket) return toast.error("Missing ticket.");
