@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, X, Edit3, Scissors, AlertTriangle } from "lucide-react";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import {
   Dialog,
   DialogContent,
