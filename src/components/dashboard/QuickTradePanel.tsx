@@ -477,13 +477,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         if (!cancelled) setPriceLoading(false);
       }
     };
-    load();
-    const id = window.setInterval(load, 15000);
+    if (isAutoRefreshAllowed()) load();
+    const onManualRefresh = () => load();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) load();
+    }, 15000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
   }, [brokerSymbol, priceNonce]);
+
 
   // Validate SL/TP relative to the current market price.
   const stopsError = validateStops({
