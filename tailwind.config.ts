@@ -14,9 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Proxima Nova', 'Poppins', 'Arial', 'system-ui', 'sans-serif'],
-        heading: ['Proxima Nova', 'Poppins', 'Arial', 'system-ui', 'sans-serif'],
-        proxima: ['Proxima Nova', 'Arial', 'system-ui', 'sans-serif'],
+        sans:    ['Inter', 'Proxima Nova', 'Arial', 'system-ui', 'sans-serif'],
+        heading: ['Inter', 'Proxima Nova', 'Arial', 'system-ui', 'sans-serif'],
+        proxima: ['Inter', 'Proxima Nova', 'Arial', 'system-ui', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'IBM Plex Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
         display: ['Fraunces', 'Times New Roman', 'serif'],
       },
       boxShadow: {
