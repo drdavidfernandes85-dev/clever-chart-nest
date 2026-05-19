@@ -28,6 +28,7 @@ import {
   getCooldownRemainingMs,
   triggerRateLimitCooldown,
 } from "@/lib/tradingLayerControl";
+import { useDevMode } from "@/hooks/useDevMode";
 
 /**
  * Professional BlackArrow-style Order Ticket.
@@ -85,6 +86,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     isLive,
   } = useBrokerSymbols();
   const { liveAccount, positions, connected, refresh } = useLiveAccount();
+  const { devMode, isAdmin, setDevMode, rawEnabled: devEnabled } = useDevMode();
 
   // get-mt5-quotes drives the selected symbol's live price + specs
   // (stale-while-revalidate). Order Ticket never blanks on a transient
@@ -964,6 +966,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ) : null}
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-mono tabular-nums">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setDevMode(!devEnabled)}
+              title="Toggle developer panels (admin only)"
+              className={cn(
+                "rounded-sm border px-1.5 py-[1px] text-[8.5px] font-bold uppercase tracking-widest transition-colors",
+                devEnabled
+                  ? "border-[#FFCD05] bg-[#FFCD05]/15 text-[#FFCD05]"
+                  : "border-neutral-700 bg-transparent text-neutral-500 hover:text-neutral-200",
+              )}
+            >
+              {devEnabled ? "Dev On" : "Dev Off"}
+            </button>
+          )}
           <span className="text-neutral-500">{liveAccount?.login ? `#${liveAccount.login}` : "—"}</span>
           <span className="text-neutral-700">·</span>
           <span className={cn(sessionPnl > 0 ? "text-emerald-400" : sessionPnl < 0 ? "text-red-400" : "text-neutral-100")}>
@@ -1136,7 +1153,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Dev-only dry-run best-execution test */}
-        {import.meta.env.DEV && (
+        {devMode && (
           <div className="flex justify-center">
             <button
               type="button"
@@ -1149,7 +1166,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         )}
 
         {/* Dev-only LIVE CONTROLLED 0.01 test — visually isolated, requires checkbox */}
-        {import.meta.env.DEV && (
+        {devMode && (
           <div className="mt-2 rounded-md border-2 border-red-600/70 bg-red-950/30 p-2 space-y-2">
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
               <AlertTriangle className="h-3 w-3" />
@@ -1364,9 +1381,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       {/* Old debugInfo panel removed — only orderDebug.rawEdgeFunctionResponse is rendered below. */}
 
 
-      {orderDebug && (
+      {devMode && orderDebug && (
         <div className="mt-2 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
-          <div className="flex items-center justify-end border-b border-neutral-800 bg-[#050505] px-2 py-1">
+          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
+            <span className="text-[9px] uppercase tracking-widest text-[#FFCD05]/80">Raw Edge Function Response</span>
             <button
               type="button"
               onClick={() => setOrderDebug(null)}
@@ -1385,9 +1403,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
       )}
-      <div className="mt-3">
-        <ExecutionAuditPanel refreshKey={auditRefreshKey} />
-      </div>
+      {devMode && (
+        <div className="mt-3">
+          <ExecutionAuditPanel refreshKey={auditRefreshKey} />
+        </div>
+      )}
     </div>
 
   );
