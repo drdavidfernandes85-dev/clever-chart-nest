@@ -1330,6 +1330,20 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     Number.isFinite(Number((selectedSymbolInfo as any)?.ask));
   const tickStale = (!selectedTickAvailable && !!tickError) || showDataDelayed;
 
+  // Tick-age string for the micro quote strip ("3s" / "2m" / "1h" / "—").
+  const tickAgeStr = (() => {
+    const ts = tickUpdatedAt ? new Date(tickUpdatedAt).getTime() : null;
+    if (!ts) return "—";
+    const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (sec < 60) return `${sec}s`;
+    if (sec < 3600) return `${Math.floor(sec / 60)}m`;
+    return `${Math.floor(sec / 3600)}h`;
+  })();
+  const spreadPts =
+    spread != null
+      ? (spread / (normalizedSym.includes("JPY") ? 0.01 : 0.0001)).toFixed(1)
+      : null;
+
   return (
     <div className={cn(
       "rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden text-neutral-100 text-[11px]",
