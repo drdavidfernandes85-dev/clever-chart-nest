@@ -1,16 +1,11 @@
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import infinoxLogoWhite from "@/assets/infinox-logo-white.png";
-import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 import LtrLogo from "@/components/branding/LtrLogo";
 
 const Footer = () => {
   const { t } = useLanguage();
-  const { theme } = useTheme();
-  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
 
   const columns = [
     {
@@ -52,10 +47,8 @@ const Footer = () => {
       <div className="container">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <Link to="/" className="inline-flex items-center gap-2" aria-label="IX LTR — Home">
-              <span className="font-heading text-base font-extrabold uppercase tracking-[0.14em] leading-none">
-                <span className="text-[#FFCD05]">IX</span> <span className="text-foreground">LTR</span>
-              </span>
+            <Link to="/" className="inline-flex items-center" aria-label="IX LTR PRO — Home">
+              <LtrLogo variant="platform" className="h-10 w-auto" />
             </Link>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}

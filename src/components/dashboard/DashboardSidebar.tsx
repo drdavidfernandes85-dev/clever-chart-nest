@@ -21,7 +21,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
-import sidebarLogo from "@/assets/logo-sidebar.png";
+
 import LtrLogoBrand from "@/components/branding/LtrLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -68,7 +68,6 @@ const DashboardSidebar = () => {
   const { t, locale, setLocale } = useLanguage();
   const localeOrder: Locale[] = ["en", "es", "pt"];
   const { theme } = useTheme();
-  const infinoxLogo = sidebarLogo;
   // "starting soon" = within the next 30 minutes
   const startingSoon =
     !!upcoming &&
@@ -87,18 +86,13 @@ const DashboardSidebar = () => {
         collapsed ? "w-[68px]" : "w-[224px]"
       )}
     >
-      {/* Brand — LTR Terminal Pro */}
+      {/* Brand — IX LTR PRO */}
       <div className="flex h-16 items-center justify-between border-b border-[#FFCD05]/15 px-3">
-        <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0 leading-none" aria-label="IX LTR — Home">
-          <img src={sidebarLogo} alt="" aria-hidden className="h-8 w-8 shrink-0 object-contain select-none" draggable={false} />
-          {!collapsed && (
-            <>
-              <span className="h-5 w-px bg-[#FFCD05]/30 shrink-0" aria-hidden="true" />
-              <span className="font-heading text-[13px] font-extrabold uppercase tracking-[0.16em] leading-none whitespace-nowrap">
-                <span className="text-[#FFCD05]">IX</span>{" "}
-                <span className="text-[#F5F5F5]">LTR</span>
-              </span>
-            </>
+        <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0 leading-none" aria-label="IX LTR PRO — Home">
+          {collapsed ? (
+            <LtrLogoBrand variant="icon" className="h-8 w-8 shrink-0" />
+          ) : (
+            <LtrLogoBrand variant="platform" className="h-9 w-auto" />
           )}
         </Link>
       </div>
