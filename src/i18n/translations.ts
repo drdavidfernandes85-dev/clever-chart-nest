@@ -921,7 +921,7 @@ const translations = {
     "hero.headline.lead": "",
     "hero.headline.brand": "IX",
     "hero.headline.tail": "Sala de Trading en Vivo",
-    "hero.subheadline": "Una comunidad de traders profesional para trading en vivo, educación trading gratis y webinars trading gratis — análisis técnico en vivo, gestión de riesgo trading e insights de IA en una sola plataforma. Contenido únicamente educativo.",
+    "hero.subheadline": "Educación profesional, comunidad real y herramientas avanzadas para traders de INFINOX.",
     "hero.cta.openAccount": "Abrir Mi Cuenta Infinox Ahora",
     "hero.cta.connectExisting": "Conectar Mi Cuenta MT5 Existente",
     "hero.eligibility": "El acceso completo requiere una cuenta real verificada de Infinox con un saldo neto mínimo de $100 USD.",
