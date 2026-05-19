@@ -197,7 +197,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           (data?.step === "pretrade_validation" && data?.liveOrderSent === false));
 
       setOrderDebug({
-        status: responseOk ? "success" : "error",
+        status: responseOk && expectedLiveResponse ? "success" : "error",
         functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
         requestUrl,
         httpStatus,
