@@ -86,6 +86,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     isLive,
   } = useBrokerSymbols();
   const { liveAccount, positions, connected, refresh } = useLiveAccount();
+  const { devMode, isAdmin, setDevMode, rawEnabled: devEnabled } = useDevMode();
 
   // get-mt5-quotes drives the selected symbol's live price + specs
   // (stale-while-revalidate). Order Ticket never blanks on a transient
