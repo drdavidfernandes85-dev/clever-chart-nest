@@ -8,6 +8,7 @@ import {
   User,
   Star,
 } from "lucide-react";
+import LtrLogo from "@/components/branding/LtrLogo";
 
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
 import { Input } from "@/components/ui/input";
