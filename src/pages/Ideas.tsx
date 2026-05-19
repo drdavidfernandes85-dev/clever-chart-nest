@@ -3,6 +3,7 @@ import SEO from "@/components/SEO";
 import { Lightbulb, Users, Info } from "lucide-react";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 import ComplianceFooter from "@/components/ComplianceFooter";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const TradingSignals = lazy(() => import("@/pages/TradingSignals"));
 const CopyTrading = lazy(() => import("@/pages/CopyTrading"));
@@ -11,14 +12,17 @@ type Tab = "ideas" | "follow";
 
 const Ideas = () => {
   const [tab, setTab] = useState<Tab>("ideas");
+  const { t } = useLanguage();
 
   return (
     <>
       <SEO
-        title="Trade Ideas"
-        description="Educational market ideas and optional user-controlled review tools — powered by Trading Layer. Not investment advice."
-        canonical="https://elitelivetradingroom.com/ideas"
+        title={t("ideas.seo.title" as never)}
+        description={t("ideas.seo.desc" as never)}
+        keywords={t("ideas.seo.keywords" as never)}
+        canonical="https://ixsalatrading.com/ideas"
       />
+
 
       <div className="container max-w-7xl py-6">
         {/* Header */}

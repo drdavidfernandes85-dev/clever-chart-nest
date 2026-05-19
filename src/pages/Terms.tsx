@@ -2,6 +2,7 @@ import SEO from "@/components/SEO";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Section = ({
   title,
@@ -18,13 +19,17 @@ const Section = ({
   </section>
 );
 
-const Terms = () => (
+const Terms = () => {
+  const { t } = useLanguage();
+  return (
   <>
     <SEO
-      title="Terms & Conditions"
-      description="Terms and conditions governing use of the trading room, trade ideas, and third-party trading technology provided by Trading Layer."
-      canonical="https://elitelivetradingroom.com/terms"
+      title={t("terms.seo.title" as never)}
+      description={t("terms.seo.desc" as never)}
+      keywords={t("terms.seo.keywords" as never)}
+      canonical="https://ixsalatrading.com/terms"
     />
+
     <Navbar />
     <main className="container max-w-3xl py-24">
       <header className="mb-8">
@@ -354,6 +359,8 @@ const Terms = () => (
     </main>
     <Footer />
   </>
-);
+  );
+};
 
 export default Terms;
+
