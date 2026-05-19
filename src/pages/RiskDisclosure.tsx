@@ -2,6 +2,7 @@ import SEO from "@/components/SEO";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Section = ({
   title,
@@ -18,13 +19,17 @@ const Section = ({
   </section>
 );
 
-const RiskDisclosure = () => (
+const RiskDisclosure = () => {
+  const { t } = useLanguage();
+  return (
   <>
     <SEO
-      title="Risk Disclosure"
-      description="Risk disclosure for leveraged trading, third-party trading technology, and copy / follow tools."
-      canonical="https://elitelivetradingroom.com/risk-disclosure"
+      title={t("risk.seo.title" as never)}
+      description={t("risk.seo.desc" as never)}
+      keywords={t("risk.seo.keywords" as never)}
+      canonical="https://ixsalatrading.com/risk-disclosure"
     />
+
     <Navbar />
     <main className="container max-w-3xl py-24">
       <header className="mb-8">
