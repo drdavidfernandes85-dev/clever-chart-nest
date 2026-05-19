@@ -328,6 +328,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         volume: Number(volNum.toFixed(2)),
         stopLoss: noStops ? null : (sl ? Number(sl) : null),
         takeProfit: noStops ? null : (tp ? Number(tp) : null),
+        dryRun: true,
         clientClickAt,
       };
 
