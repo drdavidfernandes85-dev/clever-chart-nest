@@ -254,11 +254,22 @@ Deno.serve(async (req) => {
 
   if (matchedPosition) {
     const ticket = matchedPosition.ticket ?? matchedPosition.identifier ?? null;
+    const rawEntry =
+      matchedPosition?.entry_price ??
+      matchedPosition?.price_open ??
+      matchedPosition?.priceOpen ??
+      matchedPosition?.openPrice ??
+      matchedPosition?.open_price ??
+      matchedPosition?.price ??
+      matchedPosition?.entry ??
+      null;
+    const entryNum = rawEntry == null ? null : Number(rawEntry);
     result = {
       status: "position_confirmed",
       mt5Confirmed: true,
       confirmedTicket: ticket != null ? String(ticket) : null,
-      confirmedEntryPrice: Number(matchedPosition?.price_open ?? 0) || null,
+      confirmedEntryPrice:
+        entryNum != null && Number.isFinite(entryNum) && entryNum !== 0 ? entryNum : null,
       confirmedVolume: Number(matchedPosition?.volume ?? 0) || null,
     };
     auditStatus = "position_confirmed";

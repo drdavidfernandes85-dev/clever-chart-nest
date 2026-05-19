@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     clientClickAt,
     dryRun = false,
     liveExecutionConfirmed = false,
+    devModeAllowMissingQuote = false,
   } = payload || {};
 
   if (!symbol || !side || !volume) {
@@ -70,9 +71,11 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
 
-  // Pre-trade quote snapshot for slippage measurement (best-effort).
+  // Pre-trade quote snapshot for slippage measurement + freshness gate.
   let requestedBid: number | null = null;
   let requestedAsk: number | null = null;
+  let quoteTimestamp: string | null = null;
+  let quoteSource: string | null = null;
   try {
     const { data: q } = await supabase.functions.invoke("get-mt5-quotes", {
       body: { selectedSymbol: symbol, symbols: [symbol], debug: false },
@@ -83,11 +86,15 @@ Deno.serve(async (req) => {
     if (row) {
       requestedBid = row.bid != null ? Number(row.bid) : null;
       requestedAsk = row.ask != null ? Number(row.ask) : null;
+      quoteTimestamp = row.timestamp ?? row.time ?? row.ts ?? new Date().toISOString();
+      quoteSource = row.source ?? "get-mt5-quotes";
     }
   } catch { /* ignore — quote snapshot is best-effort */ }
 
   const requestedPrice =
     side === "buy" ? requestedAsk : side === "sell" ? requestedBid : null;
+  const haveFreshQuote =
+    requestedBid != null && requestedAsk != null && requestedPrice != null;
 
   const startedAt = Date.now();
   const clientLatencyMs = clientClickAt
@@ -153,6 +160,69 @@ Deno.serve(async (req) => {
       reasons: ["Missing live execution confirmation"],
     }, 200);
   }
+
+  // Freshness gate — refuse live execution without a fresh server-side tick
+  // unless Dev Mode explicitly authorises emergency testing.
+  if (!haveFreshQuote && devModeAllowMissingQuote !== true) {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (uid) {
+        await supabase.from("execution_audit_events").insert({
+          user_id: uid,
+          trade_id: tradeId ?? null,
+          symbol,
+          side,
+          volume: Number(volume),
+          status: "blocked",
+          outcome: "blocked",
+          requested_price: requestedPrice,
+          executed_price: null,
+          slippage: null,
+          latency_ms: Math.round(Date.now() - startedAt),
+          spread:
+            requestedBid != null && requestedAsk != null
+              ? Math.max(0, requestedAsk - requestedBid)
+              : null,
+          bid: requestedBid,
+          ask: requestedAsk,
+          broker_message: "Blocked: no fresh server-side tick available.",
+          retcode: null,
+          reason: "missing_fresh_tick",
+          rule_violated: "fresh_tick_required",
+          ticket: null,
+          raw: {
+            classification: "blocked",
+            version: VERSION,
+            step: "pretrade_validation",
+            liveOrderSent: false,
+            quote_bid: requestedBid,
+            quote_ask: requestedAsk,
+            quote_spread:
+              requestedBid != null && requestedAsk != null
+                ? Math.max(0, requestedAsk - requestedBid)
+                : null,
+            quote_timestamp: quoteTimestamp,
+            quote_source: quoteSource,
+          },
+        });
+      }
+    } catch { /* swallow */ }
+    return json({
+      success: false,
+      version: VERSION,
+      step: "pretrade_validation",
+      liveOrderSent: false,
+      tradeId,
+      error: "No fresh server-side tick available — refusing to send live order.",
+      reasons: ["Missing fresh bid/ask snapshot. Try again or enable Dev Mode bypass."],
+      requestedPrice,
+      bid: requestedBid,
+      ask: requestedAsk,
+      quoteTimestamp,
+    }, 200);
+  }
+
 
   // Forward to execute-trade (existing broker integration).
   const { data: execData, error: execError } = await supabase.functions.invoke(
@@ -230,6 +300,16 @@ Deno.serve(async (req) => {
     retcodeAccepted ||
     (upstreamSuccess && !retcodeFilled && executedPrice == null) ||
     upstreamStatus === "placed";
+
+  // Normalize confirmed entry price from any Trading Layer field shape.
+  const extractEntryPrice = (p: any): number | null => {
+    if (!p || typeof p !== "object") return null;
+    const v =
+      p.entry_price ?? p.price_open ?? p.priceOpen ??
+      p.openPrice ?? p.open_price ?? p.price ?? p.entry ?? null;
+    const n = v == null ? null : Number(v);
+    return n != null && Number.isFinite(n) && n !== 0 ? n : null;
+  };
 
   // ---------------------------------------------------------------------------
   // Reconcile against LIVE MT5 positions when the broker only "accepted".
@@ -344,6 +424,11 @@ Deno.serve(async (req) => {
     livePositionsCountAtReconcile: liveAcctDiag?.openPositionsCount ?? null,
   };
 
+  const confirmedEntryPrice = extractEntryPrice(confirmedPosition);
+  const executedPriceFinal = mt5Confirmed
+    ? (confirmedEntryPrice ?? (executedPrice != null ? Number(executedPrice) : null))
+    : (executedPrice != null ? Number(executedPrice) : null);
+
   // Best-effort audit insert — never block the response.
   try {
     const { data: userData } = await supabase.auth.getUser();
@@ -358,9 +443,7 @@ Deno.serve(async (req) => {
         status,
         outcome,
         requested_price: requestedPrice,
-        executed_price: mt5Confirmed
-          ? Number(confirmedPosition?.entry_price ?? executedPrice ?? 0) || null
-          : (executedPrice != null ? Number(executedPrice) : null),
+        executed_price: executedPriceFinal,
         slippage,
         latency_ms: Math.round(totalLatencyMs),
         spread,
@@ -387,9 +470,14 @@ Deno.serve(async (req) => {
             ? "confirmed"
             : (brokerAccepted ? "not_found" : "failed"),
           confirmedTicket,
-          confirmedEntryPrice: confirmedPosition?.entry_price ?? null,
+          confirmedEntryPrice,
           confirmedVolume: confirmedPosition?.volume ?? null,
           reconciliationAttempts,
+          quote_bid: requestedBid,
+          quote_ask: requestedAsk,
+          quote_spread: spread,
+          quote_timestamp: quoteTimestamp,
+          quote_source: quoteSource,
           diagnostics,
         },
       });
@@ -407,16 +495,14 @@ Deno.serve(async (req) => {
       ? "confirmed"
       : (brokerAccepted ? "not_found" : "failed"),
     confirmedTicket,
-    confirmedEntryPrice: confirmedPosition?.entry_price ?? null,
+    confirmedEntryPrice,
     confirmedVolume: confirmedPosition?.volume ?? null,
     tradeId,
     status,
     outcome,
     classification,
     requestedPrice,
-    executedPrice: mt5Confirmed
-      ? Number(confirmedPosition?.entry_price ?? executedPrice ?? 0) || null
-      : (executedPrice != null ? Number(executedPrice) : null),
+    executedPrice: executedPriceFinal,
     slippage,
     latencyMs: totalLatencyMs,
     clientLatencyMs,

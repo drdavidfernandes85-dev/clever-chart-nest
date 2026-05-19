@@ -59,12 +59,19 @@ function tokenFromBody(body: any): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function mt5SideToString(t: number | string): "long" | "short" {
+function mt5SideToJournalDirection(t: number | string): "long" | "short" {
   // MQL5 ENUM_POSITION_TYPE: 0 = BUY, 1 = SELL
-  // MQL4 OP_BUY = 0, OP_SELL = 1
-  // trade_journal.direction check constraint expects 'long' | 'short'
+  // trade_journal.direction expects 'long' | 'short'
   const n = typeof t === "string" ? parseInt(t, 10) : t;
   return n === 1 ? "short" : "long";
+}
+
+function normalizePositionSide(value: unknown): "buy" | "sell" | null {
+  // mt_positions.side check constraint requires 'buy' | 'sell'.
+  const raw = String(value ?? "").toLowerCase().trim();
+  if (raw === "buy" || raw === "long" || raw === "position_type_buy" || raw === "0") return "buy";
+  if (raw === "sell" || raw === "short" || raw === "position_type_sell" || raw === "1") return "sell";
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -278,8 +285,12 @@ Deno.serve(async (req) => {
     // Upsert each open position
     for (const p of incoming) {
       const ticket = String(p.ticket);
-      const side = mt5SideToString(p.type);
-      const openPrice = Number(p.entry ?? p.open_price ?? 0);
+      const side = normalizePositionSide(p.type);
+      if (!side) continue; // skip rows we can't safely insert under the check constraint
+      const openPrice = Number(
+        p.entry_price ?? p.price_open ?? p.priceOpen ?? p.openPrice ??
+        p.open_price ?? p.price ?? p.entry ?? 0,
+      );
       const volume = Number(p.volume ?? 0);
       const symbol = String(p.symbol ?? "");
       const sl = p.sl != null ? Number(p.sl) : null;
@@ -391,7 +402,7 @@ Deno.serve(async (req) => {
       const ticket = d?.ticket != null ? String(d.ticket) : null;
       if (!ticket || existingTickets.has(ticket)) continue;
 
-      const side = mt5SideToString(d?.type ?? 0);
+      const side = mt5SideToJournalDirection(d?.type ?? 0);
       const volume = Number(d?.volume ?? 0);
       const entry = Number(d?.entry ?? d?.open_price ?? 0);
       const exit =

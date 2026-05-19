@@ -574,8 +574,15 @@ serve(async (req) => {
               p.position_id ?? p.positionId ?? p.ticket ?? p.id ?? p.deal_id ?? "",
             );
             const sideStr = String(p.side ?? p.type ?? "").toLowerCase();
-            const normSide = sideStr === "sell" || sideStr === "short" || sideStr === "1"
-              ? "short" : "long";
+            // mt_positions.side check constraint requires buy/sell.
+            const normSide =
+              sideStr === "buy" || sideStr === "long" ||
+              sideStr === "position_type_buy" || sideStr === "0"
+                ? "buy"
+                : sideStr === "sell" || sideStr === "short" ||
+                    sideStr === "position_type_sell" || sideStr === "1"
+                  ? "sell"
+                  : null;
             return {
               user_id: user.id,
               account_id: account.id,
@@ -583,7 +590,10 @@ serve(async (req) => {
               symbol: String(p.symbol ?? ""),
               side: normSide,
               volume: Number(p.volume ?? p.lots ?? 0),
-              open_price: Number(p.open_price ?? p.price_open ?? p.entry ?? 0),
+              open_price: Number(
+                p.entry_price ?? p.price_open ?? p.priceOpen ??
+                p.openPrice ?? p.open_price ?? p.price ?? p.entry ?? 0,
+              ),
               current_price: p.current_price != null ? Number(p.current_price) : null,
               stop_loss: p.sl != null ? Number(p.sl) : p.stop_loss != null ? Number(p.stop_loss) : null,
               take_profit: p.tp != null ? Number(p.tp) : p.take_profit != null ? Number(p.take_profit) : null,
@@ -594,7 +604,7 @@ serve(async (req) => {
                 ? (Number(p.time) > 0 ? new Date(Number(p.time) * 1000).toISOString() : new Date(p.time).toISOString())
                 : p.opened_at ?? new Date().toISOString(),
             };
-          }).filter((r) => r.ticket);
+          }).filter((r) => r.ticket && (r.side === "buy" || r.side === "sell"));
 
           if (rows.length > 0) {
             const { error: insErr } = await supabase
