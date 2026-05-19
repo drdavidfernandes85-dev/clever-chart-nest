@@ -460,6 +460,24 @@
     background: linear-gradient(90deg, transparent, rgba(255, 205, 5, 0.45), transparent);
   }
 
+  /* Metallic silver text scale */
+  .text-ltr-silver-100 { color: var(--ltr-silver-100); }
+  .text-ltr-silver-200 { color: var(--ltr-silver-200); }
+  .text-ltr-silver-300 { color: var(--ltr-silver-300); }
+  .text-ltr-silver-400 { color: var(--ltr-silver-400); }
+  .text-ltr-silver-500 { color: var(--ltr-silver-500); }
+  .text-ltr-gold       { color: var(--ltr-gold); }
+
+  /* Brushed-metal headline (silver gradient) — for terminal section titles */
+  .text-metallic {
+    background: linear-gradient(180deg, #FFFFFF 0%, #F5F5F5 35%, #B8B8B8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.06em;
+  }
+
+
   /* Ticker scroll */
   @keyframes ticker-x {
     0% { transform: translateX(0); }
