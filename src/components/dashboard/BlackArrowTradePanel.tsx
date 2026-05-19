@@ -34,6 +34,7 @@ import {
 } from "@/lib/tradingLayerControl";
 import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useDevMode } from "@/hooks/useDevMode";
+import { getExecutionDisplayState } from "@/lib/executionDisplayState";
 
 const broadcastExec = (status: string) => {
   try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
@@ -956,27 +957,47 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           if (matched) break;
         }
 
+        // Build a unified broker-result view for the canonical mapper.
+        const brokerView = {
+          success: res?.success,
+          status: matched ? "position_confirmed" : (liveOrderSent ? "placed" : (res?.status ?? "placed")),
+          retcode: res?.retcode,
+          liveOrderSent,
+        };
+
+        let confirmedPos: any = null;
         if (matched) {
-          const confirmedTicket = matched.ticket ?? matched.id ?? null;
-          const confirmedEntry = matched.openPrice ?? matched.entryPrice ?? matched.price_open ?? matched.current_price ?? null;
-          const confirmedVol = Number(matched.volume ?? matched.lots ?? wantVol);
+          confirmedPos = {
+            ticket: matched.ticket ?? matched.id ?? null,
+            entry_price: matched.entry_price ?? null,
+            price_open: matched.price_open ?? null,
+            openPrice: matched.openPrice ?? matched.entryPrice ?? matched.current_price ?? null,
+            volume: matched.volume ?? null,
+            lots: matched.lots ?? null,
+          };
+        }
+
+        const display = getExecutionDisplayState(brokerView, confirmedPos);
+
+        if (display.status === "CONFIRMED") {
           setExecResult((prev) => prev ? {
             ...prev,
             outcome: "success",
             brokerAccepted: true,
             mt5Confirmed: true,
             confirmationStatus: "confirmed",
-            confirmedTicket,
-            confirmedEntryPrice: confirmedEntry,
-            confirmedVolume: confirmedVol,
+            confirmedTicket: display.confirmedTicket,
+            confirmedEntryPrice: display.confirmedEntryPrice,
+            confirmedVolume: display.confirmedVolume,
             confirmedAt: new Date().toISOString(),
-            executedPrice: confirmedEntry,
-            ticket: confirmedTicket,
+            executedPrice: display.confirmedEntryPrice,
+            ticket: display.confirmedTicket,
             status: "position_confirmed",
-            brokerMessage: `Position confirmed in MT5. Ticket: ${confirmedTicket}`,
+            brokerMessage: `Position confirmed in MT5. Ticket: ${display.confirmedTicket}`,
           } : prev);
-          toast.success("Position confirmed", { description: `#${confirmedTicket ?? ""} ${normalizedSym}` });
+          toast.success("Position confirmed", { description: `#${display.confirmedTicket ?? ""} ${normalizedSym}` });
         } else {
+          // PENDING (no live order sent flag missing) or UNKNOWN → MT5 not confirmed
           setExecResult((prev) => prev ? {
             ...prev,
             outcome: "unconfirmed",
