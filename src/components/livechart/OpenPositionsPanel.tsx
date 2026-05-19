@@ -18,12 +18,7 @@ const fmtPrice = (sym: string, v: number | null | undefined) => {
 const OpenPositionsPanel = () => {
   const { liveAccount, positions, connected, loading, refreshing, refresh } =
     useLiveAccount();
-  const [closing, setClosing] = useState<string | null>(null);
-  const [closeConfirmed, setCloseConfirmed] = useState<Record<string, boolean>>({});
-  const [testCloseConfirmed, setTestCloseConfirmed] = useState<Record<string, boolean>>({});
-  const [testClosing, setTestClosing] = useState<string | null>(null);
   const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
-  const { devMode } = useDevMode();
 
   useEffect(() => {
     const id = window.setInterval(() => setCooldownMs(getCooldownRemainingMs()), 1000);
@@ -36,93 +31,6 @@ const OpenPositionsPanel = () => {
   const currency = liveAccount?.currency ?? "USD";
 
 
-  async function callControlledClose(pos: LivePosition, opts: { isTest: boolean }) {
-    if (!pos.ticket) {
-      toast.error("Missing position ticket — cannot close.");
-      return;
-    }
-    if (cooling) {
-      toast.warning(`Rate limited. Retry in ${cooldownSec}s.`);
-      return;
-    }
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) throw new Error("Not authenticated.");
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
-    const r = await fetch(url, {
-      method: "POST",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify({
-        ticket: String(pos.ticket),
-        symbol: pos.symbol,
-        volume: Number(pos.volume),
-        side: pos.side === "buy" ? "sell" : "buy",
-      }),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (r.status === 429 || data?.retryAfter) {
-      triggerRateLimitCooldown(Number(data?.retryAfter) > 0 ? Number(data.retryAfter) : 60);
-      return;
-    }
-    checkAndHandle429(data, null);
-    const errMsg =
-      typeof data?.error === "string"
-        ? data.error
-        : data?.error?.message || data?.error?.code || "Close failed";
-    if (!r.ok || data?.success === false) {
-      toast.error(errMsg, { description: String(data?.brokerMessage ?? "") });
-    } else if (data?.status === "closed") {
-      toast.success("Position closed successfully", {
-        description: `#${pos.ticket} ${pos.symbol}`,
-      });
-    } else {
-      toast.warning(`Close ${data?.status || "pending"}`, {
-        description: String(data?.brokerMessage ?? ""),
-      });
-    }
-  }
-
-  async function closeTestTrade(pos: LivePosition) {
-    const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
-    if (Number(pos.volume) > TEST_CLOSE_MAX_VOLUME) {
-      toast.error(`Test close is limited to volume ≤ ${TEST_CLOSE_MAX_VOLUME}.`);
-      return;
-    }
-    setTestClosing(key);
-    try {
-      await callControlledClose(pos, { isTest: true });
-    } catch (e: any) {
-      toast.error("Could not close test position", { description: e?.message });
-    } finally {
-      setTestClosing(null);
-      setTestCloseConfirmed((m) => ({ ...m, [key]: false }));
-      try { await refresh(); } catch { /* ignore */ }
-      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
-      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
-    }
-  }
-
-  const closePosition = async (pos: LivePosition) => {
-    const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
-    setClosing(key);
-    try {
-      await callControlledClose(pos, { isTest: false });
-    } catch (e: any) {
-      toast.error("Could not close position", { description: e?.message });
-    } finally {
-      setClosing(null);
-      setCloseConfirmed((m) => ({ ...m, [key]: false }));
-      try { await refresh(); } catch { /* ignore */ }
-      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
-      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
-    }
-  };
 
   return (
     <div className="bg-[#0f0f0f] text-neutral-100">
