@@ -32,7 +32,7 @@ const OpenPositionsPanel = () => {
   const [testCloseConfirmed, setTestCloseConfirmed] = useState<Record<string, boolean>>({});
   const [testClosing, setTestClosing] = useState<string | null>(null);
   const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
-  const isDev = import.meta.env.DEV;
+  const { devMode } = useDevMode();
 
   useEffect(() => {
     const id = window.setInterval(() => setCooldownMs(getCooldownRemainingMs()), 1000);
