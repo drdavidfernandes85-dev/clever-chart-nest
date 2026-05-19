@@ -159,37 +159,38 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         return;
       }
 
-      // NOTE: Direct window.fetch() to Supabase is intercepted/broken by the
-      // Lovable Preview fetch proxy ("Failed to fetch"). We use the Supabase
-      // SDK's functions.invoke() which bypasses the proxy. The response is
-      // rendered raw — no normalization, no caching, no mock.
-      const { data, error } = await supabase.functions.invoke(
-        "submit-best-execution-order",
-        { body: payload }
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order?ts=${Date.now()}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify(payload),
+        }
       );
 
-      if (error) {
-        setOrderDebug({
-          status: "error",
-          functionUsed: "supabase.functions.invoke('submit-best-execution-order')",
-          payloadSent: payload,
-          rawEdgeFunctionResponse: data ?? null,
-          edgeFunctionError: error.message || String(error),
-          validationError: "Edge function invoke returned an error.",
-        });
-        return;
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { rawText: text };
       }
 
       setOrderDebug({
-        status: "success",
-        functionUsed: "supabase.functions.invoke('submit-best-execution-order')",
+        status: response.ok ? "success" : "error",
+        functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+        httpStatus: response.status,
         payloadSent: payload,
         rawEdgeFunctionResponse: data,
-        edgeFunctionError: null,
+        edgeFunctionError: response.ok ? null : data,
         validationError:
           data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
             ? null
-            : "Frontend is not showing the expected Edge Function version.",
+            : "Frontend is not showing the real Edge Function response.",
       });
     } catch (error) {
       setOrderDebug({
