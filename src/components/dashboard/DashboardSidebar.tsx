@@ -90,9 +90,7 @@ const DashboardSidebar = () => {
       {/* Brand — LTR Terminal Pro */}
       <div className="flex h-16 items-center justify-between border-b border-[#FFCD05]/15 px-3">
         <Link to="/dashboard" className="flex items-center gap-2 min-w-0 leading-none">
-          <div className="relative h-9 w-9 shrink-0 rounded-md border border-[#FFCD05]/40 bg-[#0B0B0C] p-0.5 shadow-[0_0_14px_rgba(255,205,5,0.35)]">
-            <LtrLogoBrand variant="icon" className="h-full w-full" glow={false} />
-          </div>
+          <LtrLogoBrand variant="icon" className="h-10 w-10 shrink-0" />
           {!collapsed && (
             <>
               <span className="h-5 w-px bg-[#FFCD05]/25 shrink-0" aria-hidden="true" />
