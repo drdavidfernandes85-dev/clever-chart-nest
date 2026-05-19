@@ -66,9 +66,7 @@ const Analytics = () => {
       <header className="sticky top-0 z-50 border-b border-border/30 bg-background/90 backdrop-blur-2xl">
         <div className="flex h-14 items-center justify-between px-4">
           <Link to="/dashboard" className="flex items-center gap-3">
-            <img src={infinoxLogo} alt="INFINOX" className="h-5" />
-            <span className="hidden sm:inline text-[10px] text-muted-foreground/30">|</span>
-            <span className="hidden sm:inline font-heading text-sm font-semibold text-foreground">
+            <span className="font-heading text-sm font-semibold text-foreground">
               {t("analytics.headerTitle1")} <span className="text-primary">{t("analytics.headerTitle2")}</span>
             </span>
           </Link>
