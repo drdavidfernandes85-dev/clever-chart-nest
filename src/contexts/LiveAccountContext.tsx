@@ -171,7 +171,7 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
     const start = () => {
       if (intervalId !== null) return;
       intervalId = window.setInterval(() => {
-        if (document.visibilityState === "visible") refresh();
+        if (document.visibilityState === "visible" && isAutoRefreshAllowed()) refresh();
       }, REFRESH_MS);
     };
     const stop = () => {
