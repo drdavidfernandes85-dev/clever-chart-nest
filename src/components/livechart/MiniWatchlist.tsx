@@ -6,6 +6,7 @@ import {
   fetchMarketQuotes,
   decimalsFor,
 } from "@/lib/markets";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 export interface WatchSymbol {
   label: string; // pretty, e.g. "EUR/USD"
