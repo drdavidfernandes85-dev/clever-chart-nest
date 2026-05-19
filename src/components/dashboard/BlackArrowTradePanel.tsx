@@ -1747,8 +1747,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         // status-based override line (hidden once position is confirmed)
         let statusLine: { text: string; tone: string } | null = null;
         const s = (c.status || "").toLowerCase();
-        if (s === "done") statusLine = { text: "Order executed", tone: "text-emerald-300" };
-        else if (s === "placed") statusLine = { text: "Order placed — confirmation pending", tone: "text-yellow-300" };
+        // NEVER claim "executed" off broker response alone — wait for MT5 ticket.
+        if (s === "done") statusLine = { text: "Broker accepted — MT5 confirmation pending", tone: "text-yellow-300" };
+        else if (s === "placed") statusLine = { text: "Order placed — MT5 confirmation pending", tone: "text-yellow-300" };
         else if (s === "rejected" || s === "failed") statusLine = { text: "Execution rejected", tone: "text-red-300" };
         const h = headerByPhase[c.phase];
         return (
