@@ -4,6 +4,7 @@ import { ArrowRight, ExternalLink, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { track } from "@/lib/analytics";
+import { reviewAccessModeEnabled } from "@/lib/accessMode";
 import type { Locale } from "@/i18n/translations";
 
 const INFINOX_URL = "https://myaccount.infinox.com/es/links/go/9926281";
