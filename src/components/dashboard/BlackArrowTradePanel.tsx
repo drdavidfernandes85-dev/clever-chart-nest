@@ -725,7 +725,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     hasValidBidAsk &&
     volNum > 0 &&
     !volumeError &&
-    !submitting;
+    !submitting &&
+    !execLocked;
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
