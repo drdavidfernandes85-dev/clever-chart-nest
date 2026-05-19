@@ -279,10 +279,6 @@ const Chatroom = () => {
   const sidebarContent = (
     <>
       <div className="flex h-14 items-center gap-2 border-b border-[#FFCD05]/20 bg-[#030303] px-4 shadow-[0_0_24px_rgba(255,205,5,0.08)]">
-        <Link to="/" className="flex items-center min-w-0 leading-none" aria-label="IX LTR PRO — Home">
-          <LtrLogo variant="platform" className="h-8 w-auto shrink-0" />
-        </Link>
-
         <button className="ml-auto md:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
           <X className="h-5 w-5" />
         </button>
