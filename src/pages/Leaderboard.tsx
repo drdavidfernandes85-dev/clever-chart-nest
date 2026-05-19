@@ -302,7 +302,7 @@ const Leaderboard = () => {
                           {r.is_verified && <CheckCircle2 className="h-3.5 w-3.5 text-[#FFCD05] shrink-0" />}
                         </div>
                         <p className="text-[10px] uppercase tracking-wider text-white/40">
-                          {r.is_mentor ? "Mentor" : r.is_verified ? "Verified" : "Trader"}
+                          {r.is_mentor ? "Educator" : r.is_verified ? "Verified Community Member" : "Trader"}
                         </p>
                       </div>
                       <div className={`text-right font-mono text-sm font-bold ${positive ? "text-emerald-400" : "text-red-400"}`}>
@@ -322,7 +322,7 @@ const Leaderboard = () => {
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
                         className={`flex-1 h-7 text-[10px] gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                        <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Copying" : "Copy"}
+                        <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
                       </Button>
                     </div>
                   </div>
@@ -358,7 +358,7 @@ const Leaderboard = () => {
                             {r.is_verified && <CheckCircle2 className="h-3 w-3 text-[#FFCD05] shrink-0" />}
                           </div>
                           <p className="text-[10px] uppercase tracking-wider text-white/40">
-                            {r.is_mentor ? "Mentor" : r.is_verified ? "Verified" : "Trader"}
+                            {r.is_mentor ? "Educator" : r.is_verified ? "Verified Community Member" : "Trader"}
                           </p>
                         </div>
                       </div>
@@ -375,7 +375,7 @@ const Leaderboard = () => {
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
                           className={`h-7 text-[10px] px-2.5 gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                          <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Copying" : "Copy"}
+                          <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
                         </Button>
                       </div>
                     </div>
@@ -486,7 +486,7 @@ const TraderDetail = ({ trader, onClose, period, following, copying, onFollow, o
                   {trader.is_verified && <CheckCircle2 className="h-4 w-4 text-[#FFCD05]" />}
                 </div>
                 <p className="text-[10px] uppercase tracking-wider text-white/40">
-                  {trader.is_mentor ? "Mentor" : trader.is_verified ? "Verified Trader" : "Trader"}
+                  {trader.is_mentor ? "Educator" : trader.is_verified ? "Verified Community Member" : "Trader"}
                 </p>
               </div>
             </div>
@@ -498,7 +498,7 @@ const TraderDetail = ({ trader, onClose, period, following, copying, onFollow, o
               </Button>
               <Button onClick={onCopy} size="sm" variant="outline"
                 className={`flex-1 gap-1 ${copying ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05]" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                <Copy className="h-3.5 w-3.5" /> {copying ? "Copying" : "Copy Trades"}
+                <Copy className="h-3.5 w-3.5" /> {copying ? "Following" : "Follow Educator"}
               </Button>
             </div>
 
