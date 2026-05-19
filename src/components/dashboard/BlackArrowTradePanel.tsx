@@ -153,8 +153,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     startedAt?: number;
   }
   const [liveConfirm, setLiveConfirm] = useState<LiveConfirmState | null>(null);
-  const positionsRef = useRef(positions);
-  useEffect(() => { positionsRef.current = positions; }, [positions]);
+  const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
+  useEffect(() => {
+    const id = window.setInterval(() => setCooldownMs(getCooldownRemainingMs()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const cooling = cooldownMs > 0;
+  const cooldownSec = Math.ceil(cooldownMs / 1000);
+
+
 
 
   async function directFetchSubmitBestExecutionOrder(payload: any) {
