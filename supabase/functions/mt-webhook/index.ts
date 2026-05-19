@@ -269,105 +269,20 @@ Deno.serve(async (req) => {
   }
 
   if (type === "positions") {
+    // mt_positions writes have been removed. The EA still pushes open
+    // positions but we no longer persist them — the UI reads live positions
+    // from Trading Layer directly. We acknowledge the payload so the EA
+    // doesn't retry.
     const incoming: any[] = Array.isArray(body?.positions) ? body.positions : [];
-
-    // Snapshot of currently-stored open positions for this account
-    const { data: previous } = await supabase
-      .from("mt_positions")
-      .select("ticket, symbol, side, volume, open_price, opened_at, profit")
-      .eq("account_id", accountRowId);
-
-    const incomingTickets = new Set(incoming.map((p) => String(p.ticket)));
-    const previousByTicket = new Map(
-      (previous ?? []).map((p) => [String(p.ticket), p]),
-    );
-
-    // Upsert each open position
-    for (const p of incoming) {
-      const ticket = String(p.ticket);
-      const side = normalizePositionSide(p.type);
-      if (!side) continue; // skip rows we can't safely insert under the check constraint
-      const openPrice = Number(
-        p.entry_price ?? p.price_open ?? p.priceOpen ?? p.openPrice ??
-        p.open_price ?? p.price ?? p.entry ?? 0,
-      );
-      const volume = Number(p.volume ?? 0);
-      const symbol = String(p.symbol ?? "");
-      const sl = p.sl != null ? Number(p.sl) : null;
-      const tp = p.tp != null ? Number(p.tp) : null;
-      const profit = p.profit != null ? Number(p.profit) : 0;
-      const openedAt =
-        p.time && Number(p.time) > 0
-          ? new Date(Number(p.time) * 1000).toISOString()
-          : new Date().toISOString();
-
-      const existing = previousByTicket.get(ticket);
-      if (existing) {
-        await supabase
-          .from("mt_positions")
-          .update({
-            symbol,
-            side,
-            volume,
-            open_price: openPrice,
-            stop_loss: sl,
-            take_profit: tp,
-            profit,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("account_id", accountRowId)
-          .eq("ticket", ticket);
-      } else {
-        await supabase.from("mt_positions").insert({
-          user_id: userId,
-          account_id: accountRowId,
-          ticket,
-          symbol,
-          side,
-          volume,
-          open_price: openPrice,
-          stop_loss: sl,
-          take_profit: tp,
-          profit,
-          opened_at: openedAt,
-        });
-      }
-    }
-
-    // Anything in `previous` but missing from `incoming` was closed → log to journal + delete
-    const closed = (previous ?? []).filter(
-      (p) => !incomingTickets.has(String(p.ticket)),
-    );
-    for (const c of closed) {
-      await supabase.from("trade_journal").insert({
-        user_id: userId,
-        pair: c.symbol,
-        direction: c.side === "sell" || c.side === "short" ? "short" : "long",
-        entry_price: Number(c.open_price),
-        exit_price: null, // EA payload doesn't include closing price; left null
-        position_size: Number(c.volume),
-        pnl: c.profit != null ? Number(c.profit) : null,
-        status: "closed",
-        opened_at: c.opened_at,
-        closed_at: new Date().toISOString(),
-        setup_tag: "ea-webhook",
-        notes: `Auto-logged from MT EA. Ticket #${c.ticket}.`,
-      });
-
-      await supabase
-        .from("mt_positions")
-        .delete()
-        .eq("account_id", accountRowId)
-        .eq("ticket", String(c.ticket));
-    }
-
     return json(200, {
       ok: true,
       type: "positions",
-      open: incoming.length,
-      closed: closed.length,
+      received: incoming.length,
+      stored: 0,
+      note: "mt_positions disabled; live data sourced from Trading Layer",
     });
   }
+
 
   // --- deals: EA pushes closed trade history (idempotent on ticket) ---
   // Payload: { type:"deals", account, deals: [
