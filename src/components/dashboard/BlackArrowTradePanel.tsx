@@ -1744,7 +1744,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Utility action bar — small, muted, never stronger than Buy/Sell */}
-        <div className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-1">
+        <div className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-px">
           <ToolBtn
             onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); }}
             label="Cancel"
