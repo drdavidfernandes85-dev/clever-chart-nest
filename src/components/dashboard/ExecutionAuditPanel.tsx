@@ -30,6 +30,11 @@ const STATUS_TONE: Record<string, string> = {
   position_confirmed: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
   filled: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
   done: "border-emerald-500/50 text-emerald-300 bg-emerald-500/10",
+  protection_modified: "border-cyan-500/50 text-cyan-300 bg-cyan-500/10",
+  protection_failed: "border-red-500/50 text-red-300 bg-red-500/10",
+  protection_rejected: "border-red-500/50 text-red-300 bg-red-500/10",
+  protection_blocked: "border-orange-500/50 text-orange-300 bg-orange-500/10",
+  // legacy
   modified: "border-cyan-500/50 text-cyan-300 bg-cyan-500/10",
   modify_failed: "border-red-500/50 text-red-300 bg-red-500/10",
   modify_rejected: "border-red-500/50 text-red-300 bg-red-500/10",
