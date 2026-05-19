@@ -4,7 +4,7 @@
  * call Trading Layer endpoints themselves.
  */
 
-import { useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import {
   liveMarketDataStore,
   type LiveMarketDataState,
