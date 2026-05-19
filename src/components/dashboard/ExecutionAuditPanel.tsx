@@ -53,15 +53,25 @@ const toneFor = (s?: string | null) =>
 
 const friendlyMessageFor = (r: AuditRow): string => {
   if (r.broker_message && r.broker_message.trim().length > 0) return r.broker_message;
-  if (r.status === "closed" && r.raw?.classification === "close_position") {
-    return "Position closed. Ticket removed from MT5 positions.";
+  switch (r.status) {
+    case "placed": return "Broker accepted the order — waiting for MT5 confirmation.";
+    case "position_confirmed": return "Position confirmed in MT5.";
+    case "execution_unconfirmed": return "Broker accepted order but no matching MT5 position was found.";
+    case "closed": return "Position closed. Ticket removed from MT5 positions.";
+    case "close_unconfirmed": return "Close request sent but the position is still open in MT5.";
+    case "partial_closed": return "Position partially closed in MT5.";
+    case "close_failed": return "Close failed at the broker.";
+    case "close_rejected": return "Close rejected by the broker.";
+    case "protection_modified": return "Stop Loss / Take Profit updated.";
+    case "protection_failed": return "Stop Loss / Take Profit update failed.";
+    case "protection_rejected": return "Stop Loss / Take Profit update rejected.";
+    case "protection_blocked": return "Stop Loss / Take Profit update blocked.";
+    case "rejected": return "Order rejected by the broker.";
+    case "rate_limited": return "Rate limited by the Trading Layer.";
+    case "blocked": return "Blocked by execution controls.";
+    case "dry_run": return "Pre-trade check OK (dry run).";
+    default: return r.status ? `Status: ${r.status}` : "No broker message available.";
   }
-  if (r.status === "close_unconfirmed") return "Close request accepted but ticket still exists in MT5 positions.";
-  if (r.status === "execution_unconfirmed") return "Broker accepted order but no matching MT5 position was found.";
-  if (r.status === "position_confirmed") return "Position confirmed";
-  if (r.status === "placed") return "Order placed — confirmation pending";
-  if (r.status === "dry_run") return "Pre-trade check OK (dry run)";
-  return "—";
 };
 
 
