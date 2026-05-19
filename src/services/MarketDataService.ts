@@ -59,10 +59,9 @@ const num = (v: any): number | null =>
 class MarketDataServiceImpl {
   private started = false;
   private timers: Partial<Record<LoopId, number>> = {};
+  private burstTimers: number[] = [];
   private selectedSymbol = "";
   private watchlist = new Set<string>();
-  private positionsBoostUntil = 0;
-  private currentPositionsInterval = POSITIONS_INTERVAL_MS;
   private cooldownTimer: number | null = null;
 
   start() {
