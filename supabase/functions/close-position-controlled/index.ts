@@ -52,11 +52,12 @@ Deno.serve(async (req) => {
   const ticket = payload?.ticket != null ? String(payload.ticket) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
   const volume = Number(payload?.volume);
+  const closeSide = payload?.side ? String(payload.side).toLowerCase() : null;
 
-  if (!ticket || !symbol || !Number.isFinite(volume) || volume <= 0) {
+  if (!ticket || !symbol || !Number.isFinite(volume) || volume <= 0 || (closeSide !== "buy" && closeSide !== "sell")) {
     return json({
       success: false, version: VERSION,
-      error: "ticket, symbol and volume are required",
+      error: "ticket, symbol, volume and side (buy|sell) are required",
     }, 400);
   }
   if (volume > MAX_TEST_VOLUME) {
