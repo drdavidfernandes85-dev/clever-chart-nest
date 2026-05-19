@@ -26,6 +26,10 @@ const OpenPositionsPanel = () => {
   const [testClosing, setTestClosing] = useState<string | null>(null);
   const isDev = import.meta.env.DEV;
 
+  const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
+  const currency = liveAccount?.currency ?? "USD";
+
+
   async function closeTestTrade(pos: LivePosition) {
     const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
     if (!pos.ticket) {
