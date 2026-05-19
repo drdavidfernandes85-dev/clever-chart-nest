@@ -23,6 +23,9 @@ import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
 import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
+import RiskBadges from "@/components/dashboard/RiskBadges";
+import RiskControlsPanel from "@/components/dashboard/RiskControlsPanel";
+import { useDevMode } from "@/hooks/useDevMode";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
