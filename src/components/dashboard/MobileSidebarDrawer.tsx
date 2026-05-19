@@ -15,7 +15,7 @@ import {
   Users,
   GraduationCap,
 } from "lucide-react";
-import infinoxLogo from "@/assets/infinox-logo-white.png";
+import LtrLogo from "@/components/branding/LtrLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
