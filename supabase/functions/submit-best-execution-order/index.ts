@@ -1,8 +1,15 @@
 // Best-Execution Order Router
 // Wraps execute-trade with pre-trade quote snapshot + latency/slippage metrics.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  loadRiskSettings,
+  loadDailyUsage,
+  checkOpenRisk,
+  buildRiskBlock,
+  auditRiskBlock,
+} from "../_shared/risk.ts";
 
-const VERSION = "BEST_EXEC_LIVE_RECONCILED_V1_3_2026_05_19";
+const VERSION = "BEST_EXEC_RISK_ENFORCED_V2_2026_05_19";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
