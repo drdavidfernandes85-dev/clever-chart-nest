@@ -152,7 +152,7 @@ const HeroSection = () => {
             <div className="flex w-full max-w-xl items-start gap-2 rounded-xl border border-primary/40 bg-primary/[0.06] px-4 py-3 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.18)]">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <p className="text-xs leading-relaxed text-white/80">
-                El acceso completo puede requerir una cuenta real verificada de INFINOX y cumplir los requisitos aplicables.
+                {t("hero.eligibilityShort")}
               </p>
             </div>
 
