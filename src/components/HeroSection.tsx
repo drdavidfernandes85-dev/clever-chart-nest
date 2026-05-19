@@ -148,10 +148,8 @@ const HeroSection = () => {
               {t("hero.subheadline")}
             </p>
 
-            {/* Educational positioning */}
-            <p className="max-w-xl text-sm font-semibold text-primary/90">
-              Educación, comunidad y herramientas — sin asesoría financiera ni promesas de rentabilidad.
-            </p>
+
+
 
             {/* Live online counter — prominent */}
             <OnlineNowPill />
