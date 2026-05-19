@@ -93,6 +93,8 @@ const RiskDisclosure = () => {
     </main>
     <Footer />
   </>
-);
+  );
+};
 
 export default RiskDisclosure;
+
