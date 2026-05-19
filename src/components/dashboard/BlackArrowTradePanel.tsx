@@ -27,8 +27,17 @@ import {
   checkAndHandle429,
   getCooldownRemainingMs,
   triggerRateLimitCooldown,
+  isExecutionLocked,
+  lockExecution,
+  unlockExecution,
 } from "@/lib/tradingLayerControl";
+import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useDevMode } from "@/hooks/useDevMode";
+
+const broadcastExec = (status: string) => {
+  try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
+  catch { /* ignore */ }
+};
 
 /**
  * Professional BlackArrow-style Order Ticket.
