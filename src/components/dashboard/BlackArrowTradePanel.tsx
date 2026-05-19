@@ -1945,29 +1945,31 @@ const SummaryRow = ({
   label, value, tone,
 }: { label: string; value: string; tone?: "pos" | "neg" }) => (
   <div className="flex items-center justify-between h-[16px] min-w-0 border-b border-neutral-900/60 last:border-b-0">
-    <span className="text-neutral-500 uppercase tracking-wider text-[8.5px] leading-none truncate">{label}</span>
-    <span className={cn(
-      "font-mono tabular-nums text-[10px] leading-none text-right tracking-tight pl-1",
+    <dt className="text-neutral-500 uppercase tracking-wider text-[8.5px] leading-none truncate m-0">{label}</dt>
+    <dd className={cn(
+      "font-mono tabular-nums text-[10px] leading-none text-right tracking-tight pl-1 m-0",
       tone === "pos" && "text-emerald-400",
       tone === "neg" && "text-red-400",
       !tone && "text-neutral-200",
     )}>
       {value}
-    </span>
+    </dd>
   </div>
 );
 
 const ToolBtn = ({
-  onClick, icon, label, danger,
-}: { onClick: () => void; icon?: React.ReactNode; label: string; danger?: boolean }) => (
+  onClick, icon, label, danger, disabled, ariaLabel,
+}: { onClick: () => void; icon?: React.ReactNode; label: string; danger?: boolean; disabled?: boolean; ariaLabel?: string }) => (
   <button
     type="button"
     onClick={onClick}
+    disabled={disabled}
+    aria-label={ariaLabel ?? label}
     className={cn(
-      "h-[20px] rounded-sm text-[9.5px] font-semibold uppercase tracking-[0.08em] flex items-center justify-center gap-1 transition-colors border border-transparent active:translate-y-px",
+      "h-[20px] rounded-sm text-[9.5px] font-semibold uppercase tracking-[0.08em] flex items-center justify-center gap-1 transition-colors border border-transparent active:translate-y-px focus:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0a0a0a] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:translate-y-0",
       danger
-        ? "bg-red-500/[0.06] text-red-400/90 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 active:bg-red-500/25"
-        : "bg-neutral-900/60 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 hover:border-neutral-700 active:bg-neutral-700",
+        ? "bg-red-500/[0.06] text-red-400/90 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 active:bg-red-500/25 focus-visible:ring-red-400 disabled:hover:bg-red-500/[0.06] disabled:hover:text-red-400/90 disabled:hover:border-transparent"
+        : "bg-neutral-900/60 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 hover:border-neutral-700 active:bg-neutral-700 focus-visible:ring-neutral-400 disabled:hover:bg-neutral-900/60 disabled:hover:text-neutral-400 disabled:hover:border-transparent",
     )}
   >
     {icon} {label}
