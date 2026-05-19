@@ -359,10 +359,12 @@ const MarketWatchPanel = ({
     const load = async () => {
       try {
         const { supabase } = await import("@/integrations/supabase/client");
+        const { checkAndHandle429 } = await import("@/lib/tradingLayerControl");
         const { data, error } = await supabase.functions.invoke("get-mt5-quotes", {
           body: { selectedSymbol: active, symbols: tickRequest, debug: false },
         });
         if (cancelled) return;
+        checkAndHandle429(data, error);
         if (error || !data?.success || !Array.isArray(data?.quotes) || data.quotes.length === 0) {
           // Keep lastGoodQuotes; flag delayed.
           setDataDelayed(true);
@@ -398,13 +400,24 @@ const MarketWatchPanel = ({
         if (!cancelled) setDataDelayed(true);
       }
     };
-    load();
-    const id = window.setInterval(load, 4000);
+    // Initial load only if auto-refresh allowed; manual refresh event always reloads.
+    import("@/lib/tradingLayerControl").then(({ isAutoRefreshAllowed }) => {
+      if (!cancelled && isAutoRefreshAllowed()) load();
+    });
+    const onManualRefresh = () => load();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      import("@/lib/tradingLayerControl").then(({ isAutoRefreshAllowed }) => {
+        if (!cancelled && isAutoRefreshAllowed()) load();
+      });
+    }, 4000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
   }, [tickRequest, active]);
+
 
 
   // Hydrate favorites with broker metadata when available

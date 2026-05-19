@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, TrendingDown, ArrowDown, ArrowUp, BarChart2 } from "lucide-react";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 interface Props {
   /** TradingView-style symbol e.g. "FX:EURUSD" */
@@ -80,13 +81,19 @@ const ChartHeaderStats = ({ symbol, displayLabel }: Props) => {
       }
     };
 
-    fetchQuote();
-    const id = window.setInterval(fetchQuote, 5000);
+    if (isAutoRefreshAllowed()) fetchQuote();
+    const onManualRefresh = () => fetchQuote();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) fetchQuote();
+    }, 5000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
   }, [symbol]);
+
 
   const decimals = decimalsFor(displayLabel);
   const change = quote ? quote.price - quote.open : 0;

@@ -6,6 +6,7 @@ import {
   fetchMarketQuotes,
   decimalsFor,
 } from "@/lib/markets";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 export interface WatchSymbol {
   label: string; // pretty, e.g. "EUR/USD"
@@ -48,12 +49,18 @@ const MiniWatchlist = ({ symbols, active, onSelect }: Props) => {
         return next;
       });
     };
-    refresh();
-    const id = window.setInterval(refresh, 20_000);
+    if (isAutoRefreshAllowed()) refresh();
+    const onManualRefresh = () => refresh();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) refresh();
+    }, 20_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
+
   }, [symbols]);
 
   return (

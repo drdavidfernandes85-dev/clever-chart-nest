@@ -33,6 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { fetchMarketQuotes } from "@/lib/markets";
+import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   validateStops,
@@ -144,6 +145,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       const { data, error } = await supabase.functions.invoke("get-mt5-terminal-data", {
         body: {},
       });
+      checkAndHandle429(data, error);
       if (error) throw error;
       if ((data as any)?.success === true) {
         const acc = (data as any).account ?? (data as any).data ?? null;
@@ -476,13 +478,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         if (!cancelled) setPriceLoading(false);
       }
     };
-    load();
-    const id = window.setInterval(load, 15000);
+    if (isAutoRefreshAllowed()) load();
+    const onManualRefresh = () => load();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) load();
+    }, 15000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
   }, [brokerSymbol, priceNonce]);
+
 
   // Validate SL/TP relative to the current market price.
   const stopsError = validateStops({

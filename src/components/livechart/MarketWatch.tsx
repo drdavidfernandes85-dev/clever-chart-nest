@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, Loader2 } from "lucide-react";
 import { fetchMarketQuotes, type LiveQuote } from "@/lib/markets";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 interface Props {
   symbols: string[]; // display labels e.g. "EUR/USD"
@@ -23,12 +24,18 @@ const MarketWatch = ({ symbols, active, onSelect }: Props) => {
       setQuotes(map);
       setLoading(false);
     };
-    load();
-    const id = window.setInterval(load, 4000);
+    if (isAutoRefreshAllowed()) load();
+    const onManualRefresh = () => load();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) load();
+    }, 4000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
+
   }, []);
 
   return (

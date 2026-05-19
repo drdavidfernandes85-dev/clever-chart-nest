@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity } from "lucide-react";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 /**
  * Real live market chart powered by TradingView Advanced Chart widget.
@@ -62,12 +63,18 @@ const LiveTradingViewChart = ({
       }
     };
 
-    fetchPrice();
-    const id = window.setInterval(fetchPrice, 5000);
+    if (isAutoRefreshAllowed()) fetchPrice();
+    const onManualRefresh = () => fetchPrice();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) fetchPrice();
+    }, 5000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
+
   }, [symbol]);
 
   const change = livePrice !== null && openPrice !== null ? livePrice - openPrice : 0;
