@@ -57,19 +57,19 @@ const SelectedSymbolExposure = ({ symbol }: Props) => {
   }, [matched]);
 
   return (
-    <div className="rounded-md border border-[color:var(--ltr-gold-border)]/60 bg-[color:var(--ltr-panel-elev)]">
-      <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-[color:var(--ltr-gold-border)]/40">
-        <span className="text-[9.5px] font-mono uppercase tracking-[0.18em] text-ltr-silver-400">
+    <div className="rounded-sm border border-neutral-800/70 bg-[#0b0b0b]">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-neutral-800/60">
+        <span className="text-[8.5px] font-mono uppercase tracking-[0.22em] text-neutral-500">
           Exposure · <span className="text-[#FFCD05]">{symbol || "—"}</span>
         </span>
         {totals && (
           <span
-            className={`text-[9px] font-mono uppercase tracking-[0.16em] px-1.5 py-0.5 rounded-sm ${
+            className={`text-[8.5px] font-mono uppercase tracking-[0.18em] px-1 py-[1px] rounded-sm ${
               totals.side === "buy"
                 ? "bg-emerald-500/15 text-emerald-400"
                 : totals.side === "sell"
                   ? "bg-red-500/15 text-red-400"
-                  : "bg-neutral-700/40 text-ltr-silver-400"
+                  : "bg-neutral-700/40 text-neutral-400"
             }`}
           >
             Net {totals.side}
@@ -78,8 +78,8 @@ const SelectedSymbolExposure = ({ symbol }: Props) => {
       </div>
 
       {matched.length === 0 ? (
-        <div className="px-3 py-3 text-[10px] font-mono uppercase tracking-[0.14em] text-ltr-silver-500 text-center">
-          No open exposure on {symbol || "selected symbol"}.
+        <div className="px-2 py-1.5 text-[9.5px] font-mono uppercase tracking-[0.18em] text-neutral-600 text-center">
+          No open exposure.
         </div>
       ) : (
         <div className="p-2 space-y-2">
