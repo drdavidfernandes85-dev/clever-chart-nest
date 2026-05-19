@@ -352,12 +352,8 @@ Deno.serve(async (req) => {
         notes: `Auto-logged from MT EA history. Ticket #${ticket}.`,
       });
 
-      // Also remove from open positions if it lingered there
-      await supabase
-        .from("mt_positions")
-        .delete()
-        .eq("user_id", userId)
-        .eq("ticket", ticket);
+      // mt_positions write removed.
+
     }
 
     if (rowsToInsert.length > 0) {
