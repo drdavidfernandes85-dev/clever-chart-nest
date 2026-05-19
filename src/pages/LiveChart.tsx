@@ -466,6 +466,8 @@ const LiveChartInner = () => {
           <aside className="flex flex-col gap-2 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
             <OpenPositionsPanel />
 
+            <LiveExecutionBanner />
+            <SystemHealthWidget />
             <div
               className={`rounded-2xl transition-all duration-500 ${
                 highlightTicket
@@ -475,6 +477,7 @@ const LiveChartInner = () => {
             >
               <BlackArrowTradePanel />
             </div>
+
           </aside>
         </div>
       </div>
