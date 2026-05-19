@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     return json({ success: false, version: VERSION, error: "Unauthorized" }, 401);
   }
 
-  // 2. Parse & validate payload (only ticket, symbol, volume accepted)
+  // 2. Parse & validate payload — accepts spec payload {closeId, ticket, symbol, openSide, volume, liveCloseConfirmed, clientClickAt} or legacy {ticket, symbol, volume, side}.
   let payload: any;
   try { payload = await req.json(); } catch {
     return json({ success: false, version: VERSION, error: "Invalid JSON body" }, 400);
@@ -52,12 +52,28 @@ Deno.serve(async (req) => {
   const ticket = payload?.ticket != null ? String(payload.ticket) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
   const volume = Number(payload?.volume);
-  const closeSide = payload?.side ? String(payload.side).toLowerCase() : null;
+  const openVolume = Number(payload?.openVolume);
+  const openSideRaw = payload?.openSide ? String(payload.openSide).toLowerCase() : null;
+  const sideRaw = payload?.side ? String(payload.side).toLowerCase() : null;
+  // Prefer derived closeSide from openSide; fall back to legacy 'side'.
+  const closeSide = openSideRaw === "buy" ? "sell"
+                  : openSideRaw === "sell" ? "buy"
+                  : (sideRaw === "buy" || sideRaw === "sell") ? sideRaw
+                  : null;
+  const closeId = typeof payload?.closeId === "string" && payload.closeId.length > 0
+    ? payload.closeId
+    : `close-${ticket}-${Date.now()}`;
 
   if (!ticket || !symbol || !Number.isFinite(volume) || volume <= 0 || (closeSide !== "buy" && closeSide !== "sell")) {
     return json({
       success: false, version: VERSION,
-      error: "ticket, symbol, volume and side (buy|sell) are required",
+      error: "ticket, symbol, volume and openSide|side (buy|sell) are required",
+    }, 400);
+  }
+  if (openSideRaw && payload?.liveCloseConfirmed !== true) {
+    return json({
+      success: false, version: VERSION,
+      error: "liveCloseConfirmed=true is required for live closes",
     }, 400);
   }
   if (volume > MAX_TEST_VOLUME) {
