@@ -1750,11 +1750,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Bottom row */}
-        <div className="grid grid-cols-3 gap-1">
+        {/* Utility action bar — muted, never stronger than Buy/Sell */}
+        <div className="grid grid-cols-4 gap-1">
           <ToolBtn
             onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); }}
             icon={<X className="h-3 w-3" />}
-            label="Cancel Order"
+            label="Cancel"
           />
           <ToolBtn
             onClick={() => setSide(side === "buy" ? "sell" : "buy")}
@@ -1762,7 +1763,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             label="Invert"
           />
           <ToolBtn onClick={closeSymbolPositions} icon={<X className="h-3 w-3" />} label="Close" danger />
+          <ToolBtn
+            onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); closeSymbolPositions(); }}
+            icon={<X className="h-3 w-3" />}
+            label="Close + Cancel"
+            danger
+          />
         </div>
+
 
         {/* Symbol exposure footer removed — handled by SelectedSymbolExposure in the right rail. */}
 
