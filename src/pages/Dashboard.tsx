@@ -16,6 +16,8 @@ import SEO from "@/components/SEO";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
+import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
+import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
@@ -1056,9 +1058,12 @@ const DashboardInner = () => {
                 onSelect={(label) => selectSymbol(label)}
               />
             </div>
-            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-0.5">
+            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-0.5 space-y-2">
+              <LiveExecutionBanner />
+              <SystemHealthWidget />
               <BlackArrowTradePanel />
             </div>
+
           </aside>
         </div>
 

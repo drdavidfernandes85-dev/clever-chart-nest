@@ -17,6 +17,63 @@ import { toast } from "sonner";
 // Trading Layer. Manual `mt:refresh-*` events still fire and bypass this.
 const AUTO_REFRESH_DISABLED = true;
 
+/* ---------------- Global execution lock ---------------- */
+/**
+ * One global lock around any in-flight Buy / Sell / Close call.
+ * Subscribers (buttons) disable themselves while locked and re-enable
+ * after `unlockExecution()`. Lock is also released automatically when the
+ * configured TTL elapses, to avoid a stuck UI if a caller forgets.
+ */
+const EXEC_LOCK_EVT = "mt:exec-lock";
+let execLockedUntil = 0;
+let execLockReason: string | null = null;
+let execLockTimer: number | null = null;
+
+export function isExecutionLocked(): boolean {
+  return Date.now() < execLockedUntil || getCooldownRemainingMs() > 0;
+}
+export function getExecutionLockReason(): string | null {
+  if (getCooldownRemainingMs() > 0) return "rate_limited";
+  return Date.now() < execLockedUntil ? execLockReason : null;
+}
+function broadcastLock() {
+  try { window.dispatchEvent(new CustomEvent(EXEC_LOCK_EVT)); } catch { /* ignore */ }
+}
+export function lockExecution(reason: string, ttlMs = 20000) {
+  execLockedUntil = Date.now() + ttlMs;
+  execLockReason = reason;
+  if (execLockTimer != null) {
+    try { window.clearTimeout(execLockTimer); } catch { /* ignore */ }
+  }
+  execLockTimer = window.setTimeout(() => {
+    execLockedUntil = 0;
+    execLockReason = null;
+    broadcastLock();
+  }, ttlMs + 50);
+  broadcastLock();
+}
+export function unlockExecution() {
+  execLockedUntil = 0;
+  execLockReason = null;
+  if (execLockTimer != null) {
+    try { window.clearTimeout(execLockTimer); } catch { /* ignore */ }
+    execLockTimer = null;
+  }
+  broadcastLock();
+}
+export async function withExecutionLock<T>(reason: string, fn: () => Promise<T>, ttlMs = 30000): Promise<T> {
+  if (isExecutionLocked()) {
+    throw new Error("Another execution is in progress. Please wait.");
+  }
+  lockExecution(reason, ttlMs);
+  try { return await fn(); }
+  finally { unlockExecution(); }
+}
+export const EXEC_LOCK_EVENT = EXEC_LOCK_EVT;
+
+/* ---------------- Auto-refresh / cooldown ---------------- */
+
+
 let cooldownUntil = 0;
 
 export function isAutoRefreshAllowed(): boolean {

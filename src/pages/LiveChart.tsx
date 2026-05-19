@@ -34,6 +34,8 @@ import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
+import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
+import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import MarketWatch from "@/components/livechart/MarketWatch";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
@@ -466,6 +468,8 @@ const LiveChartInner = () => {
           <aside className="flex flex-col gap-2 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
             <OpenPositionsPanel />
 
+            <LiveExecutionBanner />
+            <SystemHealthWidget />
             <div
               className={`rounded-2xl transition-all duration-500 ${
                 highlightTicket
@@ -475,6 +479,7 @@ const LiveChartInner = () => {
             >
               <BlackArrowTradePanel />
             </div>
+
           </aside>
         </div>
       </div>

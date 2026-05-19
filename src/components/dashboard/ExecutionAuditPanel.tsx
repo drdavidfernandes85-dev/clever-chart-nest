@@ -19,28 +19,11 @@ type AuditRow = {
   raw: any;
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  placed: "Order placed",
-  position_confirmed: "Position confirmed",
-  closed: "Position closed",
-  close_failed: "Close failed",
-  close_rejected: "Close rejected",
-  rate_limited: "Rate limited",
-  rejected: "Order rejected",
-  blocked: "Pre-trade blocked",
-  filled: "Order filled",
-  done: "Order filled",
-};
-const CLASSIFICATION_LABELS: Record<string, string> = {
-  placed: "Order placed",
-  placed_confirmed: "Position confirmed",
-  close_position: "Close position",
-  rate_limited: "Rate limited",
-};
-const prettyStatus = (s?: string | null) =>
-  s ? (STATUS_LABELS[s] ?? s) : "—";
-const prettyClass = (s?: string | null) =>
-  s ? (CLASSIFICATION_LABELS[s] ?? s) : "—";
+import { prettyAuditStatus, prettyAuditClassification } from "@/lib/auditLabels";
+
+const prettyStatus = prettyAuditStatus;
+const prettyClass = prettyAuditClassification;
+
 
 export default function ExecutionAuditPanel({ refreshKey = 0 }: { refreshKey?: number }) {
   const [rows, setRows] = useState<AuditRow[]>([]);

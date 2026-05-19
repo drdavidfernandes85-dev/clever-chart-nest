@@ -27,8 +27,17 @@ import {
   checkAndHandle429,
   getCooldownRemainingMs,
   triggerRateLimitCooldown,
+  isExecutionLocked,
+  lockExecution,
+  unlockExecution,
 } from "@/lib/tradingLayerControl";
+import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useDevMode } from "@/hooks/useDevMode";
+
+const broadcastExec = (status: string) => {
+  try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
+  catch { /* ignore */ }
+};
 
 /**
  * Professional BlackArrow-style Order Ticket.
@@ -108,6 +117,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [noStops, setNoStops] = useState(false);
   const [autoReset, setAutoReset] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const { locked: execLocked } = useExecutionLock();
   const [symbolOpen, setSymbolOpen] = useState(false);
   const [symbolSearch, setSymbolSearch] = useState("");
   const [bidFlash, setBidFlash] = useState<"up" | "down" | null>(null);
@@ -715,7 +725,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     hasValidBidAsk &&
     volNum > 0 &&
     !volumeError &&
-    !submitting;
+    !submitting &&
+    !execLocked;
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
@@ -726,8 +737,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       else if (slTpError) toast.error(slTpError);
       return;
     }
+    if (isExecutionLocked()) { toast.warning("Another execution is in progress."); return; }
     setSide(sideArg);
     setSubmitting(true);
+    lockExecution(`order_${sideArg}`, 30000);
     const clientClickAt = new Date().toISOString();
     const tradeId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -872,8 +885,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       }
     } catch (e: any) {
       toast.error(e?.message || "Order failed");
+      broadcastExec("Execution Failed");
     } finally {
       setSubmitting(false);
+      unlockExecution();
     }
   };
 
@@ -883,7 +898,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       toast.info("No open positions on this symbol");
       return;
     }
+    if (isExecutionLocked()) { toast.warning("Another execution is in progress."); return; }
     setSubmitting(true);
+    lockExecution("close_symbol", 30000);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated.");
@@ -906,15 +923,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         });
       }
       toast.success(`Closed ${symbolPositions.length} position(s)`);
+      broadcastExec("Position Closed");
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
       window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
       refresh();
     } catch (e: any) {
       toast.error(e?.message || "Close failed");
+      broadcastExec("Close Failed");
     } finally {
       setSubmitting(false);
+      unlockExecution();
     }
   };
+
 
   if (!showAsConnected) {
     return (

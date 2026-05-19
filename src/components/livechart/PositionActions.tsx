@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Loader2, X, Edit3, Scissors, AlertTriangle } from "lucide-react";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,12 @@ import {
   checkAndHandle429,
   getCooldownRemainingMs,
   triggerRateLimitCooldown,
+  isExecutionLocked,
+  lockExecution,
+  unlockExecution,
 } from "@/lib/tradingLayerControl";
+import { useExecutionLock } from "@/hooks/useExecutionLock";
+import { reconcileAfterClose, notifyCloseResult } from "@/lib/positionReconciliation";
 
 const TEST_CLOSE_MAX_VOLUME = 0.01;
 
@@ -60,9 +66,14 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
   const [openPartial, setOpenPartial] = useState(false);
   const [openFull, setOpenFull] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const { locked } = useExecutionLock();
+  const { positions } = useLiveAccount();
+  const positionsRef = useRef(positions);
+  useEffect(() => { positionsRef.current = positions; }, [positions]);
 
-  const busy = submitting || cooling || disabled;
+  const busy = submitting || cooling || disabled || locked;
   const ticket = position.ticket != null ? String(position.ticket) : null;
+
 
   async function refreshAll() {
     await onAfter();
@@ -71,86 +82,107 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
   }
 
+  function broadcastExec(status: string) {
+    try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
+    catch { /* ignore */ }
+  }
+
+
   async function submitModify(stopLoss: number | null, takeProfit: number | null) {
     if (!ticket) return toast.error("Missing ticket.");
+    if (isExecutionLocked()) {
+      return toast.warning("Another execution is in progress. Please wait.");
+    }
     setSubmitting(true);
+    lockExecution("modify_sl_tp", 20000);
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/modify-position-protection`;
       const r = await fetch(url, {
-        method: "POST",
-        cache: "no-store",
-        headers,
+        method: "POST", cache: "no-store", headers,
         body: JSON.stringify({
-          ticket,
-          symbol: position.symbol,
-          side: position.side,
-          volume: Number(position.volume),
-          currentPrice: Number(position.current_price),
-          stopLoss,
-          takeProfit,
+          ticket, symbol: position.symbol, side: position.side,
+          volume: Number(position.volume), currentPrice: Number(position.current_price),
+          stopLoss, takeProfit,
         }),
       });
       const data = await r.json().catch(() => ({}));
-      if (isRateLimited(r.status, data)) return;
+      if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
       checkAndHandle429(data, null);
       if (!r.ok || data?.success === false) {
         toast.error(errMessageFrom(data), { description: String(data?.brokerMessage ?? "") });
+        broadcastExec("Modify Failed");
       } else {
-        toast.success("Protection updated", {
-          description: `#${ticket} ${position.symbol}`,
-        });
+        toast.success("Protection updated", { description: `#${ticket} ${position.symbol}` });
+        broadcastExec("Protection Updated");
         setOpenModify(false);
       }
     } catch (e: any) {
       toast.error("Could not modify protection", { description: e?.message });
+      broadcastExec("Modify Failed");
     } finally {
       setSubmitting(false);
+      unlockExecution();
       await refreshAll();
     }
   }
 
   async function submitClose(volume: number, label: "partial" | "full") {
     if (!ticket) return toast.error("Missing ticket.");
+    if (isExecutionLocked()) {
+      return toast.warning("Another execution is in progress. Please wait.");
+    }
     setSubmitting(true);
+    lockExecution(label === "full" ? "close_full" : "close_partial", 30000);
+    let serverClosed = false;
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
       const r = await fetch(url, {
-        method: "POST",
-        cache: "no-store",
-        headers,
+        method: "POST", cache: "no-store", headers,
         body: JSON.stringify({
-          ticket,
-          symbol: position.symbol,
-          volume,
+          ticket, symbol: position.symbol, volume,
           side: position.side === "buy" ? "sell" : "buy",
         }),
       });
       const data = await r.json().catch(() => ({}));
-      if (isRateLimited(r.status, data)) return;
+      if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
       checkAndHandle429(data, null);
       if (!r.ok || data?.success === false) {
         toast.error(errMessageFrom(data), { description: String(data?.brokerMessage ?? "") });
+        broadcastExec("Close Rejected");
       } else if (data?.status === "closed") {
-        toast.success(
-          label === "full" ? "Position closed successfully" : "Partial close executed",
-          { description: `#${ticket} ${position.symbol} • ${volume.toFixed(2)} lots` },
-        );
+        serverClosed = true;
         if (label === "full") setOpenFull(false);
         else setOpenPartial(false);
       } else {
         toast.warning(`Close ${data?.status || "pending"}`, {
           description: String(data?.brokerMessage ?? ""),
         });
+        broadcastExec("Close Pending");
       }
     } catch (e: any) {
       toast.error("Could not close position", { description: e?.message });
+      broadcastExec("Close Failed");
     } finally {
       setSubmitting(false);
-      await refreshAll();
+      unlockExecution();
+      // Reconcile: refresh now + at 1.5s + 3s; check ticket disappears.
+      try { await onAfter(); } catch { /* ignore */ }
+      if (serverClosed && ticket) {
+        const getTickets = () =>
+          (positionsRef.current ?? []).map((p) => (p.ticket == null ? "" : String(p.ticket)));
+        const outcome = await reconcileAfterClose(onAfter, getTickets, ticket);
+        notifyCloseResult(outcome, position.symbol, ticket);
+        broadcastExec(outcome === "closed" ? "Position Closed" : "Close Pending");
+      }
+
+      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
     }
   }
+
 
   return (
     <>
