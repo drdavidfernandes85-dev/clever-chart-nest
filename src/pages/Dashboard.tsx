@@ -22,6 +22,7 @@ import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
 import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
+import SelectedSymbolExposure from "@/components/livechart/SelectedSymbolExposure";
 import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
