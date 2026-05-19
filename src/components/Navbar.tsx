@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, User, Plug, CheckCircle2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import sidebarLogo from "@/assets/logo-sidebar.png";
+
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import LtrLogo from "@/components/branding/LtrLogo";
 
