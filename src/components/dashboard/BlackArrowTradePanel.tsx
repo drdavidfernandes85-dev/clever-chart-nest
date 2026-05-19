@@ -263,7 +263,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             volume: payload.volume,
             startedAt: Date.now(),
           });
-          toast.success("Order placed — confirming execution...");
+          toast.success("Order placed — confirming position...");
           runPostTradeConfirmation({
             symbol: payload.symbol,
             side: payload.side,
