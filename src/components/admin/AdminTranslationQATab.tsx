@@ -44,8 +44,27 @@ const LOANWORDS_OK = new Set([
   "trading","terminal","analytics","forex","sharpe","equity","chatroom","newsletter",
   "blog","trader","trades","neutral","pro","live","demo","webinar","webinars","dashboard",
   "email","sso","api","url","ok","id","mt5","mt4","cfd","ai","faq","cta","seo","p&l",
-  "% equity","equity 30d","take profit","stop loss",
+  "% equity","equity 30d","take profit","stop loss","online","offline","swing trader","day trader",
 ]);
+
+// Treat these key-pair shapes as intentional aliases (same value in two keys).
+const isAliasPair = (keys: string[]): boolean => {
+  if (keys.length < 2) return false;
+  const norm = (k: string) => k.replace(/^seo\./, "").replace(/\.seo\./, ".").replace(/\.(title|desc|description)$/, "");
+  const set = new Set(keys.map(norm));
+  if (set.size === 1) return true;
+  // Heuristic: known alias prefixes that share copy across contexts.
+  const aliasGroups = [
+    ["dash", "livechart"],
+    ["chat", "community", "seo.community"],
+    ["edu", "webinarLp"],
+    ["analytics.desc", "analytics.subtitle"],
+    ["analytics.empty", "analytics.noReports"],
+    ["ideas.seo.disclaimer", "exec.notice.educational"],
+    ["hero.eligibility", "access.eligibility", "access.reason.unknown"],
+  ];
+  return aliasGroups.some((g) => keys.every((k) => g.some((p) => k.startsWith(p) || k.includes(p))));
+};
 
 // Compliance terms that should NEVER appear as user-facing copy.
 // We scan only string literals inside JSX text or t() default fallbacks; code
@@ -188,7 +207,7 @@ const AdminTranslationQATab = () => {
         seen.get(norm)!.push(k);
       });
       seen.forEach((keys, v) => {
-        if (keys.length > 1) {
+        if (keys.length > 1 && !isAliasPair(keys)) {
           issues.push({
             id: `dup-${loc}-${keys[0]}`,
             type: "duplicate-key",
