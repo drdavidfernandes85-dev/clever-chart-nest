@@ -1,0 +1,212 @@
+// Modify Position Protection — update SL / TP on an open MT5 position.
+// Does NOT call execute-trade or place-order. Sends only SL/TP changes to
+// Trading Layer and logs the result to execution_audit_events.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const VERSION = "MODIFY_POSITION_PROTECTION_V1_2026_05_19";
+const BASE_URL = "https://api.trading-layer.com";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
+
+  const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
+  const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (!TRADING_LAYER_KEY) {
+    return json({ success: false, version: VERSION, error: "Missing TRADING_LAYER_API_KEY" }, 500);
+  }
+
+  const authHeader = req.headers.get("Authorization") || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return json({ success: false, version: VERSION, error: "Missing Authorization header" }, 401);
+  }
+  const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+  const token = authHeader.replace("Bearer ", "");
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) {
+    return json({ success: false, version: VERSION, error: "Unauthorized" }, 401);
+  }
+
+  let payload: any;
+  try { payload = await req.json(); } catch {
+    return json({ success: false, version: VERSION, error: "Invalid JSON body" }, 400);
+  }
+  const ticket = payload?.ticket != null ? String(payload.ticket) : null;
+  const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
+  const side = payload?.side ? String(payload.side).toLowerCase() : null;
+  const volume = Number(payload?.volume);
+  const currentPrice = Number(payload?.currentPrice);
+  const stopLossRaw = payload?.stopLoss;
+  const takeProfitRaw = payload?.takeProfit;
+  const stopLoss =
+    stopLossRaw === null || stopLossRaw === "" || stopLossRaw === undefined
+      ? null
+      : Number(stopLossRaw);
+  const takeProfit =
+    takeProfitRaw === null || takeProfitRaw === "" || takeProfitRaw === undefined
+      ? null
+      : Number(takeProfitRaw);
+
+  if (!ticket || !symbol || (side !== "buy" && side !== "sell")) {
+    return json({
+      success: false, version: VERSION,
+      error: "ticket, symbol and side (buy|sell) are required",
+    }, 400);
+  }
+  if (stopLoss === null && takeProfit === null) {
+    return json({
+      success: false, version: VERSION,
+      error: "Provide at least one of stopLoss or takeProfit",
+    }, 400);
+  }
+  if (stopLoss !== null && !Number.isFinite(stopLoss)) {
+    return json({ success: false, version: VERSION, error: "stopLoss must be a number" }, 400);
+  }
+  if (takeProfit !== null && !Number.isFinite(takeProfit)) {
+    return json({ success: false, version: VERSION, error: "takeProfit must be a number" }, 400);
+  }
+  if (Number.isFinite(currentPrice) && currentPrice > 0) {
+    if (side === "buy") {
+      if (stopLoss !== null && stopLoss >= currentPrice) {
+        return json({ success: false, version: VERSION, error: "For buy, SL must be below current price" }, 400);
+      }
+      if (takeProfit !== null && takeProfit <= currentPrice) {
+        return json({ success: false, version: VERSION, error: "For buy, TP must be above current price" }, 400);
+      }
+    } else {
+      if (stopLoss !== null && stopLoss <= currentPrice) {
+        return json({ success: false, version: VERSION, error: "For sell, SL must be above current price" }, 400);
+      }
+      if (takeProfit !== null && takeProfit >= currentPrice) {
+        return json({ success: false, version: VERSION, error: "For sell, TP must be below current price" }, 400);
+      }
+    }
+  }
+
+  const { data: account, error: accountError } = await supabase
+    .from("user_mt_accounts")
+    .select("id, metaapi_account_id, status")
+    .eq("user_id", user.id)
+    .eq("status", "connected")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (accountError || !account?.metaapi_account_id) {
+    return json({
+      success: false, version: VERSION,
+      error: accountError?.message || "No connected MT5 account found",
+    }, 404);
+  }
+  const accountId = account.metaapi_account_id;
+
+  const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
+  const modifyPayload: Record<string, unknown> = {
+    symbol,
+    position: Number(ticket),
+  };
+  if (stopLoss !== null) modifyPayload.stopLoss = stopLoss;
+  if (takeProfit !== null) modifyPayload.takeProfit = takeProfit;
+
+  const startedAt = Date.now();
+  let httpStatus = 0;
+  let res: any = null;
+  let networkError: string | null = null;
+  try {
+    const r = await fetch(`${BASE_URL}/api/v1/accounts/${accountId}/trades/send`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${TRADING_LAYER_KEY}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": idempotencyKey,
+      },
+      body: JSON.stringify(modifyPayload),
+    });
+    httpStatus = r.status;
+    const text = await r.text();
+    try { res = JSON.parse(text); } catch { res = { rawText: text }; }
+  } catch (e) {
+    networkError = e instanceof Error ? e.message : String(e);
+  }
+  const latencyMs = Date.now() - startedAt;
+
+  const retcode = res?.retcode != null ? Number(res.retcode) : null;
+  const brokerMessage =
+    res?.brokerMessage ?? res?.message ?? res?.error ?? res?.retcodeDescription ?? null;
+  const httpOk = httpStatus >= 200 && httpStatus < 300;
+  const explicitSuccess = res?.success === true || retcode === 10009 || retcode === 10008;
+  const explicitRejection =
+    res?.success === false ||
+    String(res?.status || "").toLowerCase() === "rejected" ||
+    (retcode != null && retcode >= 10010 && retcode !== 10008);
+
+  let status: "modified" | "modify_failed" | "modify_rejected";
+  let outcome: "success" | "rejected" | "failed";
+  if (networkError || !httpOk) {
+    status = "modify_failed"; outcome = "failed";
+  } else if (explicitRejection) {
+    status = "modify_rejected"; outcome = "rejected";
+  } else if (explicitSuccess || httpOk) {
+    status = "modified"; outcome = "success";
+  } else {
+    status = "modify_failed"; outcome = "failed";
+  }
+
+  try {
+    await supabase.from("execution_audit_events").insert({
+      user_id: user.id,
+      trade_id: `modify-${ticket}`,
+      symbol,
+      side,
+      volume: Number.isFinite(volume) ? volume : 0,
+      status,
+      outcome,
+      broker_message: brokerMessage,
+      retcode,
+      reason: outcome !== "success" ? (networkError || brokerMessage || res?.error || null) : null,
+      latency_ms: latencyMs,
+      ticket,
+      raw: {
+        classification: "modify_position",
+        version: VERSION,
+        tradingLayerStatus: httpStatus,
+        request: modifyPayload,
+        response: res,
+        networkError,
+        appliedStopLoss: stopLoss,
+        appliedTakeProfit: takeProfit,
+      },
+    });
+  } catch { /* ignore audit errors */ }
+
+  return json({
+    success: outcome === "success",
+    version: VERSION,
+    classification: "modify_position",
+    status,
+    outcome,
+    ticket,
+    symbol,
+    stopLoss,
+    takeProfit,
+    retcode,
+    brokerMessage,
+    latencyMs,
+    tradingLayerStatus: httpStatus,
+    error: outcome === "success" ? null : (networkError || brokerMessage || "Modify failed"),
+  });
+});
