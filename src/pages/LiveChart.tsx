@@ -34,6 +34,8 @@ import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
+import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
+import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import MarketWatch from "@/components/livechart/MarketWatch";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
