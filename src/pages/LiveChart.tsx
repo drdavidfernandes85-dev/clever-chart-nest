@@ -40,6 +40,14 @@ import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import MarketWatch from "@/components/livechart/MarketWatch";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
+import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
+import TerminalStatusChips from "@/components/livechart/TerminalStatusChips";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { LiveAccountProvider, useLiveAccount, fmtMoney } from "@/contexts/LiveAccountContext";
@@ -247,61 +255,76 @@ const LiveChartInner = () => {
       />
 
       {/* App header — LTR Terminal Pro */}
-      <header className="sticky top-0 z-50 border-b border-[#FFCD05]/15 bg-[#050505]/95 backdrop-blur-2xl">
-        <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
+      <header className="sticky top-0 z-50 border-b border-[#FFCD05]/10 bg-[#050505]/95 backdrop-blur-2xl">
+        <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4 gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/" className="flex items-center gap-2.5 group shrink-0" aria-label="INFINOX — Home">
               <img src={infinoxLogo} alt="INFINOX" className="h-7 sm:h-8 w-auto object-contain" />
             </Link>
 
-            <span className="hidden md:inline-flex items-center h-5 rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1.5 text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
+            <span className="hidden md:inline-flex items-center h-5 rounded-sm border border-[#FFCD05]/25 bg-[#FFCD05]/5 px-1.5 text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
               IX LTR
             </span>
 
-            {/* MT5 connection — separated from brand identity */}
-            <div className="hidden md:flex items-center gap-1.5 h-5 px-1.5 rounded-sm border border-[#2A2D31] bg-[#0A0B0D]">
-              <span
-                className={`inline-flex h-1.5 w-1.5 rounded-full ${
-                  connected ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" : "bg-neutral-600"
-                }`}
-              />
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#C9CDD2]">
-                {connected ? "Connected · INFINOX MT5" : "MT5 disconnected"}
-              </span>
-              {connected && liveAccount?.login && (
-                <span className="font-mono text-[9px] tabular-nums text-[#8E949C] pl-1 border-l border-[#2A2D31]">
-                  #{liveAccount.login}
-                  {liveAccount.server && (
-                    <span className="text-[#5d6168]"> · {liveAccount.server}</span>
-                  )}
-                </span>
-              )}
+            {/* Consolidated status chips replace multiple loud bars */}
+            <div className="hidden md:flex">
+              <TerminalStatusChips />
             </div>
 
+            {/* Essential account metrics only: Balance · Equity · P&L
+                Server / leverage / margin / free moved into the "more" popover. */}
             {connected && liveAccount && (
-              <div className="hidden lg:flex items-center gap-4 ml-1 pl-3 border-l border-[#2A2D31] text-[10.5px] font-mono uppercase tracking-[0.08em]">
+              <div className="hidden lg:flex items-center gap-4 ml-1 pl-3 border-l border-[#1c1f23] text-[10.5px] font-mono uppercase tracking-[0.08em]">
                 <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Balance</span>
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Balance</span>
                   <span className="text-[#C9CDD2] tabular-nums">{fmtMoney(liveAccount.balance, liveAccount.currency)}</span>
                 </div>
                 <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Equity</span>
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Equity</span>
                   <span className="text-[#E8E8EA] font-bold tabular-nums">{fmtMoney(liveAccount.equity, liveAccount.currency)}</span>
                 </div>
                 <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Margin</span>
-                  <span className="text-[#C9CDD2] tabular-nums">{fmtMoney(liveAccount.margin, liveAccount.currency)}</span>
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Free</span>
-                  <span className="text-emerald-400 tabular-nums">{fmtMoney(liveAccount.marginFree, liveAccount.currency)}</span>
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">P&amp;L</span>
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">P&amp;L</span>
                   <span className={`tabular-nums font-bold ${liveAccount.profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                     {fmtMoney(liveAccount.profit, liveAccount.currency)}
                   </span>
                 </div>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="ml-1 inline-flex items-center h-6 px-2 rounded-sm border border-[#1c1f23] bg-[#0A0B0D] text-[9px] font-mono uppercase tracking-[0.16em] text-[#8E949C] hover:text-[#FFCD05] hover:border-[#FFCD05]/30 transition-colors"
+                    >
+                      More
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-60 p-3 bg-[#0A0B0D] border-[#1c1f23]">
+                    <div className="grid grid-cols-2 gap-3 text-[10.5px] font-mono uppercase tracking-[0.08em]">
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Server</span>
+                        <span className="text-[#C9CDD2] truncate">{liveAccount.server || "—"}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Login</span>
+                        <span className="text-[#C9CDD2] tabular-nums">#{liveAccount.login || "—"}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Leverage</span>
+                        <span className="text-[#C9CDD2] tabular-nums">{(liveAccount as any).leverage ? `1:${(liveAccount as any).leverage}` : "—"}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Margin</span>
+                        <span className="text-[#C9CDD2] tabular-nums">{fmtMoney(liveAccount.margin, liveAccount.currency)}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Free Margin</span>
+                        <span className="text-emerald-400 tabular-nums">{fmtMoney(liveAccount.marginFree, liveAccount.currency)}</span>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             )}
           </div>
@@ -311,7 +334,7 @@ const LiveChartInner = () => {
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("mt:refresh-quotes"))}
               title="Refresh quotes"
-              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#2A2D31] bg-[#0A0B0D] text-[#8E949C] hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors"
+              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#1c1f23] bg-[#0A0B0D] text-[#8E949C] hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </button>
@@ -334,31 +357,36 @@ const LiveChartInner = () => {
 
       {/* Workspace: left rail + chart + right rail */}
       <div className="p-2 lg:p-3">
-        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[260px_minmax(0,1fr)_340px] grid-cols-1">
-          {/* LEFT: Market Watch + Bid/Ask Board */}
+        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[256px_minmax(0,1fr)_360px] grid-cols-1">
+          {/* LEFT: Market Watch + compact Bid/Ask Board.
+              Bid/Ask is intentionally constrained so it never overpowers the order ticket. */}
           <aside className="hidden lg:flex flex-col gap-2 lg:gap-3 h-[calc(100vh-4.5rem)] overflow-y-auto pr-0.5">
-            <div className="shrink-0 max-h-[50%] overflow-hidden">
+            <div className="shrink-0 flex-1 min-h-0 overflow-hidden">
               <MarketWatch
                 symbols={WATCH_DEFAULT}
                 active={displayLabel}
                 onSelect={onSelectByLabel}
               />
             </div>
-            <BidAskBoard
-              symbols={topBoardSymbols}
-              onSelect={(sym) => setActiveBroker(sym)}
-            />
+            <div className="shrink-0 h-[260px]">
+              <BidAskBoard
+                symbols={topBoardSymbols.slice(0, 6)}
+                activeSymbol={activeBroker}
+                onSelect={(sym) => setActiveBroker(sym)}
+              />
+            </div>
           </aside>
 
           {/* CENTER: Chart */}
           <section
             ref={chartShellRef}
-            className="relative flex flex-col rounded-2xl border border-border/30 bg-card overflow-hidden h-[70vh] lg:h-[calc(100vh-4.5rem)]"
+            className="relative flex flex-col rounded-2xl border border-border/20 bg-card overflow-hidden h-[70vh] lg:h-[calc(100vh-4.5rem)]"
           >
             {/* Top toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/30 px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/20 px-3 py-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <BarChart3 className="h-4 w-4 text-primary" />
+
 
                 {/* Symbol selector — searchable, broker-driven */}
                 <Popover open={symbolsOpen} onOpenChange={setSymbolsOpen}>
@@ -498,12 +526,17 @@ const LiveChartInner = () => {
             </div>
           </section>
 
-          {/* RIGHT: Open Positions + Quick Trade ticket */}
-          <aside className="flex flex-col gap-2 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
-            <OpenPositionsPanel />
+          {/* RIGHT RAIL — institutional order flow hierarchy:
+              A. Compact quote header (bid/ask/spread/tick age)
+              B. Order ticket — PRIMARY ACTION, always above the fold
+              C. Open positions
+              D. Secondary controls (execution banner, system health) — collapsed by default
+            */}
+          <aside className="flex flex-col gap-2.5 lg:gap-3 lg:h-[calc(100vh-4.5rem)] lg:overflow-y-auto pr-0.5">
+            {/* A. Compact quote */}
+            <CompactQuoteHeader symbol={activeBroker} displayLabel={displayLabel} />
 
-            <LiveExecutionBanner />
-            <SystemHealthWidget />
+            {/* B. Order ticket — primary action area */}
             <div
               className={`rounded-2xl transition-all duration-500 ${
                 highlightTicket
@@ -514,6 +547,22 @@ const LiveChartInner = () => {
               <BlackArrowTradePanel />
             </div>
 
+            {/* C. Open positions */}
+            <OpenPositionsPanel />
+
+            {/* D. Secondary controls — collapsed by default */}
+            <Collapsible>
+              <CollapsibleTrigger className="group w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#0A0B0D]/60 hover:bg-[#0A0B0D] transition-colors text-left">
+                <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#8E949C] group-hover:text-[#FFCD05]">
+                  System &amp; risk controls
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-[#5d6168] transition-transform group-data-[state=open]:rotate-90" />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 flex flex-col gap-2">
+                <LiveExecutionBanner />
+                <SystemHealthWidget />
+              </CollapsibleContent>
+            </Collapsible>
           </aside>
         </div>
 
