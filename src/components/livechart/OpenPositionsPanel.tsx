@@ -1,17 +1,8 @@
 import { useEffect, useState } from "react";
-import { X, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
-import { useLiveAccount, type LivePosition } from "@/contexts/LiveAccountContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  checkAndHandle429,
-  getCooldownRemainingMs,
-  triggerRateLimitCooldown,
-} from "@/lib/tradingLayerControl";
-import { useDevMode } from "@/hooks/useDevMode";
-
-const TEST_CLOSE_MAX_VOLUME = 0.01;
+import { Loader2, RefreshCw } from "lucide-react";
+import { useLiveAccount } from "@/contexts/LiveAccountContext";
+import { getCooldownRemainingMs } from "@/lib/tradingLayerControl";
+import PositionActions from "./PositionActions";
 
 const fmtPrice = (sym: string, v: number | null | undefined) => {
   if (v == null || Number.isNaN(Number(v))) return "—";
