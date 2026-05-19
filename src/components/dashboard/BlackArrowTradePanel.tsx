@@ -271,6 +271,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             status: rawStatus || "placed",
             retcode: Number.isFinite(retcode) ? retcode : undefined,
             brokerMessage,
+            tradeId: payload.tradeId,
           });
         }
       } else {
