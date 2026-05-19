@@ -36,6 +36,8 @@ import {
 } from "@/lib/tradingLayerControl";
 import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useDevMode } from "@/hooks/useDevMode";
+import { useRiskSettings } from "@/hooks/useRiskSettings";
+import RiskBadges from "@/components/dashboard/RiskBadges";
 import { getExecutionDisplayState } from "@/lib/executionDisplayState";
 
 const broadcastExec = (status: string) => {
