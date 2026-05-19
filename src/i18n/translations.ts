@@ -1644,7 +1644,7 @@ const translations = {
     "community.eyebrow": "Comunidad en Vivo",
     "community.h1": "Community Hub",
     "community.subheadline": "Conecta, conversa y aprende con otros traders.",
-    "community.online": "traders en línea ahora mismo",
+    "community.online": "traders conectados ahora",
     "community.openChat": "Abrir Chat en Vivo",
     "community.viewAll": "Ver todo",
     "community.rooms.title": "Salas de Chat",
