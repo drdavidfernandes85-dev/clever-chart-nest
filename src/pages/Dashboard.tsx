@@ -809,6 +809,11 @@ const BottomTabs = () => {
           <TerminalExecutionLog />
         </TabsContent>
 
+        <TabsContent value="best-exec" className="m-0 p-0">
+          <BestExecutionTab />
+        </TabsContent>
+
+
         <TabsContent value="account" className="m-0 p-4">
           {!connected || !liveAccount ? (
             <div className="text-center text-[11px] font-mono uppercase tracking-widest text-neutral-500">
