@@ -283,12 +283,19 @@ export const ExecutionResultModal = ({
               <Row
                 label="Broker Message"
                 value={
-                  result.brokerMessage ||
-                  (result.outcome === "pending"
-                    ? "Order sent — waiting for MT5 confirmation."
-                    : "Order was accepted/sent, but no MT5 position was confirmed. Please verify in MetaTrader.")
+                  result.outcome === "unconfirmed"
+                    ? "Broker accepted/sent order but no matching MT5 position was found."
+                    : (result.brokerMessage ||
+                       "Order sent — waiting for MT5 confirmation.")
                 }
               />
+              {Number(result.retcode) === 10008 && (
+                <Row
+                  label="Retcode 10008"
+                  value="MT5 retcode 10008 means order placed/accepted, not necessarily executed."
+                  accent="text-yellow-300"
+                />
+              )}
             </>
           )}
         </div>
