@@ -22,6 +22,7 @@ import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
 import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
+import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
 import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
@@ -1041,25 +1042,75 @@ const DashboardInner = () => {
             <BottomTabs />
           </section>
 
-          {/* RIGHT — Bid/Ask Board (top 38%) + Order Ticket (bottom).
-              On small screens, panels stack naturally; never overflow the viewport. */}
-          <aside className="flex flex-col gap-1.5 lg:gap-2 min-w-0 lg:min-h-0 lg:h-[calc(100vh-6.5rem)] lg:overflow-hidden">
-            <div className="lg:shrink-0 lg:max-h-[38%] lg:overflow-hidden h-[320px] lg:h-auto">
-              <BidAskBoard
-                symbols={watchBoardSymbols}
-                activeSymbol={active}
-                onSelect={(label) => selectSymbol(label)}
-              />
-            </div>
-            <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-0.5 space-y-2">
-              <LiveExecutionBanner />
-              <RiskBadges />
-              {(devMode || isAdmin) && <RiskControlsPanel />}
-              <SystemHealthWidget />
-              <BlackArrowTradePanel />
+          {/* RIGHT RAIL — institutional execution flow:
+              1. Compact quote snapshot (≤70px)
+              2. Order Ticket — primary, always visible without scrolling
+              3. Position exposure on selected symbol
+              4. Secondary tabs (Quotes / Risk / System) tucked below
+          */}
+          <aside className="flex flex-col gap-2 min-w-0 lg:min-h-0 lg:h-[calc(100vh-6.5rem)] lg:overflow-y-auto pr-0.5">
+            {/* 1. Compact quote snapshot */}
+            <CompactQuoteHeader symbol={active} displayLabel={active} />
+
+            {/* 2. Order Ticket — dominant module */}
+            <BlackArrowTradePanel />
+
+            {/* 3. Selected-symbol position exposure (compact) */}
+            <div className="rounded-md border border-[color:var(--ltr-gold-border)]/60 bg-[color:var(--ltr-panel-elev)] overflow-hidden">
+              <div className="px-2.5 py-1.5 border-b border-[color:var(--ltr-gold-border)]/40 text-[9.5px] font-mono uppercase tracking-[0.18em] text-ltr-silver-400">
+                Position · {active}
+              </div>
+              <OpenPositionsPanel />
             </div>
 
+            {/* 4. Secondary tabs */}
+            <Tabs defaultValue="quotes" className="rounded-md border border-[color:var(--ltr-gold-border)]/40 bg-[color:var(--ltr-panel-elev)]/60 p-1">
+              <TabsList className="grid w-full grid-cols-3 bg-transparent h-7 p-0 gap-1">
+                <TabsTrigger
+                  value="quotes"
+                  className="h-6 text-[9px] font-mono uppercase tracking-[0.18em] data-[state=active]:bg-[#FFCD05]/10 data-[state=active]:text-[#FFCD05] data-[state=active]:shadow-none text-ltr-silver-400"
+                >
+                  Quotes
+                </TabsTrigger>
+                <TabsTrigger
+                  value="risk"
+                  className="h-6 text-[9px] font-mono uppercase tracking-[0.18em] data-[state=active]:bg-[#FFCD05]/10 data-[state=active]:text-[#FFCD05] data-[state=active]:shadow-none text-ltr-silver-400"
+                >
+                  Risk
+                </TabsTrigger>
+                <TabsTrigger
+                  value="system"
+                  className="h-6 text-[9px] font-mono uppercase tracking-[0.18em] data-[state=active]:bg-[#FFCD05]/10 data-[state=active]:text-[#FFCD05] data-[state=active]:shadow-none text-ltr-silver-400"
+                >
+                  System
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="quotes" className="mt-2 h-[300px]">
+                <BidAskBoard
+                  symbols={watchBoardSymbols}
+                  activeSymbol={active}
+                  onSelect={(label) => selectSymbol(label)}
+                />
+              </TabsContent>
+
+              <TabsContent value="risk" className="mt-2 flex flex-col gap-2">
+                <RiskBadges />
+                {(devMode || isAdmin) && <RiskControlsPanel />}
+                {!devMode && !isAdmin && (
+                  <p className="px-2 py-1 text-[9px] font-mono uppercase tracking-[0.14em] text-ltr-silver-500">
+                    Advanced risk controls available in Admin → Risk.
+                  </p>
+                )}
+              </TabsContent>
+
+              <TabsContent value="system" className="mt-2 flex flex-col gap-2">
+                <LiveExecutionBanner />
+                <SystemHealthWidget />
+              </TabsContent>
+            </Tabs>
           </aside>
+
         </div>
 
         <TerminalStatusBar activeSymbol={active} />
