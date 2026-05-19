@@ -57,6 +57,7 @@ const OpenPositionsPanel = () => {
           ticket: String(pos.ticket),
           symbol: pos.symbol,
           volume: Number(pos.volume),
+          side: pos.side === "buy" ? "sell" : "buy",
         }),
       });
       const data = await r.json().catch(() => ({}));
