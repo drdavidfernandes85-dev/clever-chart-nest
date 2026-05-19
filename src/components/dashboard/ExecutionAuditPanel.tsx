@@ -120,13 +120,17 @@ export default function ExecutionAuditPanel({ refreshKey = 0 }: { refreshKey?: n
                 <td className="px-2 py-1">{r.symbol}</td>
                 <td className="px-2 py-1">{r.side}</td>
                 <td className="px-2 py-1">{r.volume}</td>
-                <td className="px-2 py-1">{prettyStatus(r.status)}</td>
+                <td className="px-2 py-1">
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${toneFor(r.status)}`}>
+                    {prettyStatus(r.status)}
+                  </span>
+                </td>
                 <td className="px-2 py-1">{prettyClass(r.raw?.classification)}</td>
                 <td className="px-2 py-1">{r.requested_price ?? "—"}</td>
                 <td className="px-2 py-1">{r.bid ?? "—"}</td>
                 <td className="px-2 py-1">{r.ask ?? "—"}</td>
                 <td className="px-2 py-1">{r.spread ?? "—"}</td>
-                <td className="px-2 py-1 max-w-[260px] truncate" title={r.broker_message ?? ""}>{r.broker_message ?? "—"}</td>
+                <td className="px-2 py-1 max-w-[260px] truncate" title={friendlyMessageFor(r)}>{friendlyMessageFor(r)}</td>
               </tr>
             ))}
           </tbody>
