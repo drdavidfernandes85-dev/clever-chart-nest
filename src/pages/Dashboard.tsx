@@ -9,6 +9,7 @@ import {
   Star,
 } from "lucide-react";
 import LtrLogo from "@/components/branding/LtrLogo";
+import { useQuotes, useMarketStatus, useRateLimit } from "@/hooks/useLiveMarketData";
 
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
 import { Input } from "@/components/ui/input";
