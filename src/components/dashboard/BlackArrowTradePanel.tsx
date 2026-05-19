@@ -88,6 +88,17 @@ interface Props {
   className?: string;
 }
 
+/** Infer compact asset class chip from a normalized symbol like "EURUSD" / "XAUUSD". */
+function classify(sym: string): string {
+  const u = (sym || "").toUpperCase();
+  if (!u) return "FX";
+  if (/^XAU|XAG|GOLD|SILVER|WTI|UKOIL|USOIL|BRENT|NGAS/.test(u)) return "Metals";
+  if (/(BTC|ETH|USDT|SOL|XRP|ADA|DOGE|BNB|MATIC|DOT)/.test(u)) return "Crypto";
+  if (/(US30|NAS100|US500|SPX|GER40|DAX|FTSE|NIKKEI|DJ30)/.test(u)) return "Index";
+  if (/^[A-Z]{6}$/.test(u)) return "FX";
+  return "Stock";
+}
+
 const BlackArrowTradePanel = ({ className }: Props) => {
   const { user } = useAuth();
   const { symbol: ctxSymbol, side, setSide, setSymbol: setCtxSymbol } = useQuickTrade();
@@ -1371,18 +1382,28 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <button
             type="button"
             onClick={() => setSymbolOpen((v) => !v)}
-            className="w-full flex items-center justify-between rounded-sm border border-neutral-800 bg-[#0a0a0a] px-2 py-1 hover:border-neutral-700"
+            className={cn(
+              "w-full flex items-center justify-between rounded-sm border bg-[#0a0a0a] px-2 py-1.5 transition-colors",
+              symbolOpen
+                ? "border-[#FFCD05]/50 ring-1 ring-[#FFCD05]/20"
+                : "border-neutral-800 hover:border-[#FFCD05]/30",
+            )}
           >
-            <div className="flex flex-col items-start min-w-0">
-              <span className="font-heading text-[12px] font-bold leading-tight">{normalizedSym || "—"}</span>
-              <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[160px]">
-                {effectiveSelected?.description || selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="inline-flex h-5 items-center rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1 text-[8.5px] font-mono font-bold uppercase tracking-widest text-[#FFCD05]">
+                {classify(normalizedSym)}
               </span>
+              <div className="flex flex-col items-start min-w-0">
+                <span className="font-heading text-[12.5px] font-bold leading-tight text-neutral-50 tracking-wide">{normalizedSym || "—"}</span>
+                <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[140px]">
+                  {effectiveSelected?.description || selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="text-right font-mono tabular-nums leading-tight">
-                <div className="text-[10px] text-red-400">{fmtPx(bid, digits)}</div>
-                <div className="text-[10px] text-emerald-400">{fmtPx(ask, digits)}</div>
+                <div className="text-[10.5px] text-red-400 font-semibold">{fmtPx(bid, digits)}</div>
+                <div className="text-[10.5px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</div>
               </div>
               <ChevronDown className={cn("h-3 w-3 text-neutral-500 transition-transform", symbolOpen && "rotate-180")} />
             </div>
@@ -1574,77 +1595,79 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <SideBtn tone="sell" outline small disabled={pendingDisabled} title="Pending orders coming soon">Sell Lmt</SideBtn>
         </div>
 
-        {/* SL / TP */}
-        <div className="grid grid-cols-2 gap-1.5">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-[9px] font-bold uppercase tracking-wider text-red-400/80">Stop Loss</label>
-              {slPips > 0 && !noStops ? (
-                <span className="text-[9px] font-mono tabular-nums text-red-400/70">{slPips.toFixed(0)}p</span>
-              ) : null}
+        {/* SL / TP — compact dual column */}
+        <div className="rounded-sm border border-neutral-800 bg-[#080808] p-1.5 space-y-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[9px] font-bold uppercase tracking-[0.16em] text-red-400/80">Stop Loss</label>
+                {slPips > 0 && !noStops ? (
+                  <span className="text-[9px] font-mono tabular-nums text-red-400/70">{slPips.toFixed(0)} pips</span>
+                ) : null}
+              </div>
+              <input
+                value={sl}
+                onChange={(e) => setSl(e.target.value)}
+                disabled={noStops}
+                inputMode="decimal"
+                placeholder="—"
+                className="w-full h-6 rounded-sm border border-red-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
+              />
+              <div className="grid grid-cols-3 gap-0.5">
+                {[10, 20, 50].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    disabled={noStops}
+                    onClick={() => applyPipPreset("sl", p)}
+                    className="h-5 rounded-sm border border-red-500/25 bg-red-500/5 text-[9px] font-mono tabular-nums text-red-300 hover:bg-red-500/15 disabled:opacity-40"
+                  >
+                    {p}p
+                  </button>
+                ))}
+              </div>
             </div>
-            <input
-              value={sl}
-              onChange={(e) => setSl(e.target.value)}
-              disabled={noStops}
-              inputMode="decimal"
-              placeholder="—"
-              className="w-full h-6 rounded-sm border border-red-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 disabled:opacity-50"
-            />
-            <div className="grid grid-cols-3 gap-1">
-              {[10, 20, 50].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  disabled={noStops}
-                  onClick={() => applyPipPreset("sl", p)}
-                  className="h-5 rounded border border-red-500/25 bg-red-500/5 text-[9px] font-mono tabular-nums text-red-300 hover:bg-red-500/15 disabled:opacity-40"
-                >
-                  {p}p
-                </button>
-              ))}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-400/80">Take Profit</label>
+                {tpPips > 0 && !noStops ? (
+                  <span className="text-[9px] font-mono tabular-nums text-emerald-400/70">{tpPips.toFixed(0)} pips</span>
+                ) : null}
+              </div>
+              <input
+                value={tp}
+                onChange={(e) => setTp(e.target.value)}
+                disabled={noStops}
+                inputMode="decimal"
+                placeholder="—"
+                className="w-full h-6 rounded-sm border border-emerald-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
+              />
+              <div className="grid grid-cols-3 gap-0.5">
+                {[20, 40, 100].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    disabled={noStops}
+                    onClick={() => applyPipPreset("tp", p)}
+                    className="h-5 rounded-sm border border-emerald-500/25 bg-emerald-500/5 text-[9px] font-mono tabular-nums text-emerald-300 hover:bg-emerald-500/15 disabled:opacity-40"
+                  >
+                    {p}p
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-[9px] font-bold uppercase tracking-wider text-emerald-400/80">Take Profit</label>
-              {tpPips > 0 && !noStops ? (
-                <span className="text-[9px] font-mono tabular-nums text-emerald-400/70">{tpPips.toFixed(0)}p</span>
-              ) : null}
-            </div>
-            <input
-              value={tp}
-              onChange={(e) => setTp(e.target.value)}
-              disabled={noStops}
-              inputMode="decimal"
-              placeholder="—"
-              className="w-full h-6 rounded-sm border border-emerald-500/30 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-50"
-            />
-            <div className="grid grid-cols-3 gap-1">
-              {[20, 40, 100].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  disabled={noStops}
-                  onClick={() => applyPipPreset("tp", p)}
-                  className="h-5 rounded border border-emerald-500/25 bg-emerald-500/5 text-[9px] font-mono tabular-nums text-emerald-300 hover:bg-emerald-500/15 disabled:opacity-40"
-                >
-                  {p}p
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <Checkbox checked={noStops} onCheckedChange={(v) => setNoStops(v === true)} className="h-3 w-3" />
-            Place without SL/TP
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <Checkbox checked={autoReset} onCheckedChange={(v) => setAutoReset(v === true)} className="h-3 w-3" />
-            Reset after fill
-          </label>
+          <div className="flex items-center justify-between gap-2 text-[10px] text-muted-foreground border-t border-neutral-900 pt-1">
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <Checkbox checked={noStops} onCheckedChange={(v) => setNoStops(v === true)} className="h-3 w-3" />
+              No SL/TP
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <Checkbox checked={autoReset} onCheckedChange={(v) => setAutoReset(v === true)} className="h-3 w-3" />
+              Reset after fill
+            </label>
+          </div>
         </div>
 
         {(volumeError || slTpError) ? (
@@ -1653,22 +1676,33 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         ) : null}
 
-        {/* Summary */}
-        <div className="rounded-sm border border-neutral-800 bg-[#0a0a0a] px-2 py-1 space-y-[1px]">
-          <SummaryRow label="Entry" value={fmtPx(entryPrice || null, digits)} tone={side === "buy" ? "pos" : "neg"} />
-          <SummaryRow label="Notional" value={fmt(notional, currency)} />
-          <SummaryRow label="Margin" value={fmt(marginRequired, currency)} />
-          <SummaryRow label="Spread Cost" value={spreadCost != null ? fmt(spreadCost, currency) : "—"} />
-          <SummaryRow
-            label="Risk"
-            value={riskPct ? `${riskPct.toFixed(2)}% · ${fmt(potentialLoss, currency)}` : "—"}
-            tone={riskPct > 2 ? "neg" : undefined}
-          />
-          <SummaryRow
-            label="Potential P&L"
-            value={potentialProfit ? `+${fmt(potentialProfit, currency)}` : "—"}
-            tone="pos"
-          />
+        {/* Risk metrics summary — denser, two-column tabular layout */}
+        <div className="rounded-sm border border-neutral-800 bg-[#0a0a0a]">
+          <div className="flex items-center justify-between px-2 py-0.5 border-b border-neutral-900 bg-[#070707]">
+            <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-neutral-500">Risk Metrics</span>
+            <span className={cn(
+              "text-[9px] font-mono tabular-nums",
+              riskPct > 2 ? "text-red-400" : riskPct > 1 ? "text-[#FFCD05]" : "text-emerald-400",
+            )}>
+              {riskPct ? `${riskPct.toFixed(2)}% acct` : "—"}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-[1px] px-2 py-1">
+            <SummaryRow label="Entry" value={fmtPx(entryPrice || null, digits)} tone={side === "buy" ? "pos" : "neg"} />
+            <SummaryRow label="Notional" value={fmt(notional, currency)} />
+            <SummaryRow label="Margin" value={fmt(marginRequired, currency)} />
+            <SummaryRow label="Spread" value={spreadCost != null ? fmt(spreadCost, currency) : "—"} />
+            <SummaryRow
+              label="Max Loss"
+              value={potentialLoss ? fmt(potentialLoss, currency) : "—"}
+              tone={riskPct > 2 ? "neg" : undefined}
+            />
+            <SummaryRow
+              label="Target P&L"
+              value={potentialProfit ? `+${fmt(potentialProfit, currency)}` : "—"}
+              tone="pos"
+            />
+          </div>
         </div>
 
         {/* Bottom row */}

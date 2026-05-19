@@ -529,20 +529,20 @@ const LiveChartInner = () => {
           </aside>
         </div>
 
-        {/* Compliance footer — terminal-wide notice */}
-        <footer className="mt-3 border-t border-[#FFCD05]/10 pt-2 pb-1 px-1">
-          <div className="flex flex-wrap items-center justify-between gap-2 text-[9.5px] font-mono uppercase tracking-[0.16em] text-[#5d6168]">
-            <span>
+        {/* Compliance footer — terminal-wide notice. Wraps fully on all viewports, never truncates. */}
+        <footer className="mt-3 border-t border-[#FFCD05]/10 pt-2 pb-2 px-1">
+          <div className="flex flex-col gap-1.5 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[9.5px] font-mono uppercase tracking-[0.16em] text-[#5d6168] shrink-0">
               <span className="text-[#8E949C]">LTR Terminal Pro</span>
-              <span className="mx-2 text-[#2A2D31]">·</span>
-              Powered by Trading Layer
-              <span className="mx-2 text-[#2A2D31]">·</span>
-              Execution venue: INFINOX MT5
-            </span>
-            <span className="text-[#5d6168] normal-case tracking-normal text-[10px] max-w-[760px] text-right">
+              <span className="text-[#2A2D31]">·</span>
+              <span>Powered by Trading Layer</span>
+              <span className="text-[#2A2D31]">·</span>
+              <span>Execution venue: INFINOX MT5</span>
+            </div>
+            <p className="text-[10px] leading-snug text-[#5d6168] lg:text-right lg:max-w-[760px]">
               Educational tools and market ideas are provided for informational purposes only and do
               not constitute investment advice. Users are solely responsible for all trading decisions.
-            </span>
+            </p>
           </div>
         </footer>
       </div>
