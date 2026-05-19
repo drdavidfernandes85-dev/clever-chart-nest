@@ -1,10 +1,4 @@
 project_id = "oyzbftsjlmucmvnjuadl"
 
-[functions.mt-webhook]
-verify_jwt = false
-
-[functions.fetch-market-quotes]
-verify_jwt = false
-
-[functions.submit-best-execution-order]
+[functions.trading-layer-webhook]
 verify_jwt = false
