@@ -1857,7 +1857,6 @@ const translations = {
     "webinarLp.testimonials.2.quote": "Por fin una sesión enfocada en el riesgo y el proceso, no en promesas de hacerse rico. Muy recomendable.",
     "webinarLp.testimonials.2.name": "Ana P.",
     "webinarLp.testimonials.2.role": "Trader swing",
-    "webinarLp.testimonials.2.quote": "Por fin una sesión enfocada en el riesgo y el proceso, no en promesas de hacerse rico. Muy recomendable.",
     "webinarLp.testimonials.3.name": "Rafael S.",
     "webinarLp.testimonials.3.role": "Trader intradía",
     "webinarLp.testimonials.3.quote": "Entré a probar y me quedé toda la hora. El análisis técnico fue muy nítido.",
