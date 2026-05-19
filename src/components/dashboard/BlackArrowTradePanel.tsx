@@ -320,8 +320,72 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   async function runPostTradeConfirmation(args: {
     symbol: string; side: string; volume: number;
     status: string; retcode?: number; brokerMessage?: string;
+    tradeId?: string;
   }) {
     const startedAt = Date.now();
+    let auditUpdated = false;
+    const updateAuditRow = async (match: any) => {
+      if (auditUpdated) return;
+      auditUpdated = true;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const ticket = String(match.ticket ?? match.id ?? "");
+        const symbol = String(match.symbol ?? args.symbol);
+        const side = String(match.side ?? match.type ?? args.side);
+        const volume = Number(match.volume ?? match.lots ?? args.volume);
+        const entry_price = match.openPrice ?? match.entryPrice ?? match.price_open ?? null;
+        const current_price = match.currentPrice ?? match.price_current ?? null;
+        const profit = match.profit ?? match.pnl ?? null;
+
+        // Find the latest matching "placed" audit row
+        let q = supabase
+          .from("execution_audit_events")
+          .select("id, raw")
+          .eq("user_id", user.id)
+          .eq("status", "placed")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (args.tradeId) q = q.eq("trade_id", args.tradeId);
+        else q = q
+          .ilike("symbol", symbol)
+          .ilike("side", side)
+          .eq("volume", volume)
+          .gte("created_at", new Date(startedAt - 60_000).toISOString());
+
+        const { data: rows } = await q;
+        const target = (rows as any[] | null)?.[0];
+        if (!target) return;
+
+        const mergedRaw = {
+          ...(target.raw && typeof target.raw === "object" ? target.raw : {}),
+          positionConfirmed: true,
+          confirmedTicket: ticket,
+          confirmedSymbol: symbol,
+          confirmedSide: side,
+          confirmedVolume: volume,
+          confirmedEntryPrice: entry_price,
+          confirmedCurrentPrice: current_price,
+          confirmedFloatingPnl: profit,
+          confirmedAt: new Date().toISOString(),
+        };
+
+        await supabase
+          .from("execution_audit_events")
+          .update({
+            status: "position_confirmed",
+            outcome: "position_confirmed",
+            broker_message: `Position confirmed. Ticket: ${ticket}`,
+            ticket,
+            raw: mergedRaw,
+          })
+          .eq("id", target.id);
+        setAuditRefreshKey((k) => k + 1);
+      } catch {
+        /* ignore audit update failures */
+      }
+    };
+
     const tryMatch = () => {
       const match = findMatchingPosition(args.symbol, args.side, args.volume, startedAt);
       if (!match) return false;
@@ -339,6 +403,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         pnl: match.profit ?? match.pnl ?? null,
         startedAt,
       });
+      void updateAuditRow(match);
       return true;
     };
 
