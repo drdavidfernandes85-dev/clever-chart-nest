@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import AnalyticsFilteredView from "@/components/dashboard/AnalyticsFilteredView";
-import infinoxLogo from "@/assets/infinox-logo-white.png";
+
 import { useLanguage } from "@/i18n/LanguageContext";
 import { localizeWeeklySummary } from "@/i18n/summary";
 
