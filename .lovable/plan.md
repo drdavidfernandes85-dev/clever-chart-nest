@@ -1,54 +1,83 @@
+## Goal
 
+Stop every widget from polling Trading Layer on its own. Route all live prices, account, and positions through a single in-app store with controlled polling, 429 protection, and a status badge.
 
-## Futuristic Trading Background — Plan
+## Architecture
 
-Replace the current "Topographical Gold" background with a modern, financial-themed ambient scene that lives sitewide behind every page. Theme: **"Liquid Capital"** — a dark, depth-rich market environment evoking charts, capital flow, and elite community.
-
-### Visual concept
-
-Five layered, GPU-friendly CSS/SVG layers, all behind content (`z-0`, `pointer-events-none`):
-
-1. **Deep market base** — radial vignette in near-black with a subtle gold/green warm core (gold = money, green = bullish charts).
-2. **Animated candlestick skyline** — a faint, slow-drifting row of stylized SVG candlesticks across the lower third (green/red, very low opacity) suggesting a market chart horizon.
-3. **Flowing chart lines** — 3-4 SVG polylines drawn like price action / EKG with a slow `stroke-dashoffset` animation so they appear to "draw" continuously left-to-right.
-4. **Capital flow particles** — small gold/green dots drifting upward (like rising capital / order flow), each with random delay & duration.
-5. **Hex / data-grid mesh** — a soft hexagonal SVG pattern (community + tech feel), masked with a radial gradient so it fades to the edges.
-6. **Top vignette + bottom seam** — keeps foreground content readable and lets the hero laptop blend in cleanly.
-
-Light mode gets the same composition with inverted base (warm off-white, muted gold/teal accents, lower opacities) so it stays elegant, not noisy.
-
-### Files
-
-**Edit** `src/components/AnimatedBackground.tsx`
-- Replace current implementation with the new 6-layer scene described above
-- Keep the same export/signature so `App.tsx` consumers don't change
-- Reuse `useTheme()` for dark/light variants
-- Keep all motion `transform`/`opacity` based; respect `prefers-reduced-motion` by gating animations
-
-**Edit** `src/index.css`
-- Add new keyframes: `capital-rise` (particles), `chart-draw` (stroke-dashoffset), `candle-drift` (slow horizontal drift), `hex-pulse` (mesh subtle breathing)
-- Remove unused keyframes (`mesh-rotate`, `current-drift`, `contour-pulse`, `spark-rise`, `dust-drift`) only if no other component references them — will verify with search before deleting; otherwise leave intact
-
-**No changes** to `HeroSection.tsx`, layout, or routing. The laptop hero already blends via its own ambient layer and will sit naturally over the new background.
-
-### Technical notes
-
-- All layers use `position: absolute` inside the existing `fixed inset-0 z-0` wrapper — no layout impact.
-- Candlesticks and chart lines are inline SVG (no extra requests) with `vectorEffect="non-scaling-stroke"`.
-- Particle count capped at ~20 to stay light on mobile.
-- Color tokens: gold `hsl(48 95% 60%)`, bull green `hsl(145 65% 50%)`, bear red `hsl(0 70% 55%)` — used at 0.08–0.25 opacity so content always reads first.
-- `prefers-reduced-motion: reduce` → all animations paused, static composition still looks intentional.
-
-### ASCII layout
-
-```text
-┌──────────────────────────────────────────┐
-│  vignette + hex mesh (faded edges)       │
-│       ╱╲    ╱╲      flowing chart        │
-│   ───╱  ╲──╱  ╲────  lines (animated)    │
-│  · gold particles rising ·  ·            │
-│  ▌▌ ▍▍ ▐▐ ▍▍ ▌▌  candle skyline drift    │
-│  bottom seam → next section              │
-└──────────────────────────────────────────┘
+```
+                     ┌──────────────────────────────┐
+                     │   liveMarketDataStore        │
+                     │  (single source of truth)    │
+                     │   quotes / account /         │
+                     │   positions / status         │
+                     └──────────────┬───────────────┘
+                                    │ subscribe()
+        ┌────────────┬──────────────┼──────────────┬─────────────┐
+        ▼            ▼              ▼              ▼             ▼
+   Market Watch  Bid/Ask Board  Order Ticket  Chart header  Account / Positions widgets
+                                    ▲
+                        only one writer:
+                  MarketDataService (controlled polling
+                  or stream if Trading Layer supports it)
 ```
 
+## What we'll build
+
+1. `src/lib/liveMarketDataStore.ts` — vanilla pub/sub store: `getState()`, `subscribe()`, internal setters. Holds:
+   - `quotes: Record<symbol, { bid, ask, spread, last, timestamp, source }>`
+   - `account` (balance/equity/margin/free/profit/currency/leverage/login/server)
+   - `positions[]`
+   - `status: "live_stream" | "live_polling" | "stale" | "rate_limited" | "disconnected"`
+   - `rateLimit: { active, resumesAt }`
+   - `diagnostics: { activeLoops, lastTickAt, polledSymbols[], requestsPerMinute }`
+
+2. `src/services/MarketDataService.ts` — the only writer. Runs three controlled loops:
+   - Selected symbol: 1.5 s
+   - Watchlist symbols (batched): 7 s
+   - Account: 7 s · Positions: 10 s (boosted to 3 s for 30 s after `trade-executed` event)
+   - 429 handler: pause all loops 60 s, set `status="rate_limited"`, emit countdown, keep cached prices.
+   - Reads from existing `get-live-account` and `get-quotes` (whichever exists; if streaming endpoint exists later, swap in here only).
+
+3. `src/hooks/useLiveMarketData.ts` + selectors (`useQuote(symbol)`, `useAccount()`, `usePositions()`, `useMarketStatus()`).
+
+4. Refactor `LiveAccountContext` to be a thin wrapper that reads from the store (keep the existing API surface so we don't break callers). Delete its own `setInterval`.
+
+5. Disable independent polling in these files (turn each `setInterval`/`setTimeout` loop into a no-op and replace data source with the store):
+   - `BrokerSymbolsContext.tsx`
+   - `hooks/useMultiSymbolTicks.ts`
+   - `hooks/useSelectedQuote.ts`
+   - `hooks/useMTAccount.tsx` (keep only event-driven refresh)
+   - `dashboard/Watchlist.tsx` · `MarketMovers.tsx` · `ForexTickerBar.tsx`
+   - `dashboard/LightweightCandlestickChart.tsx` (chart header price only — keep candle fetch as-is)
+   - `dashboard/LiveTradingViewChart.tsx` · `QuickTradePanel.tsx` · `OrderBook.tsx`
+   - `BlackArrowTradePanel.tsx` bid/ask reads switch to `useQuote()`
+   - Leave non-Trading-Layer pollers alone (news, webinars, smart alerts, execution log).
+
+6. `MarketStatusBadge` component rendering: LIVE STREAM / LIVE POLLING / STALE / RATE LIMITED / DISCONNECTED, with a countdown when rate-limited. Place in dashboard header.
+
+7. Order ticket behavior: always render cached bid/ask. On submit, `submit-best-execution-order` continues to fetch its own server-side fresh tick — no change. Document with a comment that frontend cache must never be the execution source.
+
+8. Dev Mode diagnostics panel `MarketDataDiagnosticsPanel.tsx` added under the existing dev panels in `BlackArrowTradePanel`:
+   - active polling loops
+   - last tick timestamp (overall + per-symbol)
+   - symbols currently polled
+   - requests-per-minute estimate (rolling 60 s)
+   - rate-limit status + resumesAt
+
+## Out of scope
+
+- No backend changes (no new edge functions, no server-side rate limiting — per project rule).
+- True WebSocket streaming: stub the interface in `MarketDataService` so we can plug it in later if Trading Layer adds it. Default runtime path = controlled polling.
+- We are not removing unrelated 60s pollers (news, webinars, etc.).
+
+## Validation
+
+- Open `/dashboard`, confirm only the service's loops appear in the Dev diagnostics panel and per-widget intervals are gone.
+- Force a 429 by temporarily lowering intervals → badge flips to RATE LIMITED, prices stay visible, countdown ticks, resumes after 60 s.
+- Place an order → positions loop boosts for 30 s, then relaxes.
+
+## Technical notes
+
+- Store is framework-agnostic (no React) so the service can run outside component lifecycles. React layer uses `useSyncExternalStore`.
+- Service is a singleton started once from `LiveAccountProvider` mount (already top-level under the app).
+- Existing custom events (`mt:refresh-positions`, `trade-executed`) are kept and routed into the service's manual-refresh path so existing call sites keep working.
