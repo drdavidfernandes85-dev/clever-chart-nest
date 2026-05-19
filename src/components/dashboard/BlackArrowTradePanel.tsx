@@ -943,30 +943,6 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 </pre>
               </div>
             )}
-            {debugInfo.validationError && (
-              <div>
-                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Validation Error</div>
-                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
-{debugInfo.validationError}
-                </pre>
-              </div>
-            )}
-            {"rawEdgeFunctionResponse" in debugInfo && (
-              <div>
-                <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">rawEdgeFunctionResponse</div>
-                <pre className="max-h-[180px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
-{JSON.stringify(debugInfo.rawEdgeFunctionResponse, null, 2)}
-                </pre>
-              </div>
-            )}
-            {"edgeFunctionError" in debugInfo && (
-              <div>
-                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">edgeFunctionError</div>
-                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
-{JSON.stringify(debugInfo.edgeFunctionError, null, 2)}
-                </pre>
-              </div>
-            )}
             {debugInfo.response !== undefined && (
               <div>
                 <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">Response</div>
