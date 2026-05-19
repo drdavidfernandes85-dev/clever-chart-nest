@@ -108,6 +108,30 @@ Deno.serve(async (req) => {
   }
   const accountId = account.metaapi_account_id;
 
+  // ---------- Backend risk enforcement ----------
+  try {
+    const settings = await loadRiskSettings(supabase, user.id);
+    const livePositions = await fetchLivePositions(supabase);
+    const breach = checkCloseRisk(
+      { ticket, symbol, side: closeSide, volume },
+      settings,
+      livePositions,
+    );
+    if (breach) {
+      const blockBody = buildRiskBlock(VERSION, {
+        reason: breach.reason,
+        rule: breach.rule,
+        settings,
+      }, { ticket, symbol, side: closeSide, volume, closeId });
+      await auditRiskBlock(supabase, user.id, {
+        tradeId: `close-${ticket}`, symbol, side: closeSide, volume,
+        reason: breach.reason, rule: breach.rule, response: blockBody, ticket,
+      });
+      return json(blockBody, 200);
+    }
+  } catch { /* fall through */ }
+
+
   const idempotencyKey = closeId;
   const closePayload = {
     side: closeSide,
