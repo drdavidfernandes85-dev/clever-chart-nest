@@ -88,6 +88,20 @@ const TitleBar = ({
       chip: "bg-red-500/15 text-red-300 border-red-500/40",
       bar: "bg-red-500/70",
     },
+    pending: {
+      title: "Order Sent — Confirmation Pending",
+      Icon: Clock,
+      ring: "border-yellow-500/50",
+      chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
+      bar: "bg-yellow-500/70",
+    },
+    unconfirmed: {
+      title: "Order Accepted but MT5 Position Not Confirmed",
+      Icon: HelpCircle,
+      ring: "border-yellow-500/50",
+      chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
+      bar: "bg-yellow-500/70",
+    },
   }[outcome];
   const { title, Icon, chip, bar } = config;
   return (
