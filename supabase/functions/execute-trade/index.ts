@@ -402,10 +402,9 @@ serve(async (req) => {
       );
     }
 
-    // ---- After-trade sync: populate mt_positions + trade_journal so the
-    // Positions and Journal tabs reflect this trade immediately. Best-effort:
-    // any failure here is logged to `trade_execution_logs.sync_meta` but does
-    // NOT fail the trade response.
+    // ---- After-trade sync: best-effort journal insert ONLY.
+    // mt_positions writes have been removed — live positions come from
+    // Trading Layer directly. Audit data lives in execution_audit_events.
     const syncMeta: Record<string, unknown> = {
       started_at: new Date().toISOString(),
       steps: [] as Array<Record<string, unknown>>,
@@ -417,7 +416,6 @@ serve(async (req) => {
       });
     };
 
-    // Extract authoritative broker identifiers from the trade response.
     const orderTicket = (() => {
       const v = getValue(result, [
         "deal.ticket", "order.ticket", "ticket",
@@ -448,193 +446,52 @@ serve(async (req) => {
       ) ?? volume;
       const direction = side === "sell" ? "short" : "long";
 
-      // 1) JOURNAL — idempotent via unique index on (user_id, broker_ticket).
-      const journalRow = {
-        user_id: user.id,
-        pair: symbol,
-        direction,
-        entry_price: dealPrice ?? 0,
-        position_size: dealVolume,
-        stop_loss: stopLoss ?? null,
-        take_profit: takeProfit ?? null,
-        status: "open",
-        opened_at: new Date().toISOString(),
-        setup_tag: "terminal",
-        broker_ticket: orderTicket,
-        broker_position_id: positionId,
-        notes: orderTicket
-          ? `Auto-logged from terminal trade. Ticket #${orderTicket}.`
-          : `Auto-logged from terminal trade.`,
-      };
-
-      const { data: jIns, error: jErr } = await supabase
-        .from("trade_journal")
-        .upsert(journalRow, {
-          onConflict: "user_id,broker_ticket",
-          ignoreDuplicates: true,
-        })
-        .select("id")
-        .maybeSingle();
-
-      recordStep({
-        step: "journal_upsert",
-        ok: !jErr,
-        ticket: orderTicket,
-        position_id: positionId,
-        inserted_id: jIns?.id ?? null,
-        error: jErr?.message ?? null,
-      });
-
-      // 2) POSITIONS sync — fetch from Trading Layer with retry + backoff.
-      if (account?.id) {
-        const positionsUrl = `${BASE_URL}/api/v1/accounts/${accountId}/positions`;
-        let positions: any[] | null = null;
-        let lastStatus = 0;
-        let lastError: string | null = null;
-        const maxAttempts = 3;
-
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-          try {
-            const posRes = await fetch(positionsUrl, {
-              headers: { Authorization: `Bearer ${TRADING_LAYER_KEY}` },
-            });
-            lastStatus = posRes.status;
-            const posText = await posRes.text();
-            let posJson: any = {};
-            try { posJson = JSON.parse(posText); } catch { posJson = { raw: posText }; }
-
-            if (posRes.ok) {
-              positions =
-                (Array.isArray(posJson?.data) ? posJson.data
-                  : Array.isArray(posJson?.data?.positions) ? posJson.data.positions
-                  : Array.isArray(posJson?.positions) ? posJson.positions
-                  : []) ?? [];
-              recordStep({
-                step: "positions_fetch",
-                endpoint: positionsUrl,
-                ok: true,
-                status: posRes.status,
-                attempts: attempt,
-                count: positions.length,
-              });
-              break;
-            }
-
-            lastError = typeof posJson?.error === "string"
-              ? posJson.error
-              : (posJson?.message ?? posText?.slice(0, 300) ?? `HTTP ${posRes.status}`);
-            const retryable = posRes.status >= 500 || posRes.status === 429;
-            recordStep({
-              step: "positions_fetch_failed",
-              endpoint: positionsUrl,
-              attempt,
-              status: posRes.status,
-              error: lastError,
-              retryable,
-            });
-            if (!retryable) break;
-          } catch (fetchErr) {
-            lastError = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-            recordStep({
-              step: "positions_fetch_exception",
-              endpoint: positionsUrl,
-              attempt,
-              error: lastError,
-            });
-          }
-
-          if (attempt < maxAttempts) {
-            // Exponential backoff: ~400ms, 1200ms
-            await new Promise((r) => setTimeout(r, 400 * Math.pow(3, attempt - 1)));
-          }
-        }
-
-        if (positions === null) {
+      // JOURNAL — plain insert. If a duplicate broker_ticket exists we
+      // swallow the error to keep this best-effort and never block the
+      // trade response. No reliance on a unique constraint.
+      if (orderTicket) {
+        const { data: existing } = await supabase
+          .from("trade_journal")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("broker_ticket", orderTicket)
+          .maybeSingle();
+        if (!existing) {
+          const { data: jIns, error: jErr } = await supabase
+            .from("trade_journal")
+            .insert({
+              user_id: user.id,
+              pair: symbol,
+              direction,
+              entry_price: dealPrice ?? 0,
+              position_size: dealVolume,
+              stop_loss: stopLoss ?? null,
+              take_profit: takeProfit ?? null,
+              status: "open",
+              opened_at: new Date().toISOString(),
+              setup_tag: "terminal",
+              broker_ticket: orderTicket,
+              broker_position_id: positionId,
+              notes: `Auto-logged from terminal trade. Ticket #${orderTicket}.`,
+            })
+            .select("id")
+            .maybeSingle();
           recordStep({
-            step: "positions_sync_skipped",
-            reason: "all_retries_failed",
-            last_status: lastStatus,
-            last_error: lastError,
+            step: "journal_insert",
+            ok: !jErr,
+            ticket: orderTicket,
+            position_id: positionId,
+            inserted_id: jIns?.id ?? null,
+            error: jErr?.message ?? null,
           });
         } else {
-          const { error: delErr } = await supabase
-            .from("mt_positions")
-            .delete()
-            .eq("account_id", account.id);
-          if (delErr) {
-            recordStep({ step: "positions_delete_failed", error: delErr.message });
-          }
-
-          const rows = positions.map((p: any) => {
-            // Ticket mapping: Trading Layer uses `position_id` for the
-            // persistent position identifier and `ticket` for the original
-            // order. Prefer position_id so it matches the order's returned
-            // position id; fall back to ticket / id.
-            const t = String(
-              p.position_id ?? p.positionId ?? p.ticket ?? p.id ?? p.deal_id ?? "",
-            );
-            const sideStr = String(p.side ?? p.type ?? "").toLowerCase();
-            // mt_positions.side check constraint requires buy/sell.
-            const normSide =
-              sideStr === "buy" || sideStr === "long" ||
-              sideStr === "position_type_buy" || sideStr === "0"
-                ? "buy"
-                : sideStr === "sell" || sideStr === "short" ||
-                    sideStr === "position_type_sell" || sideStr === "1"
-                  ? "sell"
-                  : null;
-            return {
-              user_id: user.id,
-              account_id: account.id,
-              ticket: t,
-              symbol: String(p.symbol ?? ""),
-              side: normSide,
-              volume: Number(p.volume ?? p.lots ?? 0),
-              open_price: Number(
-                p.entry_price ?? p.price_open ?? p.priceOpen ??
-                p.openPrice ?? p.open_price ?? p.price ?? p.entry ?? 0,
-              ),
-              current_price: p.current_price != null ? Number(p.current_price) : null,
-              stop_loss: p.sl != null ? Number(p.sl) : p.stop_loss != null ? Number(p.stop_loss) : null,
-              take_profit: p.tp != null ? Number(p.tp) : p.take_profit != null ? Number(p.take_profit) : null,
-              profit: p.profit != null ? Number(p.profit) : 0,
-              swap: p.swap != null ? Number(p.swap) : null,
-              commission: p.commission != null ? Number(p.commission) : null,
-              opened_at: p.time
-                ? (Number(p.time) > 0 ? new Date(Number(p.time) * 1000).toISOString() : new Date(p.time).toISOString())
-                : p.opened_at ?? new Date().toISOString(),
-            };
-          }).filter((r) => r.ticket && (r.side === "buy" || r.side === "sell"));
-
-          if (rows.length > 0) {
-            const { error: insErr } = await supabase
-              .from("mt_positions")
-              .insert(rows);
-            recordStep({
-              step: "positions_insert",
-              count: rows.length,
-              ok: !insErr,
-              error: insErr?.message ?? null,
-            });
-
-            // Backfill broker_position_id on the journal row if missing.
-            if (orderTicket && !positionId) {
-              const matched = rows.find((r) => r.ticket === orderTicket);
-              if (matched) {
-                await supabase
-                  .from("trade_journal")
-                  .update({ broker_position_id: matched.ticket })
-                  .eq("user_id", user.id)
-                  .eq("broker_ticket", orderTicket);
-              }
-            }
-          } else {
-            recordStep({ step: "positions_insert_skipped", reason: "no_rows" });
-          }
+          recordStep({ step: "journal_skip_existing", ticket: orderTicket });
         }
-      } else {
-        recordStep({ step: "positions_sync_skipped", reason: "no_account_id" });
       }
+
+      // mt_positions sync intentionally removed — UI reads live positions
+      // from Trading Layer via get-live-account.
+      recordStep({ step: "positions_sync_skipped", reason: "mt_positions_disabled" });
     } catch (syncErr) {
       recordStep({
         step: "sync_exception",
