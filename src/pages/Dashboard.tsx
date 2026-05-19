@@ -22,6 +22,7 @@ import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
 import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
+import SelectedSymbolExposure from "@/components/livechart/SelectedSymbolExposure";
 import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
@@ -1055,13 +1056,9 @@ const DashboardInner = () => {
             {/* 2. Order Ticket — dominant module */}
             <BlackArrowTradePanel />
 
-            {/* 3. Selected-symbol position exposure (compact) */}
-            <div className="rounded-md border border-[color:var(--ltr-gold-border)]/60 bg-[color:var(--ltr-panel-elev)] overflow-hidden">
-              <div className="px-2.5 py-1.5 border-b border-[color:var(--ltr-gold-border)]/40 text-[9.5px] font-mono uppercase tracking-[0.18em] text-ltr-silver-400">
-                Position · {active}
-              </div>
-              <OpenPositionsPanel />
-            </div>
+            {/* 3. Selected-symbol exposure (compact summary, NOT the full positions table) */}
+            <SelectedSymbolExposure symbol={active} />
+
 
             {/* 4. Secondary tabs */}
             <Tabs defaultValue="quotes" className="rounded-md border border-[color:var(--ltr-gold-border)]/40 bg-[color:var(--ltr-panel-elev)]/60 p-1">
