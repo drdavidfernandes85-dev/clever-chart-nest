@@ -158,6 +158,7 @@ export const ExecutionResultModal = ({
           result.outcome === "success" && "border-emerald-500/30",
           result.outcome === "blocked" && "border-amber-500/30",
           result.outcome === "rejected" && "border-red-500/30",
+          (result.outcome === "pending" || result.outcome === "unconfirmed") && "border-yellow-500/30",
         )}
       >
         <TitleBar outcome={result.outcome} onClose={onClose} />
