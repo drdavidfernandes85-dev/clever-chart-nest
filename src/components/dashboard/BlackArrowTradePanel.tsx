@@ -801,7 +801,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
-      if (!connected) toast.error("Account not connected");
+      if (killSwitchActive) toast.error("Trading disabled by kill switch.");
+      else if (liveDisabled) toast.error("Live trading is disabled by your risk settings.");
+      else if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
       else if (!symbolValid) toast.error("Symbol not available on broker");
       else if (volumeError) toast.error(volumeError);
