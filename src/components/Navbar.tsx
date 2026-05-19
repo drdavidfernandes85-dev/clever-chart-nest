@@ -138,7 +138,7 @@ const Navbar = () => {
             >
               <Link to="/connect-mt" onClick={() => track("connect_mt_click", { location: "navbar" })}>
                 <Plug className="h-3.5 w-3.5" />
-                Connect MT5 Account
+                {t("hero.cta.mt5")}
               </Link>
             </Button>
           )}
