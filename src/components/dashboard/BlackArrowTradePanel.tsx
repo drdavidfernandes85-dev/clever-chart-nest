@@ -110,6 +110,102 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     status?: number;
     at: string;
   } | null>(null);
+  const [orderDebug, setOrderDebug] = useState<{
+    status: "loading" | "success" | "error";
+    functionUsed: string;
+    httpStatus?: number;
+    payloadSent: any;
+    rawEdgeFunctionResponse: any;
+    edgeFunctionError: any;
+    validationError: string | null;
+  } | null>(null);
+
+  async function handleBestExecutionDryRun() {
+    const payload = {
+      tradeId: crypto.randomUUID(),
+      symbol: normalizedSym || "XAUUSD",
+      side: "buy",
+      orderType: "market",
+      volume: Number(vol) || 0.01,
+      stopLoss: null,
+      takeProfit: null,
+      dryRun: true,
+      clientClickAt: new Date().toISOString(),
+    };
+
+    setOrderDebug({
+      status: "loading",
+      functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+      payloadSent: payload,
+      rawEdgeFunctionResponse: null,
+      edgeFunctionError: null,
+      validationError: null,
+    });
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setOrderDebug({
+          status: "error",
+          functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+          payloadSent: payload,
+          rawEdgeFunctionResponse: null,
+          edgeFunctionError: "No active Supabase session/access token found.",
+          validationError: "User is not authenticated.",
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order?ts=${Date.now()}`,
+        {
+          method: "POST",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Cache-Control": "no-store",
+            "Pragma": "no-cache",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { rawText: text };
+      }
+
+      setOrderDebug({
+        status: response.ok ? "success" : "error",
+        functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+        httpStatus: response.status,
+        payloadSent: payload,
+        rawEdgeFunctionResponse: data,
+        edgeFunctionError: response.ok ? null : data,
+        validationError:
+          data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
+            ? null
+            : "Frontend is not showing the real Edge Function response.",
+      });
+    } catch (error) {
+      setOrderDebug({
+        status: "error",
+        functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+        payloadSent: payload,
+        rawEdgeFunctionResponse: null,
+        edgeFunctionError: error instanceof Error ? error.message : String(error),
+        validationError: "Direct Edge Function fetch failed.",
+      });
+    }
+  }
 
   // Latch "ever connected" so a transient polling failure cannot replace
   // the entire Order Ticket with the disconnected screen.
