@@ -1524,65 +1524,91 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           ))}
         </div>
 
-        {/* Bid/Ask tiles — large institutional click-to-side targets */}
-        <div className="grid grid-cols-2 gap-1">
-          <button
-            type="button"
-            onClick={() => setSide("sell")}
+        {/* Execution block — BlackArrow-style compound side blocks.
+            Each side stacks: side label · live price · large MKT execution button. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-1">
+          {/* SELL side */}
+          <div
             className={cn(
-              "group flex flex-col items-stretch rounded-sm border px-2 py-1 text-left transition-colors",
+              "flex flex-col rounded-sm border overflow-hidden transition-colors",
               side === "sell"
-                ? "border-red-500/70 bg-red-500/10"
-                : "border-neutral-800 bg-[#0a0a0a] hover:border-red-500/40",
+                ? "border-red-500/70 bg-red-500/[0.06]"
+                : "border-neutral-800 bg-[#0a0a0a]",
             )}
           >
-            <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.18em] text-red-400/80">
-              <span>Sell</span><span>Bid</span>
-            </span>
-            <span className={cn(
-              "font-mono tabular-nums text-[15px] leading-tight font-semibold text-red-400 transition-colors",
-              bidFlash === "up" && "text-red-300",
-              bidFlash === "down" && "text-red-500",
-            )}>
-              {fmtPx(bid, digits)}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setSide("buy")}
+            <button
+              type="button"
+              onClick={() => setSide("sell")}
+              className="flex flex-col items-stretch px-2 py-1 text-left hover:bg-red-500/[0.04]"
+            >
+              <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.2em] text-red-400/80">
+                <span>Sell</span><span>Bid</span>
+              </span>
+              <span className={cn(
+                "font-mono tabular-nums text-[16px] leading-tight font-semibold text-red-400 transition-colors",
+                bidFlash === "up" && "text-red-300",
+                bidFlash === "down" && "text-red-500",
+              )}>
+                {fmtPx(bid, digits)}
+              </span>
+            </button>
+            <SideBtn
+              tone="sell"
+              disabled={!canSubmitMarket}
+              loading={submitting && side === "sell"}
+              onClick={() => submitMarket("sell")}
+            >
+              Sell @ MKT
+            </SideBtn>
+          </div>
+
+          {/* Center spread divider */}
+          <div className="flex flex-col items-center justify-center px-1 text-center min-w-[44px]">
+            <span className="text-[7.5px] font-mono uppercase tracking-[0.22em] text-neutral-500">Spread</span>
+            <span className="font-mono tabular-nums text-[11px] text-neutral-200">{spreadPts ?? "—"}</span>
+            <span className="mt-0.5 text-[7.5px] font-mono uppercase tracking-[0.22em] text-neutral-600">{tickAgeStr}</span>
+          </div>
+
+          {/* BUY side */}
+          <div
             className={cn(
-              "group flex flex-col items-stretch rounded-sm border px-2 py-1 text-left transition-colors",
+              "flex flex-col rounded-sm border overflow-hidden transition-colors",
               side === "buy"
-                ? "border-emerald-500/70 bg-emerald-500/10"
-                : "border-neutral-800 bg-[#0a0a0a] hover:border-emerald-500/40",
+                ? "border-emerald-500/70 bg-emerald-500/[0.06]"
+                : "border-neutral-800 bg-[#0a0a0a]",
             )}
           >
-            <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.18em] text-emerald-400/80">
-              <span>Buy</span><span>Ask</span>
-            </span>
-            <span className={cn(
-              "font-mono tabular-nums text-[15px] leading-tight font-semibold text-emerald-400 transition-colors",
-              askFlash === "up" && "text-emerald-300",
-              askFlash === "down" && "text-emerald-500",
-            )}>
-              {fmtPx(ask, digits)}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setSide("buy")}
+              className="flex flex-col items-stretch px-2 py-1 text-left hover:bg-emerald-500/[0.04]"
+            >
+              <span className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-[0.2em] text-emerald-400/80">
+                <span>Ask</span><span>Buy</span>
+              </span>
+              <span className={cn(
+                "font-mono tabular-nums text-[16px] leading-tight font-semibold text-emerald-400 transition-colors text-right",
+                askFlash === "up" && "text-emerald-300",
+                askFlash === "down" && "text-emerald-500",
+              )}>
+                {fmtPx(ask, digits)}
+              </span>
+            </button>
+            <SideBtn
+              tone="buy"
+              disabled={!canSubmitMarket}
+              loading={submitting && side === "buy"}
+              onClick={() => submitMarket("buy")}
+            >
+              Buy @ MKT
+            </SideBtn>
+          </div>
         </div>
 
-        {/* Market buttons — primary */}
-        <div className="grid grid-cols-2 gap-1">
-          <SideBtn tone="buy" disabled={!canSubmitMarket} loading={submitting && side === "buy"} onClick={() => submitMarket("buy")}>
-            Buy @ MKT
-          </SideBtn>
-          <SideBtn tone="sell" disabled={!canSubmitMarket} loading={submitting && side === "sell"} onClick={() => submitMarket("sell")}>
-            Sell @ MKT
-          </SideBtn>
-        </div>
-        <p className="px-1 pt-1 text-[10px] leading-snug text-muted-foreground/70">
-          This sends a real order to your connected MT5 account. You are solely
-          responsible for this trading decision. Not investment advice.
+        <p className="px-1 text-[9.5px] leading-snug text-muted-foreground/70">
+          Sends a real order to your connected MT5 account. You are responsible for this decision. Not investment advice.
         </p>
+
 
         {/* Dev-only dry-run best-execution test */}
         {devMode && (
