@@ -21,7 +21,7 @@ import {
   Copy,
 } from "lucide-react";
 import { useWebinars } from "@/hooks/useWebinars";
-import sidebarLogo from "@/assets/logo-sidebar.png";
+
 import LtrLogoBrand from "@/components/branding/LtrLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
