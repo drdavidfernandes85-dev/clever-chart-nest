@@ -39,6 +39,7 @@ const STATUS_TONE: Record<string, string> = {
   modify_failed: "border-red-500/50 text-red-300 bg-red-500/10",
   modify_rejected: "border-red-500/50 text-red-300 bg-red-500/10",
   closed: "border-zinc-400/50 text-zinc-200 bg-zinc-500/10",
+  partial_closed: "border-amber-400/50 text-amber-200 bg-amber-500/10",
   close_failed: "border-red-500/50 text-red-300 bg-red-500/10",
   close_rejected: "border-red-500/50 text-red-300 bg-red-500/10",
   rejected: "border-red-500/50 text-red-300 bg-red-500/10",
