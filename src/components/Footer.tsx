@@ -46,16 +46,14 @@ const Footer = () => {
       <div className="container">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <Link to="/" className="flex items-center gap-3" aria-label="IX Sala de Trading — Home">
-              <img src={infinoxLogo} alt="INFINOX — Online Trading Broker" className="h-6" />
+            <Link to="/" className="inline-flex items-center" aria-label="LTR Terminal Pro — Home">
+              <LtrLogo variant="full" className="text-sm" />
             </Link>
-            <span className="mt-3 inline-block font-heading text-sm font-extrabold uppercase tracking-[0.12em]">
-              <span className="text-[#FFCD05]">LTR</span> <span className="text-foreground">Terminal Pro</span>
-            </span>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}
             </p>
           </div>
+
           {columns.map((col) => (
             <nav key={col.title} aria-label={col.title}>
               <h4 className="mb-4 font-heading text-xs font-semibold text-foreground uppercase tracking-wider">{col.title}</h4>
