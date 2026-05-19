@@ -120,9 +120,7 @@ const TerminalHeader = () => {
     <header className="sticky top-0 z-50 border-b border-[#FFCD05]/20 bg-gradient-to-b from-[#0B0B0C] to-[#050505]/95 backdrop-blur-xl shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
       <div className="flex h-12 items-center gap-3 px-3 sm:px-4 pl-14 lg:pl-4">
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="relative h-7 w-7 rounded-md border border-[#FFCD05]/40 bg-[#0B0B0C] p-0.5 shadow-[0_0_14px_rgba(255,205,5,0.35)]">
-            <LtrLogo variant="icon" className="h-full w-full" glow={false} />
-          </div>
+          <LtrLogo variant="icon" className="h-8 w-8" />
           <LtrLogo variant="wordmark" className="hidden sm:inline-block" />
         </div>
 
