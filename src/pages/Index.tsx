@@ -145,7 +145,7 @@ const Index = () => {
         items={[
           { id: "pilares", label: "Pilares" },
           { id: "equipo", label: "Equipo" },
-          { id: "mentoria", label: "Mentoría" },
+          { id: "mentoria", label: "Formación" },
           { id: "faq", label: "FAQ" },
           { id: "compliance", label: "Legal" },
         ]}
