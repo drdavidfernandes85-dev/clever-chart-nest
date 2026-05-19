@@ -56,6 +56,9 @@ const fmt = (n: number | null | undefined, currency = "USD") => {
 const fmtPx = (n: number | null | undefined, digits = 5) =>
   n === null || n === undefined || Number.isNaN(n) ? "—" : n.toFixed(digits);
 
+const submitBestExecutionOrderUrl = () =>
+  `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
+
 interface Props {
   className?: string;
 }
@@ -124,6 +127,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   async function handleBestExecutionDryRun() {
     const selectedSymbol = normalizedSym;
     const volume = vol;
+    const requestUrl = submitBestExecutionOrderUrl();
     const payload = {
       tradeId: crypto.randomUUID(),
       symbol: selectedSymbol || "XAUUSD",
@@ -141,7 +145,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     setOrderDebug({
       status: "loading",
       functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
-      requestUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order?v=${Date.now()}`,
+      requestUrl,
       payloadSent: payload,
       rawEdgeFunctionResponse: null,
       edgeFunctionError: null,
@@ -157,6 +161,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         setOrderDebug({
           status: "error",
           functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+          requestUrl,
           payloadSent: payload,
           rawEdgeFunctionResponse: null,
           edgeFunctionError: "No active Supabase session/access token found.",
@@ -165,16 +170,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         return;
       }
 
-      const requestUrl =
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
-
       const response = await fetch(requestUrl, {
         method: "POST",
         cache: "no-store",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify(payload),
       });
@@ -205,6 +207,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       setOrderDebug({
         status: "error",
         functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+        requestUrl,
         payloadSent: payload,
         rawEdgeFunctionResponse: null,
         edgeFunctionError: error instanceof Error ? error.message : String(error),
