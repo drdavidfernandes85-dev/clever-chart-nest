@@ -781,7 +781,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   // selectedQuote but a last-good snapshot is still keeping the ticket alive.
   const showDataDelayed = selectedDataDelayed && !!effectiveSelected;
 
-  const { settings: riskSettings, flags: riskFlags } = useRiskSettings();
+  const { flags: riskFlags } = useRiskSettings();
   const killSwitchActive = riskFlags.killSwitch;
   const liveDisabled = !riskFlags.liveEnabled;
 
