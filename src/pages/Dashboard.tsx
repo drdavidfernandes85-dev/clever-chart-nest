@@ -21,6 +21,7 @@ import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
+import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
 import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
@@ -797,6 +798,7 @@ const BottomTabs = () => {
             { v: "positions", l: "Positions" },
             { v: "orders", l: "Orders" },
             { v: "executions", l: "Execution Log" },
+            { v: "history", l: "Execution History" },
             { v: "best-exec", l: "Best Execution" },
             { v: "account", l: "Account" },
             { v: "journal", l: "Journal" },
@@ -824,6 +826,11 @@ const BottomTabs = () => {
         <TabsContent value="executions" className="m-0 p-0">
           <TerminalExecutionLog />
         </TabsContent>
+
+        <TabsContent value="history" className="m-0 p-0">
+          <ExecutionHistoryPanel />
+        </TabsContent>
+
 
         <TabsContent value="best-exec" className="m-0 p-0">
           <BestExecutionTab />
