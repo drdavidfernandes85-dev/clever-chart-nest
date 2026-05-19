@@ -22,6 +22,7 @@ import {
   ExecutionResultModal,
   type ExecutionResultPayload,
 } from "@/components/dashboard/ExecutionResultModal";
+import ExecutionAuditPanel from "@/components/dashboard/ExecutionAuditPanel";
 
 /**
  * Professional BlackArrow-style Order Ticket.
