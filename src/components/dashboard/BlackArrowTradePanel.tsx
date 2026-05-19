@@ -199,6 +199,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   }
 
   async function handleLiveTest001() {
+    if (cooling) {
+      toast.warning(`Rate limited. Retry in ${cooldownSec}s.`);
+      return;
+    }
     const selectedSymbol = normalizedSym;
     const payload = {
       tradeId: crypto.randomUUID(),
