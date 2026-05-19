@@ -127,6 +127,101 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     validationError: string | null;
   } | null>(null);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
+  const [liveTestConfirmed, setLiveTestConfirmed] = useState(false);
+  const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
+
+  async function handleLiveTest001() {
+    const selectedSymbol = normalizedSym;
+    const payload = {
+      tradeId: crypto.randomUUID(),
+      symbol: selectedSymbol || "XAUUSD",
+      side: side || "buy",
+      orderType: "market",
+      volume: 0.01,
+      stopLoss: null,
+      takeProfit: null,
+      dryRun: false,
+      liveExecutionConfirmed: true,
+      clientClickAt: new Date().toISOString(),
+    };
+
+    setLiveTestSubmitting(true);
+    setOrderDebug({
+      status: "loading",
+      functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+      payloadSent: payload,
+      rawEdgeFunctionResponse: null,
+      edgeFunctionError: null,
+      validationError: null,
+    });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setOrderDebug({
+          status: "error",
+          functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+          payloadSent: payload,
+          rawEdgeFunctionResponse: null,
+          edgeFunctionError: "No active Supabase session/access token found.",
+          validationError: "User is not authenticated.",
+        });
+        return;
+      }
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const requestUrl =
+        `${supabaseUrl}/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
+
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await response.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { data = { rawText: text }; }
+
+      const ok =
+        response.ok &&
+        data?.version === "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19" &&
+        data?.step === "execution_result" &&
+        data?.liveOrderSent === true;
+
+      setOrderDebug({
+        status: response.ok ? "success" : "error",
+        functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+        requestUrl,
+        httpStatus: response.status,
+        payloadSent: payload,
+        rawEdgeFunctionResponse: data,
+        edgeFunctionError: response.ok ? null : data,
+        validationError: ok ? null : "Expected execution_result / liveOrderSent=true.",
+      });
+
+      if (response.ok) toast.success("Live test order sent");
+      else toast.error("Live test failed");
+    } catch (error) {
+      setOrderDebug({
+        status: "error",
+        functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
+        payloadSent: payload,
+        rawEdgeFunctionResponse: null,
+        edgeFunctionError: error instanceof Error ? error.message : String(error),
+        validationError: "Direct Edge Function fetch failed.",
+      });
+    } finally {
+      setLiveTestSubmitting(false);
+      try { await refresh(); } catch { /* ignore */ }
+      setTimeout(() => setAuditRefreshKey(k => k + 1), 400);
+    }
+  }
 
   async function handleBestExecutionDryRun() {
     const selectedSymbol = normalizedSym;
