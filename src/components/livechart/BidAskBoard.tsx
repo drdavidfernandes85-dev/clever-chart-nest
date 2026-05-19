@@ -28,8 +28,8 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
   // central service polls them on the 10s watchlist cadence.
   useEffect(() => {
     const cleaned = symbols.filter(Boolean);
-    if (cleaned.length === 0) return;
-    MarketDataService.setWatchlist(cleaned);
+    MarketDataService.subscribeWatchlist("bid-ask-board", cleaned);
+    return () => MarketDataService.subscribeWatchlist("bid-ask-board", []);
   }, [symbols.join(",")]);
 
   const liveQuotes = useQuotes(symbols);
