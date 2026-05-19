@@ -215,8 +215,9 @@ const Community = () => {
   return (
     <main className="relative min-h-screen bg-[#050505] text-foreground">
       <SEO
-        title="Community Hub | IX Sala de Trading"
-        description="Professional trading community: live chat, shared educational market ideas, and top community contributors. Real-time collaboration with educators and peers."
+        title={t("community.seo.title")}
+        description={t("community.seo.desc")}
+        keywords={t("community.seo.keywords")}
         canonical="https://ixsalatrading.com/community"
         jsonLd={{
           "@context": "https://schema.org",
@@ -226,6 +227,7 @@ const Community = () => {
           url: "https://ixsalatrading.com/community",
         }}
       />
+
 
       {/* Top bar */}
       <header className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-white/5 bg-[#0a0a0a]/95 px-4 backdrop-blur">

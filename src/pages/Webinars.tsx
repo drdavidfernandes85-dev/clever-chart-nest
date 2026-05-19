@@ -205,9 +205,11 @@ const Webinars = () => {
   return (
     <div className="min-h-screen pb-16 md:pb-0">
       <SEO
-        title="Live Webinars & Upcoming Sessions | IX Sala de Trading"
-        description="Daily live webinars hosted by INFINOX mentors plus all upcoming sessions and recordings — searchable by date, topic and mentor."
+        title={t("edu.seo.title")}
+        description={t("edu.seo.desc")}
+        keywords={t("edu.seo.keywords")}
         canonical="https://ixsalatrading.com/webinars"
+
         jsonLd={[
           {
             "@context": "https://schema.org",
