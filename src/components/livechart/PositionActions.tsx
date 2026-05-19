@@ -67,9 +67,13 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
   const [openFull, setOpenFull] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { locked } = useExecutionLock();
+  const { positions } = useLiveAccount();
+  const positionsRef = useRef(positions);
+  useEffect(() => { positionsRef.current = positions; }, [positions]);
 
   const busy = submitting || cooling || disabled || locked;
   const ticket = position.ticket != null ? String(position.ticket) : null;
+
 
   async function refreshAll() {
     await onAfter();
