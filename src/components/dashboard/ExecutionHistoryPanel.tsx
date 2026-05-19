@@ -148,7 +148,7 @@ const ExecutionHistoryPanel = () => {
         .eq("user_id", auth.user.id)
         .order("created_at", { ascending: false })
         .limit(500);
-      setRows((data ?? []) as AuditRow[]);
+      setRows((data ?? []) as unknown as AuditRow[]);
       setLoading(false);
     };
     load();
