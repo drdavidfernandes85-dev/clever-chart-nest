@@ -52,6 +52,10 @@ const TradingDashboard = lazy(() => import("./pages/TradingDashboard"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary"));
 const Webinars = lazy(() => import("./pages/Webinars"));
 const WebinarLanding = lazy(() => import("./pages/WebinarLanding"));
+const Ideas = lazy(() => import("./pages/Ideas"));
+const Terms = lazy(() => import("./pages/Terms"));
+const RiskDisclosure = lazy(() => import("./pages/RiskDisclosure"));
+const ComplianceReview = lazy(() => import("./pages/ComplianceReview"));
 
 const DashboardShell = ({ children }: { children: ReactNode }) => (
   <ProtectedRoute>
@@ -110,9 +114,11 @@ const App = () => (
                   {/* Eligibility-gated routes: requires verified live Infinox account + $100 USD min balance */}
                   <Route path="/live-chart" element={<GatedDashboardShell><LiveChart /></GatedDashboardShell>} />
                   <Route path="/chatroom" element={<GatedDashboardShell><Chatroom /></GatedDashboardShell>} />
-                  <Route path="/signals" element={<GatedDashboardShell><TradingSignals /></GatedDashboardShell>} />
+                  <Route path="/ideas" element={<GatedDashboardShell><Ideas /></GatedDashboardShell>} />
+                  {/* Legacy routes — redirect to combined Ideas tab for Compliance */}
+                  <Route path="/signals" element={<Navigate to="/ideas" replace />} />
+                  <Route path="/copy-trading" element={<Navigate to="/ideas" replace />} />
                   <Route path="/leaderboard" element={<GatedDashboardShell><Leaderboard /></GatedDashboardShell>} />
-                  <Route path="/copy-trading" element={<GatedDashboardShell><CopyTrading /></GatedDashboardShell>} />
                   <Route path="/analytics" element={<GatedDashboardShell><Analytics /></GatedDashboardShell>} />
                   <Route path="/trading-dashboard" element={<Navigate to="/trading-room" replace />} />
                   <Route path="/news" element={<GatedDashboardShell><News /></GatedDashboardShell>} />
@@ -123,6 +129,9 @@ const App = () => (
                   <Route path="/admin" element={<AdminRoute><DashboardLayout><Admin /></DashboardLayout></AdminRoute>} />
                   <Route path="/u/:userId" element={<DashboardShell><PublicProfile /></DashboardShell>} />
                   <Route path="/__qa/hero" element={<HeroQA />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/risk-disclosure" element={<RiskDisclosure />} />
+                  <Route path="/compliance-review" element={<DashboardShell><ComplianceReview /></DashboardShell>} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </Suspense>

@@ -4,6 +4,7 @@ import infinoxLogoWhite from "@/assets/infinox-logo-white.png";
 import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 
 const Footer = () => {
   const { t } = useLanguage();
@@ -30,11 +31,11 @@ const Footer = () => {
       ],
     },
     {
-      title: t("footer.support"),
+      title: "Legal",
       links: [
-        { label: "Crear cuenta", to: "/register" },
-        { label: "Iniciar sesión", to: "/login" },
-        { label: "Recuperar contraseña", to: "/forgot-password" },
+        { label: "Terms & Conditions", to: "/terms" },
+        { label: "Risk Disclosure", to: "/risk-disclosure" },
+        { label: "Community Guidelines", to: "/community/guidelines" },
         { label: t("footer.anchor.contact"), to: "/#contact" },
       ],
     },
@@ -77,16 +78,17 @@ const Footer = () => {
         <div className="mt-12 cyber-line" />
         <div className="mt-6 mx-auto max-w-4xl space-y-2 text-center text-[11px] leading-relaxed text-muted-foreground/80">
           <p>
-            <span className="font-semibold text-foreground/70">Risk Disclaimer:</span> Trading involves significant risk of loss. Past performance is not indicative of future results. All content is for educational purposes only and does not constitute financial advice.
+            <span className="font-semibold text-foreground/70">Risk warning:</span> Trading leveraged products involves significant risk and may not be suitable for all investors. You may lose more than your initial investment. The content in this trading room is provided for educational and informational purposes only and does not constitute investment advice, financial advice, or a recommendation to buy or sell any financial instrument. Users are solely responsible for their trading decisions.
           </p>
           <p className="text-muted-foreground/60">
-            IX Sala de Trading is an educational community. We do not provide trade ideas or copy-trading services. Always trade responsibly.
+            Trading Layer is an independent third-party technology provider. The broker is not the provider of trade ideas, copy / follow functionality, or third-party trading technology. The broker's role is limited to the provision of the trading account and execution venue, subject to its own terms and regulatory permissions.
           </p>
         </div>
         <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <div className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} IX Sala de Trading — Powered by INFINOX. {t("footer.rights")}
+            © {new Date().getFullYear()} IX Sala de Trading. {t("footer.rights")}
           </div>
+          <PoweredByTradingLayer />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
             <Sparkles className="h-3 w-3" /> Version 1.0 · Launch Ready
           </span>
