@@ -1,102 +1,109 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Proxima Nova stack — guideline weights: 300 Light · 400 Regular · 600 SemiBold · 700 Bold.
-   Inter is loaded as a metric-compatible fallback in index.html. */
+/* IX LTR — Inter (UI/headings) + JetBrains Mono (prices, tickets, logs). */
 :root {
-  --font-proxima: 'Proxima Nova', 'proxima-nova', 'Inter', 'Arial', system-ui, sans-serif;
+  --font-sans:  'Inter', 'Proxima Nova', 'Arial', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Legacy alias used elsewhere — keep so existing references don't break. */
+  --font-proxima: var(--font-sans);
 }
 
 @layer base {
-  /* ── LTR Terminal Pro — INFINOX-aligned palette ── */
-  /* Black #030303 · Terminal #050505 · Panel #0B0B0C · Elevated #111111
-     Gold #FFCD05 · Deep Gold #B88A00 · Buy #13E6A2 · Sell #EF4444 */
+  /* ── IX LTR — Dark luxury fintech palette ──
+     Black #050505 · Secondary #0A0A0B · Panel #111214 · Elevated #16181C
+     Borders #2A2D31 · Text #E8E8EA · Secondary text #C9CDD2 · Muted #8E949C
+     Gold #FFCD05 · Deep Gold #D4A900 · Buy #17C784 · Sell #F04E4E
+     Warning #FFB800 · Info #4DA3FF */
   :root,
   .dark {
-    --background: 0 0% 1.2%;          /* #030303 primary black */
-    --foreground: 0 0% 100%;           /* #FFFFFF primary text */
+    --background: 0 0% 2%;             /* #050505 */
+    --foreground: 240 5% 91%;          /* #E8E8EA */
 
-    --card: 240 4% 5%;                 /* #0B0B0C panel black */
-    --card-foreground: 0 0% 100%;
+    --card: 220 7% 7.5%;               /* #111214 panel */
+    --card-foreground: 240 5% 91%;
 
-    --popover: 240 4% 5%;              /* #0B0B0C */
-    --popover-foreground: 0 0% 100%;
+    --popover: 220 7% 7.5%;
+    --popover-foreground: 240 5% 91%;
 
     /* Primary = LTR Gold */
     --primary: 48 100% 51%;            /* #FFCD05 */
-    --primary-foreground: 0 0% 1.2%;   /* on-gold = black */
+    --primary-foreground: 0 0% 4%;     /* on-gold = black */
 
-    --secondary: 0 0% 6.7%;            /* #111111 elevated panel */
-    --secondary-foreground: 0 0% 85%;  /* #D9D9D9 */
+    --secondary: 220 9% 10%;           /* #16181C elevated */
+    --secondary-foreground: 213 9% 81%;/* #C9CDD2 */
 
-    --muted: 0 0% 6.7%;                /* #111111 */
-    --muted-foreground: 0 0% 54%;      /* #8A8A8A muted text */
+    --muted: 220 9% 10%;               /* #16181C */
+    --muted-foreground: 213 7% 58%;    /* #8E949C */
 
     --accent: 48 100% 51%;             /* #FFCD05 */
-    --accent-foreground: 0 0% 1.2%;
+    --accent-foreground: 0 0% 4%;
 
-    --destructive: 0 84% 60%;          /* #EF4444 sell red */
+    --destructive: 0 84% 62%;          /* #F04E4E */
     --destructive-foreground: 0 0% 100%;
 
-    /* Border = Gold at 25% (rgba(255,205,5,0.25)) — use border-primary/25 in components */
-    --border: 48 100% 51%;
-    --input: 0 0% 6.7%;                /* #111111 */
+    /* Neutral border — the gold accent is reserved for active/hover states. */
+    --border: 220 7% 18%;              /* #2A2D31 */
+    --input: 220 9% 10%;               /* #16181C */
     --ring: 48 100% 51%;
 
     --radius: 0.5rem;
 
-    /* ── LTR Terminal Pro — semantic tokens ── */
-    --ltr-black:        #030303;
-    --ltr-terminal-bg:  #050505;
-    --ltr-panel:        #0B0B0C;
-    --ltr-panel-elev:   #111111;
-    --ltr-text:         #FFFFFF;
-    --ltr-text-2:       #D9D9D9;
-    --ltr-text-muted:   #8A8A8A;
+    /* ── IX LTR — semantic tokens ── */
+    --ltr-black:        #050505;
+    --ltr-terminal-bg:  #0A0A0B;
+    --ltr-panel:        #111214;
+    --ltr-panel-elev:   #16181C;
+    --ltr-text:         #E8E8EA;
+    --ltr-text-2:       #C9CDD2;
+    --ltr-text-muted:   #8E949C;
+    --ltr-border:       #2A2D31;
     --ltr-silver-100:   #FFFFFF;
-    --ltr-silver-200:   #D9D9D9;
-    --ltr-silver-300:   #B8B8B8;
-    --ltr-silver-400:   #8A8A8A;
-    --ltr-silver-500:   #6F6F6F;
+    --ltr-silver-200:   #E8E8EA;
+    --ltr-silver-300:   #C9CDD2;
+    --ltr-silver-400:   #8E949C;
+    --ltr-silver-500:   #6F757D;
     --ltr-gold:         #FFCD05;
-    --ltr-gold-deep:    #B88A00;
-    --ltr-gold-glow:    rgba(255, 205, 5, 0.30);
-    --ltr-gold-border:  rgba(255, 205, 5, 0.25);
-    --ltr-success:      #13E6A2;   /* buy green */
-    --ltr-danger:       #EF4444;   /* sell red */
-    --ltr-warning:      #FFB020;
+    --ltr-gold-deep:    #D4A900;
+    --ltr-gold-glow:    rgba(255, 205, 5, 0.28);
+    --ltr-gold-border:  rgba(255, 205, 5, 0.35);
+    --ltr-success:      #17C784;   /* buy green */
+    --ltr-danger:       #F04E4E;   /* sell red */
+    --ltr-warning:      #FFB800;
+    --ltr-info:         #4DA3FF;
 
 
 
-    /* Crypto neon system */
-    --neon-yellow: 48 100% 51%;       /* CTA only */
-    --neon-cyan: 187 100% 50%;        /* primary data */
-    --neon-purple: 271 91% 65%;       /* secondary accent */
-    --neon-green: 145 100% 55%;       /* gains */
-    --neon-red: 348 100% 60%;         /* losses */
-    --score-strong: 145 82% 43%;
+    /* Legacy neon tokens kept for back-compat (mapped to brand) */
+    --neon-yellow: 48 100% 51%;
+    --neon-cyan:   211 100% 65%;
+    --neon-purple: 271 91% 65%;
+    --neon-green:  158 80% 44%;
+    --neon-red:    0 84% 62%;
+    --score-strong: 158 80% 44%;
     --score-strong-foreground: 0 0% 98%;
-    --score-weak: 348 86% 56%;
+    --score-weak: 0 84% 62%;
     --score-weak-foreground: 0 0% 98%;
 
-    --hero-gradient: linear-gradient(180deg, hsl(0 0% 1%) 0%, hsl(260 30% 4%) 50%, hsl(0 0% 1%) 100%);
-    --card-gradient: linear-gradient(180deg, hsl(0 0% 7% / 0.95) 0%, hsl(0 0% 5% / 0.95) 100%);
-    --glow-primary: 0 0 18px hsl(187 100% 50% / 0.45);
-    --glow-primary-strong: 0 0 32px hsl(187 100% 50% / 0.7);
-    --glow-cyan: 0 0 18px hsl(187 100% 50% / 0.5);
+    --hero-gradient: linear-gradient(180deg, hsl(0 0% 2%) 0%, hsl(220 9% 6%) 50%, hsl(0 0% 2%) 100%);
+    --card-gradient: linear-gradient(180deg, hsl(220 7% 9% / 0.95) 0%, hsl(220 7% 6% / 0.95) 100%);
+    --glow-primary: 0 0 18px hsl(48 100% 51% / 0.45);
+    --glow-primary-strong: 0 0 32px hsl(48 100% 51% / 0.7);
+    --glow-cyan: 0 0 18px hsl(211 100% 65% / 0.5);
     --glow-purple: 0 0 18px hsl(271 91% 65% / 0.5);
     --glow-yellow: 0 0 18px hsl(48 100% 51% / 0.55);
 
-    --sidebar-background: 0 0% 2%;
-    --sidebar-foreground: 0 0% 92%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 240 5% 91%;
     --sidebar-primary: 48 100% 51%;
     --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 0 0% 8%;
-    --sidebar-accent-foreground: 0 0% 92%;
-    --sidebar-border: 48 100% 51%;
+    --sidebar-accent: 220 9% 10%;
+    --sidebar-accent-foreground: 240 5% 91%;
+    --sidebar-border: 220 7% 18%;
     --sidebar-ring: 48 100% 51%;
   }
 
@@ -148,28 +155,25 @@
 
 @layer base {
   * {
-    border-color: hsl(48 100% 51% / 0.12);
+    border-color: hsl(var(--border));
   }
 
-  /* ── Global fiery dark panel treatment ──
-     Every element using `bg-card` gets a warm yellow border for cohesion
-     with the hero. NO outer halo, NO inner glow — keep crisp & data-first. */
+  /* IX LTR — neutral panel borders by default; gold is reserved for
+     active / hover states (use border-primary or .ltr-panel-hover). */
   :root:not(.light) [class*="bg-card"]:not(body):not(html):not([class*="bg-card/0"]):not([class*="bg-card-foreground"]) {
-    border-color: hsl(48 100% 51% / 0.22);
+    border-color: hsl(var(--border));
   }
 
-  /* Stronger fiery border on any element using `border-border` token */
   :root:not(.light) [class*="border-border"] {
-    border-color: hsl(48 100% 51% / 0.22);
+    border-color: hsl(var(--border));
   }
 
   body {
     @apply text-foreground antialiased;
-    font-family: var(--font-proxima);
+    font-family: var(--font-sans);
     font-weight: 400;
     position: relative;
     overflow-x: hidden;
-    /* Clean deep void — no ambient fiery radial glow */
     background-color: #050505;
     background-attachment: fixed;
   }
@@ -178,10 +182,10 @@
     background-color: #050505;
     background-attachment: fixed;
   }
-  /* Selection in yellow to match brand */
+  /* Brand selection */
   ::selection {
-    background: hsl(48 100% 51% / 0.35);
-    color: hsl(0 0% 8%);
+    background: hsl(48 100% 51% / 0.32);
+    color: hsl(0 0% 4%);
   }
   html.light {
     background-color: hsl(0 0% 100%);
@@ -194,15 +198,25 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-proxima);
+    font-family: var(--font-sans);
     letter-spacing: -0.01em;
   }
 
-  /* Guideline weights */
-  h1, .hero-title { font-weight: 300; }   /* Light for hero */
-  h2, h3 { font-weight: 600; }            /* SemiBold for sections */
+  /* Premium fintech weight hierarchy */
+  h1, .hero-title { font-weight: 600; }
+  h2 { font-weight: 600; }
+  h3 { font-weight: 600; }
   .heading-semibold { font-weight: 600; }
-  .heading-bold { font-weight: 700; }
+  .heading-bold     { font-weight: 700; }
+
+  /* Monospace utility for prices, tickets, account stats, logs.
+     Use class="font-mono-data" anywhere numeric/data text is shown. */
+  .font-mono-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum", "zero", "ss01";
+    letter-spacing: 0;
+  }
 }
 
 @layer utilities {

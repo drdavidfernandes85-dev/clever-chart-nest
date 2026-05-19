@@ -77,7 +77,7 @@ const Ideas = () => {
             }`}
           >
             <Lightbulb className="h-4 w-4" />
-            Trade Ideas
+            Market Ideas
           </button>
           <button
             role="tab"
@@ -90,7 +90,7 @@ const Ideas = () => {
             }`}
           >
             <Users className="h-4 w-4" />
-            Idea Tools
+            Follow / Copy Tools
           </button>
         </div>
 
