@@ -375,13 +375,19 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
                     checked={accepted}
                     onChange={(e) => setAccepted(e.target.checked)}
                     className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
-                    aria-label="Acknowledge trading risk"
+                    aria-label="Acknowledge that this is not investment advice"
                   />
                   <span className="text-[11px] leading-snug text-muted-foreground">
-                    I acknowledge that trading involves risk and I take full
-                    responsibility for my own trading decisions.
+                    I understand this is not investment advice and that I am
+                    solely responsible for any order submitted to my MT5
+                    account.
                   </span>
                 </label>
+
+                <p className="text-[10px] leading-snug text-muted-foreground/70">
+                  This sends a real order to your connected MT5 account. You
+                  are solely responsible for this trading decision.
+                </p>
 
                 <button
                   onClick={handleConfirm}
@@ -389,7 +395,7 @@ const CopyTradeModal = ({ request, onClose }: Props) => {
                   className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 font-heading text-sm font-extrabold uppercase tracking-[0.18em] text-white shadow-[0_15px_40px_-12px_rgba(16,185,129,0.6)] transition-all hover:bg-emerald-400 hover:shadow-[0_18px_50px_-12px_rgba(16,185,129,0.8)] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 >
                   <CheckCircle2 className="h-5 w-5" />
-                  Confirm & Place Trade
+                  Execute Idea
                 </button>
               </>
             )}
