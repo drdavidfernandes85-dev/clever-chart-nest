@@ -27,7 +27,7 @@ const Navbar = () => {
   const { theme } = useTheme();
   const { connected, liveAccount } = useLiveAccount();
   const navigate = useNavigate();
-  const infinoxLogo = sidebarLogo;
+  
 
   const navLinks = [
     { label: t("nav.home"), href: "#home" },
