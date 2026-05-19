@@ -190,6 +190,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
         );
         if (cancelled) return;
         if (invErr) {
+          checkAndHandle429(data, invErr);
           // Stale-while-revalidate: never blank the panel on a polling error.
           setTickError(invErr.message ?? String(invErr));
           if (isInitial) {
@@ -202,6 +203,7 @@ export function BrokerSymbolsProvider({ children }: { children: ReactNode }) {
           (data as any)?.rateLimited === true ||
           (data as any)?.step === "rate_limited";
         if (rateLimited) {
+          checkAndHandle429(data, null);
           setTickError("Rate limited");
           return;
         }
