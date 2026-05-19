@@ -170,17 +170,13 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       // Reconcile: refresh now + at 1.5s + 3s; check ticket disappears.
       try { await onAfter(); } catch { /* ignore */ }
       if (serverClosed && ticket) {
-        const getTickets = () => {
-          // Re-read from the DOM-mounted context via custom event consumers;
-          // here we proxy through the global refresh and trust onAfter() to
-          // have updated parent state. Caller passes a fresh `position` list
-          // implicitly via component re-render, so just dispatch refresh.
-          return [] as string[];
-        };
+        const getTickets = () =>
+          (positionsRef.current ?? []).map((p) => (p.ticket == null ? "" : String(p.ticket)));
         const outcome = await reconcileAfterClose(onAfter, getTickets, ticket);
         notifyCloseResult(outcome, position.symbol, ticket);
         broadcastExec(outcome === "closed" ? "Position Closed" : "Close Pending");
       }
+
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
       window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
       window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
