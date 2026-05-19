@@ -142,9 +142,24 @@ export const ExecutionResultModal = ({
   onClose: () => void;
 }) => {
   if (!result) return null;
-  const digits = result.digits ?? 5;
-  const sideLabel = result.side === "buy" ? "BUY" : "SELL";
-  const sideAccent = result.side === "buy" ? "text-emerald-300" : "text-red-300";
+  // Hard guard: "ORDER EXECUTED" must only render when an MT5 position ticket
+  // was confirmed from live positions. Otherwise downgrade to "unconfirmed".
+  const hasMt5Ticket =
+    result.confirmedTicket != null || (result.mt5Confirmed === true && result.ticket != null);
+  const effective: ExecutionResultPayload =
+    result.outcome === "success" && !hasMt5Ticket
+      ? {
+          ...result,
+          outcome: "unconfirmed",
+          brokerAccepted: true,
+          mt5Confirmed: false,
+          confirmationStatus: "not_found",
+          brokerMessage: "Broker accepted/sent order but no matching MT5 position was found.",
+        }
+      : result;
+  const digits = effective.digits ?? 5;
+  const sideLabel = effective.side === "buy" ? "BUY" : "SELL";
+  const sideAccent = effective.side === "buy" ? "text-emerald-300" : "text-red-300";
 
   return (
     <div
