@@ -85,18 +85,18 @@ const HeaderStat = ({
   tone?: "default" | "positive" | "negative" | "primary";
 }) => (
   <div className="flex flex-col leading-tight">
-    <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-neutral-500">
+    <span className="text-[9px] font-mono uppercase tracking-[0.18em] text-ltr-silver-400">
       {label}
     </span>
     <span
       className={`font-mono text-[12px] font-bold tabular-nums ${
         tone === "positive"
-          ? "text-emerald-400"
+          ? "text-[#13E6A2]"
           : tone === "negative"
-            ? "text-red-400"
+            ? "text-[#EF4444]"
             : tone === "primary"
               ? "text-[#FFCD05]"
-              : "text-neutral-100"
+              : "text-ltr-silver-100"
       }`}
     >
       {value}
