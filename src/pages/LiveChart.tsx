@@ -255,61 +255,76 @@ const LiveChartInner = () => {
       />
 
       {/* App header — LTR Terminal Pro */}
-      <header className="sticky top-0 z-50 border-b border-[#FFCD05]/15 bg-[#050505]/95 backdrop-blur-2xl">
-        <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4">
+      <header className="sticky top-0 z-50 border-b border-[#FFCD05]/10 bg-[#050505]/95 backdrop-blur-2xl">
+        <div className="flex h-12 items-center justify-between px-3 sm:px-4 pl-14 lg:pl-4 gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link to="/" className="flex items-center gap-2.5 group shrink-0" aria-label="INFINOX — Home">
               <img src={infinoxLogo} alt="INFINOX" className="h-7 sm:h-8 w-auto object-contain" />
             </Link>
 
-            <span className="hidden md:inline-flex items-center h-5 rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1.5 text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
+            <span className="hidden md:inline-flex items-center h-5 rounded-sm border border-[#FFCD05]/25 bg-[#FFCD05]/5 px-1.5 text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
               IX LTR
             </span>
 
-            {/* MT5 connection — separated from brand identity */}
-            <div className="hidden md:flex items-center gap-1.5 h-5 px-1.5 rounded-sm border border-[#2A2D31] bg-[#0A0B0D]">
-              <span
-                className={`inline-flex h-1.5 w-1.5 rounded-full ${
-                  connected ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" : "bg-neutral-600"
-                }`}
-              />
-              <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[#C9CDD2]">
-                {connected ? "Connected · INFINOX MT5" : "MT5 disconnected"}
-              </span>
-              {connected && liveAccount?.login && (
-                <span className="font-mono text-[9px] tabular-nums text-[#8E949C] pl-1 border-l border-[#2A2D31]">
-                  #{liveAccount.login}
-                  {liveAccount.server && (
-                    <span className="text-[#5d6168]"> · {liveAccount.server}</span>
-                  )}
-                </span>
-              )}
+            {/* Consolidated status chips replace multiple loud bars */}
+            <div className="hidden md:flex">
+              <TerminalStatusChips />
             </div>
 
+            {/* Essential account metrics only: Balance · Equity · P&L
+                Server / leverage / margin / free moved into the "more" popover. */}
             {connected && liveAccount && (
-              <div className="hidden lg:flex items-center gap-4 ml-1 pl-3 border-l border-[#2A2D31] text-[10.5px] font-mono uppercase tracking-[0.08em]">
+              <div className="hidden lg:flex items-center gap-4 ml-1 pl-3 border-l border-[#1c1f23] text-[10.5px] font-mono uppercase tracking-[0.08em]">
                 <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Balance</span>
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Balance</span>
                   <span className="text-[#C9CDD2] tabular-nums">{fmtMoney(liveAccount.balance, liveAccount.currency)}</span>
                 </div>
                 <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Equity</span>
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Equity</span>
                   <span className="text-[#E8E8EA] font-bold tabular-nums">{fmtMoney(liveAccount.equity, liveAccount.currency)}</span>
                 </div>
                 <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Margin</span>
-                  <span className="text-[#C9CDD2] tabular-nums">{fmtMoney(liveAccount.margin, liveAccount.currency)}</span>
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">Free</span>
-                  <span className="text-emerald-400 tabular-nums">{fmtMoney(liveAccount.marginFree, liveAccount.currency)}</span>
-                </div>
-                <div className="flex flex-col leading-tight">
-                  <span className="text-[8.5px] tracking-[0.18em] text-[#8E949C]">P&amp;L</span>
+                  <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">P&amp;L</span>
                   <span className={`tabular-nums font-bold ${liveAccount.profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                     {fmtMoney(liveAccount.profit, liveAccount.currency)}
                   </span>
                 </div>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="ml-1 inline-flex items-center h-6 px-2 rounded-sm border border-[#1c1f23] bg-[#0A0B0D] text-[9px] font-mono uppercase tracking-[0.16em] text-[#8E949C] hover:text-[#FFCD05] hover:border-[#FFCD05]/30 transition-colors"
+                    >
+                      More
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-60 p-3 bg-[#0A0B0D] border-[#1c1f23]">
+                    <div className="grid grid-cols-2 gap-3 text-[10.5px] font-mono uppercase tracking-[0.08em]">
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Server</span>
+                        <span className="text-[#C9CDD2] truncate">{liveAccount.server || "—"}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Login</span>
+                        <span className="text-[#C9CDD2] tabular-nums">#{liveAccount.login || "—"}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Leverage</span>
+                        <span className="text-[#C9CDD2] tabular-nums">{(liveAccount as any).leverage ? `1:${(liveAccount as any).leverage}` : "—"}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Margin</span>
+                        <span className="text-[#C9CDD2] tabular-nums">{fmtMoney(liveAccount.margin, liveAccount.currency)}</span>
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[8.5px] tracking-[0.18em] text-[#5d6168]">Free Margin</span>
+                        <span className="text-emerald-400 tabular-nums">{fmtMoney(liveAccount.marginFree, liveAccount.currency)}</span>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             )}
           </div>
@@ -319,7 +334,7 @@ const LiveChartInner = () => {
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("mt:refresh-quotes"))}
               title="Refresh quotes"
-              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#2A2D31] bg-[#0A0B0D] text-[#8E949C] hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors"
+              className="hidden sm:inline-flex items-center justify-center h-8 w-8 rounded-md border border-[#1c1f23] bg-[#0A0B0D] text-[#8E949C] hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </button>
