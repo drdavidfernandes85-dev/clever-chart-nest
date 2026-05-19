@@ -1151,7 +1151,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         )}
 
         {/* Dev-only LIVE CONTROLLED 0.01 test — visually isolated, requires checkbox */}
-        {import.meta.env.DEV && (
+        {devMode && (
           <div className="mt-2 rounded-md border-2 border-red-600/70 bg-red-950/30 p-2 space-y-2">
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
               <AlertTriangle className="h-3 w-3" />
