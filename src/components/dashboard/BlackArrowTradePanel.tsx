@@ -23,6 +23,11 @@ import {
   type ExecutionResultPayload,
 } from "@/components/dashboard/ExecutionResultModal";
 import ExecutionAuditPanel from "@/components/dashboard/ExecutionAuditPanel";
+import {
+  checkAndHandle429,
+  getCooldownRemainingMs,
+  triggerRateLimitCooldown,
+} from "@/lib/tradingLayerControl";
 
 /**
  * Professional BlackArrow-style Order Ticket.
