@@ -40,6 +40,14 @@ import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 import MarketWatch from "@/components/livechart/MarketWatch";
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
+import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
+import TerminalStatusChips from "@/components/livechart/TerminalStatusChips";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import { LiveAccountProvider, useLiveAccount, fmtMoney } from "@/contexts/LiveAccountContext";
