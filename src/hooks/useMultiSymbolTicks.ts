@@ -107,9 +107,9 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], periodMs = 5000):
       }
     };
 
-    loadBatch();
+    if (isAutoRefreshAllowed()) loadBatch();
     const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") loadBatch();
+      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) loadBatch();
     }, periodMs);
     const onVisible = () => {
       if (document.visibilityState === "visible" && !cancelled) loadBatch();
