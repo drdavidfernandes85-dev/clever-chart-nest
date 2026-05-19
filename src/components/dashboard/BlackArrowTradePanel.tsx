@@ -263,7 +263,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             volume: payload.volume,
             startedAt: Date.now(),
           });
-          toast.success("Order placed — confirming execution...");
+          toast.success("Order placed — confirming position...");
           runPostTradeConfirmation({
             symbol: payload.symbol,
             side: payload.side,
@@ -341,25 +341,34 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       return true;
     };
 
-    // T+1.5s — first refresh
-    await new Promise((r) => setTimeout(r, 1500));
+    // T+0 — immediate refresh
     try { await refresh(); } catch { /* ignore */ }
-    setAuditRefreshKey(k => k + 1);
     window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-    if (tryMatch()) return;
+    window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+    setAuditRefreshKey(k => k + 1);
+    if (tryMatch()) { setAuditRefreshKey(k => k + 1); return; }
 
     setLiveConfirm((prev) => prev ? { ...prev, phase: "confirming" } : prev);
 
-    // T+4.5s — second refresh
+    // T+2s
+    await new Promise((r) => setTimeout(r, 2000));
+    try { await refresh(); } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+    setAuditRefreshKey(k => k + 1);
+    if (tryMatch()) { setAuditRefreshKey(k => k + 1); return; }
+
+    // T+5s (additional 3s)
     await new Promise((r) => setTimeout(r, 3000));
     try { await refresh(); } catch { /* ignore */ }
-    setAuditRefreshKey(k => k + 1);
     window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-    if (tryMatch()) return;
+    setAuditRefreshKey(k => k + 1);
+    if (tryMatch()) { setAuditRefreshKey(k => k + 1); return; }
 
     // No match within 5s
     setLiveConfirm((prev) => prev ? { ...prev, phase: "pending_verification" } : prev);
+    setAuditRefreshKey(k => k + 1);
   }
+
 
 
   async function handleBestExecutionDryRun() {
@@ -1205,10 +1214,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       {liveConfirm && (() => {
         const c = liveConfirm;
         const headerByPhase: Record<typeof c.phase, { text: string; tone: string }> = {
-          placing: { text: "Order placed — confirming execution…", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
-          confirming: { text: "Order placed — confirmation pending", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          placing: { text: "Order placed — confirming position…", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
+          confirming: { text: "Order placed — confirming position…", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-300" },
           confirmed: { text: "Position confirmed", tone: "border-emerald-500/60 bg-emerald-500/10 text-emerald-300" },
-          pending_verification: { text: "Order was placed by broker, but final position confirmation is pending. Please verify in MT5.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-200" },
+          pending_verification: { text: "Order was placed by broker, but position confirmation is still pending. Please verify directly in MT5.", tone: "border-yellow-500/60 bg-yellow-500/10 text-yellow-200" },
           rejected: { text: "Execution rejected", tone: "border-red-500/60 bg-red-500/10 text-red-300" },
         };
         // status-based override line
