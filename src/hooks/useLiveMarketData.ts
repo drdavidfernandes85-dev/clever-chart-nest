@@ -34,20 +34,18 @@ export function useQuote(symbol: string | null | undefined): LiveQuote | null {
 
 export function useQuotes(symbols: string[]): Record<string, LiveQuote> {
   const key = symbols.map((s) => s.toUpperCase()).sort().join(",");
-  const cacheRef = useRef<{ key: string; quotesRef: Record<string, LiveQuote> | null; result: Record<string, LiveQuote> }>({
-    key: "",
-    quotesRef: null,
-    result: {},
-  });
+  const cacheRef = useRef<{ key: string; quotesRef: Record<string, LiveQuote> | null; result: Record<string, LiveQuote> } | null>(null);
+  if (cacheRef.current == null) {
+    cacheRef.current = { key: "", quotesRef: null, result: {} };
+  }
   const getSnap = () => {
     const all = liveMarketDataStore.getState().quotes;
-    const cache = cacheRef.current;
+    const cache = cacheRef.current!;
     if (cache.key === key && cache.quotesRef === all) return cache.result;
     const out: Record<string, LiveQuote> = {};
-    for (const s of key.split(",")) {
+    for (const s of key ? key.split(",") : []) {
       if (s && all[s]) out[s] = all[s];
     }
-    // Only return new object if contents differ from cached
     if (cache.key === key) {
       const prev = cache.result;
       const prevKeys = Object.keys(prev);
