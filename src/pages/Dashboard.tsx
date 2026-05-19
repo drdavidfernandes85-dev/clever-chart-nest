@@ -20,6 +20,7 @@ import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import TradeJournal from "@/components/dashboard/TradeJournal";
+import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
   LiveAccountProvider,
   useLiveAccount,
@@ -780,6 +781,7 @@ const BottomTabs = () => {
             { v: "positions", l: "Positions" },
             { v: "orders", l: "Orders" },
             { v: "executions", l: "Execution Log" },
+            { v: "best-exec", l: "Best Execution" },
             { v: "account", l: "Account" },
             { v: "journal", l: "Journal" },
           ].map((t) => (
@@ -806,6 +808,11 @@ const BottomTabs = () => {
         <TabsContent value="executions" className="m-0 p-0">
           <TerminalExecutionLog />
         </TabsContent>
+
+        <TabsContent value="best-exec" className="m-0 p-0">
+          <BestExecutionTab />
+        </TabsContent>
+
 
         <TabsContent value="account" className="m-0 p-4">
           {!connected || !liveAccount ? (

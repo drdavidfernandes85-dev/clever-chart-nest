@@ -179,6 +179,81 @@ export type Database = {
         }
         Relationships: []
       }
+      execution_audit_events: {
+        Row: {
+          ask: number | null
+          bid: number | null
+          broker_message: string | null
+          created_at: string
+          executed_price: number | null
+          id: string
+          latency_ms: number | null
+          outcome: string
+          raw: Json | null
+          reason: string | null
+          requested_price: number | null
+          retcode: number | null
+          rule_violated: string | null
+          side: string
+          slippage: number | null
+          spread: number | null
+          status: string
+          symbol: string
+          ticket: string | null
+          trade_id: string | null
+          user_id: string
+          volume: number
+        }
+        Insert: {
+          ask?: number | null
+          bid?: number | null
+          broker_message?: string | null
+          created_at?: string
+          executed_price?: number | null
+          id?: string
+          latency_ms?: number | null
+          outcome: string
+          raw?: Json | null
+          reason?: string | null
+          requested_price?: number | null
+          retcode?: number | null
+          rule_violated?: string | null
+          side: string
+          slippage?: number | null
+          spread?: number | null
+          status: string
+          symbol: string
+          ticket?: string | null
+          trade_id?: string | null
+          user_id: string
+          volume: number
+        }
+        Update: {
+          ask?: number | null
+          bid?: number | null
+          broker_message?: string | null
+          created_at?: string
+          executed_price?: number | null
+          id?: string
+          latency_ms?: number | null
+          outcome?: string
+          raw?: Json | null
+          reason?: string | null
+          requested_price?: number | null
+          retcode?: number | null
+          rule_violated?: string | null
+          side?: string
+          slippage?: number | null
+          spread?: number | null
+          status?: string
+          symbol?: string
+          ticket?: string | null
+          trade_id?: string | null
+          user_id?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
