@@ -23,6 +23,7 @@ import {
   type ExecutionResultPayload,
 } from "@/components/dashboard/ExecutionResultModal";
 import ExecutionAuditPanel from "@/components/dashboard/ExecutionAuditPanel";
+import Mt5PositionVerificationPanel from "@/components/dashboard/Mt5PositionVerificationPanel";
 import {
   checkAndHandle429,
   getCooldownRemainingMs,
