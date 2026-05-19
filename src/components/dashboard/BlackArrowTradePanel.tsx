@@ -373,6 +373,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
       }
 
+      // Canary check — submit-best-execution-order must NOT forward to
+      // execute-trade while we're still in dry-run validation mode.
+      const stepStr = String(res?.step ?? "").toLowerCase();
+      if (stepStr === "trade_execution") {
+        // eslint-disable-next-line no-console
+        console.warn("[OrderTicket] WARNING: response step is 'trade_execution' — live execution path was hit.");
+        toast.error("⚠️ Live execution path triggered (step: trade_execution). Stopping.");
+        return;
+      }
+      if (stepStr && stepStr !== "dry_run" && stepStr !== "canary_dry_run_no_trading_layer_call") {
+        // eslint-disable-next-line no-console
+        console.warn("[OrderTicket] Unexpected step in dry-run mode:", res?.step);
+        toast.warning(`Unexpected response step: ${res?.step}`);
+      }
+
 
       // Always trigger downstream refreshes regardless of outcome.
       window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId } }));
