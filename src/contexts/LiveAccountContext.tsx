@@ -143,15 +143,8 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
         { event: "*", schema: "public", table: "user_mt_accounts", filter: `id=eq.${accountId}` },
         trigger,
       );
-      ch = ch.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "mt_positions", filter: `account_id=eq.${accountId}` },
-        (payload: any) => {
-          if (!sym) return trigger();
-          const row = payload.new ?? payload.old ?? {};
-          if (String(row.symbol ?? "").toUpperCase() === sym) trigger();
-        },
-      );
+      // mt_positions dependency removed — live positions come from Trading Layer.
+
       ch = ch.on(
         "postgres_changes",
         { event: "*", schema: "public", table: "trade_execution_logs", filter: `account_id=eq.${accountId}` },

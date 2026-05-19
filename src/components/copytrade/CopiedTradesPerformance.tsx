@@ -118,12 +118,8 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
             .select("id, author_id, entry_price, stop_loss, take_profit, status, direction")
             .in("id", signalIds)
         : Promise.resolve({ data: [] as any[] }),
-      tickets.length
-        ? supabase.from("mt_positions")
-            .select("ticket, open_price, current_price, profit, commission, swap")
-            .eq("user_id", user.id)
-            .in("ticket", tickets)
-        : Promise.resolve({ data: [] as any[] }),
+      Promise.resolve({ data: [] as any[] }), // mt_positions removed — live data sourced from Trading Layer
+
       supabase.from("user_mt_accounts").select("equity").eq("user_id", user.id).limit(1).maybeSingle(),
     ]);
 
@@ -195,7 +191,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
     const ch = supabase
       .channel(`copy-perf-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "mt_pending_orders", filter: `user_id=eq.${user.id}` }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "mt_positions", filter: `user_id=eq.${user.id}` }, load)
+      // mt_positions realtime subscription removed.
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps

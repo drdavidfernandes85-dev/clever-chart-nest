@@ -182,14 +182,8 @@ const CopyTrading = () => {
           .eq("signal_id", openTrade.signal_id || "")
           .order("created_at", { ascending: false })
           .limit(20),
-        openTrade.ea_ticket && openTrade.ea_ticket !== "0"
-          ? supabase
-              .from("mt_positions")
-              .select("ticket, symbol, side, volume, open_price, current_price, stop_loss, take_profit, profit, commission, swap, opened_at")
-              .eq("user_id", user.id)
-              .eq("ticket", openTrade.ea_ticket)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
+        Promise.resolve({ data: null }), // mt_positions removed
+
       ]);
       if (cancelled) return;
       setOpenTradeLogs((logs || []) as ExecLogRow[]);

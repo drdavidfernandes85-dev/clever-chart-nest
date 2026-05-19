@@ -84,13 +84,9 @@ async function fetchContext(supabase: ReturnType<typeof createClient>, userId: s
       .maybeSingle();
     if (acct) {
       portfolio = acct;
-      const { data: pos } = await supabase
-        .from("mt_positions")
-        .select("symbol, side, volume, open_price, current_price, stop_loss, take_profit, profit, swap, commission")
-        .eq("account_id", acct.id)
-        .order("opened_at", { ascending: false })
-        .limit(20);
-      positions = pos || [];
+      // mt_positions removed — copilot no longer reads cached positions.
+      positions = [];
+
     }
 
     // Top traders leaderboard (last 30d)
