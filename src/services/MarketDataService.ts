@@ -31,17 +31,24 @@ import {
 const SELECTED_INTERVAL_MS = 2000;
 const WATCHLIST_INTERVAL_MS = 10_000;
 const ACCOUNT_INTERVAL_MS = 10_000;
-const POSITIONS_INTERVAL_MS = 5_000;
-const POSITIONS_BOOST_MS = 2000;
-const POSITIONS_BOOST_DURATION_MS = 30_000;
+const POSITIONS_INTERVAL_MS = 10_000;
+const SYSTEM_HEALTH_INTERVAL_MS = 30_000;
+// After an order/close, schedule extra account+positions refreshes at
+// these offsets (ms). Then the regular 10s positions loop resumes.
+const POSITIONS_BURST_OFFSETS_MS = [0, 1500, 3000, 5000, 8000];
 const RATE_LIMIT_PAUSE_SECONDS = 60;
 const STALE_CHECK_MS = 5000;
+// Soft budget — when exceeded we skip the next non-essential tick
+// (watchlist + system_health). Selected symbol, account, positions
+// keep running because they drive execution-adjacent UI.
+const REQUEST_BUDGET_PER_MINUTE = 60;
 
 type LoopId =
   | "selected_symbol"
   | "watchlist"
   | "account"
   | "positions"
+  | "system_health"
   | "stale_monitor";
 
 const num = (v: any): number | null =>
