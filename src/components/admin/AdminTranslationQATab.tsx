@@ -105,11 +105,6 @@ const COMPLIANCE_SKIP_PATTERNS = [
   /(Footer|MentoringSection|NotificationsBell|ComplianceBlock|PlatformPillars)\.tsx$/,
 ];
 
-const PUBLIC_PAGES = [
-  "/src/pages/Index.tsx","/src/pages/Community.tsx","/src/pages/Webinars.tsx",
-  "/src/pages/WebinarLanding.tsx","/src/pages/Ideas.tsx","/src/pages/Terms.tsx",
-  "/src/pages/RiskDisclosure.tsx","/src/pages/Login.tsx","/src/pages/Register.tsx",
-];
 
 type Severity = "critical" | "high" | "medium" | "low";
 
