@@ -274,6 +274,5 @@ Deno.serve(async (req) => {
     retcode: res.retcode ?? null,
     error: success ? null : (res.error || brokerMessage || "Order rejected"),
     reasons: res.reasons ?? null,
-    raw: res,
   });
 });
