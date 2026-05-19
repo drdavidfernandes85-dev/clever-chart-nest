@@ -19,7 +19,12 @@ import {
   checkAndHandle429,
   getCooldownRemainingMs,
   triggerRateLimitCooldown,
+  isExecutionLocked,
+  lockExecution,
+  unlockExecution,
 } from "@/lib/tradingLayerControl";
+import { useExecutionLock } from "@/hooks/useExecutionLock";
+import { reconcileAfterClose, notifyCloseResult } from "@/lib/positionReconciliation";
 
 const TEST_CLOSE_MAX_VOLUME = 0.01;
 
