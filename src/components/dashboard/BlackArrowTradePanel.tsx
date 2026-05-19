@@ -110,6 +110,102 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     status?: number;
     at: string;
   } | null>(null);
+  const [orderDebug, setOrderDebug] = useState<{
+    status: "loading" | "success" | "error";
+    functionUsed: string;
+    httpStatus?: number;
+    payloadSent: any;
+    rawEdgeFunctionResponse: any;
+    edgeFunctionError: any;
+    validationError: string | null;
+  } | null>(null);
+
+  async function handleBestExecutionDryRun() {
+    const payload = {
+      tradeId: crypto.randomUUID(),
+      symbol: normalizedSym || "XAUUSD",
+      side: "buy",
+      orderType: "market",
+      volume: Number(vol) || 0.01,
+      stopLoss: null,
+      takeProfit: null,
+      dryRun: true,
+      clientClickAt: new Date().toISOString(),
+    };
+
+    setOrderDebug({
+      status: "loading",
+      functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+      payloadSent: payload,
+      rawEdgeFunctionResponse: null,
+      edgeFunctionError: null,
+      validationError: null,
+    });
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setOrderDebug({
+          status: "error",
+          functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+          payloadSent: payload,
+          rawEdgeFunctionResponse: null,
+          edgeFunctionError: "No active Supabase session/access token found.",
+          validationError: "User is not authenticated.",
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order?ts=${Date.now()}`,
+        {
+          method: "POST",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            "Cache-Control": "no-store",
+            "Pragma": "no-cache",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { rawText: text };
+      }
+
+      setOrderDebug({
+        status: response.ok ? "success" : "error",
+        functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+        httpStatus: response.status,
+        payloadSent: payload,
+        rawEdgeFunctionResponse: data,
+        edgeFunctionError: response.ok ? null : data,
+        validationError:
+          data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
+            ? null
+            : "Frontend is not showing the real Edge Function response.",
+      });
+    } catch (error) {
+      setOrderDebug({
+        status: "error",
+        functionUsed: "DIRECT_FETCH_submit-best-execution-order",
+        payloadSent: payload,
+        rawEdgeFunctionResponse: null,
+        edgeFunctionError: error instanceof Error ? error.message : String(error),
+        validationError: "Direct Edge Function fetch failed.",
+      });
+    }
+  }
 
   // Latch "ever connected" so a transient polling failure cannot replace
   // the entire Order Ticket with the disconnected screen.
@@ -719,55 +815,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <div className="flex justify-center">
             <button
               type="button"
-              onClick={async () => {
-                setDebugInfo(null);
-                const selectedSymbol = normalizedSym;
-                const volume = vol;
-                const payload = {
-                  tradeId: crypto.randomUUID(),
-                  symbol: selectedSymbol || "XAUUSD",
-                  side: "buy" as const,
-                  orderType: "market" as const,
-                  volume: Number(volume) || 0.01,
-                  stopLoss: null,
-                  takeProfit: null,
-                  dryRun: true,
-                  clientClickAt: new Date().toISOString(),
-                };
-                console.log("[OrderTicket] Dry Run:", payload);
-                try {
-                  const { data: sessionData } = await supabase.auth.getSession();
-                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order`, {
-                    method: "POST",
-                    cache: "no-store",
-                    headers: {
-                      "Content-Type": "application/json",
-                      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                      Authorization: `Bearer ${sessionData.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                    },
-                    body: JSON.stringify(payload),
-                  });
-                  const data = await res.json();
-                  const error = res.ok ? undefined : (data?.error || data?.message || res.statusText);
-                  console.log("[OrderTicket] Dry Run response:", { data, error });
-                  setDebugInfo({
-                    functionUsed: "submit-best-execution-order",
-                    payload,
-                    response: data,
-                    error,
-                    status: res.status,
-                    at: new Date().toISOString(),
-                  });
-                  window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
-                } catch (e: any) {
-                  setDebugInfo({
-                    functionUsed: "submit-best-execution-order",
-                    payload,
-                    error: e?.message || String(e),
-                    at: new Date().toISOString(),
-                  });
-                }
-              }}
+              onClick={handleBestExecutionDryRun}
               className="h-5 rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-2 text-[9px] font-mono uppercase tracking-wider text-[#FFCD05] hover:bg-[#FFCD05]/20"
             >
               Dry Run Best Execution
@@ -952,6 +1000,52 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 </pre>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {orderDebug && (
+        <div className="mt-2 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
+          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
+            <span className="uppercase tracking-widest text-[#FFCD05]">
+              {orderDebug.functionUsed} · {orderDebug.status}
+              {orderDebug.httpStatus !== undefined ? ` · HTTP ${orderDebug.httpStatus}` : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => setOrderDebug(null)}
+              className="text-neutral-500 hover:text-neutral-200"
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-2 space-y-1.5">
+            {orderDebug.validationError && (
+              <div>
+                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Validation Error</div>
+                <pre className="whitespace-pre-wrap break-all text-red-300">{orderDebug.validationError}</pre>
+              </div>
+            )}
+            <div>
+              <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">payloadSent</div>
+              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+{JSON.stringify(orderDebug.payloadSent, null, 2)}
+              </pre>
+            </div>
+            <div>
+              <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">rawEdgeFunctionResponse</div>
+              <pre className="max-h-[220px] overflow-auto whitespace-pre-wrap break-all text-neutral-100">
+{JSON.stringify(orderDebug.rawEdgeFunctionResponse, null, 2)}
+              </pre>
+            </div>
+            <div>
+              <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">edgeFunctionError</div>
+              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-red-300">
+{typeof orderDebug.edgeFunctionError === "string"
+  ? orderDebug.edgeFunctionError
+  : JSON.stringify(orderDebug.edgeFunctionError, null, 2)}
+              </pre>
+            </div>
           </div>
         </div>
       )}
