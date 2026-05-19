@@ -71,9 +71,11 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
 
-  // Pre-trade quote snapshot for slippage measurement (best-effort).
+  // Pre-trade quote snapshot for slippage measurement + freshness gate.
   let requestedBid: number | null = null;
   let requestedAsk: number | null = null;
+  let quoteTimestamp: string | null = null;
+  let quoteSource: string | null = null;
   try {
     const { data: q } = await supabase.functions.invoke("get-mt5-quotes", {
       body: { selectedSymbol: symbol, symbols: [symbol], debug: false },
@@ -84,11 +86,15 @@ Deno.serve(async (req) => {
     if (row) {
       requestedBid = row.bid != null ? Number(row.bid) : null;
       requestedAsk = row.ask != null ? Number(row.ask) : null;
+      quoteTimestamp = row.timestamp ?? row.time ?? row.ts ?? new Date().toISOString();
+      quoteSource = row.source ?? "get-mt5-quotes";
     }
   } catch { /* ignore — quote snapshot is best-effort */ }
 
   const requestedPrice =
     side === "buy" ? requestedAsk : side === "sell" ? requestedBid : null;
+  const haveFreshQuote =
+    requestedBid != null && requestedAsk != null && requestedPrice != null;
 
   const startedAt = Date.now();
   const clientLatencyMs = clientClickAt
