@@ -1,13 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800;9..144,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Proxima Nova stack — guideline weights: 300 Light · 400 Regular · 600 SemiBold · 700 Bold.
-   Inter is loaded as a metric-compatible fallback in index.html. */
+/* IX LTR — Inter (UI/headings) + JetBrains Mono (prices, tickets, logs). */
 :root {
-  --font-proxima: 'Proxima Nova', 'proxima-nova', 'Inter', 'Arial', system-ui, sans-serif;
+  --font-sans:  'Inter', 'Proxima Nova', 'Arial', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Legacy alias used elsewhere — keep so existing references don't break. */
+  --font-proxima: var(--font-sans);
 }
 
 @layer base {
