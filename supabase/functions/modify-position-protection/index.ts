@@ -115,6 +115,26 @@ Deno.serve(async (req) => {
   }
   const accountId = account.metaapi_account_id;
 
+  // ---------- Backend risk enforcement (kill switch + live trading flag) ----------
+  try {
+    const settings = await loadRiskSettings(supabase, user.id);
+    let breach: { reason: string; rule: string } | null = null;
+    if (settings.kill_switch_enabled) breach = { reason: "Trading disabled by kill switch.", rule: "kill_switch" };
+    else if (!settings.live_trading_enabled) breach = { reason: "Live trading is disabled.", rule: "live_trading_disabled" };
+    if (breach) {
+      const blockBody = buildRiskBlock(VERSION, {
+        reason: breach.reason, rule: breach.rule, settings,
+      }, { ticket, symbol, side, stopLoss, takeProfit });
+      await auditRiskBlock(supabase, user.id, {
+        tradeId: `modify-${ticket}`, symbol, side: side ?? "buy",
+        volume: Number.isFinite(volume) ? volume : 0,
+        reason: breach.reason, rule: breach.rule, response: blockBody, ticket,
+      });
+      return json(blockBody, 200);
+    }
+  } catch { /* fall through */ }
+
+
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
   const modifyPayload: Record<string, unknown> = {
     symbol,
