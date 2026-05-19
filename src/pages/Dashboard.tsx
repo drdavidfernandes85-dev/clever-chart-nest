@@ -827,6 +827,11 @@ const BottomTabs = () => {
           <TerminalExecutionLog />
         </TabsContent>
 
+        <TabsContent value="history" className="m-0 p-0">
+          <ExecutionHistoryPanel />
+        </TabsContent>
+
+
         <TabsContent value="best-exec" className="m-0 p-0">
           <BestExecutionTab />
         </TabsContent>
