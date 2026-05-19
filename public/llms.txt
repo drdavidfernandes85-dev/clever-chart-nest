@@ -1,6 +1,6 @@
 # IX Sala de Trading
 
-> Professional live trading room and community for LATAM traders, powered by INFINOX. Real-time analysis, signals, education, and webinars.
+> Professional live trading room and community for LATAM traders, provides educational tools, trade ideas, and third-party trading technology (powered by Trading Layer). Real-time analysis, ideas, education, and webinars.
 
 ## Pages
 
