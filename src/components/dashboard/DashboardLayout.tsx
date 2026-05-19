@@ -3,6 +3,7 @@ import { Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
 import ConnectedAccountBadge from "./ConnectedAccountBadge";
+import MarketStatusBadge from "./MarketStatusBadge";
 import WelcomeBanner from "@/components/onboarding/WelcomeBanner";
 import { useLanguage } from "@/i18n/LanguageContext";
 
