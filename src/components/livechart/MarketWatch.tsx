@@ -166,21 +166,9 @@ const MarketWatch = ({ symbols, active, onSelect }: Props) => {
     );
   };
 
-  // Render placeholder rows so the panel keeps a stable height when empty/filtered.
-  const placeholderRows = () => {
-    const totalShown = favList.length + restList.length + (favList.length > 0 ? 1 : 0) + (favList.length > 0 && restList.length > 0 ? 1 : 0);
-    const need = Math.max(0, MIN_ROWS - totalShown);
-    return Array.from({ length: need }).map((_, i) => (
-      <li key={`ph-${i}`} aria-hidden="true">
-        <div className={`grid w-full ${ROW_COLS} items-center gap-2 px-2 py-[3px] border-b border-neutral-900/40 border-l-2 border-l-transparent`}>
-          <span />
-          <span className="h-2 w-16 rounded bg-neutral-900/60" />
-          <span className="ml-auto h-2 w-10 rounded bg-neutral-900/50" />
-          <span className="ml-auto h-2 w-8 rounded bg-neutral-900/50" />
-        </div>
-      </li>
-    ));
-  };
+  // Placeholder rows removed: empty/filtered states now show a clean
+  // empty message instead of repeated dash rows.
+
 
   // Skeleton rows while favorites or first quote batch are loading
   const initialLoading = favLoading || (quotesLoading && Object.keys(quotes).length === 0);
@@ -291,7 +279,7 @@ const MarketWatch = ({ symbols, active, onSelect }: Props) => {
                   : "Waiting for market data…"}
               </li>
             )}
-            {placeholderRows()}
+            
           </>
         )}
       </ul>
