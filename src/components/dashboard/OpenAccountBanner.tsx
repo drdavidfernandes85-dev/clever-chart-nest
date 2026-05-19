@@ -4,6 +4,7 @@ import { ArrowRight, ExternalLink, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { track } from "@/lib/analytics";
+import { reviewAccessModeEnabled } from "@/lib/accessMode";
 import type { Locale } from "@/i18n/translations";
 
 const INFINOX_URL = "https://myaccount.infinox.com/es/links/go/9926281";
@@ -99,7 +100,9 @@ const OpenAccountBanner = ({ show }: Props) => {
             {c.title}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            {c.body}
+            {reviewAccessModeEnabled
+              ? "Platform access is currently open for review and testing. Certain live trading features may still require a connected and verified MT5 account."
+              : c.body}
           </p>
         </div>
 
