@@ -2792,8 +2792,6 @@ const translations = {
     "webinarLp.testimonials.3.name": "Rafael S.",
     "webinarLp.testimonials.3.role": "Day trader (intradiário)",
     "webinarLp.testimonials.3.quote": "Entrei pra testar e fiquei a hora toda. A análise técnica foi muito afiada.",
-    "webinarLp.testimonials.3.name": "Rafael S.",
-    "webinarLp.testimonials.3.role": "Day trader",
     "webinarLp.faq.title": "Perguntas frequentes",
     "webinarLp.faq.q1": "O webinar é realmente grátis?",
     "webinarLp.faq.a1": "Sim. Todos os webinars ao vivo são 100% grátis. Entregamos conteúdo educacional — sem vendas adicionais durante a sessão.",
