@@ -885,8 +885,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       }
     } catch (e: any) {
       toast.error(e?.message || "Order failed");
+      broadcastExec("Execution Failed");
     } finally {
       setSubmitting(false);
+      unlockExecution();
     }
   };
 
