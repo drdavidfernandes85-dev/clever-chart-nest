@@ -1003,6 +1003,52 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
       )}
+
+      {orderDebug && (
+        <div className="mt-2 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
+          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
+            <span className="uppercase tracking-widest text-[#FFCD05]">
+              {orderDebug.functionUsed} · {orderDebug.status}
+              {orderDebug.httpStatus !== undefined ? ` · HTTP ${orderDebug.httpStatus}` : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => setOrderDebug(null)}
+              className="text-neutral-500 hover:text-neutral-200"
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-2 space-y-1.5">
+            {orderDebug.validationError && (
+              <div>
+                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Validation Error</div>
+                <pre className="whitespace-pre-wrap break-all text-red-300">{orderDebug.validationError}</pre>
+              </div>
+            )}
+            <div>
+              <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">payloadSent</div>
+              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+{JSON.stringify(orderDebug.payloadSent, null, 2)}
+              </pre>
+            </div>
+            <div>
+              <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">rawEdgeFunctionResponse</div>
+              <pre className="max-h-[220px] overflow-auto whitespace-pre-wrap break-all text-neutral-100">
+{JSON.stringify(orderDebug.rawEdgeFunctionResponse, null, 2)}
+              </pre>
+            </div>
+            <div>
+              <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">edgeFunctionError</div>
+              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-red-300">
+{typeof orderDebug.edgeFunctionError === "string"
+  ? orderDebug.edgeFunctionError
+  : JSON.stringify(orderDebug.edgeFunctionError, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
