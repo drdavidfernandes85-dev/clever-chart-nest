@@ -66,8 +66,9 @@ const MentoringSection = () => {
                   />
                 </div>
                 <p className="mt-4 text-xs text-muted-foreground">
-                  Sesiones 1:1 con mentores certificados — contenido educativo, sin recomendaciones de inversión.
+                  Las sesiones son educativas y no constituyen asesoría financiera ni recomendaciones personalizadas.
                 </p>
+
               </>
             )}
 

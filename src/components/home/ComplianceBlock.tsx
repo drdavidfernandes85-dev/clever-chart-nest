@@ -4,22 +4,22 @@ const items = [
   {
     icon: AlertTriangle,
     title: "Riesgo de Inversión",
-    body: "El trading de instrumentos apalancados (Forex, CFDs, índices, metales) conlleva un riesgo significativo de pérdida y puede no ser adecuado para todos los inversores. Podrías perder la totalidad de tu capital invertido.",
+    body: "Operar instrumentos apalancados (Forex, CFDs, índices, metales) conlleva un riesgo significativo de pérdida y puede no ser adecuado para todos los inversores. Podrías perder la totalidad de tu capital invertido.",
   },
   {
     icon: Ban,
     title: "Sin Asesoría Financiera",
-    body: "Ningún contenido publicado en IX Sala de Trading constituye asesoría financiera, recomendación de inversión, oferta de compraventa ni promesa de rentabilidad. Las decisiones operativas son siempre tu responsabilidad.",
+    body: "Ningún contenido publicado en IX LTR constituye asesoría financiera, recomendación de inversión, oferta de compraventa ni promesa de rentabilidad. Las decisiones operativas son siempre tu responsabilidad.",
   },
   {
     icon: ShieldCheck,
-    title: "Sin Señales de Trading",
-    body: "No proveemos señales pagas, copy-trading administrado ni gestión discrecional de cuentas. Cualquier idea compartida por mentores o miembros tiene fines exclusivamente educativos.",
+    title: "Ideas de Mercado, No Recomendaciones",
+    body: "No ofrecemos señales de trading, asesoría financiera, gestión discrecional de cuentas ni recomendaciones personalizadas. Las ideas compartidas por educadores o miembros tienen fines exclusivamente educativos e informativos.",
   },
   {
     icon: BookOpen,
     title: "Plataforma Educativa",
-    body: "Somos una comunidad educativa enfocada en formación, análisis y herramientas para traders de INFINOX LATAM. El rendimiento pasado no garantiza resultados futuros.",
+    body: "IX LTR es una plataforma educativa de trading aliada a INFINOX, enfocada en formación, comunidad y herramientas. El rendimiento pasado no garantiza resultados futuros.",
   },
 ];
 
@@ -41,8 +41,7 @@ const ComplianceBlock = () => (
           Aviso Legal y de Riesgo
         </h2>
         <p className="mt-3 text-sm md:text-base text-muted-foreground">
-          Operar con responsabilidad empieza con información clara. Lee
-          atentamente antes de utilizar la plataforma.
+          Operar con responsabilidad empieza con información clara. Lee atentamente antes de utilizar la plataforma.
         </p>
       </div>
 
@@ -72,12 +71,7 @@ const ComplianceBlock = () => (
       </ul>
 
       <p className="mx-auto mt-8 max-w-4xl text-center text-[11px] leading-relaxed text-muted-foreground/80">
-        IX Sala de Trading es una comunidad educativa independiente desarrollada
-        para la comunidad INFINOX LATAM. INFINOX es un bróker regulado; consulta
-        sus términos, condiciones y advertencias de riesgo en su sitio oficial.
-        Al usar esta plataforma aceptas que toda la información se proporciona
-        &laquo;tal cual&raquo;, sin garantías, y que el trading conlleva riesgo
-        de pérdida total del capital.
+        Trading Layer es un proveedor tecnológico independiente. El bróker no es el proveedor de ideas de mercado, herramientas de seguimiento ni tecnología de terceros. El rol del bróker se limita a la provisión de la cuenta de trading y venue de ejecución, sujeto a sus propios términos y permisos regulatorios.
       </p>
     </div>
   </section>

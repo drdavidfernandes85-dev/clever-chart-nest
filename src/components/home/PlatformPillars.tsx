@@ -159,14 +159,15 @@ const ChatMock = () => (
     </div>
     <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-2">
       <div className="flex items-center justify-between text-[10px] uppercase text-primary/80">
-        <span className="flex items-center gap-1"><LineChart className="h-3 w-3" /> Señal compartida</span>
-        <span className="rounded bg-green-500/20 px-1.5 text-green-300">BUY</span>
+        <span className="flex items-center gap-1"><LineChart className="h-3 w-3" /> Idea de mercado</span>
+        <span className="rounded bg-white/10 px-1.5 text-white/80">Educativa</span>
       </div>
       <div className="mt-1 flex items-center justify-between font-mono text-[11px] text-white/80">
         <span>XAUUSD</span>
-        <span>SL 2410 · TP 2455</span>
+        <span>Análisis compartido</span>
       </div>
     </div>
+
   </div>
 );
 
@@ -233,42 +234,42 @@ const EducationMock = () => {
 const PlatformPillars = () => {
   const pillars = [
     {
-      eyebrow: "Terminal Profesional",
-      title: "Opera con precisión institucional",
+      eyebrow: "LTR Terminal Pro",
+      title: "Terminal profesional para traders",
       subtitle:
-        "Charting avanzado, Order Entry con SL/TP, gestión de posiciones en vivo y journal automático — todo conectado a tu cuenta MT5 de INFINOX.",
-      cta: { label: "Abrir Terminal", to: "/dashboard", icon: LayoutDashboard },
+        "Visualiza tu cuenta MT5, revisa precios, gestiona posiciones, consulta tu historial de ejecución y utiliza herramientas de riesgo en una interfaz profesional.",
+      cta: { label: "Abrir LTR Terminal Pro", to: "/dashboard", icon: LayoutDashboard },
       pills: [
-        <Pill key="1"><Activity className="h-3 w-3" /> Precios en tiempo real</Pill>,
-        <Pill key="2"><LineChart className="h-3 w-3" /> Charting avanzado</Pill>,
-        <Pill key="3"><ShieldCheck className="h-3 w-3" /> Risk Management</Pill>,
+        <Pill key="1"><Activity className="h-3 w-3" /> Conectividad MT5</Pill>,
+        <Pill key="2"><LineChart className="h-3 w-3" /> Market Watch · Bid/Ask</Pill>,
+        <Pill key="3"><ShieldCheck className="h-3 w-3" /> Gestión de riesgo</Pill>,
       ],
       mock: <TerminalMock />,
       reverse: false,
     },
     {
-      eyebrow: "Comunidad en Vivo",
-      title: "Aprende con traders reales",
+      eyebrow: "Comunidad de Traders",
+      title: "Aprende y discute mercados",
       subtitle:
-        "Más de 1,200 traders activos comparten ideas, análisis y discusiones de mercado en tiempo real. Aprendizaje colaborativo, no recomendaciones.",
+        "Participa en conversaciones educativas, comparte análisis, revisa ideas de mercado y aprende junto a una comunidad activa. El objetivo es educación y discusión, no recomendaciones.",
       cta: { label: "Entrar al Chat", to: "/chatroom", icon: MessagesSquare },
       pills: [
         <Pill key="1"><Users className="h-3 w-3" /> 1,200+ traders</Pill>,
         <Pill key="2"><MessagesSquare className="h-3 w-3" /> 9 canales temáticos</Pill>,
-        <Pill key="3"><LineChart className="h-3 w-3" /> Ideas compartidas</Pill>,
+        <Pill key="3"><LineChart className="h-3 w-3" /> Ideas de mercado</Pill>,
       ],
       mock: <ChatMock />,
       reverse: true,
     },
     {
-      eyebrow: "Webinars Diarios",
-      title: "Sesiones formativas gratuitas",
+      eyebrow: "Webinars de Trading",
+      title: "Sesiones educativas en vivo",
       subtitle:
-        "Webinars en vivo y biblioteca de grabaciones con mentores certificados. Temas: análisis técnico, macro, psicología y gestión de riesgo.",
-      cta: { label: "Ver Calendario", to: "/webinars", icon: PlayCircle },
+        "Accede a webinars, sesiones grabadas e invitados especiales sobre análisis técnico, macro, psicología del trading y gestión de riesgo.",
+      cta: { label: "Ver Webinars Gratuitos", to: "/webinars", icon: PlayCircle },
       pills: [
         <Pill key="1"><PlayCircle className="h-3 w-3" /> En vivo & grabados</Pill>,
-        <Pill key="2"><Users className="h-3 w-3" /> Mentores verificados</Pill>,
+        <Pill key="2"><Users className="h-3 w-3" /> Educadores y colaboradores</Pill>,
         <Pill key="3"><BookOpen className="h-3 w-3" /> 100% gratuitos</Pill>,
       ],
       mock: <WebinarMock />,
@@ -276,9 +277,9 @@ const PlatformPillars = () => {
     },
     {
       eyebrow: "Centro de Educación",
-      title: "Currículo estructurado de trading",
+      title: "Formación estructurada para traders",
       subtitle:
-        "Más de 35 módulos cubriendo macro, análisis técnico, gestión de riesgo y psicología. Aprende a tu ritmo con material profesional.",
+        "Accede a módulos sobre análisis técnico, macroeconomía, gestión de riesgo, psicología del trading y uso responsable de herramientas de mercado.",
       cta: { label: "Explorar Módulos", to: "/education", icon: GraduationCap },
       pills: [
         <Pill key="1"><BarChart3 className="h-3 w-3" /> Técnico</Pill>,
@@ -298,13 +299,14 @@ const PlatformPillars = () => {
       className="relative mx-auto w-full max-w-7xl px-4 py-20 scroll-mt-32 sm:px-6 lg:px-8"
     >
       <SectionHeader
-        eyebrow="La Plataforma"
-        title="Todo lo que necesitas para crecer como trader"
-        subtitle="Cuatro pilares — Terminal, Comunidad, Webinars y Educación — unidos en una experiencia premium para la comunidad INFINOX LATAM."
+        eyebrow="La Plataforma IX LTR"
+        title="Educación, comunidad y herramientas para traders"
+        subtitle="Cuatro pilares — LTR Terminal Pro, Comunidad, Webinars y Educación — unidos en una experiencia premium para la comunidad de traders."
       />
       <h2 id="platform-pillars-title" className="sr-only">
-        Pilares de la plataforma
+        Pilares de la plataforma IX LTR
       </h2>
+
 
       <div className="space-y-10">
         {pillars.map((p, i) => (
@@ -359,9 +361,9 @@ const PlatformPillars = () => {
       </div>
 
       <p className="mt-10 text-center text-xs text-muted-foreground/80">
-        IX Sala de Trading es una comunidad educativa. No proveemos señales ni
-        recomendaciones financieras. El trading conlleva riesgo significativo.
+        Contenido educativo. Sin asesoría financiera. Sin promesas de rentabilidad. Operar productos apalancados conlleva riesgo significativo.
       </p>
+
     </section>
   );
 };
