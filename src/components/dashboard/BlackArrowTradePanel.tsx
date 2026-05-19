@@ -485,7 +485,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         toast.error("⚠️ Live execution path triggered (step: trade_execution). Stopping.");
         return;
       }
-      if (stepStr && stepStr !== "dry_run" && stepStr !== "deploy_verify_submit_best_execution_order") {
+      if (stepStr && stepStr !== "dry_run") {
         // eslint-disable-next-line no-console
         console.warn("[OrderTicket] Unexpected step in dry-run mode:", res?.step);
         toast.warning(`Unexpected response step: ${res?.step}`);
@@ -981,30 +981,16 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </button>
           </div>
           <div className="p-2 space-y-1.5">
-            {orderDebug.validationError && (
+            {orderDebug.requestUrl && (
               <div>
-                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Validation Error</div>
-                <pre className="whitespace-pre-wrap break-all text-red-300">{orderDebug.validationError}</pre>
+                <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">requestUrl</div>
+                <pre className="whitespace-pre-wrap break-all text-neutral-200">{orderDebug.requestUrl}</pre>
               </div>
             )}
-            <div>
-              <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">payloadSent</div>
-              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
-{JSON.stringify(orderDebug.payloadSent, null, 2)}
-              </pre>
-            </div>
             <div>
               <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">rawEdgeFunctionResponse</div>
               <pre className="max-h-[220px] overflow-auto whitespace-pre-wrap break-all text-neutral-100">
 {JSON.stringify(orderDebug.rawEdgeFunctionResponse, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">edgeFunctionError</div>
-              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-red-300">
-{typeof orderDebug.edgeFunctionError === "string"
-  ? orderDebug.edgeFunctionError
-  : JSON.stringify(orderDebug.edgeFunctionError, null, 2)}
               </pre>
             </div>
           </div>
