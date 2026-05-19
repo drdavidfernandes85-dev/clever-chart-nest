@@ -815,55 +815,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <div className="flex justify-center">
             <button
               type="button"
-              onClick={async () => {
-                setDebugInfo(null);
-                const selectedSymbol = normalizedSym;
-                const volume = vol;
-                const payload = {
-                  tradeId: crypto.randomUUID(),
-                  symbol: selectedSymbol || "XAUUSD",
-                  side: "buy" as const,
-                  orderType: "market" as const,
-                  volume: Number(volume) || 0.01,
-                  stopLoss: null,
-                  takeProfit: null,
-                  dryRun: true,
-                  clientClickAt: new Date().toISOString(),
-                };
-                console.log("[OrderTicket] Dry Run:", payload);
-                try {
-                  const { data: sessionData } = await supabase.auth.getSession();
-                  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order`, {
-                    method: "POST",
-                    cache: "no-store",
-                    headers: {
-                      "Content-Type": "application/json",
-                      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                      Authorization: `Bearer ${sessionData.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                    },
-                    body: JSON.stringify(payload),
-                  });
-                  const data = await res.json();
-                  const error = res.ok ? undefined : (data?.error || data?.message || res.statusText);
-                  console.log("[OrderTicket] Dry Run response:", { data, error });
-                  setDebugInfo({
-                    functionUsed: "submit-best-execution-order",
-                    payload,
-                    response: data,
-                    error,
-                    status: res.status,
-                    at: new Date().toISOString(),
-                  });
-                  window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
-                } catch (e: any) {
-                  setDebugInfo({
-                    functionUsed: "submit-best-execution-order",
-                    payload,
-                    error: e?.message || String(e),
-                    at: new Date().toISOString(),
-                  });
-                }
-              }}
+              onClick={handleBestExecutionDryRun}
               className="h-5 rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-2 text-[9px] font-mono uppercase tracking-wider text-[#FFCD05] hover:bg-[#FFCD05]/20"
             >
               Dry Run Best Execution
