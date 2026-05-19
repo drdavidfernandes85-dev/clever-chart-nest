@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 
 interface PendingOrderRow {
   id: string;
@@ -215,18 +216,22 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
         <div className="flex items-center gap-2">
           <Copy className="h-3.5 w-3.5 text-[#FFCD05]" />
           <h3 className="font-heading text-[11px] font-bold uppercase tracking-[0.2em] text-white">
-            My Copied Trades
+            My Reviewed Ideas
           </h3>
+          <PoweredByTradingLayer variant="muted" className="ml-1" />
         </div>
         <span className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-          {summary.count} {summary.count === 1 ? "trade" : "trades"}
+          {summary.count} {summary.count === 1 ? "idea" : "ideas"}
         </span>
       </div>
+      <p className="px-4 pt-3 text-[10.5px] leading-snug text-white/50">
+        Market Ideas are provided for educational and informational purposes only. They are not investment advice, financial advice, or personal recommendations. Users are solely responsible for deciding whether to review, modify, or execute any idea.
+      </p>
 
       {/* Summary tiles */}
       <div className="grid grid-cols-3 gap-px bg-white/5">
         <SummaryTile
-          label="Total Copy P&L"
+          label="Total Idea P&L"
           value={summary.count ? money(summary.totalPnl) : "—"}
           accent={summary.totalPnl >= 0 ? "green" : "red"}
         />
@@ -249,7 +254,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
         <div className="px-4 py-10 text-center">
           <Inbox className="h-7 w-7 text-white/30 mx-auto mb-2" />
           <p className="text-[12px] text-white/50">
-            No copied trades yet. Tap COPY TRADE on any mentor signal to get started.
+            No reviewed ideas yet. Review educational market ideas from the Community Hub or Ideas page to get started.
           </p>
         </div>
       ) : (
@@ -257,7 +262,7 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
           <table className="w-full text-left">
             <thead className="sticky top-0 bg-[#0a0a0a] z-10">
               <tr className="border-b border-white/10">
-                {["Mentor", "Symbol", "Dir", "Vol", "Entry", "P&L", "Status"].map((h) => (
+                {["Educator", "Symbol", "Dir", "Vol", "Entry", "P&L", "Status"].map((h) => (
                   <th key={h} className="px-3 py-2 font-mono text-[9px] uppercase tracking-wider text-white/40 font-semibold">
                     {h}
                   </th>

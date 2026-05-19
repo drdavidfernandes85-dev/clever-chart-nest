@@ -224,7 +224,7 @@ const CopyTrading = () => {
       .update({ status: newStatus })
       .eq("subscriber_id", user.id).eq("trader_id", m.user_id);
     if (error) return toast.error(error.message);
-    toast.success(newStatus === "active" ? `Resumed copying ${m.display_name}` : `Paused copying ${m.display_name}`);
+    toast.success(newStatus === "active" ? `Resumed following ${m.display_name}` : `Paused following ${m.display_name}`);
     loadAll();
   };
 
@@ -233,7 +233,7 @@ const CopyTrading = () => {
     const { error } = await supabase.from("copy_subscriptions")
       .delete().eq("subscriber_id", user.id).eq("trader_id", m.user_id);
     if (error) return toast.error(error.message);
-    toast.success(`Stopped copying ${m.display_name}`);
+    toast.success(`Stopped following ${m.display_name}`);
     loadAll();
   };
 
@@ -242,7 +242,7 @@ const CopyTrading = () => {
     const { error } = await supabase.from("copy_subscriptions")
       .insert({ subscriber_id: user.id, trader_id: m.user_id, status: "active", risk_multiplier: 1.0 });
     if (error) return toast.error(error.message);
-    toast.success(`Now copying ${m.display_name}`);
+    toast.success(`Now following ${m.display_name}`);
     loadAll();
   };
 
@@ -278,8 +278,8 @@ const CopyTrading = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-foreground pb-16 md:pb-0">
       <SEO
-        title="Copy Trading | IX Sala de Trading"
-        description="Manage your copied trades and followed mentors."
+        title="Idea Tools | IX Trading Room"
+        description="Manage your reviewed market ideas and followed educators."
         canonical="https://ixsalatrading.com/copy-trading"
       />
 
@@ -289,7 +289,7 @@ const CopyTrading = () => {
             <img src={infinoxLogo} alt="INFINOX" className="h-5" />
             <span className="hidden sm:inline text-[10px] text-white/20">|</span>
             <span className="hidden sm:inline font-heading text-sm font-semibold">
-              <span className="text-[#FFCD05]">IX</span> COPY TRADING
+              <span className="text-[#FFCD05]">IX</span> TRADING ROOM
             </span>
           </Link>
           <div className="flex items-center gap-2">
@@ -305,20 +305,20 @@ const CopyTrading = () => {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <Copy className="h-4 w-4 text-[#FFCD05]" />
-            <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">Copy Trading Hub</span>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">Idea Tools</span>
           </div>
           <h1 className="font-heading text-3xl md:text-4xl font-bold uppercase tracking-tight">
-            My <span className="text-[#FFCD05]">Copy Trades</span>
+            My <span className="text-[#FFCD05]">Reviewed Ideas</span>
           </h1>
           <p className="mt-1.5 text-sm text-white/50 max-w-xl">
-            Track positions you copied from mentors and manage who you follow or copy automatically.
+            Track educational market ideas you have reviewed and manage the educators you follow. Every order is user-controlled. Powered by Trading Layer.
           </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <Tile label="Active copied trades" value={String(activeOrders.filter(o => o.status === "sent" || o.status === "pending").length)} icon={<Loader2 className="h-3.5 w-3.5" />} />
+          <Tile label="Active reviewed ideas" value={String(activeOrders.filter(o => o.status === "sent" || o.status === "pending").length)} icon={<Loader2 className="h-3.5 w-3.5" />} />
           <Tile label="Executed total" value={String(orders.filter(o => o.status === "executed").length)} icon={<CheckCircle2 className="h-3.5 w-3.5" />} accent="green" />
-          <Tile label="Mentors copying" value={String(copyingCount)} icon={<Copy className="h-3.5 w-3.5" />} accent="yellow" />
+          <Tile label="Educators followed" value={String(copyingCount)} icon={<Copy className="h-3.5 w-3.5" />} accent="yellow" />
           <Tile label="Following" value={String(mentors.filter(m => m.is_following).length)} icon={<Users className="h-3.5 w-3.5" />} />
         </div>
 
@@ -329,8 +329,8 @@ const CopyTrading = () => {
 
         <div className="mb-4 flex items-center gap-1 rounded-xl border border-white/10 bg-[#0F0F0F] p-1 w-fit">
           {([
-            { k: "trades", label: "Copied Trades" },
-            { k: "mentors", label: "Followed Mentors" },
+            { k: "trades", label: "Idea Activity" },
+            { k: "mentors", label: "Followed Educators" },
           ] as const).map((t) => (
             <button key={t.k} onClick={() => setTab(t.k)}
               className={`rounded-lg px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
@@ -346,8 +346,8 @@ const CopyTrading = () => {
         ) : tab === "trades" ? (
           orders.length === 0 ? (
             <EmptyState
-              title="No copied trades yet"
-              body="Tap COPY TRADE on any mentor signal in the Community Hub or Trade Ideas page to get started."
+              title="No reviewed ideas yet"
+              body="Review educational market ideas from the Community Hub or Ideas page to get started."
               cta={{ to: "/community", label: "Open Community Hub" }}
             />
           ) : (
@@ -402,7 +402,7 @@ const CopyTrading = () => {
             {mentors.length === 0 ? (
               <EmptyState
                 title="No mentors yet"
-                body="Follow or copy mentors from the Leaderboard to manage them here."
+                body="Follow educators from the Leaderboard to manage them here."
                 cta={{ to: "/leaderboard", label: "Open Leaderboard" }}
               />
             ) : (
@@ -448,7 +448,7 @@ const CopyTrading = () => {
                     </span>
                   </SheetTitle>
                   <SheetDescription className="font-mono text-[10px] text-white/40">
-                    Copied trade · {new Date(openTrade.created_at).toLocaleString()}
+                    Reviewed idea · {new Date(openTrade.created_at).toLocaleString()}
                     {openTrade.ea_ticket && openTrade.ea_ticket !== "0" && <> · #{openTrade.ea_ticket}</>}
                   </SheetDescription>
                 </SheetHeader>
@@ -473,7 +473,7 @@ const CopyTrading = () => {
                   {openSignal && (
                     <div className="rounded-xl border border-[#FFCD05]/25 bg-[#FFCD05]/[0.04] p-3">
                       <p className="text-[10px] uppercase tracking-wider text-[#FFCD05] mb-2 flex items-center gap-1.5">
-                        <Copy className="h-3 w-3" /> vs Original signal · {openSignal.mentor_name}
+                        <Copy className="h-3 w-3" /> vs Original idea · {openSignal.mentor_name}
                       </p>
                       <div className="grid grid-cols-3 gap-2 text-[11px] font-mono tabular-nums">
                         <div>
@@ -508,7 +508,7 @@ const CopyTrading = () => {
                         </div>
                       </div>
                       <p className="mt-2 text-[10px] text-white/40">
-                        Signal status:{" "}
+                        Idea status:{" "}
                         <span className={openSignal.status === "active" ? "text-emerald-400" : "text-white/60"}>
                           {openSignal.status.toUpperCase()}
                         </span>
@@ -630,14 +630,14 @@ const MentorCard = ({ m, onToggleFollow, onTogglePause, onStop, onStartCopy }:
             <p className="text-sm font-semibold text-white truncate">{m.display_name}</p>
             {m.is_mentor && (
               <span className="rounded-md bg-[#FFCD05]/15 border border-[#FFCD05]/30 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[#FFCD05] font-bold">
-                Mentor
+                Educator
               </span>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             {m.copy_status === "active" && (
               <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
-                <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" /> Copying
+                <span className="h-1 w-1 rounded-full bg-emerald-400 animate-pulse" /> Following
               </span>
             )}
             {paused && (
@@ -671,7 +671,7 @@ const MentorCard = ({ m, onToggleFollow, onTogglePause, onStop, onStartCopy }:
         {onStartCopy && (
           <Button size="sm" onClick={onStartCopy}
             className="h-7 px-2 text-[10px] gap-1 bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90 font-bold">
-            <Copy className="h-3 w-3" /> Copy
+            <Copy className="h-3 w-3" /> Follow Educator
           </Button>
         )}
         {onTogglePause && (
@@ -683,7 +683,7 @@ const MentorCard = ({ m, onToggleFollow, onTogglePause, onStop, onStartCopy }:
         {onStop && (
           <Button size="sm" variant="outline" onClick={onStop}
             className="h-7 px-2 text-[10px] border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 gap-1">
-            <XCircle className="h-3 w-3" /> Stop copy
+            <XCircle className="h-3 w-3" /> Stop following
           </Button>
         )}
       </div>

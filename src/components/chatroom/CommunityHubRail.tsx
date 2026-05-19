@@ -24,7 +24,7 @@ const HOT_FALLBACK: HotMention[] = [
 // Activity-based community contributors — NO performance claims (regulation compliant).
 type Contributor = { name: string; ideas: number; role: string };
 const CONTRIBUTOR_FALLBACK: Contributor[] = [
-  { name: "IX_Mentor",  ideas: 42, role: "Lead Mentor" },
+  { name: "IX_Educator",  ideas: 42, role: "Lead Educator" },
   { name: "EUR_King",   ideas: 31, role: "Senior Trader" },
   { name: "alpha-rat",  ideas: 24, role: "Active Member" },
 ];

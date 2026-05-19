@@ -199,12 +199,12 @@ const Leaderboard = () => {
   };
 
   const handleCopy = async (trader: TraderRow) => {
-    if (!user) { toast.error("Sign in to copy traders"); return; }
-    if (user.id === trader.user_id) { toast.error("You cannot copy yourself"); return; }
+    if (!user) { toast.error("Sign in to follow educators"); return; }
+    if (user.id === trader.user_id) { toast.error("You cannot follow yourself"); return; }
     if (copies.has(trader.user_id)) {
       await supabase.from("copy_subscriptions").update({ status: "paused" }).eq("subscriber_id", user.id).eq("trader_id", trader.user_id);
       setCopies((s) => { const n = new Set(s); n.delete(trader.user_id); return n; });
-      toast.success(`Paused copy-trading ${trader.display_name}`);
+      toast.success(`Stopped following ${trader.display_name}`);
     } else {
       const { error } = await supabase.from("copy_subscriptions").upsert(
         { subscriber_id: user.id, trader_id: trader.user_id, status: "active", risk_multiplier: 1.0 },
@@ -212,7 +212,7 @@ const Leaderboard = () => {
       );
       if (error) return toast.error(error.message);
       setCopies((s) => new Set(s).add(trader.user_id));
-      toast.success(`Copy-trading ${trader.display_name}`);
+      toast.success(`Following ${trader.display_name}`);
     }
   };
 
@@ -302,7 +302,7 @@ const Leaderboard = () => {
                           {r.is_verified && <CheckCircle2 className="h-3.5 w-3.5 text-[#FFCD05] shrink-0" />}
                         </div>
                         <p className="text-[10px] uppercase tracking-wider text-white/40">
-                          {r.is_mentor ? "Mentor" : r.is_verified ? "Verified" : "Trader"}
+                          {r.is_mentor ? "Educator" : r.is_verified ? "Verified Community Member" : "Trader"}
                         </p>
                       </div>
                       <div className={`text-right font-mono text-sm font-bold ${positive ? "text-emerald-400" : "text-red-400"}`}>
@@ -322,7 +322,7 @@ const Leaderboard = () => {
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
                         className={`flex-1 h-7 text-[10px] gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                        <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Copying" : "Copy"}
+                        <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
                       </Button>
                     </div>
                   </div>
@@ -358,7 +358,7 @@ const Leaderboard = () => {
                             {r.is_verified && <CheckCircle2 className="h-3 w-3 text-[#FFCD05] shrink-0" />}
                           </div>
                           <p className="text-[10px] uppercase tracking-wider text-white/40">
-                            {r.is_mentor ? "Mentor" : r.is_verified ? "Verified" : "Trader"}
+                            {r.is_mentor ? "Educator" : r.is_verified ? "Verified Community Member" : "Trader"}
                           </p>
                         </div>
                       </div>
@@ -375,7 +375,7 @@ const Leaderboard = () => {
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
                           className={`h-7 text-[10px] px-2.5 gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                          <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Copying" : "Copy"}
+                          <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
                         </Button>
                       </div>
                     </div>
@@ -486,7 +486,7 @@ const TraderDetail = ({ trader, onClose, period, following, copying, onFollow, o
                   {trader.is_verified && <CheckCircle2 className="h-4 w-4 text-[#FFCD05]" />}
                 </div>
                 <p className="text-[10px] uppercase tracking-wider text-white/40">
-                  {trader.is_mentor ? "Mentor" : trader.is_verified ? "Verified Trader" : "Trader"}
+                  {trader.is_mentor ? "Educator" : trader.is_verified ? "Verified Community Member" : "Trader"}
                 </p>
               </div>
             </div>
@@ -498,7 +498,7 @@ const TraderDetail = ({ trader, onClose, period, following, copying, onFollow, o
               </Button>
               <Button onClick={onCopy} size="sm" variant="outline"
                 className={`flex-1 gap-1 ${copying ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05]" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                <Copy className="h-3.5 w-3.5" /> {copying ? "Copying" : "Copy Trades"}
+                <Copy className="h-3.5 w-3.5" /> {copying ? "Following" : "Follow Educator"}
               </Button>
             </div>
 
@@ -629,15 +629,15 @@ const MentorApplyDialog = ({ open, onOpenChange, userId }: { open: boolean; onOp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#0A0A0A] border border-white/10 text-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2"><GraduationCap className="h-4 w-4 text-[#FFCD05]" /> Become a Mentor</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2"><GraduationCap className="h-4 w-4 text-[#FFCD05]" /> Become an Educator</DialogTitle>
           <DialogDescription className="text-white/50 text-xs">
-            Submit your application. An admin will review and approve mentors manually.
+            Submit your application. An admin will review and approve educators manually.
           </DialogDescription>
         </DialogHeader>
 
         {status === "approved" && (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" /> Your application has been approved — you are now a Mentor.
+            <CheckCircle2 className="h-4 w-4" /> Your application has been approved — you are now an Educator.
           </div>
         )}
         {status === "pending" && (
