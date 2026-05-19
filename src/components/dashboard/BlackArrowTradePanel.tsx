@@ -538,6 +538,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
 
       <div className="p-1.5 space-y-1">
+        {/* Dry-run banner */}
+        <div className="flex items-center gap-1.5 rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-2 py-1">
+          <AlertTriangle className="h-3 w-3 text-[#FFCD05] shrink-0" />
+          <span className="text-[9px] font-bold uppercase tracking-wider text-[#FFCD05]">
+            DRY RUN MODE ACTIVE — no live orders will be sent.
+          </span>
+        </div>
+
         {/* Symbol block */}
         <div className="relative">
           <button
