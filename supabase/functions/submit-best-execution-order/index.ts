@@ -2,6 +2,8 @@
 // Wraps execute-trade with pre-trade quote snapshot + latency/slippage metrics.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+const VERSION = "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -40,6 +42,7 @@ Deno.serve(async (req) => {
     takeProfit = null,
     clientClickAt,
     dryRun = false,
+    liveExecutionConfirmed = false,
   } = payload || {};
 
   if (!symbol || !side || !volume) {
@@ -125,7 +128,7 @@ Deno.serve(async (req) => {
           ticket: null,
           raw: {
             classification: "pretrade_check",
-            version: "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19",
+            version: VERSION,
             step: "dry_run",
           },
         });
@@ -133,10 +136,21 @@ Deno.serve(async (req) => {
     } catch { /* swallow */ }
     return json({
       success: true,
-      version: "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19",
+      version: VERSION,
       step: "dry_run",
       liveOrderSent: false,
     });
+  }
+
+  if (liveExecutionConfirmed !== true) {
+    return json({
+      success: false,
+      version: VERSION,
+      step: "pretrade_validation",
+      liveOrderSent: false,
+      error: "Live execution requires liveExecutionConfirmed=true.",
+      reasons: ["Missing live execution confirmation"],
+    }, 200);
   }
 
   // Forward to execute-trade (existing broker integration).
