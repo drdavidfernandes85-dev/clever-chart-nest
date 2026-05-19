@@ -78,13 +78,15 @@ class MarketDataServiceImpl {
     document.addEventListener("visibilitychange", this.onVisibility);
 
     this.startLoop("account", this.tickAccount, ACCOUNT_INTERVAL_MS);
-    this.startLoop("positions", this.tickPositions, this.currentPositionsInterval);
+    this.startLoop("positions", this.tickPositions, POSITIONS_INTERVAL_MS);
+    this.startLoop("system_health", this.tickSystemHealth, SYSTEM_HEALTH_INTERVAL_MS);
     this.startLoop("stale_monitor", this.tickStale, STALE_CHECK_MS);
     // selected_symbol + watchlist loops start when first symbol/list is set.
 
     // Immediate kickoff.
     this.tickAccount();
     this.tickPositions();
+    this.tickSystemHealth();
 
     this.publishActiveLoops();
     liveMarketDataStore.setStatus("live_polling");
