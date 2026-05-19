@@ -27,9 +27,18 @@ const OpenPositionsPanel = () => {
   const { liveAccount, positions, connected, loading, refreshing, refresh } =
     useLiveAccount();
   const [closing, setClosing] = useState<string | null>(null);
+  const [closeConfirmed, setCloseConfirmed] = useState<Record<string, boolean>>({});
   const [testCloseConfirmed, setTestCloseConfirmed] = useState<Record<string, boolean>>({});
   const [testClosing, setTestClosing] = useState<string | null>(null);
+  const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
   const isDev = import.meta.env.DEV;
+
+  useEffect(() => {
+    const id = window.setInterval(() => setCooldownMs(getCooldownRemainingMs()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const cooling = cooldownMs > 0;
+  const cooldownSec = Math.ceil(cooldownMs / 1000);
 
   const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
   const currency = liveAccount?.currency ?? "USD";
