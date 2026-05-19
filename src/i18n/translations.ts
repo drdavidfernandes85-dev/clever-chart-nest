@@ -2097,6 +2097,8 @@ const translations = {
     "hero.cta.openAccount": "Abrir Minha Conta Infinox Agora",
     "hero.cta.connectExisting": "Conectar Minha Conta MT5 Existente",
     "hero.eligibility": "O acesso completo requer uma conta real verificada da Infinox com saldo líquido mínimo de $100 USD.",
+    "hero.eligibilityShort": "O acesso completo pode exigir uma conta real verificada da INFINOX e o cumprimento dos requisitos aplicáveis.",
+    "hero.riskDisclaimer": "Operar produtos alavancados envolve risco significativo. O desempenho passado não garante resultados futuros. Todo o conteúdo é exclusivamente educativo e informativo.",
     "hero.onlineNow": "traders online agora mesmo",
     "announcement.text": "Algo grande está chegando...",
     "announcement.link": "Saiba mais",
