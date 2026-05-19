@@ -248,7 +248,13 @@ Deno.serve(async (req) => {
         reason: outcome !== "success" ? (res.error || reasonsText || brokerMessage || null) : null,
         rule_violated: outcome === "blocked" ? (res.ruleViolated || reasonsText || res.error || null) : null,
         ticket: res.ticket != null ? String(res.ticket) : null,
-        raw: res,
+        raw: {
+          ...(res && typeof res === "object" ? res : {}),
+          classification: success ? "placed" : (outcome === "blocked" ? "blocked" : "rejected"),
+          version: VERSION,
+          step: success ? "execution_result" : "pretrade_validation",
+          liveOrderSent: success,
+        },
       });
     }
   } catch { /* swallow audit errors */ }
