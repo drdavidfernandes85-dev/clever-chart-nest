@@ -42,6 +42,7 @@ import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalStatusChips from "@/components/livechart/TerminalStatusChips";
+import TerminalStatusBar from "@/components/livechart/TerminalStatusBar";
 import {
   Collapsible,
   CollapsibleContent,
