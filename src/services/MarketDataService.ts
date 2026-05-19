@@ -96,6 +96,7 @@ class MarketDataServiceImpl {
     if (!this.started) return;
     this.started = false;
     for (const id of Object.keys(this.timers) as LoopId[]) this.stopLoop(id);
+    this.clearBurstTimers();
     window.removeEventListener("trade-executed", this.onTradeExecuted);
     window.removeEventListener("mt:refresh-positions", this.refreshAccountAndPositions);
     window.removeEventListener("mt:refresh-quotes", this.refreshSelected);
