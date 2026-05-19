@@ -247,7 +247,7 @@ const CommunityNest = () => {
               Live trade ideas
             </span>
           </div>
-          <Link to="/signals" className="text-[10px] text-primary hover:underline">
+          <Link to="/ideas" className="text-[10px] text-primary hover:underline">
             All
           </Link>
         </div>

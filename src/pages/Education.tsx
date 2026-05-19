@@ -470,7 +470,7 @@ const Education = () => {
                 {t("edu.pillars.linkVideos")}
               </Link>
               <Link
-                to="/signals"
+                to="/ideas"
                 className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3.5 py-1.5 font-proxima text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/15 transition"
               >
                 <LineChart className="h-3.5 w-3.5" />

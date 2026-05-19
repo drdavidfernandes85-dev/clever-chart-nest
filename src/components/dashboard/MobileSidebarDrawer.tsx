@@ -26,7 +26,7 @@ import { LOCALE_FLAGS, LOCALE_LABELS, type Locale, type TranslationKey } from "@
 const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
-  { to: "/signals", labelKey: "sidebar.signals", icon: Radio },
+  { to: "/ideas", labelKey: "sidebar.signals", icon: Radio },
   { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
   { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
