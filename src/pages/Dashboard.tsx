@@ -160,7 +160,7 @@ const TerminalHeader = () => {
         ) : (
           <Link
             to="/connect-mt"
-            className="ml-2 pl-3 border-l border-neutral-800 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#FFCD05] hover:text-[#FFCD05]/80"
+            className="ml-2 pl-3 border-l border-[color:var(--ltr-gold-border)] flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#FFCD05] hover:text-[#FFCD05]/80"
           >
             <span className="inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
             Connect MT5 Account
@@ -173,7 +173,7 @@ const TerminalHeader = () => {
             onClick={() => refresh()}
             disabled={refreshing}
             title="Refresh account"
-            className="flex h-7 w-7 items-center justify-center rounded border border-neutral-800 bg-[#0f0f0f] text-neutral-400 hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors disabled:opacity-50"
+            className="flex h-7 w-7 items-center justify-center rounded border border-[color:var(--ltr-gold-border)] bg-[color:var(--ltr-panel-elev)] text-ltr-silver-400 hover:text-[#FFCD05] hover:border-[#FFCD05]/40 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
@@ -229,7 +229,7 @@ const MarketRow = ({
   const spreadDigits = Math.max(digits, 1);
   return (
     <li
-      className={`grid grid-cols-[16px_1fr_56px_56px_48px] items-center gap-1 pr-1.5 py-[3px] border-b border-neutral-900/80 border-l-2 transition-colors ${
+      className={`grid grid-cols-[16px_1fr_56px_56px_48px] items-center gap-1 pr-1.5 py-[3px] border-b border-[color:var(--ltr-gold-border)]/80 border-l-2 transition-colors ${
         isActive ? "bg-[#FFCD05]/12 border-l-[#FFCD05] pl-[6px]" : "border-l-transparent pl-1.5 hover:bg-neutral-900/40"
       }`}
     >
@@ -240,18 +240,18 @@ const MarketRow = ({
         aria-label={isFav ? "Remove favorite" : "Add favorite"}
       >
         <Star
-          className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-neutral-700 hover:text-neutral-400"}`}
+          className={`h-3 w-3 ${isFav ? "fill-[#FFCD05] text-[#FFCD05]" : "text-ltr-silver-500 hover:text-ltr-silver-400"}`}
         />
       </button>
       <button type="button" onClick={onSelect} className="min-w-0 text-left flex flex-col leading-tight">
         <span
-          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-neutral-100"}`}
+          className={`font-mono text-[10.5px] font-semibold truncate ${isActive ? "text-[#FFCD05]" : "text-ltr-silver-100"}`}
           title={description ?? sym}
         >
           {sym}
         </span>
         {description ? (
-          <span className="font-mono text-[8.5px] text-neutral-500 truncate" title={description}>
+          <span className="font-mono text-[8.5px] text-ltr-silver-400 truncate" title={description}>
             {description}
           </span>
         ) : null}
@@ -259,21 +259,21 @@ const MarketRow = ({
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10px] tabular-nums text-red-400"
+        className="text-right font-mono text-[10px] tabular-nums text-ltr-sell"
       >
         {fmt(bid)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[10px] tabular-nums text-emerald-400"
+        className="text-right font-mono text-[10px] tabular-nums text-ltr-buy"
       >
         {fmt(ask)}
       </button>
       <button
         type="button"
         onClick={onSelect}
-        className="text-right font-mono text-[9.5px] tabular-nums text-neutral-300"
+        className="text-right font-mono text-[9.5px] tabular-nums text-ltr-silver-300"
         title="Spread"
       >
         {spread == null
@@ -490,34 +490,34 @@ const MarketWatchPanel = ({
   };
 
   return (
-    <aside className="hidden lg:flex flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden h-[calc(100vh-6.5rem)]">
-      <div className="flex items-center justify-between border-b border-neutral-800/80 px-3 py-2">
-        <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-neutral-200">
+    <aside className="hidden lg:flex flex-col rounded-sm border border-[color:var(--ltr-gold-border)] bg-[color:var(--ltr-panel)] overflow-hidden h-[calc(100vh-6.5rem)]">
+      <div className="flex items-center justify-between border-b border-[color:var(--ltr-gold-border)]/80 px-3 py-2">
+        <h2 className="font-heading text-[10px] font-bold uppercase tracking-[0.22em] text-ltr-silver-200">
           Market Watch
         </h2>
-        <span className="font-mono text-[9px] uppercase tracking-widest text-neutral-500 flex items-center gap-1.5">
+        <span className="font-mono text-[9px] uppercase tracking-widest text-ltr-silver-400 flex items-center gap-1.5">
           {dataDelayed && (
             <span className="px-1.5 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-amber-300 text-[8.5px]">
               Data delayed
             </span>
           )}
           {isLive ? (
-            <span className="text-emerald-400">● {symbols.length}</span>
+            <span className="text-ltr-buy">● {symbols.length}</span>
           ) : loading ? (
             <Loader2 className="h-3 w-3 animate-spin text-[#FFCD05]" />
           ) : (
-            <span className="text-neutral-500">—</span>
+            <span className="text-ltr-silver-400">—</span>
           )}
         </span>
       </div>
-      <div className="px-2 py-2 border-b border-neutral-800/80 space-y-2">
+      <div className="px-2 py-2 border-b border-[color:var(--ltr-gold-border)]/80 space-y-2">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-neutral-500" />
+          <Search className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-ltr-silver-400" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search symbols…"
-            className="h-7 pl-7 pr-8 bg-[#050505] border-neutral-800 text-[11px] font-mono placeholder:text-neutral-600 focus-visible:ring-[#FFCD05]/40 rounded"
+            className="h-7 pl-7 pr-8 bg-[#050505] border-[color:var(--ltr-gold-border)] text-[11px] font-mono placeholder:text-ltr-silver-500 focus-visible:ring-[#FFCD05]/40 rounded"
           />
           <Star className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 fill-[#FFCD05] text-[#FFCD05]" />
         </div>
@@ -530,7 +530,7 @@ const MarketWatchPanel = ({
               className={`px-2 py-0.5 rounded text-[9px] font-mono uppercase tracking-widest border transition-colors ${
                 tab === c
                   ? "bg-[#FFCD05]/15 border-[#FFCD05]/40 text-[#FFCD05]"
-                  : "border-neutral-800 text-neutral-500 hover:text-neutral-300"
+                  : "border-[color:var(--ltr-gold-border)] text-ltr-silver-400 hover:text-ltr-silver-300"
               }`}
             >
               {c}
@@ -540,11 +540,11 @@ const MarketWatchPanel = ({
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[16px_1fr_56px_56px_48px] items-center gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-1.5 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+      <div className="grid grid-cols-[16px_1fr_56px_56px_48px] items-center gap-1 border-b border-[color:var(--ltr-gold-border)] bg-[color:var(--ltr-terminal-bg)] px-1.5 py-1 text-[9px] font-mono uppercase tracking-widest text-ltr-silver-400">
         <span />
         <span>Symbol</span>
-        <span className="text-right text-red-400/80">Bid</span>
-        <span className="text-right text-emerald-400/80">Ask</span>
+        <span className="text-right text-ltr-sell/80">Bid</span>
+        <span className="text-right text-ltr-buy/80">Ask</span>
         <span className="text-right">Spread</span>
       </div>
 
@@ -552,11 +552,11 @@ const MarketWatchPanel = ({
         {/* Favorites — always shown at the top when not actively filtering by another tab */}
         {tab === "All" && !query && (
           <>
-            <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-[#FFCD05]/80 bg-[#0a0a0a]/60 border-b border-neutral-800/60 flex items-center gap-1.5">
+            <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-[#FFCD05]/80 bg-[color:var(--ltr-terminal-bg)]/60 border-b border-[color:var(--ltr-gold-border)]/60 flex items-center gap-1.5">
               <Star className="h-2.5 w-2.5 fill-[#FFCD05] text-[#FFCD05]" /> Favorites
             </li>
             {favRows.length === 0 ? (
-              <li className="px-3 py-3 text-[10px] text-neutral-500 italic">
+              <li className="px-3 py-3 text-[10px] text-ltr-silver-400 italic">
                 No favorites yet. Star an instrument to add it here.
               </li>
             ) : (
@@ -590,12 +590,12 @@ const MarketWatchPanel = ({
         )}
 
         {loading && sortedByCategory.length === 0 && (
-          <li className="px-3 py-5 text-center text-[11px] text-neutral-500 flex items-center justify-center gap-1.5">
+          <li className="px-3 py-5 text-center text-[11px] text-ltr-silver-400 flex items-center justify-center gap-1.5">
             <Loader2 className="h-3 w-3 animate-spin" /> Loading broker symbols…
           </li>
         )}
         {!loading && sortedByCategory.length === 0 && (
-          <li className="px-3 py-5 text-center text-[11px] text-neutral-500">
+          <li className="px-3 py-5 text-center text-[11px] text-ltr-silver-400">
             {query
               ? "No matches."
               : !hasEverLoaded
@@ -607,7 +607,7 @@ const MarketWatchPanel = ({
         {showGroupHeaders
           ? grouped.map(([cat, rows]) => (
               <Fragment key={cat}>
-                <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-neutral-500 bg-[#0a0a0a]/60 border-y border-neutral-800/60">
+                <li className="px-2 py-1 text-[9px] font-mono uppercase tracking-widest text-ltr-silver-400 bg-[color:var(--ltr-terminal-bg)]/60 border-y border-[color:var(--ltr-gold-border)]/60">
                   {cat}
                 </li>
                 {rows.map((s) => {
@@ -689,7 +689,7 @@ const ChartBidAskHeader = () => {
   const change = open != null && last != null ? last - open : null;
   const changePct = open != null && last != null && open !== 0 ? ((last - open) / open) * 100 : null;
   const changeColor =
-    change == null ? "text-neutral-400" : change >= 0 ? "text-emerald-400" : "text-red-400";
+    change == null ? "text-ltr-silver-400" : change >= 0 ? "text-ltr-buy" : "text-ltr-sell";
 
   // Last MT5 tick time — bumps whenever the live quote refreshes.
   const [tickTime, setTickTime] = useState<string>("—");
@@ -719,25 +719,25 @@ const ChartBidAskHeader = () => {
           </span>
         </div>
       </div>
-      <div className="rounded border border-neutral-800 bg-[#0a0a0a] px-2 py-1 text-center">
-        <div className="font-mono text-[10px] tabular-nums text-neutral-300">
+      <div className="rounded border border-[color:var(--ltr-gold-border)] bg-[color:var(--ltr-terminal-bg)] px-2 py-1 text-center">
+        <div className="font-mono text-[10px] tabular-nums text-ltr-silver-300">
           {spreadPts != null ? spreadPts.toFixed(2) : "—"}
         </div>
       </div>
       <div className="flex items-center rounded border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 leading-tight">
         <div className="flex flex-col items-center">
-          <span className="font-mono text-[14px] font-bold tabular-nums text-emerald-300">
+          <span className="font-mono text-[14px] font-bold tabular-nums text-ltr-buy">
             {fmt(ask)}
           </span>
-          <span className="text-[8.5px] font-mono uppercase tracking-[0.22em] text-emerald-300/80">
+          <span className="text-[8.5px] font-mono uppercase tracking-[0.22em] text-ltr-buy/80">
             Buy · MT5
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-5 pl-2 ml-1 border-l border-neutral-800">
+      <div className="flex items-center gap-5 pl-2 ml-1 border-l border-[color:var(--ltr-gold-border)]">
         <div className="flex flex-col leading-tight">
-          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-ltr-silver-400">
             24H Change
           </span>
           <span className={`font-mono text-[12px] font-bold tabular-nums ${changeColor}`}>
@@ -751,28 +751,28 @@ const ChartBidAskHeader = () => {
           </span>
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-ltr-silver-400">
             High
           </span>
-          <span className="font-mono text-[12px] font-bold tabular-nums text-neutral-200">
+          <span className="font-mono text-[12px] font-bold tabular-nums text-ltr-silver-200">
             {fmt(high)}
           </span>
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-ltr-silver-400">
             Low
           </span>
-          <span className="font-mono text-[12px] font-bold tabular-nums text-neutral-200">
+          <span className="font-mono text-[12px] font-bold tabular-nums text-ltr-silver-200">
             {fmt(low)}
           </span>
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-neutral-500">
+          <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-ltr-silver-400">
             Last MT5 tick
           </span>
           <span
             className={`font-mono text-[11px] tabular-nums ${
-              dataDelayed ? "text-amber-400" : "text-emerald-400"
+              dataDelayed ? "text-amber-400" : "text-ltr-buy"
             }`}
             title="Trading Layer / MT5"
           >
@@ -791,9 +791,9 @@ const BottomTabs = () => {
   const c = liveAccount?.currency ?? "USD";
 
   return (
-    <div className="rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden">
+    <div className="rounded-md border border-[color:var(--ltr-gold-border)]/80 bg-[color:var(--ltr-panel-elev)] overflow-hidden">
       <Tabs defaultValue="positions" className="w-full">
-        <TabsList className="w-full justify-start rounded-none border-b border-neutral-800/80 bg-[#0a0a0a] h-9 p-0">
+        <TabsList className="w-full justify-start rounded-none border-b border-[color:var(--ltr-gold-border)]/80 bg-[color:var(--ltr-terminal-bg)] h-9 p-0">
           {[
             { v: "positions", l: "Positions" },
             { v: "orders", l: "Orders" },
@@ -806,7 +806,7 @@ const BottomTabs = () => {
             <TabsTrigger
               key={t.v}
               value={t.v}
-              className="rounded-none border-r border-neutral-800/80 h-9 px-4 text-[10px] font-mono font-semibold uppercase tracking-[0.18em] text-neutral-400 data-[state=active]:bg-[#0f0f0f] data-[state=active]:text-[#FFCD05] data-[state=active]:border-b-2 data-[state=active]:border-b-[#FFCD05]"
+              className="rounded-none border-r border-[color:var(--ltr-gold-border)]/80 h-9 px-4 text-[10px] font-mono font-semibold uppercase tracking-[0.18em] text-ltr-silver-400 data-[state=active]:bg-[color:var(--ltr-panel-elev)] data-[state=active]:text-[#FFCD05] data-[state=active]:border-b-2 data-[state=active]:border-b-[#FFCD05]"
             >
               {t.l}
             </TabsTrigger>
@@ -818,7 +818,7 @@ const BottomTabs = () => {
         </TabsContent>
 
         <TabsContent value="orders" className="m-0 p-6">
-          <div className="text-center text-[11px] font-mono uppercase tracking-widest text-neutral-500">
+          <div className="text-center text-[11px] font-mono uppercase tracking-widest text-ltr-silver-400">
             No pending orders.
           </div>
         </TabsContent>
@@ -839,7 +839,7 @@ const BottomTabs = () => {
 
         <TabsContent value="account" className="m-0 p-4">
           {!connected || !liveAccount ? (
-            <div className="text-center text-[11px] font-mono uppercase tracking-widest text-neutral-500">
+            <div className="text-center text-[11px] font-mono uppercase tracking-widest text-ltr-silver-400">
               MT5 account not connected.
             </div>
           ) : (
@@ -865,12 +865,12 @@ const BottomTabs = () => {
               ].map(([k, v]) => (
                 <div
                   key={k}
-                  className="rounded border border-neutral-800/80 bg-[#0a0a0a] px-3 py-2"
+                  className="rounded border border-[color:var(--ltr-gold-border)]/80 bg-[color:var(--ltr-terminal-bg)] px-3 py-2"
                 >
-                  <div className="text-[9px] font-mono uppercase tracking-widest text-neutral-500">
+                  <div className="text-[9px] font-mono uppercase tracking-widest text-ltr-silver-400">
                     {k}
                   </div>
-                  <div className="font-mono text-[12px] font-bold tabular-nums text-neutral-100 mt-0.5">
+                  <div className="font-mono text-[12px] font-bold tabular-nums text-ltr-silver-100 mt-0.5">
                     {v}
                   </div>
                 </div>
@@ -987,7 +987,7 @@ const DashboardInner = () => {
   }, [ctxSymbol]);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-100">
+    <div className="min-h-screen bg-[#050505] text-ltr-silver-100">
       <SEO
         title={t("dash.seo.title")}
         description={t("dash.seo.desc")}
@@ -1005,11 +1005,11 @@ const DashboardInner = () => {
 
           {/* CENTER — Chart + Tabs */}
           <section className="flex flex-col gap-2 lg:gap-3 min-w-0">
-            <div className="rounded-md border border-neutral-800/80 bg-[#0f0f0f] overflow-hidden">
+            <div className="rounded-md border border-[color:var(--ltr-gold-border)]/80 bg-[color:var(--ltr-panel-elev)] overflow-hidden">
               {/* Chart toolbar */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800/80 px-3 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--ltr-gold-border)]/80 px-3 py-2">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-heading text-[14px] font-bold tracking-wide text-neutral-100">
+                  <span className="font-heading text-[14px] font-bold tracking-wide text-ltr-silver-100">
                     {active}
                   </span>
                   <span className="flex items-center gap-1.5 rounded border border-[#FFCD05]/30 bg-[#FFCD05]/10 px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.2em] text-[#FFCD05]">
@@ -1017,7 +1017,7 @@ const DashboardInner = () => {
                   </span>
                   <ChartBidAskHeader />
                 </div>
-                <div className="flex items-center gap-0.5 rounded border border-neutral-800 bg-[#050505] p-0.5">
+                <div className="flex items-center gap-0.5 rounded border border-[color:var(--ltr-gold-border)] bg-[#050505] p-0.5">
                   {TIMEFRAMES.map((tf) => (
                     <button
                       key={tf.value}
@@ -1025,7 +1025,7 @@ const DashboardInner = () => {
                       className={`rounded px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors ${
                         interval === tf.value
                           ? "bg-[#FFCD05] text-black"
-                          : "text-neutral-400 hover:text-neutral-100"
+                          : "text-ltr-silver-400 hover:text-ltr-silver-100"
                       }`}
                     >
                       {tf.label}
@@ -1047,7 +1047,7 @@ const DashboardInner = () => {
                 />
                 <div className="pointer-events-none absolute top-2 left-2 flex flex-col gap-0.5 rounded-sm border border-[#FFCD05]/30 bg-black/80 px-2 py-1 text-[9px] font-mono uppercase tracking-widest backdrop-blur-sm">
                   <span className="text-[#FFCD05] font-bold">{active} · Infinox MT5</span>
-                  <span className="text-neutral-400 normal-case tracking-wider">Live MT5 tick via Trading Layer</span>
+                  <span className="text-ltr-silver-400 normal-case tracking-wider">Live MT5 tick via Trading Layer</span>
                 </div>
               </div>
             </div>
@@ -1096,20 +1096,20 @@ const TerminalStatusBar = ({ activeSymbol }: { activeSymbol: string }) => {
     ? new Date(lastTick).toLocaleTimeString()
     : "—";
   return (
-    <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded border border-neutral-800/80 bg-[#0a0a0a] px-3 py-1.5 text-[9.5px] font-mono uppercase tracking-widest text-neutral-400">
+    <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded border border-[color:var(--ltr-gold-border)]/80 bg-[color:var(--ltr-terminal-bg)] px-3 py-1.5 text-[9.5px] font-mono uppercase tracking-widest text-ltr-silver-400">
       <div className="flex items-center gap-4">
-        <span className={`flex items-center gap-1.5 ${connected ? "text-emerald-400" : "text-red-400"}`}>
+        <span className={`flex items-center gap-1.5 ${connected ? "text-ltr-buy" : "text-ltr-sell"}`}>
           <span className="h-1.5 w-1.5 rounded-full bg-current" />
           {connected ? "Connected" : "Disconnected"}
         </span>
-        <span>Trading Layer: <span className="text-neutral-200">MT5</span></span>
+        <span>Trading Layer: <span className="text-ltr-silver-200">MT5</span></span>
         <span>Symbol: <span className="text-[#FFCD05]">{activeSymbol || "—"}</span></span>
       </div>
       <div className="flex items-center gap-4">
-        <span>Last Tick: <span className="text-neutral-200">{lastTickStr}</span></span>
-        <span>Ping: <span className="text-neutral-200">—</span></span>
-        <span>Data: <span className="text-emerald-400">Live</span></span>
-        <span>Server Time: <span className="text-neutral-200">{now.toLocaleTimeString()}</span></span>
+        <span>Last Tick: <span className="text-ltr-silver-200">{lastTickStr}</span></span>
+        <span>Ping: <span className="text-ltr-silver-200">—</span></span>
+        <span>Data: <span className="text-ltr-buy">Live</span></span>
+        <span>Server Time: <span className="text-ltr-silver-200">{now.toLocaleTimeString()}</span></span>
       </div>
     </div>
   );
