@@ -229,11 +229,8 @@ export function useMTAccount() {
         { event: "*", schema: "public", table: "user_mt_accounts", filter: `id=eq.${accountId}` },
         () => refreshRef.current(),
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "mt_positions", filter: `account_id=eq.${accountId}` },
-        () => refreshRef.current(),
-      )
+      // mt_positions subscription removed.
+
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "mt_account_snapshots", filter: `account_id=eq.${accountId}` },
