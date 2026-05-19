@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
           ticket: null,
           raw: {
             classification: "pretrade_check",
-            version: "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19",
+            version: "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19",
             step: "dry_run",
           },
         });
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     } catch { /* swallow */ }
     return json({
       success: true,
-      version: "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19",
+      version: "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19",
       step: "dry_run",
       liveOrderSent: false,
     });
