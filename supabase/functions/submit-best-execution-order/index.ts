@@ -144,16 +144,62 @@ Deno.serve(async (req) => {
     null;
 
   const success = res.success === true;
+  const status = res.status ?? res.classification ?? (success ? "done" : "failed");
+  const outcome = success
+    ? "success"
+    : (String(status).toLowerCase() === "blocked" || res.blocked === true || (Array.isArray(res.reasons) && res.reasons.length > 0 && res.retcode == null))
+      ? "blocked"
+      : "rejected";
+  const spread =
+    requestedBid != null && requestedAsk != null
+      ? Math.max(0, requestedAsk - requestedBid)
+      : null;
+  const reasonsText = Array.isArray(res.reasons) ? res.reasons.join(" · ") : null;
+
+  // Best-effort audit insert — never block the response.
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (uid) {
+      await supabase.from("execution_audit_events").insert({
+        user_id: uid,
+        trade_id: tradeId ?? null,
+        symbol,
+        side,
+        volume: Number(volume),
+        status,
+        outcome,
+        requested_price: requestedPrice,
+        executed_price: executedPrice != null ? Number(executedPrice) : null,
+        slippage,
+        latency_ms: Math.round(totalLatencyMs),
+        spread,
+        bid: requestedBid,
+        ask: requestedAsk,
+        broker_message: brokerMessage,
+        retcode: res.retcode != null ? Number(res.retcode) : null,
+        reason: outcome !== "success" ? (res.error || reasonsText || brokerMessage || null) : null,
+        rule_violated: outcome === "blocked" ? (res.ruleViolated || reasonsText || res.error || null) : null,
+        ticket: res.ticket != null ? String(res.ticket) : null,
+        raw: res,
+      });
+    }
+  } catch { /* swallow audit errors */ }
+
   return json({
     success,
     tradeId,
-    status: res.status ?? res.classification ?? (success ? "done" : "failed"),
+    status,
+    outcome,
     requestedPrice,
     executedPrice: executedPrice != null ? Number(executedPrice) : null,
     slippage,
     latencyMs: totalLatencyMs,
     clientLatencyMs,
     serverLatencyMs,
+    spread,
+    bid: requestedBid,
+    ask: requestedAsk,
     brokerMessage,
     ticket: res.ticket ?? null,
     retcode: res.retcode ?? null,
