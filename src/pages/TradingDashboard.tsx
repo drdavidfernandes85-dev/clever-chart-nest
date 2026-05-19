@@ -668,11 +668,12 @@ const TradeIdeaCards = ({
     setBusyId(idea.id);
     setConfirming(null);
     try {
-      const { data, error } = await supabase.functions.invoke("execute-trade", {
+      const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
         body: {
           tradeId: idea.id,
           symbol: idea.symbol,
           side: idea.direction,
+          orderType: "market",
           volume: vol,
           stopLoss: idea.stopLoss,
           takeProfit: idea.takeProfit,

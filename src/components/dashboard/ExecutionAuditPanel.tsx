@@ -19,6 +19,29 @@ type AuditRow = {
   raw: any;
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  placed: "Order placed",
+  position_confirmed: "Position confirmed",
+  closed: "Position closed",
+  close_failed: "Close failed",
+  close_rejected: "Close rejected",
+  rate_limited: "Rate limited",
+  rejected: "Order rejected",
+  blocked: "Pre-trade blocked",
+  filled: "Order filled",
+  done: "Order filled",
+};
+const CLASSIFICATION_LABELS: Record<string, string> = {
+  placed: "Order placed",
+  placed_confirmed: "Position confirmed",
+  close_position: "Close position",
+  rate_limited: "Rate limited",
+};
+const prettyStatus = (s?: string | null) =>
+  s ? (STATUS_LABELS[s] ?? s) : "—";
+const prettyClass = (s?: string | null) =>
+  s ? (CLASSIFICATION_LABELS[s] ?? s) : "—";
+
 export default function ExecutionAuditPanel({ refreshKey = 0 }: { refreshKey?: number }) {
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -84,8 +107,8 @@ export default function ExecutionAuditPanel({ refreshKey = 0 }: { refreshKey?: n
                 <td className="px-2 py-1">{r.symbol}</td>
                 <td className="px-2 py-1">{r.side}</td>
                 <td className="px-2 py-1">{r.volume}</td>
-                <td className="px-2 py-1">{r.status}</td>
-                <td className="px-2 py-1">{r.raw?.classification ?? "—"}</td>
+                <td className="px-2 py-1">{prettyStatus(r.status)}</td>
+                <td className="px-2 py-1">{prettyClass(r.raw?.classification)}</td>
                 <td className="px-2 py-1">{r.requested_price ?? "—"}</td>
                 <td className="px-2 py-1">{r.bid ?? "—"}</td>
                 <td className="px-2 py-1">{r.ask ?? "—"}</td>

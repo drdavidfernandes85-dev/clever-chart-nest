@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { useLiveAccount, type LivePosition } from "@/contexts/LiveAccountContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  checkAndHandle429,
+  getCooldownRemainingMs,
+  triggerRateLimitCooldown,
+} from "@/lib/tradingLayerControl";
 
 const TEST_CLOSE_MAX_VOLUME = 0.01;
 
@@ -22,101 +27,108 @@ const OpenPositionsPanel = () => {
   const { liveAccount, positions, connected, loading, refreshing, refresh } =
     useLiveAccount();
   const [closing, setClosing] = useState<string | null>(null);
+  const [closeConfirmed, setCloseConfirmed] = useState<Record<string, boolean>>({});
   const [testCloseConfirmed, setTestCloseConfirmed] = useState<Record<string, boolean>>({});
   const [testClosing, setTestClosing] = useState<string | null>(null);
+  const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
   const isDev = import.meta.env.DEV;
+
+  useEffect(() => {
+    const id = window.setInterval(() => setCooldownMs(getCooldownRemainingMs()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const cooling = cooldownMs > 0;
+  const cooldownSec = Math.ceil(cooldownMs / 1000);
 
   const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
   const currency = liveAccount?.currency ?? "USD";
 
 
-  async function closeTestTrade(pos: LivePosition) {
-    const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
+  async function callControlledClose(pos: LivePosition, opts: { isTest: boolean }) {
     if (!pos.ticket) {
       toast.error("Missing position ticket — cannot close.");
       return;
     }
+    if (cooling) {
+      toast.warning(`Rate limited. Retry in ${cooldownSec}s.`);
+      return;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw new Error("Not authenticated.");
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
+    const r = await fetch(url, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        ticket: String(pos.ticket),
+        symbol: pos.symbol,
+        volume: Number(pos.volume),
+        side: pos.side === "buy" ? "sell" : "buy",
+      }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.status === 429 || data?.retryAfter) {
+      triggerRateLimitCooldown(Number(data?.retryAfter) > 0 ? Number(data.retryAfter) : 60);
+      return;
+    }
+    checkAndHandle429(data, null);
+    const errMsg =
+      typeof data?.error === "string"
+        ? data.error
+        : data?.error?.message || data?.error?.code || "Close failed";
+    if (!r.ok || data?.success === false) {
+      toast.error(errMsg, { description: String(data?.brokerMessage ?? "") });
+    } else if (data?.status === "closed") {
+      toast.success("Position closed successfully", {
+        description: `#${pos.ticket} ${pos.symbol}`,
+      });
+    } else {
+      toast.warning(`Close ${data?.status || "pending"}`, {
+        description: String(data?.brokerMessage ?? ""),
+      });
+    }
+  }
+
+  async function closeTestTrade(pos: LivePosition) {
+    const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
     if (Number(pos.volume) > TEST_CLOSE_MAX_VOLUME) {
       toast.error(`Test close is limited to volume ≤ ${TEST_CLOSE_MAX_VOLUME}.`);
       return;
     }
     setTestClosing(key);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Not authenticated.");
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
-      const r = await fetch(url, {
-        method: "POST",
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          ticket: String(pos.ticket),
-          symbol: pos.symbol,
-          volume: Number(pos.volume),
-          side: pos.side === "buy" ? "sell" : "buy",
-        }),
-      });
-      const data = await r.json().catch(() => ({}));
-      const errMsg =
-        typeof data?.error === "string"
-          ? data.error
-          : data?.error?.message || data?.error?.code || "Close failed";
-      if (!r.ok || data?.success === false) {
-        toast.error(errMsg, { description: String(data?.brokerMessage ?? "") });
-      } else if (data?.status === "closed") {
-        toast.success(`Position #${pos.ticket} closed`);
-      } else {
-        toast.warning(`Close ${data?.status || "pending"}`, { description: String(data?.brokerMessage ?? "") });
-      }
+      await callControlledClose(pos, { isTest: true });
     } catch (e: any) {
       toast.error("Could not close test position", { description: e?.message });
     } finally {
       setTestClosing(null);
       setTestCloseConfirmed((m) => ({ ...m, [key]: false }));
-      try {
-        await refresh();
-      } catch { /* ignore */ }
+      try { await refresh(); } catch { /* ignore */ }
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
       window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
       window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
     }
   }
 
-
   const closePosition = async (pos: LivePosition) => {
     const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
     setClosing(key);
     try {
-      const { data, error } = await supabase.functions.invoke("execute-trade", {
-        body: {
-          symbol: pos.symbol,
-          side: pos.side === "buy" ? "sell" : "buy",
-          volume: Number(pos.volume),
-          tradeId: `close-${pos.ticket ?? key}-${Date.now()}`,
-          comment: `Close #${pos.ticket ?? ""}`.trim(),
-          positionId: pos.ticket ?? undefined,
-        },
-      });
-      if (error) {
-        const msg = typeof error === "string" ? error : (error as any)?.message || "Close failed";
-        throw new Error(msg);
-      }
-      if (data && (data as any).success === false) {
-        const rawErr = (data as any).error;
-        const msg = typeof rawErr === "string" ? rawErr : rawErr?.message || "Broker rejected the close order";
-        throw new Error(msg);
-      }
-      toast.success(`Close order sent for ${pos.symbol} #${pos.ticket ?? ""}`);
-      window.dispatchEvent(new Event("trade-executed"));
-      refresh();
+      await callControlledClose(pos, { isTest: false });
     } catch (e: any) {
       toast.error("Could not close position", { description: e?.message });
     } finally {
       setClosing(null);
+      setCloseConfirmed((m) => ({ ...m, [key]: false }));
+      try { await refresh(); } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
     }
   };
 
@@ -268,7 +280,7 @@ const OpenPositionsPanel = () => {
                             <button
                               type="button"
                               onClick={() => closeTestTrade(p)}
-                              disabled={!testCloseConfirmed[key] || testClosing === key}
+                              disabled={!testCloseConfirmed[key] || testClosing === key || cooling}
                               title="I understand this will close a live MT5 position."
                               className="inline-flex h-5 items-center gap-1 rounded border border-red-600/70 bg-red-700/30 px-1.5 text-[8px] font-bold uppercase tracking-widest text-red-200 hover:bg-red-700/50 hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
@@ -280,23 +292,40 @@ const OpenPositionsPanel = () => {
                             </button>
                           </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => closePosition(p)}
-                          disabled={closing === key}
-                          title="Close position"
-                          aria-label="Close position"
-                          className="inline-flex h-6 items-center gap-1 rounded border border-neutral-800 bg-[#050505] px-2 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-red-500/50 hover:text-red-400 transition-colors disabled:opacity-50"
-                        >
-                          {closing === key ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <>
-                              <X className="h-3 w-3" />
-                              Close
-                            </>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1 rounded border border-neutral-800 bg-[#050505] px-1.5 py-0.5">
+                          <Checkbox
+                            id={`close-confirm-${key}`}
+                            checked={!!closeConfirmed[key]}
+                            onCheckedChange={(v) =>
+                              setCloseConfirmed((m) => ({ ...m, [key]: v === true }))
+                            }
+                            className="h-3 w-3"
+                          />
+                          <label
+                            htmlFor={`close-confirm-${key}`}
+                            className="cursor-pointer text-[8px] uppercase tracking-wider text-neutral-400"
+                            title="I understand this closes a live MT5 position."
+                          >
+                            Confirm
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => closePosition(p)}
+                            disabled={closing === key || !closeConfirmed[key] || cooling}
+                            title={cooling ? `Rate limited (${cooldownSec}s)` : "I understand this closes a live MT5 position."}
+                            aria-label="Close position"
+                            className="inline-flex h-5 items-center gap-1 rounded border border-neutral-800 bg-[#0a0a0a] px-1.5 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-red-500/50 hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {closing === key ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <>
+                                <X className="h-3 w-3" />
+                                {cooling ? `${cooldownSec}s` : "Close"}
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </td>
 

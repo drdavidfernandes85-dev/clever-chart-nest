@@ -23,6 +23,11 @@ import {
   type ExecutionResultPayload,
 } from "@/components/dashboard/ExecutionResultModal";
 import ExecutionAuditPanel from "@/components/dashboard/ExecutionAuditPanel";
+import {
+  checkAndHandle429,
+  getCooldownRemainingMs,
+  triggerRateLimitCooldown,
+} from "@/lib/tradingLayerControl";
 
 /**
  * Professional BlackArrow-style Order Ticket.
@@ -150,6 +155,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [liveConfirm, setLiveConfirm] = useState<LiveConfirmState | null>(null);
   const positionsRef = useRef(positions);
   useEffect(() => { positionsRef.current = positions; }, [positions]);
+  const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
+  useEffect(() => {
+    const id = window.setInterval(() => setCooldownMs(getCooldownRemainingMs()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const cooling = cooldownMs > 0;
+  const cooldownSec = Math.ceil(cooldownMs / 1000);
+
+
 
 
   async function directFetchSubmitBestExecutionOrder(payload: any) {
@@ -185,6 +199,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   }
 
   async function handleLiveTest001() {
+    if (cooling) {
+      toast.warning(`Rate limited. Retry in ${cooldownSec}s.`);
+      return;
+    }
     const selectedSymbol = normalizedSym;
     const payload = {
       tradeId: crypto.randomUUID(),
@@ -211,6 +229,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
     try {
       const { requestUrl, httpStatus, responseOk, data } = await directFetchSubmitBestExecutionOrder(payload);
+
+      if (httpStatus === 429 || (data && (data.retryAfter || data.tradingLayerStatus === 429))) {
+        triggerRateLimitCooldown(Number(data?.retryAfter) > 0 ? Number(data.retryAfter) : 60);
+      } else {
+        checkAndHandle429(data, null);
+      }
+
 
       const expectedLiveResponse =
         data?.version === BEST_EXEC_VERSION &&
@@ -858,19 +883,29 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     }
     setSubmitting(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated.");
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
       for (const p of symbolPositions) {
-        const opposite: "buy" | "sell" = p.side === "buy" ? "sell" : "buy";
-        await supabase.functions.invoke("execute-trade", {
-          body: {
-            symbol: p.symbol,
-            side: opposite,
-            volume: Number(Number(p.volume).toFixed(2)),
-            closeTicket: p.ticket,
+        const closeSide: "buy" | "sell" = p.side === "buy" ? "sell" : "buy";
+        await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
           },
+          body: JSON.stringify({
+            ticket: String(p.ticket),
+            symbol: p.symbol,
+            volume: Number(Number(p.volume).toFixed(2)),
+            side: closeSide,
+          }),
         });
       }
       toast.success(`Closed ${symbolPositions.length} position(s)`);
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
       refresh();
     } catch (e: any) {
       toast.error(e?.message || "Close failed");
@@ -1129,16 +1164,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 onCheckedChange={(v) => setLiveTestConfirmed(v === true)}
                 className="mt-0.5 border-red-500 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
               />
-              <span>I understand this will send a live 0.01 market order.</span>
+              <span>I understand this sends a real order to my connected MT5 account.</span>
             </label>
             <button
               type="button"
-              disabled={!liveTestConfirmed || liveTestSubmitting}
+              disabled={!liveTestConfirmed || liveTestSubmitting || cooling}
               onClick={handleLiveTest001}
+              title={cooling ? `Rate limited — retry in ${cooldownSec}s` : undefined}
               className="w-full h-7 rounded-sm border border-red-500 bg-red-600 px-2 text-[10px] font-mono font-bold uppercase tracking-wider text-white hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
             >
               {liveTestSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
-              LIVE TEST 0.01
+              {cooling ? `RATE LIMITED — ${cooldownSec}s` : "LIVE TEST 0.01"}
             </button>
           </div>
         )}
