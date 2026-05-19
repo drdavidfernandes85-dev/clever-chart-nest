@@ -5,17 +5,19 @@ import { MarketDataService } from "@/services/MarketDataService";
 interface Props {
   symbol: string;
   displayLabel?: string;
+  /** Compact mode shows a single dense row (for right rail). */
+  variant?: "compact" | "prominent";
 }
 
 /**
- * Compact, single-row symbol/bid/ask/spread/tick-time header for the
- * right rail. Replaces the heavy quote panel and gives the order ticket
- * primary visual weight directly below it.
+ * Compact symbol / bid / ask / spread / tick-age block.
+ * Two visual variants:
+ *  - "compact"   : right-rail snapshot above the order ticket.
+ *  - "prominent" : large Sell | Spread | Buy strip for the chart header.
  */
-const CompactQuoteHeader = ({ symbol, displayLabel }: Props) => {
+const CompactQuoteHeader = ({ symbol, displayLabel, variant = "compact" }: Props) => {
   const sym = (symbol || "").trim();
 
-  // Make sure the centralized service polls this symbol on the fast cadence.
   useEffect(() => {
     if (!sym) return;
     MarketDataService.setSelectedSymbol(sym);
@@ -52,6 +54,54 @@ const CompactQuoteHeader = ({ symbol, displayLabel }: Props) => {
     quote?.spread != null ? (quote.spread / point).toFixed(1) : null;
 
   const stale = status === "stale";
+
+  if (variant === "prominent") {
+    return (
+      <div className="flex items-center gap-4 px-3 py-2 rounded-lg bg-[#0A0B0D]/70">
+        <div className="flex flex-col min-w-0">
+          <span className="font-heading text-[13px] font-bold tracking-tight text-[#E8E8EA] truncate">
+            {displayLabel || sym}
+          </span>
+          <span className="flex items-center gap-1.5 text-[8.5px] font-mono uppercase tracking-[0.18em] text-[#5d6168]">
+            <span
+              className={`inline-flex h-1.5 w-1.5 rounded-full ${
+                stale ? "bg-amber-500" : "bg-emerald-500"
+              }`}
+            />
+            {stale ? "Stale" : "Live"} · INFINOX MT5
+            {tickAge && <span className="text-[#3f4348]">· {tickAge}</span>}
+          </span>
+        </div>
+
+        <div className="ml-auto flex items-stretch gap-2">
+          <div className="flex flex-col items-end px-3 py-1 rounded-md bg-red-500/[0.06]">
+            <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-red-400/70">
+              Sell
+            </span>
+            <span className="font-mono text-[18px] font-bold leading-none tabular-nums text-red-400">
+              {fmt(quote?.bid ?? null)}
+            </span>
+          </div>
+          <div className="flex flex-col items-center justify-center px-2 rounded-md bg-[#0a0a0a]">
+            <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-[#5d6168]">
+              Sprd
+            </span>
+            <span className="font-mono text-[12px] font-semibold tabular-nums text-[#C9CDD2]">
+              {spreadPts ?? "—"}
+            </span>
+          </div>
+          <div className="flex flex-col items-start px-3 py-1 rounded-md bg-emerald-500/[0.06]">
+            <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-emerald-400/70">
+              Buy
+            </span>
+            <span className="font-mono text-[18px] font-bold leading-none tabular-nums text-emerald-400">
+              {fmt(quote?.ask ?? null)}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg bg-[#0A0B0D]/80 px-3 py-2.5">
