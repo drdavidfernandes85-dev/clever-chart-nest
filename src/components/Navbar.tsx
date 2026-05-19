@@ -61,9 +61,32 @@ const Navbar = () => {
       }`}
     >
       <div className="container flex h-16 sm:h-18 lg:h-20 items-center justify-between gap-4 px-4 sm:px-6 py-2">
-        <a href="#home" className="flex items-center min-w-0 shrink leading-none" aria-label="LTR Terminal Pro — Home">
-          <LtrLogo variant="full" className="text-sm lg:text-base" />
+        <a href="#home" className="flex items-center gap-2.5 sm:gap-3 min-w-0 shrink leading-none">
+          <div className="relative flex items-center justify-center shrink-0 h-10 sm:h-12 lg:h-14 aspect-square">
+            <img
+              src={infinoxLogo}
+              alt="INFINOX IX Sala de Trading"
+              width={220}
+              height={220}
+              className="h-full w-full object-contain object-center select-none block"
+              draggable={false}
+              loading="eager"
+              decoding="async"
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (!img.dataset.fallback) {
+                  img.dataset.fallback = "1";
+                  img.src = sidebarLogo;
+                }
+              }}
+            />
+          </div>
+          <span className="hidden sm:inline-block h-5 lg:h-6 w-px bg-[#FFCD05]/30 shrink-0" aria-hidden="true" />
+          <span className="hidden sm:inline font-heading text-sm lg:text-base font-extrabold uppercase tracking-[0.12em] truncate leading-none">
+            <span className="text-[#FFCD05]">LTR</span> <span className="text-foreground">Terminal Pro</span>
+          </span>
         </a>
+
 
 
         <div className="hidden lg:flex" />
