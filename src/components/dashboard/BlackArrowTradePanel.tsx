@@ -107,6 +107,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     payload: any;
     response?: any;
     error?: string;
+    rawEdgeFunctionResponse?: any;
+    edgeFunctionError?: string | null;
+    validationError?: string;
     at: string;
   } | null>(null);
 
@@ -719,50 +722,60 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             <button
               type="button"
               onClick={async () => {
-                const clientClickAt = new Date().toISOString();
-                const tradeId =
-                  typeof crypto !== "undefined" && "randomUUID" in crypto
-                    ? crypto.randomUUID()
-                    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                setDebugInfo(null);
+                const selectedSymbol = normalizedSym;
+                const volume = vol;
                 const payload = {
-                  tradeId,
-                  symbol: normalizedSym || "GBPUSD",
+                  tradeId: crypto.randomUUID(),
+                  symbol: selectedSymbol || "XAUUSD",
                   side: "buy" as const,
                   orderType: "market" as const,
-                  volume: Number(vol) || 0.01,
+                  volume: Number(volume) || 0.01,
                   stopLoss: null,
                   takeProfit: null,
                   dryRun: true,
-                  clientClickAt,
+                  clientClickAt: new Date().toISOString(),
                 };
                 console.log("[OrderTicket] Dry Run:", payload);
                 setDebugInfo({
                   functionUsed: "submit-best-execution-order",
                   payload,
+                  rawEdgeFunctionResponse: undefined,
+                  edgeFunctionError: null,
                   at: new Date().toISOString(),
                 });
                 try {
-                  const { data, error } = await supabase.functions.invoke(
-                    "submit-best-execution-order",
-                    { body: payload },
-                  );
+                  const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
+                    body: payload
+                  });
                   console.log("[OrderTicket] Dry Run response:", { data, error });
-                  setDebugInfo((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          response: data ?? null,
-                          error: error ? (error as any)?.message || String(error) : undefined,
-                        }
-                      : prev,
-                  );
+                  const edgeFunctionError = error?.message || null;
+                  const validationError =
+                    data?.step === "deploy_verify_submit_best_execution_order" &&
+                    data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
+                      ? undefined
+                      : "Frontend is not showing the real Edge Function response.";
+                  if (validationError) toast.error(validationError);
+                  setDebugInfo({
+                    functionUsed: "submit-best-execution-order",
+                    payload,
+                    rawEdgeFunctionResponse: data,
+                    edgeFunctionError,
+                    validationError,
+                    at: new Date().toISOString(),
+                  });
                   window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
                 } catch (e: any) {
-                  setDebugInfo((prev) =>
-                    prev
-                      ? { ...prev, error: e?.message || String(e) }
-                      : prev,
-                  );
+                  const validationError = "Frontend is not showing the real Edge Function response.";
+                  toast.error(validationError);
+                  setDebugInfo({
+                    functionUsed: "submit-best-execution-order",
+                    payload,
+                    rawEdgeFunctionResponse: null,
+                    edgeFunctionError: e?.message || String(e),
+                    validationError,
+                    at: new Date().toISOString(),
+                  });
                 }
               }}
               className="h-5 rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-2 text-[9px] font-mono uppercase tracking-wider text-[#FFCD05] hover:bg-[#FFCD05]/20"
@@ -921,18 +934,46 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </button>
           </div>
           <div className="p-2 space-y-1.5">
-            <div className="text-neutral-500">at {debugInfo.at}</div>
-            <div>
-              <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
-              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+            {!('rawEdgeFunctionResponse' in debugInfo) && (
+              <>
+                <div className="text-neutral-500">at {debugInfo.at}</div>
+                <div>
+                  <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
+                  <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
 {JSON.stringify(debugInfo.payload, null, 2)}
-              </pre>
-            </div>
+                  </pre>
+                </div>
+              </>
+            )}
             {debugInfo.error && (
               <div>
                 <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Error</div>
                 <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
 {debugInfo.error}
+                </pre>
+              </div>
+            )}
+            {debugInfo.validationError && (
+              <div>
+                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Validation Error</div>
+                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
+{debugInfo.validationError}
+                </pre>
+              </div>
+            )}
+            {"rawEdgeFunctionResponse" in debugInfo && (
+              <div>
+                <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">rawEdgeFunctionResponse</div>
+                <pre className="max-h-[180px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+{JSON.stringify(debugInfo.rawEdgeFunctionResponse, null, 2)}
+                </pre>
+              </div>
+            )}
+            {"edgeFunctionError" in debugInfo && (
+              <div>
+                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">edgeFunctionError</div>
+                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
+{JSON.stringify(debugInfo.edgeFunctionError, null, 2)}
                 </pre>
               </div>
             )}
