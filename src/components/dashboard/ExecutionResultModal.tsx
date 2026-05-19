@@ -131,6 +131,7 @@ const TitleBar = ({
           <h3 className="font-heading text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-100 truncate">
             {title}
           </h3>
+          <StatusBadge status={outcomeToExecStatus(outcome)} size="xs" className="ml-1 shrink-0" />
         </div>
         <button
           type="button"
