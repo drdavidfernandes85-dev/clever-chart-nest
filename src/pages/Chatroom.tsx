@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X, Maximize2, Minimize2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import LtrLogo from "@/components/branding/LtrLogo";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -278,17 +279,14 @@ const Chatroom = () => {
   const sidebarContent = (
     <>
       <div className="flex h-14 items-center gap-2 border-b border-border/50 px-4">
-        <Link to="/" className="flex items-center gap-3">
-          <img src={infinoxLogo} alt="INFINOX" className="h-4" />
-          <span className="hidden sm:inline text-xs text-muted-foreground/40">|</span>
-          <span className="font-heading text-xs font-semibold text-foreground tracking-tight">
-            <span className="text-primary">IX</span> LTR
-          </span>
+        <Link to="/" className="flex items-center min-w-0" aria-label="LTR Terminal Pro — Home">
+          <LtrLogo variant="full" className="text-[12px]" />
         </Link>
         <button className="ml-auto md:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
           <X className="h-5 w-5" />
         </button>
       </div>
+
       <div className="flex items-center gap-1 border-b border-border/50 px-3 py-2">
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Search className="h-4 w-4" /></Button>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Users className="h-4 w-4" /></Button>

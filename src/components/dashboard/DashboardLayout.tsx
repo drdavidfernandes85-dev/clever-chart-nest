@@ -3,11 +3,9 @@ import { Menu } from "lucide-react";
 import DashboardSidebar from "./DashboardSidebar";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
 import ConnectedAccountBadge from "./ConnectedAccountBadge";
-import MarketStatusBadge from "./MarketStatusBadge";
 import WelcomeBanner from "@/components/onboarding/WelcomeBanner";
 import ComplianceFooter from "@/components/ComplianceFooter";
 import TradingRoomDisclaimerModal from "@/components/TradingRoomDisclaimerModal";
-import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Props {
@@ -40,10 +38,10 @@ const DashboardLayout = ({ children }: Props) => {
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <ConnectedAccountBadge />
-      <div className="fixed top-3 right-3 z-40 hidden lg:flex items-center gap-2">
-        <PoweredByTradingLayer />
-        <MarketStatusBadge />
-      </div>
+      {/* MarketStatusBadge moved out of the top-right corner because it
+          collided with the global Navbar's CTA/user pill. PoweredByTradingLayer
+          is already rendered in the footer + compliance footer. */}
+
 
       {/* Floating mobile hamburger — visible on every page < lg */}
       <button
