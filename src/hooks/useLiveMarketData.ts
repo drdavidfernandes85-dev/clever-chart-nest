@@ -4,7 +4,7 @@
  * call Trading Layer endpoints themselves.
  */
 
-import { useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import {
   liveMarketDataStore,
   type LiveMarketDataState,
@@ -34,25 +34,33 @@ export function useQuote(symbol: string | null | undefined): LiveQuote | null {
 
 export function useQuotes(symbols: string[]): Record<string, LiveQuote> {
   const key = symbols.map((s) => s.toUpperCase()).sort().join(",");
-  return useSyncExternalStore(
-    subscribe,
-    () => {
-      const all = liveMarketDataStore.getState().quotes;
-      const out: Record<string, LiveQuote> = {};
-      for (const s of key.split(",")) {
-        if (s && all[s]) out[s] = all[s];
+  const cacheRef = useRef<{ key: string; quotesRef: Record<string, LiveQuote> | null; result: Record<string, LiveQuote> }>({
+    key: "",
+    quotesRef: null,
+    result: {},
+  });
+  const getSnap = () => {
+    const all = liveMarketDataStore.getState().quotes;
+    const cache = cacheRef.current;
+    if (cache.key === key && cache.quotesRef === all) return cache.result;
+    const out: Record<string, LiveQuote> = {};
+    for (const s of key.split(",")) {
+      if (s && all[s]) out[s] = all[s];
+    }
+    // Only return new object if contents differ from cached
+    if (cache.key === key) {
+      const prev = cache.result;
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(out);
+      if (prevKeys.length === nextKeys.length && nextKeys.every((k) => prev[k] === out[k])) {
+        cacheRef.current = { key, quotesRef: all, result: prev };
+        return prev;
       }
-      return out;
-    },
-    () => {
-      const all = liveMarketDataStore.getState().quotes;
-      const out: Record<string, LiveQuote> = {};
-      for (const s of key.split(",")) {
-        if (s && all[s]) out[s] = all[s];
-      }
-      return out;
-    },
-  );
+    }
+    cacheRef.current = { key, quotesRef: all, result: out };
+    return out;
+  };
+  return useSyncExternalStore(subscribe, getSnap, getSnap);
 }
 
 export function useLiveAccountSnapshot(): LiveAccountSnapshot | null {
