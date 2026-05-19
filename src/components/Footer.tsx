@@ -1,16 +1,11 @@
 import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import infinoxLogoWhite from "@/assets/infinox-logo-white.png";
-import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 import LtrLogo from "@/components/branding/LtrLogo";
 
 const Footer = () => {
   const { t } = useLanguage();
-  const { theme } = useTheme();
-  const infinoxLogo = theme === "dark" ? infinoxLogoWhite : infinoxLogoBlack;
 
   const columns = [
     {
