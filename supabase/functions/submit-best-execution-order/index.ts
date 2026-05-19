@@ -97,27 +97,9 @@ Deno.serve(async (req) => {
   if (dryRun === true) {
     return json({
       success: true,
-      step: "deploy_verify_submit_best_execution_order",
-      version: "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049",
-      dryRun: true,
-      tradeId: tradeId ?? null,
-      symbol,
-      side,
-      orderType: "market",
-      volume: Number(volume),
-      requestedPrice,
-      requestedBid,
-      requestedAsk,
-      spread:
-        requestedBid != null && requestedAsk != null
-          ? Math.max(0, requestedAsk - requestedBid)
-          : null,
-      clientLatencyMs,
-      serverLatencyMs: Date.now() - startedAt,
-      executedPrice: null,
-      slippage: null,
-      status: "dry_run",
-      outcome: "dry_run",
+      version: "BEST_EXEC_PRECHECK_PARSE_SAFE_V3_2026_05_19",
+      step: "dry_run",
+      liveOrderSent: false,
     });
   }
 
