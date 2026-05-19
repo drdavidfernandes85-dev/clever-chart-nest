@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.fetch-market-quotes]
 verify_jwt = false
+
+[functions.submit-best-execution-order]
+verify_jwt = false
