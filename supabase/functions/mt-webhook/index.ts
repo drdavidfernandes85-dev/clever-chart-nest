@@ -402,7 +402,7 @@ Deno.serve(async (req) => {
       const ticket = d?.ticket != null ? String(d.ticket) : null;
       if (!ticket || existingTickets.has(ticket)) continue;
 
-      const side = mt5SideToString(d?.type ?? 0);
+      const side = mt5SideToJournalDirection(d?.type ?? 0);
       const volume = Number(d?.volume ?? 0);
       const entry = Number(d?.entry ?? d?.open_price ?? 0);
       const exit =
