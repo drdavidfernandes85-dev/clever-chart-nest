@@ -1115,6 +1115,53 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             latencyMs: res?.latencyMs ?? null,
           });
         }
+
+        // Emit reconciliation debug payload for the Dev panel (no MT5 polling on reject/block).
+        try {
+          const positionsAfterSnapshot: any[] = JSON.parse(
+            JSON.stringify((positionsRef.current as any[]) || []),
+          );
+          window.dispatchEvent(new CustomEvent("mt:execution-reconcile-debug", {
+            detail: {
+              at: new Date().toISOString(),
+              account: {
+                account_number: (liveAccount as any)?.login ?? null,
+                server: (liveAccount as any)?.server ?? null,
+                trading_layer_trader_id:
+                  (res as any)?.trading_layer_trader_id ??
+                  (res as any)?.diagnostics?.trader_id ??
+                  (res as any)?.diagnostics?.accountId ??
+                  null,
+              },
+              request: {
+                symbol: normalizedSym,
+                side: sideArg,
+                volume: Number(volNum.toFixed(2)),
+                stopLoss: noStops ? null : (sl ? Number(sl) : null),
+                takeProfit: noStops ? null : (tp ? Number(tp) : null),
+                deviation: (res as any)?.diagnostics?.payloadSent?.deviation ?? null,
+                endpoint: "submit-best-execution-order",
+              },
+              response: {
+                retcode: (res as any)?.retcode ?? null,
+                classification: (res as any)?.classification ?? null,
+                raw: res ?? null,
+              },
+              reconciliation: {
+                positionsBefore: positionsBeforeSnapshot,
+                positionsAfter: positionsAfterSnapshot,
+                matchFound: false,
+                confirmedTicket: null,
+              },
+              history: {
+                matchingPendingOrderFound:
+                  (res as any)?.diagnostics?.matchingPendingOrderFound ?? null,
+                matchingDealFound:
+                  (res as any)?.diagnostics?.matchingDealFound ?? null,
+              },
+            },
+          }));
+        } catch { /* ignore */ }
       }
     } catch (e: any) {
       toast.error(e?.message || "Order failed");
