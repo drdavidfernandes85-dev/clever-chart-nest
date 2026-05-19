@@ -153,20 +153,29 @@ class MarketDataServiceImpl {
 
   /* ---------- Internal ---------- */
 
-  private canRun(): boolean {
+  private canRun(loop?: LoopId): boolean {
     if (!this.started) return false;
     if (liveMarketDataStore.getState().rateLimit.active) return false;
     if (typeof document !== "undefined" && document.visibilityState !== "visible")
       return false;
+    // Soft request budget — keep total outbound calls under
+    // REQUEST_BUDGET_PER_MINUTE. When exceeded, drop the non-essential
+    // loops (watchlist + system_health) but keep selected_symbol,
+    // account, positions, which drive execution-adjacent UI.
+    const reqs = liveMarketDataStore.getState().diagnostics.requestsLast60s;
+    if (reqs >= REQUEST_BUDGET_PER_MINUTE) {
+      if (loop === "watchlist" || loop === "system_health") return false;
+    }
     return true;
   }
 
   private startLoop(id: LoopId, fn: () => void | Promise<void>, intervalMs: number) {
     this.stopLoop(id);
     this.timers[id] = window.setInterval(() => {
-      if (this.canRun()) void fn();
+      if (this.canRun(id)) void fn();
     }, intervalMs);
   }
+
 
   private stopLoop(id: LoopId) {
     const t = this.timers[id];
