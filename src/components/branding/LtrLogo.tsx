@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import ltrFullLogo from "@/assets/ltr-terminal-pro-logo.png";
 import ltrIcon from "@/assets/ltr-icon.png";
 
 interface Props {
@@ -51,18 +50,33 @@ const LtrLogo = ({ variant = "full", className, glow = true }: Props) => {
     );
   }
 
+  // "full" — compose the transparent icon mark + crisp wordmark text.
+  // Avoids using the wide PNG (which truncates in narrow headers and
+  // carries baked-in padding/checker artifacts).
   return (
-    <img
-      src={ltrFullLogo}
-      alt="LTR Terminal Pro"
-      draggable={false}
+    <span
       className={cn(
-        "select-none object-contain",
-        glow && "drop-shadow-[0_0_24px_rgba(255,205,5,0.35)]",
+        "inline-flex items-center gap-2.5 leading-none whitespace-nowrap",
         className,
       )}
-    />
+    >
+      <img
+        src={ltrIcon}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className={cn(
+          "h-[1.4em] w-[1.4em] shrink-0 select-none object-contain",
+          glow && "drop-shadow-[0_0_14px_rgba(255,205,5,0.45)]",
+        )}
+      />
+      <span className="font-heading text-[1em] font-extrabold uppercase tracking-[0.14em]">
+        <span className="text-[#FFCD05]">LTR</span>{" "}
+        <span className="text-[#F5F5F5]">Terminal Pro</span>
+      </span>
+    </span>
   );
+
 };
 
 export default LtrLogo;
