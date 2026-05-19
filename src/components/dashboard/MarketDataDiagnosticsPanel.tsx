@@ -4,27 +4,47 @@ import {
   useRateLimit,
 } from "@/hooks/useLiveMarketData";
 import { MarketDataService } from "@/services/MarketDataService";
+import {
+  getDuplicateLoops,
+  getExternalLoops,
+  subscribePollingRegistry,
+} from "@/lib/pollingRegistry";
 import { useEffect, useState } from "react";
 
 /**
  * Dev-Mode diagnostics for the centralized market data layer.
  *
  *  - active polling loops
- *  - last tick timestamp
  *  - symbols being polled
- *  - requests per minute estimate
- *  - current rate-limit status
+ *  - requests per minute
+ *  - last tick timestamp
+ *  - rate-limit status + cooldown remaining
+ *  - duplicate loops detected
  */
 const MarketDataDiagnosticsPanel = () => {
   const diag = useMarketDataDiagnostics();
   const status = useMarketStatus();
   const rl = useRateLimit();
   const [, force] = useState(0);
+  const [registry, setRegistry] = useState({
+    external: getExternalLoops(),
+    duplicates: getDuplicateLoops(),
+  });
 
   // Tick every second so the countdown / "Xs ago" stays fresh.
   useEffect(() => {
     const id = setInterval(() => force((n) => n + 1), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribePollingRegistry(() =>
+      setRegistry({
+        external: getExternalLoops(),
+        duplicates: getDuplicateLoops(),
+      }),
+    );
+    return unsub;
   }, []);
 
   const lastTickStr = diag.lastTickAt
@@ -43,6 +63,9 @@ const MarketDataDiagnosticsPanel = () => {
     MarketDataService.refreshWatchlist();
     MarketDataService.refreshAccountAndPositions();
   };
+
+  const dupDetected = registry.duplicates.length > 0;
+  const allLoops = [...diag.activeLoops, ...registry.external];
 
   return (
     <div className="rounded border border-neutral-800 bg-[#0a0a0a] p-3">
@@ -67,11 +90,14 @@ const MarketDataDiagnosticsPanel = () => {
       <div className="grid grid-cols-2 gap-2 text-[10.5px] font-mono text-neutral-200">
         <div>
           <span className="text-neutral-500">active loops: </span>
-          {diag.activeLoops.length === 0 ? "—" : diag.activeLoops.join(", ")}
+          {allLoops.length === 0 ? "—" : allLoops.join(", ")}
         </div>
         <div>
           <span className="text-neutral-500">req/min (rolling 60s): </span>
-          {diag.requestsPerMinute}
+          <span className={diag.requestsPerMinute >= 60 ? "text-amber-400" : ""}>
+            {diag.requestsPerMinute}
+          </span>
+          <span className="text-neutral-500"> / 60 budget</span>
         </div>
         <div>
           <span className="text-neutral-500">last tick: </span>
@@ -79,9 +105,25 @@ const MarketDataDiagnosticsPanel = () => {
         </div>
         <div>
           <span className="text-neutral-500">rate-limit: </span>
-          {rl.active
-            ? `ACTIVE · ${rlSecondsLeft}s left`
-            : "off"}
+          {rl.active ? (
+            <span className="text-amber-400">
+              ACTIVE · cooldown {rlSecondsLeft}s
+            </span>
+          ) : (
+            "off"
+          )}
+        </div>
+        <div>
+          <span className="text-neutral-500">duplicate loops: </span>
+          {dupDetected ? (
+            <span className="text-red-400">YES ({registry.duplicates.join(", ")})</span>
+          ) : (
+            <span className="text-emerald-400">no</span>
+          )}
+        </div>
+        <div>
+          <span className="text-neutral-500">external loops: </span>
+          {registry.external.length === 0 ? "—" : registry.external.join(", ")}
         </div>
         <div className="col-span-2 break-words">
           <span className="text-neutral-500">polled symbols ({diag.polledSymbols.length}): </span>
