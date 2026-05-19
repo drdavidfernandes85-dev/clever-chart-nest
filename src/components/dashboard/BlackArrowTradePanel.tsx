@@ -1381,9 +1381,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       {/* Old debugInfo panel removed — only orderDebug.rawEdgeFunctionResponse is rendered below. */}
 
 
-      {orderDebug && (
+      {devMode && orderDebug && (
         <div className="mt-2 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
-          <div className="flex items-center justify-end border-b border-neutral-800 bg-[#050505] px-2 py-1">
+          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
+            <span className="text-[9px] uppercase tracking-widest text-[#FFCD05]/80">Raw Edge Function Response</span>
             <button
               type="button"
               onClick={() => setOrderDebug(null)}
@@ -1402,9 +1403,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
       )}
-      <div className="mt-3">
-        <ExecutionAuditPanel refreshKey={auditRefreshKey} />
-      </div>
+      {devMode && (
+        <div className="mt-3">
+          <ExecutionAuditPanel refreshKey={auditRefreshKey} />
+        </div>
+      )}
     </div>
 
   );
