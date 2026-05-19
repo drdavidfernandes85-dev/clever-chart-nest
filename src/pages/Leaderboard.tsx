@@ -629,15 +629,15 @@ const MentorApplyDialog = ({ open, onOpenChange, userId }: { open: boolean; onOp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#0A0A0A] border border-white/10 text-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2"><GraduationCap className="h-4 w-4 text-[#FFCD05]" /> Become a Mentor</DialogTitle>
+          <DialogTitle className="text-white flex items-center gap-2"><GraduationCap className="h-4 w-4 text-[#FFCD05]" /> Become an Educator</DialogTitle>
           <DialogDescription className="text-white/50 text-xs">
-            Submit your application. An admin will review and approve mentors manually.
+            Submit your application. An admin will review and approve educators manually.
           </DialogDescription>
         </DialogHeader>
 
         {status === "approved" && (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" /> Your application has been approved — you are now a Mentor.
+            <CheckCircle2 className="h-4 w-4" /> Your application has been approved — you are now an Educator.
           </div>
         )}
         {status === "pending" && (
