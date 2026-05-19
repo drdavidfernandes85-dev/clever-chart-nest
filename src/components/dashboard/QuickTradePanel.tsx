@@ -33,6 +33,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { fetchMarketQuotes } from "@/lib/markets";
+import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   validateStops,
