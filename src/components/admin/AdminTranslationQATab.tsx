@@ -265,15 +265,21 @@ const AdminTranslationQATab = () => {
 
       const addIfRelevant = (s: string) => {
         const t = s.trim();
-        if (t.length < 8) return;
+        if (t.length < 12) return;
         if (!/[a-záéíóúñ]/i.test(t)) return;
         if (/^[0-9.,%$\s/:-]+$/.test(t)) return;
         if (t.includes("{") || t.includes("}")) return;
         if (t.startsWith("http") || t.startsWith("/")) return;
+        // Skip code fragments captured by JSX regex
+        if (/[=()[\]<>]|===|&&|\|\|/.test(t)) return;
+        // Skip SEO title strings ("... | IX Sala de Trading" / "... | IX LTR")
+        if (/\|\s*(IX\s+(LTR|Sala)|INFINOX)/i.test(t)) return;
         if (BRAND_TERMS.some((b) => t === b)) return;
-        // Skip strings that are mostly brand tokens
+        // Skip strings that are mostly brand tokens or proper-noun-only
         const cleaned = stripBrands(t).replace(/[^a-záéíóúñ]/gi, "");
-        if (cleaned.length < 5) return;
+        if (cleaned.length < 8) return;
+        // Skip "Name LastInitial." patterns (testimonials, mentor names)
+        if (/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+[A-ZÁÉÍÓÚÑ]\.?$/.test(t)) return;
         localHardcoded.add(t);
       };
 
