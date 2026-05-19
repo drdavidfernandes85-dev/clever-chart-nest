@@ -236,6 +236,61 @@ export const ExecutionResultModal = ({
               <Row label="Latency" value={fmtMs(result.latencyMs)} />
             </>
           )}
+
+          {(result.outcome === "pending" || result.outcome === "unconfirmed") && (
+            <>
+              <Row label="Symbol" value={result.symbol} accent="text-[#FFCD05]" />
+              <Row label="Side" value={sideLabel} accent={sideAccent} />
+              <Row label="Volume" value={result.volume.toFixed(2)} />
+              <Row
+                label="Broker Accepted"
+                value={result.brokerAccepted ? "YES" : "—"}
+                accent={result.brokerAccepted ? "text-emerald-300" : undefined}
+              />
+              <Row
+                label="MT5 Confirmed"
+                value={result.mt5Confirmed ? "YES" : "NO"}
+                accent={result.mt5Confirmed ? "text-emerald-300" : "text-yellow-300"}
+              />
+              <Row
+                label="Confirmation"
+                value={(result.confirmationStatus || "pending").toUpperCase()}
+                accent={
+                  result.confirmationStatus === "confirmed"
+                    ? "text-emerald-300"
+                    : result.confirmationStatus === "not_found" || result.confirmationStatus === "failed"
+                    ? "text-yellow-300"
+                    : "text-yellow-300"
+                }
+              />
+              <Row
+                label="Confirmed Ticket"
+                value={result.confirmedTicket != null ? `#${result.confirmedTicket}` : "—"}
+              />
+              <Row
+                label="Confirmed Entry"
+                value={fmtPx(result.confirmedEntryPrice, digits)}
+              />
+              <Row
+                label="Status"
+                value={
+                  result.outcome === "pending"
+                    ? "ORDER SENT — WAITING FOR MT5"
+                    : "NO MATCHING MT5 POSITION"
+                }
+                accent="text-yellow-300"
+              />
+              <Row
+                label="Broker Message"
+                value={
+                  result.brokerMessage ||
+                  (result.outcome === "pending"
+                    ? "Order sent — waiting for MT5 confirmation."
+                    : "Order was accepted/sent, but no MT5 position was confirmed. Please verify in MetaTrader.")
+                }
+              />
+            </>
+          )}
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-neutral-800 px-3 py-2 bg-[#070707]">
