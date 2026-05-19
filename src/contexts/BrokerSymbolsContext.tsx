@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
+import { checkAndHandle429 } from "@/lib/tradingLayerControl";
 import { liveMarketDataStore } from "@/lib/liveMarketDataStore";
 
 export interface BrokerSymbol {
