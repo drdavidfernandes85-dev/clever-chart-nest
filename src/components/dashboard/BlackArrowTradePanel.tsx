@@ -751,6 +751,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   console.log("[OrderTicket] Dry Run response:", { data, error });
                   const edgeFunctionError = error?.message || null;
                   const validationError =
+                    data?.step === "deploy_verify_submit_best_execution_order" &&
                     data?.version === "DEPLOY_VERIFY_BEST_EXEC_V3_2026_05_19_0049"
                       ? undefined
                       : "Frontend is not showing the real Edge Function response.";
@@ -933,13 +934,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </button>
           </div>
           <div className="p-2 space-y-1.5">
-            <div className="text-neutral-500">at {debugInfo.at}</div>
-            <div>
-              <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
-              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+            {!('rawEdgeFunctionResponse' in debugInfo) && (
+              <>
+                <div className="text-neutral-500">at {debugInfo.at}</div>
+                <div>
+                  <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
+                  <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
 {JSON.stringify(debugInfo.payload, null, 2)}
-              </pre>
-            </div>
+                  </pre>
+                </div>
+              </>
+            )}
             {debugInfo.error && (
               <div>
                 <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Error</div>
