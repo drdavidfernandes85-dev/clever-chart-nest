@@ -528,6 +528,23 @@ const LiveChartInner = () => {
 
           </aside>
         </div>
+
+        {/* Compliance footer — terminal-wide notice */}
+        <footer className="mt-3 border-t border-[#FFCD05]/10 pt-2 pb-1 px-1">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[9.5px] font-mono uppercase tracking-[0.16em] text-[#5d6168]">
+            <span>
+              <span className="text-[#8E949C]">LTR Terminal Pro</span>
+              <span className="mx-2 text-[#2A2D31]">·</span>
+              Powered by Trading Layer
+              <span className="mx-2 text-[#2A2D31]">·</span>
+              Execution venue: INFINOX MT5
+            </span>
+            <span className="text-[#5d6168] normal-case tracking-normal text-[10px] max-w-[760px] text-right">
+              Educational tools and market ideas are provided for informational purposes only and do
+              not constitute investment advice. Users are solely responsible for all trading decisions.
+            </span>
+          </div>
+        </footer>
       </div>
     </div>
   );
