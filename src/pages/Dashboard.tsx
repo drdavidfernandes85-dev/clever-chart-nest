@@ -27,6 +27,7 @@ import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBan
 import RiskBadges from "@/components/dashboard/RiskBadges";
 import RiskControlsPanel from "@/components/dashboard/RiskControlsPanel";
 import { useDevMode } from "@/hooks/useDevMode";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
