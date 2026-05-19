@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { useExecutionLock } from "@/hooks/useExecutionLock";
+import { useLanguage } from "@/i18n/LanguageContext";
+
 
 type Health = "ok" | "warn" | "down" | "unknown";
 
