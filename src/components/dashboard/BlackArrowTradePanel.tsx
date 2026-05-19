@@ -299,17 +299,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   function findMatchingPosition(symbol: string, side: string, volume: number, sinceMs: number) {
     const sym = symbol.toUpperCase();
     const wantSide = side.toLowerCase();
-    const list = positionsRef.current || [];
+    const list: any[] = (positionsRef.current as any) || [];
     return list.find((p: any) => {
       const pSym = String(p?.symbol ?? "").toUpperCase();
       const pSide = String(p?.side ?? p?.type ?? "").toLowerCase();
       const pVol = Number(p?.volume ?? p?.lots ?? 0);
-      const pTime = p?.openTime ? new Date(p.openTime).getTime() : p?.time ? Number(p.time) * 1000 : Date.now();
+      const pTime = p?.openTime ? new Date(p.openTime).getTime()
+        : p?.time_open ? new Date(p.time_open).getTime()
+        : p?.time ? Number(p.time) * 1000
+        : Date.now();
       return pSym === sym
         && (pSide === wantSide || pSide.startsWith(wantSide))
         && Math.abs(pVol - volume) < 1e-6
         && pTime >= sinceMs - 10_000;
     });
+
   }
 
   async function runPostTradeConfirmation(args: {
