@@ -1138,7 +1138,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Dev-only dry-run best-execution test */}
-        {import.meta.env.DEV && (
+        {devMode && (
           <div className="flex justify-center">
             <button
               type="button"
