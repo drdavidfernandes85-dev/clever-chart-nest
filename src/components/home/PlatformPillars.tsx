@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
 const cardBase =
   "group relative overflow-hidden rounded-3xl border border-primary/15 bg-card/40 backdrop-blur-2xl shadow-[0_30px_120px_-60px_hsl(45_100%_50%/0.35)] transition-all hover:border-primary/40 hover:shadow-[0_30px_120px_-40px_hsl(45_100%_50%/0.55)]";
@@ -45,7 +47,7 @@ const Pill = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
-const TerminalMock = () => (
+const TerminalMock = ({ t }: { t: (k: TranslationKey) => string }) => (
   <div className="relative rounded-2xl border border-primary/20 bg-[hsl(220_20%_6%)] p-4 shadow-2xl">
     <div className="flex items-center gap-1.5 pb-3">
       <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
@@ -123,90 +125,100 @@ const TerminalMock = () => (
         <div className="rounded-md border border-white/10 bg-white/5 p-2">
           <div className="text-[10px] uppercase text-white/50">Equity</div>
           <div className="font-mono text-sm font-bold text-primary">$24,815</div>
-          <div className="text-[10px] text-green-400">+1.42% hoy</div>
+          <div className="text-[10px] text-green-400">{t("home.pillars.mock.equityChange")}</div>
         </div>
       </div>
     </div>
   </div>
 );
 
-const ChatMock = () => (
-  <div className="rounded-2xl border border-primary/20 bg-[hsl(220_20%_6%)] p-4 shadow-2xl">
-    <div className="flex items-center justify-between border-b border-white/5 pb-2">
-      <div className="flex items-center gap-2 text-xs font-semibold text-white">
-        <MessagesSquare className="h-4 w-4 text-primary" /> #general
+const ChatMock = ({ t }: { t: (k: TranslationKey) => string }) => {
+  const messages = [
+    { u: t("home.pillars.mock.chatMsg1User"), t: t("home.pillars.mock.chatMsg1"), c: "bg-blue-500/20 text-blue-300" },
+    { u: t("home.pillars.mock.chatMsg2User"), t: t("home.pillars.mock.chatMsg2"), c: "bg-purple-500/20 text-purple-300" },
+    { u: t("home.pillars.mock.chatMsg3User"), t: t("home.pillars.mock.chatMsg3"), c: "bg-primary/20 text-primary" },
+  ];
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-[hsl(220_20%_6%)] p-4 shadow-2xl">
+      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+        <div className="flex items-center gap-2 text-xs font-semibold text-white">
+          <MessagesSquare className="h-4 w-4 text-primary" /> #general
+        </div>
+        <span className="flex items-center gap-1 text-[10px] text-green-400">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" /> 342 online
+        </span>
       </div>
-      <span className="flex items-center gap-1 text-[10px] text-green-400">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" /> 342 online
-      </span>
-    </div>
-    <div className="mt-3 space-y-3 text-xs">
-      {[
-        { u: "Carlos M.", t: "Buen día equipo, ¿análisis del DXY hoy?", c: "bg-blue-500/20 text-blue-300" },
-        { u: "Ana R.", t: "Esperando confirmación en EURUSD H1, OB claro.", c: "bg-purple-500/20 text-purple-300" },
-        { u: "Mentor · Diego", t: "Webinar de gestión de riesgo en 30 min — no se lo pierdan.", c: "bg-primary/20 text-primary" },
-      ].map((m, i) => (
-        <div key={i} className="flex gap-2">
-          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${m.c}`}>
-            {m.u[0]}
+      <div className="mt-3 space-y-3 text-xs">
+        {messages.map((m, i) => (
+          <div key={i} className="flex gap-2">
+            <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${m.c}`}>
+              {m.u[0]}
+            </div>
+            <div>
+              <div className="text-[10px] font-semibold text-white/80">{m.u}</div>
+              <div className="text-white/70">{m.t}</div>
+            </div>
           </div>
-          <div>
-            <div className="text-[10px] font-semibold text-white/80">{m.u}</div>
-            <div className="text-white/70">{m.t}</div>
+        ))}
+      </div>
+      <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-2">
+        <div className="flex items-center justify-between text-[10px] uppercase text-primary/80">
+          <span className="flex items-center gap-1"><LineChart className="h-3 w-3" /> {t("home.pillars.mock.marketIdea")}</span>
+          <span className="rounded bg-white/10 px-1.5 text-white/80">{t("home.pillars.mock.educational")}</span>
+        </div>
+        <div className="mt-1 flex items-center justify-between font-mono text-[11px] text-white/80">
+          <span>XAUUSD</span>
+          <span>{t("home.pillars.mock.sharedAnalysis")}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WebinarMock = ({ t }: { t: (k: TranslationKey) => string }) => {
+  const days = [
+    { label: t("home.pillars.mock.dayMon"), time: "14:00" },
+    { label: t("home.pillars.mock.dayWed"), time: "18:00" },
+    { label: t("home.pillars.mock.dayFri"), time: "20:00" },
+  ];
+  return (
+    <div className="rounded-2xl border border-primary/20 bg-[hsl(220_20%_6%)] p-4 shadow-2xl">
+      <div className="relative aspect-video overflow-hidden rounded-lg border border-white/5 bg-gradient-to-br from-[hsl(45_100%_15%)] via-[hsl(28_60%_10%)] to-black">
+        <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-red-600/90 px-2 py-0.5 text-[10px] font-bold text-white">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> {t("home.pillars.mock.live")}
+        </div>
+        <div className="absolute right-3 top-3 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-mono text-white/80">
+          1,248 viewers
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/90 text-black shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
+            <PlayCircle className="h-7 w-7" />
           </div>
         </div>
-      ))}
-    </div>
-    <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-2">
-      <div className="flex items-center justify-between text-[10px] uppercase text-primary/80">
-        <span className="flex items-center gap-1"><LineChart className="h-3 w-3" /> Idea de mercado</span>
-        <span className="rounded bg-white/10 px-1.5 text-white/80">Educativa</span>
-      </div>
-      <div className="mt-1 flex items-center justify-between font-mono text-[11px] text-white/80">
-        <span>XAUUSD</span>
-        <span>Análisis compartido</span>
-      </div>
-    </div>
-
-  </div>
-);
-
-const WebinarMock = () => (
-  <div className="rounded-2xl border border-primary/20 bg-[hsl(220_20%_6%)] p-4 shadow-2xl">
-    <div className="relative aspect-video overflow-hidden rounded-lg border border-white/5 bg-gradient-to-br from-[hsl(45_100%_15%)] via-[hsl(28_60%_10%)] to-black">
-      <div className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-red-600/90 px-2 py-0.5 text-[10px] font-bold text-white">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> EN VIVO
-      </div>
-      <div className="absolute right-3 top-3 rounded-md bg-black/60 px-2 py-0.5 text-[10px] font-mono text-white/80">
-        1,248 viewers
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/90 text-black shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
-          <PlayCircle className="h-7 w-7" />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3">
+          <div className="text-xs font-bold text-white">{t("home.pillars.mock.webinarTitle")}</div>
+          <div className="text-[10px] text-white/60">{t("home.pillars.mock.webinarHost")}</div>
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-3">
-        <div className="text-xs font-bold text-white">Gestión de Riesgo Profesional</div>
-        <div className="text-[10px] text-white/60">con Diego Hernández · Mentor IX</div>
+      <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]">
+        {days.map((d) => (
+          <div key={d.label} className="rounded border border-white/10 bg-white/5 p-2 text-center">
+            <div className="font-semibold text-white/80">{d.label}</div>
+            <div className="font-mono text-primary">{d.time}</div>
+          </div>
+        ))}
       </div>
     </div>
-    <div className="mt-3 grid grid-cols-3 gap-2 text-[10px]">
-      {["Lunes 14:00", "Miércoles 18:00", "Viernes 20:00"].map((d) => (
-        <div key={d} className="rounded border border-white/10 bg-white/5 p-2 text-center">
-          <div className="font-semibold text-white/80">{d.split(" ")[0]}</div>
-          <div className="font-mono text-primary">{d.split(" ")[1]}</div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
-const EducationMock = () => {
+const EducationMock = ({ t }: { t: (k: TranslationKey) => string }) => {
+  const modulesLabel = t("home.pillars.mock.modules");
   const modules = [
-    { i: BarChart3, t: "Análisis Técnico", n: "12 módulos" },
-    { i: Globe, t: "Macro & Fundamentales", n: "8 módulos" },
-    { i: ShieldCheck, t: "Gestión de Riesgo", n: "10 módulos" },
-    { i: BookOpen, t: "Psicología Trading", n: "6 módulos" },
+    { i: BarChart3, t: t("home.pillars.mock.eduTech"), n: `12 ${modulesLabel}` },
+    { i: Globe, t: t("home.pillars.mock.eduMacro"), n: `8 ${modulesLabel}` },
+    { i: ShieldCheck, t: t("home.pillars.mock.eduRisk"), n: `10 ${modulesLabel}` },
+    { i: BookOpen, t: t("home.pillars.mock.eduPsych"), n: `6 ${modulesLabel}` },
   ];
   return (
     <div className="rounded-2xl border border-primary/20 bg-[hsl(220_20%_6%)] p-4 shadow-2xl">
@@ -225,69 +237,66 @@ const EducationMock = () => {
         ))}
       </div>
       <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-2 text-center text-[11px] text-primary">
-        Contenido 100% educativo · Sin promesas de rentabilidad
+        {t("home.pillars.mock.eduFooter")}
       </div>
     </div>
   );
 };
 
 const PlatformPillars = () => {
+  const { t } = useLanguage();
   const pillars = [
     {
-      eyebrow: "LTR Terminal Pro",
-      title: "Terminal profesional para traders",
-      subtitle:
-        "Visualiza tu cuenta MT5, revisa precios, gestiona posiciones, consulta tu historial de ejecución y utiliza herramientas de riesgo en una interfaz profesional.",
-      cta: { label: "Abrir LTR Terminal Pro", to: "/dashboard", icon: LayoutDashboard },
+      eyebrow: t("home.pillars.terminal.eyebrow"),
+      title: t("home.pillars.terminal.title"),
+      subtitle: t("home.pillars.terminal.subtitle"),
+      cta: { label: t("home.pillars.terminal.cta"), to: "/dashboard", icon: LayoutDashboard },
       pills: [
-        <Pill key="1"><Activity className="h-3 w-3" /> Conectividad MT5</Pill>,
-        <Pill key="2"><LineChart className="h-3 w-3" /> Market Watch · Bid/Ask</Pill>,
-        <Pill key="3"><ShieldCheck className="h-3 w-3" /> Gestión de riesgo</Pill>,
+        <Pill key="1"><Activity className="h-3 w-3" /> {t("home.pillars.terminal.pill1")}</Pill>,
+        <Pill key="2"><LineChart className="h-3 w-3" /> {t("home.pillars.terminal.pill2")}</Pill>,
+        <Pill key="3"><ShieldCheck className="h-3 w-3" /> {t("home.pillars.terminal.pill3")}</Pill>,
       ],
-      mock: <TerminalMock />,
+      mock: <TerminalMock t={t} />,
       reverse: false,
     },
     {
-      eyebrow: "Comunidad de Traders",
-      title: "Aprende y discute mercados",
-      subtitle:
-        "Participa en conversaciones educativas, comparte análisis, revisa ideas de mercado y aprende junto a una comunidad activa. El objetivo es educación y discusión, no recomendaciones.",
-      cta: { label: "Entrar al Chat", to: "/chatroom", icon: MessagesSquare },
+      eyebrow: t("home.pillars.community.eyebrow"),
+      title: t("home.pillars.community.title"),
+      subtitle: t("home.pillars.community.subtitle"),
+      cta: { label: t("home.pillars.community.cta"), to: "/chatroom", icon: MessagesSquare },
       pills: [
-        <Pill key="1"><Users className="h-3 w-3" /> 1,200+ traders</Pill>,
-        <Pill key="2"><MessagesSquare className="h-3 w-3" /> 9 canales temáticos</Pill>,
-        <Pill key="3"><LineChart className="h-3 w-3" /> Ideas de mercado</Pill>,
+        <Pill key="1"><Users className="h-3 w-3" /> {t("home.pillars.community.pill1")}</Pill>,
+        <Pill key="2"><MessagesSquare className="h-3 w-3" /> {t("home.pillars.community.pill2")}</Pill>,
+        <Pill key="3"><LineChart className="h-3 w-3" /> {t("home.pillars.community.pill3")}</Pill>,
       ],
-      mock: <ChatMock />,
+      mock: <ChatMock t={t} />,
       reverse: true,
     },
     {
-      eyebrow: "Webinars de Trading",
-      title: "Sesiones educativas en vivo",
-      subtitle:
-        "Accede a webinars, sesiones grabadas e invitados especiales sobre análisis técnico, macro, psicología del trading y gestión de riesgo.",
-      cta: { label: "Ver Webinars Gratuitos", to: "/webinars", icon: PlayCircle },
+      eyebrow: t("home.pillars.webinars.eyebrow"),
+      title: t("home.pillars.webinars.title"),
+      subtitle: t("home.pillars.webinars.subtitle"),
+      cta: { label: t("home.pillars.webinars.cta"), to: "/webinars", icon: PlayCircle },
       pills: [
-        <Pill key="1"><PlayCircle className="h-3 w-3" /> En vivo & grabados</Pill>,
-        <Pill key="2"><Users className="h-3 w-3" /> Educadores y colaboradores</Pill>,
-        <Pill key="3"><BookOpen className="h-3 w-3" /> 100% gratuitos</Pill>,
+        <Pill key="1"><PlayCircle className="h-3 w-3" /> {t("home.pillars.webinars.pill1")}</Pill>,
+        <Pill key="2"><Users className="h-3 w-3" /> {t("home.pillars.webinars.pill2")}</Pill>,
+        <Pill key="3"><BookOpen className="h-3 w-3" /> {t("home.pillars.webinars.pill3")}</Pill>,
       ],
-      mock: <WebinarMock />,
+      mock: <WebinarMock t={t} />,
       reverse: false,
     },
     {
-      eyebrow: "Centro de Educación",
-      title: "Formación estructurada para traders",
-      subtitle:
-        "Accede a módulos sobre análisis técnico, macroeconomía, gestión de riesgo, psicología del trading y uso responsable de herramientas de mercado.",
-      cta: { label: "Explorar Módulos", to: "/education", icon: GraduationCap },
+      eyebrow: t("home.pillars.education.eyebrow"),
+      title: t("home.pillars.education.title"),
+      subtitle: t("home.pillars.education.subtitle"),
+      cta: { label: t("home.pillars.education.cta"), to: "/education", icon: GraduationCap },
       pills: [
-        <Pill key="1"><BarChart3 className="h-3 w-3" /> Técnico</Pill>,
-        <Pill key="2"><Globe className="h-3 w-3" /> Macro</Pill>,
-        <Pill key="3"><ShieldCheck className="h-3 w-3" /> Riesgo</Pill>,
-        <Pill key="4"><BookOpen className="h-3 w-3" /> Psicología</Pill>,
+        <Pill key="1"><BarChart3 className="h-3 w-3" /> {t("home.pillars.education.pill1")}</Pill>,
+        <Pill key="2"><Globe className="h-3 w-3" /> {t("home.pillars.education.pill2")}</Pill>,
+        <Pill key="3"><ShieldCheck className="h-3 w-3" /> {t("home.pillars.education.pill3")}</Pill>,
+        <Pill key="4"><BookOpen className="h-3 w-3" /> {t("home.pillars.education.pill4")}</Pill>,
       ],
-      mock: <EducationMock />,
+      mock: <EducationMock t={t} />,
       reverse: true,
     },
   ];
@@ -299,12 +308,12 @@ const PlatformPillars = () => {
       className="relative mx-auto w-full max-w-7xl px-4 py-20 scroll-mt-32 sm:px-6 lg:px-8"
     >
       <SectionHeader
-        eyebrow="La Plataforma IX LTR"
-        title="Educación, comunidad y herramientas para traders"
-        subtitle="Cuatro pilares — LTR Terminal Pro, Comunidad, Webinars y Educación — unidos en una experiencia premium para la comunidad de traders."
+        eyebrow={t("home.pillars.section.eyebrow")}
+        title={t("home.pillars.section.title")}
+        subtitle={t("home.pillars.section.subtitle")}
       />
       <h2 id="platform-pillars-title" className="sr-only">
-        Pilares de la plataforma IX LTR
+        {t("home.pillars.srTitle")}
       </h2>
 
 
@@ -361,7 +370,7 @@ const PlatformPillars = () => {
       </div>
 
       <p className="mt-10 text-center text-xs text-muted-foreground/80">
-        Contenido educativo. Sin asesoría financiera. Sin promesas de rentabilidad. Operar productos apalancados conlleva riesgo significativo.
+        {t("home.pillars.disclaimer")}
       </p>
 
     </section>
