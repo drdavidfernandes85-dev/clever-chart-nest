@@ -198,25 +198,27 @@ class MarketDataServiceImpl {
   };
 
   private onTradeExecuted = () => {
-    this.positionsBoostUntil = Date.now() + POSITIONS_BOOST_DURATION_MS;
-    if (this.currentPositionsInterval !== POSITIONS_BOOST_MS) {
-      this.currentPositionsInterval = POSITIONS_BOOST_MS;
-      this.startLoop("positions", this.tickPositions, POSITIONS_BOOST_MS);
+    // After an order/close, run a short burst of immediate-then-spaced
+    // refreshes so the UI catches the new position quickly without
+    // permanently raising the polling rate.
+    this.clearBurstTimers();
+    for (const offset of POSITIONS_BURST_OFFSETS_MS) {
+      const t = window.setTimeout(() => {
+        if (this.canRun()) {
+          void this.tickAccount();
+        }
+      }, offset);
+      this.burstTimers.push(t);
     }
-    this.refreshAccountAndPositions();
   };
 
-  private maybeRelaxPositionsBoost() {
-    if (
-      this.positionsBoostUntil &&
-      Date.now() > this.positionsBoostUntil &&
-      this.currentPositionsInterval !== POSITIONS_INTERVAL_MS
-    ) {
-      this.currentPositionsInterval = POSITIONS_INTERVAL_MS;
-      this.positionsBoostUntil = 0;
-      this.startLoop("positions", this.tickPositions, POSITIONS_INTERVAL_MS);
+  private clearBurstTimers() {
+    for (const t of this.burstTimers) {
+      try { window.clearTimeout(t); } catch { /* ignore */ }
     }
+    this.burstTimers = [];
   }
+
 
   private detect429(data: any, error: any): boolean {
     const status =
