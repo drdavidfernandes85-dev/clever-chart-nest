@@ -53,7 +53,7 @@ const broadcastExec = (status: string) => {
  * Only market orders submit; pending types kept visible but disabled.
  */
 
-const QUICK_VOLS = [0.01, 0.1, 0.25, 0.5, 1.0, 2.0];
+const QUICK_VOLS = [0.01, 0.02, 0.03, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0];
 const STRATEGIES = ["Standard", "Bracket", "None"] as const;
 const ORDER_TYPES = ["Market", "Limit", "Stop"] as const;
 const BEST_EXEC_VERSION = "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19";
