@@ -1519,7 +1519,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 <span>Sell</span><span>Bid</span>
               </span>
               <span className={cn(
-                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-red-400",
+                "font-mono tabular-nums text-[20px] leading-none font-bold text-red-400",
                 bidFlash === "up" && "text-red-300",
                 bidFlash === "down" && "text-red-500",
               )}>
@@ -1546,7 +1546,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 <span>Ask</span><span>Buy</span>
               </span>
               <span className={cn(
-                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-emerald-400 text-right",
+                "font-mono tabular-nums text-[20px] leading-none font-bold text-emerald-400 text-right",
                 askFlash === "up" && "text-emerald-300",
                 askFlash === "down" && "text-emerald-500",
               )}>
