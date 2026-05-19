@@ -4,6 +4,7 @@ import { ArrowRight, LayoutDashboard, PlayCircle, GraduationCap } from "lucide-r
 import { Button } from "@/components/ui/button";
 import MagneticButton from "@/components/MagneticButton";
 import { track } from "@/lib/analytics";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 /**
  * Reusable landing-page CTAs.
@@ -24,57 +25,69 @@ const primaryCls =
 const secondaryCls =
   "h-12 md:h-14 gap-2 rounded-full border-primary/60 bg-[#FFCD05]/10 px-6 md:px-7 text-sm md:text-base font-bold text-primary hover:bg-primary/20 hover:border-primary backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.2)]";
 
-export const OpenTerminalCTA = ({ section, className = "" }: BaseProps) => (
-  <MagneticButton strength={0.25}>
-    <Button size="lg" className={`${primaryCls} cta-pulse ${className}`} asChild>
-      <Link
-        to="/dashboard"
-        aria-label="Entrar al Trading Room"
-        onClick={() =>
-          track("cta_click", { cta: "open_terminal", section, destination: "/dashboard" })
-        }
-      >
-        <LayoutDashboard className="h-4 w-4" />
-        Entrar al Trading Room
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-    </Button>
-  </MagneticButton>
-);
+export const OpenTerminalCTA = ({ section, className = "" }: BaseProps) => {
+  const { t } = useLanguage();
+  const label = t("home.cta.openTerminal");
+  return (
+    <MagneticButton strength={0.25}>
+      <Button size="lg" className={`${primaryCls} cta-pulse ${className}`} asChild>
+        <Link
+          to="/dashboard"
+          aria-label={label}
+          onClick={() =>
+            track("cta_click", { cta: "open_terminal", section, destination: "/dashboard" })
+          }
+        >
+          <LayoutDashboard className="h-4 w-4" />
+          {label}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </Button>
+    </MagneticButton>
+  );
+};
 
 
-export const WatchWebinarsCTA = ({ section, className = "" }: BaseProps) => (
-  <MagneticButton strength={0.22}>
-    <Button size="lg" variant="outline" className={`${secondaryCls} ${className}`} asChild>
-      <Link
-        to="/webinars"
-        aria-label="Ver Webinars Gratuitos"
-        onClick={() =>
-          track("cta_click", { cta: "view_webinars", section, destination: "/webinars" })
-        }
-      >
-        <PlayCircle className="h-4 w-4" />
-        Ver Webinars Gratuitos
-      </Link>
-    </Button>
-  </MagneticButton>
-);
+export const WatchWebinarsCTA = ({ section, className = "" }: BaseProps) => {
+  const { t } = useLanguage();
+  const label = t("home.cta.watchWebinars");
+  return (
+    <MagneticButton strength={0.22}>
+      <Button size="lg" variant="outline" className={`${secondaryCls} ${className}`} asChild>
+        <Link
+          to="/webinars"
+          aria-label={label}
+          onClick={() =>
+            track("cta_click", { cta: "view_webinars", section, destination: "/webinars" })
+          }
+        >
+          <PlayCircle className="h-4 w-4" />
+          {label}
+        </Link>
+      </Button>
+    </MagneticButton>
+  );
+};
 
 export const BookMentoringCTA = ({
   section,
   onClick,
-  label = "Reservar Mentoría 1:1",
+  label,
   className = "",
-}: BaseProps & { onClick?: () => void; label?: string }) => (
-  <Button
-    size="lg"
-    className={`${primaryCls} ${className}`}
-    onClick={() => {
-      track("cta_click", { cta: "book_mentoring", section, destination: "#mentoria_form" });
-      onClick?.();
-    }}
-  >
-    <GraduationCap className="h-4 w-4" />
-    {label}
-  </Button>
-);
+}: BaseProps & { onClick?: () => void; label?: string }) => {
+  const { t } = useLanguage();
+  const finalLabel = label ?? t("home.cta.bookMentoring");
+  return (
+    <Button
+      size="lg"
+      className={`${primaryCls} ${className}`}
+      onClick={() => {
+        track("cta_click", { cta: "book_mentoring", section, destination: "#mentoria_form" });
+        onClick?.();
+      }}
+    >
+      <GraduationCap className="h-4 w-4" />
+      {finalLabel}
+    </Button>
+  );
+};
