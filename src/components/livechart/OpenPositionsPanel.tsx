@@ -22,8 +22,61 @@ const OpenPositionsPanel = () => {
   const { liveAccount, positions, connected, loading, refreshing, refresh } =
     useLiveAccount();
   const [closing, setClosing] = useState<string | null>(null);
+  const [testCloseConfirmed, setTestCloseConfirmed] = useState<Record<string, boolean>>({});
+  const [testClosing, setTestClosing] = useState<string | null>(null);
+  const isDev = import.meta.env.DEV;
 
-  const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
+  async function closeTestTrade(pos: LivePosition) {
+    const key = String(pos.ticket ?? `${pos.symbol}-${pos.entry_price}`);
+    if (!pos.ticket) {
+      toast.error("Missing position ticket — cannot close.");
+      return;
+    }
+    if (Number(pos.volume) > TEST_CLOSE_MAX_VOLUME) {
+      toast.error(`Test close is limited to volume ≤ ${TEST_CLOSE_MAX_VOLUME}.`);
+      return;
+    }
+    setTestClosing(key);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Not authenticated.");
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
+      const r = await fetch(url, {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          ticket: String(pos.ticket),
+          symbol: pos.symbol,
+          volume: Number(pos.volume),
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || data?.success === false) {
+        toast.error(data?.error || "Close failed", { description: data?.brokerMessage });
+      } else if (data?.status === "closed") {
+        toast.success(`Position #${pos.ticket} closed`);
+      } else {
+        toast.warning(`Close ${data?.status || "pending"}`, { description: data?.brokerMessage });
+      }
+    } catch (e: any) {
+      toast.error("Could not close test position", { description: e?.message });
+    } finally {
+      setTestClosing(null);
+      setTestCloseConfirmed((m) => ({ ...m, [key]: false }));
+      try {
+        await refresh();
+      } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+      window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
+    }
+  }
+
   const currency = liveAccount?.currency ?? "USD";
 
   const closePosition = async (pos: LivePosition) => {
