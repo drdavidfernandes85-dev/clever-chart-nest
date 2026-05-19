@@ -88,10 +88,11 @@ Deno.serve(async (req) => {
   // 4. Send close request to Trading Layer (MetaApi-style POSITION_CLOSE_ID).
   const idempotencyKey = `close-${ticket}-${user.id}`;
   const closePayload = {
-    actionType: "POSITION_CLOSE_ID",
-    positionId: ticket,
+    side: closeSide,
     symbol,
     volume,
+    position: Number(ticket),
+    deviation: 20,
   };
 
   const startedAt = Date.now();
