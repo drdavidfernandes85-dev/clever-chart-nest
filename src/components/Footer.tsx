@@ -5,6 +5,7 @@ import infinoxLogoBlack from "@/assets/infinox-logo-black.svg";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
+import LtrLogo from "@/components/branding/LtrLogo";
 
 const Footer = () => {
   const { t } = useLanguage();
