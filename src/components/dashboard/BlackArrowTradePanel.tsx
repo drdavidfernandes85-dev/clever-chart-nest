@@ -1939,12 +1939,11 @@ const SideBtn = ({
 const SummaryRow = ({
   label, value, tone,
 }: { label: string; value: string; tone?: "pos" | "neg" }) => (
-  <div className="flex items-center justify-between text-[10px]">
-    <span className="text-neutral-500 uppercase tracking-wider text-[8.5px]">{label}</span>
+  <div className="flex items-center justify-between gap-2 h-[16px] leading-none">
+    <span className="text-neutral-500 uppercase tracking-[0.14em] text-[8.5px] shrink-0">{label}</span>
     <span className={cn(
-      "font-mono tabular-nums",
-      tone === "pos" && "text-emerald-400",
-      tone === "neg" && "text-red-400",
+      "font-mono tabular-nums text-[10px] text-right truncate",
+      tone === "pos" ? "text-emerald-400" : tone === "neg" ? "text-red-400" : "text-neutral-200",
     )}>
       {value}
     </span>
@@ -1958,10 +1957,10 @@ const ToolBtn = ({
     type="button"
     onClick={onClick}
     className={cn(
-      "h-[20px] rounded-sm text-[9.5px] font-semibold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors",
+      "h-[20px] rounded-sm text-[9px] font-semibold uppercase tracking-[0.12em] flex items-center justify-center gap-1 transition-colors border border-transparent active:translate-y-px",
       danger
-        ? "bg-red-500/8 text-red-400/90 hover:bg-red-500/15 hover:text-red-300"
-        : "bg-neutral-900/60 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100",
+        ? "bg-red-500/[0.07] text-red-400/90 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 active:bg-red-500/25"
+        : "bg-neutral-900/70 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 hover:border-neutral-700 active:bg-neutral-700",
     )}
   >
     {icon} {label}
