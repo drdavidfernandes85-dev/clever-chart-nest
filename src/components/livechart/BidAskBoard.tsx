@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 
 interface Quote {
   symbol: string;
