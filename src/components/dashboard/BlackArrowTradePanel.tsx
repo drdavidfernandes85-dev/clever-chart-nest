@@ -1416,14 +1416,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 font-mono tabular-nums leading-none">
-                <span className="text-[7.5px] uppercase tracking-[0.18em] text-neutral-600">Bid</span>
-                <span className="text-[10.5px] text-red-400 font-semibold">{fmtPx(bid, digits)}</span>
-              </div>
-              <div className="flex items-center gap-1 font-mono tabular-nums leading-none">
-                <span className="text-[7.5px] uppercase tracking-[0.18em] text-neutral-600">Ask</span>
-                <span className="text-[10.5px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</span>
+            <div className="flex items-center gap-1.5">
+              <div className="text-right font-mono tabular-nums leading-tight">
+                <div className="text-[10px] text-red-400 font-semibold">{fmtPx(bid, digits)}</div>
+                <div className="text-[10px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</div>
               </div>
               <ChevronDown className={cn("h-3 w-3 text-neutral-500 transition-transform", symbolOpen && "rotate-180")} />
             </div>
@@ -1519,7 +1515,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 <span>Sell</span><span>Bid</span>
               </span>
               <span className={cn(
-                "font-mono tabular-nums text-[20px] leading-none font-bold text-red-400",
+                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-red-400",
                 bidFlash === "up" && "text-red-300",
                 bidFlash === "down" && "text-red-500",
               )}>
@@ -1546,7 +1542,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 <span>Ask</span><span>Buy</span>
               </span>
               <span className={cn(
-                "font-mono tabular-nums text-[20px] leading-none font-bold text-emerald-400 text-right",
+                "font-mono tabular-nums text-[14px] leading-tight font-semibold text-emerald-400 text-right",
                 askFlash === "up" && "text-emerald-300",
                 askFlash === "down" && "text-emerald-500",
               )}>
@@ -1648,11 +1644,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
           <div className="grid grid-cols-2 gap-1.5">
             <div className="space-y-1">
-              <div className="flex items-center justify-between h-[12px]">
-                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-red-400/80 leading-none">Stop Loss</label>
-                <span className="text-[8.5px] font-mono tabular-nums text-red-400/70 leading-none">
-                  {slPips > 0 && !noStops ? `${slPips.toFixed(0)}p` : "\u00A0"}
-                </span>
+              <div className="flex items-center justify-between">
+                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-red-400/80">Stop Loss</label>
+                {slPips > 0 && !noStops ? (
+                  <span className="text-[8.5px] font-mono tabular-nums text-red-400/70">{slPips.toFixed(0)}p</span>
+                ) : null}
               </div>
               <input
                 value={sl}
@@ -1677,11 +1673,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               </div>
             </div>
             <div className="space-y-1">
-              <div className="flex items-center justify-between h-[12px]">
-                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-emerald-400/80 leading-none">Take Profit</label>
-                <span className="text-[8.5px] font-mono tabular-nums text-emerald-400/70 leading-none">
-                  {tpPips > 0 && !noStops ? `${tpPips.toFixed(0)}p` : "\u00A0"}
-                </span>
+              <div className="flex items-center justify-between">
+                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-emerald-400/80">Take Profit</label>
+                {tpPips > 0 && !noStops ? (
+                  <span className="text-[8.5px] font-mono tabular-nums text-emerald-400/70">{tpPips.toFixed(0)}p</span>
+                ) : null}
               </div>
               <input
                 value={tp}
@@ -1744,7 +1740,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {/* Utility action bar — small, muted, never stronger than Buy/Sell */}
-        <div className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-px">
+        <div className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-1">
           <ToolBtn
             onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); }}
             label="Cancel"
@@ -1939,11 +1935,12 @@ const SideBtn = ({
 const SummaryRow = ({
   label, value, tone,
 }: { label: string; value: string; tone?: "pos" | "neg" }) => (
-  <div className="flex items-center justify-between gap-2 h-[16px] leading-none">
-    <span className="text-neutral-500 uppercase tracking-[0.14em] text-[8.5px] shrink-0">{label}</span>
+  <div className="flex items-center justify-between text-[10px]">
+    <span className="text-neutral-500 uppercase tracking-wider text-[8.5px]">{label}</span>
     <span className={cn(
-      "font-mono tabular-nums text-[10px] text-right truncate",
-      tone === "pos" ? "text-emerald-400" : tone === "neg" ? "text-red-400" : "text-neutral-200",
+      "font-mono tabular-nums",
+      tone === "pos" && "text-emerald-400",
+      tone === "neg" && "text-red-400",
     )}>
       {value}
     </span>
@@ -1957,10 +1954,10 @@ const ToolBtn = ({
     type="button"
     onClick={onClick}
     className={cn(
-      "h-[20px] rounded-sm text-[9px] font-semibold uppercase tracking-[0.12em] flex items-center justify-center gap-1 transition-colors border border-transparent active:translate-y-px",
+      "h-[20px] rounded-sm text-[9.5px] font-semibold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors",
       danger
-        ? "bg-red-500/[0.07] text-red-400/90 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 active:bg-red-500/25"
-        : "bg-neutral-900/70 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 hover:border-neutral-700 active:bg-neutral-700",
+        ? "bg-red-500/8 text-red-400/90 hover:bg-red-500/15 hover:text-red-300"
+        : "bg-neutral-900/60 text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100",
     )}
   >
     {icon} {label}
