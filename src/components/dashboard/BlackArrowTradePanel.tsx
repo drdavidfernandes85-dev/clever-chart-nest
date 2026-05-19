@@ -1788,17 +1788,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <ToolBtn onClick={closeSymbolPositions} icon={<X className="h-3 w-3" />} label="Close" danger />
         </div>
 
-        {symbolPositions.length > 0 ? (
-          <div className="rounded border border-border/60 bg-background/40 px-2 py-1 flex items-center justify-between text-[10px]">
-            <span className="text-muted-foreground">Open {normalizedSym}: {symbolPositions.length} pos</span>
-            <span className={cn(
-              "font-mono tabular-nums",
-              symbolPnl > 0 ? "text-emerald-400" : symbolPnl < 0 ? "text-red-400" : "text-foreground",
-            )}>
-              {fmt(symbolPnl, currency)}
-            </span>
-          </div>
-        ) : null}
+        {/* Symbol exposure footer removed — handled by SelectedSymbolExposure in the right rail. */}
+
       </div>
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
 
