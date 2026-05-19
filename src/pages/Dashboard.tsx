@@ -120,9 +120,9 @@ const TerminalHeader = () => {
   return (
     <header className="sticky top-0 z-50 border-b border-[#FFCD05]/20 bg-gradient-to-b from-[#0B0B0C] to-[#050505]/95 backdrop-blur-xl shadow-[0_2px_24px_rgba(0,0,0,0.6)]">
       <div className="flex h-12 items-center gap-3 px-3 sm:px-4 pl-14 lg:pl-4">
-        <div className="flex items-center shrink-0 min-w-0">
+        <Link to="/" aria-label="Home" className="flex items-center shrink-0 min-w-0 hover:opacity-80 transition-opacity">
           <LtrLogo variant="full" className="h-7 sm:h-8 w-auto" />
-        </div>
+        </Link>
 
 
         {hasEverLoaded ? (
