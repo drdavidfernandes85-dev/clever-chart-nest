@@ -187,6 +187,7 @@ export function useMTAccount() {
     let cancelled = false;
     const tick = async () => {
       if (cancelled) return;
+      if (!isAutoRefreshAllowed()) return;
       if (isEAWebhook) {
         // Just re-read from DB — the EA already pushed fresh data
         await refresh();
