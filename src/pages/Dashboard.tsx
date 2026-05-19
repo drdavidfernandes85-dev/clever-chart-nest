@@ -893,6 +893,7 @@ const BottomTabs = () => {
 const DashboardInner = () => {
   const { t } = useLanguage();
   const { devMode } = useDevMode();
+  const { isAdmin } = useIsAdmin();
   const { symbols, setSelectedBrokerSymbol } = useBrokerSymbols();
   const { symbol: ctxSymbol, setSymbol: setCtxSymbol, openTrade } = useQuickTrade();
   const [active, setActive] = useState<string>(ctxSymbol || "EURUSD");
