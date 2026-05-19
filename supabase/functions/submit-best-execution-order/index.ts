@@ -161,6 +161,69 @@ Deno.serve(async (req) => {
     }, 200);
   }
 
+  // Freshness gate — refuse live execution without a fresh server-side tick
+  // unless Dev Mode explicitly authorises emergency testing.
+  if (!haveFreshQuote && devModeAllowMissingQuote !== true) {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (uid) {
+        await supabase.from("execution_audit_events").insert({
+          user_id: uid,
+          trade_id: tradeId ?? null,
+          symbol,
+          side,
+          volume: Number(volume),
+          status: "blocked",
+          outcome: "blocked",
+          requested_price: requestedPrice,
+          executed_price: null,
+          slippage: null,
+          latency_ms: Math.round(Date.now() - startedAt),
+          spread:
+            requestedBid != null && requestedAsk != null
+              ? Math.max(0, requestedAsk - requestedBid)
+              : null,
+          bid: requestedBid,
+          ask: requestedAsk,
+          broker_message: "Blocked: no fresh server-side tick available.",
+          retcode: null,
+          reason: "missing_fresh_tick",
+          rule_violated: "fresh_tick_required",
+          ticket: null,
+          raw: {
+            classification: "blocked",
+            version: VERSION,
+            step: "pretrade_validation",
+            liveOrderSent: false,
+            quote_bid: requestedBid,
+            quote_ask: requestedAsk,
+            quote_spread:
+              requestedBid != null && requestedAsk != null
+                ? Math.max(0, requestedAsk - requestedBid)
+                : null,
+            quote_timestamp: quoteTimestamp,
+            quote_source: quoteSource,
+          },
+        });
+      }
+    } catch { /* swallow */ }
+    return json({
+      success: false,
+      version: VERSION,
+      step: "pretrade_validation",
+      liveOrderSent: false,
+      tradeId,
+      error: "No fresh server-side tick available — refusing to send live order.",
+      reasons: ["Missing fresh bid/ask snapshot. Try again or enable Dev Mode bypass."],
+      requestedPrice,
+      bid: requestedBid,
+      ask: requestedAsk,
+      quoteTimestamp,
+    }, 200);
+  }
+
+
   // Forward to execute-trade (existing broker integration).
   const { data: execData, error: execError } = await supabase.functions.invoke(
     "execute-trade",
