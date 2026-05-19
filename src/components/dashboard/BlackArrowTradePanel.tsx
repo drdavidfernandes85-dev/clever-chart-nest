@@ -1643,58 +1643,64 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
-            <div className="space-y-1">
+            <div className="space-y-1" role="group" aria-label="Stop loss">
               <div className="flex h-[12px] items-center justify-between">
-                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-red-400/80 leading-none">Stop Loss</label>
-                <span className="text-[8.5px] font-mono tabular-nums text-red-400/70 leading-none">
+                <label htmlFor="ba-sl-input" className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-red-400/80 leading-none">Stop Loss</label>
+                <span className="text-[8.5px] font-mono tabular-nums text-red-400/70 leading-none" aria-hidden="true">
                   {slPips > 0 && !noStops ? `${slPips.toFixed(0)}p` : "\u00A0"}
                 </span>
               </div>
               <input
+                id="ba-sl-input"
                 value={sl}
                 onChange={(e) => setSl(e.target.value)}
                 disabled={noStops}
                 inputMode="decimal"
                 placeholder="—"
-                className="w-full h-[22px] rounded-sm border border-red-500/25 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                aria-label="Stop loss price"
+                className="w-full h-[22px] rounded-sm border border-red-500/25 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus-visible:ring-1 focus-visible:ring-red-500 focus-visible:border-red-500 disabled:opacity-50"
               />
-              <div className="grid grid-cols-3 gap-0.5">
+              <div className="grid grid-cols-3 gap-0.5" role="group" aria-label="Stop loss pip presets">
                 {[10, 20, 50].map((p) => (
                   <button
                     key={p}
                     type="button"
                     disabled={noStops}
                     onClick={() => applyPipPreset("sl", p)}
-                    className="h-[18px] rounded-sm bg-red-500/[0.06] text-[9px] font-mono tabular-nums text-red-300/90 hover:bg-red-500/15 disabled:opacity-40 transition-colors"
+                    aria-label={`Set stop loss to ${p} pips`}
+                    className="h-[18px] rounded-sm bg-red-500/[0.06] text-[9px] font-mono tabular-nums text-red-300/90 hover:bg-red-500/15 active:bg-red-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0a0a0a]"
                   >
                     {p}p
                   </button>
                 ))}
               </div>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1" role="group" aria-label="Take profit">
               <div className="flex h-[12px] items-center justify-between">
-                <label className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-emerald-400/80 leading-none">Take Profit</label>
-                <span className="text-[8.5px] font-mono tabular-nums text-emerald-400/70 leading-none">
+                <label htmlFor="ba-tp-input" className="text-[8.5px] font-bold uppercase tracking-[0.16em] text-emerald-400/80 leading-none">Take Profit</label>
+                <span className="text-[8.5px] font-mono tabular-nums text-emerald-400/70 leading-none" aria-hidden="true">
                   {tpPips > 0 && !noStops ? `${tpPips.toFixed(0)}p` : "\u00A0"}
                 </span>
               </div>
               <input
+                id="ba-tp-input"
                 value={tp}
                 onChange={(e) => setTp(e.target.value)}
                 disabled={noStops}
                 inputMode="decimal"
                 placeholder="—"
-                className="w-full h-[22px] rounded-sm border border-emerald-500/25 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 disabled:opacity-50"
+                aria-label="Take profit price"
+                className="w-full h-[22px] rounded-sm border border-emerald-500/25 bg-[#0a0a0a] px-1.5 text-[10.5px] font-mono tabular-nums focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500 focus-visible:border-emerald-500 disabled:opacity-50"
               />
-              <div className="grid grid-cols-3 gap-0.5">
+              <div className="grid grid-cols-3 gap-0.5" role="group" aria-label="Take profit pip presets">
                 {[20, 40, 100].map((p) => (
                   <button
                     key={p}
                     type="button"
                     disabled={noStops}
                     onClick={() => applyPipPreset("tp", p)}
-                    className="h-[18px] rounded-sm bg-emerald-500/[0.06] text-[9px] font-mono tabular-nums text-emerald-300/90 hover:bg-emerald-500/15 disabled:opacity-40 transition-colors"
+                    aria-label={`Set take profit to ${p} pips`}
+                    className="h-[18px] rounded-sm bg-emerald-500/[0.06] text-[9px] font-mono tabular-nums text-emerald-300/90 hover:bg-emerald-500/15 active:bg-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 focus-visible:ring-offset-[#0a0a0a]"
                   >
                     {p}p
                   </button>
@@ -1705,7 +1711,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         </div>
 
         {(volumeError || slTpError) ? (
-          <div className="flex items-center gap-1.5 rounded-sm border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
+          <div role="alert" className="flex items-center gap-1.5 rounded-sm border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] text-red-400">
             <AlertTriangle className="h-3 w-3 shrink-0" /> {volumeError || slTpError}
           </div>
         ) : null}
@@ -1721,7 +1727,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               {riskPct ? `${riskPct.toFixed(2)}% acct` : "—"}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-x-3 px-0.5">
+          <dl className="grid grid-cols-2 gap-x-3 px-0.5" aria-label="Risk metrics">
             <SummaryRow label="Entry" value={fmtPx(entryPrice || null, digits)} tone={side === "buy" ? "pos" : "neg"} />
             <SummaryRow label="Notional" value={fmt(notional, currency)} />
             <SummaryRow label="Margin" value={fmt(marginRequired, currency)} />
@@ -1736,24 +1742,27 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               value={potentialProfit ? `+${fmt(potentialProfit, currency)}` : "—"}
               tone="pos"
             />
-          </div>
+          </dl>
         </div>
 
         {/* Utility action bar — small, muted, never stronger than Buy/Sell */}
-        <div className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-1">
+        <div role="toolbar" aria-label="Ticket actions" className="pt-1 border-t border-neutral-800/60 grid grid-cols-4 gap-1">
           <ToolBtn
             onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); }}
             label="Cancel"
+            ariaLabel="Cancel and reset ticket fields"
           />
           <ToolBtn
             onClick={() => setSide(side === "buy" ? "sell" : "buy")}
             label="Invert"
+            ariaLabel="Invert order side"
           />
-          <ToolBtn onClick={closeSymbolPositions} label="Close" danger />
+          <ToolBtn onClick={closeSymbolPositions} label="Close" danger ariaLabel="Close open positions for this symbol" />
           <ToolBtn
             onClick={() => { setSl(""); setTp(""); setPrice(""); setNoStops(false); closeSymbolPositions(); }}
             label="Close+Cxl"
             danger
+            ariaLabel="Close positions and cancel ticket"
           />
         </div>
 
