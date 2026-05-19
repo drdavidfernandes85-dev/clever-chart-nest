@@ -63,12 +63,18 @@ const LiveTradingViewChart = ({
       }
     };
 
-    fetchPrice();
-    const id = window.setInterval(fetchPrice, 5000);
+    if (isAutoRefreshAllowed()) fetchPrice();
+    const onManualRefresh = () => fetchPrice();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) fetchPrice();
+    }, 5000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
+
   }, [symbol]);
 
   const change = livePrice !== null && openPrice !== null ? livePrice - openPrice : 0;
