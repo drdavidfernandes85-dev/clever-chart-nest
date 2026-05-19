@@ -3,6 +3,8 @@ import {
   useMarketStatus,
   useRateLimit,
 } from "@/hooks/useLiveMarketData";
+import { MarketDataService } from "@/services/MarketDataService";
+import { useEffect, useState } from "react";
 
 /**
  * Dev-Mode diagnostics for the centralized market data layer.
@@ -17,6 +19,13 @@ const MarketDataDiagnosticsPanel = () => {
   const diag = useMarketDataDiagnostics();
   const status = useMarketStatus();
   const rl = useRateLimit();
+  const [, force] = useState(0);
+
+  // Tick every second so the countdown / "Xs ago" stays fresh.
+  useEffect(() => {
+    const id = setInterval(() => force((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const lastTickStr = diag.lastTickAt
     ? new Date(diag.lastTickAt).toLocaleTimeString()
@@ -25,13 +34,34 @@ const MarketDataDiagnosticsPanel = () => {
     ? `${Math.max(0, Math.round((Date.now() - diag.lastTickAt) / 1000))}s ago`
     : "—";
 
+  const rlSecondsLeft = rl.active && rl.resumesAt
+    ? Math.max(0, Math.ceil((rl.resumesAt - Date.now()) / 1000))
+    : 0;
+
+  const handleRefresh = () => {
+    MarketDataService.refreshSelected();
+    MarketDataService.refreshWatchlist();
+    MarketDataService.refreshAccountAndPositions();
+  };
+
   return (
     <div className="rounded border border-neutral-800 bg-[#0a0a0a] p-3">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 gap-2">
         <div className="text-[11px] font-semibold uppercase tracking-wider text-[#FFCD05]">
           Market Data Layer — Diagnostics (Dev)
         </div>
-        <div className="text-[10px] text-neutral-500">{status.toUpperCase()}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-neutral-500">{status.toUpperCase()}</span>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={rl.active}
+            className="text-[10px] px-2 py-0.5 rounded border border-neutral-700 text-neutral-200 hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed"
+            title={rl.active ? "Paused by rate limit" : "Force refresh all loops once"}
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-[10.5px] font-mono text-neutral-200">
@@ -50,11 +80,7 @@ const MarketDataDiagnosticsPanel = () => {
         <div>
           <span className="text-neutral-500">rate-limit: </span>
           {rl.active
-            ? `ACTIVE · resumes ${
-                rl.resumesAt
-                  ? new Date(rl.resumesAt).toLocaleTimeString()
-                  : "—"
-              }`
+            ? `ACTIVE · ${rlSecondsLeft}s left`
             : "off"}
         </div>
         <div className="col-span-2 break-words">
