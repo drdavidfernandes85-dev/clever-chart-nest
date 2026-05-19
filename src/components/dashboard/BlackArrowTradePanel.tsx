@@ -822,6 +822,48 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         ) : null}
       </div>
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
+
+      {debugInfo && (
+        <div className="mt-2 rounded border border-[#FFCD05]/40 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
+          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
+            <span className="uppercase tracking-widest text-[#FFCD05]">
+              Order Debug · {debugInfo.functionUsed}
+            </span>
+            <button
+              type="button"
+              onClick={() => setDebugInfo(null)}
+              className="text-neutral-500 hover:text-neutral-200"
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-2 space-y-1.5">
+            <div className="text-neutral-500">at {debugInfo.at}</div>
+            <div>
+              <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
+              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+{JSON.stringify(debugInfo.payload, null, 2)}
+              </pre>
+            </div>
+            {debugInfo.error && (
+              <div>
+                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Error</div>
+                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
+{debugInfo.error}
+                </pre>
+              </div>
+            )}
+            {debugInfo.response !== undefined && (
+              <div>
+                <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">Response</div>
+                <pre className="max-h-[180px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+{JSON.stringify(debugInfo.response, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
