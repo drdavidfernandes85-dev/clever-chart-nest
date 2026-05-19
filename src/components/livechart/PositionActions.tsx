@@ -81,7 +81,9 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
   const positionsRef = useRef(positions);
   useEffect(() => { positionsRef.current = positions; }, [positions]);
 
-  const busy = submitting || cooling || disabled || locked;
+  const { flags: riskFlags } = useRiskSettings();
+  const riskBlock = riskFlags.killSwitch || !riskFlags.liveEnabled;
+  const busy = submitting || cooling || disabled || locked || riskBlock;
   const ticket = position.ticket != null ? String(position.ticket) : null;
 
 
