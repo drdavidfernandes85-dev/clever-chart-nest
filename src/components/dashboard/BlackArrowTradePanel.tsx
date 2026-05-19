@@ -102,6 +102,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const prevBidRef = useRef<number | null>(null);
   const prevAskRef = useRef<number | null>(null);
   const [execResult, setExecResult] = useState<ExecutionResultPayload | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{
+    functionUsed: string;
+    payload: any;
+    response?: any;
+    error?: string;
+    at: string;
+  } | null>(null);
 
   // Latch "ever connected" so a transient polling failure cannot replace
   // the entire Order Ticket with the disconnected screen.
@@ -323,10 +330,35 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         takeProfit: noStops ? null : (tp ? Number(tp) : null),
         clientClickAt,
       };
+
+      // Debug: log + show in temporary debug panel BEFORE the call
+      // eslint-disable-next-line no-console
+      console.log("[OrderTicket] functionUsed:", "submit-best-execution-order");
+      // eslint-disable-next-line no-console
+      console.log("[OrderTicket] payload:", payload);
+      setDebugInfo({
+        functionUsed: "submit-best-execution-order",
+        payload,
+        at: new Date().toISOString(),
+      });
+
       const { data, error } = await supabase.functions.invoke(
         "submit-best-execution-order",
         { body: payload },
       );
+
+      // eslint-disable-next-line no-console
+      console.log("[OrderTicket] raw response:", { data, error });
+      setDebugInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              response: data ?? null,
+              error: error ? (error as any)?.message || String(error) : undefined,
+            }
+          : prev,
+      );
+
       let res: any = data;
       if (error && !res) {
         try {
@@ -339,6 +371,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           return;
         }
       }
+
 
       // Always trigger downstream refreshes regardless of outcome.
       window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId } }));
@@ -789,6 +822,48 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         ) : null}
       </div>
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
+
+      {debugInfo && (
+        <div className="mt-2 rounded border border-[#FFCD05]/40 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
+          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
+            <span className="uppercase tracking-widest text-[#FFCD05]">
+              Order Debug · {debugInfo.functionUsed}
+            </span>
+            <button
+              type="button"
+              onClick={() => setDebugInfo(null)}
+              className="text-neutral-500 hover:text-neutral-200"
+            >
+              ×
+            </button>
+          </div>
+          <div className="p-2 space-y-1.5">
+            <div className="text-neutral-500">at {debugInfo.at}</div>
+            <div>
+              <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">Payload</div>
+              <pre className="max-h-[140px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+{JSON.stringify(debugInfo.payload, null, 2)}
+              </pre>
+            </div>
+            {debugInfo.error && (
+              <div>
+                <div className="text-red-400 uppercase tracking-widest text-[9px] mb-0.5">Error</div>
+                <pre className="max-h-[100px] overflow-auto whitespace-pre-wrap break-all text-red-300">
+{debugInfo.error}
+                </pre>
+              </div>
+            )}
+            {debugInfo.response !== undefined && (
+              <div>
+                <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">Response</div>
+                <pre className="max-h-[180px] overflow-auto whitespace-pre-wrap break-all text-neutral-200">
+{JSON.stringify(debugInfo.response, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
