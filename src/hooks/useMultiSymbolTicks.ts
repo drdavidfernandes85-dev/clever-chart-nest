@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 
 export interface MultiTick {
   bid: number | null;
