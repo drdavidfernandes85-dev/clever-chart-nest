@@ -41,6 +41,7 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
           body: { selectedSymbol, symbols, debug: true },
         });
         if (cancelled) return;
+        checkAndHandle429(data, error);
         if (error || !data?.success || !Array.isArray(data?.quotes) || data.quotes.length === 0) {
           // Rule 2 & 4: keep lastGood; never clear
           setFailed(true);
@@ -61,19 +62,23 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
       }
     };
 
-    load();
+    if (isAutoRefreshAllowed()) load();
+    const onManualRefresh = () => load();
+    window.addEventListener("mt:refresh-quotes", onManualRefresh);
     const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) load();
     }, POLL_MS);
     const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled) load();
+      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) load();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
     };
+
   }, [selectedSymbol, symbols.join(",")]);
 
   // Render source: live if present, else lastGood. Never blank during refresh.
