@@ -80,9 +80,9 @@ const Navbar = () => {
               }}
             />
           </div>
-          <span className="hidden sm:inline-block h-5 lg:h-6 w-px bg-border/50 shrink-0" aria-hidden="true" />
-          <span className="hidden sm:inline font-heading text-sm lg:text-base font-semibold text-foreground truncate leading-none tracking-tight">
-            <span className="text-primary">IX</span> LTR
+          <span className="hidden sm:inline-block h-5 lg:h-6 w-px bg-[#FFCD05]/30 shrink-0" aria-hidden="true" />
+          <span className="hidden sm:inline font-heading text-sm lg:text-base font-extrabold uppercase tracking-[0.12em] truncate leading-none">
+            <span className="text-[#FFCD05]">LTR</span> <span className="text-foreground">Terminal Pro</span>
           </span>
         </a>
 
