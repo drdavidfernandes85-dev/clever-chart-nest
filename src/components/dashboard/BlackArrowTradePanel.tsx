@@ -1077,11 +1077,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
       {orderDebug && (
         <div className="mt-2 rounded border border-[#FFCD05]/60 bg-[#0a0a0a] text-[10px] font-mono overflow-hidden">
-          <div className="flex items-center justify-between border-b border-neutral-800 bg-[#050505] px-2 py-1">
-            <span className="uppercase tracking-widest text-[#FFCD05]">
-              {orderDebug.functionUsed} · {orderDebug.status}
-              {orderDebug.httpStatus !== undefined ? ` · HTTP ${orderDebug.httpStatus}` : ""}
-            </span>
+          <div className="flex items-center justify-end border-b border-neutral-800 bg-[#050505] px-2 py-1">
             <button
               type="button"
               onClick={() => setOrderDebug(null)}
@@ -1091,18 +1087,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </button>
           </div>
           <div className="p-2 space-y-1.5">
-            {orderDebug.requestUrl && (
-              <div>
-                <div className="text-neutral-500 uppercase tracking-widest text-[9px] mb-0.5">requestUrl</div>
-                <pre className="whitespace-pre-wrap break-all text-neutral-200">{orderDebug.requestUrl}</pre>
-              </div>
-            )}
-            <div>
-              <div className="text-emerald-400 uppercase tracking-widest text-[9px] mb-0.5">rawEdgeFunctionResponse</div>
-              <pre className="max-h-[220px] overflow-auto whitespace-pre-wrap break-all text-neutral-100">
+            <pre className="max-h-[220px] overflow-auto whitespace-pre-wrap break-all text-neutral-100">
 {JSON.stringify(orderDebug.rawEdgeFunctionResponse, null, 2)}
-              </pre>
-            </div>
+            </pre>
+            {orderDebug.validationError === "Wrong live execution handler is still being used." && (
+              <div className="text-red-400">Wrong live execution handler is still being used.</div>
+            )}
           </div>
         </div>
       )}
