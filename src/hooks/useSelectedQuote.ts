@@ -96,8 +96,12 @@ export function useSelectedQuote(
         if (!cancelled) setDataDelayed(true);
       }
     };
-    load();
-    const id = window.setInterval(load, intervalMs);
+    if (isAutoRefreshAllowed()) load();
+    const id = window.setInterval(() => {
+      if (isAutoRefreshAllowed()) load();
+    }, intervalMs);
+    const onRefresh = () => { if (!cancelled) load(); };
+    window.addEventListener("mt:refresh-quotes", onRefresh);
     return () => {
       cancelled = true;
       window.clearInterval(id);
