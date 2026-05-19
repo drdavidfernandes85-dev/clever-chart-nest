@@ -215,13 +215,16 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       if (responseOk) toast.success("Live test response received");
       else toast.error("Live test failed");
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       setOrderDebug({
         status: "error",
         functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
         payloadSent: payload,
         rawEdgeFunctionResponse: null,
-        edgeFunctionError: error instanceof Error ? error.message : String(error),
-        validationError: "Direct Edge Function fetch failed.",
+        edgeFunctionError: message,
+        validationError: message.includes("No active Supabase session")
+          ? "User is not authenticated."
+          : "Direct Edge Function fetch failed.",
       });
     } finally {
       setLiveTestSubmitting(false);
@@ -255,67 +258,33 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     });
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        setOrderDebug({
-          status: "error",
-          functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
-          payloadSent: payload,
-          rawEdgeFunctionResponse: null,
-          edgeFunctionError: "No active Supabase session/access token found.",
-          validationError: "User is not authenticated.",
-        });
-        return;
-      }
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const requestUrl =
-        `${supabaseUrl}/functions/v1/submit-best-execution-order?v=${Date.now()}&nonce=${crypto.randomUUID()}`;
-
-      const response = await fetch(requestUrl, {
-        method: "POST",
-        cache: "no-store",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await response.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { rawText: text };
-      }
+      const { requestUrl, httpStatus, responseOk, data } = await directFetchSubmitBestExecutionOrder(payload);
 
       setOrderDebug({
-        status: response.ok ? "success" : "error",
+        status: responseOk ? "success" : "error",
         functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
         requestUrl,
-        httpStatus: response.status,
+        httpStatus,
         payloadSent: payload,
         rawEdgeFunctionResponse: data,
-        edgeFunctionError: response.ok ? null : data,
+        edgeFunctionError: responseOk ? null : data,
         validationError:
-          data?.version === "BEST_EXEC_LIVE_CONTROLLED_V1_2026_05_19" &&
+          data?.version === BEST_EXEC_VERSION &&
           data?.step === "dry_run"
             ? null
             : "Wrong Edge Function response or auth/project mismatch.",
       });
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       setOrderDebug({
         status: "error",
         functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
         payloadSent: payload,
         rawEdgeFunctionResponse: null,
-        edgeFunctionError: error instanceof Error ? error.message : String(error),
-        validationError: "Direct Edge Function fetch failed.",
+        edgeFunctionError: message,
+        validationError: message.includes("No active Supabase session")
+          ? "User is not authenticated."
+          : "Direct Edge Function fetch failed.",
       });
     }
     // Refresh audit panel after every Dry Run attempt
