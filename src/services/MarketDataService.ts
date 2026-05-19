@@ -62,6 +62,13 @@ class MarketDataServiceImpl {
   private burstTimers: number[] = [];
   private selectedSymbol = "";
   private watchlist = new Set<string>();
+  /**
+   * Watchlist is built from multiple UI sources (e.g. mini-watchlist,
+   * bid/ask board, dashboard symbol list). Each source registers under
+   * a key; the union is polled. This prevents one component clearing
+   * another's symbols.
+   */
+  private watchlistSources = new Map<string, Set<string>>();
   private cooldownTimer: number | null = null;
 
   start() {
