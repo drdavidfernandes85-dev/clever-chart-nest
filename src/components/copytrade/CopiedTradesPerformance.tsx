@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 
 interface PendingOrderRow {
   id: string;
@@ -217,11 +218,15 @@ const CopiedTradesPerformance = ({ className = "", limit = 50 }: Props) => {
           <h3 className="font-heading text-[11px] font-bold uppercase tracking-[0.2em] text-white">
             My Reviewed Ideas
           </h3>
+          <PoweredByTradingLayer variant="muted" className="ml-1" />
         </div>
         <span className="font-mono text-[10px] uppercase tracking-wider text-white/40">
-          {summary.count} {summary.count === 1 ? "trade" : "trades"}
+          {summary.count} {summary.count === 1 ? "idea" : "ideas"}
         </span>
       </div>
+      <p className="px-4 pt-3 text-[10.5px] leading-snug text-white/50">
+        Market Ideas are provided for educational and informational purposes only. They are not investment advice, financial advice, or personal recommendations. Users are solely responsible for deciding whether to review, modify, or execute any idea.
+      </p>
 
       {/* Summary tiles */}
       <div className="grid grid-cols-3 gap-px bg-white/5">
