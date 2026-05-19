@@ -60,12 +60,16 @@ const OpenPositionsPanel = () => {
         }),
       });
       const data = await r.json().catch(() => ({}));
+      const errMsg =
+        typeof data?.error === "string"
+          ? data.error
+          : data?.error?.message || data?.error?.code || "Close failed";
       if (!r.ok || data?.success === false) {
-        toast.error(data?.error || "Close failed", { description: data?.brokerMessage });
+        toast.error(errMsg, { description: String(data?.brokerMessage ?? "") });
       } else if (data?.status === "closed") {
         toast.success(`Position #${pos.ticket} closed`);
       } else {
-        toast.warning(`Close ${data?.status || "pending"}`, { description: data?.brokerMessage });
+        toast.warning(`Close ${data?.status || "pending"}`, { description: String(data?.brokerMessage ?? "") });
       }
     } catch (e: any) {
       toast.error("Could not close test position", { description: e?.message });
@@ -96,11 +100,14 @@ const OpenPositionsPanel = () => {
           positionId: pos.ticket ?? undefined,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const msg = typeof error === "string" ? error : (error as any)?.message || "Close failed";
+        throw new Error(msg);
+      }
       if (data && (data as any).success === false) {
-        throw new Error(
-          (data as any).error || "Broker rejected the close order",
-        );
+        const rawErr = (data as any).error;
+        const msg = typeof rawErr === "string" ? rawErr : rawErr?.message || "Broker rejected the close order";
+        throw new Error(msg);
       }
       toast.success(`Close order sent for ${pos.symbol} #${pos.ticket ?? ""}`);
       window.dispatchEvent(new Event("trade-executed"));
