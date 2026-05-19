@@ -17,6 +17,7 @@ export const AUDIT_STATUS_LABELS: Record<string, string> = {
   modify_failed: "SL/TP Failed",
   modify_rejected: "SL/TP Rejected",
   closed: "Position Closed",
+  partial_closed: "Partial Close",
   close_failed: "Close Failed",
   close_rejected: "Close Rejected",
   rejected: "Order Rejected",
