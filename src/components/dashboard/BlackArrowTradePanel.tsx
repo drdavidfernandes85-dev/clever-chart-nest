@@ -396,6 +396,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
         const mergedRaw = {
           ...(target.raw && typeof target.raw === "object" ? target.raw : {}),
+          classification: "placed_confirmed",
           positionConfirmed: true,
           confirmedTicket: ticket,
           confirmedSymbol: symbol,
