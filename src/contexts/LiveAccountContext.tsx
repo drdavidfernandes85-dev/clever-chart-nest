@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, R
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 export interface LiveAccount {
   login: string;
