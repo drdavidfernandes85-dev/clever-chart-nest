@@ -31,6 +31,7 @@ export const AUDIT_CLASSIFICATION_LABELS: Record<string, string> = {
   dry_run: "Dry Run",
   placed: "Order Placed",
   placed_confirmed: "Position Confirmed",
+  placed_unconfirmed: "Placed (Unconfirmed)",
   close_position: "Close Position",
   modify_protection: "Modify SL / TP",
   modify_position: "Modify SL / TP", // legacy
