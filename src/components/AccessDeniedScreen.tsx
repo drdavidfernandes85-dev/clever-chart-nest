@@ -82,7 +82,7 @@ const AccessDeniedScreen = ({ reason = "unknown", balance, currency }: Props) =>
 
             {/* Clear, short eligibility statement */}
             <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-foreground/85 sm:text-base">
-              {t("access.eligibility.short" as any)}
+              {eligibilityCopy(locale, t("access.eligibility.short" as any))}
             </p>
 
             {/* Contextual reason — softer, non-restrictive tone */}
