@@ -2,8 +2,9 @@
 // Does NOT call execute-trade or place-order. Sends only SL/TP changes to
 // Trading Layer and logs the result to execution_audit_events.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { loadRiskSettings, buildRiskBlock, auditRiskBlock } from "../_shared/risk.ts";
 
-const VERSION = "MODIFY_POSITION_PROTECTION_V1_2026_05_19";
+const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
 
 const corsHeaders = {
