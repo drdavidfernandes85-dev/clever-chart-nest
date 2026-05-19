@@ -978,6 +978,43 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           if (matched) break;
         }
 
+        // ── Authoritative server-side reconciliation against Trading Layer ──
+        // Inspects positions + pending orders + history orders + history deals
+        // and returns one of:
+        //   position_confirmed | deal_found_no_open_position |
+        //   order_found_not_filled | execution_unconfirmed
+        let reconcile: any = null;
+        try {
+          const { data: rec } = await supabase.functions.invoke(
+            "reconcile-execution",
+            {
+              body: {
+                tradeId,
+                symbol: normalizedSym,
+                side: sideArg,
+                volume: Number(volNum.toFixed(2)),
+                requestedPrice: res?.requestedPrice ?? null,
+                clientClickAt,
+                brokerRetcode: res?.retcode ?? null,
+                brokerMessage:
+                  res?.brokerMessage ?? res?.retcodeDescription ?? null,
+                rawExecutionResponse: res ?? null,
+              },
+            },
+          );
+          reconcile = rec ?? null;
+        } catch { /* reconcile is best-effort */ }
+
+        // Reconcile is authoritative when it confirms an MT5 position.
+        if (reconcile?.mt5Confirmed === true && reconcile?.confirmedTicket) {
+          matched = matched || {
+            ticket: reconcile.confirmedTicket,
+            entry_price: reconcile.confirmedEntryPrice,
+            price_open: reconcile.confirmedEntryPrice,
+            volume: reconcile.confirmedVolume,
+          };
+        }
+
         // Build a unified broker-result view for the canonical mapper.
         const brokerView = {
           success: res?.success,
@@ -1018,18 +1055,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           } : prev);
           toast.success("Position confirmed", { description: `#${display.confirmedTicket ?? ""} ${normalizedSym}` });
         } else {
-          // PENDING (no live order sent flag missing) or UNKNOWN → MT5 not confirmed
+          // MT5 not confirmed. Use reconcile's authoritative classification
+          // (deal_found_no_open_position, order_found_not_filled, or
+          // execution_unconfirmed) when available; fall back to the generic
+          // unconfirmed message otherwise.
+          const recStatus: string = reconcile?.status ?? "execution_unconfirmed";
+          const recExplanation: string =
+            reconcile?.explanation ??
+            "Broker accepted the order, but no matching MT5 position was found.";
           setExecResult((prev) => prev ? {
             ...prev,
             outcome: "unconfirmed",
             brokerAccepted: true,
             mt5Confirmed: false,
             confirmationStatus: "not_found",
-            status: "execution_unconfirmed",
-            brokerMessage: "Broker accepted/sent order but no matching MT5 position was found.",
+            status: recStatus,
+            brokerMessage: recExplanation,
           } : prev);
           toast.warning("Order accepted but no MT5 position confirmed", {
-            description: "Please verify in MetaTrader.",
+            description: recExplanation,
           });
         }
         setAuditRefreshKey((k) => k + 1);
@@ -1043,9 +1087,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             detail: {
               at: new Date().toISOString(),
               account: {
-                account_number: (liveAccount as any)?.login ?? null,
-                server: (liveAccount as any)?.server ?? null,
+                account_number:
+                  reconcile?.account?.mt5_login ??
+                  (liveAccount as any)?.login ?? null,
+                server:
+                  reconcile?.account?.server ??
+                  (liveAccount as any)?.server ?? null,
                 trading_layer_trader_id:
+                  reconcile?.account?.trading_layer_trader_id ??
                   (res as any)?.trading_layer_trader_id ??
                   (res as any)?.diagnostics?.trader_id ??
                   (res as any)?.diagnostics?.accountId ??
@@ -1062,19 +1111,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               },
               response: {
                 retcode: (res as any)?.retcode ?? null,
-                classification: (res as any)?.classification ?? null,
+                classification:
+                  reconcile?.status ?? (res as any)?.classification ?? null,
                 raw: res ?? null,
               },
               reconciliation: {
                 positionsBefore: positionsBeforeSnapshot,
                 positionsAfter: positionsAfterSnapshot,
-                matchFound: !!matched,
-                confirmedTicket: matched ? (matched.ticket ?? matched.id ?? null) : null,
+                matchFound: !!matched || reconcile?.mt5Confirmed === true,
+                confirmedTicket:
+                  reconcile?.confirmedTicket ??
+                  (matched ? (matched.ticket ?? matched.id ?? null) : null),
               },
               history: {
                 matchingPendingOrderFound:
+                  reconcile?.checked?.pendingOrders?.matchFound ??
                   (res as any)?.diagnostics?.matchingPendingOrderFound ?? null,
                 matchingDealFound:
+                  reconcile?.checked?.historyDeals?.matchFound ??
                   (res as any)?.diagnostics?.matchingDealFound ?? null,
               },
             },
