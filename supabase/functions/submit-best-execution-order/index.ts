@@ -1,8 +1,15 @@
 // Best-Execution Order Router
 // Wraps execute-trade with pre-trade quote snapshot + latency/slippage metrics.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  loadRiskSettings,
+  loadDailyUsage,
+  checkOpenRisk,
+  buildRiskBlock,
+  auditRiskBlock,
+} from "../_shared/risk.ts";
 
-const VERSION = "BEST_EXEC_LIVE_RECONCILED_V1_3_2026_05_19";
+const VERSION = "BEST_EXEC_RISK_ENFORCED_V2_2026_05_19";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -160,6 +167,35 @@ Deno.serve(async (req) => {
       reasons: ["Missing live execution confirmation"],
     }, 200);
   }
+
+  // ---------- Backend risk enforcement ----------
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (uid) {
+      const settings = await loadRiskSettings(supabase, uid);
+      const usage = await loadDailyUsage(supabase, uid);
+      const breach = checkOpenRisk(
+        { symbol, volume: Number(volume) },
+        settings,
+        usage,
+      );
+      if (breach) {
+        const blockBody = buildRiskBlock(VERSION, {
+          reason: breach.reason,
+          rule: breach.rule,
+          settings,
+          usage,
+        }, { tradeId, symbol, side, volume: Number(volume) });
+        await auditRiskBlock(supabase, uid, {
+          tradeId, symbol, side, volume: Number(volume),
+          reason: breach.reason, rule: breach.rule, response: blockBody,
+        });
+        return json(blockBody, 200);
+      }
+    }
+  } catch { /* if risk lookup fails entirely, fall through (audit only) */ }
+
 
   // Freshness gate — refuse live execution without a fresh server-side tick
   // unless Dev Mode explicitly authorises emergency testing.

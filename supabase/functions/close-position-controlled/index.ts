@@ -3,8 +3,15 @@
 // Calls Trading Layer directly with POSITION_CLOSE_ID and logs to
 // execution_audit_events with classification = close_position.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  loadRiskSettings,
+  checkCloseRisk,
+  buildRiskBlock,
+  auditRiskBlock,
+  fetchLivePositions,
+} from "../_shared/risk.ts";
 
-const VERSION = "CLOSE_POSITION_CONTROLLED_V1_2026_05_19";
+const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
 const MAX_TEST_VOLUME = 0.01;
 
@@ -100,6 +107,30 @@ Deno.serve(async (req) => {
     }, 404);
   }
   const accountId = account.metaapi_account_id;
+
+  // ---------- Backend risk enforcement ----------
+  try {
+    const settings = await loadRiskSettings(supabase, user.id);
+    const livePositions = await fetchLivePositions(supabase);
+    const breach = checkCloseRisk(
+      { ticket, symbol, side: closeSide, volume },
+      settings,
+      livePositions,
+    );
+    if (breach) {
+      const blockBody = buildRiskBlock(VERSION, {
+        reason: breach.reason,
+        rule: breach.rule,
+        settings,
+      }, { ticket, symbol, side: closeSide, volume, closeId });
+      await auditRiskBlock(supabase, user.id, {
+        tradeId: `close-${ticket}`, symbol, side: closeSide, volume,
+        reason: breach.reason, rule: breach.rule, response: blockBody, ticket,
+      });
+      return json(blockBody, 200);
+    }
+  } catch { /* fall through */ }
+
 
   const idempotencyKey = closeId;
   const closePayload = {

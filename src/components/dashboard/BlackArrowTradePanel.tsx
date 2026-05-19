@@ -36,6 +36,8 @@ import {
 } from "@/lib/tradingLayerControl";
 import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useDevMode } from "@/hooks/useDevMode";
+import { useRiskSettings } from "@/hooks/useRiskSettings";
+import RiskBadges from "@/components/dashboard/RiskBadges";
 import { getExecutionDisplayState } from "@/lib/executionDisplayState";
 
 const broadcastExec = (status: string) => {
@@ -779,6 +781,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   // selectedQuote but a last-good snapshot is still keeping the ticket alive.
   const showDataDelayed = selectedDataDelayed && !!effectiveSelected;
 
+  const { flags: riskFlags } = useRiskSettings();
+  const killSwitchActive = riskFlags.killSwitch;
+  const liveDisabled = !riskFlags.liveEnabled;
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
@@ -789,11 +795,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     volNum > 0 &&
     !volumeError &&
     !submitting &&
-    !execLocked;
+    !execLocked &&
+    !killSwitchActive &&
+    !liveDisabled;
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
-      if (!connected) toast.error("Account not connected");
+      if (killSwitchActive) toast.error("Trading disabled by kill switch.");
+      else if (liveDisabled) toast.error("Live trading is disabled by your risk settings.");
+      else if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
       else if (!symbolValid) toast.error("Symbol not available on broker");
       else if (volumeError) toast.error(volumeError);

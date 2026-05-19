@@ -23,6 +23,9 @@ import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
 import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
+import RiskBadges from "@/components/dashboard/RiskBadges";
+import RiskControlsPanel from "@/components/dashboard/RiskControlsPanel";
+import { useDevMode } from "@/hooks/useDevMode";
 import TradeJournal from "@/components/dashboard/TradeJournal";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
@@ -891,6 +894,7 @@ const BottomTabs = () => {
 
 const DashboardInner = () => {
   const { t } = useLanguage();
+  const { devMode } = useDevMode();
   const { symbols, setSelectedBrokerSymbol } = useBrokerSymbols();
   const { symbol: ctxSymbol, setSymbol: setCtxSymbol, openTrade } = useQuickTrade();
   const [active, setActive] = useState<string>(ctxSymbol || "EURUSD");
@@ -1067,6 +1071,8 @@ const DashboardInner = () => {
             </div>
             <div className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto pr-0.5 space-y-2">
               <LiveExecutionBanner />
+              <RiskBadges />
+              {devMode && <RiskControlsPanel />}
               <SystemHealthWidget />
               <BlackArrowTradePanel />
             </div>

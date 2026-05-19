@@ -741,6 +741,39 @@ export type Database = {
         }
         Relationships: []
       }
+      risk_setting_audit_logs: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          reason: string | null
+          setting_name: string
+          user_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          setting_name: string
+          user_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          setting_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           id: string
@@ -957,6 +990,57 @@ export type Database = {
           signature_valid?: boolean | null
           ticket?: string | null
           trader_id?: string | null
+        }
+        Relationships: []
+      }
+      trading_risk_settings: {
+        Row: {
+          allowed_symbols: string[] | null
+          blocked_symbols: string[]
+          created_at: string
+          id: string
+          kill_switch_enabled: boolean
+          live_trading_enabled: boolean
+          max_close_volume: number
+          max_daily_loss: number
+          max_daily_trades: number
+          max_daily_volume: number
+          max_order_volume: number
+          testing_mode_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed_symbols?: string[] | null
+          blocked_symbols?: string[]
+          created_at?: string
+          id?: string
+          kill_switch_enabled?: boolean
+          live_trading_enabled?: boolean
+          max_close_volume?: number
+          max_daily_loss?: number
+          max_daily_trades?: number
+          max_daily_volume?: number
+          max_order_volume?: number
+          testing_mode_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed_symbols?: string[] | null
+          blocked_symbols?: string[]
+          created_at?: string
+          id?: string
+          kill_switch_enabled?: boolean
+          live_trading_enabled?: boolean
+          max_close_volume?: number
+          max_daily_loss?: number
+          max_daily_trades?: number
+          max_daily_volume?: number
+          max_order_volume?: number
+          testing_mode_enabled?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

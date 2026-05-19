@@ -2,8 +2,9 @@
 // Does NOT call execute-trade or place-order. Sends only SL/TP changes to
 // Trading Layer and logs the result to execution_audit_events.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { loadRiskSettings, buildRiskBlock, auditRiskBlock } from "../_shared/risk.ts";
 
-const VERSION = "MODIFY_POSITION_PROTECTION_V1_2026_05_19";
+const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
 
 const corsHeaders = {
@@ -113,6 +114,26 @@ Deno.serve(async (req) => {
     }, 404);
   }
   const accountId = account.metaapi_account_id;
+
+  // ---------- Backend risk enforcement (kill switch + live trading flag) ----------
+  try {
+    const settings = await loadRiskSettings(supabase, user.id);
+    let breach: { reason: string; rule: string } | null = null;
+    if (settings.kill_switch_enabled) breach = { reason: "Trading disabled by kill switch.", rule: "kill_switch" };
+    else if (!settings.live_trading_enabled) breach = { reason: "Live trading is disabled.", rule: "live_trading_disabled" };
+    if (breach) {
+      const blockBody = buildRiskBlock(VERSION, {
+        reason: breach.reason, rule: breach.rule, settings,
+      }, { ticket, symbol, side, stopLoss, takeProfit });
+      await auditRiskBlock(supabase, user.id, {
+        tradeId: `modify-${ticket}`, symbol, side: side ?? "buy",
+        volume: Number.isFinite(volume) ? volume : 0,
+        reason: breach.reason, rule: breach.rule, response: blockBody, ticket,
+      });
+      return json(blockBody, 200);
+    }
+  } catch { /* fall through */ }
+
 
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
   const modifyPayload: Record<string, unknown> = {
