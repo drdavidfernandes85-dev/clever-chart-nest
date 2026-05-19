@@ -60,12 +60,16 @@ const OpenPositionsPanel = () => {
         }),
       });
       const data = await r.json().catch(() => ({}));
+      const errMsg =
+        typeof data?.error === "string"
+          ? data.error
+          : data?.error?.message || data?.error?.code || "Close failed";
       if (!r.ok || data?.success === false) {
-        toast.error(data?.error || "Close failed", { description: data?.brokerMessage });
+        toast.error(errMsg, { description: String(data?.brokerMessage ?? "") });
       } else if (data?.status === "closed") {
         toast.success(`Position #${pos.ticket} closed`);
       } else {
-        toast.warning(`Close ${data?.status || "pending"}`, { description: data?.brokerMessage });
+        toast.warning(`Close ${data?.status || "pending"}`, { description: String(data?.brokerMessage ?? "") });
       }
     } catch (e: any) {
       toast.error("Could not close test position", { description: e?.message });
