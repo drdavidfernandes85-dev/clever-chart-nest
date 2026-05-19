@@ -1,18 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { isAutoRefreshAllowed, checkAndHandle429 } from "@/lib/tradingLayerControl";
 import { useLanguage } from "@/i18n/LanguageContext";
-
-
-interface Quote {
-  symbol: string;
-  bid: number | null;
-  ask: number | null;
-  last: number | null;
-  spread: number | null;
-  digits: number | null;
-}
+import { useQuotes, useRateLimit, useMarketStatus } from "@/hooks/useLiveMarketData";
+import { MarketDataService } from "@/services/MarketDataService";
 
 interface Props {
   symbols: string[];
@@ -21,89 +11,82 @@ interface Props {
 }
 
 const COLS = "grid-cols-[minmax(0,1fr)_64px_64px_64px_52px]";
-const POLL_MS = 5000;
 
+/**
+ * BidAskBoard — display only.
+ *
+ * Reads quotes from the centralized `liveMarketDataStore` via
+ * `useQuotes`. Subscribes its symbol list to the shared watchlist on
+ * `MarketDataService` so prices come from the single polling loop.
+ * Never performs its own Trading Layer poll.
+ */
 const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
   const { t } = useLanguage();
-
-  const [bidAskBoardData, setBidAskBoardData] = useState<Quote[]>([]);
-  const lastGoodRef = useRef<Quote[]>([]);
-  const [lastGoodBidAskBoardData, setLastGoodBidAskBoardData] = useState<Quote[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [hasFetched, setHasFetched] = useState(false);
-
   const selectedSymbol = activeSymbol || "";
 
+  // Push the visible symbol set into the shared watchlist so the
+  // central service polls them on the 10s watchlist cadence.
   useEffect(() => {
-    let cancelled = false;
+    const cleaned = symbols.filter(Boolean);
+    if (cleaned.length === 0) return;
+    MarketDataService.setWatchlist(cleaned);
+  }, [symbols.join(",")]);
 
-    const load = async () => {
-      setRefreshing(true);
-      try {
-        const { data, error } = await supabase.functions.invoke("get-mt5-quotes", {
-          body: { selectedSymbol, symbols, debug: true },
-        });
-        if (cancelled) return;
-        checkAndHandle429(data, error);
-        if (error || !data?.success || !Array.isArray(data?.quotes) || data.quotes.length === 0) {
-          // Rule 2 & 4: keep lastGood; never clear
-          setFailed(true);
-          return;
-        }
-        // Rule 1: update both
-        setBidAskBoardData(data.quotes);
-        lastGoodRef.current = data.quotes;
-        setLastGoodBidAskBoardData(data.quotes);
-        setFailed(false);
-      } catch {
-        if (!cancelled) setFailed(true);
-      } finally {
-        if (!cancelled) {
-          setRefreshing(false);
-          setHasFetched(true);
-        }
+  const liveQuotes = useQuotes(symbols);
+  const rl = useRateLimit();
+  const status = useMarketStatus();
+
+  // Keep a last-good cache so a transient empty store doesn't blank the board.
+  type Quote = {
+    symbol: string;
+    bid: number | null;
+    ask: number | null;
+    last: number | null;
+    spread: number | null;
+    digits: number | null;
+  };
+  const lastGoodRef = useRef<Record<string, Quote>>({});
+  const [, force] = useState(0);
+
+  const quotesArray = useMemo<Quote[]>(() => {
+    const out: Quote[] = [];
+    for (const sym of symbols) {
+      const key = sym.toUpperCase();
+      const live = liveQuotes[key];
+      if (live && (live.bid != null || live.ask != null)) {
+        const q: Quote = {
+          symbol: sym,
+          bid: live.bid,
+          ask: live.ask,
+          last: live.last,
+          spread: live.spread,
+          digits: live.digits,
+        };
+        lastGoodRef.current[key] = q;
+        out.push(q);
+      } else if (lastGoodRef.current[key]) {
+        out.push(lastGoodRef.current[key]);
       }
-    };
+    }
+    return out;
+  }, [symbols.join(","), liveQuotes]);
 
-    if (isAutoRefreshAllowed()) load();
-    const onManualRefresh = () => load();
-    window.addEventListener("mt:refresh-quotes", onManualRefresh);
-    const id = window.setInterval(() => {
-      if (document.visibilityState === "visible" && isAutoRefreshAllowed()) load();
-    }, POLL_MS);
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && !cancelled && isAutoRefreshAllowed()) load();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("mt:refresh-quotes", onManualRefresh);
-    };
+  // Re-render on rate-limit/status changes so badge updates.
+  useEffect(() => {
+    force((n) => n + 1);
+  }, [rl.active, status]);
 
-  }, [selectedSymbol, symbols.join(",")]);
-
-  // Render source: live if present, else lastGood. Never blank during refresh.
-  const visible: Quote[] =
-    bidAskBoardData.length > 0
-      ? bidAskBoardData
-      : lastGoodBidAskBoardData.length > 0
-        ? lastGoodBidAskBoardData
-        : [];
-
-  const hasLastGood = lastGoodBidAskBoardData.length > 0;
-  // "Data delayed" only when refresh failed AND we have nothing fresh; if we
-  // have lastGood we still flag delayed so the user knows the feed is stale.
-  const isDelayed = failed && hasLastGood;
+  const visible = quotesArray;
+  const hasFetched = visible.length > 0;
+  const isDelayed = status === "stale" || (rl.active && visible.length > 0);
+  const isRateLimited = rl.active;
   const statusLabel = !hasFetched
     ? null
-    : isDelayed
-      ? { text: "Data delayed", dot: "bg-amber-500", color: "text-amber-400" }
-      : visible.length > 0
-        ? { text: "Live", dot: "bg-emerald-500", color: "text-emerald-400" }
-        : null;
+    : isRateLimited
+      ? { text: "Rate limited", dot: "bg-amber-500", color: "text-amber-400" }
+      : isDelayed
+        ? { text: "Data delayed", dot: "bg-amber-500", color: "text-amber-400" }
+        : { text: "Live", dot: "bg-emerald-500", color: "text-emerald-400" };
 
   return (
     <div className="flex h-full flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden">
@@ -127,14 +110,13 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
         <span>{t("terminal.symbol" as never)}</span>
         <span className="text-right text-red-400/70">{t("terminal.bid" as never)}</span>
         <span className="text-right">{t("terminal.last" as never)}</span>
-
         <span className="text-right text-emerald-400/70">Ask</span>
         <span className="text-right">Sprd</span>
       </div>
       <ul className="flex-1 overflow-y-auto">
         {visible.length === 0 ? (
           <li className="px-3 py-4 text-center text-[10px] font-mono text-neutral-500">
-            {refreshing ? "Loading market data…" : "Waiting for tick data…"}
+            Waiting for tick data…
           </li>
         ) : visible.map((q) => {
           const digits = q.digits ?? 5;
