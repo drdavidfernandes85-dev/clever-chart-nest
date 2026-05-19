@@ -11,6 +11,7 @@ import { FreeWebinarTrigger } from "@/components/lead/FreeWebinarModal";
 import OnlineNowPill from "@/components/social/OnlineNowPill";
 import { track } from "@/lib/analytics";
 import SEO from "@/components/SEO";
+import LtrLogo from "@/components/branding/LtrLogo";
 
 const Login = () => {
   const [email, setEmail] = useState("");
