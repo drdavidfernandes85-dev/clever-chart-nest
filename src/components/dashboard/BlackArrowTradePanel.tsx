@@ -1371,18 +1371,28 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <button
             type="button"
             onClick={() => setSymbolOpen((v) => !v)}
-            className="w-full flex items-center justify-between rounded-sm border border-neutral-800 bg-[#0a0a0a] px-2 py-1 hover:border-neutral-700"
+            className={cn(
+              "w-full flex items-center justify-between rounded-sm border bg-[#0a0a0a] px-2 py-1.5 transition-colors",
+              symbolOpen
+                ? "border-[#FFCD05]/50 ring-1 ring-[#FFCD05]/20"
+                : "border-neutral-800 hover:border-[#FFCD05]/30",
+            )}
           >
-            <div className="flex flex-col items-start min-w-0">
-              <span className="font-heading text-[12px] font-bold leading-tight">{normalizedSym || "—"}</span>
-              <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[160px]">
-                {effectiveSelected?.description || selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="inline-flex h-5 items-center rounded-sm border border-[#FFCD05]/30 bg-[#FFCD05]/5 px-1 text-[8.5px] font-mono font-bold uppercase tracking-widest text-[#FFCD05]">
+                {classify(normalizedSym)}
               </span>
+              <div className="flex flex-col items-start min-w-0">
+                <span className="font-heading text-[12.5px] font-bold leading-tight text-neutral-50 tracking-wide">{normalizedSym || "—"}</span>
+                <span className="text-[9px] text-neutral-500 uppercase tracking-wider truncate max-w-[140px]">
+                  {effectiveSelected?.description || selectedSymbolInfo?.description || (isLive ? "Live broker symbol" : "Loading…")}
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="text-right font-mono tabular-nums leading-tight">
-                <div className="text-[10px] text-red-400">{fmtPx(bid, digits)}</div>
-                <div className="text-[10px] text-emerald-400">{fmtPx(ask, digits)}</div>
+                <div className="text-[10.5px] text-red-400 font-semibold">{fmtPx(bid, digits)}</div>
+                <div className="text-[10.5px] text-emerald-400 font-semibold">{fmtPx(ask, digits)}</div>
               </div>
               <ChevronDown className={cn("h-3 w-3 text-neutral-500 transition-transform", symbolOpen && "rotate-180")} />
             </div>
