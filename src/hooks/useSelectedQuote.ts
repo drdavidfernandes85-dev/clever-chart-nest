@@ -105,6 +105,7 @@ export function useSelectedQuote(
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener("mt:refresh-quotes", onRefresh);
     };
   }, [sym, intervalMs]);
 
