@@ -40,10 +40,10 @@ const DashboardLayout = ({ children }: Props) => {
       <DashboardSidebar />
       <MobileSidebarDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
       <ConnectedAccountBadge />
-      <div className="fixed top-3 right-3 z-40 hidden lg:flex items-center gap-2">
-        <PoweredByTradingLayer />
-        <MarketStatusBadge />
-      </div>
+      {/* MarketStatusBadge moved out of the top-right corner because it
+          collided with the global Navbar's CTA/user pill. PoweredByTradingLayer
+          is already rendered in the footer + compliance footer. */}
+
 
       {/* Floating mobile hamburger — visible on every page < lg */}
       <button
