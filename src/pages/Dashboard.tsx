@@ -31,6 +31,7 @@ import {
 } from "@/contexts/BrokerSymbolsContext";
 import { TerminalStateProvider } from "@/contexts/TerminalStateContext";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { useSelectedQuote } from "@/hooks/useSelectedQuote";
 import { MARKET_UNIVERSE } from "@/lib/markets";
 import { useLanguage } from "@/i18n/LanguageContext";
 
