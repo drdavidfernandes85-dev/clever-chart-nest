@@ -88,6 +88,17 @@ interface Props {
   className?: string;
 }
 
+/** Infer compact asset class chip from a normalized symbol like "EURUSD" / "XAUUSD". */
+function classify(sym: string): string {
+  const u = (sym || "").toUpperCase();
+  if (!u) return "FX";
+  if (/^XAU|XAG|GOLD|SILVER|WTI|UKOIL|USOIL|BRENT|NGAS/.test(u)) return "Metals";
+  if (/(BTC|ETH|USDT|SOL|XRP|ADA|DOGE|BNB|MATIC|DOT)/.test(u)) return "Crypto";
+  if (/(US30|NAS100|US500|SPX|GER40|DAX|FTSE|NIKKEI|DJ30)/.test(u)) return "Index";
+  if (/^[A-Z]{6}$/.test(u)) return "FX";
+  return "Stock";
+}
+
 const BlackArrowTradePanel = ({ className }: Props) => {
   const { user } = useAuth();
   const { symbol: ctxSymbol, side, setSide, setSymbol: setCtxSymbol } = useQuickTrade();
