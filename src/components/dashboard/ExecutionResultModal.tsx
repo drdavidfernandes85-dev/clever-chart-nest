@@ -1,5 +1,16 @@
 import { X, CheckCircle2, ShieldAlert, AlertOctagon, Clock, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import StatusBadge, { type ExecStatus } from "@/components/terminal/StatusBadge";
+
+const outcomeToExecStatus = (outcome: ExecutionOutcome): ExecStatus => {
+  switch (outcome) {
+    case "success": return "position_confirmed";
+    case "blocked": return "risk_blocked";
+    case "rejected": return "rejected";
+    case "pending": return "broker_accepted";
+    case "unconfirmed": return "execution_unconfirmed";
+  }
+};
 
 export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed";
 
@@ -120,6 +131,7 @@ const TitleBar = ({
           <h3 className="font-heading text-[11px] font-bold uppercase tracking-[0.18em] text-neutral-100 truncate">
             {title}
           </h3>
+          <StatusBadge status={outcomeToExecStatus(outcome)} size="xs" className="ml-1 shrink-0" />
         </div>
         <button
           type="button"
@@ -205,8 +217,7 @@ export const ExecutionResultModal = ({
               <Row label="Broker Message" value={effective.brokerMessage || "—"} />
               <Row
                 label="Status"
-                value={(effective.status || "DONE").toString().toUpperCase()}
-                accent="text-emerald-300"
+                value={<StatusBadge status="position_confirmed" />}
               />
               {effective.ticket != null && (
                 <Row label="Ticket" value={`#${effective.ticket}`} />
@@ -289,11 +300,10 @@ export const ExecutionResultModal = ({
               <Row
                 label="Status"
                 value={
-                  effective.outcome === "pending"
-                    ? "ORDER SENT — WAITING FOR MT5"
-                    : "NO MATCHING MT5 POSITION"
+                  <StatusBadge
+                    status={effective.outcome === "pending" ? "broker_accepted" : "execution_unconfirmed"}
+                  />
                 }
-                accent="text-yellow-300"
               />
               <Row
                 label="Broker Message"
