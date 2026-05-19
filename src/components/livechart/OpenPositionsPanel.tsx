@@ -175,6 +175,10 @@ const OpenPositionsPanel = () => {
           </table>
         </div>
       )}
+
+      <div className="shrink-0 border-t border-neutral-900 bg-[#070707] px-2 py-[3px] text-[8px] font-mono uppercase tracking-[0.22em] text-[#5d6168] text-center">
+        Powered by Trading Layer · Execution venue: INFINOX MT5
+      </div>
     </div>
   );
 };
