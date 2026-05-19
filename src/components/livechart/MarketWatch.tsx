@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, Loader2 } from "lucide-react";
 import { fetchMarketQuotes, type LiveQuote } from "@/lib/markets";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 interface Props {
   symbols: string[]; // display labels e.g. "EUR/USD"
