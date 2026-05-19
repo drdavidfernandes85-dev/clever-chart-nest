@@ -781,6 +781,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   // selectedQuote but a last-good snapshot is still keeping the ticket alive.
   const showDataDelayed = selectedDataDelayed && !!effectiveSelected;
 
+  const { settings: riskSettings, flags: riskFlags } = useRiskSettings();
+  const killSwitchActive = riskFlags.killSwitch;
+  const liveDisabled = !riskFlags.liveEnabled;
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
@@ -791,7 +795,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     volNum > 0 &&
     !volumeError &&
     !submitting &&
-    !execLocked;
+    !execLocked &&
+    !killSwitchActive &&
+    !liveDisabled;
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
