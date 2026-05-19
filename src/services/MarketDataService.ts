@@ -31,17 +31,24 @@ import {
 const SELECTED_INTERVAL_MS = 2000;
 const WATCHLIST_INTERVAL_MS = 10_000;
 const ACCOUNT_INTERVAL_MS = 10_000;
-const POSITIONS_INTERVAL_MS = 5_000;
-const POSITIONS_BOOST_MS = 2000;
-const POSITIONS_BOOST_DURATION_MS = 30_000;
+const POSITIONS_INTERVAL_MS = 10_000;
+const SYSTEM_HEALTH_INTERVAL_MS = 30_000;
+// After an order/close, schedule extra account+positions refreshes at
+// these offsets (ms). Then the regular 10s positions loop resumes.
+const POSITIONS_BURST_OFFSETS_MS = [0, 1500, 3000, 5000, 8000];
 const RATE_LIMIT_PAUSE_SECONDS = 60;
 const STALE_CHECK_MS = 5000;
+// Soft budget — when exceeded we skip the next non-essential tick
+// (watchlist + system_health). Selected symbol, account, positions
+// keep running because they drive execution-adjacent UI.
+const REQUEST_BUDGET_PER_MINUTE = 60;
 
 type LoopId =
   | "selected_symbol"
   | "watchlist"
   | "account"
   | "positions"
+  | "system_health"
   | "stale_monitor";
 
 const num = (v: any): number | null =>
@@ -52,10 +59,16 @@ const num = (v: any): number | null =>
 class MarketDataServiceImpl {
   private started = false;
   private timers: Partial<Record<LoopId, number>> = {};
+  private burstTimers: number[] = [];
   private selectedSymbol = "";
   private watchlist = new Set<string>();
-  private positionsBoostUntil = 0;
-  private currentPositionsInterval = POSITIONS_INTERVAL_MS;
+  /**
+   * Watchlist is built from multiple UI sources (e.g. mini-watchlist,
+   * bid/ask board, dashboard symbol list). Each source registers under
+   * a key; the union is polled. This prevents one component clearing
+   * another's symbols.
+   */
+  private watchlistSources = new Map<string, Set<string>>();
   private cooldownTimer: number | null = null;
 
   start() {
@@ -72,13 +85,15 @@ class MarketDataServiceImpl {
     document.addEventListener("visibilitychange", this.onVisibility);
 
     this.startLoop("account", this.tickAccount, ACCOUNT_INTERVAL_MS);
-    this.startLoop("positions", this.tickPositions, this.currentPositionsInterval);
+    this.startLoop("positions", this.tickPositions, POSITIONS_INTERVAL_MS);
+    this.startLoop("system_health", this.tickSystemHealth, SYSTEM_HEALTH_INTERVAL_MS);
     this.startLoop("stale_monitor", this.tickStale, STALE_CHECK_MS);
     // selected_symbol + watchlist loops start when first symbol/list is set.
 
     // Immediate kickoff.
     this.tickAccount();
     this.tickPositions();
+    this.tickSystemHealth();
 
     this.publishActiveLoops();
     liveMarketDataStore.setStatus("live_polling");
@@ -88,6 +103,7 @@ class MarketDataServiceImpl {
     if (!this.started) return;
     this.started = false;
     for (const id of Object.keys(this.timers) as LoopId[]) this.stopLoop(id);
+    this.clearBurstTimers();
     window.removeEventListener("trade-executed", this.onTradeExecuted);
     window.removeEventListener("mt:refresh-positions", this.refreshAccountAndPositions);
     window.removeEventListener("mt:refresh-quotes", this.refreshSelected);
@@ -110,15 +126,37 @@ class MarketDataServiceImpl {
     this.publishActiveLoops();
   }
 
+  /**
+   * Replaces the symbols watched by the default ("global") source.
+   * For multi-source coordination use `subscribeWatchlist(source, symbols)`.
+   */
   setWatchlist(symbols: string[]) {
-    const cleaned = symbols
-      .map((s) => (s || "").trim().toUpperCase())
-      .filter(Boolean);
+    this.subscribeWatchlist("default", symbols);
+  }
+
+  /** Register a named source's symbol list; service polls the union. */
+  subscribeWatchlist(source: string, symbols: string[]) {
+    const cleaned = new Set(
+      symbols.map((s) => (s || "").trim().toUpperCase()).filter(Boolean),
+    );
+    if (cleaned.size === 0) {
+      this.watchlistSources.delete(source);
+    } else {
+      this.watchlistSources.set(source, cleaned);
+    }
+    this.recomputeWatchlist();
+  }
+
+  private recomputeWatchlist() {
+    const union = new Set<string>();
+    for (const set of this.watchlistSources.values()) {
+      for (const s of set) union.add(s);
+    }
     const same =
-      cleaned.length === this.watchlist.size &&
-      cleaned.every((s) => this.watchlist.has(s));
+      union.size === this.watchlist.size &&
+      Array.from(union).every((s) => this.watchlist.has(s));
     if (same) return;
-    this.watchlist = new Set(cleaned);
+    this.watchlist = union;
     this.stopLoop("watchlist");
     if (this.watchlist.size > 0) {
       this.startLoop("watchlist", this.tickWatchlist, WATCHLIST_INTERVAL_MS);
@@ -127,6 +165,7 @@ class MarketDataServiceImpl {
     this.publishPolledSymbols();
     this.publishActiveLoops();
   }
+
 
   /** Manual refresh hooks for legacy callers. */
   refreshSelected = () => {
@@ -145,20 +184,29 @@ class MarketDataServiceImpl {
 
   /* ---------- Internal ---------- */
 
-  private canRun(): boolean {
+  private canRun(loop?: LoopId): boolean {
     if (!this.started) return false;
     if (liveMarketDataStore.getState().rateLimit.active) return false;
     if (typeof document !== "undefined" && document.visibilityState !== "visible")
       return false;
+    // Soft request budget — keep total outbound calls under
+    // REQUEST_BUDGET_PER_MINUTE. When exceeded, drop the non-essential
+    // loops (watchlist + system_health) but keep selected_symbol,
+    // account, positions, which drive execution-adjacent UI.
+    const reqs = liveMarketDataStore.getState().diagnostics.requestsLast60s;
+    if (reqs >= REQUEST_BUDGET_PER_MINUTE) {
+      if (loop === "watchlist" || loop === "system_health") return false;
+    }
     return true;
   }
 
   private startLoop(id: LoopId, fn: () => void | Promise<void>, intervalMs: number) {
     this.stopLoop(id);
     this.timers[id] = window.setInterval(() => {
-      if (this.canRun()) void fn();
+      if (this.canRun(id)) void fn();
     }, intervalMs);
   }
+
 
   private stopLoop(id: LoopId) {
     const t = this.timers[id];
@@ -190,25 +238,27 @@ class MarketDataServiceImpl {
   };
 
   private onTradeExecuted = () => {
-    this.positionsBoostUntil = Date.now() + POSITIONS_BOOST_DURATION_MS;
-    if (this.currentPositionsInterval !== POSITIONS_BOOST_MS) {
-      this.currentPositionsInterval = POSITIONS_BOOST_MS;
-      this.startLoop("positions", this.tickPositions, POSITIONS_BOOST_MS);
+    // After an order/close, run a short burst of immediate-then-spaced
+    // refreshes so the UI catches the new position quickly without
+    // permanently raising the polling rate.
+    this.clearBurstTimers();
+    for (const offset of POSITIONS_BURST_OFFSETS_MS) {
+      const t = window.setTimeout(() => {
+        if (this.canRun()) {
+          void this.tickAccount();
+        }
+      }, offset);
+      this.burstTimers.push(t);
     }
-    this.refreshAccountAndPositions();
   };
 
-  private maybeRelaxPositionsBoost() {
-    if (
-      this.positionsBoostUntil &&
-      Date.now() > this.positionsBoostUntil &&
-      this.currentPositionsInterval !== POSITIONS_INTERVAL_MS
-    ) {
-      this.currentPositionsInterval = POSITIONS_INTERVAL_MS;
-      this.positionsBoostUntil = 0;
-      this.startLoop("positions", this.tickPositions, POSITIONS_INTERVAL_MS);
+  private clearBurstTimers() {
+    for (const t of this.burstTimers) {
+      try { window.clearTimeout(t); } catch { /* ignore */ }
     }
+    this.burstTimers = [];
   }
+
 
   private detect429(data: any, error: any): boolean {
     const status =
@@ -419,19 +469,34 @@ class MarketDataServiceImpl {
       }
     } catch (e: any) {
       liveMarketDataStore.setLastError(e?.message || "Network error");
-    } finally {
-      this.maybeRelaxPositionsBoost();
     }
   };
 
   private tickPositions = async () => {
-    // Positions are returned by get-mt5-terminal-data; piggyback on tickAccount
-    // when it ran recently. To minimize independent calls, re-invoke account
-    // when positions cadence is faster than account cadence (boost mode).
-    if (this.currentPositionsInterval < ACCOUNT_INTERVAL_MS) {
-      await this.tickAccount();
+    // Positions piggyback on tickAccount (get-mt5-terminal-data returns
+    // both account + positions). The dedicated loop is here for clarity
+    // and for the post-trade burst schedule.
+    // No-op when the account loop already fired within the interval.
+  };
+
+  private tickSystemHealth = async () => {
+    if (!this.canRun()) return;
+    liveMarketDataStore.recordRequest();
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "trading-layer-health",
+        { body: {} },
+      );
+      if (this.detect429(data, error)) {
+        this.triggerRateLimitPause();
+        return;
+      }
+      // Health result is informational only; the per-tick status flips
+      // (live_polling / stale / rate_limited) are still driven by the
+      // quote + account loops.
+    } catch {
+      /* health errors are non-fatal */
     }
-    // Otherwise nothing extra to fetch — tickAccount already populated positions.
   };
 
   private tickStale = () => {
@@ -444,6 +509,7 @@ class MarketDataServiceImpl {
       liveMarketDataStore.setStatus("live_polling");
     }
   };
+
 
   private normalizePositions(rows: any[]): LivePositionRow[] {
     return rows.map((p) => ({

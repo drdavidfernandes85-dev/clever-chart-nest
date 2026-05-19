@@ -32,11 +32,16 @@ export function useMultiSymbolTicksWithMeta(symbols: string[], _periodMs = 5000)
   const key = symbols.map((s) => s.toUpperCase()).sort().join(",");
   const sessionOpen = useRef<Record<string, number>>({});
 
-  // Register symbol list with the central service.
+  // Register symbol list with the central service under a stable
+  // per-hook source key so multiple consumers don't overwrite each other.
+  const sourceIdRef = useRef<string>(
+    `multi-symbol-ticks:${Math.random().toString(36).slice(2, 8)}`,
+  );
   useEffect(() => {
-    MarketDataService.setWatchlist(key ? key.split(",") : []);
+    const source = sourceIdRef.current;
+    MarketDataService.subscribeWatchlist(source, key ? key.split(",") : []);
     return () => {
-      // Don't clear globally — other consumers may rely on it.
+      MarketDataService.subscribeWatchlist(source, []);
     };
   }, [key]);
 
