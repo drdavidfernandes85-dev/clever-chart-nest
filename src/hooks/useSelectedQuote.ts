@@ -65,6 +65,7 @@ export function useSelectedQuote(
           sq &&
           (sq.bid != null || sq.ask != null || sq.last != null || sq.volumeMin != null);
         if (!usable) {
+          checkAndHandle429(data, error);
           setDataDelayed(true);
           return;
         }
