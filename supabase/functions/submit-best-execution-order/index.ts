@@ -185,6 +185,9 @@ Deno.serve(async (req) => {
   if (!res) {
     return json({
       success: false,
+      version: VERSION,
+      step: "pretrade_validation",
+      liveOrderSent: false,
       tradeId,
       error: (execError as any)?.message || "execute-trade returned no body",
       latencyMs: totalLatencyMs,
@@ -251,6 +254,9 @@ Deno.serve(async (req) => {
 
   return json({
     success,
+    version: VERSION,
+    step: success ? "execution_result" : "pretrade_validation",
+    liveOrderSent: success,
     tradeId,
     status,
     outcome,
