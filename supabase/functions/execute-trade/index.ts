@@ -590,7 +590,10 @@ serve(async (req) => {
               symbol: String(p.symbol ?? ""),
               side: normSide,
               volume: Number(p.volume ?? p.lots ?? 0),
-              open_price: Number(p.open_price ?? p.price_open ?? p.entry ?? 0),
+              open_price: Number(
+                p.entry_price ?? p.price_open ?? p.priceOpen ??
+                p.openPrice ?? p.open_price ?? p.price ?? p.entry ?? 0,
+              ),
               current_price: p.current_price != null ? Number(p.current_price) : null,
               stop_loss: p.sl != null ? Number(p.sl) : p.stop_loss != null ? Number(p.stop_loss) : null,
               take_profit: p.tp != null ? Number(p.tp) : p.take_profit != null ? Number(p.take_profit) : null,
