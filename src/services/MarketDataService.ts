@@ -126,15 +126,37 @@ class MarketDataServiceImpl {
     this.publishActiveLoops();
   }
 
+  /**
+   * Replaces the symbols watched by the default ("global") source.
+   * For multi-source coordination use `subscribeWatchlist(source, symbols)`.
+   */
   setWatchlist(symbols: string[]) {
-    const cleaned = symbols
-      .map((s) => (s || "").trim().toUpperCase())
-      .filter(Boolean);
+    this.subscribeWatchlist("default", symbols);
+  }
+
+  /** Register a named source's symbol list; service polls the union. */
+  subscribeWatchlist(source: string, symbols: string[]) {
+    const cleaned = new Set(
+      symbols.map((s) => (s || "").trim().toUpperCase()).filter(Boolean),
+    );
+    if (cleaned.size === 0) {
+      this.watchlistSources.delete(source);
+    } else {
+      this.watchlistSources.set(source, cleaned);
+    }
+    this.recomputeWatchlist();
+  }
+
+  private recomputeWatchlist() {
+    const union = new Set<string>();
+    for (const set of this.watchlistSources.values()) {
+      for (const s of set) union.add(s);
+    }
     const same =
-      cleaned.length === this.watchlist.size &&
-      cleaned.every((s) => this.watchlist.has(s));
+      union.size === this.watchlist.size &&
+      Array.from(union).every((s) => this.watchlist.has(s));
     if (same) return;
-    this.watchlist = new Set(cleaned);
+    this.watchlist = union;
     this.stopLoop("watchlist");
     if (this.watchlist.size > 0) {
       this.startLoop("watchlist", this.tickWatchlist, WATCHLIST_INTERVAL_MS);
@@ -143,6 +165,7 @@ class MarketDataServiceImpl {
     this.publishPolledSymbols();
     this.publishActiveLoops();
   }
+
 
   /** Manual refresh hooks for legacy callers. */
   refreshSelected = () => {
