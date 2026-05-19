@@ -83,7 +83,7 @@ const Navbar = () => {
           </div>
           <span className="hidden sm:inline-block h-5 lg:h-6 w-px bg-[#FFCD05]/30 shrink-0" aria-hidden="true" />
           <span className="hidden sm:inline font-heading text-sm lg:text-base font-extrabold uppercase tracking-[0.12em] truncate leading-none">
-            <span className="text-[#FFCD05]">LTR</span> <span className="text-foreground">Terminal Pro</span>
+            <span className="text-[#FFCD05]">IX</span> <span className="text-foreground">LTR</span>
           </span>
         </a>
 
@@ -138,7 +138,7 @@ const Navbar = () => {
             >
               <Link to="/connect-mt" onClick={() => track("connect_mt_click", { location: "navbar" })}>
                 <Plug className="h-3.5 w-3.5" />
-                Connect MT5 Account
+                {t("hero.cta.mt5")}
               </Link>
             </Button>
           )}
@@ -226,7 +226,7 @@ const Navbar = () => {
               <Button size="sm" asChild className="justify-start gap-1.5 rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90">
                 <Link to="/connect-mt" onClick={() => { setMobileOpen(false); track("connect_mt_click", { location: "navbar_mobile" }); }}>
                   <Plug className="h-3.5 w-3.5" />
-                  Connect MT5 Account
+                  {t("hero.cta.mt5")}
                 </Link>
               </Button>
             )}

@@ -52,8 +52,10 @@ const Footer = () => {
       <div className="container">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <Link to="/" className="inline-flex items-center" aria-label="LTR Terminal Pro — Home">
-              <LtrLogo variant="full" className="h-8 w-auto" />
+            <Link to="/" className="inline-flex items-center gap-2" aria-label="IX LTR — Home">
+              <span className="font-heading text-base font-extrabold uppercase tracking-[0.14em] leading-none">
+                <span className="text-[#FFCD05]">IX</span> <span className="text-foreground">LTR</span>
+              </span>
             </Link>
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               {t("footer.desc")}
@@ -82,10 +84,10 @@ const Footer = () => {
         <div className="mt-12 cyber-line" />
         <div className="mt-6 mx-auto max-w-4xl space-y-2 text-center text-[11px] leading-relaxed text-muted-foreground/80">
           <p>
-            <span className="font-semibold text-foreground/70">Risk warning:</span> Trading leveraged products involves significant risk and may not be suitable for all investors. You may lose more than your initial investment. The content in this trading room is provided for educational and informational purposes only and does not constitute investment advice, financial advice, or a recommendation to buy or sell any financial instrument. Users are solely responsible for their trading decisions.
+            <span className="font-semibold text-foreground/70">Aviso de riesgo:</span> Operar productos apalancados conlleva un riesgo significativo y puede no ser adecuado para todos los inversores. Puede perder más que su inversión inicial. El contenido de IX LTR (incluyendo LTR Terminal Pro, webinars, chatroom e Ideas de Mercado) es exclusivamente educativo e informativo y no constituye asesoría financiera, recomendaciones de inversión ni señales de trading. Cada usuario es responsable de sus propias decisiones.
           </p>
           <p className="text-muted-foreground/60">
-            Trading Layer is an independent third-party technology provider. The broker is not the provider of trade ideas, copy / follow functionality, or third-party trading technology. The broker's role is limited to the provision of the trading account and execution venue, subject to its own terms and regulatory permissions.
+            Trading Layer es un proveedor tecnológico independiente. El bróker no es el proveedor de ideas de mercado, herramientas de seguimiento ni tecnología de terceros. El rol del bróker se limita a la provisión de la cuenta de trading y venue de ejecución, sujeto a sus propios términos y permisos regulatorios.
           </p>
         </div>
         <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
