@@ -59,12 +59,19 @@ function tokenFromBody(body: any): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function mt5SideToString(t: number | string): "long" | "short" {
+function mt5SideToJournalDirection(t: number | string): "long" | "short" {
   // MQL5 ENUM_POSITION_TYPE: 0 = BUY, 1 = SELL
-  // MQL4 OP_BUY = 0, OP_SELL = 1
-  // trade_journal.direction check constraint expects 'long' | 'short'
+  // trade_journal.direction expects 'long' | 'short'
   const n = typeof t === "string" ? parseInt(t, 10) : t;
   return n === 1 ? "short" : "long";
+}
+
+function normalizePositionSide(value: unknown): "buy" | "sell" | null {
+  // mt_positions.side check constraint requires 'buy' | 'sell'.
+  const raw = String(value ?? "").toLowerCase().trim();
+  if (raw === "buy" || raw === "long" || raw === "position_type_buy" || raw === "0") return "buy";
+  if (raw === "sell" || raw === "short" || raw === "position_type_sell" || raw === "1") return "sell";
+  return null;
 }
 
 Deno.serve(async (req) => {
