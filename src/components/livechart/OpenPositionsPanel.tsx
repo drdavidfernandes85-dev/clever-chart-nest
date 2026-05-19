@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Briefcase, Loader2, RefreshCw } from "lucide-react";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { getCooldownRemainingMs } from "@/lib/tradingLayerControl";
 import PositionActions from "./PositionActions";
