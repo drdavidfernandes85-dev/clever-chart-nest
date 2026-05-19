@@ -141,49 +141,67 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     if (isExecutionLocked()) {
       return toast.warning("Another execution is in progress. Please wait.");
     }
+    const openVolume = Number(position.volume);
     setSubmitting(true);
     lockExecution(label === "full" ? "close_full" : "close_partial", 30000);
-    let serverClosed = false;
+    let serverAccepted = false;
+    let serverPartial = false;
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
       const r = await fetch(url, {
         method: "POST", cache: "no-store", headers,
         body: JSON.stringify({
-          ticket, symbol: position.symbol, volume,
-          side: position.side === "buy" ? "sell" : "buy",
+          closeId: crypto.randomUUID(),
+          ticket: Number(ticket),
+          symbol: position.symbol,
+          openSide: position.side,
+          openVolume,
+          volume: Number(volume),
+          liveCloseConfirmed: true,
+          clientClickAt: new Date().toISOString(),
         }),
       });
       const data = await r.json().catch(() => ({}));
       if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
       checkAndHandle429(data, null);
       if (!r.ok || data?.success === false) {
-        toast.error(errMessageFrom(data), { description: String(data?.brokerMessage ?? "") });
+        toast.error(errMessageFrom(data), { description: safeStr(data?.brokerMessage) });
         broadcastExec("Close Rejected");
-      } else if (data?.status === "closed") {
-        serverClosed = true;
+      } else if (data?.status === "closed" || data?.status === "partial_closed") {
+        serverAccepted = true;
+        serverPartial = data?.status === "partial_closed" || data?.partial === true;
         if (label === "full") setOpenFull(false);
         else setOpenPartial(false);
       } else {
-        toast.warning(`Close ${data?.status || "pending"}`, {
-          description: String(data?.brokerMessage ?? ""),
+        toast.warning(`Close ${safeStr(data?.status) || "pending"}`, {
+          description: safeStr(data?.brokerMessage),
         });
         broadcastExec("Close Pending");
       }
     } catch (e: any) {
-      toast.error("Could not close position", { description: e?.message });
+      toast.error("Could not close position", { description: safeStr(e?.message) });
       broadcastExec("Close Failed");
     } finally {
       setSubmitting(false);
       unlockExecution();
       // Reconcile: refresh now + at 1.5s + 3s; check ticket disappears.
       try { await onAfter(); } catch { /* ignore */ }
-      if (serverClosed && ticket) {
+      if (serverAccepted && ticket) {
         const getTickets = () =>
           (positionsRef.current ?? []).map((p) => (p.ticket == null ? "" : String(p.ticket)));
         const outcome = await reconcileAfterClose(onAfter, getTickets, ticket);
-        notifyCloseResult(outcome, position.symbol, ticket);
-        broadcastExec(outcome === "closed" ? "Position Closed" : "Close Pending");
+        const gone = outcome === "closed";
+        if (gone) {
+          toast.success("Position fully closed", { description: `#${ticket} ${position.symbol}` });
+          broadcastExec("Position Closed");
+        } else if (serverPartial) {
+          toast.success("Partial close completed", { description: `#${ticket} ${position.symbol}` });
+          broadcastExec("Partial Closed");
+        } else {
+          notifyCloseResult("pending", position.symbol, ticket);
+          broadcastExec("Close Pending");
+        }
       }
 
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
