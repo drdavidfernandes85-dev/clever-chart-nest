@@ -59,7 +59,7 @@ const Index = () => {
       "@context": "https://schema.org",
       "@type": "FinancialService",
       "@id": homeUrl + "#organization",
-      name: "IX Sala de Trading",
+      name: "IX LTR",
       url: homeUrl,
       logo: SITE_URL + "/pwa-512.png",
       image: SITE_URL + "/og-image.jpg",
@@ -71,14 +71,14 @@ const Index = () => {
       ],
       serviceType:
         locale === "es"
-          ? "Educación de trading y comunidad de traders en vivo"
+          ? "Plataforma educativa de trading y comunidad de traders"
           : locale === "pt"
-          ? "Educação de trading e comunidade de traders ao vivo"
-          : "Trading education and live trader community",
+          ? "Plataforma educacional de trading e comunidade de traders"
+          : "Educational trading platform and trader community",
       provider: {
         "@type": "Organization",
-        name: "INFINOX",
-        url: "https://www.infinox.com",
+        name: "IX LTR",
+        url: homeUrl,
       },
     },
     {
@@ -86,7 +86,8 @@ const Index = () => {
       "@type": "WebSite",
       "@id": homeUrl + "#website",
       url: homeUrl,
-      name: "IX Sala de Trading",
+      name: "IX LTR",
+
       inLanguage,
       publisher: { "@id": homeUrl + "#organization" },
     },

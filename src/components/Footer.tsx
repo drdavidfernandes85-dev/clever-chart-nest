@@ -16,9 +16,12 @@ const Footer = () => {
     {
       title: t("footer.quickLinks"),
       links: [
-        { label: t("footer.anchor.education"), to: "/education" },
-        { label: t("footer.anchor.webinars"), to: "/webinars" },
-        { label: "Video Library", to: "/videos" },
+        { label: "Educación de Trading", to: "/education" },
+        { label: "Webinars Gratuitos", to: "/webinars" },
+        { label: "Biblioteca de Videos", to: "/videos" },
+        { label: "Comunidad", to: "/chatroom" },
+        { label: "LTR Terminal Pro", to: "/dashboard" },
+        { label: "Ideas de Mercado", to: "/ideas" },
         { label: "Leaderboard", to: "/leaderboard" },
       ],
     },
@@ -36,11 +39,13 @@ const Footer = () => {
       links: [
         { label: "Terms & Conditions", to: "/terms" },
         { label: "Risk Disclosure", to: "/risk-disclosure" },
+        { label: "Privacy Notice", to: "/terms#privacy" },
         { label: "Community Guidelines", to: "/community/guidelines" },
-        { label: t("footer.anchor.contact"), to: "/#contact" },
+        { label: "Contact Compliance", to: "/#contact" },
       ],
     },
   ];
+
 
   return (
     <footer className="relative bg-background/95 backdrop-blur-xl border-t border-border py-16">
@@ -85,13 +90,14 @@ const Footer = () => {
         </div>
         <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <div className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} IX Sala de Trading. {t("footer.rights")}
+            © {new Date().getFullYear()} IX LTR. {t("footer.rights")}
           </div>
           <PoweredByTradingLayer />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">
             <Sparkles className="h-3 w-3" /> Version 1.0 · Launch Ready
           </span>
         </div>
+
       </div>
     </footer>
   );

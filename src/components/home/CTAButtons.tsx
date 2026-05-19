@@ -29,18 +29,19 @@ export const OpenTerminalCTA = ({ section, className = "" }: BaseProps) => (
     <Button size="lg" className={`${primaryCls} cta-pulse ${className}`} asChild>
       <Link
         to="/dashboard"
-        aria-label="Acceder al Terminal de Trading"
+        aria-label="Entrar al Trading Room"
         onClick={() =>
           track("cta_click", { cta: "open_terminal", section, destination: "/dashboard" })
         }
       >
         <LayoutDashboard className="h-4 w-4" />
-        Acceder al Terminal
+        Entrar al Trading Room
         <ArrowRight className="h-4 w-4" />
       </Link>
     </Button>
   </MagneticButton>
 );
+
 
 export const WatchWebinarsCTA = ({ section, className = "" }: BaseProps) => (
   <MagneticButton strength={0.22}>

@@ -135,22 +135,22 @@ const HeroSection = () => {
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:grid-cols-[1.1fr_1fr] xl:gap-20">
           {/* LEFT — copy */}
           <div className="relative flex flex-col items-start gap-6 text-left lg:pl-4 xl:pl-2 2xl:pl-0">
-            {/* Headline */}
+            {/* Headline — H1 */}
             <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
               <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
-                IX Sala de Trading
+                Aprende. Discute.
               </span>{" "}
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">en Vivo</span>
+              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">Opera con Disciplina.</span>
             </h1>
 
             {/* Sub-headline */}
             <p className="max-w-xl text-base md:text-lg leading-relaxed font-sans text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-              Educación profesional, comunidad real y herramientas avanzadas para traders de INFINOX.
+              IX LTR es una plataforma educativa de trading aliada a INFINOX, creada para traders nuevos y avanzados que buscan aprender, participar en webinars, discutir mercados, revisar ideas educativas y acceder a herramientas profesionales de trading.
             </p>
 
             {/* Educational positioning */}
             <p className="max-w-xl text-sm font-semibold text-primary/90">
-              Herramientas y conocimiento — sin señales ni consejos financieros.
+              Educación, comunidad y herramientas — sin asesoría financiera ni promesas de rentabilidad.
             </p>
 
             {/* Live online counter — prominent */}
@@ -160,9 +160,10 @@ const HeroSection = () => {
             <div className="flex w-full max-w-xl items-start gap-2 rounded-xl border border-primary/40 bg-primary/[0.06] px-4 py-3 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.18)]">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <p className="text-xs leading-relaxed text-white/80">
-                {t("hero.eligibility")}
+                El acceso completo puede requerir una cuenta real verificada de INFINOX y cumplir los requisitos aplicables.
               </p>
             </div>
+
 
             {/* CTAs — primary: Trading Terminal · secondary: Free Webinars */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -201,9 +202,10 @@ const HeroSection = () => {
             <div className="mt-2 flex w-full max-w-xl items-start gap-2 rounded-lg border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/60" />
               <p className="text-xs leading-relaxed text-white/65">
-                Trading involves significant risk. Past performance is not indicative of future results. All content is for educational purposes only.
+                Operar productos apalancados implica riesgo significativo. El rendimiento pasado no garantiza resultados futuros. Todo el contenido es exclusivamente educativo e informativo.
               </p>
             </div>
+
           </div>
 
           {/* RIGHT — empty spacer; the comet+logo is the section background image */}
