@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, TrendingDown, ArrowDown, ArrowUp, BarChart2 } from "lucide-react";
+import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 
 interface Props {
   /** TradingView-style symbol e.g. "FX:EURUSD" */
