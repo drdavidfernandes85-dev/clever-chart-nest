@@ -215,7 +215,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         validationError: "Direct Edge Function fetch failed.",
       });
     }
+    // Refresh audit panel after every Dry Run attempt
+    setTimeout(() => setAuditRefreshKey(k => k + 1), 400);
   }
+
 
 
   // Latch "ever connected" so a transient polling failure cannot replace
