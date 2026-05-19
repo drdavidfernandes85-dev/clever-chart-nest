@@ -1164,16 +1164,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 onCheckedChange={(v) => setLiveTestConfirmed(v === true)}
                 className="mt-0.5 border-red-500 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
               />
-              <span>I understand this will send a live 0.01 market order.</span>
+              <span>I understand this sends a real order to my connected MT5 account.</span>
             </label>
             <button
               type="button"
-              disabled={!liveTestConfirmed || liveTestSubmitting}
+              disabled={!liveTestConfirmed || liveTestSubmitting || cooling}
               onClick={handleLiveTest001}
+              title={cooling ? `Rate limited — retry in ${cooldownSec}s` : undefined}
               className="w-full h-7 rounded-sm border border-red-500 bg-red-600 px-2 text-[10px] font-mono font-bold uppercase tracking-wider text-white hover:bg-red-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
             >
               {liveTestSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
-              LIVE TEST 0.01
+              {cooling ? `RATE LIMITED — ${cooldownSec}s` : "LIVE TEST 0.01"}
             </button>
           </div>
         )}
