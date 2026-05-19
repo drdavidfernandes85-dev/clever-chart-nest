@@ -43,9 +43,9 @@ const WATCHLIST = [
 ];
 
 const COMMUNITY = [
-  { name: "Marco D.", role: "Mentor", status: "Live now", color: "yellow" },
+  { name: "Marco D.", role: "Educator", status: "Live now", color: "yellow" },
   { name: "Lina K.", role: "Pro", status: "Online", color: "yellow" },
-  { name: "Theo S.", role: "Mentor", status: "Online", color: "yellow" },
+  { name: "Theo S.", role: "Educator", status: "Online", color: "yellow" },
   { name: "Ana R.", role: "Member", status: "Online", color: "gray" },
   { name: "Diego F.", role: "Member", status: "Online", color: "gray" },
   { name: "Sofia M.", role: "Member", status: "Idle", color: "gray" },
