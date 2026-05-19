@@ -285,8 +285,12 @@ Deno.serve(async (req) => {
     // Upsert each open position
     for (const p of incoming) {
       const ticket = String(p.ticket);
-      const side = mt5SideToString(p.type);
-      const openPrice = Number(p.entry ?? p.open_price ?? 0);
+      const side = normalizePositionSide(p.type);
+      if (!side) continue; // skip rows we can't safely insert under the check constraint
+      const openPrice = Number(
+        p.entry_price ?? p.price_open ?? p.priceOpen ?? p.openPrice ??
+        p.open_price ?? p.price ?? p.entry ?? 0,
+      );
       const volume = Number(p.volume ?? 0);
       const symbol = String(p.symbol ?? "");
       const sl = p.sl != null ? Number(p.sl) : null;
