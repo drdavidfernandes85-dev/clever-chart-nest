@@ -100,11 +100,14 @@ const OpenPositionsPanel = () => {
           positionId: pos.ticket ?? undefined,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const msg = typeof error === "string" ? error : (error as any)?.message || "Close failed";
+        throw new Error(msg);
+      }
       if (data && (data as any).success === false) {
-        throw new Error(
-          (data as any).error || "Broker rejected the close order",
-        );
+        const rawErr = (data as any).error;
+        const msg = typeof rawErr === "string" ? rawErr : rawErr?.message || "Broker rejected the close order";
+        throw new Error(msg);
       }
       toast.success(`Close order sent for ${pos.symbol} #${pos.ticket ?? ""}`);
       window.dispatchEvent(new Event("trade-executed"));
