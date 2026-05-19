@@ -146,6 +146,7 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     lockExecution(label === "full" ? "close_full" : "close_partial", 30000);
     let serverAccepted = false;
     let serverPartial = false;
+    let closeAuditEventId: string | null = null;
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
@@ -171,6 +172,7 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       } else if (data?.status === "closed" || data?.status === "partial_closed") {
         serverAccepted = true;
         serverPartial = data?.status === "partial_closed" || data?.partial === true;
+        closeAuditEventId = typeof data?.auditEventId === "string" ? data.auditEventId : null;
         if (label === "full") setOpenFull(false);
         else setOpenPartial(false);
       } else {
@@ -185,22 +187,84 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     } finally {
       setSubmitting(false);
       unlockExecution();
-      // Reconcile: refresh now + at 1.5s + 3s; check ticket disappears.
+      // Reconciliation IS the source of truth. Never trust server "closed" alone.
       try { await onAfter(); } catch { /* ignore */ }
       if (serverAccepted && ticket) {
         const getTickets = () =>
           (positionsRef.current ?? []).map((p) => (p.ticket == null ? "" : String(p.ticket)));
-        const outcome = await reconcileAfterClose(onAfter, getTickets, ticket);
-        const gone = outcome === "closed";
-        if (gone) {
-          toast.success("Position fully closed", { description: `#${ticket} ${position.symbol}` });
+        const getVolumeForTicket = (t: string) => {
+          const row = (positionsRef.current ?? []).find((p) => String(p.ticket) === t);
+          return row ? Number(row.volume) : null;
+        };
+        const outcome = await reconcileAfterClose(
+          onAfter,
+          getTickets,
+          ticket,
+          { initialVolume: openVolume, getVolumeForTicket },
+        );
+
+        // Update / insert the audit row to reflect MT5 truth.
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const baseFields = {
+              user_id: user.id,
+              ticket,
+              symbol: position.symbol,
+              side: position.side,
+              volume: Number(volume),
+            };
+            if (outcome === "closed") {
+              const patch = {
+                status: "closed",
+                outcome: "closed",
+                broker_message: "Position closed. Ticket removed from MT5 positions.",
+                raw: { classification: "close_position", mt5Confirmed: true, reconciledAt: new Date().toISOString() },
+              };
+              if (closeAuditEventId) {
+                await supabase.from("execution_audit_events").update(patch).eq("id", closeAuditEventId);
+              } else {
+                await supabase.from("execution_audit_events").insert({ ...baseFields, ...patch });
+              }
+            } else if (outcome === "partial") {
+              const patch = {
+                status: "partial_closed",
+                outcome: "partial_closed",
+                broker_message: "Position partially closed. Remaining volume confirmed in MT5.",
+                raw: { classification: "close_position", mt5Confirmed: true, partial: true, reconciledAt: new Date().toISOString() },
+              };
+              if (closeAuditEventId) {
+                await supabase.from("execution_audit_events").update(patch).eq("id", closeAuditEventId);
+              } else {
+                await supabase.from("execution_audit_events").insert({ ...baseFields, ...patch });
+              }
+            } else {
+              const patch = {
+                status: "close_unconfirmed",
+                outcome: "close_unconfirmed",
+                broker_message: "Close request accepted but ticket still exists in MT5 positions.",
+                raw: { classification: "close_position", mt5Confirmed: false, reconciledAt: new Date().toISOString() },
+              };
+              if (closeAuditEventId) {
+                await supabase.from("execution_audit_events").update(patch).eq("id", closeAuditEventId);
+              } else {
+                await supabase.from("execution_audit_events").insert({ ...baseFields, ...patch });
+              }
+            }
+          }
+        } catch { /* ignore audit failures */ }
+
+        if (outcome === "closed") {
+          toast.success("Position closed", { description: `#${ticket} ${position.symbol} — ticket removed from MT5.` });
           broadcastExec("Position Closed");
-        } else if (serverPartial) {
+        } else if (outcome === "partial") {
           toast.success("Partial close completed", { description: `#${ticket} ${position.symbol}` });
           broadcastExec("Partial Closed");
         } else {
-          notifyCloseResult("pending", position.symbol, ticket);
-          broadcastExec("Close Pending");
+          toast.warning("Close request sent but position is still open in MT5.", {
+            description: `#${ticket} ${position.symbol} — please verify in MetaTrader.`,
+          });
+          broadcastExec("Close Unconfirmed");
         }
       }
 
@@ -209,6 +273,8 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       window.dispatchEvent(new CustomEvent("mt:refresh-execution-logs"));
     }
   }
+
+
 
 
   return (
