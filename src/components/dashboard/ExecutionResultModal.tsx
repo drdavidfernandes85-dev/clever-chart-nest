@@ -96,7 +96,7 @@ const TitleBar = ({
       bar: "bg-yellow-500/70",
     },
     unconfirmed: {
-      title: "Order Accepted but MT5 Position Not Confirmed",
+      title: "Order Accepted — Not Confirmed in MT5",
       Icon: HelpCircle,
       ring: "border-yellow-500/50",
       chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
@@ -142,9 +142,24 @@ export const ExecutionResultModal = ({
   onClose: () => void;
 }) => {
   if (!result) return null;
-  const digits = result.digits ?? 5;
-  const sideLabel = result.side === "buy" ? "BUY" : "SELL";
-  const sideAccent = result.side === "buy" ? "text-emerald-300" : "text-red-300";
+  // Hard guard: "ORDER EXECUTED" must only render when an MT5 position ticket
+  // was confirmed from live positions. Otherwise downgrade to "unconfirmed".
+  const hasMt5Ticket =
+    result.confirmedTicket != null || (result.mt5Confirmed === true && result.ticket != null);
+  const effective: ExecutionResultPayload =
+    result.outcome === "success" && !hasMt5Ticket
+      ? {
+          ...result,
+          outcome: "unconfirmed",
+          brokerAccepted: true,
+          mt5Confirmed: false,
+          confirmationStatus: "not_found",
+          brokerMessage: "Broker accepted/sent order but no matching MT5 position was found.",
+        }
+      : result;
+  const digits = effective.digits ?? 5;
+  const sideLabel = effective.side === "buy" ? "BUY" : "SELL";
+  const sideAccent = effective.side === "buy" ? "text-emerald-300" : "text-red-300";
 
   return (
     <div
@@ -155,126 +170,126 @@ export const ExecutionResultModal = ({
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "w-[min(420px,92vw)] rounded-sm border bg-[#0a0a0a] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden",
-          result.outcome === "success" && "border-emerald-500/30",
-          result.outcome === "blocked" && "border-amber-500/30",
-          result.outcome === "rejected" && "border-red-500/30",
-          (result.outcome === "pending" || result.outcome === "unconfirmed") && "border-yellow-500/30",
+          effective.outcome === "success" && "border-emerald-500/30",
+          effective.outcome === "blocked" && "border-amber-500/30",
+          effective.outcome === "rejected" && "border-red-500/30",
+          (effective.outcome === "pending" || effective.outcome === "unconfirmed") && "border-yellow-500/30",
         )}
       >
-        <TitleBar outcome={result.outcome} onClose={onClose} />
+        <TitleBar outcome={effective.outcome} onClose={onClose} />
 
         <div className="px-3 py-2">
-          {result.outcome === "success" && (
+          {effective.outcome === "success" && (
             <>
-              <Row label="Symbol" value={result.symbol} accent="text-[#FFCD05]" />
+              <Row label="Symbol" value={effective.symbol} accent="text-[#FFCD05]" />
               <Row label="Side" value={sideLabel} accent={sideAccent} />
-              <Row label="Volume" value={result.volume.toFixed(2)} />
-              <Row label="Requested Price" value={fmtPx(result.requestedPrice, digits)} />
+              <Row label="Volume" value={effective.volume.toFixed(2)} />
+              <Row label="Requested Price" value={fmtPx(effective.requestedPrice, digits)} />
               <Row
                 label="Executed Price"
-                value={fmtPx(result.executedPrice, digits)}
+                value={fmtPx(effective.executedPrice, digits)}
                 accent="text-neutral-50 font-semibold"
               />
               <Row
                 label="Slippage"
-                value={fmtSlip(result.slippage, digits)}
+                value={fmtSlip(effective.slippage, digits)}
                 accent={
-                  result.slippage != null && Number(result.slippage) !== 0
-                    ? Number(result.slippage) < 0
+                  effective.slippage != null && Number(effective.slippage) !== 0
+                    ? Number(effective.slippage) < 0
                       ? "text-emerald-300"
                       : "text-amber-300"
                     : undefined
                 }
               />
-              <Row label="Latency" value={fmtMs(result.latencyMs)} />
-              <Row label="Broker Message" value={result.brokerMessage || "—"} />
+              <Row label="Latency" value={fmtMs(effective.latencyMs)} />
+              <Row label="Broker Message" value={effective.brokerMessage || "—"} />
               <Row
                 label="Status"
-                value={(result.status || "DONE").toString().toUpperCase()}
+                value={(effective.status || "DONE").toString().toUpperCase()}
                 accent="text-emerald-300"
               />
-              {result.ticket != null && (
-                <Row label="Ticket" value={`#${result.ticket}`} />
+              {effective.ticket != null && (
+                <Row label="Ticket" value={`#${effective.ticket}`} />
               )}
             </>
           )}
 
-          {result.outcome === "blocked" && (
+          {effective.outcome === "blocked" && (
             <>
               <Row
                 label="Reason"
-                value={result.reason || "Pre-trade check failed"}
+                value={effective.reason || "Pre-trade check failed"}
                 accent="text-amber-300"
               />
-              <Row label="Symbol" value={result.symbol} accent="text-[#FFCD05]" />
-              <Row label="Bid" value={fmtPx(result.bid, digits)} accent="text-red-300" />
-              <Row label="Ask" value={fmtPx(result.ask, digits)} accent="text-emerald-300" />
-              <Row label="Spread" value={fmtPx(result.spread, digits)} />
-              <Row label="Tick Age" value={fmtMs(result.tickAgeMs)} />
-              <Row label="Volume" value={result.volume.toFixed(2)} />
+              <Row label="Symbol" value={effective.symbol} accent="text-[#FFCD05]" />
+              <Row label="Bid" value={fmtPx(effective.bid, digits)} accent="text-red-300" />
+              <Row label="Ask" value={fmtPx(effective.ask, digits)} accent="text-emerald-300" />
+              <Row label="Spread" value={fmtPx(effective.spread, digits)} />
+              <Row label="Tick Age" value={fmtMs(effective.tickAgeMs)} />
+              <Row label="Volume" value={effective.volume.toFixed(2)} />
               <Row
                 label="Rule Violated"
-                value={result.ruleViolated || "—"}
+                value={effective.ruleViolated || "—"}
                 accent="text-amber-300"
               />
             </>
           )}
 
-          {result.outcome === "rejected" && (
+          {effective.outcome === "rejected" && (
             <>
               <Row
                 label="Broker Message"
-                value={result.brokerMessage || "Order rejected"}
+                value={effective.brokerMessage || "Order rejected"}
                 accent="text-red-300"
               />
-              <Row label="Retcode" value={result.retcode != null ? String(result.retcode) : "—"} />
-              <Row label="Symbol" value={result.symbol} accent="text-[#FFCD05]" />
+              <Row label="Retcode" value={effective.retcode != null ? String(effective.retcode) : "—"} />
+              <Row label="Symbol" value={effective.symbol} accent="text-[#FFCD05]" />
               <Row label="Side" value={sideLabel} accent={sideAccent} />
-              <Row label="Requested Price" value={fmtPx(result.requestedPrice, digits)} />
-              <Row label="Quote Bid" value={fmtPx(result.quoteBid ?? result.bid, digits)} accent="text-red-300" />
-              <Row label="Quote Ask" value={fmtPx(result.quoteAsk ?? result.ask, digits)} accent="text-emerald-300" />
-              <Row label="Latency" value={fmtMs(result.latencyMs)} />
+              <Row label="Requested Price" value={fmtPx(effective.requestedPrice, digits)} />
+              <Row label="Quote Bid" value={fmtPx(effective.quoteBid ?? effective.bid, digits)} accent="text-red-300" />
+              <Row label="Quote Ask" value={fmtPx(effective.quoteAsk ?? effective.ask, digits)} accent="text-emerald-300" />
+              <Row label="Latency" value={fmtMs(effective.latencyMs)} />
             </>
           )}
 
-          {(result.outcome === "pending" || result.outcome === "unconfirmed") && (
+          {(effective.outcome === "pending" || effective.outcome === "unconfirmed") && (
             <>
-              <Row label="Symbol" value={result.symbol} accent="text-[#FFCD05]" />
+              <Row label="Symbol" value={effective.symbol} accent="text-[#FFCD05]" />
               <Row label="Side" value={sideLabel} accent={sideAccent} />
-              <Row label="Volume" value={result.volume.toFixed(2)} />
+              <Row label="Volume" value={effective.volume.toFixed(2)} />
               <Row
                 label="Broker Accepted"
-                value={result.brokerAccepted ? "YES" : "—"}
-                accent={result.brokerAccepted ? "text-emerald-300" : undefined}
+                value={effective.brokerAccepted ? "YES" : "—"}
+                accent={effective.brokerAccepted ? "text-emerald-300" : undefined}
               />
               <Row
                 label="MT5 Confirmed"
-                value={result.mt5Confirmed ? "YES" : "NO"}
-                accent={result.mt5Confirmed ? "text-emerald-300" : "text-yellow-300"}
+                value={effective.mt5Confirmed ? "YES" : "NO"}
+                accent={effective.mt5Confirmed ? "text-emerald-300" : "text-yellow-300"}
               />
               <Row
                 label="Confirmation"
-                value={(result.confirmationStatus || "pending").toUpperCase()}
+                value={(effective.confirmationStatus || "pending").toUpperCase()}
                 accent={
-                  result.confirmationStatus === "confirmed"
+                  effective.confirmationStatus === "confirmed"
                     ? "text-emerald-300"
-                    : result.confirmationStatus === "not_found" || result.confirmationStatus === "failed"
+                    : effective.confirmationStatus === "not_found" || effective.confirmationStatus === "failed"
                     ? "text-yellow-300"
                     : "text-yellow-300"
                 }
               />
               <Row
                 label="Confirmed Ticket"
-                value={result.confirmedTicket != null ? `#${result.confirmedTicket}` : "—"}
+                value={effective.confirmedTicket != null ? `#${effective.confirmedTicket}` : "—"}
               />
               <Row
                 label="Confirmed Entry"
-                value={fmtPx(result.confirmedEntryPrice, digits)}
+                value={fmtPx(effective.confirmedEntryPrice, digits)}
               />
               <Row
                 label="Status"
                 value={
-                  result.outcome === "pending"
+                  effective.outcome === "pending"
                     ? "ORDER SENT — WAITING FOR MT5"
                     : "NO MATCHING MT5 POSITION"
                 }
@@ -283,12 +298,19 @@ export const ExecutionResultModal = ({
               <Row
                 label="Broker Message"
                 value={
-                  result.brokerMessage ||
-                  (result.outcome === "pending"
-                    ? "Order sent — waiting for MT5 confirmation."
-                    : "Order was accepted/sent, but no MT5 position was confirmed. Please verify in MetaTrader.")
+                  effective.outcome === "unconfirmed"
+                    ? "Broker accepted/sent order but no matching MT5 position was found."
+                    : (effective.brokerMessage ||
+                       "Order sent — waiting for MT5 confirmation.")
                 }
               />
+              {Number(effective.retcode) === 10008 && (
+                <Row
+                  label="Retcode 10008"
+                  value="MT5 retcode 10008 means order placed/accepted, not necessarily executed."
+                  accent="text-yellow-300"
+                />
+              )}
             </>
           )}
         </div>
