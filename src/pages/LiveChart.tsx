@@ -9,6 +9,7 @@ import {
   Minimize2,
   Search,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
