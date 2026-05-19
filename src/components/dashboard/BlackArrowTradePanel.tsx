@@ -141,7 +141,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     setOrderDebug({
       status: "loading",
       functionUsed: "DIRECT_FETCH_LIVE_submit-best-execution-order",
-      requestUrl: `https://qdyrgsnkpoujimocynni.supabase.co/functions/v1/submit-best-execution-order?v=${Date.now()}`,
+      requestUrl: `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-best-execution-order?v=${Date.now()}`,
       payloadSent: payload,
       rawEdgeFunctionResponse: null,
       edgeFunctionError: null,
