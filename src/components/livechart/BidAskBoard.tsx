@@ -147,9 +147,6 @@ const BidAskBoard = ({ symbols, onSelect, activeSymbol }: Props) => {
                 <span className="text-right font-mono text-[10px] tabular-nums text-red-400">
                   {fmt(q.bid)}
                 </span>
-                <span className="text-right font-mono text-[9.5px] tabular-nums text-neutral-400">
-                  {fmt(q.last)}
-                </span>
                 <span className="text-right font-mono text-[10px] tabular-nums text-emerald-400">
                   {fmt(q.ask)}
                 </span>
