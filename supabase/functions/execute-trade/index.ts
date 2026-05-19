@@ -574,8 +574,15 @@ serve(async (req) => {
               p.position_id ?? p.positionId ?? p.ticket ?? p.id ?? p.deal_id ?? "",
             );
             const sideStr = String(p.side ?? p.type ?? "").toLowerCase();
-            const normSide = sideStr === "sell" || sideStr === "short" || sideStr === "1"
-              ? "short" : "long";
+            // mt_positions.side check constraint requires buy/sell.
+            const normSide =
+              sideStr === "buy" || sideStr === "long" ||
+              sideStr === "position_type_buy" || sideStr === "0"
+                ? "buy"
+                : sideStr === "sell" || sideStr === "short" ||
+                    sideStr === "position_type_sell" || sideStr === "1"
+                  ? "sell"
+                  : null;
             return {
               user_id: user.id,
               account_id: account.id,
