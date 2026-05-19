@@ -260,7 +260,7 @@ const OpenPositionsPanel = () => {
                     </td>
                     <td className="px-3 py-1.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {isDev && Number(p.volume) <= TEST_CLOSE_MAX_VOLUME && p.ticket && (
+                        {devMode && Number(p.volume) <= TEST_CLOSE_MAX_VOLUME && p.ticket && (
                           <div className="flex items-center gap-1.5 rounded border border-red-500/40 bg-red-950/30 px-1.5 py-0.5">
                             <Checkbox
                               id={`test-close-${key}`}
