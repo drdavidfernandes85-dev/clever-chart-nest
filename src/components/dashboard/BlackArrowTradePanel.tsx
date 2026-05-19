@@ -1346,7 +1346,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   return (
     <div className={cn(
-      "rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden text-neutral-100 text-[11px]",
+      "rounded-sm border border-neutral-800/70 bg-[#0b0b0b] overflow-hidden text-neutral-100 text-[11px]",
       className,
     )}>
       {/* Header */}
