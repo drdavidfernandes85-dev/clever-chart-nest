@@ -63,8 +63,8 @@ const findings: Finding[] = [
   { area: "7. Compliance wording", status: "pass", label: "No 'guaranteed' / 'risk-free' claims in UI" },
   { area: "7. Compliance wording", status: "pass", label: "No 'investment advice / financial advice' as a claim" },
   { area: "7. Compliance wording", status: "pass", label: "Leaderboard 'Follow / Copy' CTAs replaced with 'View Profile'", note: "copy-trading insert removed in launch build" },
-  { area: "7. Compliance wording", status: "high", label: "/ideas still renders a 'Copy Trading' tab", note: "Ideas.tsx imports CopyTrading — rename to 'Apply Idea to Terminal (educational)' or hide before launch" },
-  { area: "7. Compliance wording", status: "medium", label: "CopyTradeModal + LiveSharedSignals 'Take/Copy Trade' button copy", note: "Reword to 'Apply Idea to Terminal'" },
+  { area: "7. Compliance wording", status: "pass", label: "/ideas tab renamed to 'Idea Tools'; auto-follow UI hidden behind coming-soon placeholder", note: "CopyTrading component no longer rendered to end users; copy_subscriptions insert path not reachable from launch UI" },
+  { area: "7. Compliance wording", status: "medium", label: "CopyTradeModal + LiveSharedSignals 'Take/Copy Trade' button copy", note: "Reword to 'Review Idea' / 'Apply Idea to Terminal'" },
 
   // 8 — Performance
   { area: "8. Performance", status: "pass", label: "Home lazy-loads heavy sections via DeferredSection + Suspense" },
