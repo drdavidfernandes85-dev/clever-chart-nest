@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
   const matchedPosition = positions.find((p: any) => {
     if (String(p?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(p?.type) !== wantSide) return false;
-    if (!eq(Number(p?.volume), wantVol)) return false;
+    if (!volEq(Number(p?.volume), wantVol)) return false;
     if (!withinTime(p?.time)) return false;
     return true;
   });
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
     if (String(d?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(d?.type) !== wantSide) return false;
     const vol = Number(d?.volume);
-    if (!Number.isFinite(vol) || !eq(vol, wantVol)) return false;
+    if (!Number.isFinite(vol) || !volEq(vol, wantVol)) return false;
     if (!withinTime(d?.time)) return false;
     return true;
   });
@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
   const matchedPendingOrder = pendingOrders.find((o: any) => {
     if (String(o?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
-    if (!eq(Number(o?.volume_current ?? o?.volume_initial ?? 0), wantVol)) return false;
+    if (!volEq(Number(o?.volume_current ?? o?.volume_initial ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
     return true;
   });
@@ -242,10 +242,17 @@ Deno.serve(async (req) => {
   const matchedHistoryOrder = historyOrders.find((o: any) => {
     if (String(o?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
-    if (!eq(Number(o?.volume_initial ?? o?.volume_current ?? 0), wantVol)) return false;
+    if (!volEq(Number(o?.volume_initial ?? o?.volume_current ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
     return true;
   });
+
+  // Detect if any history order represents a rejection (state >= 4 typically).
+  const rejectedHistoryOrder = matchedHistoryOrder && (() => {
+    const state = Number((matchedHistoryOrder as any).state);
+    // MT5 ORDER_STATE: 0 STARTED, 1 PLACED, 2 CANCELED, 3 PARTIAL, 4 FILLED, 5 REJECTED, 6 EXPIRED
+    return state === 2 || state === 5 || state === 6;
+  })();
 
   // ── Decision ────────────────────────────────────────────────────────────
   let result: {
