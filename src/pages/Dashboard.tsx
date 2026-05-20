@@ -184,6 +184,7 @@ const TerminalHeader = () => {
             <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
           <NotificationsBell />
+          <LanguageSwitcher />
           <Link
             to="/profile"
             className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FFCD05] text-[11px] font-bold text-black hover:bg-[#FFCD05]/85 transition-colors"
