@@ -50,6 +50,13 @@ const mt5TypeToSide = (t: any): "buy" | "sell" | null => {
 };
 
 const eq = (a: number, b: number, eps = 1e-6) => Math.abs(a - b) < eps;
+// Volume tolerance: 0.005 lots absolute OR 1% relative — whichever is larger.
+// Covers float rounding, micro/standard lot conversion and broker netting.
+const volEq = (a: number, b: number) => {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  const tol = Math.max(0.005, Math.abs(b) * 0.01);
+  return Math.abs(a - b) <= tol;
+};
 
 type ReconcileInput = {
   tradeId?: string | null;
