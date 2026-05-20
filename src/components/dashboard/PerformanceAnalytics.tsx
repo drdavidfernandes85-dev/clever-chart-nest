@@ -80,11 +80,14 @@ const PerformanceAnalytics = () => {
     return { winRate, totalPnl, avgRR, sharpe, maxDrawdown: maxDD, equityCurve: curve };
   }, [trades]);
 
+  const MIN_TRADES = 3;
+  const insufficient = trades.length < MIN_TRADES;
+  const dash = "—";
   const cards = [
-    { label: t("perf.totalPnl"), value: stats.totalPnl, icon: TrendingUp, format: (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}`, accent: stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400" },
-    { label: t("perf.winRate"), value: stats.winRate, icon: Target, format: (v: number) => `${v.toFixed(1)}%`, accent: "text-primary" },
-    { label: t("perf.avgRR"), value: stats.avgRR, icon: Activity, format: (v: number) => v.toFixed(2), accent: "text-foreground" },
-    { label: t("perf.sharpe"), value: stats.sharpe, icon: TrendingDown, format: (v: number) => v.toFixed(2), accent: "text-foreground" },
+    { label: t("perf.totalPnl"), value: stats.totalPnl, icon: TrendingUp, format: (v: number) => insufficient ? dash : `${v >= 0 ? "+" : ""}${v.toFixed(2)}`, accent: insufficient ? "text-muted-foreground" : (stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400") },
+    { label: t("perf.winRate"), value: stats.winRate, icon: Target, format: (v: number) => insufficient ? dash : `${v.toFixed(1)}%`, accent: insufficient ? "text-muted-foreground" : "text-primary" },
+    { label: t("perf.avgRR"), value: stats.avgRR, icon: Activity, format: (v: number) => insufficient ? dash : v.toFixed(2), accent: insufficient ? "text-muted-foreground" : "text-foreground" },
+    { label: t("perf.sharpe"), value: stats.sharpe, icon: TrendingDown, format: (v: number) => insufficient ? dash : v.toFixed(2), accent: insufficient ? "text-muted-foreground" : "text-foreground" },
   ];
 
   return (
