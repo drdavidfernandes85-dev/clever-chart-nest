@@ -95,6 +95,19 @@ const findings: Finding[] = [
   { area: "12. Languages", status: "pass", label: "EN / ES / PT-BR available via LanguageSwitcher" },
   { area: "12. Languages", status: "pass", label: "Critical legal & risk pages translated (Terms, Risk Disclosure, Privacy, Compliance footer)" },
   { area: "12. Languages", status: "pass", label: "No mixed-language strings detected on core UI in audit" },
+
+  // 13 — Mobile / Tablet QA
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Public website mobile status: Pass (320–414px, 768px, 1024px)" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Mobile navigation works (Navbar hamburger + MobileBottomNav on auth pages)" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Dashboard mobile status: Pass (MobileSidebarDrawer + bottom nav; sticky bars use safe-area-inset)" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Terminal mobile strategy: Option A — mobile summary view replaces full terminal < 768px" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Tablet (768–1024px): full responsive terminal layout retained" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Modals status: shadcn Dialog/Drawer used; full-width on mobile, dismissable" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Page-level horizontal overflow: blocked globally via html/body overflow-x: hidden" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Login / Register / Profile / Connect-MT verified usable on mobile" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "News & Calendar / Webinars / Ideas cards stack cleanly on mobile" },
+  { area: "13. Mobile / Tablet QA", status: "info", label: "Phone terminal recommendation: keep Option A (mobile summary). Full LTR Terminal Pro remains desktop/tablet-only by design — execution surface is never squeezed onto small screens." },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "No execution / risk / MT5 / reconciliation logic changed during mobile QA" },
 ];
 
 const severityMeta: Record<Severity, { label: string; cls: string; icon: typeof CheckCircle2 }> = {
