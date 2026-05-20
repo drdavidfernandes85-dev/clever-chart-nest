@@ -429,31 +429,29 @@ const ToolsPanel = () => (
   </div>
 );
 
-const NewsFlowWidget = () => {
+interface NewsFlowWidgetProps {
+  /** Optional external search query (e.g. wired from the News page header). */
+  externalSearch?: string;
+}
+
+const NewsFlowWidget = ({ externalSearch }: NewsFlowWidgetProps = {}) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [newsItems, setNewsItems] = useState<RssNewsItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const fetchNews = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
-      if (!error && data?.data) {
-        setNewsItems(data.data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch news:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [error, setError] = useState<string | null>(null);
+  const [localSearch, setLocalSearch] = useState("");
+  const searchQuery = (externalSearch ?? "") || localSearch;
 
   useEffect(() => {
-    fetchNews();
-    const interval = setInterval(fetchNews, 60000);
-    return () => clearInterval(interval);
-  }, [fetchNews]);
+    const unsub = subscribeRssNews((s) => {
+      setNewsItems(s.items);
+      setLoading(s.loading && s.items.length === 0);
+      setError(s.error);
+    });
+    return () => unsub();
+  }, []);
+
+  const fetchNews = useCallback(() => { void refreshRssNews(); }, []);
 
   const filteredNews = newsItems.filter((item) => {
     const matchesFilter = activeFilter === "all" || item.category.toLowerCase().includes(activeFilter);
