@@ -4,6 +4,7 @@ import { fetchMarketQuotes, type LiveQuote } from "@/lib/markets";
 import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
 import { useFavorites, inferCategory } from "@/hooks/useFavorites";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useHeavyComponent } from "@/lib/perfRegistry";
 
 
 interface Props {
@@ -31,6 +32,7 @@ const MIN_ROWS = 12; // keep table height stable across filters/empty states
 
 /** Compact Market Watch rail — favorites (per-user), search, category filters, live bid/ask. */
 const MarketWatch = ({ symbols, active, onSelect }: Props) => {
+  useHeavyComponent("MarketWatch");
   const { t } = useLanguage();
 
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
