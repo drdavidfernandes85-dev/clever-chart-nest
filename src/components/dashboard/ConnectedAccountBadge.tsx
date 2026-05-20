@@ -2,28 +2,33 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * Floating "Connected" badge — visible globally once the user has a connected
  * MT5 account. Clicking it opens /connect-mt (which renders the
  * already-connected state).
+ *
+ * Uses `useAuth()` for the current user id instead of calling
+ * `supabase.auth.getUser()` directly — this avoids contributing to the
+ * `gotrue-js` auth-token lock contention (the "Lock ... was released because
+ * another request stole it" runtime error).
  */
 const ConnectedAccountBadge = () => {
+  const { user } = useAuth();
   const [info, setInfo] = useState<{ login: string; server: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    if (!user?.id) {
+      setInfo(null);
+      return;
+    }
     const load = async () => {
-      const { data: ures } = await supabase.auth.getUser();
-      const uid = ures?.user?.id;
-      if (!uid) {
-        if (!cancelled) setInfo(null);
-        return;
-      }
       const { data: row } = await supabase
         .from("user_mt_accounts")
         .select("login, server_name")
-        .eq("user_id", uid)
+        .eq("user_id", user.id)
         .eq("status", "connected")
         .order("created_at", { ascending: false })
         .limit(1)
@@ -32,17 +37,13 @@ const ConnectedAccountBadge = () => {
       setInfo(row ? { login: String(row.login ?? ""), server: String(row.server_name ?? "") } : null);
     };
     load();
-
-    // Refresh on auth changes and when the user navigates back to the tab
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
     const onFocus = () => load();
     window.addEventListener("focus", onFocus);
     return () => {
       cancelled = true;
-      sub?.subscription?.unsubscribe?.();
       window.removeEventListener("focus", onFocus);
     };
-  }, []);
+  }, [user?.id]);
 
   if (!info) return null;
 

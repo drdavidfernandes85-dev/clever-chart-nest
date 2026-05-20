@@ -7,17 +7,17 @@ import LtrLogo from "@/components/branding/LtrLogo";
 const Footer = () => {
   const { t } = useLanguage();
 
+  // NOTE: /videos and /leaderboard intentionally removed from launch footer.
+  // Routes remain accessible via direct URL for internal testing.
   const columns = [
     {
       title: t("footer.quickLinks"),
       links: [
         { label: t("footer.link.education"), to: "/education" },
         { label: t("footer.link.webinars"), to: "/webinars" },
-        { label: t("footer.link.videos"), to: "/videos" },
         { label: t("footer.link.community"), to: "/chatroom" },
         { label: t("footer.link.terminal"), to: "/dashboard" },
         { label: t("footer.link.ideas"), to: "/ideas" },
-        { label: t("footer.link.leaderboard"), to: "/leaderboard" },
       ],
     },
     {
