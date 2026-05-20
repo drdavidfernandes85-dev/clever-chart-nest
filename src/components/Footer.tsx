@@ -24,7 +24,6 @@ const Footer = () => {
       links: [
         { label: t("footer.link.nextWebinar"), to: "/webinar" },
         { label: t("footer.anchor.community"), to: "/community/guidelines" },
-        { label: t("footer.anchor.pricing"), to: "/#pricing" },
         { label: t("footer.anchor.faq"), to: "/#faq" },
       ],
     },
