@@ -1102,6 +1102,7 @@ const DashboardInner = () => {
               <TabsContent value="system" className="mt-2 flex flex-col gap-2">
                 <LiveExecutionBanner />
                 <SystemHealthWidget />
+                <ButtonQAReport />
               </TabsContent>
             </Tabs>
           </aside>
