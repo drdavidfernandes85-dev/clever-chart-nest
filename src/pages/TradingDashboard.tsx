@@ -87,6 +87,21 @@ interface LiveData {
 interface LiveResponse {
   success: boolean;
   error?: string;
+  stage?: string;
+  errorCode?:
+    | "NO_MT5_ACCOUNT"
+    | "MISSING_TRADER_ID"
+    | "TL_CONFIG_MISSING"
+    | "TL_AUTH_FAILED"
+    | "TL_ACCOUNT_NOT_FOUND"
+    | "TL_RATE_LIMITED"
+    | "TL_SERVICE_DOWN"
+    | "TL_TIMEOUT"
+    | "TL_NETWORK"
+    | "TL_UPSTREAM_ERROR";
+  tradingLayerStatus?: number;
+  retryAfter?: number | null;
+  retryable?: boolean;
   data?: LiveData;
 }
 
