@@ -19,6 +19,7 @@ interface Video {
 }
 
 const CATEGORIES = ["all", "webinar", "tutorial", "analysis"] as const;
+const MIN_VIDEOS_FOR_READY = 6;
 
 const VideoLibrary = () => {
   const { t } = useLanguage();
