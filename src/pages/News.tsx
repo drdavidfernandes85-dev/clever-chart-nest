@@ -15,6 +15,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 const News = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const { t } = useLanguage();
 
   return (
