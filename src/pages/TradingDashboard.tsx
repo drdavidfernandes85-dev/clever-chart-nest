@@ -341,10 +341,12 @@ const TradingDashboard = () => {
           </div>
         ) : !connected ? (
           <ServiceStatusCard
-            message={res?.error || "No connected trading account found."}
+            res={res}
             onRetry={() => load(true)}
             retrying={refreshing}
           />
+
+
 
         ) : (
           <>
