@@ -78,6 +78,12 @@ let cooldownUntil = 0;
 
 export function isAutoRefreshAllowed(): boolean {
   if (AUTO_REFRESH_DISABLED) return false;
+  // Pause all secondary polling whenever the tab is hidden. This kills
+  // dozens of background timers (chart header, ticker bars, market movers,
+  // news, watchlists) the instant the user switches tabs, which is the
+  // single biggest cause of "the website slows my computer" reports.
+  if (typeof document !== "undefined" && document.visibilityState === "hidden")
+    return false;
   return Date.now() >= cooldownUntil;
 }
 
