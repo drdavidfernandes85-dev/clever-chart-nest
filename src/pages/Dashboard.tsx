@@ -989,9 +989,9 @@ const DashboardInner = () => {
       <TradingLayerPauseBanner />
 
       <div className="p-2 lg:p-3">
-        <div className="grid gap-1.5 lg:gap-2 grid-cols-1 lg:grid-cols-[210px_minmax(0,1fr)_310px]">
-          {/* LEFT — Market Watch */}
-          <MarketWatchPanel active={active} onSelect={selectSymbol} />
+        <div className="grid gap-1.5 lg:gap-2 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_310px]">
+          {/* Market Watch removed — symbol selection happens via the chart header and right-rail tabs. */}
+
 
           {/* CENTER — Chart + Tabs */}
           <section className="flex flex-col gap-2 lg:gap-3 min-w-0">
