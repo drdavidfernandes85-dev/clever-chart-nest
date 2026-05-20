@@ -508,11 +508,11 @@ const TraderDetail = ({ trader, onClose, period, following, copying, onFollow, o
                 className={`flex-1 ${following ? "bg-white/10 text-white hover:bg-white/15" : "bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90"}`}>
                 {following ? "Following" : "Follow"}
               </Button>
-              <Button onClick={onCopy} size="sm" variant="outline"
-                className={`flex-1 gap-1 ${copying ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05]" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                <Copy className="h-3.5 w-3.5" /> {copying ? "Following" : "Follow Educator"}
-              </Button>
             </div>
+            <p className="mt-2 text-[10px] text-white/40 leading-relaxed">
+              Profiles are view-only. Following another trader does not copy, mirror or execute their trades on
+              your account. Not investment advice.
+            </p>
 
             {/* Win rate breakdown */}
             <div className="mt-5">
