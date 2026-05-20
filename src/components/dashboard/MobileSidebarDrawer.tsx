@@ -22,13 +22,14 @@ import { LOCALE_FLAGS, LOCALE_LABELS, type Locale, type TranslationKey } from "@
 
 // NOTE: /analytics, /leaderboard, /videos intentionally hidden from launch
 // navigation. Routes remain accessible via direct URL for internal testing.
-const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
-  { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
+// Launch nav (simplified) — mirrors DashboardSidebar.
+// Hidden: /analytics, /leaderboard, /videos, /news, /live-chart.
+const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean; label?: string }[] = [
+  { to: "/trading-room", labelKey: "sidebar.dashboard", icon: LayoutDashboard, label: "Panel" },
+  { to: "/chatroom", labelKey: "sidebar.tradingRoom", icon: MessageSquare, label: "Trading Room" },
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
-  { to: "/ideas", labelKey: "sidebar.signals", icon: Radio },
-  { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
-  { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
-  { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
+  { to: "/ideas", labelKey: "sidebar.signals", icon: Radio, label: "Ideas" },
+  { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LineChart, label: "LTR Terminal Pro" },
   { to: "/education", labelKey: "sidebar.education", icon: GraduationCap },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];
