@@ -29,7 +29,12 @@ Deno.serve(async (req) => {
     const TRADING_LAYER_API_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 
     if (!TRADING_LAYER_API_KEY) {
-      return json(500, { success: false, error: "Trading Layer API key not configured." });
+      return json(200, {
+        success: false,
+        stage: "config",
+        errorCode: "TL_CONFIG_MISSING",
+        error: "Trading Layer configuration missing.",
+      });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
