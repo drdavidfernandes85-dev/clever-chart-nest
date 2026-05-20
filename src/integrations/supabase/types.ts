@@ -795,6 +795,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tl_account_cache: {
+        Row: {
+          account_data: Json | null
+          account_updated_at: string | null
+          cooldown_until: string | null
+          created_at: string
+          id: string
+          positions_data: Json | null
+          positions_updated_at: string | null
+          trader_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_data?: Json | null
+          account_updated_at?: string | null
+          cooldown_until?: string | null
+          created_at?: string
+          id?: string
+          positions_data?: Json | null
+          positions_updated_at?: string | null
+          trader_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_data?: Json | null
+          account_updated_at?: string | null
+          cooldown_until?: string | null
+          created_at?: string
+          id?: string
+          positions_data?: Json | null
+          positions_updated_at?: string | null
+          trader_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trade_execution_logs: {
         Row: {
           account_id: string | null
