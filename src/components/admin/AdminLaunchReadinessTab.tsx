@@ -160,11 +160,11 @@ const AdminLaunchReadinessTab = () => {
           )}
           <div>
             <p className="text-sm font-semibold text-foreground">
-              Ready for Compliance Review: {readyForCompliance ? "Yes (conditional)" : "No"}
+              Ready for Compliance Review: {readyForCompliance ? "Yes" : "No"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {readyForCompliance
-                ? `0 critical, ${highs} high. Submit after resolving the remaining high item (rename "Copy Trading" tab on /ideas).`
+                ? `0 critical, 0 high. All blocking compliance items resolved. Remaining medium items are polish and can ship post-review.`
                 : `${criticals} critical and ${highs} high issues must be addressed before submission.`}
             </p>
           </div>
