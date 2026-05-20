@@ -646,12 +646,19 @@ const LiveChartInner = () => {
   );
 };
 
-const LiveChart = () => (
-  <LiveAccountProvider>
-    <BrokerSymbolsProvider>
-      <LiveChartInner />
-    </BrokerSymbolsProvider>
-  </LiveAccountProvider>
-);
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileTerminalSummary from "@/components/livechart/MobileTerminalSummary";
+
+const LiveChart = () => {
+  const isMobile = useIsMobile();
+  if (isMobile) return <MobileTerminalSummary />;
+  return (
+    <LiveAccountProvider>
+      <BrokerSymbolsProvider>
+        <LiveChartInner />
+      </BrokerSymbolsProvider>
+    </LiveAccountProvider>
+  );
+};
 
 export default LiveChart;
