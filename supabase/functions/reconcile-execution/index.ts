@@ -22,7 +22,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const VERSION = "reconcile-execution@1.0.0";
+const VERSION = "reconcile-execution@1.1.0";
 const TL_BASE = "https://api.trading-layer.com/api/v1";
 
 const corsHeaders: Record<string, string> = {
