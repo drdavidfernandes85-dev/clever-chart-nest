@@ -45,8 +45,10 @@ const SystemHealthWidget = () => {
     useLiveAccount() as any;
 
   const { rateLimited, cooldownSec, locked, reason } = useExecutionLock();
+  const { devMode } = useDevMode();
   const [lastExec, setLastExec] = useState<{ status: string; at: string } | null>(null);
   const [, force] = useState(0);
+  const [mdState, setMdState] = useState<LiveMarketDataState>(() => liveMarketDataStore.getState());
 
   useEffect(() => {
     const tick = () => force((n) => n + 1);
