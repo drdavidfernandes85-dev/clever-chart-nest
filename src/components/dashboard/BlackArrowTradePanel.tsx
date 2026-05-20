@@ -30,6 +30,7 @@ import ExecutionReconciliationDebugPanel from "@/components/dashboard/ExecutionR
 import MarketDataDiagnosticsPanel from "@/components/dashboard/MarketDataDiagnosticsPanel";
 import PerformanceDiagnosticsPanel from "@/components/dashboard/PerformanceDiagnosticsPanel";
 import SymbolSourceDiagnosticsPanel from "@/components/dashboard/SymbolSourceDiagnosticsPanel";
+import LinkQAReportPanel from "@/components/dashboard/LinkQAReportPanel";
 import {
   checkAndHandle429,
   getCooldownRemainingMs,
