@@ -210,19 +210,20 @@ const DashboardSidebar = () => {
       </div>
 
       {/* Language switcher */}
-      <div className="border-t border-primary/10 px-3 py-2">
+      <div className={cn("border-t border-primary/10", collapsed ? "px-0 py-0" : "px-3 py-2")}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               title={collapsed ? LOCALE_LABELS[locale] : undefined}
               className={cn(
-                "flex w-full items-center gap-2 rounded-lg border border-border/50 bg-secondary/40 px-2.5 py-1.5 text-[12px] font-medium text-foreground hover:bg-secondary transition-colors",
-                collapsed && "justify-center px-0"
+                collapsed
+                  ? "flex h-10 w-full items-center justify-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:bg-primary/5 hover:text-primary transition-colors"
+                  : "flex w-full items-center gap-2 rounded-lg border border-border/50 bg-secondary/40 px-2.5 py-1.5 text-[12px] font-medium text-foreground hover:bg-secondary transition-colors"
               )}
               aria-label="Change language"
             >
               {collapsed ? (
-                <span className="text-base leading-none">{LOCALE_FLAGS[locale]}</span>
+                <span className="font-mono">{locale.toUpperCase()}</span>
               ) : (
                 <>
                   <Globe className="h-3.5 w-3.5 text-muted-foreground" />
@@ -259,8 +260,8 @@ const DashboardSidebar = () => {
           onClick={handleSignOut}
           title={collapsed ? t("sidebar.signOut") : undefined}
           className={cn(
-            "flex items-center gap-2 border-t border-primary/10 px-3 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
-            collapsed && "justify-center"
+            "flex items-center gap-2 border-t border-primary/10 text-[12px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
+            collapsed ? "h-10 w-full justify-center px-0" : "px-3 py-2.5"
           )}
         >
           <LogOut className="h-4 w-4 shrink-0" />
