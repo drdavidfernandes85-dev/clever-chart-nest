@@ -297,11 +297,27 @@ Deno.serve(async (req) => {
     };
     auditStatus = "deal_found_no_position";
     auditClassification = "execution_reconciled";
-  } else if (matchedPendingOrder || matchedHistoryOrder) {
+  } else if (matchedPendingOrder) {
+    result = {
+      status: "pending_order_placed",
+      mt5Confirmed: false,
+      explanation: "Pending order placed in MT5. Awaiting trigger/fill.",
+    };
+    auditStatus = "pending_order_placed";
+    auditClassification = "pending_order";
+  } else if (rejectedHistoryOrder) {
+    result = {
+      status: "order_rejected",
+      mt5Confirmed: false,
+      explanation: "Order was found in MT5 history with a rejected/canceled/expired state.",
+    };
+    auditStatus = "order_rejected";
+    auditClassification = "execution_reconciled";
+  } else if (matchedHistoryOrder) {
     result = {
       status: "order_found_not_filled",
       mt5Confirmed: false,
-      explanation: "Order exists but no fill/deal was found.",
+      explanation: "Order exists in MT5 history but no matching fill/deal was found.",
     };
     auditStatus = "order_found_not_filled";
     auditClassification = "execution_reconciled";
@@ -310,11 +326,30 @@ Deno.serve(async (req) => {
       status: "execution_unconfirmed",
       mt5Confirmed: false,
       explanation:
-        "Broker accepted request but no matching MT5 position/order/deal was found.",
+        "Broker accepted request but no matching MT5 position/order/deal was found yet.",
     };
     auditStatus = "execution_unconfirmed";
     auditClassification = "placed_unconfirmed";
   }
+
+  // Confirmation lifecycle status — explicit for the client UI.
+  const confirmationStatus =
+    result.mt5Confirmed
+      ? "confirmed"
+      : result.status === "pending_order_placed"
+        ? "pending_order"
+        : result.status === "order_rejected"
+          ? "rejected"
+          : "not_found";
+  (result as any).confirmationStatus = confirmationStatus;
+  (result as any).brokerAccepted =
+    Number(input?.brokerRetcode) === 10008 ||
+    Number(input?.brokerRetcode) === 10009 ||
+    input?.rawExecutionResponse?.success === true ||
+    input?.rawExecutionResponse?.liveOrderSent === true ||
+    matchedPosition || matchedDeal || matchedPendingOrder || matchedHistoryOrder
+      ? true
+      : false;
 
   const fullPayload = {
     version: VERSION,
