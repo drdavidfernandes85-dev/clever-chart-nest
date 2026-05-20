@@ -60,15 +60,32 @@ const SystemHealthWidget = () => {
       }
     };
     window.addEventListener("mt:exec-result", handler as EventListener);
+    const unsub = liveMarketDataStore.subscribe(setMdState);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("mt:exec-result", handler as EventListener);
+      unsub();
     };
   }, []);
 
-  const mt: Health = loading ? "unknown" : connected ? "ok" : "down";
-  const tradingLayer: Health = rateLimited ? "warn" : connected ? "ok" : "unknown";
-  const rateHealth: Health = rateLimited ? "warn" : "ok";
+  // Detect duplicate loop registrations within the central service.
+  const duplicateLoops = useMemo(() => {
+    const seen = new Set<string>();
+    const dups: string[] = [];
+    for (const l of mdState.diagnostics.activeLoops) {
+      if (seen.has(l)) dups.push(l);
+      seen.add(l);
+    }
+    return dups;
+  }, [mdState.diagnostics.activeLoops]);
+
+  const cooldownRemainingSec = mdState.rateLimit.active && mdState.rateLimit.resumesAt
+    ? Math.max(0, Math.ceil((mdState.rateLimit.resumesAt - Date.now()) / 1000))
+    : 0;
+  const lastTickAgo = mdState.diagnostics.lastTickAt
+    ? Math.round((Date.now() - mdState.diagnostics.lastTickAt) / 1000)
+    : null;
+  const isStale = mdState.status === "stale";
 
   return (
     <section className="rounded-md border border-neutral-800 bg-[#0a0a0a] p-2.5 text-neutral-100">
