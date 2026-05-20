@@ -126,7 +126,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                             isWebinars && "text-primary"
                           )}
                         />
-                        <span className="truncate">{t(item.labelKey)}</span>
+                        <span className="truncate">{item.label ?? t(item.labelKey)}</span>
                         {showBadge ? (
                           <span
                             className={cn(
