@@ -232,7 +232,7 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-[#050505] text-foreground pb-16 md:pb-0">
       <SEO
         title="Trader Leaderboard | IX Sala de Trading"
-        description="Top community traders ranked by real P&L, win rate, and risk/reward."
+        description="Community activity overview based on available educational platform data. Not investment advice."
         canonical="https://ixsalatrading.com/leaderboard"
       />
 
