@@ -99,12 +99,22 @@ Deno.serve(async (req) => {
     }
 
     if (!account) {
-      return json(200, { success: false, error: "No connected trading account found." });
+      return json(200, {
+        success: false,
+        stage: "account_lookup",
+        errorCode: "NO_MT5_ACCOUNT",
+        error: "No connected trading account found.",
+      });
     }
 
     const traderId = account.metaapi_account_id;
     if (!traderId) {
-      return json(200, { success: false, error: "Connected account is missing a Trading Layer trader id." });
+      return json(200, {
+        success: false,
+        stage: "account_lookup",
+        errorCode: "MISSING_TRADER_ID",
+        error: "Connected account is missing a Trading Layer trader id.",
+      });
     }
 
     // 12s timeout per upstream request — long enough for cold reads, short
