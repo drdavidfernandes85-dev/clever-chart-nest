@@ -82,6 +82,11 @@ const findings: Finding[] = [
   // 11 — Mobile
   { area: "Mobile / responsive", status: "info", label: "Responsive layout requires viewport QA", note: "Test 375x812 + 414x896 — homepage, /dashboard, /live-chart" },
   { area: "Mobile / responsive", status: "info", label: "Terminal on small screens", note: "Consider a 'best viewed on desktop' notice on /live-chart below 768px" },
+
+  // 12 — Module readiness (Internal Preview gating)
+  { area: "Module readiness", status: "medium", label: "Analytics — Internal Preview", note: "Needs 3+ closed trades. Empty state, '—' KPIs, and disabled AI Report now in place. Keep hidden from launch nav." },
+  { area: "Module readiness", status: "high", label: "Leaderboard — Hidden", note: "Disclaimer added, copy-trading CTA removed, eligibility ≥5 closed trades. Compliance/perf rework still required (server-side aggregation) before restoring to nav." },
+  { area: "Module readiness", status: "medium", label: "Video Library — Ready only when 6+ published videos", note: "Coming-soon gate active. Restore to nav once videos table reaches 6 published rows." },
 ];
 
 const severityMeta: Record<Severity, { label: string; cls: string; icon: typeof CheckCircle2 }> = {
