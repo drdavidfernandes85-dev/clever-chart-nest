@@ -19,7 +19,7 @@ interface Finding {
   note?: string;
 }
 
-const SNAPSHOT_TIMESTAMP = "2026-05-20T14:50:00Z";
+const SNAPSHOT_TIMESTAMP = "2026-05-20T15:30:00Z";
 
 const findings: Finding[] = [
   // 2 — Core launch journey
@@ -83,7 +83,7 @@ const findings: Finding[] = [
   { area: "10. Performance / rate limit", status: "pass", label: "429 categorized as TL_RATE_LIMITED with retry-after honored" },
   { area: "10. Performance / rate limit", status: "pass", label: "Last-known-good fallback returned during cooldown when available" },
   { area: "10. Performance / rate limit", status: "pass", label: "Verified: no 429 during normal dashboard usage" },
-  { area: "10. Performance / rate limit", status: "info", label: "Cache is module-scoped per Deno isolate — post-review hardening recommended (Postgres/KV cross-isolate cache)" },
+  { area: "10. Performance / rate limit", status: "pass", label: "Cross-isolate Postgres cache live (tl_account_cache) — cacheStore=\"postgres\", 429 cooldown + last-known-good shared across isolates, admin-only SELECT RLS, service-role writes only" },
 
   // 11 — Stability
   { area: "11. Stability", status: "pass", label: "No black screens on visible launch pages" },
@@ -219,7 +219,7 @@ const AdminLaunchReadinessTab = () => {
         </h4>
         <p className="text-xs text-muted-foreground mb-2">Post-review hardening notes (non-blocking):</p>
         <ol className="list-decimal pl-5 space-y-1 text-xs text-muted-foreground">
-          <li>Consider Postgres / KV cross-isolate cache for Trading Layer last-known-good data (current cache is module-scoped per Deno isolate).</li>
+          <li><span className="text-emerald-500 font-medium">Completed:</span> Postgres cross-isolate cache for Trading Layer last-known-good data is live and verified (tl_account_cache, cacheStore="postgres", 429 cooldown shared across isolates).</li>
           <li>Restore Video Library nav only after 6+ videos are seeded.</li>
           <li>Restore Analytics only after enough user data and improved value delivery.</li>
           <li>Rework Leaderboard with server-side aggregation and compliance approval before public restore.</li>
