@@ -25,6 +25,8 @@ const FloatingMobileCTA = lazy(() => import("@/components/lead/FloatingMobileCTA
 const ExitIntentPopup = lazy(() => import("@/components/lead/ExitIntentPopup"));
 const DashboardLayout = lazy(() => import("@/components/dashboard/DashboardLayout"));
 import ReviewAccessBadge from "@/components/ReviewAccessBadge";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import InternalPreviewBanner from "@/components/InternalPreviewBanner";
 const Admin = lazy(() => import("./pages/Admin"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Chatroom = lazy(() => import("./pages/Chatroom"));
@@ -58,17 +60,35 @@ const Terms = lazy(() => import("./pages/Terms"));
 const RiskDisclosure = lazy(() => import("./pages/RiskDisclosure"));
 const ComplianceReview = lazy(() => import("./pages/ComplianceReview"));
 
-const DashboardShell = ({ children }: { children: ReactNode }) => (
+const DashboardShell = ({ children, scope }: { children: ReactNode; scope?: string }) => (
   <ProtectedRoute>
-    <DashboardLayout>{children}</DashboardLayout>
+    <DashboardLayout>
+      <ErrorBoundary scope={scope}>{children}</ErrorBoundary>
+    </DashboardLayout>
   </ProtectedRoute>
 );
 
-const GatedDashboardShell = ({ children }: { children: ReactNode }) => (
+const GatedDashboardShell = ({ children, scope }: { children: ReactNode; scope?: string }) => (
   <ProtectedRoute>
     <EligibilityGate>
-      <DashboardLayout>{children}</DashboardLayout>
+      <DashboardLayout>
+        <ErrorBoundary scope={scope}>{children}</ErrorBoundary>
+      </DashboardLayout>
     </EligibilityGate>
+  </ProtectedRoute>
+);
+
+/** Wrapper for routes hidden from launch navigation but reachable by URL. */
+const InternalPreviewShell = ({ children, scope, label }: { children: ReactNode; scope?: string; label?: string }) => (
+  <ProtectedRoute>
+    <DashboardLayout>
+      <ErrorBoundary scope={scope}>
+        <div className="p-4">
+          <InternalPreviewBanner label={label} />
+        </div>
+        {children}
+      </ErrorBoundary>
+    </DashboardLayout>
   </ProtectedRoute>
 );
 
