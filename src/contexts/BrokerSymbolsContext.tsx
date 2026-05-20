@@ -29,13 +29,35 @@ const enrich = (s: any): BrokerSymbol => {
   };
 };
 
+/**
+ * Curated broker-approved fallback list, used ONLY when:
+ *   - the user is signed out, or
+ *   - the broker symbol endpoint has not responded yet, or
+ *   - the broker returns an empty/failed payload.
+ *
+ * This is NOT the tradable universe — it is a safe placeholder so the
+ * UI never renders random TradingView symbols as if they were tradable.
+ * Replace by Trading Layer / MT5 list as soon as it arrives.
+ */
 export const FALLBACK_SYMBOLS: BrokerSymbol[] = [
-  { symbol: "XAUUSD", description: "Gold vs USD (fallback)" },
-  { symbol: "EURUSD", description: "Euro vs USD (fallback)" },
-  { symbol: "GBPUSD", description: "Pound vs USD (fallback)" },
-  { symbol: "GBPCAD", description: "Pound vs CAD (fallback)" },
-  { symbol: "US30",   description: "Dow Jones 30 (fallback)" },
-  { symbol: "NAS100", description: "Nasdaq 100 (fallback)" },
+  // Forex majors
+  { symbol: "EURUSD", description: "Euro vs USD (fallback)",   assetClass: "forex" },
+  { symbol: "GBPUSD", description: "Pound vs USD (fallback)",  assetClass: "forex" },
+  { symbol: "USDJPY", description: "USD vs Yen (fallback)",    assetClass: "forex" },
+  { symbol: "AUDUSD", description: "Aussie vs USD (fallback)", assetClass: "forex" },
+  { symbol: "USDCAD", description: "USD vs CAD (fallback)",    assetClass: "forex" },
+  { symbol: "USDCHF", description: "USD vs CHF (fallback)",    assetClass: "forex" },
+  { symbol: "NZDUSD", description: "Kiwi vs USD (fallback)",   assetClass: "forex" },
+  // Metals
+  { symbol: "XAUUSD", description: "Gold vs USD (fallback)",   assetClass: "metals" },
+  { symbol: "XAGUSD", description: "Silver vs USD (fallback)", assetClass: "metals" },
+  // Indices
+  { symbol: "US30",   description: "Dow Jones 30 (fallback)",  assetClass: "indices" },
+  { symbol: "NAS100", description: "Nasdaq 100 (fallback)",    assetClass: "indices" },
+  { symbol: "SPX500", description: "S&P 500 (fallback)",       assetClass: "indices" },
+  // Crypto (only when broker supports it; safe defaults for testing)
+  { symbol: "BTCUSD", description: "Bitcoin vs USD (fallback)", assetClass: "crypto" },
+  { symbol: "ETHUSD", description: "Ethereum vs USD (fallback)", assetClass: "crypto" },
 ].map(enrich);
 
 interface Ctx {
