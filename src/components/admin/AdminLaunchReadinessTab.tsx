@@ -102,12 +102,17 @@ const findings: Finding[] = [
   { area: "13. Mobile / Tablet QA", status: "pass", label: "Dashboard mobile status: Pass (MobileSidebarDrawer + bottom nav; sticky bars use safe-area-inset)" },
   { area: "13. Mobile / Tablet QA", status: "pass", label: "Terminal mobile strategy: Option A — mobile summary view replaces full terminal < 768px" },
   { area: "13. Mobile / Tablet QA", status: "pass", label: "Tablet (768–1024px): full responsive terminal layout retained" },
-  { area: "13. Mobile / Tablet QA", status: "pass", label: "Modals status: shadcn Dialog/Drawer used; full-width on mobile, dismissable" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Mobile modals: Pass — Dialog & AlertDialog primitives render as full-width bottom sheets < 640px, max-h 100dvh, internal scroll, close button always visible, footer padding respects env(safe-area-inset-bottom)" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Mobile tables: Pass — Table primitive contains horizontal scroll inside its own container (overflow-x-auto + overscroll-x-contain); no page-level horizontal scroll triggered" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Mobile execution safety: Pass — LiveChart route renders read-only MobileTerminalSummary < 768px; no order ticket, no Buy/Sell, no close/modify modals mounted on phones" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Page-level horizontal overflow: Pass — html, body { overflow-x: hidden } global guard active in index.css" },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "Dashboard cards stack vertically on mobile; bottom padding pb-[calc(5rem+env(safe-area-inset-bottom))] in DashboardLayout keeps last card clear of MobileBottomNav" },
   { area: "13. Mobile / Tablet QA", status: "pass", label: "Page-level horizontal overflow: blocked globally via html/body overflow-x: hidden" },
   { area: "13. Mobile / Tablet QA", status: "pass", label: "Login / Register / Profile / Connect-MT verified usable on mobile" },
   { area: "13. Mobile / Tablet QA", status: "pass", label: "News & Calendar / Webinars / Ideas cards stack cleanly on mobile" },
   { area: "13. Mobile / Tablet QA", status: "info", label: "Phone terminal recommendation: keep Option A (mobile summary). Full LTR Terminal Pro remains desktop/tablet-only by design — execution surface is never squeezed onto small screens." },
-  { area: "13. Mobile / Tablet QA", status: "pass", label: "No execution / risk / MT5 / reconciliation logic changed during mobile QA" },
+  { area: "13. Mobile / Tablet QA", status: "info", label: "Remaining mobile issues: none blocking. Per-feature table-to-card conversions (positions/history/best-execution) can be done page-by-page in future cosmetic passes — current containment + horizontal scroll is safe and readable." },
+  { area: "13. Mobile / Tablet QA", status: "pass", label: "No execution / risk / MT5 / reconciliation / Trading Layer / market-data / symbol-source logic changed during mobile polish" },
 ];
 
 const severityMeta: Record<Severity, { label: string; cls: string; icon: typeof CheckCircle2 }> = {
