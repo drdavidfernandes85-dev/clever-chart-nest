@@ -29,6 +29,7 @@ import Mt5PositionVerificationPanel from "@/components/dashboard/Mt5PositionVeri
 import ExecutionReconciliationDebugPanel from "@/components/dashboard/ExecutionReconciliationDebugPanel";
 import MarketDataDiagnosticsPanel from "@/components/dashboard/MarketDataDiagnosticsPanel";
 import PerformanceDiagnosticsPanel from "@/components/dashboard/PerformanceDiagnosticsPanel";
+import SymbolSourceDiagnosticsPanel from "@/components/dashboard/SymbolSourceDiagnosticsPanel";
 import {
   checkAndHandle429,
   getCooldownRemainingMs,
