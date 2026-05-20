@@ -198,6 +198,14 @@ const LiveSquawkFeed = () => {
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading live squawk…
           </div>
+        ) : error && filteredItems.length === 0 ? (
+          <div className="flex h-32 flex-col items-center justify-center gap-2 text-xs text-muted-foreground p-4 text-center">
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            <span>{error}</span>
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={fetchSquawk}>
+              <RefreshCw className="h-3 w-3 mr-1" /> Retry
+            </Button>
+          </div>
         ) : filteredItems.length === 0 ? (
           <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
             No items for this filter
