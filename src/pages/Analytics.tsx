@@ -19,22 +19,33 @@ interface WeeklyReport {
   created_at: string;
 }
 
+const MIN_CLOSED_TRADES = 3;
+
 const Analytics = () => {
   const { user } = useAuth();
   const { t, locale } = useLanguage();
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [closedTradeCount, setClosedTradeCount] = useState<number>(0);
 
   const loadReports = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("weekly_reports" as any)
-      .select("*")
-      .eq("user_id", user.id)
-      .order("week_start", { ascending: false })
-      .limit(10);
+    const [{ data }, { count }] = await Promise.all([
+      supabase
+        .from("weekly_reports" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .order("week_start", { ascending: false })
+        .limit(10),
+      supabase
+        .from("trade_journal")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "closed"),
+    ]);
     setReports((data ?? []) as unknown as WeeklyReport[]);
+    setClosedTradeCount(count ?? 0);
     setLoading(false);
   };
 
