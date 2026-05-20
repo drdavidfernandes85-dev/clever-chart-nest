@@ -39,6 +39,8 @@ const News = () => {
             <div className="relative flex-1 max-w-lg ml-auto xl:ml-8">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("page.searchNews")}
                 className="h-9 pl-10 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40 rounded-xl"
               />
