@@ -219,7 +219,7 @@ const AdminLaunchReadinessTab = () => {
         </h4>
         <p className="text-xs text-muted-foreground mb-2">Post-review hardening notes (non-blocking):</p>
         <ol className="list-decimal pl-5 space-y-1 text-xs text-muted-foreground">
-          <li>Consider Postgres / KV cross-isolate cache for Trading Layer last-known-good data (current cache is module-scoped per Deno isolate).</li>
+          <li><span className="text-emerald-500 font-medium">Completed:</span> Postgres cross-isolate cache for Trading Layer last-known-good data is live and verified (tl_account_cache, cacheStore="postgres", 429 cooldown shared across isolates).</li>
           <li>Restore Video Library nav only after 6+ videos are seeded.</li>
           <li>Restore Analytics only after enough user data and improved value delivery.</li>
           <li>Rework Leaderboard with server-side aggregation and compliance approval before public restore.</li>
