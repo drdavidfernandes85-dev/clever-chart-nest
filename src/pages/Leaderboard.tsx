@@ -255,6 +255,16 @@ const Leaderboard = () => {
       </header>
 
       <div className="container max-w-6xl py-8 px-4">
+        {/* Compliance disclaimer — required on this page */}
+        <div className="mb-6 rounded-2xl border border-[#FFCD05]/30 bg-[#FFCD05]/5 p-4 text-xs leading-relaxed text-white/80">
+          <p className="font-semibold text-[#FFCD05] mb-1 uppercase tracking-wider text-[10px]">Educational Disclaimer</p>
+          <p>
+            Leaderboard data is provided for educational and community purposes only. Rankings are not
+            investment advice, financial advice, performance guarantees, or recommendations to follow any
+            trader. Past performance does not guarantee future results.
+          </p>
+        </div>
+
         {/* Mentor verification + Apply CTA */}
         <div className="mb-6">
           <MentorTierProgression onApply={() => setMentorOpen(true)} />
