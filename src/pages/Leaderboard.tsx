@@ -110,7 +110,8 @@ async function fetchLeaders(period: PeriodKey, offset: number, limit: number): P
     agg.set(e.user_id, c);
   });
 
-  const rows: TraderRow[] = (profiles || []).map((p: any) => {
+  const MIN_TRADES_TO_RANK = 5;
+  const rowsAll: TraderRow[] = (profiles || []).map((p: any) => {
     const a = agg.get(p.user_id) || { trades: 0, wins: 0, losses: 0, pnl: 0, rSum: 0, rCount: 0 };
     const decided = a.wins + a.losses;
     return {
@@ -128,6 +129,10 @@ async function fetchLeaders(period: PeriodKey, offset: number, limit: number): P
     };
   });
 
+  // Eligibility: only rank traders with verifiable activity (>= MIN_TRADES_TO_RANK closed trades).
+  // Excludes empty/0-trade users from ranking entirely.
+  const rows = rowsAll.filter((r) => r.trades >= MIN_TRADES_TO_RANK);
+
   // Sort: traders with activity first by P&L desc, then by trade count, mentors as tiebreaker
   rows.sort((a, b) => {
     if (b.total_pnl !== a.total_pnl) return b.total_pnl - a.total_pnl;
@@ -138,6 +143,10 @@ async function fetchLeaders(period: PeriodKey, offset: number, limit: number): P
   const page = rows.slice(offset, offset + limit);
   return { rows: page, hasMore: rows.length > offset + limit };
 }
+
+// TODO(perf): Before restoring Leaderboard to nav, replace this client-side aggregation
+// (fetch 500 profiles + journal + execs and reduce in JS) with a server-side view or RPC
+// that returns pre-aggregated, eligibility-filtered ranking rows.
 
 const Leaderboard = () => {
   const { user } = useAuth();
@@ -198,22 +207,10 @@ const Leaderboard = () => {
     }
   };
 
-  const handleCopy = async (trader: TraderRow) => {
-    if (!user) { toast.error("Sign in to follow educators"); return; }
-    if (user.id === trader.user_id) { toast.error("You cannot follow yourself"); return; }
-    if (copies.has(trader.user_id)) {
-      await supabase.from("copy_subscriptions").update({ status: "paused" }).eq("subscriber_id", user.id).eq("trader_id", trader.user_id);
-      setCopies((s) => { const n = new Set(s); n.delete(trader.user_id); return n; });
-      toast.success(`Stopped following ${trader.display_name}`);
-    } else {
-      const { error } = await supabase.from("copy_subscriptions").upsert(
-        { subscriber_id: user.id, trader_id: trader.user_id, status: "active", risk_multiplier: 1.0 },
-        { onConflict: "subscriber_id,trader_id" },
-      );
-      if (error) return toast.error(error.message);
-      setCopies((s) => new Set(s).add(trader.user_id));
-      toast.success(`Following ${trader.display_name}`);
-    }
+  // Copy-trading insertion disabled for launch (compliance).
+  // The leaderboard must not insert into copy_subscriptions; "View Profile" is shown instead.
+  const handleCopy = async (_trader: TraderRow) => {
+    toast.info("Trader profiles are view-only for now.");
   };
 
   const top3 = rows.slice(0, 3);
@@ -223,7 +220,7 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-[#050505] text-foreground pb-16 md:pb-0">
       <SEO
         title="Trader Leaderboard | IX Sala de Trading"
-        description="Top community traders ranked by real P&L, win rate, and risk/reward."
+        description="Community activity overview based on available educational platform data. Not investment advice."
         canonical="https://ixsalatrading.com/leaderboard"
       />
 
@@ -246,6 +243,16 @@ const Leaderboard = () => {
       </header>
 
       <div className="container max-w-6xl py-8 px-4">
+        {/* Compliance disclaimer — required on this page */}
+        <div className="mb-6 rounded-2xl border border-[#FFCD05]/30 bg-[#FFCD05]/5 p-4 text-xs leading-relaxed text-white/80">
+          <p className="font-semibold text-[#FFCD05] mb-1 uppercase tracking-wider text-[10px]">Educational Disclaimer</p>
+          <p>
+            Leaderboard data is provided for educational and community purposes only. Rankings are not
+            investment advice, financial advice, performance guarantees, or recommendations to follow any
+            trader. Past performance does not guarantee future results.
+          </p>
+        </div>
+
         {/* Mentor verification + Apply CTA */}
         <div className="mb-6">
           <MentorTierProgression onApply={() => setMentorOpen(true)} />
@@ -256,11 +263,14 @@ const Leaderboard = () => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Trophy className="h-4 w-4 text-[#FFCD05]" />
-              <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">Community Ranking</span>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">Community Activity</span>
             </div>
             <h1 className="font-heading text-3xl md:text-4xl font-bold uppercase tracking-tight">
               IX <span className="text-[#FFCD05]">Traders</span>
             </h1>
+            <p className="mt-1 text-xs text-white/50">
+              Community activity overview based on available educational platform data.
+            </p>
           </div>
           <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-[#0F0F0F] p-1">
             {PERIODS.map((p) => (
@@ -279,7 +289,9 @@ const Leaderboard = () => {
         ) : rows.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-[#0F0F0F] p-10 text-center">
             <Trophy className="h-8 w-8 mx-auto text-white/30 mb-2" />
-            <p className="text-sm text-white/60">No trader activity for this period yet.</p>
+            <p className="text-sm text-white/60">
+              Leaderboard will be available once there is enough verified community activity.
+            </p>
           </div>
         ) : (
           <>
@@ -320,9 +332,9 @@ const Leaderboard = () => {
                         className={`flex-1 h-7 text-[10px] font-semibold ${follows.has(r.user_id) ? "bg-white/10 text-white hover:bg-white/15" : "bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90"}`}>
                         {follows.has(r.user_id) ? "Following" : "Follow"}
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
-                        className={`flex-1 h-7 text-[10px] gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                        <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
+                      <Button size="sm" variant="outline" onClick={() => setDetail(r)}
+                        className="flex-1 h-7 text-[10px] gap-1 border-white/15 bg-transparent text-white hover:bg-white/5">
+                        View Profile
                       </Button>
                     </div>
                   </div>
@@ -373,9 +385,9 @@ const Leaderboard = () => {
                           className={`h-7 text-[10px] font-semibold px-3 ${follows.has(r.user_id) ? "bg-white/10 text-white hover:bg-white/15" : "bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90"}`}>
                           {follows.has(r.user_id) ? "Following" : "Follow"}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
-                          className={`h-7 text-[10px] px-2.5 gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                          <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
+                        <Button size="sm" variant="outline" onClick={() => setDetail(r)}
+                          className="h-7 text-[10px] px-2.5 gap-1 border-white/15 bg-transparent text-white hover:bg-white/5">
+                          View Profile
                         </Button>
                       </div>
                     </div>
@@ -496,11 +508,11 @@ const TraderDetail = ({ trader, onClose, period, following, copying, onFollow, o
                 className={`flex-1 ${following ? "bg-white/10 text-white hover:bg-white/15" : "bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90"}`}>
                 {following ? "Following" : "Follow"}
               </Button>
-              <Button onClick={onCopy} size="sm" variant="outline"
-                className={`flex-1 gap-1 ${copying ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05]" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                <Copy className="h-3.5 w-3.5" /> {copying ? "Following" : "Follow Educator"}
-              </Button>
             </div>
+            <p className="mt-2 text-[10px] text-white/40 leading-relaxed">
+              Profiles are view-only. Following another trader does not copy, mirror or execute their trades on
+              your account. Not investment advice.
+            </p>
 
             {/* Win rate breakdown */}
             <div className="mt-5">

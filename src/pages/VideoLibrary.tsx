@@ -19,6 +19,7 @@ interface Video {
 }
 
 const CATEGORIES = ["all", "webinar", "tutorial", "analysis"] as const;
+const MIN_VIDEOS_FOR_READY = 6;
 
 const VideoLibrary = () => {
   const { t } = useLanguage();
@@ -121,6 +122,17 @@ const VideoLibrary = () => {
           </h1>
           <p className="mt-2 text-muted-foreground">{t("videos.desc")}</p>
         </div>
+
+        {!loading && videos.length < MIN_VIDEOS_FOR_READY && (
+          <div className="mb-8 rounded-2xl border border-dashed border-border bg-card/40 p-6 text-center">
+            <Play className="h-8 w-8 mx-auto text-muted-foreground/40 mb-3" />
+            <p className="text-sm font-semibold text-foreground mb-1">Video Library is being prepared</p>
+            <p className="text-xs text-muted-foreground">
+              Educational videos will appear here soon.
+              {videos.length > 0 && ` (${videos.length} of ${MIN_VIDEOS_FOR_READY} published)`}
+            </p>
+          </div>
+        )}
 
         {/* Player */}
         {playingId && (
