@@ -207,22 +207,10 @@ const Leaderboard = () => {
     }
   };
 
-  const handleCopy = async (trader: TraderRow) => {
-    if (!user) { toast.error("Sign in to follow educators"); return; }
-    if (user.id === trader.user_id) { toast.error("You cannot follow yourself"); return; }
-    if (copies.has(trader.user_id)) {
-      await supabase.from("copy_subscriptions").update({ status: "paused" }).eq("subscriber_id", user.id).eq("trader_id", trader.user_id);
-      setCopies((s) => { const n = new Set(s); n.delete(trader.user_id); return n; });
-      toast.success(`Stopped following ${trader.display_name}`);
-    } else {
-      const { error } = await supabase.from("copy_subscriptions").upsert(
-        { subscriber_id: user.id, trader_id: trader.user_id, status: "active", risk_multiplier: 1.0 },
-        { onConflict: "subscriber_id,trader_id" },
-      );
-      if (error) return toast.error(error.message);
-      setCopies((s) => new Set(s).add(trader.user_id));
-      toast.success(`Following ${trader.display_name}`);
-    }
+  // Copy-trading insertion disabled for launch (compliance).
+  // The leaderboard must not insert into copy_subscriptions; "View Profile" is shown instead.
+  const handleCopy = async (_trader: TraderRow) => {
+    toast.info("Trader profiles are view-only for now.");
   };
 
   const top3 = rows.slice(0, 3);
