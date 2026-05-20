@@ -335,12 +335,12 @@ const TradingDashboard = () => {
 // Reduces first-load complexity. Cards are state-aware:
 // - Profile / Connect MT5 card flips its CTA based on `connected`.
 // - All other cards link to the simplified launch nav destinations.
-const PANEL_ACTIONS = [
+const PANEL_ACTIONS: { to: string; title: string; desc: string; primary?: boolean }[] = [
   { to: "/chatroom", title: "Continue to Trading Room", desc: "Live community, market discussion and shared ideas.", primary: true },
   { to: "/webinars", title: "Join Next Webinar", desc: "Live educational sessions and market reviews." },
   { to: "/ideas", title: "Review Market Ideas", desc: "Educational market ideas — you stay in control." },
   { to: "/dashboard", title: "Open LTR Terminal Pro", desc: "Charts, order controls and risk tools." },
-] as const;
+];
 
 const PanelActionCards = ({ connected }: { connected: boolean }) => (
   <section
