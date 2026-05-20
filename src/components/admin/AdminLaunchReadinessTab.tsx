@@ -197,11 +197,11 @@ const AdminLaunchReadinessTab = () => {
         </Card>
       ))}
 
-      <Card className="p-4 border-amber-500/30 bg-amber-500/5">
-        <h4 className="text-sm font-semibold text-foreground mb-2">Action items before Compliance submission</h4>
+      <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
+        <h4 className="text-sm font-semibold text-foreground mb-2">Post-review polish (non-blocking)</h4>
         <ol className="list-decimal pl-5 space-y-1 text-xs text-muted-foreground">
-          <li><span className="text-orange-500 font-medium">High:</span> Rename or hide the "Copy Trading" tab inside <code>/ideas</code>.</li>
-          <li><span className="text-amber-400 font-medium">Medium:</span> Replace "Copy Trade" labels with "Apply Idea to Terminal" in <code>CopyTradeModal</code> and <code>LiveSharedSignals</code>.</li>
+          <li><span className="text-emerald-500 font-medium">Resolved:</span> "Copy Trading" tab on <code>/ideas</code> renamed to "Idea Tools"; auto-follow UI hidden behind coming-soon placeholder.</li>
+          <li><span className="text-amber-400 font-medium">Medium:</span> Replace remaining "Copy Trade" labels with "Review Idea" in <code>CopyTradeModal</code> and <code>LiveSharedSignals</code>.</li>
           <li><span className="text-amber-400 font-medium">Medium:</span> Swap INFINOX wordmark in Admin header for IX LTR mark.</li>
           <li><span className="text-amber-400 font-medium">Medium:</span> Per-route SEO + translation visual QA at 375 / 414 / 768 / 1280.</li>
         </ol>
