@@ -118,7 +118,7 @@ const AdminLaunchReadinessTab = () => {
 
   const criticals = counts.critical ?? 0;
   const highs = counts.high ?? 0;
-  const readyForCompliance = criticals === 0 && highs <= 1; // single tracked high = "Copy Trading" tab rename
+  const readyForCompliance = criticals === 0 && highs === 0;
 
   return (
     <div className="space-y-4">
