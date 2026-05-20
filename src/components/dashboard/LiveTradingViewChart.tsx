@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Activity } from "lucide-react";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import { isAutoRefreshAllowed } from "@/lib/tradingLayerControl";
+import { useHeavyComponent } from "@/lib/perfRegistry";
 
 /**
  * Real live market chart powered by TradingView Advanced Chart widget.
@@ -35,6 +36,7 @@ const LiveTradingViewChart = ({
   height = 720,
   className = "",
 }: Props) => {
+  useHeavyComponent("LiveTradingViewChart");
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [openPrice, setOpenPrice] = useState<number | null>(null);
 

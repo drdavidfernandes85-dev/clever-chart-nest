@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BookOpen } from "lucide-react";
+import { useHeavyComponent } from "@/lib/perfRegistry";
 
 /**
  * Order Book / Market Depth — left-rail pro panel.
@@ -16,6 +17,7 @@ const seedRows = (mid: number, side: "bid" | "ask"): Row[] =>
   });
 
 const OrderBook = () => {
+  useHeavyComponent("OrderBook");
   const [mid, setMid] = useState(1.09608);
   const [bids, setBids] = useState<Row[]>(() => seedRows(1.09608, "bid"));
   const [asks, setAsks] = useState<Row[]>(() => seedRows(1.09608, "ask"));

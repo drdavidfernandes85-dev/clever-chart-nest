@@ -3,6 +3,7 @@ import { Briefcase, Loader2, RefreshCw } from "lucide-react";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { getCooldownRemainingMs } from "@/lib/tradingLayerControl";
 import PositionActions from "./PositionActions";
+import { useHeavyComponent } from "@/lib/perfRegistry";
 
 const fmtPrice = (sym: string, v: number | null | undefined) => {
   if (v == null || Number.isNaN(Number(v))) return "—";
@@ -16,6 +17,7 @@ const fmtPrice = (sym: string, v: number | null | undefined) => {
 };
 
 const OpenPositionsPanel = () => {
+  useHeavyComponent("OpenPositionsPanel");
   const { liveAccount, positions, connected, loading, refreshing, refresh } =
     useLiveAccount();
   const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
