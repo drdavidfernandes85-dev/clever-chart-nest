@@ -224,13 +224,31 @@ const TradingDashboard = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const visibleRef = useRef(true);
   const backoffTickRef = useRef(false);
+  const lastManualRef = useRef(0);
+  const inFlightRef = useRef(false);
   const [logs, setLogs] = useState<ExecutionLog[]>([]);
 
+  // Manual refresh throttle: 15s between user-initiated requests.
+  const MANUAL_THROTTLE_MS = 15_000;
+
   const load = useCallback(async (manual = false) => {
-    if (manual) setRefreshing(true);
+    if (inFlightRef.current) return;
+    if (manual) {
+      const since = Date.now() - lastManualRef.current;
+      if (since < MANUAL_THROTTLE_MS) {
+        const wait = Math.ceil((MANUAL_THROTTLE_MS - since) / 1000);
+        toast.info(`Please wait ${wait}s before refreshing again`);
+        return;
+      }
+      lastManualRef.current = Date.now();
+      setRefreshing(true);
+    }
+    inFlightRef.current = true;
     try {
+      // `refresh: true` only forces a cache bypass when no cooldown is active;
+      // the edge function always respects retry-after and returns last-known-good.
       const { data, error } = await supabase.functions.invoke("get-live-account", {
-        body: { refresh: true },
+        body: { refresh: manual },
       });
       if (error) throw error;
       setRes(data as LiveResponse);
@@ -242,6 +260,7 @@ const TradingDashboard = () => {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      inFlightRef.current = false;
     }
   }, []);
 
@@ -262,19 +281,20 @@ const TradingDashboard = () => {
       if (visibleRef.current) load();
     };
     document.addEventListener("visibilitychange", onVis);
-    // Poll every 30s (was 10s). Trading Layer rate-limits aggressive polling;
-    // back off to 60s when the last response was 429 or upstream-error.
+    // Poll every 60s. The edge function holds short server-side caches
+    // (account 25s, positions 15s) and global 429 cooldown, so most polls
+    // are served from cache and never hit Trading Layer.
     const id = setInterval(() => {
       if (!visibleRef.current) return;
       const code = res?.errorCode;
       const backoff = code === "TL_RATE_LIMITED" || code === "TL_SERVICE_DOWN";
       if (backoff) {
-        // Skip every other tick → effective 60s while throttled.
+        // Skip every other tick → effective 120s while throttled.
         backoffTickRef.current = !backoffTickRef.current;
         if (backoffTickRef.current) return;
       }
       load();
-    }, 30_000);
+    }, 60_000);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
