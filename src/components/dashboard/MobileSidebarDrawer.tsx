@@ -23,6 +23,8 @@ import { useWebinars } from "@/hooks/useWebinars";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LOCALE_FLAGS, LOCALE_LABELS, type Locale, type TranslationKey } from "@/i18n/translations";
 
+// NOTE: /analytics, /leaderboard, /videos intentionally hidden from launch
+// navigation. Routes remain accessible via direct URL for internal testing.
 const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
@@ -30,9 +32,6 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/live-chart", labelKey: "sidebar.liveCharts", icon: LineChart },
   { to: "/chatroom", labelKey: "sidebar.chatroom", icon: MessageSquare },
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
-  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
-  { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
-  { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
   { to: "/education", labelKey: "sidebar.education", icon: GraduationCap },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];

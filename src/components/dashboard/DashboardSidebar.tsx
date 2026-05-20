@@ -41,6 +41,8 @@ import { Globe } from "lucide-react";
  * (mobile uses MobileBottomNav). Inspired by top-tier trading platforms.
  */
 
+// NOTE: /analytics, /leaderboard, /videos intentionally hidden from launch
+// navigation. Routes remain accessible via direct URL for internal testing.
 const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard; flagship?: boolean; label?: string }[] = [
   { to: "/dashboard", labelKey: "sidebar.dashboard", icon: LayoutDashboard },
   { to: "/trading-room", labelKey: "sidebar.tradingRoom", icon: Activity },
@@ -48,9 +50,6 @@ const NAV: { to: string; labelKey: TranslationKey; icon: typeof LayoutDashboard;
   { to: "/webinars", labelKey: "sidebar.liveWebinars", icon: Radio, flagship: true },
   { to: "/ideas", labelKey: "sidebar.signals", icon: Zap, label: "Ideas" },
   { to: "/news", labelKey: "sidebar.news", icon: Newspaper },
-  { to: "/analytics", labelKey: "sidebar.analytics", icon: BarChart3 },
-  { to: "/leaderboard", labelKey: "sidebar.leaderboard", icon: Trophy },
-  { to: "/videos", labelKey: "sidebar.videoLibrary", icon: Video },
   { to: "/education", labelKey: "sidebar.education", icon: GraduationCap },
   { to: "/profile", labelKey: "sidebar.profile", icon: User },
 ];

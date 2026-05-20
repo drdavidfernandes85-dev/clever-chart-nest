@@ -73,9 +73,7 @@ const Navbar = () => {
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/dashboard">{t("nav.dashboard")}</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
-            <Link to="/videos">{t("nav.videos")}</Link>
-          </Button>
+          {/* /videos hidden from launch nav (route remains for internal testing) */}
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/education">{t("nav.education")}</Link>
           </Button>
@@ -183,9 +181,7 @@ const Navbar = () => {
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/dashboard" onClick={() => setMobileOpen(false)}>{t("nav.dashboard")}</Link>
             </Button>
-            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
-              <Link to="/videos" onClick={() => setMobileOpen(false)}>{t("nav.videos")}</Link>
-            </Button>
+            {/* /videos hidden from launch mobile nav */}
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/education" onClick={() => setMobileOpen(false)}>{t("nav.education")}</Link>
             </Button>
