@@ -530,9 +530,17 @@ const NewsFlowWidget = ({ externalSearch }: NewsFlowWidgetProps = {}) => {
                   </div>
                 ))}
               </div>
+            ) : error && filteredNews.length === 0 ? (
+              <div className="flex h-40 flex-col items-center justify-center gap-2 px-4 text-center text-xs text-muted-foreground">
+                <AlertTriangle className="h-4 w-4 text-amber-400" />
+                <span>{error}</span>
+                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={fetchNews}>
+                  <RefreshCw className="h-3 w-3 mr-1" /> Retry
+                </Button>
+              </div>
             ) : filteredNews.length === 0 ? (
               <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-                No news found
+                {searchQuery ? "No updates found." : "No news found"}
               </div>
             ) : (
               filteredNews.map((item, i) => (
