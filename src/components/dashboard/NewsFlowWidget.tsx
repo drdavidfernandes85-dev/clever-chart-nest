@@ -140,30 +140,23 @@ const LiveSquawkFeed = () => {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [items, setItems] = useState<SquawkItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchSquawk = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
-      if (!error && data?.data) {
-        const classified = (data.data as RssNewsItem[]).map(classifyNews);
-        setItems(classified);
-      }
-    } catch (e) {
-      console.error("Failed to fetch squawk:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Shared RSS cache — dedupes the fetch with NewsFlow.
   useEffect(() => {
-    fetchSquawk();
-    const refresh = setInterval(fetchSquawk, 60_000);
+    const unsub = subscribeRssNews((s) => {
+      setItems(s.items.map(classifyNews));
+      setLoading(s.loading && s.items.length === 0);
+      setError(s.error);
+    });
     const blink = setInterval(() => setPulse((p) => !p), 1500);
     return () => {
-      clearInterval(refresh);
+      unsub();
       clearInterval(blink);
     };
-  }, [fetchSquawk]);
+  }, []);
+
+  const fetchSquawk = useCallback(() => { void refreshRssNews(); }, []);
 
   const filteredItems = items.filter((item) => {
     if (activeFilter === "ALL") return true;
