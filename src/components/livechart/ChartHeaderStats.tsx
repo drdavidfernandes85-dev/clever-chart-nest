@@ -84,9 +84,11 @@ const ChartHeaderStats = ({ symbol, displayLabel }: Props) => {
     if (isAutoRefreshAllowed()) fetchQuote();
     const onManualRefresh = () => fetchQuote();
     window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    // Header badge — informational only. 30s is plenty and avoids
+    // hammering free CORS endpoints (gold-api / coingecko / frankfurter).
     const id = window.setInterval(() => {
       if (isAutoRefreshAllowed()) fetchQuote();
-    }, 5000);
+    }, 30_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);

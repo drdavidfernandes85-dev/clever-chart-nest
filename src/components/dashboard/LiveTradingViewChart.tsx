@@ -66,9 +66,11 @@ const LiveTradingViewChart = ({
     if (isAutoRefreshAllowed()) fetchPrice();
     const onManualRefresh = () => fetchPrice();
     window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    // Header price badge — informational. 30s avoids spamming
+    // exchangerate.host on every chart mount.
     const id = window.setInterval(() => {
       if (isAutoRefreshAllowed()) fetchPrice();
-    }, 5000);
+    }, 30_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);
