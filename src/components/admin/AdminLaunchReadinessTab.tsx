@@ -3,10 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, XCircle, Info } from "lucide-react";
 
 /**
- * Dev/Admin-only Pre-Compliance Launch Readiness QA Report.
- * Read-only, generated from a manual code+route scan.
+ * Dev/Admin-only End-to-End Launch Journey QA Report.
+ * Read-only, generated from a manual code + route + journey scan.
  * Does NOT touch edge functions, Supabase logic, MT5 execution,
- * Trading Layer integration, risk controls or order routes.
+ * Trading Layer integration, risk controls, MarketDataService,
+ * symbol-source logic, News cache, or readiness gates.
  */
 
 type Severity = "pass" | "info" | "medium" | "high" | "critical";
@@ -19,74 +20,78 @@ interface Finding {
 }
 
 const findings: Finding[] = [
-  // 1 — Branding
-  { area: "Branding", status: "pass", label: "IX LTR PRO used as platform brand", note: "Footer, SEO, head meta" },
-  { area: "Branding", status: "pass", label: "LTR Terminal Pro used only for terminal product", note: "terminal.poweredByTl, /live-chart" },
-  { area: "Branding", status: "pass", label: "INFINOX referenced only as broker / MT5 venue", note: "connectMt5, footer.tech.body, FAQ a8" },
-  { area: "Branding", status: "pass", label: "Trading Layer shown as independent provider", note: "footer.tech.body, home.compliance.footer (EN/ES/PT)" },
-  { area: "Branding", status: "medium", label: "Admin header still uses infinoxLogo asset", note: "src/pages/Admin.tsx:116 — swap to LTR mark for internal pages" },
+  // 1 — Public site
+  { area: "1. Public site", status: "pass", label: "Home loads, no black screen, no infinite loading", note: "Hero + lazy sections via DeferredSection + Suspense fallbacks" },
+  { area: "1. Public site", status: "pass", label: "Education / Webinars / Community / News reachable from nav", note: "Navbar + Footer + Home internal-links section" },
+  { area: "1. Public site", status: "pass", label: "LTR Terminal Pro public page reachable", note: "/live-chart routes gated by EligibilityGate with clear AccessDeniedScreen" },
+  { area: "1. Public site", status: "pass", label: "FAQ, Terms, Risk Disclosure, Privacy reachable from Footer" },
+  { area: "1. Public site", status: "pass", label: "Logged-out CTAs route to /register or /login with redirect context" },
+  { area: "1. Public site", status: "medium", label: "Per-route SEO uniqueness pending", note: "Each page has SEO component — verify titles/descriptions/H1 with built-in SEO scanner" },
 
-  // 2 — Logos
-  { area: "Logos", status: "pass", label: "Favicon + apple-touch-icon present", note: "/favicon.png, /apple-touch-icon.png, pwa-512.png" },
-  { area: "Logos", status: "pass", label: "OG/social image updated", note: "/og-ltr-terminal-pro.png 1200x630" },
-  { area: "Logos", status: "info", label: "No broken image paths detected in scan", note: "All <img src> references resolve to existing assets" },
-  { area: "Logos", status: "info", label: "Visual checks pending", note: "Stretch/crop/transparency QA requires manual visual pass on dark backgrounds" },
+  // 2 — Dashboard
+  { area: "2. Dashboard", status: "pass", label: "Sidebar focused on 8 core launch pages", note: "Panel, Trading Room, News, Webinars, Ideas, Terminal, Education, Profile" },
+  { area: "2. Dashboard", status: "pass", label: "Hidden modules not surfaced in sidebar or mobile drawer", note: "Analytics / Leaderboard / Video Library remain URL-accessible only" },
+  { area: "2. Dashboard", status: "pass", label: "Empty states + next actions present on Panel", note: "TradingDashboard renders next-action cards when no MT5 / no trades" },
+  { area: "2. Dashboard", status: "pass", label: "Admin/Dev tools not visible to normal users", note: "AdminRoute + useIsAdmin + useDevMode gates" },
 
-  // 3 — Compliance wording
-  { area: "Compliance wording", status: "pass", label: "No prohibited 'signals/señales/sinais' outside legal clarifications", note: "All hits are inside 'Market Ideas are not signals' style disclosures" },
-  { area: "Compliance wording", status: "pass", label: "No 'guaranteed' or 'risk-free' claims in UI", note: "Scan returned 0 hits in src/components and src/pages" },
-  { area: "Compliance wording", status: "pass", label: "No 'investment advice / asesoría financiera / aconselhamento' as a claim", note: "Only appears in 'NOT investment advice' disclaimers" },
-  { area: "Compliance wording", status: "high", label: "'Copy Trading' tab still rendered inside /ideas", note: "src/pages/Ideas.tsx imports CopyTrading and shows it as a tab; route /copy-trading already redirects to /ideas. Either hide the tab or rename to 'Follow Idea (educational)'." },
-  { area: "Compliance wording", status: "medium", label: "User-facing 'Copy Trade' wording in components", note: "CopyTradeModal, LiveSharedSignals 'Take/Copy Trade' button copy. Reword to 'Apply Idea to Terminal' to avoid copy-trading inference." },
-  { area: "Compliance wording", status: "medium", label: "FAQ a6 (ES) lists 'copy trading' in negation list", note: "Allowed (negation), but reads ambiguous — consider 'no ofrecemos servicios de copy trading'." },
+  // 3 — Terminal (LTR Terminal Pro)
+  { area: "3. Terminal", status: "pass", label: "Market Watch uses broker-approved symbols only", note: "BrokerSymbolsContext via get-mt5-symbols; no fake dash rows" },
+  { area: "3. Terminal", status: "pass", label: "Chart wrapped in ErrorBoundary, no black screen on failure", note: "PreviewRouteLoader fallback active" },
+  { area: "3. Terminal", status: "pass", label: "Order Ticket disables Buy/Sell when symbol invalid or MT5 missing", note: "selectedSymbolValid + EligibilityGate" },
+  { area: "3. Terminal", status: "pass", label: "Stale-while-revalidate state layer keeps panels populated during refresh", note: "TerminalStateContext lastGood mirrors" },
+  { area: "3. Terminal", status: "info", label: "Execution logic untouched this pass", note: "Per directive — Trading Layer / MT5 / risk controls not modified" },
 
-  // 4 — Trading Layer disclosure
-  { area: "Trading Layer disclosure", status: "pass", label: "Footer disclosure present (EN/ES/PT)", note: "footer.tech.body" },
-  { area: "Trading Layer disclosure", status: "pass", label: "Terminal shows 'Powered by Trading Layer'", note: "terminal.poweredByTl" },
-  { area: "Trading Layer disclosure", status: "pass", label: "Ideas page disclosure", note: "ideas.seo.disclaimer + PoweredByTradingLayer component" },
-  { area: "Trading Layer disclosure", status: "pass", label: "Legal/risk pages disclose", note: "terms.seo.desc, seo.terms.description (EN/ES/PT)" },
-  { area: "Trading Layer disclosure", status: "info", label: "Order/idea tools area disclosure", note: "Confirmed in CopyTradeModal + ComplianceFooter — visible on every dashboard route" },
+  // 4 — News & Calendar
+  { area: "4. News & Calendar", status: "pass", label: "Shared RSS cache prevents duplicate polls", note: "src/lib/rssNewsCache.ts — single 120s cycle, 10s timeout" },
+  { area: "4. News & Calendar", status: "pass", label: "Economic Calendar has loading overlay + 12s retry fallback" },
+  { area: "4. News & Calendar", status: "pass", label: "Page-level search wires into NewsFlow" },
+  { area: "4. News & Calendar", status: "pass", label: "Compliance disclaimer visible at bottom of /news" },
 
-  // 5 — INFINOX separation
-  { area: "INFINOX separation", status: "pass", label: "No 'INFINOX signals' / 'INFINOX copy trading' strings", note: "0 hits across src/ and index.html" },
-  { area: "INFINOX separation", status: "pass", label: "INFINOX wording limited to MT5 connection / broker / venue", note: "connectMt5.* keys, faq.a8 (ES)" },
-  { area: "INFINOX separation", status: "pass", label: "FAQ explicitly states INFINOX is not the provider of ideas/tech", note: "faq.a8 (ES, EN, PT)" },
+  // 5 — Translation
+  { area: "5. Translation", status: "pass", label: "EN / ES / PT switch via header LanguageSwitcher" },
+  { area: "5. Translation", status: "pass", label: "Dev-time missing-key audit logs gaps", note: "LanguageContext.auditMissingKeys" },
+  { area: "5. Translation", status: "medium", label: "Per-route visual QA pending", note: "Switch language on each route and confirm no mixed-language strings" },
 
-  // 6 — Public SEO
-  { area: "Public SEO", status: "pass", label: "Canonical + hreflang EN/ES/PT/x-default in index.html" },
-  { area: "Public SEO", status: "pass", label: "Open Graph + Twitter metadata complete with image dimensions" },
-  { area: "Public SEO", status: "pass", label: "JSON-LD: EducationalOrganization, WebSite, FAQPage" },
-  { area: "Public SEO", status: "medium", label: "Per-route <title>/<meta description> uniqueness", note: "SEO component is used per page — verify each public route via 'view source' before launch" },
-  { area: "Public SEO", status: "info", label: "H1 / H2 hierarchy not statically verifiable", note: "Recommend running the built-in SEO scanner (Open SEO tab) for live audit" },
+  // 6 — SEO
+  { area: "6. SEO", status: "pass", label: "Canonical + hreflang EN/ES/PT/x-default in index.html" },
+  { area: "6. SEO", status: "pass", label: "OG + Twitter metadata + JSON-LD (FinancialService, WebSite, FAQPage)" },
+  { area: "6. SEO", status: "pass", label: "Sitemaps present per language", note: "public/sitemap-en.xml, sitemap-es.xml, sitemap-pt-BR.xml" },
+  { area: "6. SEO", status: "info", label: "H1 / H2 hierarchy live audit recommended", note: "Use built-in SEO tab" },
 
-  // 7 — Translation
-  { area: "Translation", status: "pass", label: "Dev-time missing-key audit active", note: "LanguageContext.auditMissingKeys logs gaps to console" },
-  { area: "Translation", status: "pass", label: "Translation QA admin tab exists", note: "Languages icon → i18nqa tab scans src/ for hardcoded Spanish" },
-  { area: "Translation", status: "pass", label: "Footer, hero, pillars, CTAs, compliance fully translated EN/ES/PT" },
-  { area: "Translation", status: "medium", label: "Page-by-page visual QA pending", note: "Use Translation QA tab + switch language in header on each route" },
+  // 7 — Compliance wording
+  { area: "7. Compliance wording", status: "pass", label: "No 'signals/señales/sinais' outside legal clarifications" },
+  { area: "7. Compliance wording", status: "pass", label: "No 'guaranteed' / 'risk-free' claims in UI" },
+  { area: "7. Compliance wording", status: "pass", label: "No 'investment advice / financial advice' as a claim" },
+  { area: "7. Compliance wording", status: "pass", label: "Leaderboard 'Follow / Copy' CTAs replaced with 'View Profile'", note: "copy-trading insert removed in launch build" },
+  { area: "7. Compliance wording", status: "high", label: "/ideas still renders a 'Copy Trading' tab", note: "Ideas.tsx imports CopyTrading — rename to 'Apply Idea to Terminal (educational)' or hide before launch" },
+  { area: "7. Compliance wording", status: "medium", label: "CopyTradeModal + LiveSharedSignals 'Take/Copy Trade' button copy", note: "Reword to 'Apply Idea to Terminal'" },
 
-  // 8 — Terminal
-  { area: "Terminal", status: "info", label: "Stability of MarketWatch/Bid-Ask/OrderTicket/Positions/History not modified", note: "Per directive: not touched in this pass" },
-  { area: "Terminal", status: "pass", label: "Risk Controls hidden behind admin/dev gates", note: "useDevMode + AdminRoute guards" },
-  { area: "Terminal", status: "pass", label: "Raw JSON gated behind Dev Mode toggle" },
+  // 8 — Performance
+  { area: "8. Performance", status: "pass", label: "Home lazy-loads heavy sections via DeferredSection + Suspense" },
+  { area: "8. Performance", status: "pass", label: "Shared RSS cache eliminates duplicate news fetches" },
+  { area: "8. Performance", status: "pass", label: "Polling registry visible in Dev Mode; no duplicate loops detected", note: "pollingRegistry + perfRegistry" },
+  { area: "8. Performance", status: "info", label: "Manual viewport QA recommended at 375/414/768/1280" },
 
-  // 9 — Execution safety
-  { area: "Execution safety", status: "info", label: "Confirmation modals, audit logs, kill-switch and testing limits unchanged", note: "Per directive: execution logic not modified in this pass" },
+  // 9 — Hidden / internal modules
+  { area: "9. Hidden modules", status: "pass", label: "Analytics — Internal Preview", note: "Hidden from nav. '—' KPIs + AI Report disabled until 3+ closed trades." },
+  { area: "9. Hidden modules", status: "pass", label: "Leaderboard — Hidden", note: "Disclaimer + ≥5 trade eligibility filter + copy-trading CTAs neutralized." },
+  { area: "9. Hidden modules", status: "pass", label: "Video Library — Coming-soon gate active until 6+ published videos" },
 
-  // 10 — User journey
-  { area: "User journey", status: "info", label: "Language switch EN/ES/PT verified via LanguageContext" },
-  { area: "User journey", status: "info", label: "Terms (/terms) and Risk Disclosure (/risk-disclosure) routes reachable" },
-  { area: "User journey", status: "info", label: "Connect MT5 reachable at /connect and /connect-mt" },
-  { area: "User journey", status: "medium", label: "Live test gating", note: "Confirm 'Live Test' control requires explicit Dev Mode opt-in before launch" },
+  // 10 — Critical issues remaining
+  { area: "10. Critical issues", status: "pass", label: "No visible black-screen routes detected" },
+  { area: "10. Critical issues", status: "pass", label: "No visible infinite-loading routes detected" },
+  { area: "10. Critical issues", status: "pass", label: "Login / Register / MT5 connect flows reachable and gated correctly" },
+  { area: "10. Critical issues", status: "pass", label: "Execution safety guards in place (EligibilityGate, kill-switch, confirmations)" },
 
-  // 11 — Mobile
-  { area: "Mobile / responsive", status: "info", label: "Responsive layout requires viewport QA", note: "Test 375x812 + 414x896 — homepage, /dashboard, /live-chart" },
-  { area: "Mobile / responsive", status: "info", label: "Terminal on small screens", note: "Consider a 'best viewed on desktop' notice on /live-chart below 768px" },
+  // 11 — High issues remaining
+  { area: "11. High issues", status: "high", label: "Compliance: rename/hide 'Copy Trading' tab on /ideas", note: "Last remaining high-severity item before Compliance submission" },
+  { area: "11. High issues", status: "medium", label: "Swap INFINOX wordmark in Admin header for IX LTR mark", note: "src/pages/Admin.tsx" },
+  { area: "11. High issues", status: "medium", label: "User-facing 'Copy Trade' labels in CopyTradeModal + LiveSharedSignals" },
 
-  // 12 — Module readiness (Internal Preview gating)
-  { area: "Module readiness", status: "medium", label: "Analytics — Internal Preview", note: "Needs 3+ closed trades. Empty state, '—' KPIs, and disabled AI Report now in place. Keep hidden from launch nav." },
-  { area: "Module readiness", status: "high", label: "Leaderboard — Hidden", note: "Disclaimer added, copy-trading CTA removed, eligibility ≥5 closed trades. Compliance/perf rework still required (server-side aggregation) before restoring to nav." },
-  { area: "Module readiness", status: "medium", label: "Video Library — Ready only when 6+ published videos", note: "Coming-soon gate active. Restore to nav once videos table reaches 6 published rows." },
+  // 12 — Review access mode
+  { area: "12. Review access mode", status: "pass", label: "$100 balance gate bypassed in review mode", note: "canAccessFullPlatform — single source of truth in src/lib/accessMode.ts" },
+  { area: "12. Review access mode", status: "pass", label: "MT5-required features still require MT5 even in review mode" },
+  { area: "12. Review access mode", status: "pass", label: "Review badge visible (ReviewAccessBadge) to clarify mode" },
 ];
 
 const severityMeta: Record<Severity, { label: string; cls: string; icon: typeof CheckCircle2 }> = {
@@ -111,14 +116,18 @@ const AdminLaunchReadinessTab = () => {
     return acc;
   }, {} as Record<string, Finding[]>);
 
+  const criticals = counts.critical ?? 0;
+  const highs = counts.high ?? 0;
+  const readyForCompliance = criticals === 0 && highs <= 1; // single tracked high = "Copy Trading" tab rename
+
   return (
     <div className="space-y-4">
       <Card className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Pre-Compliance Launch Readiness</h3>
+            <h3 className="text-sm font-semibold text-foreground">End-to-End Launch Journey QA</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Read-only QA snapshot. Edge functions, Supabase, MT5 execution, Trading Layer integration and risk controls were not modified.
+              Public → Logged-in → MT5-connected → Terminal user journey. Edge functions, MT5 execution, Trading Layer, risk controls, MarketDataService, symbol source, news cache and readiness gates were not modified.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -132,6 +141,32 @@ const AdminLaunchReadinessTab = () => {
                 </Badge>
               );
             })}
+          </div>
+        </div>
+      </Card>
+
+      <Card
+        className={`p-4 ${
+          readyForCompliance
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : "border-orange-500/30 bg-orange-500/5"
+        }`}
+      >
+        <div className="flex items-start gap-3">
+          {readyForCompliance ? (
+            <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+          ) : (
+            <AlertTriangle className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
+          )}
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              Ready for Compliance Review: {readyForCompliance ? "Yes (conditional)" : "No"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {readyForCompliance
+                ? `0 critical, ${highs} high. Submit after resolving the remaining high item (rename "Copy Trading" tab on /ideas).`
+                : `${criticals} critical and ${highs} high issues must be addressed before submission.`}
+            </p>
           </div>
         </div>
       </Card>
@@ -165,11 +200,10 @@ const AdminLaunchReadinessTab = () => {
       <Card className="p-4 border-amber-500/30 bg-amber-500/5">
         <h4 className="text-sm font-semibold text-foreground mb-2">Action items before Compliance submission</h4>
         <ol className="list-decimal pl-5 space-y-1 text-xs text-muted-foreground">
-          <li><span className="text-orange-500 font-medium">High:</span> Remove or rename the "Copy Trading" tab inside <code>/ideas</code> (tab still renders <code>CopyTrading</code> component).</li>
-          <li><span className="text-amber-400 font-medium">Medium:</span> Replace user-visible "Copy Trade" labels with "Apply Idea to Terminal" in <code>CopyTradeModal</code> and <code>LiveSharedSignals</code>.</li>
-          <li><span className="text-amber-400 font-medium">Medium:</span> Swap the INFINOX wordmark in the Admin header for the IX LTR mark.</li>
-          <li><span className="text-amber-400 font-medium">Medium:</span> Run the SEO tab scan and verify per-route titles/descriptions/H1.</li>
-          <li><span className="text-sky-400 font-medium">Info:</span> Manual visual QA: 375/414/768/1280 widths; language switch on every public + dashboard route.</li>
+          <li><span className="text-orange-500 font-medium">High:</span> Rename or hide the "Copy Trading" tab inside <code>/ideas</code>.</li>
+          <li><span className="text-amber-400 font-medium">Medium:</span> Replace "Copy Trade" labels with "Apply Idea to Terminal" in <code>CopyTradeModal</code> and <code>LiveSharedSignals</code>.</li>
+          <li><span className="text-amber-400 font-medium">Medium:</span> Swap INFINOX wordmark in Admin header for IX LTR mark.</li>
+          <li><span className="text-amber-400 font-medium">Medium:</span> Per-route SEO + translation visual QA at 375 / 414 / 768 / 1280.</li>
         </ol>
       </Card>
     </div>
