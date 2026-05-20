@@ -23,14 +23,7 @@ const tagColors: Record<string, string> = {
   COMMODITIES: "bg-yellow-700 text-white",
 };
 
-interface RssNewsItem {
-  title: string;
-  link: string;
-  pubDate: string;
-  source: string;
-  category: string;
-  description?: string;
-}
+// RssNewsItem is imported from "@/lib/rssNewsCache".
 
 
 function formatTime(dateStr: string): string {
