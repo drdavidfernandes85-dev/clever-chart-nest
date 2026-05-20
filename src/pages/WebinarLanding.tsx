@@ -327,26 +327,31 @@ const WebinarLanding = () => {
             </div>
 
             {/* Secondary external CTA */}
-            <Button
-              asChild
-              variant="outline"
-              className="h-12 w-fit gap-2 rounded-full border-primary/50 bg-primary/5 px-6 text-sm font-bold text-primary hover:bg-primary/15 hover:border-primary"
-            >
-              <a
-                href={INFINOX_SIGNUP}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() =>
-                  track("open_infinox_account_click", {
-                    location: "webinar_lp_hero_secondary",
-                    locale,
-                  })
-                }
+            <div className="flex flex-col gap-1.5">
+              <Button
+                asChild
+                variant="outline"
+                className="h-12 w-fit gap-2 rounded-full border-primary/50 bg-primary/5 px-6 text-sm font-bold text-primary hover:bg-primary/15 hover:border-primary"
               >
-                {t("webinarLp.form.openAccount")}
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </Button>
+                <a
+                  href={INFINOX_SIGNUP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    track("open_infinox_account_click", {
+                      location: "webinar_lp_hero_secondary",
+                      locale,
+                    })
+                  }
+                >
+                  {t("webinarLp.form.openAccount")}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </Button>
+              <p className="text-[11px] text-muted-foreground/80">
+                {t("webinarLp.openAccount.helper" as any)}
+              </p>
+            </div>
           </div>
 
           {/* RIGHT — registration form card */}
@@ -537,37 +542,42 @@ const WebinarLanding = () => {
           <div className="mx-auto mt-6 max-w-md">
             <WebinarRegistrationForm source="webinar_lp_footer" webinar={webinarContext} />
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              asChild
-              variant="outline"
-              className="h-11 gap-2 rounded-full border-primary/50 bg-primary/5 px-6 text-sm font-bold text-primary hover:bg-primary/15"
-            >
-              <a
-                href={INFINOX_SIGNUP}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() =>
-                  track("open_infinox_account_click", {
-                    location: "webinar_lp_footer",
-                    locale,
-                  })
-                }
+          <div className="mt-5 flex flex-col items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
+                asChild
+                variant="outline"
+                className="h-11 gap-2 rounded-full border-primary/50 bg-primary/5 px-6 text-sm font-bold text-primary hover:bg-primary/15"
               >
-                {t("webinarLp.form.openAccount")}
-                <ArrowRight className="h-4 w-4" />
-              </a>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              className="h-11 rounded-full px-5 text-sm text-foreground/70 hover:text-primary"
-            >
-              <Link to="/connect">
-                <PlayCircle className="h-4 w-4" />
-                {t("hero.cta.connectExisting")}
-              </Link>
-            </Button>
+                <a
+                  href={INFINOX_SIGNUP}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    track("open_infinox_account_click", {
+                      location: "webinar_lp_footer",
+                      locale,
+                    })
+                  }
+                >
+                  {t("webinarLp.form.openAccount")}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                className="h-11 rounded-full px-5 text-sm text-foreground/70 hover:text-primary"
+              >
+                <Link to="/connect">
+                  <PlayCircle className="h-4 w-4" />
+                  {t("hero.cta.connectExisting")}
+                </Link>
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground/80">
+              {t("webinarLp.openAccount.helper" as any)}
+            </p>
           </div>
         </div>
       </section>

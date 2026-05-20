@@ -121,13 +121,13 @@ const Index = () => {
   ];
 
   // Keyword-focused internal links — boosts topical relevance & crawlability.
+  // Launch nav: hide Video Library (unstable) — keep route accessible by direct URL only.
   const internalLinks = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("seo.home.internal.dashboard" as any) },
     { to: "/education", icon: GraduationCap, label: t("seo.home.internal.education" as any) },
     { to: "/webinars", icon: PlayCircle, label: t("seo.home.internal.webinars" as any) },
     { to: "/chatroom", icon: MessagesSquare, label: t("seo.home.internal.chatroom" as any) },
     { to: "/ideas", icon: LineChart, label: t("seo.home.internal.signals" as any) },
-    { to: "/videos", icon: Video, label: t("seo.home.internal.videos" as any) },
   ];
 
   return (
