@@ -537,6 +537,16 @@ const ServiceStatusCard = ({
               {res?.retryAfter != null && (
                 <div>retry-after: <span className="text-foreground">{res.retryAfter}s</span></div>
               )}
+              {res?.cache && (
+                <div>cache: <span className="text-foreground">{res.cache}</span></div>
+              )}
+              {res?.usingLastKnownGood && (
+                <div>using last-known-good: <span className="text-foreground">yes</span></div>
+              )}
+              {res?.nextRefreshAllowedAt && (
+                <div>next allowed: <span className="text-foreground">{new Date(res.nextRefreshAllowedAt).toLocaleTimeString()}</span></div>
+              )}
+              <div>poll interval: <span className="text-foreground">60s</span></div>
               {res?.error && (
                 <div className="break-words">message: <span className="text-foreground">{res.error}</span></div>
               )}
