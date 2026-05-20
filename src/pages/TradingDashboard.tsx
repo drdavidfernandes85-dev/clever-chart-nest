@@ -253,14 +253,24 @@ const TradingDashboard = () => {
       if (visibleRef.current) load();
     };
     document.addEventListener("visibilitychange", onVis);
+    // Poll every 30s (was 10s). Trading Layer rate-limits aggressive polling;
+    // back off to 60s when the last response was 429 or upstream-error.
     const id = setInterval(() => {
-      if (visibleRef.current) load();
-    }, 10_000);
+      if (!visibleRef.current) return;
+      const code = res?.errorCode;
+      const backoff = code === "TL_RATE_LIMITED" || code === "TL_SERVICE_DOWN";
+      if (backoff) {
+        // Skip every other tick → effective 60s while throttled.
+        backoffTickRef.current = !backoffTickRef.current;
+        if (backoffTickRef.current) return;
+      }
+      load();
+    }, 30_000);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [load, loadLogs]);
+  }, [load, loadLogs, res?.errorCode]);
 
   const data = res?.data;
   const connected = res?.success === true && !!data;
