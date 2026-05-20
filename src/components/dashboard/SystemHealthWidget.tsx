@@ -87,6 +87,10 @@ const SystemHealthWidget = () => {
     : null;
   const isStale = mdState.status === "stale";
 
+  const mt: Health = loading ? "unknown" : connected ? "ok" : "down";
+  const tradingLayer: Health = rateLimited ? "warn" : connected ? "ok" : "unknown";
+  const rateHealth: Health = rateLimited || mdState.rateLimit.active ? "warn" : "ok";
+
   return (
     <section className="rounded-md border border-neutral-800 bg-[#0a0a0a] p-2.5 text-neutral-100">
       <div className="flex items-center justify-between border-b border-neutral-800/80 pb-1.5 mb-1">
