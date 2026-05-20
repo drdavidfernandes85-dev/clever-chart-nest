@@ -22,7 +22,51 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const VERSION = "reconcile-execution@1.1.0";
+const VERSION = "reconcile-execution@1.2.0";
+
+// MT5 TRADE_RETCODE → short name + human description.
+// Only well-known codes are mapped; anything else returns null/null.
+const MT5_RETCODES: Record<number, { name: string; description: string }> = {
+  10004: { name: "TRADE_RETCODE_REQUOTE", description: "Requote" },
+  10006: { name: "TRADE_RETCODE_REJECT", description: "Request rejected" },
+  10007: { name: "TRADE_RETCODE_CANCEL", description: "Request canceled by trader" },
+  10008: { name: "TRADE_RETCODE_PLACED", description: "Order placed" },
+  10009: { name: "TRADE_RETCODE_DONE", description: "Request completed" },
+  10010: { name: "TRADE_RETCODE_DONE_PARTIAL", description: "Only part of the request was completed" },
+  10011: { name: "TRADE_RETCODE_ERROR", description: "Request processing error" },
+  10012: { name: "TRADE_RETCODE_TIMEOUT", description: "Request canceled by timeout" },
+  10013: { name: "TRADE_RETCODE_INVALID", description: "Invalid request" },
+  10014: { name: "TRADE_RETCODE_INVALID_VOLUME", description: "Invalid volume in the request" },
+  10015: { name: "TRADE_RETCODE_INVALID_PRICE", description: "Invalid price in the request" },
+  10016: { name: "TRADE_RETCODE_INVALID_STOPS", description: "Invalid stops in the request" },
+  10017: { name: "TRADE_RETCODE_TRADE_DISABLED", description: "Trade is disabled" },
+  10018: { name: "TRADE_RETCODE_MARKET_CLOSED", description: "Market is closed" },
+  10019: { name: "TRADE_RETCODE_NO_MONEY", description: "Insufficient funds" },
+  10020: { name: "TRADE_RETCODE_PRICE_CHANGED", description: "Prices changed" },
+  10021: { name: "TRADE_RETCODE_PRICE_OFF", description: "No quotes to process the request" },
+  10022: { name: "TRADE_RETCODE_INVALID_EXPIRATION", description: "Invalid order expiration date" },
+  10023: { name: "TRADE_RETCODE_ORDER_CHANGED", description: "Order state changed" },
+  10024: { name: "TRADE_RETCODE_TOO_MANY_REQUESTS", description: "Too frequent requests" },
+  10025: { name: "TRADE_RETCODE_NO_CHANGES", description: "No changes in request" },
+  10026: { name: "TRADE_RETCODE_SERVER_DISABLES_AT", description: "Autotrading disabled by server" },
+  10027: { name: "TRADE_RETCODE_CLIENT_DISABLES_AT", description: "Autotrading disabled by client terminal" },
+  10028: { name: "TRADE_RETCODE_LOCKED", description: "Request locked for processing" },
+  10029: { name: "TRADE_RETCODE_FROZEN", description: "Order or position frozen" },
+  10030: { name: "TRADE_RETCODE_INVALID_FILL", description: "Invalid order filling type" },
+  10031: { name: "TRADE_RETCODE_CONNECTION", description: "No connection with the trade server" },
+  10032: { name: "TRADE_RETCODE_ONLY_REAL", description: "Operation allowed only for live accounts" },
+  10033: { name: "TRADE_RETCODE_LIMIT_ORDERS", description: "Number of pending orders limit reached" },
+  10034: { name: "TRADE_RETCODE_LIMIT_VOLUME", description: "Volume limit for orders/positions reached" },
+};
+
+const lookupRetcode = (code: unknown): { retcodeName: string | null; retcodeDescription: string | null } => {
+  const n = Number(code);
+  if (!Number.isFinite(n)) return { retcodeName: null, retcodeDescription: null };
+  const hit = MT5_RETCODES[n];
+  return hit
+    ? { retcodeName: hit.name, retcodeDescription: hit.description }
+    : { retcodeName: null, retcodeDescription: null };
+};
 const TL_BASE = "https://api.trading-layer.com/api/v1";
 
 const corsHeaders: Record<string, string> = {
