@@ -178,17 +178,17 @@ const DashboardSidebar = () => {
       </nav>
 
       {/* Online traders counter */}
-      <div className="border-t border-primary/10 px-3 py-2.5">
+      <div className={cn("border-t border-primary/10", collapsed ? "px-0 py-0" : "px-3 py-2.5")}>
         {collapsed ? (
           <div
-            className="flex flex-col items-center gap-1"
+            className="flex h-10 w-full flex-col items-center justify-center gap-0.5"
             title="Traders online"
           >
-            <span className="relative flex h-2 w-2">
+            <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[hsl(145_65%_50%)]" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[hsl(145_65%_50%)]" />
             </span>
-            <span className="font-mono text-[9px] tabular-nums text-muted-foreground">12K</span>
+            <span className="font-mono text-[9px] leading-none tabular-nums text-muted-foreground">12K</span>
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-lg bg-card/60 px-2.5 py-1.5">
