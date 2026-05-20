@@ -430,43 +430,93 @@ const PanelActionCards = ({ connected }: { connected: boolean }) => (
 // The dashboard's PanelActionCards (Education / Webinars / Community / Ideas /
 // Terminal / Connect MT5) remain rendered above this card, so users always
 // have a path forward even when Trading Layer or MT5 is unreachable.
+const ERROR_COPY: Record<string, { title: string; body: string }> = {
+  NO_MT5_ACCOUNT: {
+    title: "Connect your MT5 account",
+    body: "Connect your MT5 account to see your live portfolio, positions and execution history. Education, webinars, community and market ideas remain available above.",
+  },
+  MISSING_TRADER_ID: {
+    title: "Account connection incomplete",
+    body: "Your MT5 account is registered but is missing a Trading Layer identifier. Reconnect from Manage Account to finish setup.",
+  },
+  TL_CONFIG_MISSING: {
+    title: "Trading Layer configuration missing",
+    body: "An administrator needs to configure the Trading Layer API key before live trading services can come online.",
+  },
+  TL_AUTH_FAILED: {
+    title: "Trading Layer authorization failed",
+    body: "The Trading Layer API key was rejected. An administrator needs to verify the credentials.",
+  },
+  TL_ACCOUNT_NOT_FOUND: {
+    title: "MT5 account not found in Trading Layer",
+    body: "Your MT5 account is no longer linked in Trading Layer. Reconnect from Manage Account to restore live data.",
+  },
+  TL_RATE_LIMITED: {
+    title: "Rate limited — retrying shortly",
+    body: "Live trading services are throttling requests. The dashboard will automatically retry. Education, webinars, community and market ideas remain available above.",
+  },
+  TL_SERVICE_DOWN: {
+    title: "Live trading services are temporarily unavailable",
+    body: "Trading Layer is experiencing an issue on their side. The dashboard will retry automatically. Everything else remains accessible.",
+  },
+  TL_TIMEOUT: {
+    title: "Connection timed out",
+    body: "The Trading Layer connection took too long to respond. Tap Retry to try again.",
+  },
+  TL_NETWORK: {
+    title: "Network error reaching Trading Layer",
+    body: "Could not reach Trading Layer. Check your connection and retry.",
+  },
+  TL_UPSTREAM_ERROR: {
+    title: "Live trading services are temporarily unavailable",
+    body: "Trading Layer returned an unexpected response. Tap Retry to try again.",
+  },
+};
+
 const ServiceStatusCard = ({
-  message,
+  res,
   onRetry,
   retrying,
 }: {
-  message: string;
+  res: LiveResponse | null;
   onRetry: () => void;
   retrying: boolean;
 }) => {
-  const noAccount = /no connected|not connected|no account/i.test(message);
-
-  const title = noAccount
-    ? "Connect your MT5 account"
-    : "Live trading services are temporarily unavailable";
-
-  const body = noAccount
-    ? "Connect your MT5 account to see your live portfolio, positions and execution history. Education, webinars, community and market ideas remain available above."
-    : "Live account data and trading tools are temporarily unavailable. Education, webinars, community and market ideas remain accessible above.";
+  const { devMode } = useDevMode();
+  const code = res?.errorCode ?? (res?.error ? "TL_UPSTREAM_ERROR" : "NO_MT5_ACCOUNT");
+  const isNoAccount = code === "NO_MT5_ACCOUNT" || code === "MISSING_TRADER_ID";
+  const copy = ERROR_COPY[code] ?? ERROR_COPY.TL_UPSTREAM_ERROR;
 
   return (
     <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-5 md:p-6 shadow-[0_4px_20px_-8px_hsl(var(--primary)/0.15)]">
       <div className="flex flex-col sm:flex-row sm:items-start gap-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          {noAccount ? <Plug className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          {isNoAccount ? <Plug className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="font-heading text-base font-semibold text-foreground">
-            {title}
+            {copy.title}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{body}</p>
-          {!noAccount && (
-            <p className="mt-1 text-[11px] font-mono text-muted-foreground/70 break-words">
-              {message}
-            </p>
+          <p className="mt-1 text-sm text-muted-foreground">{copy.body}</p>
+
+          {devMode && (
+            <div className="mt-3 rounded-lg border border-border/40 bg-background/40 p-3 font-mono text-[11px] text-muted-foreground/80 space-y-0.5">
+              <div>stage: <span className="text-foreground">{res?.stage ?? "—"}</span></div>
+              <div>errorCode: <span className="text-foreground">{code}</span></div>
+              {res?.tradingLayerStatus != null && (
+                <div>upstream HTTP: <span className="text-foreground">{res.tradingLayerStatus}</span></div>
+              )}
+              {res?.retryAfter != null && (
+                <div>retry-after: <span className="text-foreground">{res.retryAfter}s</span></div>
+              )}
+              {res?.error && (
+                <div className="break-words">message: <span className="text-foreground">{res.error}</span></div>
+              )}
+            </div>
           )}
+
           <div className="mt-4 flex flex-wrap gap-2">
-            {!noAccount && (
+            {!isNoAccount && (
               <Button
                 size="sm"
                 onClick={onRetry}
@@ -483,7 +533,7 @@ const ServiceStatusCard = ({
             )}
             <Link to="/connect-mt">
               <Button size="sm" variant="outline" className="rounded-full">
-                {noAccount ? "Connect Account" : "Manage Account"}
+                {isNoAccount ? "Connect Account" : "Manage Account"}
               </Button>
             </Link>
             <Link to="/education">
