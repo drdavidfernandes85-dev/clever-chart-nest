@@ -28,6 +28,7 @@ import ExecutionAuditPanel from "@/components/dashboard/ExecutionAuditPanel";
 import Mt5PositionVerificationPanel from "@/components/dashboard/Mt5PositionVerificationPanel";
 import ExecutionReconciliationDebugPanel from "@/components/dashboard/ExecutionReconciliationDebugPanel";
 import MarketDataDiagnosticsPanel from "@/components/dashboard/MarketDataDiagnosticsPanel";
+import PerformanceDiagnosticsPanel from "@/components/dashboard/PerformanceDiagnosticsPanel";
 import {
   checkAndHandle429,
   getCooldownRemainingMs,
@@ -1876,6 +1877,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         <div className="mt-3 space-y-3">
           <Mt5PositionVerificationPanel />
           <MarketDataDiagnosticsPanel />
+          <PerformanceDiagnosticsPanel />
           <ExecutionReconciliationDebugPanel />
           <ExecutionAuditPanel refreshKey={auditRefreshKey} />
         </div>
