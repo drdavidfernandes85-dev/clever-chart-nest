@@ -1,8 +1,8 @@
 // get-live-account — returns live MT5 account snapshot for the logged-in user
 //
-// Adds server-side caching + split account/positions cadence and a global
-// retry-after-aware 429 cooldown to dramatically reduce Trading Layer calls.
-// Execution / order / risk paths are NOT touched by this function.
+// Cross-isolate last-known-good cache lives in Postgres (tl_account_cache).
+// Module-scope is used only as a tiny per-isolate hot-cache to absorb
+// burst polling. Execution / order / risk paths are NOT touched.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -19,27 +19,24 @@ const json = (status: number, body: unknown) =>
 
 const TL_BASE = "https://api.trading-layer.com/api/v1";
 
-// ---------- Cache (module-scoped, per isolate) ----------
-// TTLs are intentionally short — just enough to absorb burst polling from
-// dashboard tabs without ever returning stale-feeling data.
-const ACCOUNT_TTL_MS = 25_000; // trader/account snapshot
-const POSITIONS_TTL_MS = 15_000; // positions snapshot
-const RATE_LIMIT_DEFAULT_MS = 60_000; // when retry-after header missing
+// TTLs — same as before. The Postgres cache stores the last successful
+// snapshot; freshness windows decide whether we call Trading Layer.
+const ACCOUNT_TTL_MS = 25_000;
+const POSITIONS_TTL_MS = 15_000;
+const RATE_LIMIT_DEFAULT_MS = 60_000;
 
-type AccountEntry = { at: number; data: any };
-type PositionsEntry = { at: number; data: any[] };
+// Tiny per-isolate hot cache (5s) to absorb extremely rapid bursts without
+// hitting Postgres. Safe to be stale — Postgres is still the source of truth.
+type HotEntry = { at: number; row: CacheRow };
+const HOT_TTL_MS = 5_000;
+const hot = new Map<string, HotEntry>();
 
-const accountCache = new Map<string, AccountEntry>();
-const positionsCache = new Map<string, PositionsEntry>();
-// Global per-trader cooldown (covers both endpoints) when upstream returns 429.
-const cooldownUntil = new Map<string, number>();
-
-function getCooldownRemaining(traderId: string): number {
-  const until = cooldownUntil.get(traderId) ?? 0;
-  return Math.max(0, until - Date.now());
-}
-function setCooldown(traderId: string, ms: number) {
-  cooldownUntil.set(traderId, Date.now() + Math.max(1_000, ms));
+interface CacheRow {
+  account_data: any | null;
+  account_updated_at: string | null;
+  positions_data: any[] | null;
+  positions_updated_at: string | null;
+  cooldown_until: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -51,8 +48,6 @@ Deno.serve(async (req) => {
       return json(401, { success: false, error: "Missing Authorization header." });
     }
 
-    // Optional body — `{ refresh, debug }`. `refresh: true` bypasses cache
-    // ONLY when no cooldown is active; cooldown is always respected.
     let body: any = {};
     try {
       if (req.method !== "GET") body = await req.json().catch(() => ({}));
@@ -62,6 +57,7 @@ Deno.serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const TRADING_LAYER_API_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 
     if (!TRADING_LAYER_API_KEY) {
@@ -73,9 +69,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    // User-scoped client for auth + reading user_mt_accounts under RLS.
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
+    // Service-role client for the shared cache table (bypasses RLS).
+    const svc = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { data: userData, error: userErr } = await supabase.auth.getUser();
     if (userErr || !userData?.user) {
@@ -99,8 +98,7 @@ Deno.serve(async (req) => {
 
     if (accErr) return json(500, { success: false, error: accErr.message });
 
-    // Fallback: if no DB row, ask Trading Layer's tenant endpoint whether the
-    // owner account is already connected and self-heal the missing row.
+    // Self-heal: ask Trading Layer tenant endpoint if no DB row.
     if (!account) {
       try {
         const tenantRes = await fetch(`${TL_BASE}/tenant`, { headers: tlHeaders });
@@ -125,9 +123,7 @@ Deno.serve(async (req) => {
             .insert(insertRow)
             .select("id, login, server_name, status, last_synced_at, metaapi_account_id, created_at")
             .single();
-          if (!insErr && inserted) {
-            account = inserted;
-          }
+          if (!insErr && inserted) account = inserted;
         }
       } catch (_) { /* fall through */ }
     }
@@ -151,21 +147,43 @@ Deno.serve(async (req) => {
       });
     }
 
-    const cacheKey = `${userId}:${traderId}:${account.login ?? ""}`;
+    const hotKey = `${userId}:${traderId}`;
     const now = Date.now();
 
-    // Cooldown check — return last-known-good if available, never call upstream.
-    const cooldownMs = getCooldownRemaining(traderId);
-    const accCached = accountCache.get(cacheKey);
-    const posCached = positionsCache.get(cacheKey);
+    // ---- Load cache row from Postgres (with tiny hot-cache shortcut) ----
+    let cacheRow: CacheRow | null = null;
+    const hotHit = hot.get(hotKey);
+    if (hotHit && now - hotHit.at < HOT_TTL_MS) {
+      cacheRow = hotHit.row;
+    } else {
+      const { data: row } = await svc
+        .from("tl_account_cache")
+        .select("account_data, account_updated_at, positions_data, positions_updated_at, cooldown_until")
+        .eq("user_id", userId)
+        .eq("trader_id", traderId)
+        .maybeSingle();
+      cacheRow = (row as CacheRow | null) ?? null;
+      if (cacheRow) hot.set(hotKey, { at: now, row: cacheRow });
+    }
 
+    const accAt = cacheRow?.account_updated_at ? new Date(cacheRow.account_updated_at).getTime() : 0;
+    const posAt = cacheRow?.positions_updated_at ? new Date(cacheRow.positions_updated_at).getTime() : 0;
+    const cooldownUntil = cacheRow?.cooldown_until ? new Date(cacheRow.cooldown_until).getTime() : 0;
+    const cooldownMs = Math.max(0, cooldownUntil - now);
+
+    const hasAccData = !!cacheRow?.account_data;
+    const hasPosData = Array.isArray(cacheRow?.positions_data);
+
+    // ---- Cooldown active: never call upstream ----
     if (cooldownMs > 0) {
-      if (accCached && posCached) {
+      if (hasAccData && hasPosData) {
         return json(200, buildSuccess({
-          account, traderId, accData: accCached.data, positions: posCached.data,
+          account, traderId,
+          accData: cacheRow!.account_data,
+          positions: cacheRow!.positions_data!,
           cache: "hit",
-          cacheAgeMs: { account: now - accCached.at, positions: now - posCached.at },
-          nextRefreshAllowedAt: new Date(now + cooldownMs).toISOString(),
+          cacheAgeMs: { account: now - accAt, positions: now - posAt },
+          nextRefreshAllowedAt: new Date(cooldownUntil).toISOString(),
           usingLastKnownGood: true,
           rateLimited: true,
           debug,
@@ -183,10 +201,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Decide which upstream calls are actually needed.
-    const accountFresh = !!accCached && now - accCached.at < ACCOUNT_TTL_MS;
-    const positionsFresh = !!posCached && now - posCached.at < POSITIONS_TTL_MS;
-
+    // ---- Decide which upstream calls are actually needed ----
+    const accountFresh = hasAccData && now - accAt < ACCOUNT_TTL_MS;
+    const positionsFresh = hasPosData && now - posAt < POSITIONS_TTL_MS;
     const needAccount = forceRefresh || !accountFresh;
     const needPositions = forceRefresh || !positionsFresh;
 
@@ -194,7 +211,6 @@ Deno.serve(async (req) => {
     if (!needAccount) upstreamCallsAvoided += 1;
     if (!needPositions) upstreamCallsAvoided += 1;
 
-    // 12s timeout per upstream request.
     const withTimeout = (url: string) => {
       const ctl = new AbortController();
       const t = setTimeout(() => ctl.abort(), 12_000);
@@ -215,12 +231,13 @@ Deno.serve(async (req) => {
       if (needPositions) posRes = results[idx++];
     } catch (e: any) {
       const aborted = e?.name === "AbortError";
-      // If we still have cached data, fall back to it rather than failing.
-      if (accCached && posCached) {
+      if (hasAccData && hasPosData) {
         return json(200, buildSuccess({
-          account, traderId, accData: accCached.data, positions: posCached.data,
+          account, traderId,
+          accData: cacheRow!.account_data,
+          positions: cacheRow!.positions_data!,
           cache: "hit",
-          cacheAgeMs: { account: now - accCached.at, positions: now - posCached.at },
+          cacheAgeMs: { account: now - accAt, positions: now - posAt },
           usingLastKnownGood: true,
           stale: true,
           debug,
@@ -238,14 +255,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Handle upstream errors (account leg drives the primary failure mode).
+    // ---- Handle upstream errors ----
+    let newCooldownMs = 0;
     const checkUpstream = (resp: Response | null): { ok: boolean; payload?: any } => {
       if (!resp) return { ok: true };
       const status = resp.status;
       if (status === 429) {
         const retryAfterHeader = Number(resp.headers.get("retry-after") ?? "0");
-        const cooldown = retryAfterHeader > 0 ? retryAfterHeader * 1000 : RATE_LIMIT_DEFAULT_MS;
-        setCooldown(traderId, cooldown);
+        const cd = retryAfterHeader > 0 ? retryAfterHeader * 1000 : RATE_LIMIT_DEFAULT_MS;
+        newCooldownMs = Math.max(newCooldownMs, cd);
         return {
           ok: false,
           payload: {
@@ -253,7 +271,7 @@ Deno.serve(async (req) => {
             errorCode: "TL_RATE_LIMITED",
             error: "Rate limited — retrying shortly.",
             tradingLayerStatus: 429,
-            retryAfter: Math.ceil(cooldown / 1000),
+            retryAfter: Math.ceil(cd / 1000),
             retryable: true,
           },
         };
@@ -285,14 +303,26 @@ Deno.serve(async (req) => {
     const accountCheck = checkUpstream(traderRes);
     const positionsCheck = checkUpstream(posRes);
 
-    // If either leg got 429 / failed, fall back to last-known-good if present.
+    // Persist cooldown to Postgres so other isolates honor it too.
+    if (newCooldownMs > 0) {
+      const cooldownIso = new Date(now + newCooldownMs).toISOString();
+      await svc.from("tl_account_cache").upsert({
+        user_id: userId,
+        trader_id: traderId,
+        cooldown_until: cooldownIso,
+      }, { onConflict: "user_id,trader_id" });
+      hot.delete(hotKey);
+    }
+
     if (!accountCheck.ok || !positionsCheck.ok) {
       const failure = !accountCheck.ok ? accountCheck.payload : positionsCheck.payload;
-      if (accCached && posCached) {
+      if (hasAccData && hasPosData) {
         return json(200, buildSuccess({
-          account, traderId, accData: accCached.data, positions: posCached.data,
+          account, traderId,
+          accData: cacheRow!.account_data,
+          positions: cacheRow!.positions_data!,
           cache: "hit",
-          cacheAgeMs: { account: now - accCached.at, positions: now - posCached.at },
+          cacheAgeMs: { account: now - accAt, positions: now - posAt },
           usingLastKnownGood: true,
           rateLimited: failure?.errorCode === "TL_RATE_LIMITED",
           stale: true,
@@ -303,19 +333,52 @@ Deno.serve(async (req) => {
       return json(200, { success: false, cache: "miss", usingLastKnownGood: false, ...failure });
     }
 
-    // Parse & update caches.
+    // ---- Parse fresh responses and persist to Postgres cache ----
+    let finalAccData = cacheRow?.account_data ?? null;
+    let finalPosData: any[] = cacheRow?.positions_data ?? [];
+    let finalAccUpdatedAt = accAt;
+    let finalPosUpdatedAt = posAt;
+
+    const upsertPayload: any = {
+      user_id: userId,
+      trader_id: traderId,
+    };
+
     if (traderRes) {
       const traderData = await traderRes.json().catch(() => ({}));
-      accountCache.set(cacheKey, { at: now, data: traderData });
+      finalAccData = traderData;
+      finalAccUpdatedAt = now;
+      upsertPayload.account_data = traderData;
+      upsertPayload.account_updated_at = new Date(now).toISOString();
     }
     if (posRes) {
       const positionsData = await posRes.json().catch(() => ({}));
       const arr = Array.isArray(positionsData?.data) ? positionsData.data : [];
-      positionsCache.set(cacheKey, { at: now, data: arr });
+      finalPosData = arr;
+      finalPosUpdatedAt = now;
+      upsertPayload.positions_data = arr;
+      upsertPayload.positions_updated_at = new Date(now).toISOString();
     }
 
-    const finalAcc = accountCache.get(cacheKey)!;
-    const finalPos = positionsCache.get(cacheKey)!;
+    // Clear cooldown on a successful pass.
+    if (traderRes || posRes) {
+      upsertPayload.cooldown_until = null;
+      const { error: upsertErr } = await svc
+        .from("tl_account_cache")
+        .upsert(upsertPayload, { onConflict: "user_id,trader_id" });
+      if (!upsertErr) {
+        hot.set(hotKey, {
+          at: now,
+          row: {
+            account_data: finalAccData,
+            account_updated_at: new Date(finalAccUpdatedAt).toISOString(),
+            positions_data: finalPosData,
+            positions_updated_at: new Date(finalPosUpdatedAt).toISOString(),
+            cooldown_until: null,
+          },
+        });
+      }
+    }
 
     const cacheStatus: "hit" | "miss" | "partial" =
       !needAccount && !needPositions
@@ -326,11 +389,15 @@ Deno.serve(async (req) => {
 
     return json(200, buildSuccess({
       account, traderId,
-      accData: finalAcc.data,
-      positions: finalPos.data,
+      accData: finalAccData,
+      positions: finalPosData,
       cache: cacheStatus,
-      cacheAgeMs: { account: now - finalAcc.at, positions: now - finalPos.at },
+      cacheAgeMs: {
+        account: now - finalAccUpdatedAt,
+        positions: now - finalPosUpdatedAt,
+      },
       upstreamCallsAvoided,
+      cacheStore: "postgres",
       debug,
     }));
   } catch (e) {
@@ -338,7 +405,6 @@ Deno.serve(async (req) => {
   }
 });
 
-// Build a normalized success response from cached/fresh upstream payloads.
 function buildSuccess(opts: {
   account: any;
   traderId: string;
@@ -352,12 +418,13 @@ function buildSuccess(opts: {
   stale?: boolean;
   retryAfter?: number;
   upstreamCallsAvoided?: number;
+  cacheStore?: string;
   debug?: boolean;
 }) {
   const {
     account, traderId, accData, positions, cache, cacheAgeMs,
     nextRefreshAllowedAt, usingLastKnownGood, rateLimited, stale, retryAfter,
-    upstreamCallsAvoided,
+    upstreamCallsAvoided, cacheStore,
   } = opts;
 
   const acc = accData?.data?.account ?? {};
@@ -409,6 +476,7 @@ function buildSuccess(opts: {
     timestamp: new Date().toISOString(),
     cache,
     cacheAgeMs,
+    cacheStore: cacheStore ?? "postgres",
     nextRefreshAllowedAt,
     usingLastKnownGood: !!usingLastKnownGood,
     rateLimited: !!rateLimited,
