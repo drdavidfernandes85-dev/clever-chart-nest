@@ -83,7 +83,7 @@ const findings: Finding[] = [
   { area: "10. Performance / rate limit", status: "pass", label: "429 categorized as TL_RATE_LIMITED with retry-after honored" },
   { area: "10. Performance / rate limit", status: "pass", label: "Last-known-good fallback returned during cooldown when available" },
   { area: "10. Performance / rate limit", status: "pass", label: "Verified: no 429 during normal dashboard usage" },
-  { area: "10. Performance / rate limit", status: "info", label: "Cache is module-scoped per Deno isolate — post-review hardening recommended (Postgres/KV cross-isolate cache)" },
+  { area: "10. Performance / rate limit", status: "pass", label: "Cross-isolate Postgres cache live (tl_account_cache) — cacheStore=\"postgres\", 429 cooldown + last-known-good shared across isolates, admin-only SELECT RLS, service-role writes only" },
 
   // 11 — Stability
   { area: "11. Stability", status: "pass", label: "No black screens on visible launch pages" },
