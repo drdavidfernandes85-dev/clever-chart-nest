@@ -483,18 +483,20 @@ const NewsFlowWidget = ({ externalSearch }: NewsFlowWidgetProps = {}) => {
         </div>
 
         <TabsContent value="newsflow" className="mt-0">
-          <div className="border-b border-border px-3 py-2">
-            <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1">
-              <Search className="h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Quick filter..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
-              />
+          {externalSearch == null && (
+            <div className="border-b border-border px-3 py-2">
+              <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1">
+                <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Quick filter..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
             <div className="flex items-center gap-1">
