@@ -84,7 +84,7 @@ const findings: Finding[] = [
   { area: "10. Critical issues", status: "pass", label: "Execution safety guards in place (EligibilityGate, kill-switch, confirmations)" },
 
   // 11 — High issues remaining
-  { area: "11. High issues", status: "high", label: "Compliance: rename/hide 'Copy Trading' tab on /ideas", note: "Last remaining high-severity item before Compliance submission" },
+  { area: "11. High issues", status: "pass", label: "Resolved: 'Copy Trading' tab renamed to 'Idea Tools' on /ideas", note: "Auto-follow execution UI hidden for launch (internal preview only)" },
   { area: "11. High issues", status: "medium", label: "Swap INFINOX wordmark in Admin header for IX LTR mark", note: "src/pages/Admin.tsx" },
   { area: "11. High issues", status: "medium", label: "User-facing 'Copy Trade' labels in CopyTradeModal + LiveSharedSignals" },
 
