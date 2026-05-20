@@ -71,14 +71,16 @@ const Navbar = () => {
 
         <div className="hidden items-center gap-3 lg:flex text-foreground">
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
-            <Link to="/dashboard">{t("nav.dashboard")}</Link>
-          </Button>
-          {/* /videos hidden from launch nav (route remains for internal testing) */}
-          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/education">{t("nav.education")}</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
+            <Link to="/webinars">{t("nav.webinars")}</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
             <Link to="/chatroom">{t("nav.chatroom")}</Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild className="text-foreground hover:text-primary">
+            <Link to="/dashboard">{t("nav.terminal")}</Link>
           </Button>
           {connected && liveAccount ? (
             <DropdownMenu>
@@ -179,14 +181,16 @@ const Navbar = () => {
               <LanguageSwitcher />
             </div>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
-              <Link to="/dashboard" onClick={() => setMobileOpen(false)}>{t("nav.dashboard")}</Link>
-            </Button>
-            {/* /videos hidden from launch mobile nav */}
-            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/education" onClick={() => setMobileOpen(false)}>{t("nav.education")}</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/webinars" onClick={() => setMobileOpen(false)}>{t("nav.webinars")}</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
               <Link to="/chatroom" onClick={() => setMobileOpen(false)}>{t("nav.chatroom")}</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="justify-start text-muted-foreground">
+              <Link to="/dashboard" onClick={() => setMobileOpen(false)}>{t("nav.terminal")}</Link>
             </Button>
             {connected && liveAccount ? (
               <div className="flex items-center justify-between gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5">
