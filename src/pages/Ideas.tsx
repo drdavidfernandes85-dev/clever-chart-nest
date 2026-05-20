@@ -1,14 +1,13 @@
 import { lazy, Suspense, useState } from "react";
 import SEO from "@/components/SEO";
-import { Lightbulb, Users, Info } from "lucide-react";
+import { Lightbulb, Wrench, Info } from "lucide-react";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
 import ComplianceFooter from "@/components/ComplianceFooter";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const TradingSignals = lazy(() => import("@/pages/TradingSignals"));
-const CopyTrading = lazy(() => import("@/pages/CopyTrading"));
 
-type Tab = "ideas" | "follow";
+type Tab = "ideas" | "tools";
 
 const Ideas = () => {
   const [tab, setTab] = useState<Tab>("ideas");
@@ -22,7 +21,6 @@ const Ideas = () => {
         keywords={t("ideas.seo.keywords" as never)}
         canonical="https://ixsalatrading.com/ideas"
       />
-
 
       <div className="container max-w-7xl py-6">
         {/* Header */}
@@ -40,7 +38,7 @@ const Ideas = () => {
           </div>
         </div>
 
-        {/* Top-of-tab compliance disclaimer */}
+        {/* Top-of-page compliance disclaimer */}
         <div
           role="note"
           className="mt-4 flex items-start gap-2.5 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-[12px] leading-relaxed text-muted-foreground"
@@ -49,17 +47,16 @@ const Ideas = () => {
           <div className="space-y-1.5">
             <p>
               <strong className="font-semibold text-foreground">
-                Trade Ideas are provided for educational and informational
-                purposes only.
+                Market Ideas and related tools are provided for educational and
+                informational purposes only.
               </strong>{" "}
-              They are not investment advice, financial advice, or personal
-              recommendations.
+              They are not investment advice, financial advice, trading
+              signals, or personal recommendations.
             </p>
             <p>
-              Any decision to follow, copy, modify, or execute an idea is made
-              solely by the user. Past performance does not guarantee future
-              results. Trade Ideas and related technology are powered by
-              Trading Layer.
+              Users remain solely responsible for any trading decision. Past
+              performance does not guarantee future results. Market Ideas and
+              related technology are powered by Trading Layer.
             </p>
           </div>
         </div>
@@ -85,25 +82,25 @@ const Ideas = () => {
           </button>
           <button
             role="tab"
-            aria-selected={tab === "follow"}
-            onClick={() => setTab("follow")}
+            aria-selected={tab === "tools"}
+            onClick={() => setTab("tools")}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              tab === "follow"
+              tab === "tools"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Users className="h-4 w-4" />
-            Follow / Copy Tools
+            <Wrench className="h-4 w-4" />
+            Idea Tools
           </button>
         </div>
 
         {/* Compliance bullets */}
         <ul className="mt-4 grid gap-1.5 text-[11px] text-muted-foreground/80 sm:grid-cols-2">
-          <li>· Trade Ideas are educational and informational only.</li>
-          <li>· Following or copying an idea is optional and user-controlled.</li>
+          <li>· Market Ideas are educational and informational only.</li>
+          <li>· Reviewing an idea is optional and entirely user-controlled.</li>
           <li>· You remain responsible for every order submitted to your MT5 account.</li>
-          <li>· No trade idea is investment advice or a guarantee of performance.</li>
+          <li>· No Market Idea is investment advice or a guarantee of performance.</li>
         </ul>
 
         <div className="mt-4">
@@ -114,7 +111,7 @@ const Ideas = () => {
               </div>
             }
           >
-            {tab === "ideas" ? <TradingSignals /> : <CopyTrading />}
+            {tab === "ideas" ? <TradingSignals /> : <IdeaToolsComingSoon />}
           </Suspense>
         </div>
       </div>
@@ -123,5 +120,27 @@ const Ideas = () => {
     </>
   );
 };
+
+/**
+ * Launch-safe placeholder for the Idea Tools tab.
+ * The underlying CopyTrading workflow (auto-follow / subscription insert) is
+ * intentionally hidden from end users until compliance review is complete.
+ */
+const IdeaToolsComingSoon = () => (
+  <div className="rounded-2xl border border-border/60 bg-card/40 p-8 text-center">
+    <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary">
+      <Wrench className="h-5 w-5" />
+    </div>
+    <h2 className="font-heading text-lg font-semibold text-foreground">
+      Idea Tools — coming soon
+    </h2>
+    <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+      Educational tools for reviewing and learning from community Market Ideas
+      are being prepared for launch. They are not trading signals and do not
+      execute trades automatically. Users will remain in full control of any
+      decision sent to their MT5 account.
+    </p>
+  </div>
+);
 
 export default Ideas;

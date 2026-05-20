@@ -63,8 +63,8 @@ const findings: Finding[] = [
   { area: "7. Compliance wording", status: "pass", label: "No 'guaranteed' / 'risk-free' claims in UI" },
   { area: "7. Compliance wording", status: "pass", label: "No 'investment advice / financial advice' as a claim" },
   { area: "7. Compliance wording", status: "pass", label: "Leaderboard 'Follow / Copy' CTAs replaced with 'View Profile'", note: "copy-trading insert removed in launch build" },
-  { area: "7. Compliance wording", status: "high", label: "/ideas still renders a 'Copy Trading' tab", note: "Ideas.tsx imports CopyTrading — rename to 'Apply Idea to Terminal (educational)' or hide before launch" },
-  { area: "7. Compliance wording", status: "medium", label: "CopyTradeModal + LiveSharedSignals 'Take/Copy Trade' button copy", note: "Reword to 'Apply Idea to Terminal'" },
+  { area: "7. Compliance wording", status: "pass", label: "/ideas tab renamed to 'Idea Tools'; auto-follow UI hidden behind coming-soon placeholder", note: "CopyTrading component no longer rendered to end users; copy_subscriptions insert path not reachable from launch UI" },
+  { area: "7. Compliance wording", status: "medium", label: "CopyTradeModal + LiveSharedSignals 'Take/Copy Trade' button copy", note: "Reword to 'Review Idea' / 'Apply Idea to Terminal'" },
 
   // 8 — Performance
   { area: "8. Performance", status: "pass", label: "Home lazy-loads heavy sections via DeferredSection + Suspense" },
@@ -84,7 +84,7 @@ const findings: Finding[] = [
   { area: "10. Critical issues", status: "pass", label: "Execution safety guards in place (EligibilityGate, kill-switch, confirmations)" },
 
   // 11 — High issues remaining
-  { area: "11. High issues", status: "high", label: "Compliance: rename/hide 'Copy Trading' tab on /ideas", note: "Last remaining high-severity item before Compliance submission" },
+  { area: "11. High issues", status: "pass", label: "Resolved: 'Copy Trading' tab renamed to 'Idea Tools' on /ideas", note: "Auto-follow execution UI hidden for launch (internal preview only)" },
   { area: "11. High issues", status: "medium", label: "Swap INFINOX wordmark in Admin header for IX LTR mark", note: "src/pages/Admin.tsx" },
   { area: "11. High issues", status: "medium", label: "User-facing 'Copy Trade' labels in CopyTradeModal + LiveSharedSignals" },
 
@@ -118,7 +118,7 @@ const AdminLaunchReadinessTab = () => {
 
   const criticals = counts.critical ?? 0;
   const highs = counts.high ?? 0;
-  const readyForCompliance = criticals === 0 && highs <= 1; // single tracked high = "Copy Trading" tab rename
+  const readyForCompliance = criticals === 0 && highs === 0;
 
   return (
     <div className="space-y-4">
@@ -160,11 +160,11 @@ const AdminLaunchReadinessTab = () => {
           )}
           <div>
             <p className="text-sm font-semibold text-foreground">
-              Ready for Compliance Review: {readyForCompliance ? "Yes (conditional)" : "No"}
+              Ready for Compliance Review: {readyForCompliance ? "Yes" : "No"}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               {readyForCompliance
-                ? `0 critical, ${highs} high. Submit after resolving the remaining high item (rename "Copy Trading" tab on /ideas).`
+                ? `0 critical, 0 high. All blocking compliance items resolved. Remaining medium items are polish and can ship post-review.`
                 : `${criticals} critical and ${highs} high issues must be addressed before submission.`}
             </p>
           </div>
@@ -197,11 +197,11 @@ const AdminLaunchReadinessTab = () => {
         </Card>
       ))}
 
-      <Card className="p-4 border-amber-500/30 bg-amber-500/5">
-        <h4 className="text-sm font-semibold text-foreground mb-2">Action items before Compliance submission</h4>
+      <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
+        <h4 className="text-sm font-semibold text-foreground mb-2">Post-review polish (non-blocking)</h4>
         <ol className="list-decimal pl-5 space-y-1 text-xs text-muted-foreground">
-          <li><span className="text-orange-500 font-medium">High:</span> Rename or hide the "Copy Trading" tab inside <code>/ideas</code>.</li>
-          <li><span className="text-amber-400 font-medium">Medium:</span> Replace "Copy Trade" labels with "Apply Idea to Terminal" in <code>CopyTradeModal</code> and <code>LiveSharedSignals</code>.</li>
+          <li><span className="text-emerald-500 font-medium">Resolved:</span> "Copy Trading" tab on <code>/ideas</code> renamed to "Idea Tools"; auto-follow UI hidden behind coming-soon placeholder.</li>
+          <li><span className="text-amber-400 font-medium">Medium:</span> Replace remaining "Copy Trade" labels with "Review Idea" in <code>CopyTradeModal</code> and <code>LiveSharedSignals</code>.</li>
           <li><span className="text-amber-400 font-medium">Medium:</span> Swap INFINOX wordmark in Admin header for IX LTR mark.</li>
           <li><span className="text-amber-400 font-medium">Medium:</span> Per-route SEO + translation visual QA at 375 / 414 / 768 / 1280.</li>
         </ol>
