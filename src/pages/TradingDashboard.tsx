@@ -54,6 +54,7 @@ import { useQuickTrade, QuickTradeProvider } from "@/contexts/QuickTradeContext"
 import { LiveAccountProvider } from "@/contexts/LiveAccountContext";
 import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
 import { X } from "lucide-react";
+import { useDevMode } from "@/hooks/useDevMode";
 
 // ---------- Types ----------
 interface LivePosition {
