@@ -676,6 +676,63 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     return () => clearTimeout(t);
   }, [askFlash]);
 
+  // "Retry Confirmation" from the result modal — re-runs reconcile-execution
+  // against Trading Layer without re-sending the order.
+  useEffect(() => {
+    const onRetry = async (evt: Event) => {
+      const detail = (evt as CustomEvent).detail || {};
+      const symbol = String(detail.symbol || "").toUpperCase();
+      const side = String(detail.side || "").toLowerCase();
+      const volume = Number(detail.volume);
+      if (!symbol || (side !== "buy" && side !== "sell") || !Number.isFinite(volume)) return;
+      try {
+        const { data: rec } = await supabase.functions.invoke("reconcile-execution", {
+          body: {
+            symbol, side, volume,
+            requestedPrice: detail.requestedPrice ?? null,
+            clientClickAt: new Date().toISOString(),
+            brokerRetcode: detail.retcode ?? null,
+            brokerMessage: detail.brokerMessage ?? null,
+          },
+        });
+        if (!rec) return;
+        setExecResult((prev) => {
+          if (!prev) return prev;
+          if (rec.mt5Confirmed === true && rec.confirmedTicket) {
+            return {
+              ...prev,
+              outcome: "success",
+              brokerAccepted: true,
+              mt5Confirmed: true,
+              confirmationStatus: "confirmed",
+              confirmedTicket: rec.confirmedTicket,
+              confirmedEntryPrice: rec.confirmedEntryPrice,
+              confirmedVolume: rec.confirmedVolume,
+              confirmedAt: new Date().toISOString(),
+              executedPrice: rec.confirmedEntryPrice,
+              ticket: rec.confirmedTicket,
+              status: "position_confirmed",
+              brokerMessage: `Position confirmed in MT5. Ticket: ${rec.confirmedTicket}`,
+            };
+          }
+          const isPending = rec.status === "pending_order_placed";
+          return {
+            ...prev,
+            outcome: "unconfirmed",
+            brokerAccepted: true,
+            mt5Confirmed: false,
+            confirmationStatus: isPending ? "pending" : "not_found",
+            status: rec.status ?? "execution_unconfirmed",
+            brokerMessage: rec.explanation ?? prev.brokerMessage ?? null,
+          };
+        });
+      } catch { /* ignore */ }
+    };
+    window.addEventListener("mt:retry-confirmation", onRetry);
+    return () => window.removeEventListener("mt:retry-confirmation", onRetry);
+  }, []);
+
+
   const volNum = Number(vol) || 0;
   const entryPrice =
     orderType === "Market" ? livePrice ?? 0 : Number(price) || livePrice || 0;
