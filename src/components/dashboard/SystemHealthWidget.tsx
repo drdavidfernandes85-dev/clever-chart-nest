@@ -144,6 +144,77 @@ const SystemHealthWidget = () => {
           Execution locked: {reason ?? "in-flight request"}
         </div>
       )}
+
+      {devMode && (
+        <div className="mt-2 border-t border-neutral-800/80 pt-1.5">
+          <div className="mb-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#FFCD05]" />
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#FFCD05]">
+              Dev · Polling Diagnostics
+            </span>
+          </div>
+          <Row
+            label="Active Loops"
+            status={mdState.diagnostics.activeLoops.length > 0 ? "ok" : "unknown"}
+            value={mdState.diagnostics.activeLoops.join(", ") || "—"}
+          />
+          <Row
+            label="Requests / min"
+            status={
+              mdState.diagnostics.requestsLast60s >= 60
+                ? "warn"
+                : mdState.diagnostics.requestsLast60s > 0
+                  ? "ok"
+                  : "unknown"
+            }
+            value={`${mdState.diagnostics.requestsLast60s} / 60`}
+          />
+          <Row
+            label="Last Tick"
+            status={lastTickAgo == null ? "unknown" : lastTickAgo > 20 ? "warn" : "ok"}
+            value={lastTickAgo == null ? "—" : `${lastTickAgo}s ago`}
+          />
+          <Row
+            label="Last Acct Sync"
+            status={lastSyncAt ? "ok" : "unknown"}
+            value={sinceLabel(lastSyncAt)}
+          />
+          <Row
+            label="Last Pos Sync"
+            status={mdState.positions.length > 0 ? "ok" : "unknown"}
+            value={
+              mdState.diagnostics.lastTickAt
+                ? sinceLabel(new Date(mdState.diagnostics.lastTickAt).toISOString())
+                : "—"
+            }
+          />
+          <Row
+            label="Stale"
+            status={isStale ? "warn" : "ok"}
+            value={isStale ? "YES" : "no"}
+          />
+          <Row
+            label="Rate Limit"
+            status={mdState.rateLimit.active ? "warn" : "ok"}
+            value={mdState.rateLimit.active ? "ACTIVE" : "—"}
+          />
+          <Row
+            label="Cooldown"
+            status={cooldownRemainingSec > 0 ? "warn" : "ok"}
+            value={cooldownRemainingSec > 0 ? `${cooldownRemainingSec}s` : "—"}
+          />
+          <Row
+            label="Duplicate Loops"
+            status={duplicateLoops.length > 0 ? "down" : "ok"}
+            value={duplicateLoops.length > 0 ? `YES (${duplicateLoops.join(",")})` : "no"}
+          />
+          <Row
+            label="Polled Symbols"
+            status={mdState.diagnostics.polledSymbols.length > 0 ? "ok" : "unknown"}
+            value={mdState.diagnostics.polledSymbols.join(", ") || "—"}
+          />
+        </div>
+      )}
     </section>
   );
 };
