@@ -260,8 +260,8 @@ const DashboardSidebar = () => {
           onClick={handleSignOut}
           title={collapsed ? t("sidebar.signOut") : undefined}
           className={cn(
-            "flex items-center gap-2 border-t border-primary/10 px-3 py-2.5 text-[12px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
-            collapsed && "justify-center"
+            "flex items-center gap-2 border-t border-primary/10 text-[12px] font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
+            collapsed ? "h-10 w-full justify-center px-0" : "px-3 py-2.5"
           )}
         >
           <LogOut className="h-4 w-4 shrink-0" />
