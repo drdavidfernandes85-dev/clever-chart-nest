@@ -304,6 +304,11 @@ const TradingDashboard = () => {
       </header>
 
       <div className="mx-auto max-w-7xl space-y-5 p-4 md:p-6">
+        {/* Simplified launch panel: clear next actions before any heavy widgets.
+            Always rendered (even before MT5 connects) so the user always sees
+            an unambiguous path forward. */}
+        <PanelActionCards connected={connected} />
+
         {loading && !res ? (
           <div className="flex items-center justify-center py-24">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -325,6 +330,66 @@ const TradingDashboard = () => {
     </div>
   );
 };
+
+// ---------- Launch Panel Action Cards ----------
+// Reduces first-load complexity. Cards are state-aware:
+// - Profile / Connect MT5 card flips its CTA based on `connected`.
+// - All other cards link to the simplified launch nav destinations.
+const PANEL_ACTIONS: { to: string; title: string; desc: string; primary?: boolean }[] = [
+  { to: "/chatroom", title: "Continue to Trading Room", desc: "Live community, market discussion and shared ideas.", primary: true },
+  { to: "/webinars", title: "Join Next Webinar", desc: "Live educational sessions and market reviews." },
+  { to: "/ideas", title: "Review Market Ideas", desc: "Educational market ideas — you stay in control." },
+  { to: "/dashboard", title: "Open LTR Terminal Pro", desc: "Charts, order controls and risk tools." },
+];
+
+const PanelActionCards = ({ connected }: { connected: boolean }) => (
+  <section
+    aria-labelledby="panel-actions-title"
+    className="rounded-2xl border border-primary/20 bg-card/40 backdrop-blur-xl p-4 md:p-5"
+  >
+    <div className="flex items-baseline justify-between gap-3 mb-3">
+      <h2 id="panel-actions-title" className="font-heading text-base md:text-lg font-semibold text-foreground">
+        What would you like to do next?
+      </h2>
+      <span className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground">
+        Quick actions
+      </span>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {PANEL_ACTIONS.map((a) => (
+        <Link
+          key={a.to}
+          to={a.to}
+          className={cn(
+            "group flex flex-col gap-1.5 rounded-xl border p-3.5 transition-all min-h-[96px]",
+            a.primary
+              ? "border-primary/40 bg-primary/10 hover:bg-primary/15 hover:border-primary/60"
+              : "border-border/40 bg-background/40 hover:border-primary/30 hover:bg-primary/5",
+          )}
+        >
+          <span className={cn("text-sm font-semibold", a.primary ? "text-primary" : "text-foreground")}>
+            {a.title}
+          </span>
+          <span className="text-[11px] leading-snug text-muted-foreground">{a.desc}</span>
+        </Link>
+      ))}
+      <Link
+        to={connected ? "/profile" : "/connect-mt"}
+        className="group flex flex-col gap-1.5 rounded-xl border border-border/40 bg-background/40 p-3.5 transition-all hover:border-primary/30 hover:bg-primary/5 min-h-[96px]"
+      >
+        <span className="text-sm font-semibold text-foreground">
+          {connected ? "Complete Profile" : "Connect MT5 Account"}
+        </span>
+        <span className="text-[11px] leading-snug text-muted-foreground">
+          {connected
+            ? "Keep your trader profile up to date."
+            : "Required for live account and trading features."}
+        </span>
+      </Link>
+    </div>
+  </section>
+);
+
 
 // ---------- States ----------
 const NoAccountState = ({ message }: { message: string }) => {

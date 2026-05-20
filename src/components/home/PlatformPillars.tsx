@@ -245,46 +245,9 @@ const EducationMock = ({ t }: { t: (k: TranslationKey) => string }) => {
 
 const PlatformPillars = () => {
   const { t } = useLanguage();
+  // Launch order: Education → Webinars → Community → LTR Terminal Pro.
+  // Keeps existing translation keys for i18n consistency.
   const pillars = [
-    {
-      eyebrow: t("home.pillars.terminal.eyebrow"),
-      title: t("home.pillars.terminal.title"),
-      subtitle: t("home.pillars.terminal.subtitle"),
-      cta: { label: t("home.pillars.terminal.cta"), to: "/dashboard", icon: LayoutDashboard },
-      pills: [
-        <Pill key="1"><Activity className="h-3 w-3" /> {t("home.pillars.terminal.pill1")}</Pill>,
-        <Pill key="2"><LineChart className="h-3 w-3" /> {t("home.pillars.terminal.pill2")}</Pill>,
-        <Pill key="3"><ShieldCheck className="h-3 w-3" /> {t("home.pillars.terminal.pill3")}</Pill>,
-      ],
-      mock: <TerminalMock t={t} />,
-      reverse: false,
-    },
-    {
-      eyebrow: t("home.pillars.community.eyebrow"),
-      title: t("home.pillars.community.title"),
-      subtitle: t("home.pillars.community.subtitle"),
-      cta: { label: t("home.pillars.community.cta"), to: "/chatroom", icon: MessagesSquare },
-      pills: [
-        <Pill key="1"><Users className="h-3 w-3" /> {t("home.pillars.community.pill1")}</Pill>,
-        <Pill key="2"><MessagesSquare className="h-3 w-3" /> {t("home.pillars.community.pill2")}</Pill>,
-        <Pill key="3"><LineChart className="h-3 w-3" /> {t("home.pillars.community.pill3")}</Pill>,
-      ],
-      mock: <ChatMock t={t} />,
-      reverse: true,
-    },
-    {
-      eyebrow: t("home.pillars.webinars.eyebrow"),
-      title: t("home.pillars.webinars.title"),
-      subtitle: t("home.pillars.webinars.subtitle"),
-      cta: { label: t("home.pillars.webinars.cta"), to: "/webinars", icon: PlayCircle },
-      pills: [
-        <Pill key="1"><PlayCircle className="h-3 w-3" /> {t("home.pillars.webinars.pill1")}</Pill>,
-        <Pill key="2"><Users className="h-3 w-3" /> {t("home.pillars.webinars.pill2")}</Pill>,
-        <Pill key="3"><BookOpen className="h-3 w-3" /> {t("home.pillars.webinars.pill3")}</Pill>,
-      ],
-      mock: <WebinarMock t={t} />,
-      reverse: false,
-    },
     {
       eyebrow: t("home.pillars.education.eyebrow"),
       title: t("home.pillars.education.title"),
@@ -297,6 +260,45 @@ const PlatformPillars = () => {
         <Pill key="4"><BookOpen className="h-3 w-3" /> {t("home.pillars.education.pill4")}</Pill>,
       ],
       mock: <EducationMock t={t} />,
+      reverse: false,
+    },
+    {
+      eyebrow: t("home.pillars.webinars.eyebrow"),
+      title: t("home.pillars.webinars.title"),
+      subtitle: t("home.pillars.webinars.subtitle"),
+      cta: { label: t("home.pillars.webinars.cta"), to: "/webinars", icon: PlayCircle },
+      pills: [
+        <Pill key="1"><PlayCircle className="h-3 w-3" /> {t("home.pillars.webinars.pill1")}</Pill>,
+        <Pill key="2"><Users className="h-3 w-3" /> {t("home.pillars.webinars.pill2")}</Pill>,
+        <Pill key="3"><BookOpen className="h-3 w-3" /> {t("home.pillars.webinars.pill3")}</Pill>,
+      ],
+      mock: <WebinarMock t={t} />,
+      reverse: true,
+    },
+    {
+      eyebrow: t("home.pillars.community.eyebrow"),
+      title: t("home.pillars.community.title"),
+      subtitle: t("home.pillars.community.subtitle"),
+      cta: { label: t("home.pillars.community.cta"), to: "/chatroom", icon: MessagesSquare },
+      pills: [
+        <Pill key="1"><Users className="h-3 w-3" /> {t("home.pillars.community.pill1")}</Pill>,
+        <Pill key="2"><MessagesSquare className="h-3 w-3" /> {t("home.pillars.community.pill2")}</Pill>,
+        <Pill key="3"><LineChart className="h-3 w-3" /> {t("home.pillars.community.pill3")}</Pill>,
+      ],
+      mock: <ChatMock t={t} />,
+      reverse: false,
+    },
+    {
+      eyebrow: t("home.pillars.terminal.eyebrow"),
+      title: t("home.pillars.terminal.title"),
+      subtitle: t("home.pillars.terminal.subtitle"),
+      cta: { label: t("home.pillars.terminal.cta"), to: "/dashboard", icon: LayoutDashboard },
+      pills: [
+        <Pill key="1"><Activity className="h-3 w-3" /> {t("home.pillars.terminal.pill1")}</Pill>,
+        <Pill key="2"><LineChart className="h-3 w-3" /> {t("home.pillars.terminal.pill2")}</Pill>,
+        <Pill key="3"><ShieldCheck className="h-3 w-3" /> {t("home.pillars.terminal.pill3")}</Pill>,
+      ],
+      mock: <TerminalMock t={t} />,
       reverse: true,
     },
   ];
