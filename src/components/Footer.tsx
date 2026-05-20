@@ -17,7 +17,6 @@ const Footer = () => {
         { label: t("footer.link.webinars"), to: "/webinars" },
         { label: t("footer.link.community"), to: "/chatroom" },
         { label: t("footer.link.terminal"), to: "/dashboard" },
-        { label: t("footer.link.ideas"), to: "/ideas" },
       ],
     },
     {
