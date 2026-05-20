@@ -29,7 +29,12 @@ Deno.serve(async (req) => {
     const TRADING_LAYER_API_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 
     if (!TRADING_LAYER_API_KEY) {
-      return json(500, { success: false, error: "Trading Layer API key not configured." });
+      return json(200, {
+        success: false,
+        stage: "config",
+        errorCode: "TL_CONFIG_MISSING",
+        error: "Trading Layer configuration missing.",
+      });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -94,28 +99,83 @@ Deno.serve(async (req) => {
     }
 
     if (!account) {
-      return json(200, { success: false, error: "No connected trading account found." });
+      return json(200, {
+        success: false,
+        stage: "account_lookup",
+        errorCode: "NO_MT5_ACCOUNT",
+        error: "No connected trading account found.",
+      });
     }
 
     const traderId = account.metaapi_account_id;
     if (!traderId) {
-      return json(200, { success: false, error: "Connected account is missing a Trading Layer trader id." });
+      return json(200, {
+        success: false,
+        stage: "account_lookup",
+        errorCode: "MISSING_TRADER_ID",
+        error: "Connected account is missing a Trading Layer trader id.",
+      });
     }
 
-    const [traderRes, posRes] = await Promise.all([
-      fetch(`${TL_BASE}/traders/${encodeURIComponent(traderId)}`, { headers: tlHeaders }),
-      fetch(`${TL_BASE}/accounts/${encodeURIComponent(traderId)}/positions`, { headers: tlHeaders }),
-    ]);
+    // 12s timeout per upstream request — long enough for cold reads, short
+    // enough to avoid stacking polling cycles.
+    const withTimeout = (url: string) => {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 12_000);
+      return fetch(url, { headers: tlHeaders, signal: ctl.signal }).finally(() =>
+        clearTimeout(t),
+      );
+    };
+
+    let traderRes: Response;
+    let posRes: Response;
+    try {
+      [traderRes, posRes] = await Promise.all([
+        withTimeout(`${TL_BASE}/traders/${encodeURIComponent(traderId)}`),
+        withTimeout(`${TL_BASE}/accounts/${encodeURIComponent(traderId)}/positions`),
+      ]);
+    } catch (e: any) {
+      const aborted = e?.name === "AbortError";
+      return json(200, {
+        success: false,
+        stage: "trading_layer_fetch",
+        errorCode: aborted ? "TL_TIMEOUT" : "TL_NETWORK",
+        error: aborted
+          ? "Connection to Trading Layer timed out."
+          : "Network error reaching Trading Layer.",
+        retryable: true,
+      });
+    }
 
     const traderData = await traderRes.json().catch(() => ({}));
     const positionsData = await posRes.json().catch(() => ({}));
 
+    // Categorize upstream failures so the UI can show the actual cause.
     if (!traderRes.ok) {
+      const status = traderRes.status;
+      const retryAfter = Number(traderRes.headers.get("retry-after") ?? "0") || null;
+      let errorCode = "TL_UPSTREAM_ERROR";
+      let message = "Live trading services are temporarily unavailable.";
+      if (status === 401 || status === 403) {
+        errorCode = "TL_AUTH_FAILED";
+        message = "Trading Layer authorization failed.";
+      } else if (status === 404) {
+        errorCode = "TL_ACCOUNT_NOT_FOUND";
+        message = "Trading Layer account not found.";
+      } else if (status === 429) {
+        errorCode = "TL_RATE_LIMITED";
+        message = "Rate limited — retrying shortly.";
+      } else if (status >= 500) {
+        errorCode = "TL_SERVICE_DOWN";
+      }
       return json(200, {
         success: false,
-        error: "Trading Layer is temporarily unavailable. Please retry in a moment.",
-        tradingLayerStatus: traderRes.status,
-        retryable: traderRes.status >= 500,
+        stage: "trading_layer_account_check",
+        errorCode,
+        error: message,
+        tradingLayerStatus: status,
+        retryAfter,
+        retryable: status === 429 || status >= 500,
       });
     }
 
