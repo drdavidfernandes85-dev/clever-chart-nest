@@ -108,54 +108,58 @@ const App = () => (
             <QuickTradeProvider>
             <CyberpunkBackground />
             <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  {/* Open to all logged-in users (no eligibility required) */}
-                  <Route path="/dashboard" element={<DashboardShell><Dashboard /></DashboardShell>} />
-                  <Route path="/trading-room" element={<DashboardShell><TradingDashboard /></DashboardShell>} />
-                  <Route path="/command" element={<DashboardShell><CommandDeck /></DashboardShell>} />
-                  <Route path="/profile" element={<DashboardShell><Profile /></DashboardShell>} />
-                  <Route path="/videos" element={<DashboardShell><VideoLibrary /></DashboardShell>} />
-                  <Route path="/connect-mt" element={<DashboardShell><ConnectMT /></DashboardShell>} />
-                  <Route path="/connect" element={<ConnectMyMT5 />} />
-                  {/* Public-facing free webinar landing page (high-conversion) */}
-                  <Route path="/webinar" element={<WebinarLanding />} />
-                  <Route path="/webinars" element={<WebinarLanding />} />
-                  <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
-                  <Route path="/community/guidelines" element={<CommunityGuidelines />} />
-                  {/* In-app webinar library (logged-in) */}
-                  <Route path="/webinars/all" element={<DashboardShell><Webinars /></DashboardShell>} />
-                  <Route path="/webinars/:id" element={<DashboardShell><Webinars /></DashboardShell>} />
+              <ErrorBoundary scope="route-root">
+                <Suspense fallback={<RouteFallback />}>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    {/* Open to all logged-in users (no eligibility required) */}
+                    <Route path="/dashboard" element={<DashboardShell scope="dashboard"><Dashboard /></DashboardShell>} />
+                    <Route path="/trading-room" element={<DashboardShell scope="trading-room"><TradingDashboard /></DashboardShell>} />
+                    <Route path="/command" element={<DashboardShell scope="command"><CommandDeck /></DashboardShell>} />
+                    <Route path="/profile" element={<DashboardShell scope="profile"><Profile /></DashboardShell>} />
+                    {/* /videos: hidden from launch nav (Video Library) */}
+                    <Route path="/videos" element={<InternalPreviewShell scope="videos" label="Video Library"><VideoLibrary /></InternalPreviewShell>} />
+                    <Route path="/connect-mt" element={<DashboardShell scope="connect-mt"><ConnectMT /></DashboardShell>} />
+                    <Route path="/connect" element={<ErrorBoundary scope="connect"><ConnectMyMT5 /></ErrorBoundary>} />
+                    {/* Public-facing free webinar landing page (high-conversion) */}
+                    <Route path="/webinar" element={<ErrorBoundary scope="webinar"><WebinarLanding /></ErrorBoundary>} />
+                    <Route path="/webinars" element={<ErrorBoundary scope="webinars"><WebinarLanding /></ErrorBoundary>} />
+                    <Route path="/community" element={<ProtectedRoute><ErrorBoundary scope="community"><Community /></ErrorBoundary></ProtectedRoute>} />
+                    <Route path="/community/guidelines" element={<ErrorBoundary scope="community-guidelines"><CommunityGuidelines /></ErrorBoundary>} />
+                    {/* In-app webinar library (logged-in) */}
+                    <Route path="/webinars/all" element={<DashboardShell scope="webinars-all"><Webinars /></DashboardShell>} />
+                    <Route path="/webinars/:id" element={<DashboardShell scope="webinars-detail"><Webinars /></DashboardShell>} />
 
-                  {/* Eligibility-gated routes: requires verified live Infinox account + $100 USD min balance */}
-                  <Route path="/live-chart" element={<GatedDashboardShell><LiveChart /></GatedDashboardShell>} />
-                  <Route path="/chatroom" element={<GatedDashboardShell><Chatroom /></GatedDashboardShell>} />
-                  <Route path="/ideas" element={<GatedDashboardShell><Ideas /></GatedDashboardShell>} />
-                  {/* Legacy routes — redirect to combined Ideas tab for Compliance */}
-                  <Route path="/signals" element={<Navigate to="/ideas" replace />} />
-                  <Route path="/copy-trading" element={<Navigate to="/ideas" replace />} />
-                  <Route path="/leaderboard" element={<GatedDashboardShell><Leaderboard /></GatedDashboardShell>} />
-                  <Route path="/analytics" element={<GatedDashboardShell><Analytics /></GatedDashboardShell>} />
-                  <Route path="/trading-dashboard" element={<Navigate to="/trading-room" replace />} />
-                  <Route path="/news" element={<GatedDashboardShell><News /></GatedDashboardShell>} />
-                  <Route path="/calendar" element={<Navigate to="/news" replace />} />
-                  <Route path="/education" element={<GatedDashboardShell><Education /></GatedDashboardShell>} />
-                  <Route path="/education/:slug" element={<GatedDashboardShell><EducationModule /></GatedDashboardShell>} />
+                    {/* Eligibility-gated routes: requires verified live Infinox account + $100 USD min balance */}
+                    <Route path="/live-chart" element={<GatedDashboardShell scope="live-chart"><LiveChart /></GatedDashboardShell>} />
+                    <Route path="/chatroom" element={<GatedDashboardShell scope="chatroom"><Chatroom /></GatedDashboardShell>} />
+                    <Route path="/ideas" element={<GatedDashboardShell scope="ideas"><Ideas /></GatedDashboardShell>} />
+                    {/* Legacy routes — redirect to combined Ideas tab for Compliance */}
+                    <Route path="/signals" element={<Navigate to="/ideas" replace />} />
+                    <Route path="/copy-trading" element={<Navigate to="/ideas" replace />} />
+                    {/* /leaderboard, /analytics: hidden from launch nav */}
+                    <Route path="/leaderboard" element={<InternalPreviewShell scope="leaderboard" label="Leaderboard"><Leaderboard /></InternalPreviewShell>} />
+                    <Route path="/analytics" element={<InternalPreviewShell scope="analytics" label="Analytics"><Analytics /></InternalPreviewShell>} />
+                    <Route path="/trading-dashboard" element={<Navigate to="/trading-room" replace />} />
+                    <Route path="/news" element={<GatedDashboardShell scope="news"><News /></GatedDashboardShell>} />
+                    <Route path="/calendar" element={<Navigate to="/news" replace />} />
+                    <Route path="/education" element={<GatedDashboardShell scope="education"><Education /></GatedDashboardShell>} />
+                    <Route path="/education/:slug" element={<GatedDashboardShell scope="education-module"><EducationModule /></GatedDashboardShell>} />
 
-                  <Route path="/admin" element={<AdminRoute><DashboardLayout><Admin /></DashboardLayout></AdminRoute>} />
-                  <Route path="/u/:userId" element={<DashboardShell><PublicProfile /></DashboardShell>} />
-                  <Route path="/__qa/hero" element={<HeroQA />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/risk-disclosure" element={<RiskDisclosure />} />
-                  <Route path="/compliance-review" element={<DashboardShell><ComplianceReview /></DashboardShell>} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
+                    <Route path="/admin" element={<AdminRoute><DashboardLayout><ErrorBoundary scope="admin"><Admin /></ErrorBoundary></DashboardLayout></AdminRoute>} />
+                    <Route path="/u/:userId" element={<DashboardShell scope="public-profile"><PublicProfile /></DashboardShell>} />
+                    <Route path="/__qa/hero" element={<HeroQA />} />
+                    <Route path="/terms" element={<ErrorBoundary scope="terms"><Terms /></ErrorBoundary>} />
+                    <Route path="/risk-disclosure" element={<ErrorBoundary scope="risk-disclosure"><RiskDisclosure /></ErrorBoundary>} />
+                    <Route path="/compliance-review" element={<DashboardShell scope="compliance-review"><ComplianceReview /></DashboardShell>} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
             </PageTransition>
             <OnboardingTour />
             <MobileBottomNav />
