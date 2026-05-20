@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Newspaper, Radio, Wrench, Search, RefreshCw, Volume2, TrendingUp, TrendingDown, Minus, Loader2, RotateCcw } from "lucide-react";
+import { Newspaper, Radio, Wrench, Search, RefreshCw, Volume2, TrendingUp, TrendingDown, Minus, Loader2, RotateCcw, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { subscribeRssNews, refreshRssNews, type RssNewsItem } from "@/lib/rssNewsCache";
 
 const tagColors: Record<string, string> = {
   STOCKS: "bg-blue-600 text-white",
@@ -23,14 +23,7 @@ const tagColors: Record<string, string> = {
   COMMODITIES: "bg-yellow-700 text-white",
 };
 
-interface RssNewsItem {
-  title: string;
-  link: string;
-  pubDate: string;
-  source: string;
-  category: string;
-  description?: string;
-}
+// RssNewsItem is imported from "@/lib/rssNewsCache".
 
 
 function formatTime(dateStr: string): string {
@@ -147,30 +140,23 @@ const LiveSquawkFeed = () => {
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [items, setItems] = useState<SquawkItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchSquawk = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
-      if (!error && data?.data) {
-        const classified = (data.data as RssNewsItem[]).map(classifyNews);
-        setItems(classified);
-      }
-    } catch (e) {
-      console.error("Failed to fetch squawk:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Shared RSS cache — dedupes the fetch with NewsFlow.
   useEffect(() => {
-    fetchSquawk();
-    const refresh = setInterval(fetchSquawk, 60_000);
+    const unsub = subscribeRssNews((s) => {
+      setItems(s.items.map(classifyNews));
+      setLoading(s.loading && s.items.length === 0);
+      setError(s.error);
+    });
     const blink = setInterval(() => setPulse((p) => !p), 1500);
     return () => {
-      clearInterval(refresh);
+      unsub();
       clearInterval(blink);
     };
-  }, [fetchSquawk]);
+  }, []);
+
+  const fetchSquawk = useCallback(() => { void refreshRssNews(); }, []);
 
   const filteredItems = items.filter((item) => {
     if (activeFilter === "ALL") return true;
@@ -211,6 +197,14 @@ const LiveSquawkFeed = () => {
           <div className="flex h-32 items-center justify-center text-xs text-muted-foreground gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading live squawk…
+          </div>
+        ) : error && filteredItems.length === 0 ? (
+          <div className="flex h-32 flex-col items-center justify-center gap-2 text-xs text-muted-foreground p-4 text-center">
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            <span>{error}</span>
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={fetchSquawk}>
+              <RefreshCw className="h-3 w-3 mr-1" /> Retry
+            </Button>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="flex h-24 items-center justify-center text-xs text-muted-foreground">
@@ -435,31 +429,29 @@ const ToolsPanel = () => (
   </div>
 );
 
-const NewsFlowWidget = () => {
+interface NewsFlowWidgetProps {
+  /** Optional external search query (e.g. wired from the News page header). */
+  externalSearch?: string;
+}
+
+const NewsFlowWidget = ({ externalSearch }: NewsFlowWidgetProps = {}) => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [newsItems, setNewsItems] = useState<RssNewsItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const fetchNews = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("fetch-rss-news");
-      if (!error && data?.data) {
-        setNewsItems(data.data);
-      }
-    } catch (e) {
-      console.error("Failed to fetch news:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [error, setError] = useState<string | null>(null);
+  const [localSearch, setLocalSearch] = useState("");
+  const searchQuery = (externalSearch ?? "") || localSearch;
 
   useEffect(() => {
-    fetchNews();
-    const interval = setInterval(fetchNews, 60000);
-    return () => clearInterval(interval);
-  }, [fetchNews]);
+    const unsub = subscribeRssNews((s) => {
+      setNewsItems(s.items);
+      setLoading(s.loading && s.items.length === 0);
+      setError(s.error);
+    });
+    return () => unsub();
+  }, []);
+
+  const fetchNews = useCallback(() => { void refreshRssNews(); }, []);
 
   const filteredNews = newsItems.filter((item) => {
     const matchesFilter = activeFilter === "all" || item.category.toLowerCase().includes(activeFilter);
@@ -491,18 +483,20 @@ const NewsFlowWidget = () => {
         </div>
 
         <TabsContent value="newsflow" className="mt-0">
-          <div className="border-b border-border px-3 py-2">
-            <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1">
-              <Search className="h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Quick filter..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
-              />
+          {externalSearch == null && (
+            <div className="border-b border-border px-3 py-2">
+              <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1">
+                <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Quick filter..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="flex-1 bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
             <div className="flex items-center gap-1">
@@ -536,9 +530,17 @@ const NewsFlowWidget = () => {
                   </div>
                 ))}
               </div>
+            ) : error && filteredNews.length === 0 ? (
+              <div className="flex h-40 flex-col items-center justify-center gap-2 px-4 text-center text-xs text-muted-foreground">
+                <AlertTriangle className="h-4 w-4 text-amber-400" />
+                <span>{error}</span>
+                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={fetchNews}>
+                  <RefreshCw className="h-3 w-3 mr-1" /> Retry
+                </Button>
+              </div>
             ) : filteredNews.length === 0 ? (
               <div className="flex h-32 items-center justify-center text-xs text-muted-foreground">
-                No news found
+                {searchQuery ? "No updates found." : "No news found"}
               </div>
             ) : (
               filteredNews.map((item, i) => (

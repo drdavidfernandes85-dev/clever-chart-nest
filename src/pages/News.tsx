@@ -15,6 +15,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 
 const News = () => {
   const [tickerOpen, setTickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const { t } = useLanguage();
 
   return (
@@ -38,6 +39,8 @@ const News = () => {
             <div className="relative flex-1 max-w-lg ml-auto xl:ml-8">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("page.searchNews")}
                 className="h-9 pl-10 bg-card/60 border-border/40 text-xs placeholder:text-muted-foreground/70 focus-visible:ring-primary/40 rounded-xl"
               />
@@ -100,7 +103,7 @@ const News = () => {
                   </h2>
                 </header>
                 <div className="min-h-[600px] lg:h-[680px] overflow-hidden rounded-2xl">
-                  <NewsFlowWidget />
+                  <NewsFlowWidget externalSearch={search} />
                 </div>
               </article>
 
@@ -116,6 +119,16 @@ const News = () => {
                 </div>
               </article>
             </section>
+
+            {/* Compliance disclaimer — News & Calendar */}
+            <p className="mt-8 rounded-2xl border border-dashed border-border/50 bg-card/40 px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
+              Calendar and market information is provided for educational and informational purposes only
+              and does not constitute investment advice or a recommendation to trade. Headlines link to
+              third-party publishers and are not endorsements.
+            </p>
+            {/* TODO(content): Before full launch, optionally connect a Supabase-backed
+                "Platform Updates" and "Community Events" feed so admins can add entries
+                without code changes. RSS + Investing.com cover News + Market Calendar today. */}
           </motion.div>
         </main>
       </div>
