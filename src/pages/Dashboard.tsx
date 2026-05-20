@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SEO from "@/components/SEO";
 import NotificationsBell from "@/components/notifications/NotificationsBell";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ButtonQAReport from "@/components/dashboard/ButtonQAReport";
 import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
