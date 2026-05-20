@@ -385,9 +385,9 @@ const Leaderboard = () => {
                           className={`h-7 text-[10px] font-semibold px-3 ${follows.has(r.user_id) ? "bg-white/10 text-white hover:bg-white/15" : "bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90"}`}>
                           {follows.has(r.user_id) ? "Following" : "Follow"}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
-                          className={`h-7 text-[10px] px-2.5 gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                          <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
+                        <Button size="sm" variant="outline" onClick={() => setDetail(r)}
+                          className="h-7 text-[10px] px-2.5 gap-1 border-white/15 bg-transparent text-white hover:bg-white/5">
+                          View Profile
                         </Button>
                       </div>
                     </div>
