@@ -5,7 +5,6 @@ import {
   LineChart,
   Radio,
   MessageSquare,
-  MessageSquare,
   User,
   LogOut,
   Newspaper,
