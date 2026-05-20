@@ -27,6 +27,7 @@ const DashboardLayout = lazy(() => import("@/components/dashboard/DashboardLayou
 import ReviewAccessBadge from "@/components/ReviewAccessBadge";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InternalPreviewBanner from "@/components/InternalPreviewBanner";
+import PreviewRouteLoader from "@/components/PreviewRouteLoader";
 const Admin = lazy(() => import("./pages/Admin"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Chatroom = lazy(() => import("./pages/Chatroom"));
@@ -78,7 +79,13 @@ const GatedDashboardShell = ({ children, scope }: { children: ReactNode; scope?:
   </ProtectedRoute>
 );
 
-/** Wrapper for routes hidden from launch navigation but reachable by URL. */
+/**
+ * Wrapper for routes hidden from launch navigation but reachable by URL.
+ * Adds:
+ *   - an ErrorBoundary scoped to the route (no black-screen on render crash)
+ *   - a dedicated Suspense fallback with 12s timeout + retry UI so the
+ *     lazy chunk download can never spin forever.
+ */
 const InternalPreviewShell = ({ children, scope, label }: { children: ReactNode; scope?: string; label?: string }) => (
   <ProtectedRoute>
     <DashboardLayout>
@@ -86,7 +93,11 @@ const InternalPreviewShell = ({ children, scope, label }: { children: ReactNode;
         <div className="p-4">
           <InternalPreviewBanner label={label} />
         </div>
-        {children}
+        <Suspense fallback={<PreviewRouteLoader label={label} />}>
+          <ErrorBoundary scope={`${scope}-content`}>
+            {children}
+          </ErrorBoundary>
+        </Suspense>
       </ErrorBoundary>
     </DashboardLayout>
   </ProtectedRoute>
