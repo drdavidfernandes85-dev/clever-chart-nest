@@ -198,7 +198,7 @@ const SummaryInner = () => {
                         {p.symbol}
                       </p>
                       <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                        {p.type} · {p.volume} lots
+                        {p.side?.toUpperCase()} · {p.volume} lots
                       </p>
                     </div>
                     <span
