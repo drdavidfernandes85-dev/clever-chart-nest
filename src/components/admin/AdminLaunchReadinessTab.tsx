@@ -19,7 +19,7 @@ interface Finding {
   note?: string;
 }
 
-const SNAPSHOT_TIMESTAMP = "2026-05-20T18:15:00Z";
+const SNAPSHOT_TIMESTAMP = "2026-05-20T19:00:00Z";
 
 const findings: Finding[] = [
   // 2 — Core launch journey
@@ -113,6 +113,20 @@ const findings: Finding[] = [
   { area: "13. Mobile / Tablet QA", status: "info", label: "Phone terminal recommendation: keep Option A (mobile summary). Full LTR Terminal Pro remains desktop/tablet-only by design — execution surface is never squeezed onto small screens." },
   { area: "13. Mobile / Tablet QA", status: "info", label: "Remaining mobile issues: none blocking. Per-feature table-to-card conversions (positions/history/best-execution) can be done page-by-page in future cosmetic passes — current containment + horizontal scroll is safe and readable." },
   { area: "13. Mobile / Tablet QA", status: "pass", label: "No execution / risk / MT5 / reconciliation / Trading Layer / market-data / symbol-source logic changed during mobile polish" },
+
+  // 14 — Global Modal & Action Payload QA
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Modal positioning: Pass — Dialog/AlertDialog/Sheet/Drawer overlays z-[100], content z-[101] (above terminal/chart layers, sidebar and headers)" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Radix DialogPortal renders into document.body — not affected by transformed/clipped parents (chart container, sidebar, terminal grid)" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Mobile modal usability: Pass — bottom-sheet layout, max-h 100dvh, internal scroll, safe-area-inset-bottom padding, close button always reachable" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Position actions payloads: Pass — Close/Partial/Modify pass the full LivePosition object (ticket + exact broker symbol + side + volume + current_price) to close-position-controlled / modify-position-protection" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Broker suffix preserved: Pass — execution actions send position.symbol exactly as returned by MT5 (e.g. XAUUSD.M is NOT normalized to XAUUSD)" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Identifier helpers: Pass — src/lib/actionPayloads.ts exposes getPositionIdentifier / getBrokerSymbol / getRowIdentifier / validatePositionAction for reuse" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Missing identifier handling: Pass — 'Position identifier missing on this row. Refresh positions and try again.' with inline Refresh action; backend rule ticket_not_live is mapped to a clear, actionable toast" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Retry Confirmation: Pass — calls reconcile-execution only; never re-sends the order" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Generic row actions: Pass — webinar/idea/news cards disable CTAs and show 'Details coming soon' when id/slug/url is missing" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Dev diagnostics: Pass — sanitized payload (action, resolvedIdentifier, brokerSymbol, displaySymbol, side, volume, keys) via devDiagnostics(); never exposes API keys, secrets, tokens or service-role keys" },
+  { area: "14. Global Modal & Action Payload QA", status: "info", label: "Critical issues found: 0 | High: 0 | Medium: 0 | Remaining: none blocking — fix complete" },
+  { area: "14. Global Modal & Action Payload QA", status: "pass", label: "No execution / risk / MT5 / reconciliation / Trading Layer / market-data / symbol-source / compliance / navigation logic changed during this pass" },
 ];
 
 const severityMeta: Record<Severity, { label: string; cls: string; icon: typeof CheckCircle2 }> = {
