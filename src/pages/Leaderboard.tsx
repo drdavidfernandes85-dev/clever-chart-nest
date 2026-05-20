@@ -301,7 +301,9 @@ const Leaderboard = () => {
         ) : rows.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-[#0F0F0F] p-10 text-center">
             <Trophy className="h-8 w-8 mx-auto text-white/30 mb-2" />
-            <p className="text-sm text-white/60">No trader activity for this period yet.</p>
+            <p className="text-sm text-white/60">
+              Leaderboard will be available once there is enough verified community activity.
+            </p>
           </div>
         ) : (
           <>
