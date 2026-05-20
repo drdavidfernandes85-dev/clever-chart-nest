@@ -395,9 +395,30 @@ Deno.serve(async (req) => {
       ? true
       : false;
 
+  // ── Named audit fields (v1.2.0) ─────────────────────────────────────────
+  // Prefer matched MT5 record retcode > broker response retcode > input.
+  const effectiveRetcode =
+    (matchedHistoryOrder as any)?.retcode ??
+    (matchedPosition as any)?.retcode ??
+    input?.rawExecutionResponse?.retcode ??
+    input?.brokerRetcode ??
+    null;
+  const { retcodeName, retcodeDescription } = lookupRetcode(effectiveRetcode);
+  const reconciliationAttempts =
+    Number.isFinite(Number((input as any)?.reconciliationAttempts)) &&
+    Number((input as any)?.reconciliationAttempts) > 0
+      ? Number((input as any)?.reconciliationAttempts)
+      : 1;
+  const lastReconciliationAt = new Date().toISOString();
+
   const fullPayload = {
     version: VERSION,
     ...result,
+    retcode: effectiveRetcode,
+    retcodeName,
+    retcodeDescription,
+    reconciliationAttempts,
+    lastReconciliationAt,
     account: {
       account_id: account.id,
       mt5_login: account.login,
