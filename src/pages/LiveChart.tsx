@@ -37,7 +37,7 @@ import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvance
 import BlackArrowTradePanel from "@/components/dashboard/BlackArrowTradePanel";
 import LiveExecutionBanner from "@/components/dashboard/LiveExecutionBanner";
 import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
-import MarketWatch from "@/components/livechart/MarketWatch";
+
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
 import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
