@@ -397,25 +397,79 @@ const PanelActionCards = ({ connected }: { connected: boolean }) => (
 
 
 // ---------- States ----------
-const NoAccountState = ({ message }: { message: string }) => {
-  const noAccount = /no connected/i.test(message);
+// ---------- Contained service-status card ----------
+// Replaces the previous full-page "Dashboard unavailable" state.
+// The dashboard's PanelActionCards (Education / Webinars / Community / Ideas /
+// Terminal / Connect MT5) remain rendered above this card, so users always
+// have a path forward even when Trading Layer or MT5 is unreachable.
+const ServiceStatusCard = ({
+  message,
+  onRetry,
+  retrying,
+}: {
+  message: string;
+  onRetry: () => void;
+  retrying: boolean;
+}) => {
+  const noAccount = /no connected|not connected|no account/i.test(message);
+
+  const title = noAccount
+    ? "Connect your MT5 account"
+    : "Live trading services are temporarily unavailable";
+
+  const body = noAccount
+    ? "Connect your MT5 account to see your live portfolio, positions and execution history. Education, webinars, community and market ideas remain available above."
+    : "Live account data and trading tools are temporarily unavailable. Education, webinars, community and market ideas remain accessible above.";
+
   return (
-    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/80 to-background/40 backdrop-blur-xl p-10 text-center shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)]">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
-        {noAccount ? <Plug className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-xl p-5 md:p-6 shadow-[0_4px_20px_-8px_hsl(var(--primary)/0.15)]">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          {noAccount ? <Plug className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-heading text-base font-semibold text-foreground">
+            {title}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">{body}</p>
+          {!noAccount && (
+            <p className="mt-1 text-[11px] font-mono text-muted-foreground/70 break-words">
+              {message}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {!noAccount && (
+              <Button
+                size="sm"
+                onClick={onRetry}
+                disabled={retrying}
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+              >
+                {retrying ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                Retry connection
+              </Button>
+            )}
+            <Link to="/connect-mt">
+              <Button size="sm" variant="outline" className="rounded-full">
+                {noAccount ? "Connect Account" : "Manage Account"}
+              </Button>
+            </Link>
+            <Link to="/education">
+              <Button size="sm" variant="ghost" className="rounded-full">
+                Continue to Education
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
-      <h2 className="font-heading text-lg font-semibold text-foreground mb-1">
-        {noAccount ? "Connect your MT5 account" : "Dashboard unavailable"}
-      </h2>
-      <p className="text-sm text-muted-foreground mb-5 max-w-md mx-auto">{message}</p>
-      <Link to="/connect-mt">
-        <Button className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
-          {noAccount ? "Connect Account" : "Manage Account"}
-        </Button>
-      </Link>
     </div>
   );
 };
+
 
 // ---------- Live Portfolio ----------
 const LivePortfolioPanel = ({
