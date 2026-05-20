@@ -314,7 +314,12 @@ const TradingDashboard = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : !connected ? (
-          <NoAccountState message={res?.error || "No connected trading account found."} />
+          <ServiceStatusCard
+            message={res?.error || "No connected trading account found."}
+            onRetry={() => load(true)}
+            retrying={refreshing}
+          />
+
         ) : (
           <>
             <LivePortfolioPanel data={data!} lastUpdated={lastUpdated} />
