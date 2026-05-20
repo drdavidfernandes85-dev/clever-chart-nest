@@ -110,7 +110,8 @@ async function fetchLeaders(period: PeriodKey, offset: number, limit: number): P
     agg.set(e.user_id, c);
   });
 
-  const rows: TraderRow[] = (profiles || []).map((p: any) => {
+  const MIN_TRADES_TO_RANK = 5;
+  const rowsAll: TraderRow[] = (profiles || []).map((p: any) => {
     const a = agg.get(p.user_id) || { trades: 0, wins: 0, losses: 0, pnl: 0, rSum: 0, rCount: 0 };
     const decided = a.wins + a.losses;
     return {
@@ -128,6 +129,10 @@ async function fetchLeaders(period: PeriodKey, offset: number, limit: number): P
     };
   });
 
+  // Eligibility: only rank traders with verifiable activity (>= MIN_TRADES_TO_RANK closed trades).
+  // Excludes empty/0-trade users from ranking entirely.
+  const rows = rowsAll.filter((r) => r.trades >= MIN_TRADES_TO_RANK);
+
   // Sort: traders with activity first by P&L desc, then by trade count, mentors as tiebreaker
   rows.sort((a, b) => {
     if (b.total_pnl !== a.total_pnl) return b.total_pnl - a.total_pnl;
@@ -138,6 +143,10 @@ async function fetchLeaders(period: PeriodKey, offset: number, limit: number): P
   const page = rows.slice(offset, offset + limit);
   return { rows: page, hasMore: rows.length > offset + limit };
 }
+
+// TODO(perf): Before restoring Leaderboard to nav, replace this client-side aggregation
+// (fetch 500 profiles + journal + execs and reduce in JS) with a server-side view or RPC
+// that returns pre-aggregated, eligibility-filtered ranking rows.
 
 const Leaderboard = () => {
   const { user } = useAuth();
