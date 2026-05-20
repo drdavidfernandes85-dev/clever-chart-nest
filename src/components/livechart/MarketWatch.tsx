@@ -53,9 +53,12 @@ const MarketWatch = ({ symbols, active, onSelect }: Props) => {
     if (isAutoRefreshAllowed()) load();
     const onManualRefresh = () => load();
     window.addEventListener("mt:refresh-quotes", onManualRefresh);
+    // Aligned with MiniWatchlist/Watchlist (20s). The previous 4s cadence
+    // was a duplicate of fetch-market-quotes and pushed total request
+    // budget above 60/min on dashboards that mount multiple watchlists.
     const id = window.setInterval(() => {
       if (isAutoRefreshAllowed()) load();
-    }, 4000);
+    }, 20_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);

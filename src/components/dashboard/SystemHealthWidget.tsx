@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useLiveAccount } from "@/contexts/LiveAccountContext";
 import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useDevMode } from "@/hooks/useDevMode";
+import { liveMarketDataStore, type LiveMarketDataState } from "@/lib/liveMarketDataStore";
 
 
 type Health = "ok" | "warn" | "down" | "unknown";
@@ -43,8 +45,10 @@ const SystemHealthWidget = () => {
     useLiveAccount() as any;
 
   const { rateLimited, cooldownSec, locked, reason } = useExecutionLock();
+  const { devMode } = useDevMode();
   const [lastExec, setLastExec] = useState<{ status: string; at: string } | null>(null);
   const [, force] = useState(0);
+  const [mdState, setMdState] = useState<LiveMarketDataState>(() => liveMarketDataStore.getState());
 
   useEffect(() => {
     const tick = () => force((n) => n + 1);
@@ -56,15 +60,36 @@ const SystemHealthWidget = () => {
       }
     };
     window.addEventListener("mt:exec-result", handler as EventListener);
+    const unsub = liveMarketDataStore.subscribe(setMdState);
     return () => {
       window.clearInterval(id);
       window.removeEventListener("mt:exec-result", handler as EventListener);
+      unsub();
     };
   }, []);
 
+  // Detect duplicate loop registrations within the central service.
+  const duplicateLoops = useMemo(() => {
+    const seen = new Set<string>();
+    const dups: string[] = [];
+    for (const l of mdState.diagnostics.activeLoops) {
+      if (seen.has(l)) dups.push(l);
+      seen.add(l);
+    }
+    return dups;
+  }, [mdState.diagnostics.activeLoops]);
+
+  const cooldownRemainingSec = mdState.rateLimit.active && mdState.rateLimit.resumesAt
+    ? Math.max(0, Math.ceil((mdState.rateLimit.resumesAt - Date.now()) / 1000))
+    : 0;
+  const lastTickAgo = mdState.diagnostics.lastTickAt
+    ? Math.round((Date.now() - mdState.diagnostics.lastTickAt) / 1000)
+    : null;
+  const isStale = mdState.status === "stale";
+
   const mt: Health = loading ? "unknown" : connected ? "ok" : "down";
   const tradingLayer: Health = rateLimited ? "warn" : connected ? "ok" : "unknown";
-  const rateHealth: Health = rateLimited ? "warn" : "ok";
+  const rateHealth: Health = rateLimited || mdState.rateLimit.active ? "warn" : "ok";
 
   return (
     <section className="rounded-md border border-neutral-800 bg-[#0a0a0a] p-2.5 text-neutral-100">
@@ -117,6 +142,77 @@ const SystemHealthWidget = () => {
       {locked && !rateLimited && (
         <div className="mt-1 text-[10px] text-amber-300">
           Execution locked: {reason ?? "in-flight request"}
+        </div>
+      )}
+
+      {devMode && (
+        <div className="mt-2 border-t border-neutral-800/80 pt-1.5">
+          <div className="mb-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#FFCD05]" />
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#FFCD05]">
+              Dev · Polling Diagnostics
+            </span>
+          </div>
+          <Row
+            label="Active Loops"
+            status={mdState.diagnostics.activeLoops.length > 0 ? "ok" : "unknown"}
+            value={mdState.diagnostics.activeLoops.join(", ") || "—"}
+          />
+          <Row
+            label="Requests / min"
+            status={
+              mdState.diagnostics.requestsLast60s >= 60
+                ? "warn"
+                : mdState.diagnostics.requestsLast60s > 0
+                  ? "ok"
+                  : "unknown"
+            }
+            value={`${mdState.diagnostics.requestsLast60s} / 60`}
+          />
+          <Row
+            label="Last Tick"
+            status={lastTickAgo == null ? "unknown" : lastTickAgo > 20 ? "warn" : "ok"}
+            value={lastTickAgo == null ? "—" : `${lastTickAgo}s ago`}
+          />
+          <Row
+            label="Last Acct Sync"
+            status={lastSyncAt ? "ok" : "unknown"}
+            value={sinceLabel(lastSyncAt)}
+          />
+          <Row
+            label="Last Pos Sync"
+            status={mdState.positions.length > 0 ? "ok" : "unknown"}
+            value={
+              mdState.diagnostics.lastTickAt
+                ? sinceLabel(new Date(mdState.diagnostics.lastTickAt).toISOString())
+                : "—"
+            }
+          />
+          <Row
+            label="Stale"
+            status={isStale ? "warn" : "ok"}
+            value={isStale ? "YES" : "no"}
+          />
+          <Row
+            label="Rate Limit"
+            status={mdState.rateLimit.active ? "warn" : "ok"}
+            value={mdState.rateLimit.active ? "ACTIVE" : "—"}
+          />
+          <Row
+            label="Cooldown"
+            status={cooldownRemainingSec > 0 ? "warn" : "ok"}
+            value={cooldownRemainingSec > 0 ? `${cooldownRemainingSec}s` : "—"}
+          />
+          <Row
+            label="Duplicate Loops"
+            status={duplicateLoops.length > 0 ? "down" : "ok"}
+            value={duplicateLoops.length > 0 ? `YES (${duplicateLoops.join(",")})` : "no"}
+          />
+          <Row
+            label="Polled Symbols"
+            status={mdState.diagnostics.polledSymbols.length > 0 ? "ok" : "unknown"}
+            value={mdState.diagnostics.polledSymbols.join(", ") || "—"}
+          />
         </div>
       )}
     </section>
