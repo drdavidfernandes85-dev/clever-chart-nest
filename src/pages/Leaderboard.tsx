@@ -275,11 +275,14 @@ const Leaderboard = () => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Trophy className="h-4 w-4 text-[#FFCD05]" />
-              <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">Community Ranking</span>
+              <span className="text-[10px] uppercase tracking-[0.3em] text-white/40">Community Activity</span>
             </div>
             <h1 className="font-heading text-3xl md:text-4xl font-bold uppercase tracking-tight">
               IX <span className="text-[#FFCD05]">Traders</span>
             </h1>
+            <p className="mt-1 text-xs text-white/50">
+              Community activity overview based on available educational platform data.
+            </p>
           </div>
           <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-[#0F0F0F] p-1">
             {PERIODS.map((p) => (
