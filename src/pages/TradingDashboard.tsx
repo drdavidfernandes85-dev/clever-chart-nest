@@ -104,6 +104,13 @@ interface LiveResponse {
   retryAfter?: number | null;
   retryable?: boolean;
   data?: LiveData;
+  cache?: "hit" | "miss" | "partial";
+  cacheAgeMs?: { account: number; positions: number };
+  nextRefreshAllowedAt?: string;
+  usingLastKnownGood?: boolean;
+  rateLimited?: boolean;
+  stale?: boolean;
+  upstreamCallsAvoided?: number;
 }
 
 interface TradeIdea {
