@@ -1879,6 +1879,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <Mt5PositionVerificationPanel />
           <MarketDataDiagnosticsPanel />
           <PerformanceDiagnosticsPanel />
+          <SymbolSourceDiagnosticsPanel />
           <ExecutionReconciliationDebugPanel />
           <ExecutionAuditPanel refreshKey={auditRefreshKey} />
         </div>
