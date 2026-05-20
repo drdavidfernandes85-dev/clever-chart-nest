@@ -383,15 +383,10 @@ const LiveChartInner = () => {
 
       {/* Workspace: left rail + chart + right rail */}
       <div className="p-2 lg:p-3">
-        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[244px_minmax(0,1fr)_360px] grid-cols-1">
-          {/* LEFT: Market Watch only — Bid/Ask board moved to right-rail Quotes tab. */}
-          <aside className="hidden lg:flex flex-col h-[calc(100vh-4.5rem)] overflow-hidden pr-0.5">
-            <MarketWatch
-              symbols={marketWatchLabels}
-              active={displayLabel}
-              onSelect={onSelectByLabel}
-            />
-          </aside>
+        <div className="grid gap-2 lg:gap-3 lg:grid-cols-[minmax(0,1fr)_360px] grid-cols-1">
+          {/* Market Watch removed — symbol selection happens via the chart header and right-rail Quotes tab. */}
+
+
 
           {/* CENTER: Instrument quote strip + Chart */}
           <section
