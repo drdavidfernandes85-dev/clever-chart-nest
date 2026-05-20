@@ -1881,6 +1881,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <MarketDataDiagnosticsPanel />
           <PerformanceDiagnosticsPanel />
           <SymbolSourceDiagnosticsPanel />
+          <LinkQAReportPanel />
           <ExecutionReconciliationDebugPanel />
           <ExecutionAuditPanel refreshKey={auditRefreshKey} />
         </div>
