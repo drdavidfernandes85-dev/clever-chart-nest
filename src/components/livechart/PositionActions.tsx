@@ -63,12 +63,29 @@ function safeStr(v: any): string {
   try { return JSON.stringify(v); } catch { return ""; }
 }
 function errMessageFrom(data: any) {
-  if (typeof data?.error === "string") return data.error;
-  if (typeof data?.error?.message === "string") return data.error.message;
-  if (typeof data?.brokerMessage === "string") return data.brokerMessage;
-  if (typeof data?.message === "string") return data.message;
-  if (typeof data?.error?.code === "string") return data.error.code;
-  return "Request failed";
+  const raw =
+    (typeof data?.error === "string" && data.error) ||
+    (typeof data?.error?.message === "string" && data.error.message) ||
+    (typeof data?.brokerMessage === "string" && data.brokerMessage) ||
+    (typeof data?.message === "string" && data.message) ||
+    (typeof data?.error?.code === "string" && data.error.code) ||
+    "Request failed";
+  const rule = String(data?.rule || data?.ruleViolated || "").toLowerCase();
+  // Friendlier, actionable rewrites for known backend rule failures.
+  if (rule === "ticket_not_live" || /not found in live mt5/i.test(raw)) {
+    return "Position not found on the live MT5 account. Refresh positions and try again.";
+  }
+  if (rule === "symbol_mismatch") return "Symbol mismatch between this row and the live MT5 position. Refresh positions and try again.";
+  if (rule === "volume_exceeds_open") return "Close volume exceeds the open position volume. Refresh positions and try again.";
+  if (rule === "side_mismatch") return "Side mismatch detected for this close. Refresh positions and try again.";
+  if (rule === "kill_switch") return "Trading is disabled by the kill switch.";
+  if (rule === "live_trading_disabled") return "Live trading is disabled in risk controls.";
+  return raw;
+}
+
+function refreshPositionsNow() {
+  window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+  window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
 }
 
 export default function PositionActions({ position, onAfter, cooling, cooldownSec, disabled }: Props) {
@@ -101,7 +118,7 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
 
 
   async function submitModify(stopLoss: number | null, takeProfit: number | null) {
-    if (!ticket) return toast.error("Missing ticket.");
+    if (!ticket) return toast.error("Position identifier missing on this row. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
     if (isExecutionLocked()) {
       return toast.warning("Another execution is in progress. Please wait.");
     }
@@ -140,7 +157,7 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
   }
 
   async function submitClose(volume: number, label: "partial" | "full") {
-    if (!ticket) return toast.error("Missing ticket.");
+    if (!ticket) return toast.error("Position identifier missing on this row. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
     if (isExecutionLocked()) {
       return toast.warning("Another execution is in progress. Please wait.");
     }
@@ -170,7 +187,10 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
       checkAndHandle429(data, null);
       if (!r.ok || data?.success === false) {
-        toast.error(errMessageFrom(data), { description: safeStr(data?.brokerMessage) });
+        toast.error(errMessageFrom(data), {
+          description: safeStr(data?.brokerMessage),
+          action: { label: "Refresh", onClick: refreshPositionsNow },
+        });
         broadcastExec("Close Rejected");
       } else if (data?.status === "closed" || data?.status === "partial_closed") {
         serverAccepted = true;
