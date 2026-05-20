@@ -332,9 +332,10 @@ const Leaderboard = () => {
                         className={`flex-1 h-7 text-[10px] font-semibold ${follows.has(r.user_id) ? "bg-white/10 text-white hover:bg-white/15" : "bg-[#FFCD05] text-black hover:bg-[#FFCD05]/90"}`}>
                         {follows.has(r.user_id) ? "Following" : "Follow"}
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleCopy(r)}
-                        className={`flex-1 h-7 text-[10px] gap-1 ${copies.has(r.user_id) ? "border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[#FFCD05] hover:bg-[#FFCD05]/15" : "border-white/15 bg-transparent text-white hover:bg-white/5"}`}>
-                        <Copy className="h-3 w-3" /> {copies.has(r.user_id) ? "Following" : "Follow Educator"}
+                      <Button size="sm" variant="outline" onClick={() => setDetail(r)}
+                        className="flex-1 h-7 text-[10px] gap-1 border-white/15 bg-transparent text-white hover:bg-white/5">
+                        View Profile
+                      </Button>
                       </Button>
                     </div>
                   </div>
