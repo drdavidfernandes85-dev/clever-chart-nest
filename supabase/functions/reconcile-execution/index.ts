@@ -22,7 +22,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const VERSION = "reconcile-execution@1.0.0";
+const VERSION = "reconcile-execution@1.1.0";
 const TL_BASE = "https://api.trading-layer.com/api/v1";
 
 const corsHeaders: Record<string, string> = {
@@ -50,6 +50,13 @@ const mt5TypeToSide = (t: any): "buy" | "sell" | null => {
 };
 
 const eq = (a: number, b: number, eps = 1e-6) => Math.abs(a - b) < eps;
+// Volume tolerance: 0.005 lots absolute OR 1% relative — whichever is larger.
+// Covers float rounding, micro/standard lot conversion and broker netting.
+const volEq = (a: number, b: number) => {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  const tol = Math.max(0.005, Math.abs(b) * 0.01);
+  return Math.abs(a - b) <= tol;
+};
 
 type ReconcileInput = {
   tradeId?: string | null;
@@ -208,7 +215,7 @@ Deno.serve(async (req) => {
   const matchedPosition = positions.find((p: any) => {
     if (String(p?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(p?.type) !== wantSide) return false;
-    if (!eq(Number(p?.volume), wantVol)) return false;
+    if (!volEq(Number(p?.volume), wantVol)) return false;
     if (!withinTime(p?.time)) return false;
     return true;
   });
@@ -218,7 +225,7 @@ Deno.serve(async (req) => {
     if (String(d?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(d?.type) !== wantSide) return false;
     const vol = Number(d?.volume);
-    if (!Number.isFinite(vol) || !eq(vol, wantVol)) return false;
+    if (!Number.isFinite(vol) || !volEq(vol, wantVol)) return false;
     if (!withinTime(d?.time)) return false;
     return true;
   });
@@ -227,7 +234,7 @@ Deno.serve(async (req) => {
   const matchedPendingOrder = pendingOrders.find((o: any) => {
     if (String(o?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
-    if (!eq(Number(o?.volume_current ?? o?.volume_initial ?? 0), wantVol)) return false;
+    if (!volEq(Number(o?.volume_current ?? o?.volume_initial ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
     return true;
   });
@@ -235,10 +242,17 @@ Deno.serve(async (req) => {
   const matchedHistoryOrder = historyOrders.find((o: any) => {
     if (String(o?.symbol || "").toUpperCase() !== wantSym) return false;
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
-    if (!eq(Number(o?.volume_initial ?? o?.volume_current ?? 0), wantVol)) return false;
+    if (!volEq(Number(o?.volume_initial ?? o?.volume_current ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
     return true;
   });
+
+  // Detect if any history order represents a rejection (state >= 4 typically).
+  const rejectedHistoryOrder = matchedHistoryOrder && (() => {
+    const state = Number((matchedHistoryOrder as any).state);
+    // MT5 ORDER_STATE: 0 STARTED, 1 PLACED, 2 CANCELED, 3 PARTIAL, 4 FILLED, 5 REJECTED, 6 EXPIRED
+    return state === 2 || state === 5 || state === 6;
+  })();
 
   // ── Decision ────────────────────────────────────────────────────────────
   let result: {
@@ -283,11 +297,27 @@ Deno.serve(async (req) => {
     };
     auditStatus = "deal_found_no_position";
     auditClassification = "execution_reconciled";
-  } else if (matchedPendingOrder || matchedHistoryOrder) {
+  } else if (matchedPendingOrder) {
+    result = {
+      status: "pending_order_placed",
+      mt5Confirmed: false,
+      explanation: "Pending order placed in MT5. Awaiting trigger/fill.",
+    };
+    auditStatus = "pending_order_placed";
+    auditClassification = "pending_order";
+  } else if (rejectedHistoryOrder) {
+    result = {
+      status: "order_rejected",
+      mt5Confirmed: false,
+      explanation: "Order was found in MT5 history with a rejected/canceled/expired state.",
+    };
+    auditStatus = "order_rejected";
+    auditClassification = "execution_reconciled";
+  } else if (matchedHistoryOrder) {
     result = {
       status: "order_found_not_filled",
       mt5Confirmed: false,
-      explanation: "Order exists but no fill/deal was found.",
+      explanation: "Order exists in MT5 history but no matching fill/deal was found.",
     };
     auditStatus = "order_found_not_filled";
     auditClassification = "execution_reconciled";
@@ -296,11 +326,30 @@ Deno.serve(async (req) => {
       status: "execution_unconfirmed",
       mt5Confirmed: false,
       explanation:
-        "Broker accepted request but no matching MT5 position/order/deal was found.",
+        "Broker accepted request but no matching MT5 position/order/deal was found yet.",
     };
     auditStatus = "execution_unconfirmed";
     auditClassification = "placed_unconfirmed";
   }
+
+  // Confirmation lifecycle status — explicit for the client UI.
+  const confirmationStatus =
+    result.mt5Confirmed
+      ? "confirmed"
+      : result.status === "pending_order_placed"
+        ? "pending_order"
+        : result.status === "order_rejected"
+          ? "rejected"
+          : "not_found";
+  (result as any).confirmationStatus = confirmationStatus;
+  (result as any).brokerAccepted =
+    Number(input?.brokerRetcode) === 10008 ||
+    Number(input?.brokerRetcode) === 10009 ||
+    input?.rawExecutionResponse?.success === true ||
+    input?.rawExecutionResponse?.liveOrderSent === true ||
+    matchedPosition || matchedDeal || matchedPendingOrder || matchedHistoryOrder
+      ? true
+      : false;
 
   const fullPayload = {
     version: VERSION,

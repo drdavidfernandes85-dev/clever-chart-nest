@@ -325,7 +325,40 @@ export const ExecutionResultModal = ({
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-neutral-800 px-3 py-2 bg-[#070707]">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-800 px-3 py-2 bg-[#070707]">
+          {(effective.outcome === "pending" || effective.outcome === "unconfirmed") && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
+                  window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
+                }}
+                className="rounded border border-neutral-700 bg-neutral-900 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-neutral-300 hover:text-neutral-50 hover:border-neutral-500"
+              >
+                Refresh Positions
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // Re-runs reconcile-execution against TL without re-sending the order.
+                  window.dispatchEvent(new CustomEvent("mt:retry-confirmation", {
+                    detail: {
+                      symbol: effective.symbol,
+                      side: effective.side,
+                      volume: effective.volume,
+                      requestedPrice: effective.requestedPrice ?? null,
+                      retcode: effective.retcode ?? null,
+                      brokerMessage: effective.brokerMessage ?? null,
+                    },
+                  }));
+                }}
+                className="rounded border border-yellow-500/40 bg-yellow-500/10 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-yellow-200 hover:bg-yellow-500/20"
+              >
+                Retry Confirmation
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={onClose}

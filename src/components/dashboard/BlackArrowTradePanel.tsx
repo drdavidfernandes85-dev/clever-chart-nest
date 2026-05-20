@@ -676,6 +676,63 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     return () => clearTimeout(t);
   }, [askFlash]);
 
+  // "Retry Confirmation" from the result modal — re-runs reconcile-execution
+  // against Trading Layer without re-sending the order.
+  useEffect(() => {
+    const onRetry = async (evt: Event) => {
+      const detail = (evt as CustomEvent).detail || {};
+      const symbol = String(detail.symbol || "").toUpperCase();
+      const side = String(detail.side || "").toLowerCase();
+      const volume = Number(detail.volume);
+      if (!symbol || (side !== "buy" && side !== "sell") || !Number.isFinite(volume)) return;
+      try {
+        const { data: rec } = await supabase.functions.invoke("reconcile-execution", {
+          body: {
+            symbol, side, volume,
+            requestedPrice: detail.requestedPrice ?? null,
+            clientClickAt: new Date().toISOString(),
+            brokerRetcode: detail.retcode ?? null,
+            brokerMessage: detail.brokerMessage ?? null,
+          },
+        });
+        if (!rec) return;
+        setExecResult((prev) => {
+          if (!prev) return prev;
+          if (rec.mt5Confirmed === true && rec.confirmedTicket) {
+            return {
+              ...prev,
+              outcome: "success",
+              brokerAccepted: true,
+              mt5Confirmed: true,
+              confirmationStatus: "confirmed",
+              confirmedTicket: rec.confirmedTicket,
+              confirmedEntryPrice: rec.confirmedEntryPrice,
+              confirmedVolume: rec.confirmedVolume,
+              confirmedAt: new Date().toISOString(),
+              executedPrice: rec.confirmedEntryPrice,
+              ticket: rec.confirmedTicket,
+              status: "position_confirmed",
+              brokerMessage: `Position confirmed in MT5. Ticket: ${rec.confirmedTicket}`,
+            };
+          }
+          const isPending = rec.status === "pending_order_placed";
+          return {
+            ...prev,
+            outcome: "unconfirmed",
+            brokerAccepted: true,
+            mt5Confirmed: false,
+            confirmationStatus: isPending ? "pending" : "not_found",
+            status: rec.status ?? "execution_unconfirmed",
+            brokerMessage: rec.explanation ?? prev.brokerMessage ?? null,
+          };
+        });
+      } catch { /* ignore */ }
+    };
+    window.addEventListener("mt:retry-confirmation", onRetry);
+    return () => window.removeEventListener("mt:retry-confirmation", onRetry);
+  }, []);
+
+
   const volNum = Number(vol) || 0;
   const entryPrice =
     orderType === "Market" ? livePrice ?? 0 : Number(price) || livePrice || 0;
@@ -1083,26 +1140,76 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           } : prev);
           toast.success("Position confirmed", { description: `#${display.confirmedTicket ?? ""} ${normalizedSym}` });
         } else {
-          // MT5 not confirmed. Use reconcile's authoritative classification
-          // (deal_found_no_open_position, order_found_not_filled, or
-          // execution_unconfirmed) when available; fall back to the generic
-          // unconfirmed message otherwise.
-          const recStatus: string = reconcile?.status ?? "execution_unconfirmed";
-          const recExplanation: string =
-            reconcile?.explanation ??
-            "Broker accepted the order, but no matching MT5 position was found.";
-          setExecResult((prev) => prev ? {
-            ...prev,
-            outcome: "unconfirmed",
-            brokerAccepted: true,
-            mt5Confirmed: false,
-            confirmationStatus: "not_found",
-            status: recStatus,
-            brokerMessage: recExplanation,
-          } : prev);
-          toast.warning("Order accepted but no MT5 position confirmed", {
-            description: recExplanation,
-          });
+          // MT5 not confirmed yet. Run delayed re-reconciliation against TL
+          // (no resend) at +5s and +15s to absorb broker→position propagation.
+          const reconcileAgain = async () => {
+            try {
+              const { data: r2 } = await supabase.functions.invoke("reconcile-execution", {
+                body: {
+                  tradeId,
+                  symbol: normalizedSym,
+                  side: sideArg,
+                  volume: Number(volNum.toFixed(2)),
+                  requestedPrice: res?.requestedPrice ?? null,
+                  clientClickAt,
+                  brokerRetcode: res?.retcode ?? null,
+                  brokerMessage: res?.brokerMessage ?? res?.retcodeDescription ?? null,
+                  rawExecutionResponse: res ?? null,
+                },
+              });
+              return r2;
+            } catch { return null; }
+          };
+
+          let finalReconcile: any = reconcile;
+          for (const waitMs of [5000, 7000]) { // cumulative ~+5s, +12s after first
+            if (finalReconcile?.mt5Confirmed === true || finalReconcile?.status === "pending_order_placed") break;
+            await new Promise((r) => setTimeout(r, waitMs));
+            try { await refresh(); } catch { /* ignore */ }
+            const r2 = await reconcileAgain();
+            if (r2) finalReconcile = r2;
+          }
+
+          if (finalReconcile?.mt5Confirmed === true && finalReconcile?.confirmedTicket) {
+            setExecResult((prev) => prev ? {
+              ...prev,
+              outcome: "success",
+              brokerAccepted: true,
+              mt5Confirmed: true,
+              confirmationStatus: "confirmed",
+              confirmedTicket: finalReconcile.confirmedTicket,
+              confirmedEntryPrice: finalReconcile.confirmedEntryPrice,
+              confirmedVolume: finalReconcile.confirmedVolume,
+              confirmedAt: new Date().toISOString(),
+              executedPrice: finalReconcile.confirmedEntryPrice,
+              ticket: finalReconcile.confirmedTicket,
+              status: "position_confirmed",
+              brokerMessage: `Position confirmed in MT5. Ticket: ${finalReconcile.confirmedTicket}`,
+            } : prev);
+            toast.success("Position confirmed", { description: `#${finalReconcile.confirmedTicket} ${normalizedSym}` });
+          } else {
+            const recStatus: string = finalReconcile?.status ?? "execution_unconfirmed";
+            const recExplanation: string =
+              finalReconcile?.explanation ??
+              "Broker accepted the order, but MT5 confirmation was not found.";
+            const isPendingOrder = recStatus === "pending_order_placed";
+            setExecResult((prev) => prev ? {
+              ...prev,
+              outcome: "unconfirmed",
+              brokerAccepted: true,
+              mt5Confirmed: false,
+              confirmationStatus: isPendingOrder ? "pending" : "not_found",
+              status: recStatus,
+              brokerMessage: isPendingOrder
+                ? "Pending order placed in MT5. Awaiting trigger/fill."
+                : recExplanation,
+            } : prev);
+            if (isPendingOrder) {
+              toast.info("Pending order placed", { description: `${normalizedSym} ${sideArg.toUpperCase()} ${wantVol}` });
+            } else {
+              toast.warning("Order accepted — MT5 confirmation not found", { description: recExplanation });
+            }
+          }
         }
         setAuditRefreshKey((k) => k + 1);
 
