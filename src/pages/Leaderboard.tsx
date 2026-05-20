@@ -336,7 +336,6 @@ const Leaderboard = () => {
                         className="flex-1 h-7 text-[10px] gap-1 border-white/15 bg-transparent text-white hover:bg-white/5">
                         View Profile
                       </Button>
-                      </Button>
                     </div>
                   </div>
                 );
