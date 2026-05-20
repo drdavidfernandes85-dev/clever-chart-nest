@@ -103,7 +103,7 @@ const News = () => {
                   </h2>
                 </header>
                 <div className="min-h-[600px] lg:h-[680px] overflow-hidden rounded-2xl">
-                  <NewsFlowWidget />
+                  <NewsFlowWidget externalSearch={search} />
                 </div>
               </article>
 
@@ -119,6 +119,16 @@ const News = () => {
                 </div>
               </article>
             </section>
+
+            {/* Compliance disclaimer — News & Calendar */}
+            <p className="mt-8 rounded-2xl border border-dashed border-border/50 bg-card/40 px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
+              Calendar and market information is provided for educational and informational purposes only
+              and does not constitute investment advice or a recommendation to trade. Headlines link to
+              third-party publishers and are not endorsements.
+            </p>
+            {/* TODO(content): Before full launch, optionally connect a Supabase-backed
+                "Platform Updates" and "Community Events" feed so admins can add entries
+                without code changes. RSS + Investing.com cover News + Market Calendar today. */}
           </motion.div>
         </main>
       </div>
