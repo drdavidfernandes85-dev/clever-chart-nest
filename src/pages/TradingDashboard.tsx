@@ -215,6 +215,7 @@ const TradingDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const visibleRef = useRef(true);
+  const backoffTickRef = useRef(false);
   const [logs, setLogs] = useState<ExecutionLog[]>([]);
 
   const load = useCallback(async (manual = false) => {
