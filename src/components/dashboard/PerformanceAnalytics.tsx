@@ -100,6 +100,14 @@ const PerformanceAnalytics = () => {
         <span className="text-xs text-muted-foreground font-mono">{trades.length} {t("perf.closedTrades")}</span>
       </div>
 
+      {insufficient && !loading && (
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-4 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground mb-1">Not enough trade history yet</p>
+          <p>Analytics will become available after you have closed enough trades to generate meaningful performance data.</p>
+          <p className="mt-1 opacity-80">Minimum recommended: {MIN_TRADES} closed trades. You currently have {trades.length}.</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {cards.map((c) => {
           const Icon = c.icon;
