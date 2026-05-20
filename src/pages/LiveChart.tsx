@@ -76,11 +76,15 @@ const INDICATORS = [
   { id: "STD;ATR", label: "ATR" },
 ];
 
+/**
+ * Static last-resort list used only when broker symbols haven't arrived yet.
+ * The live Market Watch is fed by `useBrokerSymbols()` below — see
+ * `marketWatchLabels` in `LiveChartInner`.
+ */
 const WATCH_DEFAULT = [
-  "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD",
-  "XAUUSD", "BTC/USDT", "ETH/USDT",
-  "S&P 500", "Nasdaq 100", "Dow Jones",
-  "AAPL", "MSFT", "NVDA", "TSLA",
+  "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD",
+  "XAUUSD", "XAGUSD",
+  "US30", "NAS100", "SPX500",
 ];
 
 /** Map a broker symbol (e.g. "EURUSD", "XAUUSD", "AAPL") to a TradingView symbol. */
@@ -148,6 +152,26 @@ const LiveChartInner = () => {
       if (!picks.includes(s)) picks.push(s);
     }
     return picks.slice(0, 10);
+  }, [allBrokerLabels]);
+
+  /**
+   * Market Watch labels — derived strictly from the broker symbol source.
+   * We render the broker symbol mapped to a friendly display label
+   * (e.g. EURUSD → EUR/USD) so users still see familiar names, but the
+   * underlying list is always broker-approved. Falls back to the curated
+   * static list only while the broker list hasn't arrived.
+   */
+  const marketWatchLabels = useMemo(() => {
+    if (allBrokerLabels.length === 0) return WATCH_DEFAULT;
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const s of allBrokerLabels) {
+      const d = brokerToDisplay(s);
+      if (seen.has(d)) continue;
+      seen.add(d);
+      out.push(d);
+    }
+    return out;
   }, [allBrokerLabels]);
 
 
@@ -363,7 +387,7 @@ const LiveChartInner = () => {
           {/* LEFT: Market Watch only — Bid/Ask board moved to right-rail Quotes tab. */}
           <aside className="hidden lg:flex flex-col h-[calc(100vh-4.5rem)] overflow-hidden pr-0.5">
             <MarketWatch
-              symbols={WATCH_DEFAULT}
+              symbols={marketWatchLabels}
               active={displayLabel}
               onSelect={onSelectByLabel}
             />
