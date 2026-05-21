@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     }
   };
   upstream.onerror = (e) => {
-    console.error("tl-market-data-stream upstream error", e);
+    console.error("tl-market-data-stream upstream error");
     try { client.send(JSON.stringify({ type: "error", message: "upstream error" })); } catch { /* */ }
   };
   upstream.onclose = (e) => {
