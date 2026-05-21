@@ -309,15 +309,11 @@ Deno.serve(async (req) => {
       dateFrom: windowFrom,
       dateTo: windowTo,
       limit: 200,
-      sort: "time_setup",
-      order: "desc",
     }, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/deals`, {
       dateFrom: windowFrom,
       dateTo: windowTo,
       limit: 200,
-      sort: "time",
-      order: "desc",
     }, TL_KEY),
     ]);
   } finally {
