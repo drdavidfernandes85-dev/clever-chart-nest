@@ -305,6 +305,68 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
           });
           broadcastExec("Close Unconfirmed");
         }
+
+        // Emit close debug event for Dev Mode diagnostics panel.
+        try {
+          const positionsAfter = (positionsRef.current ?? []).map((p) => ({ ...p }));
+          const remaining = (positionsRef.current ?? []).find((p) => String(p.ticket) === String(ticket));
+          window.dispatchEvent(new CustomEvent("mt:execution-reconcile-debug", {
+            detail: {
+              at: new Date().toISOString(),
+              kind: label === "partial" ? "partial_close" : "close",
+              account: {
+                metaapi_account_id: serverResp?.metaapi_account_id ?? null,
+                accountIdUsed: serverResp?.metaapi_account_id ?? null,
+              },
+              ids: {
+                clientCloseId,
+                requestId: serverResp?.requestId ?? clientCloseId,
+                orderId: serverResp?.orderId ?? null,
+                dealId: serverResp?.dealId ?? null,
+                positionTicket: serverResp?.positionTicket ?? ticket,
+                brokerSymbol: serverResp?.brokerSymbol ?? position.symbol,
+                displaySymbol: position.symbol,
+              },
+              request: {
+                symbol: position.symbol,
+                side: position.side,
+                volume: Number(volume),
+                endpoint: "close-position-controlled",
+                originalVolume: openVolume,
+                closeVolume: Number(volume),
+                remainingVolumeExpected: Math.max(0, openVolume - Number(volume)),
+              },
+              response: {
+                retcode: serverResp?.retcode ?? null,
+                retcodeName: serverResp?.retcodeName ?? null,
+                retcodeDescription: serverResp?.retcodeDescription ?? null,
+                classification: serverResp?.classification ?? null,
+                brokerAccepted: serverAccepted,
+                mt5Confirmed: outcome === "closed" || outcome === "partial",
+                confirmationStatus:
+                  outcome === "closed" ? "close_confirmed"
+                  : outcome === "partial" ? "partial_close_confirmed"
+                  : "close_unconfirmed_after_reconciliation",
+                status: serverResp?.status ?? null,
+                raw: serverResp ?? null,
+              },
+              reconciliation: {
+                positionsBefore: [],
+                positionsAfter,
+                matchFound: outcome === "closed" || outcome === "partial",
+                confirmedTicket: ticket,
+                attempts: null,
+                lastAttemptAt: new Date().toISOString(),
+                sourcesChecked: { positions: true, orders: null, deals: null },
+                matchingMode: "positionTicket",
+                matchedTicket: outcome === "closed" ? ticket : (remaining ? ticket : null),
+                matchedDealId: serverResp?.dealId ?? null,
+                matchedOrderId: serverResp?.orderId ?? null,
+              },
+              durations: { backendTotalMs: serverResp?.latencyMs ?? null },
+            },
+          }));
+        } catch { /* ignore */ }
       }
 
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
