@@ -174,6 +174,14 @@ function WsDiagnosticsSection() {
           mt5:market-data
         </div>
         <div>
+          <span className="text-neutral-500">key status: </span>
+          {rt.lastError && /not configured|TL_CONFIG_MISSING/i.test(rt.lastError) ? (
+            <span className="text-red-400">missing</span>
+          ) : (
+            <span className="text-emerald-400">configured</span>
+          )}
+        </div>
+        <div>
           <span className="text-neutral-500">status: </span>
           <span className={tone}>{rt.wsMarketDataStatus.toUpperCase()}</span>
         </div>
