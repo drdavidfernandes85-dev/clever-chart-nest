@@ -1015,6 +1015,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         // confirms a matching live position.
         setExecResult({
           ...baseFields,
+          tradeId,
+          clientOrderId: res?.clientOrderId ?? tradeId,
+          requestId: res?.requestId ?? null,
+          orderId: res?.orderId ?? null,
+          dealId: res?.dealId ?? null,
+          brokerSymbol: res?.brokerSymbol ?? normalizedSym,
           outcome: "pending",
           brokerAccepted: true,
           mt5Confirmed: false,
