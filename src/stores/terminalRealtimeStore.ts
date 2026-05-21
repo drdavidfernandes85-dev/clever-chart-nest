@@ -241,6 +241,21 @@ export const terminalRealtimeStore = {
   recordClose(code: number | null, reason: string | null) {
     setState({ lastCloseCode: code, lastCloseReason: reason });
   },
+  setUpstreamReady(v: boolean) {
+    if (state.upstreamReady !== v) setState({ upstreamReady: v });
+  },
+  setLastControlFrame(frame: string | null) {
+    setState({ lastControlFrame: frame });
+  },
+  setConfirmedSubscribedSymbols(syms: string[]) {
+    const norm = Array.from(
+      new Set((syms || []).map((s) => (s || "").toUpperCase()).filter(Boolean)),
+    ).sort();
+    setState({ confirmedSubscribedSymbols: norm });
+  },
+  setLastTickSymbol(sym: string | null) {
+    setState({ lastTickSymbol: sym });
+  },
   reset() {
     state = initial;
     emit();
