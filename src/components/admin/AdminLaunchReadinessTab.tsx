@@ -19,7 +19,7 @@ interface Finding {
   note?: string;
 }
 
-const SNAPSHOT_TIMESTAMP = "2026-05-21T20:00:00Z";
+const SNAPSHOT_TIMESTAMP = "2026-05-21T21:10:00Z";
 
 const findings: Finding[] = [
   // 2 — Core launch journey
@@ -141,7 +141,12 @@ const findings: Finding[] = [
   { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Stale detection: Pass — selected-symbol tick age >8s triggers wsMarketDataStatus='stale' without clearing latestTicks; UI keeps last good values" },
   { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Dev Mode diagnostics: Pass — MarketDataDiagnosticsPanel shows status, masked accountId (3…3), connected-since, last tick age, selected tick age, reconnect attempts, fallback active, malformed events, duplicate socket flag, masked WS URL, subscribed symbols, last error; no secrets, tokens, API keys or service-role keys printed" },
   { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Execution safety untouched: Pass — submit-best-execution-order / close-position-controlled / modify-position-protection / reconcile-execution all unchanged; backend still validates fresh tick before any order; frontend WS ticks remain display-only and are NEVER used as price-of-record in execution paths" },
-  { area: "15. WebSocket Market Data (Phase 1)", status: "info", label: "Pending TL confirmation: exact WebSocket auth scheme. Proxy currently sends bearer via Sec-WebSocket-Protocol subprotocol (Deno's standard WebSocket does not support custom HTTP headers). If TL requires a different scheme, only the upstream WebSocket constructor in tl-market-data-stream needs updating; everything downstream is unaffected" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Auth method confirmed: Pass — upstream uses new WebSocket(url, ['bearer', tlApiKey]) per Trading Layer's confirmed subprotocol fallback; no 'bearer.' concatenation; no custom headers" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "mt5:market-data scope confirmed: Pass — active TRADING_LAYER key for IX Sala Trading includes mt5:market-data; key prefix validated (tl_live_/tl_test_) before upstream connect; missing key returns TL_CONFIG_MISSING" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Auth-failure mapping: Pass — upstream close codes 4401/4403/1008 map to TL_WS_AUTH_FAILED; sanitized Dev Mode message 'Confirm the API key includes mt5:market-data scope' surfaces in lastError" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Secrets exposed: No — TL key read only from Deno.env inside tl-market-data-stream; never returned to client (proxy_ready frame carries only authMethod + requiredScope); Dev Mode prints 'key status: configured' with no value; logs include only stage/errorCode/masked accountId" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "info", label: "Live tick verification: Code-verified — fan-out into liveMarketDataStore drives Order Ticket, Bid/Ask Board, Chart header and Micro Quote Strip; end-to-end live-account run requires a connected MT5 session in the preview to confirm WS LIVE + live tick age" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Execution untouched: Pass — submit-best-execution-order / close-position-controlled / modify-position-protection / reconcile-execution unchanged; backend fresh-tick validation remains price-of-record; WS ticks are display-only" },
   { area: "15. WebSocket Market Data (Phase 1)", status: "info", label: "Critical issues found: 0 | High: 0 | Medium: 0 | Remaining: WS lifecycle events (TL roadmap, Phase 2)" },
 ];
 
