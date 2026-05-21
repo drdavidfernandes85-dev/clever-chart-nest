@@ -526,11 +526,12 @@ Deno.serve(async (req) => {
     reconciliationAttempts,
     lastReconciliationAt,
     account: {
-      account_id: account.id,
-      mt5_login: account.login,
-      server: account.server_name,
+      account_id: mapping.localRowId,
+      mt5_login: mapping.login,
+      server: mapping.server,
       trading_layer_account_id: accountId,
       trading_layer_trader_id: traderId,
+      mapping_status: mapping.status,
       trader_status: traderRes.ok ? (traderRes.data?.data?.status ?? null) : null,
     },
     request: {
