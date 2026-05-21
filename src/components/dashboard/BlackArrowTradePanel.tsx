@@ -1083,6 +1083,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 brokerRetcode: res?.retcode ?? null,
                 brokerMessage:
                   res?.brokerMessage ?? res?.retcodeDescription ?? null,
+                // ID-first matching keys (reconcile-execution@1.3.0)
+                positionTicket: res?.positionTicket ?? res?.ticket ?? null,
+                orderId: res?.orderId ?? null,
+                dealId: res?.dealId ?? null,
+                requestId: res?.requestId ?? null,
+                clientOrderId: res?.clientOrderId ?? tradeId,
+                brokerSymbol: res?.brokerSymbol ?? null,
                 rawExecutionResponse: res ?? null,
               },
             },
