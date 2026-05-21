@@ -639,6 +639,31 @@ const ExecutionHistoryPanel = () => {
                   </Section>
                 )}
 
+                {detail.trade_id && [
+                  "placed",
+                  "broker_accepted_pending_confirmation",
+                  "confirmation_delayed_rate_limited",
+                  "execution_unconfirmed",
+                  "unconfirmed_after_reconciliation",
+                  "order_found_not_filled",
+                  "pending_order_placed",
+                ].includes(detail.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => retryConfirmation(detail)}
+                    disabled={retryingTradeId === detail.trade_id}
+                    className="h-8 gap-1 border-[#FFCD05]/40 text-[#FFCD05] hover:bg-[#FFCD05]/10"
+                  >
+                    {retryingTradeId === detail.trade_id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    )}
+                    Retry Confirmation
+                  </Button>
+                )}
+
                 <ReconciliationView raw={detail.raw} />
 
                 {devMode && detail.raw ? (
