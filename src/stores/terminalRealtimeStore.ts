@@ -130,10 +130,11 @@ export const terminalRealtimeStore = {
   /* writer-only — service uses these */
   setStatus(s: WsMarketDataStatus) {
     if (state.wsMarketDataStatus !== s) {
+      const isConnectedLike = s === "connected" || s === "connected_no_frames" || s === "stale";
       setState({
         wsMarketDataStatus: s,
         connectedSince:
-          s === "connected"
+          isConnectedLike
             ? state.connectedSince ?? Date.now()
             : s === "disconnected" || s === "disabled"
               ? null
