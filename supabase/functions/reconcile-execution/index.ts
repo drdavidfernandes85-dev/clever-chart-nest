@@ -541,15 +541,26 @@ Deno.serve(async (req) => {
     };
     auditStatus = "order_found_not_filled";
     auditClassification = "execution_reconciled";
-  } else {
+  } else if (rateLimitHit) {
+    const endpoint = rateLimitedEntries[0]?.[0] ?? "unknown";
     result = {
-      status: "execution_unconfirmed",
+      status: "confirmation_delayed_rate_limited",
       mt5Confirmed: false,
       explanation:
-        "Broker accepted request but no matching MT5 position/order/deal was found yet.",
+        "Broker accepted the order. MT5 confirmation is delayed due to API rate limits. We will keep checking.",
     };
-    auditStatus = "execution_unconfirmed";
-    auditClassification = "placed_unconfirmed";
+    auditStatus = "confirmation_delayed_rate_limited";
+    auditClassification = "confirmation_delayed_rate_limited";
+    (result as any).endpointRateLimited = endpoint;
+  } else {
+    result = {
+      status: "unconfirmed_after_reconciliation",
+      mt5Confirmed: false,
+      explanation:
+        "All available MT5 sources were checked and no matching position/order/deal was found.",
+    };
+    auditStatus = "unconfirmed_after_reconciliation";
+    auditClassification = "unconfirmed_after_reconciliation";
   }
 
   // Confirmation lifecycle status — explicit for the client UI.
@@ -558,6 +569,8 @@ Deno.serve(async (req) => {
       ? "confirmed"
       : result.status === "pending_order_placed"
         ? "pending_order"
+        : result.status === "confirmation_delayed_rate_limited"
+          ? "delayed_rate_limited"
         : result.status === "order_rejected"
           ? "rejected"
           : "not_found";
