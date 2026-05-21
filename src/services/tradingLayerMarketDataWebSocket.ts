@@ -207,16 +207,18 @@ class TradingLayerMarketDataWebSocketImpl {
         }
         this.connecting = false;
         this.backoff = BASE_BACKOFF_MS;
-        terminalRealtimeStore.setStatus("connected");
+        // We are connected to the proxy, but not yet upstream-ready.
+        terminalRealtimeStore.setStatus("connected_waiting_ready");
+        terminalRealtimeStore.setUpstreamReady(false);
         terminalRealtimeStore.resetReconnectAttempts();
         terminalRealtimeStore.setLastError(null);
         terminalRealtimeStore.setDuplicateSocket(false);
-        terminalRealtimeStore.setFallbackPolling(false);
+        // Keep fallback polling on until ticks actually flow.
+        terminalRealtimeStore.setFallbackPolling(true);
         terminalRealtimeStore.setSubscribeSchema(this.subscribeSchema);
         this.startStaleMonitor();
         this.startNoFramesTimer();
-        // (Re)send current subscriptions.
-        this.sendSubscribe(this.currentSubscribed);
+        // Note: do NOT send subscribe here. Wait for connection.ready.
       };
 
       ws.onmessage = (ev) => this.handleMessage(ev.data);
