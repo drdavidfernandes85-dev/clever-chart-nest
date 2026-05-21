@@ -365,8 +365,27 @@ Deno.serve(async (req) => {
     }
 
 
-    // 9. Persist locally — never store the password. Strict: a save failure
-    // means the user will not appear connected on the dashboard, so surface it.
+    // 8b. Fetch credential status (best-effort — non-fatal).
+    let credentialStatus: string | null = null;
+    try {
+      const statusRes = await fetchWithTimeout(
+        `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials/status`,
+        { method: "GET", headers: tlHeaders },
+        10000,
+      );
+      const statusJson = await readJson(statusRes);
+      if (statusRes.ok) {
+        credentialStatus =
+          statusJson?.data?.status ??
+          statusJson?.data?.credentialStatus ??
+          (statusJson?.data?.connected ? "connected" : "validated");
+      }
+    } catch (_e) { /* ignore */ }
+
+    const traderId =
+      account?.traderId ?? account?.trader_id ?? tenantJson?.data?.ownerAccount?.traderId ?? String(accountId);
+
+    // 9. Persist locally — never store the password.
     const nowIso = new Date().toISOString();
     const { data: savedRow, error: saveError } = await supabase
       .from("user_mt_accounts")
@@ -384,13 +403,18 @@ Deno.serve(async (req) => {
           leverage: Number(account?.leverage ?? 0),
           currency: account?.currency ?? "USD",
           metaapi_account_id: String(accountId),
+          trading_layer_account_id: String(accountId),
+          trading_layer_trader_id: String(traderId),
+          credential_status: credentialStatus ?? "validated",
+          last_verified_at: nowIso,
+          last_tl_error_code: null,
           investor_password_encrypted: null,
           last_synced_at: nowIso,
           updated_at: nowIso,
         },
         { onConflict: "user_id,platform,login,server_name" },
       )
-      .select("id, user_id, login, server_name, status, metaapi_account_id, last_synced_at")
+      .select("id, user_id, login, server_name, status, metaapi_account_id, trading_layer_account_id, trading_layer_trader_id, credential_status, last_verified_at, last_synced_at")
       .single();
 
     if (saveError || !savedRow) {
@@ -399,23 +423,21 @@ Deno.serve(async (req) => {
         step: "save_connected_account",
         error: saveError?.message ?? "Failed to save the connected account locally.",
         tradingLayerStatus: testRes.status,
-        tradingLayerResponse: testJson,
-        persistResponse: persistJson,
       });
     }
 
     return json(200, {
       success: true,
       step: "account_saved",
-      message: "Account successfully linked!",
+      message: "MT5 account connected successfully.",
       mode,
       accountId,
-      trading_layer_trader_id: accountId,
+      trading_layer_account_id: String(accountId),
+      trading_layer_trader_id: String(traderId),
+      credential_status: credentialStatus ?? "validated",
       account,
       savedRow,
       tradingLayerStatus: testRes.status,
-      tradingLayerResponse: testJson,
-      persistResponse: persistJson,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
