@@ -924,7 +924,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
       const { data, error } = await supabase.functions.invoke(
         "submit-best-execution-order",
-        { body: payload },
+        { body: { ...payload, devMode: devMode ? true : undefined } },
       );
 
       // eslint-disable-next-line no-console
