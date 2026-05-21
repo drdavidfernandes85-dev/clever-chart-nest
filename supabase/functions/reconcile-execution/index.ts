@@ -608,12 +608,51 @@ Deno.serve(async (req) => {
     retcodeDescription,
     reconciliationAttempts,
     lastReconciliationAt,
+    sourcesChecked,
+    checked: {
+      ...checkedCounts,
+      positions: {
+        checked: sourcesChecked.positions, skippedReason: sourcesSkipped.positions,
+        ok: posRes.ok, status: posRes.status, count: positions.length,
+        matchFound: !!matchedPosition,
+      },
+      pendingOrders: {
+        checked: sourcesChecked.pending, skippedReason: sourcesSkipped.pending,
+        ok: ordersRes.ok, status: ordersRes.status, count: pendingOrders.length,
+        matchFound: !!matchedPendingOrder,
+      },
+      historyOrders: {
+        checked: sourcesChecked.orders, skippedReason: sourcesSkipped.orders,
+        ok: histOrdersRes.ok, status: histOrdersRes.status, count: historyOrders.length,
+        matchFound: !!matchedHistoryOrder,
+      },
+      historyDeals: {
+        checked: sourcesChecked.deals, skippedReason: sourcesSkipped.deals,
+        ok: histDealsRes.ok, status: histDealsRes.status, count: historyDeals.length,
+        matchFound: !!matchedDeal,
+      },
+      window: { from: windowFrom, to: windowTo },
+    },
+    sourcesSkipped,
+    rateLimitHit,
+    retryAfter,
+    nextReconcileAt,
+    upstreamStatus: rateLimitHit ? "rate_limited" : (traderRes.ok ? "ok" : `trader_${traderRes.status}`),
+    endpointRateLimited: rateLimitedEntries[0]?.[0] ?? null,
+    matchingMode: matchedPosition ? "position" : matchedDeal ? "dealId" : matchedPendingOrder ? "pending" : matchedHistoryOrder ? "orderId" : "fallback",
+    matchedTicket: matchedPosition ? String(matchedPosition.ticket ?? matchedPosition.id ?? "") : null,
+    matchedDealId: matchedDeal ? String(matchedDeal.ticket ?? matchedDeal.id ?? matchedDeal.dealId ?? "") : null,
+    matchedOrderId: (matchedPendingOrder || matchedHistoryOrder)
+      ? String((matchedPendingOrder ?? matchedHistoryOrder).ticket ?? (matchedPendingOrder ?? matchedHistoryOrder).id ?? "")
+      : null,
     account: {
       account_id: mapping.localRowId,
       mt5_login: mapping.login,
       server: mapping.server,
       trading_layer_account_id: accountId,
       trading_layer_trader_id: traderId,
+      metaapi_account_id: accountId,
+      local_row_id: mapping.localRowId,
       mapping_status: mapping.status,
       trader_status: traderRes.ok ? (traderRes.data?.data?.status ?? null) : null,
     },
@@ -626,25 +665,6 @@ Deno.serve(async (req) => {
       clientClickAt: input.clientClickAt ?? null,
       brokerRetcode: input.brokerRetcode ?? null,
       brokerMessage: input.brokerMessage ?? null,
-    },
-    checked: {
-      positions: {
-        ok: posRes.ok, status: posRes.status, count: positions.length,
-        matchFound: !!matchedPosition,
-      },
-      pendingOrders: {
-        ok: ordersRes.ok, status: ordersRes.status, count: pendingOrders.length,
-        matchFound: !!matchedPendingOrder,
-      },
-      historyOrders: {
-        ok: histOrdersRes.ok, status: histOrdersRes.status, count: historyOrders.length,
-        matchFound: !!matchedHistoryOrder,
-      },
-      historyDeals: {
-        ok: histDealsRes.ok, status: histDealsRes.status, count: historyDeals.length,
-        matchFound: !!matchedDeal,
-      },
-      window: { from: windowFrom, to: windowTo },
     },
     samples: {
       positions: positions.slice(0, 5),
