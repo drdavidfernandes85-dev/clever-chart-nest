@@ -16,6 +16,9 @@
 export type WsMarketDataStatus =
   | "disabled"
   | "connecting"
+  | "connected_waiting_ready"
+  | "connected_ready_no_subscription"
+  | "connected_subscribed_no_ticks"
   | "connected"
   | "connected_no_frames"
   | "reconnecting"
