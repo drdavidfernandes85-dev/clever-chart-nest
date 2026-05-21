@@ -379,12 +379,16 @@ class TradingLayerMarketDataWebSocketImpl {
       terminalRealtimeStore.setUpstreamReady(true);
       terminalRealtimeStore.setLastControlFrame("connection.ready");
       terminalRealtimeStore.incFrameReceived(false, "connection.ready");
-      // Now safe to send the current desired subscription list (full list).
       this.flushSubscribe();
-      const has = this.currentSubscribed.length > 0;
-      terminalRealtimeStore.setStatus(
-        has ? "connected_subscribed_no_ticks" : "connected_ready_no_subscription",
-      );
+      // Only downgrade status if we have NOT yet seen any tick frames.
+      // TL may emit connection.ready periodically; don't bounce a healthy
+      // "connected" state back to a no-ticks state.
+      if (terminalRealtimeStore.getState().tickFramesReceived === 0) {
+        const has = this.currentSubscribed.length > 0;
+        terminalRealtimeStore.setStatus(
+          has ? "connected_subscribed_no_ticks" : "connected_ready_no_subscription",
+        );
+      }
       return;
     }
     if (msg.type === "subscription.updated") {
