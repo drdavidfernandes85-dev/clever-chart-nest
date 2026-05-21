@@ -16,6 +16,12 @@ export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | 
 
 export interface ExecutionResultPayload {
   outcome: ExecutionOutcome;
+  tradeId?: string | null;
+  clientOrderId?: string | null;
+  requestId?: string | null;
+  orderId?: string | null;
+  dealId?: string | null;
+  brokerSymbol?: string | null;
   symbol: string;
   side: "buy" | "sell";
   volume: number;
@@ -23,7 +29,7 @@ export interface ExecutionResultPayload {
   // lifecycle (MT5 truth)
   brokerAccepted?: boolean;
   mt5Confirmed?: boolean;
-  confirmationStatus?: "pending" | "confirmed" | "not_found" | "failed";
+  confirmationStatus?: "pending" | "confirmed" | "not_found" | "failed" | "delayed_rate_limited";
   confirmedTicket?: number | string | null;
   confirmedEntryPrice?: number | null;
   confirmedVolume?: number | null;
@@ -344,6 +350,12 @@ export const ExecutionResultModal = ({
                   // Re-runs reconcile-execution against TL without re-sending the order.
                   window.dispatchEvent(new CustomEvent("mt:retry-confirmation", {
                     detail: {
+                      tradeId: effective.tradeId ?? null,
+                      clientOrderId: effective.clientOrderId ?? null,
+                      requestId: effective.requestId ?? null,
+                      orderId: effective.orderId ?? null,
+                      dealId: effective.dealId ?? null,
+                      brokerSymbol: effective.brokerSymbol ?? effective.symbol,
                       symbol: effective.symbol,
                       side: effective.side,
                       volume: effective.volume,
