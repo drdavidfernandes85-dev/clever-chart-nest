@@ -238,9 +238,33 @@ function WsDiagnosticsSection() {
           <span className="text-neutral-500">ws url: </span>
           {rt.wsUrlMasked ?? "—"}
         </div>
+        <div>
+          <span className="text-neutral-500">upstream ready: </span>
+          {rt.upstreamReady ? (
+            <span className="text-emerald-400">yes</span>
+          ) : (
+            <span className="text-amber-400">no</span>
+          )}
+        </div>
+        <div>
+          <span className="text-neutral-500">last control frame: </span>
+          {rt.lastControlFrame ?? "—"}
+        </div>
         <div className="col-span-2 break-words">
-          <span className="text-neutral-500">subscribed ({rt.subscribedSymbols.length}): </span>
+          <span className="text-neutral-500">desired ({rt.subscribedSymbols.length}): </span>
           {rt.subscribedSymbols.length === 0 ? "—" : rt.subscribedSymbols.join(" · ")}
+        </div>
+        <div className="col-span-2 break-words">
+          <span className="text-neutral-500">
+            confirmed ({rt.confirmedSubscribedSymbols.length}):{" "}
+          </span>
+          {rt.confirmedSubscribedSymbols.length === 0
+            ? "—"
+            : rt.confirmedSubscribedSymbols.join(" · ")}
+        </div>
+        <div>
+          <span className="text-neutral-500">last tick symbol: </span>
+          {rt.lastTickSymbol ?? "—"}
         </div>
         <div>
           <span className="text-neutral-500">subscribe schema: </span>
