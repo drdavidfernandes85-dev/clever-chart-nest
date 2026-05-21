@@ -473,8 +473,13 @@ Deno.serve(async (req) => {
       }
     } catch (_e) { /* ignore */ }
 
-    const traderId =
-      account?.traderId ?? account?.trader_id ?? tenantJson?.data?.ownerAccount?.traderId ?? String(accountId);
+    // Refresh externalTraderId from the test response when available.
+    const resolvedExternalTraderId =
+      externalTraderId ??
+      account?.externalTraderId ??
+      account?.external_trader_id ??
+      null;
+
 
     // 9. Persist locally — never store the password.
     const nowIso = new Date().toISOString();
