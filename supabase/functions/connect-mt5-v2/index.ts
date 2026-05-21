@@ -134,11 +134,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const tlHeaders = {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
+  const tlHeaders = tlAuthHeaders(apiKey);
 
   try {
     // 1. Get tenant
@@ -149,6 +145,15 @@ Deno.serve(async (req) => {
     );
     const tenantJson = await readJson(tenantRes);
 
+    if (tenantRes.status === 401 || tenantRes.status === 403) {
+      return json(502, {
+        success: false,
+        step: "tenant",
+        error: "TL_AUTH_FAILED",
+        message: "Trading Layer rejected the configured credentials.",
+        tradingLayerStatus: tenantRes.status,
+      });
+    }
     if (!tenantRes.ok) {
       return json(502, {
         success: false,
@@ -170,6 +175,57 @@ Deno.serve(async (req) => {
         tradingLayerResponse: tenantJson,
       });
     }
+
+    // Disconnect mode — DELETE upstream credentials, then remove local row.
+    if (mode === "disconnect") {
+      const delRes = await fetchWithTimeout(
+        `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials`,
+        { method: "DELETE", headers: tlHeaders },
+        15000,
+      );
+      const delJson = await readJson(delRes);
+
+      if (delRes.status === 401 || delRes.status === 403) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_delete",
+          error: "TL_AUTH_FAILED",
+          message: "Trading Layer rejected the configured credentials.",
+          tradingLayerStatus: delRes.status,
+        });
+      }
+      // 404 = already disconnected upstream; treat as success.
+      if (!delRes.ok && delRes.status !== 404) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_delete",
+          error: "Failed to remove MT5 credentials in Trading Layer.",
+          tradingLayerStatus: delRes.status,
+          tradingLayerResponse: delJson,
+        });
+      }
+
+      const { error: delLocalError } = await supabase
+        .from("user_mt_accounts")
+        .delete()
+        .eq("user_id", userId)
+        .eq("platform", "mt5");
+      if (delLocalError) {
+        return json(500, {
+          success: false,
+          step: "remove_connected_account",
+          error: delLocalError.message,
+        });
+      }
+
+      return json(200, {
+        success: true,
+        mode,
+        accountId,
+        tradingLayerStatus: delRes.status,
+      });
+    }
+
 
     // 3. Test the form credentials (with retry on transient 5xx from Cloudflare)
     let testRes!: Response;
