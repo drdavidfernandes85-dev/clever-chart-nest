@@ -117,6 +117,22 @@ const fmtDate = (iso: string) => {
   }
 };
 
+const sourceSummary = (rec: any, source: "positions" | "orders" | "deals" | "pending") => {
+  const checked = rec?.sourcesChecked?.[source];
+  const skipped = rec?.sourcesSkipped?.[source] ?? null;
+  const counts: Record<typeof source, string> = {
+    positions: "positionsCount",
+    orders: "ordersCount",
+    deals: "dealsCount",
+    pending: "pendingOrdersCount",
+  };
+  const count = rec?.checked?.[counts[source]];
+  if (checked === true) return `Checked (${Number(count ?? 0)})`;
+  if (skipped) return `Skipped: ${String(skipped).replace(/_/g, " ")}`;
+  if (checked === false) return "No";
+  return "No";
+};
+
 const csvEscape = (v: unknown) => {
   if (v == null) return "";
   const s = String(v);
