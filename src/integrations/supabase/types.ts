@@ -1220,6 +1220,7 @@ export type Database = {
           balance: number | null
           broker_name: string
           created_at: string
+          credential_status: string | null
           currency: string | null
           equity: number | null
           free_margin: number | null
@@ -1227,6 +1228,8 @@ export type Database = {
           investor_password_encrypted: string | null
           last_error: string | null
           last_synced_at: string | null
+          last_tl_error_code: string | null
+          last_verified_at: string | null
           leverage: number | null
           login: string
           margin: number | null
@@ -1239,6 +1242,8 @@ export type Database = {
           server_name: string
           status: string
           status_message: string | null
+          trading_layer_account_id: string | null
+          trading_layer_trader_id: string | null
           updated_at: string
           user_id: string
         }
@@ -1247,6 +1252,7 @@ export type Database = {
           balance?: number | null
           broker_name: string
           created_at?: string
+          credential_status?: string | null
           currency?: string | null
           equity?: number | null
           free_margin?: number | null
@@ -1254,6 +1260,8 @@ export type Database = {
           investor_password_encrypted?: string | null
           last_error?: string | null
           last_synced_at?: string | null
+          last_tl_error_code?: string | null
+          last_verified_at?: string | null
           leverage?: number | null
           login: string
           margin?: number | null
@@ -1266,6 +1274,8 @@ export type Database = {
           server_name: string
           status?: string
           status_message?: string | null
+          trading_layer_account_id?: string | null
+          trading_layer_trader_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1274,6 +1284,7 @@ export type Database = {
           balance?: number | null
           broker_name?: string
           created_at?: string
+          credential_status?: string | null
           currency?: string | null
           equity?: number | null
           free_margin?: number | null
@@ -1281,6 +1292,8 @@ export type Database = {
           investor_password_encrypted?: string | null
           last_error?: string | null
           last_synced_at?: string | null
+          last_tl_error_code?: string | null
+          last_verified_at?: string | null
           leverage?: number | null
           login?: string
           margin?: number | null
@@ -1293,6 +1306,8 @@ export type Database = {
           server_name?: string
           status?: string
           status_message?: string | null
+          trading_layer_account_id?: string | null
+          trading_layer_trader_id?: string | null
           updated_at?: string
           user_id?: string
         }
