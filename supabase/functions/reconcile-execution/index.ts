@@ -247,29 +247,24 @@ Deno.serve(async (req) => {
   const windowTo = new Date(Date.now() + 60_000).toISOString();
 
   // ── Parallel fetches against Trading Layer ──────────────────────────────
+  // We intentionally omit the upstream `symbol` filter so a broker that
+  // returns a suffixed broker symbol (e.g. "XAUUSD.M") is not silently
+  // filtered out. Symbol comparison happens client-side with symEq.
   const [traderRes, posRes, ordersRes, histOrdersRes, histDealsRes] = await Promise.all([
     tlFetch(`/traders/${encodeURIComponent(traderId)}`, {}, TL_KEY),
-    tlFetch(`/accounts/${encodeURIComponent(accountId)}/positions`, {
-      symbol: wantSym,
-      limit: 100,
-    }, TL_KEY),
-    tlFetch(`/accounts/${encodeURIComponent(accountId)}/orders`, {
-      symbol: wantSym,
-      limit: 100,
-    }, TL_KEY),
+    tlFetch(`/accounts/${encodeURIComponent(accountId)}/positions`, { limit: 200 }, TL_KEY),
+    tlFetch(`/accounts/${encodeURIComponent(accountId)}/orders`, { limit: 200 }, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/orders`, {
-      symbol: wantSym,
       dateFrom: windowFrom,
       dateTo: windowTo,
-      limit: 100,
+      limit: 200,
       sort: "time_setup",
       order: "desc",
     }, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/deals`, {
-      symbol: wantSym,
       dateFrom: windowFrom,
       dateTo: windowTo,
-      limit: 100,
+      limit: 200,
       sort: "time",
       order: "desc",
     }, TL_KEY),
@@ -281,6 +276,12 @@ Deno.serve(async (req) => {
   const historyDeals: any[] = Array.isArray(histDealsRes.data?.data) ? histDealsRes.data.data : [];
 
   // ── Matching ────────────────────────────────────────────────────────────
+  // Match priority (most specific first):
+  //   1. positionTicket / ticket / positionId
+  //   2. dealId
+  //   3. orderId
+  //   4. requestId / clientOrderId
+  //   5. (fallback) brokerSymbol + side + volume + time window
   const clickSec = Math.floor(clickMs / 1000);
   const withinTime = (t: any) => {
     const n = Number(t);
@@ -288,18 +289,64 @@ Deno.serve(async (req) => {
     return Math.abs(n - clickSec) <= 600; // 10 minute window
   };
 
-  // (A) open positions
+  const wantPositionTicket = input.positionTicket
+    ?? pickId(input.rawExecutionResponse, [
+      "positionTicket", "ticket", "position.ticket", "position.id",
+      "data.positionTicket", "data.ticket",
+    ]);
+  const wantOrderId = input.orderId
+    ?? pickId(input.rawExecutionResponse, [
+      "orderId", "order_id", "order.id", "order.ticket",
+      "data.orderId", "data.order.ticket",
+    ]);
+  const wantDealId = input.dealId
+    ?? pickId(input.rawExecutionResponse, [
+      "dealId", "deal_id", "deal.id", "deal.ticket",
+      "data.dealId", "data.deal.ticket",
+    ]);
+  const wantRequestId = input.requestId
+    ?? input.clientOrderId
+    ?? pickId(input.rawExecutionResponse, [
+      "requestId", "request_id", "clientOrderId", "client_order_id", "tradeId",
+    ])
+    ?? (input.tradeId ?? null);
+
+  const idOf = (o: any, paths: string[]) => pickId(o, paths);
+
+  // (A) Position matching — ID first, then suffix-tolerant symbol fallback.
   const matchedPosition = positions.find((p: any) => {
-    if (String(p?.symbol || "").toUpperCase() !== wantSym) return false;
+    const pTicket = idOf(p, ["ticket", "id", "identifier", "positionTicket"]);
+    if (wantPositionTicket && pTicket && pTicket === wantPositionTicket) return true;
+    if (wantDealId) {
+      const pDeal = idOf(p, ["dealId", "deal_id", "deal.id"]);
+      if (pDeal && pDeal === wantDealId) return true;
+    }
+    // Fallback — symbol/side/vol/time. brokerSymbol takes precedence over
+    // the user-typed display symbol.
+    const pSym = String(p?.symbol ?? "");
+    const candSym = input.brokerSymbol ?? wantSym;
+    if (!symEq(pSym, candSym)) return false;
     if (mt5TypeToSide(p?.type) !== wantSide) return false;
     if (!volEq(Number(p?.volume), wantVol)) return false;
     if (!withinTime(p?.time)) return false;
     return true;
   });
 
-  // (B) deals — typically two per market open/close. We want an IN deal (entry=0).
+  // (B) Deals — ID first, then fallback.
   const matchedDeal = historyDeals.find((d: any) => {
-    if (String(d?.symbol || "").toUpperCase() !== wantSym) return false;
+    const dId = idOf(d, ["ticket", "id", "dealId"]);
+    if (wantDealId && dId && dId === wantDealId) return true;
+    if (wantOrderId) {
+      const dOrd = idOf(d, ["order", "orderId", "order_id"]);
+      if (dOrd && dOrd === wantOrderId) return true;
+    }
+    if (wantPositionTicket) {
+      const dPos = idOf(d, ["position_id", "positionId", "position"]);
+      if (dPos && dPos === wantPositionTicket) return true;
+    }
+    const dSym = String(d?.symbol ?? "");
+    const candSym = input.brokerSymbol ?? wantSym;
+    if (!symEq(dSym, candSym)) return false;
     if (mt5TypeToSide(d?.type) !== wantSide) return false;
     const vol = Number(d?.volume);
     if (!Number.isFinite(vol) || !volEq(vol, wantVol)) return false;
@@ -307,17 +354,34 @@ Deno.serve(async (req) => {
     return true;
   });
 
-  // (C) orders — first pending, then history (rejected/canceled/filled).
+  // (C) Pending orders — ID first, then fallback.
   const matchedPendingOrder = pendingOrders.find((o: any) => {
-    if (String(o?.symbol || "").toUpperCase() !== wantSym) return false;
+    const oId = idOf(o, ["ticket", "id", "orderId"]);
+    if (wantOrderId && oId && oId === wantOrderId) return true;
+    if (wantRequestId) {
+      const oReq = idOf(o, ["requestId", "clientOrderId", "request_id"]);
+      if (oReq && oReq === wantRequestId) return true;
+    }
+    const oSym = String(o?.symbol ?? "");
+    const candSym = input.brokerSymbol ?? wantSym;
+    if (!symEq(oSym, candSym)) return false;
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
     if (!volEq(Number(o?.volume_current ?? o?.volume_initial ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
     return true;
   });
 
+  // (D) History orders — ID first, then fallback.
   const matchedHistoryOrder = historyOrders.find((o: any) => {
-    if (String(o?.symbol || "").toUpperCase() !== wantSym) return false;
+    const oId = idOf(o, ["ticket", "id", "orderId"]);
+    if (wantOrderId && oId && oId === wantOrderId) return true;
+    if (wantRequestId) {
+      const oReq = idOf(o, ["requestId", "clientOrderId", "request_id"]);
+      if (oReq && oReq === wantRequestId) return true;
+    }
+    const oSym = String(o?.symbol ?? "");
+    const candSym = input.brokerSymbol ?? wantSym;
+    if (!symEq(oSym, candSym)) return false;
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
     if (!volEq(Number(o?.volume_initial ?? o?.volume_current ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
