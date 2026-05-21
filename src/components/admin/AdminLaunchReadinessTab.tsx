@@ -19,7 +19,7 @@ interface Finding {
   note?: string;
 }
 
-const SNAPSHOT_TIMESTAMP = "2026-05-20T19:00:00Z";
+const SNAPSHOT_TIMESTAMP = "2026-05-21T20:00:00Z";
 
 const findings: Finding[] = [
   // 2 — Core launch journey
@@ -127,6 +127,22 @@ const findings: Finding[] = [
   { area: "14. Global Modal & Action Payload QA", status: "pass", label: "Dev diagnostics: Pass — sanitized payload (action, resolvedIdentifier, brokerSymbol, displaySymbol, side, volume, keys) via devDiagnostics(); never exposes API keys, secrets, tokens or service-role keys" },
   { area: "14. Global Modal & Action Payload QA", status: "info", label: "Critical issues found: 0 | High: 0 | Medium: 0 | Remaining: none blocking — fix complete" },
   { area: "14. Global Modal & Action Payload QA", status: "pass", label: "No execution / risk / MT5 / reconciliation / Trading Layer / market-data / symbol-source / compliance / navigation logic changed during this pass" },
+
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "WS proxy security: Pass — tl-market-data-stream is a server-side WebSocket relay; Trading Layer API key never leaves the edge function; browser only sees the Supabase URL" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "TL API key server-side only: Pass — TRADING_LAYER_API_KEY read from Deno.env inside the proxy; not echoed in logs, not returned to client" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Supabase JWT verification: Pass — proxy calls admin.auth.getUser(token) and rejects 401 on failure (verify_jwt=false in config.toml is intentional so the WS upgrade handshake passes; JWT is checked in code via ?token= query param)" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Account ownership check: Pass — proxy verifies user_mt_accounts.metaapi_account_id = accountId AND user_id = JWT.sub before opening upstream; foreign accountId returns 403" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "One centralized socket: Pass — tradingLayerMarketDataWebSocket is a singleton; duplicate connect attempts are short-circuited and flagged via duplicateSocketDetected" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Lifecycle: Pass — service starts in LiveAccountContext when metaapi_account_id resolves, stops on logout/account-change/unmount; reconnect uses exponential backoff capped at 30s" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Subscriptions: Pass — union of selected symbol + Quotes/Bid-Ask board + dashboard symbol list + favorites; no full broker-universe subscribe; resubscribe on reconnect" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Tick normalization: Pass — { brokerSymbol, displaySymbol, bid, ask, last, spread, volume, timestamp, source:'trading_layer_ws' }; non-numeric inputs collapse to null (UI renders '—'); malformedEventCount increments on bad frames" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "UI fan-out: Pass — ticks are mirrored into the existing liveMarketDataStore so Order Ticket, Bid/Ask Board, Chart header and Micro Quote Strip update with zero component changes; no widget opens its own socket" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Fallback polling: Pass — MarketDataService.canRun() skips selected_symbol and watchlist loops while fallbackPollingActive=false; when WS goes stale (>8s no tick) or disconnects, fallbackPollingActive flips true and the existing 2s selected / 10s watchlist polling resumes; last-known prices stay visible" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Stale detection: Pass — selected-symbol tick age >8s triggers wsMarketDataStatus='stale' without clearing latestTicks; UI keeps last good values" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Dev Mode diagnostics: Pass — MarketDataDiagnosticsPanel shows status, masked accountId (3…3), connected-since, last tick age, selected tick age, reconnect attempts, fallback active, malformed events, duplicate socket flag, masked WS URL, subscribed symbols, last error; no secrets, tokens, API keys or service-role keys printed" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Execution safety untouched: Pass — submit-best-execution-order / close-position-controlled / modify-position-protection / reconcile-execution all unchanged; backend still validates fresh tick before any order; frontend WS ticks remain display-only and are NEVER used as price-of-record in execution paths" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "info", label: "Pending TL confirmation: exact WebSocket auth scheme. Proxy currently sends bearer via Sec-WebSocket-Protocol subprotocol (Deno's standard WebSocket does not support custom HTTP headers). If TL requires a different scheme, only the upstream WebSocket constructor in tl-market-data-stream needs updating; everything downstream is unaffected" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "info", label: "Critical issues found: 0 | High: 0 | Medium: 0 | Remaining: WS lifecycle events (TL roadmap, Phase 2)" },
 ];
 
 const severityMeta: Record<Severity, { label: string; cls: string; icon: typeof CheckCircle2 }> = {
