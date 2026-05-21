@@ -72,6 +72,46 @@ function isRetryableTradingLayerFailure(status: number, payload: any): boolean {
   return payload?.retryable === true || status === 502 || status === 503 || status === 504;
 }
 
+// Module-level tenant cache to avoid hitting Trading Layer's 120/min rate limit
+// on /tenant. Tenant data is effectively static for the API key.
+const TENANT_TTL_MS = 5 * 60 * 1000;
+let tenantCache: { at: number; data: any } | null = null;
+
+async function fetchTenantCached(apiKey: string, tlHeaders: Record<string, string>) {
+  const now = Date.now();
+  if (tenantCache && now - tenantCache.at < TENANT_TTL_MS) {
+    return { status: 200, ok: true, json: tenantCache.data, cached: true };
+  }
+  // Try up to 2 times with backoff on 429.
+  let lastStatus = 0;
+  let lastJson: any = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetchWithTimeout(
+      `${TRADING_LAYER_BASE}/api/v1/tenant`,
+      { method: "GET", headers: tlHeaders },
+      15000,
+    );
+    const body = await readJson(res);
+    lastStatus = res.status;
+    lastJson = body;
+    if (res.ok) {
+      tenantCache = { at: Date.now(), data: body };
+      return { status: res.status, ok: true, json: body, cached: false };
+    }
+    if (res.status === 429) {
+      // If we have any stale cache, serve it rather than failing the user.
+      if (tenantCache) {
+        return { status: 200, ok: true, json: tenantCache.data, cached: true };
+      }
+      const retry = retryAfterSeconds(body) ?? 1;
+      await new Promise((r) => setTimeout(r, Math.min(retry, 2) * 1000));
+      continue;
+    }
+    break;
+  }
+  return { status: lastStatus, ok: false, json: lastJson, cached: false };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -137,29 +177,29 @@ Deno.serve(async (req) => {
   const tlHeaders = tlAuthHeaders(apiKey);
 
   try {
-    // 1. Get tenant
-    const tenantRes = await fetchWithTimeout(
-      `${TRADING_LAYER_BASE}/api/v1/tenant`,
-      { method: "GET", headers: tlHeaders },
-      15000,
-    );
-    const tenantJson = await readJson(tenantRes);
+    // 1. Get tenant (cached, with 429 backoff)
+    const tenantResult = await fetchTenantCached(apiKey, tlHeaders);
+    const tenantJson = tenantResult.json;
 
-    if (tenantRes.status === 401 || tenantRes.status === 403) {
+    if (tenantResult.status === 401 || tenantResult.status === 403) {
       return json(502, {
         success: false,
         step: "tenant",
         error: "TL_AUTH_FAILED",
         message: "Trading Layer rejected the configured credentials.",
-        tradingLayerStatus: tenantRes.status,
+        tradingLayerStatus: tenantResult.status,
       });
     }
-    if (!tenantRes.ok) {
-      return json(502, {
+    if (!tenantResult.ok) {
+      const isRate = tenantResult.status === 429;
+      return json(isRate ? 429 : 502, {
         success: false,
         step: "tenant",
-        error: "Failed to load Trading Layer tenant.",
-        tradingLayerStatus: tenantRes.status,
+        error: isRate ? "TL_RATE_LIMITED" : "Failed to load Trading Layer tenant.",
+        message: isRate
+          ? "Trading Layer is rate limiting requests. Please retry in a few seconds."
+          : undefined,
+        tradingLayerStatus: tenantResult.status,
         tradingLayerResponse: tenantJson,
       });
     }
