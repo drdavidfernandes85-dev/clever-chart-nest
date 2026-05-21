@@ -27,6 +27,8 @@ import {
   type LiveAccountSnapshot,
   type LivePositionRow,
 } from "@/lib/liveMarketDataStore";
+import { tradingLayerMarketDataWebSocket } from "@/services/tradingLayerMarketDataWebSocket";
+import { terminalRealtimeStore } from "@/stores/terminalRealtimeStore";
 
 const SELECTED_INTERVAL_MS = 2000;
 const WATCHLIST_INTERVAL_MS = 10_000;
