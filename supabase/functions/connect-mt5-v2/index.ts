@@ -333,6 +333,16 @@ Deno.serve(async (req) => {
           tradingLayerStatus: testRes.status,
         });
       }
+      if (testRes.status === 404) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_test",
+          error: "TL_TRADER_NOT_FOUND",
+          message: "Trading Layer account mapping was not found. Please reconnect your MT5 account.",
+          tradingLayerStatus: testRes.status,
+          trading_layer_trader_id: traderId,
+        });
+      }
       const retryable = isRetryableTradingLayerFailure(testRes.status, testJson);
       if (retryable) {
         const retryAfter = retryAfterSeconds(testJson) ?? 60;
