@@ -27,7 +27,9 @@ import {
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
 
-const VERSION = "reconcile-execution@1.4.0";
+const VERSION = "reconcile-execution@1.5.0";
+const RATE_LIMIT_DEFAULT_SECONDS = 60;
+const reconcileInFlight = new Map<string, number>();
 
 // MT5 TRADE_RETCODE → short name + human description.
 // Only well-known codes are mapped; anything else returns null/null.
@@ -152,11 +154,29 @@ type ReconcileInput = {
   brokerSymbol?: string | null;
 };
 
+const parseRetryAfter = (value: string | null): number | null => {
+  if (!value) return null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return Math.ceil(numeric);
+  const asDate = Date.parse(value);
+  if (Number.isFinite(asDate)) return Math.max(1, Math.ceil((asDate - Date.now()) / 1000));
+  return null;
+};
+
+const extractArray = (data: any): any[] => {
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.positions)) return data.positions;
+  if (Array.isArray(data?.orders)) return data.orders;
+  if (Array.isArray(data?.deals)) return data.deals;
+  if (Array.isArray(data)) return data;
+  return [];
+};
+
 async function tlFetch(
   path: string,
   qs: Record<string, string | number | undefined>,
   apiKey: string,
-): Promise<{ ok: boolean; status: number; data: any; error?: string }> {
+): Promise<{ ok: boolean; status: number; data: any; error?: string; retryAfter: number | null }> {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(qs)) {
     if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
@@ -169,9 +189,9 @@ async function tlFetch(
     const text = await res.text();
     let body: any = {};
     try { body = text ? JSON.parse(text) : {}; } catch { body = { _raw: text }; }
-    return { ok: res.ok, status: res.status, data: body };
+    return { ok: res.ok, status: res.status, data: body, retryAfter: parseRetryAfter(res.headers.get("retry-after")) };
   } catch (e) {
-    return { ok: false, status: 0, data: null, error: e instanceof Error ? e.message : String(e) };
+    return { ok: false, status: 0, data: null, error: e instanceof Error ? e.message : String(e), retryAfter: null };
   }
 }
 
@@ -220,11 +240,26 @@ Deno.serve(async (req) => {
     });
   }
 
+  const reconcileKey = input.tradeId || `${userId}:${wantSym}:${wantSide}:${wantVol}`;
+  const inFlightAt = reconcileInFlight.get(reconcileKey);
+  if (inFlightAt && Date.now() - inFlightAt < 30_000) {
+    return json(202, {
+      ok: false,
+      version: VERSION,
+      status: "confirmation_pending",
+      confirmationStatus: "pending",
+      explanation: "A confirmation check is already running for this trade. No duplicate order was sent.",
+      tradeId: input.tradeId ?? null,
+    });
+  }
+  reconcileInFlight.set(reconcileKey, Date.now());
+
   // ── Load the connected MT5 account via the shared mapping resolver ─────
   // This ensures reconciliation always uses the same Trading Layer trader id
   // that execute-trade resolves, even when stale ownerAccountId rows exist.
   const mapping = await resolveActiveMtMapping(supabase, userId);
   if (mapping.status === "missing") {
+    reconcileInFlight.delete(reconcileKey);
     return json(200, {
       ok: false,
       version: VERSION,
@@ -235,6 +270,7 @@ Deno.serve(async (req) => {
     });
   }
   if (mapping.status === "stale" || !mapping.traderId) {
+    reconcileInFlight.delete(reconcileKey);
     return json(409, {
       ok: false,
       version: VERSION,
@@ -259,7 +295,13 @@ Deno.serve(async (req) => {
   // We intentionally omit the upstream `symbol` filter so a broker that
   // returns a suffixed broker symbol (e.g. "XAUUSD.M") is not silently
   // filtered out. Symbol comparison happens client-side with symEq.
-  const [traderRes, posRes, ordersRes, histOrdersRes, histDealsRes] = await Promise.all([
+  let traderRes: Awaited<ReturnType<typeof tlFetch>>;
+  let posRes: Awaited<ReturnType<typeof tlFetch>>;
+  let ordersRes: Awaited<ReturnType<typeof tlFetch>>;
+  let histOrdersRes: Awaited<ReturnType<typeof tlFetch>>;
+  let histDealsRes: Awaited<ReturnType<typeof tlFetch>>;
+  try {
+    [traderRes, posRes, ordersRes, histOrdersRes, histDealsRes] = await Promise.all([
     tlFetch(`/traders/${encodeURIComponent(traderId)}`, {}, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/positions`, { limit: 200 }, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/orders`, { limit: 200 }, TL_KEY),
@@ -267,22 +309,48 @@ Deno.serve(async (req) => {
       dateFrom: windowFrom,
       dateTo: windowTo,
       limit: 200,
-      sort: "time_setup",
-      order: "desc",
     }, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/deals`, {
       dateFrom: windowFrom,
       dateTo: windowTo,
       limit: 200,
-      sort: "time",
-      order: "desc",
     }, TL_KEY),
-  ]);
+    ]);
+  } finally {
+    reconcileInFlight.delete(reconcileKey);
+  }
 
-  const positions: any[] = Array.isArray(posRes.data?.data) ? posRes.data.data : [];
-  const pendingOrders: any[] = Array.isArray(ordersRes.data?.data) ? ordersRes.data.data : [];
-  const historyOrders: any[] = Array.isArray(histOrdersRes.data?.data) ? histOrdersRes.data.data : [];
-  const historyDeals: any[] = Array.isArray(histDealsRes.data?.data) ? histDealsRes.data.data : [];
+  const positions: any[] = extractArray(posRes.data);
+  const pendingOrders: any[] = extractArray(ordersRes.data);
+  const historyOrders: any[] = extractArray(histOrdersRes.data);
+  const historyDeals: any[] = extractArray(histDealsRes.data);
+  const endpointResults = { positions: posRes, orders: histOrdersRes, pending: ordersRes, deals: histDealsRes };
+  const sourcesChecked = {
+    positions: posRes.status !== 429 && posRes.ok,
+    orders: histOrdersRes.status !== 429 && histOrdersRes.ok,
+    deals: histDealsRes.status !== 429 && histDealsRes.ok,
+    pending: ordersRes.status !== 429 && ordersRes.ok,
+  };
+  const reasonFor = (r: Awaited<ReturnType<typeof tlFetch>>): "rate_limited" | "endpoint_error" | null =>
+    r.status === 429 ? "rate_limited" : r.ok ? null : "endpoint_error";
+  const sourcesSkipped = {
+    positions: reasonFor(posRes),
+    orders: reasonFor(histOrdersRes),
+    deals: reasonFor(histDealsRes),
+    pending: reasonFor(ordersRes),
+  };
+  const checkedCounts = {
+    positionsCount: positions.length,
+    ordersCount: historyOrders.length,
+    dealsCount: historyDeals.length,
+    pendingOrdersCount: pendingOrders.length,
+  };
+  const rateLimitedEntries = Object.entries(endpointResults).filter(([, r]) => r.status === 429);
+  const rateLimitHit = rateLimitedEntries.length > 0;
+  const retryAfter = rateLimitHit
+    ? Math.max(...rateLimitedEntries.map(([, r]) => r.retryAfter ?? RATE_LIMIT_DEFAULT_SECONDS))
+    : null;
+  const nextReconcileAt = retryAfter ? new Date(Date.now() + retryAfter * 1000).toISOString() : null;
 
   // ── Matching ────────────────────────────────────────────────────────────
   // Match priority (most specific first):
@@ -471,15 +539,26 @@ Deno.serve(async (req) => {
     };
     auditStatus = "order_found_not_filled";
     auditClassification = "execution_reconciled";
-  } else {
+  } else if (rateLimitHit) {
+    const endpoint = rateLimitedEntries[0]?.[0] ?? "unknown";
     result = {
-      status: "execution_unconfirmed",
+      status: "confirmation_delayed_rate_limited",
       mt5Confirmed: false,
       explanation:
-        "Broker accepted request but no matching MT5 position/order/deal was found yet.",
+        "Broker accepted the order. MT5 confirmation is delayed due to API rate limits. We will keep checking.",
     };
-    auditStatus = "execution_unconfirmed";
-    auditClassification = "placed_unconfirmed";
+    auditStatus = "confirmation_delayed_rate_limited";
+    auditClassification = "confirmation_delayed_rate_limited";
+    (result as any).endpointRateLimited = endpoint;
+  } else {
+    result = {
+      status: "unconfirmed_after_reconciliation",
+      mt5Confirmed: false,
+      explanation:
+        "All available MT5 sources were checked and no matching position/order/deal was found.",
+    };
+    auditStatus = "unconfirmed_after_reconciliation";
+    auditClassification = "unconfirmed_after_reconciliation";
   }
 
   // Confirmation lifecycle status — explicit for the client UI.
@@ -488,6 +567,8 @@ Deno.serve(async (req) => {
       ? "confirmed"
       : result.status === "pending_order_placed"
         ? "pending_order"
+        : result.status === "confirmation_delayed_rate_limited"
+          ? "delayed_rate_limited"
         : result.status === "order_rejected"
           ? "rejected"
           : "not_found";
@@ -525,12 +606,51 @@ Deno.serve(async (req) => {
     retcodeDescription,
     reconciliationAttempts,
     lastReconciliationAt,
+    sourcesChecked,
+    checked: {
+      ...checkedCounts,
+      positions: {
+        checked: sourcesChecked.positions, skippedReason: sourcesSkipped.positions,
+        ok: posRes.ok, status: posRes.status, count: positions.length,
+        matchFound: !!matchedPosition,
+      },
+      pendingOrders: {
+        checked: sourcesChecked.pending, skippedReason: sourcesSkipped.pending,
+        ok: ordersRes.ok, status: ordersRes.status, count: pendingOrders.length,
+        matchFound: !!matchedPendingOrder,
+      },
+      historyOrders: {
+        checked: sourcesChecked.orders, skippedReason: sourcesSkipped.orders,
+        ok: histOrdersRes.ok, status: histOrdersRes.status, count: historyOrders.length,
+        matchFound: !!matchedHistoryOrder,
+      },
+      historyDeals: {
+        checked: sourcesChecked.deals, skippedReason: sourcesSkipped.deals,
+        ok: histDealsRes.ok, status: histDealsRes.status, count: historyDeals.length,
+        matchFound: !!matchedDeal,
+      },
+      window: { from: windowFrom, to: windowTo },
+    },
+    sourcesSkipped,
+    rateLimitHit,
+    retryAfter,
+    nextReconcileAt,
+    upstreamStatus: rateLimitHit ? "rate_limited" : (traderRes.ok ? "ok" : `trader_${traderRes.status}`),
+    endpointRateLimited: rateLimitedEntries[0]?.[0] ?? null,
+    matchingMode: matchedPosition ? "position" : matchedDeal ? "dealId" : matchedPendingOrder ? "pending" : matchedHistoryOrder ? "orderId" : "fallback",
+    matchedTicket: matchedPosition ? String(matchedPosition.ticket ?? matchedPosition.id ?? "") : null,
+    matchedDealId: matchedDeal ? String(matchedDeal.ticket ?? matchedDeal.id ?? matchedDeal.dealId ?? "") : null,
+    matchedOrderId: (matchedPendingOrder || matchedHistoryOrder)
+      ? String((matchedPendingOrder ?? matchedHistoryOrder).ticket ?? (matchedPendingOrder ?? matchedHistoryOrder).id ?? "")
+      : null,
     account: {
       account_id: mapping.localRowId,
       mt5_login: mapping.login,
       server: mapping.server,
       trading_layer_account_id: accountId,
       trading_layer_trader_id: traderId,
+      metaapi_account_id: accountId,
+      local_row_id: mapping.localRowId,
       mapping_status: mapping.status,
       trader_status: traderRes.ok ? (traderRes.data?.data?.status ?? null) : null,
     },
@@ -543,25 +663,6 @@ Deno.serve(async (req) => {
       clientClickAt: input.clientClickAt ?? null,
       brokerRetcode: input.brokerRetcode ?? null,
       brokerMessage: input.brokerMessage ?? null,
-    },
-    checked: {
-      positions: {
-        ok: posRes.ok, status: posRes.status, count: positions.length,
-        matchFound: !!matchedPosition,
-      },
-      pendingOrders: {
-        ok: ordersRes.ok, status: ordersRes.status, count: pendingOrders.length,
-        matchFound: !!matchedPendingOrder,
-      },
-      historyOrders: {
-        ok: histOrdersRes.ok, status: histOrdersRes.status, count: historyOrders.length,
-        matchFound: !!matchedHistoryOrder,
-      },
-      historyDeals: {
-        ok: histDealsRes.ok, status: histDealsRes.status, count: historyDeals.length,
-        matchFound: !!matchedDeal,
-      },
-      window: { from: windowFrom, to: windowTo },
     },
     samples: {
       positions: positions.slice(0, 5),
@@ -591,6 +692,14 @@ Deno.serve(async (req) => {
         .from("execution_audit_events")
         .update({
           status: auditStatus,
+          outcome: result.mt5Confirmed
+            ? "success"
+            : auditStatus === "confirmation_delayed_rate_limited"
+              ? "pending"
+              : auditStatus === "order_rejected"
+                ? "rejected"
+                : "unconfirmed",
+          retcode: effectiveRetcode != null && Number.isFinite(Number(effectiveRetcode)) ? Number(effectiveRetcode) : null,
           ticket: result.confirmedTicket ?? null,
           executed_price: result.confirmedEntryPrice ?? null,
           broker_message: matchedPosition

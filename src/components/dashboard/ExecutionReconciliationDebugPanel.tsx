@@ -81,7 +81,13 @@ export interface ExecutionReconcileDebugPayload {
     confirmedTicket: string | number | null;
     attempts?: number | null;
     lastAttemptAt?: string | null;
-    sourcesChecked?: { positions?: boolean | null; orders?: boolean | null; deals?: boolean | null } | null;
+    sourcesChecked?: { positions?: boolean | null; orders?: boolean | null; deals?: boolean | null; pending?: boolean | null } | null;
+    sourcesSkipped?: { positions?: string | null; orders?: string | null; deals?: string | null; pending?: string | null } | null;
+    checked?: { positionsCount?: number; ordersCount?: number; dealsCount?: number; pendingOrdersCount?: number } | null;
+    rateLimitHit?: boolean | null;
+    retryAfter?: number | null;
+    nextReconcileAt?: string | null;
+    endpointRateLimited?: string | null;
     matchingMode?: "positionTicket" | "dealId" | "orderId" | "requestId" | "fallback" | null;
     matchedTicket?: string | number | null;
     matchedDealId?: string | null;
@@ -375,9 +381,24 @@ const ExecutionReconciliationDebugPanel = () => {
                       }</div>
                       <div className="col-span-2">
                         <span className="text-neutral-500">sources checked: </span>
-                        positions={String(r.reconciliation.sourcesChecked?.positions ?? "—")}
-                        {" · "}orders={String(r.reconciliation.sourcesChecked?.orders ?? "—")}
-                        {" · "}deals={String(r.reconciliation.sourcesChecked?.deals ?? "—")}
+                        positions={String(r.reconciliation.sourcesChecked?.positions ?? false)} ({r.reconciliation.checked?.positionsCount ?? 0})
+                        {" · "}orders={String(r.reconciliation.sourcesChecked?.orders ?? false)} ({r.reconciliation.checked?.ordersCount ?? 0})
+                        {" · "}deals={String(r.reconciliation.sourcesChecked?.deals ?? false)} ({r.reconciliation.checked?.dealsCount ?? 0})
+                        {" · "}pending={String(r.reconciliation.sourcesChecked?.pending ?? false)} ({r.reconciliation.checked?.pendingOrdersCount ?? 0})
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-neutral-500">skipped: </span>
+                        positions={r.reconciliation.sourcesSkipped?.positions ?? "none"}
+                        {" · "}orders={r.reconciliation.sourcesSkipped?.orders ?? "none"}
+                        {" · "}deals={r.reconciliation.sourcesSkipped?.deals ?? "none"}
+                        {" · "}pending={r.reconciliation.sourcesSkipped?.pending ?? "none"}
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-neutral-500">rate limit: </span>
+                        {r.reconciliation.rateLimitHit ? "yes" : "no"}
+                        {r.reconciliation.retryAfter ? ` · retryAfter=${r.reconciliation.retryAfter}s` : ""}
+                        {r.reconciliation.nextReconcileAt ? ` · next=${r.reconciliation.nextReconcileAt}` : ""}
+                        {r.reconciliation.endpointRateLimited ? ` · endpoint=${r.reconciliation.endpointRateLimited}` : ""}
                       </div>
                     </div>
                   </section>

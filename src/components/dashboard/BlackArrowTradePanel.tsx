@@ -688,11 +688,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       try {
         const { data: rec } = await supabase.functions.invoke("reconcile-execution", {
           body: {
+            tradeId: detail.tradeId ?? null,
             symbol, side, volume,
             requestedPrice: detail.requestedPrice ?? null,
-            clientClickAt: new Date().toISOString(),
+            clientClickAt: detail.clientClickAt ?? new Date().toISOString(),
             brokerRetcode: detail.retcode ?? null,
             brokerMessage: detail.brokerMessage ?? null,
+            positionTicket: detail.positionTicket ?? null,
+            orderId: detail.orderId ?? null,
+            dealId: detail.dealId ?? null,
+            requestId: detail.requestId ?? null,
+            clientOrderId: detail.clientOrderId ?? detail.tradeId ?? null,
+            brokerSymbol: detail.brokerSymbol ?? symbol,
           },
         });
         if (!rec) return;
@@ -716,12 +723,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             };
           }
           const isPending = rec.status === "pending_order_placed";
+          const isRateLimited = rec.status === "confirmation_delayed_rate_limited";
           return {
             ...prev,
             outcome: "unconfirmed",
             brokerAccepted: true,
             mt5Confirmed: false,
-            confirmationStatus: isPending ? "pending" : "not_found",
+            confirmationStatus: isRateLimited ? "delayed_rate_limited" : isPending ? "pending" : "not_found",
             status: rec.status ?? "execution_unconfirmed",
             brokerMessage: rec.explanation ?? prev.brokerMessage ?? null,
           };
@@ -1007,6 +1015,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         // confirms a matching live position.
         setExecResult({
           ...baseFields,
+          tradeId,
+          clientOrderId: res?.clientOrderId ?? tradeId,
+          requestId: res?.requestId ?? null,
+          orderId: res?.orderId ?? null,
+          dealId: res?.dealId ?? null,
+          brokerSymbol: res?.brokerSymbol ?? normalizedSym,
           outcome: "pending",
           brokerAccepted: true,
           mt5Confirmed: false,
@@ -1161,6 +1175,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   clientClickAt,
                   brokerRetcode: res?.retcode ?? null,
                   brokerMessage: res?.brokerMessage ?? res?.retcodeDescription ?? null,
+                  positionTicket: res?.positionTicket ?? res?.ticket ?? null,
+                  orderId: res?.orderId ?? null,
+                  dealId: res?.dealId ?? null,
+                  requestId: res?.requestId ?? null,
+                  clientOrderId: res?.clientOrderId ?? tradeId,
+                  brokerSymbol: res?.brokerSymbol ?? null,
                   rawExecutionResponse: res ?? null,
                 },
               });
@@ -1170,7 +1190,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
           let finalReconcile: any = reconcile;
           for (const waitMs of [5000, 7000]) { // cumulative ~+5s, +12s after first
-            if (finalReconcile?.mt5Confirmed === true || finalReconcile?.status === "pending_order_placed") break;
+            if (
+              finalReconcile?.mt5Confirmed === true ||
+              finalReconcile?.status === "pending_order_placed" ||
+              finalReconcile?.status === "confirmation_delayed_rate_limited"
+            ) break;
             await new Promise((r) => setTimeout(r, waitMs));
             try { await refresh(); } catch { /* ignore */ }
             const r2 = await reconcileAgain();
@@ -1200,12 +1224,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               finalReconcile?.explanation ??
               "Broker accepted the order, but MT5 confirmation was not found.";
             const isPendingOrder = recStatus === "pending_order_placed";
+            const isRateLimited = recStatus === "confirmation_delayed_rate_limited";
             setExecResult((prev) => prev ? {
               ...prev,
               outcome: "unconfirmed",
               brokerAccepted: true,
               mt5Confirmed: false,
-              confirmationStatus: isPendingOrder ? "pending" : "not_found",
+              confirmationStatus: isRateLimited ? "delayed_rate_limited" : isPendingOrder ? "pending" : "not_found",
               status: recStatus,
               brokerMessage: isPendingOrder
                 ? "Pending order placed in MT5. Awaiting trigger/fill."
@@ -1214,7 +1239,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             if (isPendingOrder) {
               toast.info("Pending order placed", { description: `${normalizedSym} ${sideArg.toUpperCase()} ${wantVol}` });
             } else {
-              toast.warning("Order accepted — MT5 confirmation not found", { description: recExplanation });
+              toast.warning(isRateLimited ? "Confirmation delayed by API rate limit" : "Order accepted — MT5 confirmation not found", { description: recExplanation });
             }
           }
         }
@@ -1310,10 +1335,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 attempts: reconcile?.attempts ?? null,
                 lastAttemptAt: reconcile?.lastAttemptAt ?? new Date().toISOString(),
                 sourcesChecked: {
-                  positions: reconcile?.checked?.positions?.checked ?? true,
-                  orders: reconcile?.checked?.pendingOrders?.checked ?? null,
-                  deals: reconcile?.checked?.historyDeals?.checked ?? null,
+                  positions: reconcile?.sourcesChecked?.positions ?? false,
+                  orders: reconcile?.sourcesChecked?.orders ?? false,
+                  deals: reconcile?.sourcesChecked?.deals ?? false,
+                  pending: reconcile?.sourcesChecked?.pending ?? false,
                 },
+                sourcesSkipped: reconcile?.sourcesSkipped ?? null,
+                checked: reconcile?.checked ?? null,
+                rateLimitHit: reconcile?.rateLimitHit ?? false,
+                retryAfter: reconcile?.retryAfter ?? null,
+                nextReconcileAt: reconcile?.nextReconcileAt ?? null,
+                endpointRateLimited: reconcile?.endpointRateLimited ?? null,
                 matchingMode: reconcile?.matchingMode ?? null,
                 matchedTicket: reconcile?.confirmedTicket ?? (matched?.ticket ?? null),
                 matchedDealId: reconcile?.matchedDealId ?? null,

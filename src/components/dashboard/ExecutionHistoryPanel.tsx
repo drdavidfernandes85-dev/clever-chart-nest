@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Loader2, Search } from "lucide-react";
+import { Download, Loader2, RefreshCw, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDevMode } from "@/hooks/useDevMode";
 import { Input } from "@/components/ui/input";
@@ -47,8 +47,12 @@ interface AuditRow {
 const STATUS_LABELS: Record<string, string> = {
   dry_run: "Dry Run",
   placed: "Broker Accepted",
+  broker_accepted_pending_confirmation: "Broker Accepted",
   position_confirmed: "Position Confirmed",
-  execution_unconfirmed: "Execution Unconfirmed",
+  confirmation_delayed_rate_limited: "Confirmation Delayed",
+  execution_unconfirmed: "Waiting for MT5 Confirmation",
+  unconfirmed_after_reconciliation: "Unconfirmed",
+  pending_order_placed: "Pending Order Placed",
   order_found_not_filled: "Order Found Not Filled",
   deal_found_no_position: "Deal Found No Position",
   closed: "Position Closed",
@@ -59,8 +63,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const CLASSIFICATION_LABELS: Record<string, string> = {
+  broker_accepted: "Broker Accepted",
+  confirmation_pending: "Waiting for MT5 Confirmation",
   placed_confirmed: "Placed (Confirmed)",
   placed_unconfirmed: "Placed (Unconfirmed)",
+  confirmation_delayed_rate_limited: "Delayed by Rate Limit",
+  unconfirmed_after_reconciliation: "Unconfirmed After Checks",
+  pending_order: "Pending Order",
   execution_reconciled: "Reconciled",
   rejected: "Rejected",
   blocked: "Blocked",
@@ -71,9 +80,13 @@ const STATUS_TONE: Record<string, string> = {
   position_confirmed: "bg-emerald-500/15 text-emerald-400",
   closed: "bg-emerald-500/10 text-emerald-300",
   placed: "bg-[#FFCD05]/15 text-[#FFCD05]",
+  broker_accepted_pending_confirmation: "bg-[#FFCD05]/15 text-[#FFCD05]",
   protection_modified: "bg-sky-500/15 text-sky-400",
   dry_run: "bg-neutral-500/15 text-neutral-300",
+  confirmation_delayed_rate_limited: "bg-orange-500/15 text-orange-300",
   execution_unconfirmed: "bg-orange-500/15 text-orange-400",
+  unconfirmed_after_reconciliation: "bg-orange-500/15 text-orange-400",
+  pending_order_placed: "bg-yellow-500/15 text-yellow-300",
   order_found_not_filled: "bg-orange-500/15 text-orange-400",
   deal_found_no_position: "bg-orange-500/15 text-orange-400",
   rate_limited: "bg-purple-500/15 text-purple-400",
@@ -104,6 +117,22 @@ const fmtDate = (iso: string) => {
   }
 };
 
+const sourceSummary = (rec: any, source: "positions" | "orders" | "deals" | "pending") => {
+  const checked = rec?.sourcesChecked?.[source];
+  const skipped = rec?.sourcesSkipped?.[source] ?? null;
+  const counts: Record<typeof source, string> = {
+    positions: "positionsCount",
+    orders: "ordersCount",
+    deals: "dealsCount",
+    pending: "pendingOrdersCount",
+  };
+  const count = rec?.checked?.[counts[source]];
+  if (checked === true) return `Checked (${Number(count ?? 0)})`;
+  if (skipped) return `Skipped: ${String(skipped).replace(/_/g, " ")}`;
+  if (checked === false) return "No";
+  return "No";
+};
+
 const csvEscape = (v: unknown) => {
   if (v == null) return "";
   const s = String(v);
@@ -125,6 +154,7 @@ const ExecutionHistoryPanel = () => {
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AuditRow | null>(null);
+  const [retryingTradeId, setRetryingTradeId] = useState<string | null>(null);
 
   // filters
   const [symbol, setSymbol] = useState("");
@@ -268,6 +298,47 @@ const ExecutionHistoryPanel = () => {
     setOpCategory("all");
     setDateFrom("");
     setDateTo("");
+  };
+
+  const retryConfirmation = async (row: AuditRow) => {
+    if (!row.trade_id || retryingTradeId) return;
+    setRetryingTradeId(row.trade_id);
+    const raw = row.raw || {};
+    const rec = raw.reconciliation || {};
+    const diag = raw.diagnostics || {};
+    try {
+      await supabase.functions.invoke("reconcile-execution", {
+        body: {
+          tradeId: row.trade_id,
+          symbol: row.symbol,
+          side: row.side,
+          volume: Number(row.volume),
+          requestedPrice: row.requested_price,
+          clientClickAt: rec?.request?.clientClickAt ?? row.created_at,
+          brokerRetcode: row.retcode ?? raw.retcode ?? null,
+          brokerMessage: row.broker_message ?? null,
+          positionTicket: row.ticket ?? raw.positionTicket ?? diag.positionTicket ?? null,
+          orderId: raw.orderId ?? diag.orderId ?? null,
+          dealId: raw.dealId ?? diag.dealId ?? null,
+          requestId: raw.requestId ?? diag.requestId ?? null,
+          clientOrderId: raw.clientOrderId ?? diag.clientOrderId ?? row.trade_id,
+          brokerSymbol: raw.brokerSymbol ?? diag.brokerSymbol ?? row.symbol,
+          rawExecutionResponse: raw,
+        },
+      });
+      const { data } = await supabase
+        .from("execution_audit_events")
+        .select("*")
+        .eq("id", row.id)
+        .maybeSingle();
+      if (data) {
+        const updated = data as unknown as AuditRow;
+        setRows((prev) => prev.map((r) => (r.id === row.id ? updated : r)));
+        setDetail(updated);
+      }
+    } finally {
+      setRetryingTradeId(null);
+    }
   };
 
   const summaryCards: Array<[string, string]> = [
@@ -568,6 +639,31 @@ const ExecutionHistoryPanel = () => {
                   </Section>
                 )}
 
+                {detail.trade_id && [
+                  "placed",
+                  "broker_accepted_pending_confirmation",
+                  "confirmation_delayed_rate_limited",
+                  "execution_unconfirmed",
+                  "unconfirmed_after_reconciliation",
+                  "order_found_not_filled",
+                  "pending_order_placed",
+                ].includes(detail.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => retryConfirmation(detail)}
+                    disabled={retryingTradeId === detail.trade_id}
+                    className="h-8 gap-1 border-[#FFCD05]/40 text-[#FFCD05] hover:bg-[#FFCD05]/10"
+                  >
+                    {retryingTradeId === detail.trade_id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    )}
+                    Retry Confirmation
+                  </Button>
+                )}
+
                 <ReconciliationView raw={detail.raw} />
 
                 {devMode && detail.raw ? (
@@ -668,10 +764,14 @@ const ReconciliationView = ({ raw }: { raw: any }) => {
             "Confirmed Price",
             rec.confirmedEntryPrice != null ? String(rec.confirmedEntryPrice) : "—",
           ],
-          ["Positions Checked", String(rec.positionsChecked ?? "—")],
-          ["Orders Checked", String(rec.ordersChecked ?? "—")],
-          ["Deals Checked", String(rec.dealsChecked ?? "—")],
-          ["Pending Checked", String(rec.pendingOrdersChecked ?? "—")],
+          ["Positions Checked", sourceSummary(rec, "positions")],
+          ["Orders Checked", sourceSummary(rec, "orders")],
+          ["Deals Checked", sourceSummary(rec, "deals")],
+          ["Pending Checked", sourceSummary(rec, "pending")],
+          ["Rate Limit Hit", rec.rateLimitHit ? "Yes" : "No"],
+          ["Retry After", rec.retryAfter != null ? `${rec.retryAfter}s` : "No"],
+          ["Next Reconcile", rec.nextReconcileAt || "No"],
+          ["Rate-Limited Endpoint", rec.endpointRateLimited || "No"],
         ]}
       />
       {rec.explanation && (
