@@ -1243,6 +1243,7 @@ export type Database = {
           status: string
           status_message: string | null
           trading_layer_account_id: string | null
+          trading_layer_external_trader_id: string | null
           trading_layer_trader_id: string | null
           updated_at: string
           user_id: string
@@ -1275,6 +1276,7 @@ export type Database = {
           status?: string
           status_message?: string | null
           trading_layer_account_id?: string | null
+          trading_layer_external_trader_id?: string | null
           trading_layer_trader_id?: string | null
           updated_at?: string
           user_id: string
@@ -1307,6 +1309,7 @@ export type Database = {
           status?: string
           status_message?: string | null
           trading_layer_account_id?: string | null
+          trading_layer_external_trader_id?: string | null
           trading_layer_trader_id?: string | null
           updated_at?: string
           user_id?: string
