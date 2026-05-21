@@ -217,11 +217,14 @@ serve(async (req) => {
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
+    // Degrade gracefully so the frontend keeps fallback polling without surfacing a 500.
     return json({
       success: false,
       step: "unhandled_exception",
       error: err instanceof Error ? err.message : String(err),
       quotes: [],
-    }, 500);
+      accountConnected: true,
+      timestamp: new Date().toISOString(),
+    }, 200);
   }
 });
