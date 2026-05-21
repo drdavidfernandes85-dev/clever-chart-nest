@@ -211,7 +211,9 @@ class TradingLayerMarketDataWebSocketImpl {
         terminalRealtimeStore.setLastError(null);
         terminalRealtimeStore.setDuplicateSocket(false);
         terminalRealtimeStore.setFallbackPolling(false);
+        terminalRealtimeStore.setSubscribeSchema(this.subscribeSchema);
         this.startStaleMonitor();
+        this.startNoFramesTimer();
         // (Re)send current subscriptions.
         this.sendSubscribe(this.currentSubscribed);
       };
