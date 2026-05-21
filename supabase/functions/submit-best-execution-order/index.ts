@@ -1,5 +1,20 @@
 // Best-Execution Order Router
 // Wraps execute-trade with pre-trade quote snapshot + latency/slippage metrics.
+//
+// SPEED CONTRACT (v3):
+//   - This function returns to the client as soon as Trading Layer responds.
+//   - Reconciliation is owned by the client (BlackArrowTradePanel) which calls
+//     reconcile-execution on a fast cadence carrying the IDs we surface here.
+//   - Audit-row writes for accepted / unconfirmed orders run inside
+//     EdgeRuntime.waitUntil so they never block the HTTP response.
+//   - Risk-block / freshness / dry-run audits remain synchronous because the
+//     client uses them to decide whether to even continue.
+//
+// Dev-mode timings (returned only when payload.devMode === true) cover:
+//   requestReceivedAt, authValidatedAt, accountResolvedAt, riskValidatedAt,
+//   freshTickFetchedAt, orderSentToTradingLayerAt, tradingLayerResponseAt,
+//   firstReconcileStartedAt (always null here — client owns reconcile),
+//   mt5ConfirmedAt (null), finalUiStatusAt.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   loadRiskSettings,
@@ -9,7 +24,7 @@ import {
   auditRiskBlock,
 } from "../_shared/risk.ts";
 
-const VERSION = "BEST_EXEC_RISK_ENFORCED_V2_2026_05_19";
+const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,9 +39,47 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Fire-and-forget on Deno deploy — survives the response if supported.
+const fireAndForget = (p: Promise<unknown>) => {
+  try {
+    // @ts-ignore -- Deno Deploy / Supabase Edge Runtime
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(p.catch(() => {}));
+    } else {
+      p.catch(() => {});
+    }
+  } catch { /* ignore */ }
+};
+
+// Extract a value from any of the documented Trading Layer shapes.
+const pick = (obj: any, paths: string[]): any => {
+  if (!obj || typeof obj !== "object") return null;
+  for (const path of paths) {
+    const v = path
+      .split(".")
+      .reduce<any>((acc, k) => (acc && typeof acc === "object" ? acc[k] : undefined), obj);
+    if (v !== undefined && v !== null) return v;
+  }
+  return null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
+
+  const timings: Record<string, number | null> = {
+    requestReceivedAt: Date.now(),
+    authValidatedAt: null,
+    accountResolvedAt: null,
+    riskValidatedAt: null,
+    freshTickFetchedAt: null,
+    orderSentToTradingLayerAt: null,
+    tradingLayerResponseAt: null,
+    firstReconcileStartedAt: null, // owned by client
+    mt5ConfirmedAt: null,           // owned by client
+    finalUiStatusAt: null,
+  };
 
   const authHeader = req.headers.get("Authorization") || "";
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -51,32 +104,37 @@ Deno.serve(async (req) => {
     dryRun = false,
     liveExecutionConfirmed = false,
     devModeAllowMissingQuote = false,
+    devMode = false,
   } = payload || {};
 
+  const withTimings = (body: Record<string, unknown>, status = 200) => {
+    timings.finalUiStatusAt = Date.now();
+    return json(devMode ? { ...body, timings } : body, status);
+  };
+
   if (!symbol || !side || !volume) {
-    return json(
-      {
-        success: false,
-        error: "Missing required fields",
-        reasons: ["symbol, side and volume are required"],
-      },
-      400,
-    );
+    return withTimings({
+      success: false,
+      error: "Missing required fields",
+      reasons: ["symbol, side and volume are required"],
+    }, 400);
   }
   if (orderType && String(orderType).toLowerCase() !== "market") {
-    return json(
-      {
-        success: false,
-        error: "Only market orders are supported by this router",
-        reasons: [`orderType=${orderType} not supported`],
-      },
-      400,
-    );
+    return withTimings({
+      success: false,
+      error: "Only market orders are supported by this router",
+      reasons: [`orderType=${orderType} not supported`],
+    }, 400);
   }
 
   const supabase = createClient(SUPABASE_URL, ANON, {
     global: { headers: { Authorization: authHeader } },
   });
+
+  // Cache the auth lookup once.
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData?.user?.id ?? null;
+  timings.authValidatedAt = Date.now();
 
   // Pre-trade quote snapshot for slippage measurement + freshness gate.
   let requestedBid: number | null = null;
@@ -97,6 +155,7 @@ Deno.serve(async (req) => {
       quoteSource = row.source ?? "get-mt5-quotes";
     }
   } catch { /* ignore — quote snapshot is best-effort */ }
+  timings.freshTickFetchedAt = Date.now();
 
   const requestedPrice =
     side === "buy" ? requestedAsk : side === "sell" ? requestedBid : null;
@@ -116,40 +175,36 @@ Deno.serve(async (req) => {
       requestedBid != null && requestedAsk != null
         ? Math.max(0, requestedAsk - requestedBid)
         : null;
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData?.user?.id;
-      if (uid) {
-        await supabase.from("execution_audit_events").insert({
-          user_id: uid,
-          trade_id: tradeId ?? null,
-          symbol,
-          side,
-          volume: Number(volume),
-          status: "dry_run",
-          outcome: "success",
-          requested_price: requestedPrice,
-          executed_price: null,
-          slippage: null,
-          latency_ms: Math.round(Date.now() - startedAt),
-          spread: spreadDry,
-          bid: requestedBid,
-          ask: requestedAsk,
-          broker_message: "Pre-trade check OK (dry run)",
-          retcode: null,
-          reason: null,
-          rule_violated: null,
-          ticket: null,
-          raw: {
-            classification: "pretrade_check",
-            version: VERSION,
-            step: "dry_run",
-            liveOrderSent: false,
-          },
-        });
-      }
-    } catch { /* swallow */ }
-    return json({
+    if (uid) {
+      fireAndForget(supabase.from("execution_audit_events").insert({
+        user_id: uid,
+        trade_id: tradeId ?? null,
+        symbol,
+        side,
+        volume: Number(volume),
+        status: "dry_run",
+        outcome: "success",
+        requested_price: requestedPrice,
+        executed_price: null,
+        slippage: null,
+        latency_ms: Math.round(Date.now() - startedAt),
+        spread: spreadDry,
+        bid: requestedBid,
+        ask: requestedAsk,
+        broker_message: "Pre-trade check OK (dry run)",
+        retcode: null,
+        reason: null,
+        rule_violated: null,
+        ticket: null,
+        raw: {
+          classification: "pretrade_check",
+          version: VERSION,
+          step: "dry_run",
+          liveOrderSent: false,
+        },
+      }));
+    }
+    return withTimings({
       success: true,
       version: VERSION,
       step: "dry_run",
@@ -158,20 +213,18 @@ Deno.serve(async (req) => {
   }
 
   if (liveExecutionConfirmed !== true) {
-    return json({
+    return withTimings({
       success: false,
       version: VERSION,
       step: "pretrade_validation",
       liveOrderSent: false,
       error: "Live execution requires liveExecutionConfirmed=true.",
       reasons: ["Missing live execution confirmation"],
-    }, 200);
+    });
   }
 
-  // ---------- Backend risk enforcement ----------
+  // ---------- Backend risk enforcement (always synchronous) ----------
   try {
-    const { data: userData } = await supabase.auth.getUser();
-    const uid = userData?.user?.id;
     if (uid) {
       const settings = await loadRiskSettings(supabase, uid);
       const usage = await loadDailyUsage(supabase, uid);
@@ -187,64 +240,57 @@ Deno.serve(async (req) => {
           settings,
           usage,
         }, { tradeId, symbol, side, volume: Number(volume) });
+        // Synchronous audit so client can rely on it for risk_blocked toasts.
         await auditRiskBlock(supabase, uid, {
           tradeId, symbol, side, volume: Number(volume),
           reason: breach.reason, rule: breach.rule, response: blockBody,
         });
-        return json(blockBody, 200);
+        timings.riskValidatedAt = Date.now();
+        return withTimings(blockBody);
       }
     }
   } catch { /* if risk lookup fails entirely, fall through (audit only) */ }
+  timings.riskValidatedAt = Date.now();
 
-
-  // Freshness gate — refuse live execution without a fresh server-side tick
-  // unless Dev Mode explicitly authorises emergency testing.
+  // Freshness gate — refuse live execution without a fresh server-side tick.
   if (!haveFreshQuote && devModeAllowMissingQuote !== true) {
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData?.user?.id;
-      if (uid) {
-        await supabase.from("execution_audit_events").insert({
-          user_id: uid,
-          trade_id: tradeId ?? null,
-          symbol,
-          side,
-          volume: Number(volume),
-          status: "blocked",
-          outcome: "blocked",
-          requested_price: requestedPrice,
-          executed_price: null,
-          slippage: null,
-          latency_ms: Math.round(Date.now() - startedAt),
-          spread:
-            requestedBid != null && requestedAsk != null
-              ? Math.max(0, requestedAsk - requestedBid)
-              : null,
-          bid: requestedBid,
-          ask: requestedAsk,
-          broker_message: "Blocked: no fresh server-side tick available.",
-          retcode: null,
-          reason: "missing_fresh_tick",
-          rule_violated: "fresh_tick_required",
-          ticket: null,
-          raw: {
-            classification: "blocked",
-            version: VERSION,
-            step: "pretrade_validation",
-            liveOrderSent: false,
-            quote_bid: requestedBid,
-            quote_ask: requestedAsk,
-            quote_spread:
-              requestedBid != null && requestedAsk != null
-                ? Math.max(0, requestedAsk - requestedBid)
-                : null,
-            quote_timestamp: quoteTimestamp,
-            quote_source: quoteSource,
-          },
-        });
-      }
-    } catch { /* swallow */ }
-    return json({
+    if (uid) {
+      fireAndForget(supabase.from("execution_audit_events").insert({
+        user_id: uid,
+        trade_id: tradeId ?? null,
+        symbol,
+        side,
+        volume: Number(volume),
+        status: "blocked",
+        outcome: "blocked",
+        requested_price: requestedPrice,
+        executed_price: null,
+        slippage: null,
+        latency_ms: Math.round(Date.now() - startedAt),
+        spread:
+          requestedBid != null && requestedAsk != null
+            ? Math.max(0, requestedAsk - requestedBid)
+            : null,
+        bid: requestedBid,
+        ask: requestedAsk,
+        broker_message: "Blocked: no fresh server-side tick available.",
+        retcode: null,
+        reason: "missing_fresh_tick",
+        rule_violated: "fresh_tick_required",
+        ticket: null,
+        raw: {
+          classification: "blocked",
+          version: VERSION,
+          step: "pretrade_validation",
+          liveOrderSent: false,
+          quote_bid: requestedBid,
+          quote_ask: requestedAsk,
+          quote_timestamp: quoteTimestamp,
+          quote_source: quoteSource,
+        },
+      }));
+    }
+    return withTimings({
       success: false,
       version: VERSION,
       step: "pretrade_validation",
@@ -256,11 +302,38 @@ Deno.serve(async (req) => {
       bid: requestedBid,
       ask: requestedAsk,
       quoteTimestamp,
-    }, 200);
+    });
   }
 
+  // Resolve mapping once — purely for diagnostics. execute-trade resolves
+  // and uses metaapi_account_id (= trading_layer_trader_id) internally.
+  let mapping: { localRowId: string | null; traderId: string | null; login: string | null; server: string | null } = {
+    localRowId: null, traderId: null, login: null, server: null,
+  };
+  if (uid) {
+    try {
+      const { data: acc } = await supabase
+        .from("user_mt_accounts")
+        .select("id, metaapi_account_id, trading_layer_trader_id, login, server_name")
+        .eq("user_id", uid)
+        .eq("status", "connected")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (acc) {
+        mapping = {
+          localRowId: String((acc as any).id ?? "") || null,
+          traderId: String((acc as any).trading_layer_trader_id ?? (acc as any).metaapi_account_id ?? "") || null,
+          login: (acc as any).login ?? null,
+          server: (acc as any).server_name ?? null,
+        };
+      }
+    } catch { /* diagnostics-only */ }
+  }
+  timings.accountResolvedAt = Date.now();
 
   // Forward to execute-trade (existing broker integration).
+  timings.orderSentToTradingLayerAt = Date.now();
   const { data: execData, error: execError } = await supabase.functions.invoke(
     "execute-trade",
     {
@@ -274,6 +347,7 @@ Deno.serve(async (req) => {
       },
     },
   );
+  timings.tradingLayerResponseAt = Date.now();
 
   const serverLatencyMs = Date.now() - startedAt;
   const totalLatencyMs =
@@ -290,7 +364,7 @@ Deno.serve(async (req) => {
   }
 
   if (!res) {
-    return json({
+    return withTimings({
       success: false,
       version: VERSION,
       step: "pretrade_validation",
@@ -302,8 +376,33 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Extract every ID Trading Layer might return so the client can use them
+  // as primary reconciliation keys (positionTicket → dealId → orderId →
+  // requestId/clientOrderId → fallback symbol+side+vol match).
+  const result = res?.data ?? res;
+  const positionTicket = pick(result, [
+    "position.ticket", "position.id", "positionTicket",
+    "ticket", "data.ticket",
+  ]);
+  const orderTicket = pick(result, [
+    "order.ticket", "order.id", "orderId", "order_id",
+    "data.order.ticket", "ticketOrder",
+  ]);
+  const dealId = pick(result, [
+    "deal.ticket", "deal.id", "dealId", "deal_id",
+    "data.deal.ticket", "data.deal.id",
+  ]);
+  const requestId = pick(result, [
+    "requestId", "request_id", "clientOrderId", "client_order_id",
+    "tradeId", "data.requestId",
+  ]) ?? tradeId ?? null;
+  const responseSymbol = pick(result, ["symbol", "data.symbol", "order.symbol", "position.symbol"]);
+  const responseVolume = pick(result, ["volume", "data.volume", "order.volume", "deal.volume"]);
+  const responsePrice = pick(result, ["price", "data.price", "deal.price", "order.price", "openPrice", "open_price"]);
+  const responseSide = pick(result, ["side", "data.side", "order.side"]);
+
   const executedPrice =
-    res.price ?? res.openPrice ?? res.executedPrice ?? null;
+    res.price ?? res.openPrice ?? res.executedPrice ?? responsePrice ?? null;
   const slippage =
     requestedPrice != null && executedPrice != null
       ? Number(executedPrice) - Number(requestedPrice)
@@ -337,62 +436,10 @@ Deno.serve(async (req) => {
     (upstreamSuccess && !retcodeFilled && executedPrice == null) ||
     upstreamStatus === "placed";
 
-  // Normalize confirmed entry price from any Trading Layer field shape.
-  const extractEntryPrice = (p: any): number | null => {
-    if (!p || typeof p !== "object") return null;
-    const v =
-      p.entry_price ?? p.price_open ?? p.priceOpen ??
-      p.openPrice ?? p.open_price ?? p.price ?? p.entry ?? null;
-    const n = v == null ? null : Number(v);
-    return n != null && Number.isFinite(n) && n !== 0 ? n : null;
-  };
-
   // ---------------------------------------------------------------------------
-  // Reconcile against LIVE MT5 positions when the broker only "accepted".
-  // ---------------------------------------------------------------------------
-  let mt5Confirmed = false;
-  let confirmedTicket: string | null = null;
-  let confirmedPosition: any = null;
-  let reconciliationAttempts = 0;
-  let positionsSnapshot: any[] = [];
-  let liveAcctDiag: any = null;
-
-  if (retcodeFilled || isPlacedOnly) {
-    const wantSym = String(symbol).toUpperCase();
-    const wantSide = String(side).toLowerCase();
-    const wantVol = Number(volume);
-    const cadence = [0, 1500, 3000];
-    for (const delay of cadence) {
-      if (delay > 0) await new Promise((r) => setTimeout(r, delay));
-      reconciliationAttempts++;
-      try {
-        const { data: live } = await supabase.functions.invoke("get-live-account", { body: {} });
-        liveAcctDiag = live ? {
-          accountId: live?.account?.traderId ?? null,
-          login: live?.account?.login ?? null,
-          server: live?.account?.server ?? null,
-          openPositionsCount: Array.isArray(live?.positions) ? live.positions.length : null,
-        } : null;
-        const list: any[] = Array.isArray(live?.positions) ? live.positions : [];
-        positionsSnapshot = list;
-        const match = list.find((p: any) => {
-          const pSym = String(p?.symbol ?? "").toUpperCase();
-          const pSide = String(p?.side ?? "").toLowerCase();
-          const pVol = Number(p?.volume ?? 0);
-          return pSym === wantSym && pSide === wantSide && Math.abs(pVol - wantVol) < 1e-6;
-        });
-        if (match) {
-          confirmedPosition = match;
-          confirmedTicket = match.ticket != null ? String(match.ticket) : null;
-          mt5Confirmed = true;
-          break;
-        }
-      } catch { /* ignore reconciliation errors */ }
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Final lifecycle determination
+  // Final lifecycle determination — NO blocking reconciliation here.
+  //  - If broker accepted → status: broker_accepted_pending_confirmation
+  //  - Client owns the reconcile-execution loop using the IDs below.
   // ---------------------------------------------------------------------------
   const brokerAccepted = upstreamSuccess || retcodeFilled || retcodeAccepted || isPlacedOnly;
   const liveOrderSent = brokerAccepted;
@@ -404,28 +451,20 @@ Deno.serve(async (req) => {
   let classification: string;
   let brokerMessage = brokerMessageRaw;
 
-  if (mt5Confirmed) {
-    success = true;
-    status = "position_confirmed";
-    outcome = "success";
-    step = "execution_result";
-    classification = "placed_confirmed";
-    brokerMessage = `Position confirmed in MT5. Ticket: ${confirmedTicket}`;
-  } else if (isBlocked) {
+  if (isBlocked) {
     success = false;
     status = "blocked";
     outcome = "blocked";
     step = "pretrade_validation";
     classification = "blocked";
   } else if (brokerAccepted) {
-    // Broker accepted (10008 / placed / success-but-no-fill) but MT5
-    // reconciliation could not find a matching live position.
-    success = false;
-    status = "execution_unconfirmed";
-    outcome = "broker_accepted_no_position";
-    step = "execution_unconfirmed";
-    classification = "placed_unconfirmed";
-    brokerMessage = "Broker accepted the order, but no MT5 position was confirmed.";
+    // Client must run reconcile-execution to flip to position_confirmed.
+    success = true; // broker accepted, optimistic non-final state for the UI
+    status = "broker_accepted_pending_confirmation";
+    outcome = "broker_accepted";
+    step = "execution_result";
+    classification = "broker_accepted";
+    brokerMessage = "Broker accepted — waiting for MT5 confirmation.";
   } else {
     success = false;
     status = "rejected";
@@ -440,105 +479,101 @@ Deno.serve(async (req) => {
       : null;
   const reasonsText = Array.isArray(res.reasons) ? res.reasons.join(" · ") : null;
 
-  // Diagnostic block (always included; surfaced in Dev Mode by the UI).
+  // Sanitized diagnostics (no secrets) — surfaced in Dev Mode by the UI.
   const diagnostics = {
     payloadSent: {
       tradeId, symbol, side, orderType, volume: Number(volume),
       stopLoss, takeProfit,
     },
     rawTradingLayerResponse: res,
+    transport: "rest",
+    accountIdUsed: mapping.traderId,
+    localRowId: mapping.localRowId,
+    tradingLayerTraderId: mapping.traderId,
+    mt5Login: mapping.login,
+    mt5Server: mapping.server,
+    brokerSymbol: responseSymbol ?? symbol,
+    displaySymbol: symbol,
+    side: responseSide ?? side,
+    volume: responseVolume != null ? Number(responseVolume) : Number(volume),
     retcode: retcodeNum,
     retcodeDescription:
       res.retcodeDescription ?? res.retcode_description ?? brokerMessageRaw ?? null,
-    orderId: res.orderId ?? res.order_id ?? res.order ?? null,
-    dealId: res.dealId ?? res.deal_id ?? res.deal ?? null,
-    positionTicket: confirmedTicket ?? (res.ticket != null ? String(res.ticket) : null),
-    accountId: liveAcctDiag?.accountId ?? null,
-    login: liveAcctDiag?.login ?? null,
-    server: liveAcctDiag?.server ?? null,
-    reconciliationAttempts,
-    livePositionsCountAtReconcile: liveAcctDiag?.openPositionsCount ?? null,
+    orderId: orderTicket != null ? String(orderTicket) : null,
+    dealId: dealId != null ? String(dealId) : null,
+    positionTicket: positionTicket != null ? String(positionTicket) : null,
+    requestId: requestId != null ? String(requestId) : null,
+    clientOrderId: tradeId ?? null,
+    brokerResponseTimeMs: timings.tradingLayerResponseAt && timings.orderSentToTradingLayerAt
+      ? (timings.tradingLayerResponseAt - timings.orderSentToTradingLayerAt)
+      : null,
   };
 
-  const confirmedEntryPrice = extractEntryPrice(confirmedPosition);
-  const executedPriceFinal = mt5Confirmed
-    ? (confirmedEntryPrice ?? (executedPrice != null ? Number(executedPrice) : null))
-    : (executedPrice != null ? Number(executedPrice) : null);
-
-  // Best-effort audit insert — never block the response.
-  try {
-    const { data: userData } = await supabase.auth.getUser();
-    const uid = userData?.user?.id;
-    if (uid) {
-      await supabase.from("execution_audit_events").insert({
-        user_id: uid,
-        trade_id: tradeId ?? null,
-        symbol,
-        side,
-        volume: Number(volume),
-        status,
-        outcome,
-        requested_price: requestedPrice,
-        executed_price: executedPriceFinal,
-        slippage,
-        latency_ms: Math.round(totalLatencyMs),
-        spread,
-        bid: requestedBid,
-        ask: requestedAsk,
-        broker_message: classification === "placed_unconfirmed"
-          ? "Broker accepted order but no matching MT5 position was found."
-          : brokerMessage,
-        retcode: retcodeNum,
-        reason: outcome === "blocked" || outcome === "rejected"
-          ? (res.error || reasonsText || brokerMessage || null)
-          : null,
-        rule_violated: outcome === "blocked" ? (res.ruleViolated || reasonsText || res.error || null) : null,
-        ticket: confirmedTicket ?? (res.ticket != null ? String(res.ticket) : null),
-        raw: {
-          ...(res && typeof res === "object" ? res : {}),
-          classification,
-          version: VERSION,
-          step,
-          liveOrderSent,
-          brokerAccepted,
-          mt5Confirmed,
-          confirmationStatus: mt5Confirmed
-            ? "confirmed"
-            : (brokerAccepted ? "not_found" : "failed"),
-          confirmedTicket,
-          confirmedEntryPrice,
-          confirmedVolume: confirmedPosition?.volume ?? null,
-          reconciliationAttempts,
-          quote_bid: requestedBid,
-          quote_ask: requestedAsk,
-          quote_spread: spread,
-          quote_timestamp: quoteTimestamp,
-          quote_source: quoteSource,
-          diagnostics,
-        },
-      });
+  // Audit insert — fire-and-forget for accepted/unconfirmed paths; synchronous
+  // ONLY for rejection (so the UI can rely on it for incident reporting).
+  if (uid) {
+    const auditRow = {
+      user_id: uid,
+      trade_id: tradeId ?? null,
+      symbol,
+      side,
+      volume: Number(volume),
+      status,
+      outcome,
+      requested_price: requestedPrice,
+      executed_price: executedPrice != null ? Number(executedPrice) : null,
+      slippage,
+      latency_ms: Math.round(totalLatencyMs),
+      spread,
+      bid: requestedBid,
+      ask: requestedAsk,
+      broker_message: brokerMessage,
+      retcode: retcodeNum,
+      reason: outcome === "blocked" || outcome === "rejected"
+        ? (res.error || reasonsText || brokerMessage || null)
+        : null,
+      rule_violated: outcome === "blocked" ? (res.ruleViolated || reasonsText || res.error || null) : null,
+      ticket: positionTicket != null ? String(positionTicket) : null,
+      raw: {
+        ...(res && typeof res === "object" ? res : {}),
+        classification,
+        version: VERSION,
+        step,
+        liveOrderSent,
+        brokerAccepted,
+        positionTicket: diagnostics.positionTicket,
+        orderId: diagnostics.orderId,
+        dealId: diagnostics.dealId,
+        requestId: diagnostics.requestId,
+        quote_bid: requestedBid,
+        quote_ask: requestedAsk,
+        quote_spread: spread,
+        quote_timestamp: quoteTimestamp,
+        quote_source: quoteSource,
+        diagnostics,
+      },
+    };
+    if (outcome === "rejected") {
+      try { await supabase.from("execution_audit_events").insert(auditRow); } catch { /* swallow */ }
+    } else {
+      fireAndForget(supabase.from("execution_audit_events").insert(auditRow));
     }
-  } catch { /* swallow audit errors */ }
+  }
 
-  return json({
+  return withTimings({
     success,
     version: VERSION,
     step,
     liveOrderSent,
     brokerAccepted,
-    mt5Confirmed,
-    confirmationStatus: mt5Confirmed
-      ? "confirmed"
-      : (brokerAccepted ? "not_found" : "failed"),
-    confirmedTicket,
-    confirmedEntryPrice,
-    confirmedVolume: confirmedPosition?.volume ?? null,
+    mt5Confirmed: false, // never true here — client owns confirmation
+    confirmationStatus: brokerAccepted ? "broker_accepted_pending_confirmation" : (isBlocked ? "blocked" : "rejected"),
     tradeId,
     status,
     outcome,
     classification,
     requestedPrice,
-    executedPrice: executedPriceFinal,
+    executedPrice: executedPrice != null ? Number(executedPrice) : null,
     slippage,
     latencyMs: totalLatencyMs,
     clientLatencyMs,
@@ -547,15 +582,17 @@ Deno.serve(async (req) => {
     bid: requestedBid,
     ask: requestedAsk,
     brokerMessage,
-    ticket: confirmedTicket ?? (res.ticket ?? null),
+    // Surface every ID the client may use as a reconciliation key.
+    ticket: diagnostics.positionTicket,
+    positionTicket: diagnostics.positionTicket,
+    orderId: diagnostics.orderId,
+    dealId: diagnostics.dealId,
+    requestId: diagnostics.requestId,
+    clientOrderId: diagnostics.clientOrderId,
+    brokerSymbol: diagnostics.brokerSymbol,
     retcode: retcodeNum,
-    error: success ? null : (
-      classification === "placed_unconfirmed"
-        ? "Broker accepted order but no matching MT5 position was found."
-        : (res.error || brokerMessage || "Order rejected")
-    ),
+    error: success ? null : (res.error || brokerMessage || "Order rejected"),
     reasons: res.reasons ?? null,
     diagnostics,
   });
 });
-
