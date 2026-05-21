@@ -1225,9 +1225,27 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           const positionsAfterSnapshot: any[] = JSON.parse(
             JSON.stringify((positionsRef.current as any[]) || []),
           );
+          const clickMs = Date.parse(clientClickAt);
+          const timings = (res as any)?.timings || null;
+          const tlResp = timings?.tradingLayerResponseAt;
+          const tlSent = timings?.orderSentToTradingLayerAt;
+          const reqRecv = timings?.requestReceivedAt;
+          const finalUi = timings?.finalUiStatusAt ?? timings?.responseReturnedAt;
+          const durations = {
+            authMs: timings?.authValidatedAt && reqRecv ? timings.authValidatedAt - reqRecv : null,
+            accountResolveMs: timings?.accountResolvedAt && timings?.authValidatedAt ? timings.accountResolvedAt - timings.authValidatedAt : null,
+            riskValidationMs: timings?.riskValidatedAt && timings?.accountResolvedAt ? timings.riskValidatedAt - timings.accountResolvedAt : null,
+            freshTickMs: timings?.freshTickFetchedAt && timings?.riskValidatedAt ? timings.freshTickFetchedAt - timings.riskValidatedAt : null,
+            tradingLayerRoundTripMs: tlResp && tlSent ? tlResp - tlSent : null,
+            backendTotalMs: finalUi && reqRecv ? finalUi - reqRecv : null,
+            clickToBrokerAcceptedMs: tlResp && clickMs ? tlResp - clickMs : null,
+            clickToFirstReconcileMs: Number.isFinite(clickMs) ? Date.now() - clickMs : null,
+            clickToConfirmedMs: matched && Number.isFinite(clickMs) ? Date.now() - clickMs : null,
+          };
           window.dispatchEvent(new CustomEvent("mt:execution-reconcile-debug", {
             detail: {
               at: new Date().toISOString(),
+              kind: "open",
               account: {
                 account_number:
                   reconcile?.account?.mt5_login ??
@@ -1241,6 +1259,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   (res as any)?.diagnostics?.trader_id ??
                   (res as any)?.diagnostics?.accountId ??
                   null,
+                metaapi_account_id:
+                  (res as any)?.metaapi_account_id ??
+                  reconcile?.account?.metaapi_account_id ?? null,
+                local_row_id:
+                  reconcile?.account?.local_row_id ??
+                  (res as any)?.diagnostics?.local_row_id ?? null,
+                accountIdUsed:
+                  (res as any)?.diagnostics?.accountId ??
+                  (res as any)?.accountId ?? null,
+              },
+              ids: {
+                tradeId,
+                clientOrderId: (res as any)?.clientOrderId ?? tradeId,
+                requestId: (res as any)?.requestId ?? null,
+                orderId: (res as any)?.orderId ?? null,
+                dealId: (res as any)?.dealId ?? null,
+                positionTicket: (res as any)?.positionTicket ?? (res as any)?.ticket ?? null,
+                brokerSymbol: (res as any)?.brokerSymbol ?? null,
+                displaySymbol: normalizedSym,
               },
               request: {
                 symbol: normalizedSym,
@@ -1253,8 +1290,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               },
               response: {
                 retcode: (res as any)?.retcode ?? null,
+                retcodeName: (res as any)?.retcodeName ?? null,
+                retcodeDescription: (res as any)?.retcodeDescription ?? null,
                 classification:
                   reconcile?.status ?? (res as any)?.classification ?? null,
+                brokerAccepted: true,
+                mt5Confirmed: !!matched || reconcile?.mt5Confirmed === true,
+                confirmationStatus: reconcile?.status ?? (matched ? "position_confirmed" : "pending"),
+                status: (res as any)?.status ?? null,
                 raw: res ?? null,
               },
               reconciliation: {
@@ -1264,6 +1307,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 confirmedTicket:
                   reconcile?.confirmedTicket ??
                   (matched ? (matched.ticket ?? matched.id ?? null) : null),
+                attempts: reconcile?.attempts ?? null,
+                lastAttemptAt: reconcile?.lastAttemptAt ?? new Date().toISOString(),
+                sourcesChecked: {
+                  positions: reconcile?.checked?.positions?.checked ?? true,
+                  orders: reconcile?.checked?.pendingOrders?.checked ?? null,
+                  deals: reconcile?.checked?.historyDeals?.checked ?? null,
+                },
+                matchingMode: reconcile?.matchingMode ?? null,
+                matchedTicket: reconcile?.confirmedTicket ?? (matched?.ticket ?? null),
+                matchedDealId: reconcile?.matchedDealId ?? null,
+                matchedOrderId: reconcile?.matchedOrderId ?? null,
               },
               history: {
                 matchingPendingOrderFound:
@@ -1273,6 +1327,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   reconcile?.checked?.historyDeals?.matchFound ??
                   (res as any)?.diagnostics?.matchingDealFound ?? null,
               },
+              timings,
+              durations,
             },
           }));
         } catch { /* ignore */ }
