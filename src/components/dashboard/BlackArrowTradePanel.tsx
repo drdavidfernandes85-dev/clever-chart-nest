@@ -688,11 +688,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       try {
         const { data: rec } = await supabase.functions.invoke("reconcile-execution", {
           body: {
+            tradeId: detail.tradeId ?? null,
             symbol, side, volume,
             requestedPrice: detail.requestedPrice ?? null,
-            clientClickAt: new Date().toISOString(),
+            clientClickAt: detail.clientClickAt ?? new Date().toISOString(),
             brokerRetcode: detail.retcode ?? null,
             brokerMessage: detail.brokerMessage ?? null,
+            positionTicket: detail.positionTicket ?? null,
+            orderId: detail.orderId ?? null,
+            dealId: detail.dealId ?? null,
+            requestId: detail.requestId ?? null,
+            clientOrderId: detail.clientOrderId ?? detail.tradeId ?? null,
+            brokerSymbol: detail.brokerSymbol ?? symbol,
           },
         });
         if (!rec) return;
@@ -716,12 +723,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             };
           }
           const isPending = rec.status === "pending_order_placed";
+          const isRateLimited = rec.status === "confirmation_delayed_rate_limited";
           return {
             ...prev,
             outcome: "unconfirmed",
             brokerAccepted: true,
             mt5Confirmed: false,
-            confirmationStatus: isPending ? "pending" : "not_found",
+            confirmationStatus: isRateLimited ? "delayed_rate_limited" : isPending ? "pending" : "not_found",
             status: rec.status ?? "execution_unconfirmed",
             brokerMessage: rec.explanation ?? prev.brokerMessage ?? null,
           };
