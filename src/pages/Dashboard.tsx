@@ -985,6 +985,7 @@ const DashboardInner = () => {
 
       <TerminalHeader />
       <TradingLayerPauseBanner />
+      <MT5MappingHealthNotice />
 
       <div className="p-2 lg:p-3">
         <div className="grid gap-1.5 lg:gap-2 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_310px]">
