@@ -72,6 +72,46 @@ function isRetryableTradingLayerFailure(status: number, payload: any): boolean {
   return payload?.retryable === true || status === 502 || status === 503 || status === 504;
 }
 
+// Module-level tenant cache to avoid hitting Trading Layer's 120/min rate limit
+// on /tenant. Tenant data is effectively static for the API key.
+const TENANT_TTL_MS = 5 * 60 * 1000;
+let tenantCache: { at: number; data: any } | null = null;
+
+async function fetchTenantCached(apiKey: string, tlHeaders: Record<string, string>) {
+  const now = Date.now();
+  if (tenantCache && now - tenantCache.at < TENANT_TTL_MS) {
+    return { status: 200, ok: true, json: tenantCache.data, cached: true };
+  }
+  // Try up to 2 times with backoff on 429.
+  let lastStatus = 0;
+  let lastJson: any = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetchWithTimeout(
+      `${TRADING_LAYER_BASE}/api/v1/tenant`,
+      { method: "GET", headers: tlHeaders },
+      15000,
+    );
+    const body = await readJson(res);
+    lastStatus = res.status;
+    lastJson = body;
+    if (res.ok) {
+      tenantCache = { at: Date.now(), data: body };
+      return { status: res.status, ok: true, json: body, cached: false };
+    }
+    if (res.status === 429) {
+      // If we have any stale cache, serve it rather than failing the user.
+      if (tenantCache) {
+        return { status: 200, ok: true, json: tenantCache.data, cached: true };
+      }
+      const retry = retryAfterSeconds(body) ?? 1;
+      await new Promise((r) => setTimeout(r, Math.min(retry, 2) * 1000));
+      continue;
+    }
+    break;
+  }
+  return { status: lastStatus, ok: false, json: lastJson, cached: false };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
