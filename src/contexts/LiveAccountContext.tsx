@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 import { MarketDataService } from "@/services/MarketDataService";
+import { tradingLayerMarketDataWebSocket } from "@/services/tradingLayerMarketDataWebSocket";
 import { liveMarketDataStore } from "@/lib/liveMarketDataStore";
 
 export interface LiveAccount {
