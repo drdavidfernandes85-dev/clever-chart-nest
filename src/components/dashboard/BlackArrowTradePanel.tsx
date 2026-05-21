@@ -1175,6 +1175,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                   clientClickAt,
                   brokerRetcode: res?.retcode ?? null,
                   brokerMessage: res?.brokerMessage ?? res?.retcodeDescription ?? null,
+                  positionTicket: res?.positionTicket ?? res?.ticket ?? null,
+                  orderId: res?.orderId ?? null,
+                  dealId: res?.dealId ?? null,
+                  requestId: res?.requestId ?? null,
+                  clientOrderId: res?.clientOrderId ?? tradeId,
+                  brokerSymbol: res?.brokerSymbol ?? null,
                   rawExecutionResponse: res ?? null,
                 },
               });
@@ -1214,12 +1220,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               finalReconcile?.explanation ??
               "Broker accepted the order, but MT5 confirmation was not found.";
             const isPendingOrder = recStatus === "pending_order_placed";
+            const isRateLimited = recStatus === "confirmation_delayed_rate_limited";
             setExecResult((prev) => prev ? {
               ...prev,
               outcome: "unconfirmed",
               brokerAccepted: true,
               mt5Confirmed: false,
-              confirmationStatus: isPendingOrder ? "pending" : "not_found",
+              confirmationStatus: isRateLimited ? "delayed_rate_limited" : isPendingOrder ? "pending" : "not_found",
               status: recStatus,
               brokerMessage: isPendingOrder
                 ? "Pending order placed in MT5. Awaiting trigger/fill."
@@ -1228,7 +1235,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             if (isPendingOrder) {
               toast.info("Pending order placed", { description: `${normalizedSym} ${sideArg.toUpperCase()} ${wantVol}` });
             } else {
-              toast.warning("Order accepted — MT5 confirmation not found", { description: recExplanation });
+              toast.warning(isRateLimited ? "Confirmation delayed by API rate limit" : "Order accepted — MT5 confirmation not found", { description: recExplanation });
             }
           }
         }
