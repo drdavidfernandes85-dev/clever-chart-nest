@@ -107,11 +107,13 @@ class TradingLayerMarketDataWebSocketImpl {
   private shouldRun = false;
   private reconnectTimer: number | null = null;
   private staleTimer: number | null = null;
+  private noFramesTimer: number | null = null;
   private backoff = BASE_BACKOFF_MS;
   private subSources: SubscriptionSources = {};
   private selectedSymbol = "";
   private currentSubscribed: string[] = [];
   private instanceCount = 0;
+  private subscribeSchema: WsSubscribeSchema = resolveSubscribeSchema();
 
   /* ---------- Public API ---------- */
 
@@ -125,6 +127,8 @@ class TradingLayerMarketDataWebSocketImpl {
     if (this.shouldRun && this.accountId === id) return;
     this.shouldRun = true;
     this.accountId = id;
+    this.subscribeSchema = resolveSubscribeSchema();
+    terminalRealtimeStore.setSubscribeSchema(this.subscribeSchema);
     terminalRealtimeStore.setMeta({ accountIdMasked: maskAccountId(id) });
     this.connect();
   }
