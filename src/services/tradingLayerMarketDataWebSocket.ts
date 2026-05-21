@@ -225,10 +225,14 @@ class TradingLayerMarketDataWebSocketImpl {
         terminalRealtimeStore.setStatus("error");
       };
 
-      ws.onclose = () => {
+      ws.onclose = (e) => {
         this.connecting = false;
         this.ws = null;
         this.clearStaleMonitor();
+        this.clearNoFramesTimer();
+        const code = (e as CloseEvent)?.code ?? null;
+        const reason = ((e as CloseEvent)?.reason || "").slice(0, 120) || null;
+        terminalRealtimeStore.recordClose(code, reason);
         if (!this.shouldRun) {
           terminalRealtimeStore.setStatus("disconnected");
           terminalRealtimeStore.setFallbackPolling(true);
