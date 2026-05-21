@@ -144,7 +144,7 @@ serve(async (req) => {
 
     const limited = targetUpper.slice(0, 40);
 
-    const CONC = 8;
+    const CONC = 4;
     const quotes: any[] = [];
     let cursor = 0;
     async function worker() {
