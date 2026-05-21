@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  resolveActiveMtMapping,
+  STALE_MAPPING_ERROR_CODE,
+  STALE_MAPPING_USER_MESSAGE,
+} from "../_shared/mtMapping.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
@@ -198,27 +203,8 @@ serve(async (req) => {
       );
     }
 
-    const { data: account, error: accountError } = await supabase
-      .from("user_mt_accounts")
-      .select("id, metaapi_account_id, login, server_name, status")
-      .eq("user_id", user.id)
-      .eq("status", "connected")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (accountError) {
-      return json(
-        {
-          success: false,
-          step: "account_lookup",
-          error: accountError.message,
-        },
-        500,
-      );
-    }
-
-    if (!account?.metaapi_account_id) {
+    const mapping = await resolveActiveMtMapping(supabase, user.id);
+    if (mapping.status === "missing") {
       return json(
         {
           success: false,
@@ -228,8 +214,21 @@ serve(async (req) => {
         404,
       );
     }
+    if (mapping.status === "stale" || !mapping.traderId) {
+      return json(
+        {
+          success: false,
+          step: "mapping_validation",
+          error: STALE_MAPPING_ERROR_CODE,
+          message: STALE_MAPPING_USER_MESSAGE,
+          mappingStatus: mapping.status,
+          localRowId: mapping.localRowId,
+        },
+        409,
+      );
+    }
 
-    const accountId = account.metaapi_account_id;
+    const accountId = mapping.traderId;
     const idempotencyKey = `trade-${tradeId}-${user.id}`;
 
     const orderPayload: Record<string, unknown> = {

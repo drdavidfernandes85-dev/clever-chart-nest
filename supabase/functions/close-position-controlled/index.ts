@@ -10,6 +10,11 @@ import {
   auditRiskBlock,
   fetchLivePositions,
 } from "../_shared/risk.ts";
+import {
+  resolveActiveMtMapping,
+  STALE_MAPPING_ERROR_CODE,
+  STALE_MAPPING_USER_MESSAGE,
+} from "../_shared/mtMapping.ts";
 
 const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
@@ -90,23 +95,26 @@ Deno.serve(async (req) => {
     }, 400);
   }
 
-  // 3. Load connected MT5 account
-  const { data: account, error: accountError } = await supabase
-    .from("user_mt_accounts")
-    .select("id, metaapi_account_id, status")
-    .eq("user_id", user.id)
-    .eq("status", "connected")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (accountError || !account?.metaapi_account_id) {
+  // 3. Load connected MT5 account via shared mapping resolver so we always
+  //    pick the freshest, validated trading-layer mapping instead of a stale
+  //    ownerAccountId row.
+  const mapping = await resolveActiveMtMapping(supabase, user.id);
+  if (mapping.status === "missing") {
     return json({
       success: false, version: VERSION,
-      error: accountError?.message || "No connected MT5 account found",
+      error: "No connected MT5 account found",
     }, 404);
   }
-  const accountId = account.metaapi_account_id;
+  if (mapping.status === "stale" || !mapping.traderId) {
+    return json({
+      success: false, version: VERSION,
+      error: STALE_MAPPING_ERROR_CODE,
+      message: STALE_MAPPING_USER_MESSAGE,
+      mappingStatus: mapping.status,
+      localRowId: mapping.localRowId,
+    }, 409);
+  }
+  const accountId = mapping.traderId;
 
   // ---------- Backend risk enforcement ----------
   try {

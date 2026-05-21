@@ -37,15 +37,18 @@ interface MappingRow {
   last_tl_error_code: string | null;
 }
 
-const STALE_ERRORS = new Set(["TL_TRADER_NOT_FOUND", "TL_ACCOUNT_NOT_FOUND"]);
+const STALE_ERRORS = new Set(["TL_TRADER_NOT_FOUND", "TL_ACCOUNT_NOT_FOUND", "TL_MAPPING_STALE"]);
 
-const isStale = (row: MappingRow): boolean => {
-  if (!row) return false;
-  if (!row.trading_layer_trader_id) return true;
-  if (!row.credential_status) return true;
-  if (row.last_tl_error_code && STALE_ERRORS.has(row.last_tl_error_code)) return true;
+type MappingStatus = "valid" | "stale" | "missing" | "mismatch";
+
+const classify = (row: MappingRow | null): MappingStatus => {
+  if (!row) return "missing";
+  if (!row.metaapi_account_id && !row.trading_layer_trader_id) return "missing";
+  if (row.last_tl_error_code && STALE_ERRORS.has(row.last_tl_error_code)) return "stale";
+  if (!row.trading_layer_trader_id) return "stale";
+  if (row.credential_status && row.credential_status !== "validated") return "stale";
   // ownerAccountId pattern: metaapi_account_id matches trading_layer_account_id
-  // but is NOT equal to the real trader id.
+  // but is NOT equal to the real trader id (mapping inconsistency).
   if (
     row.metaapi_account_id &&
     row.trading_layer_account_id &&
@@ -53,9 +56,29 @@ const isStale = (row: MappingRow): boolean => {
     row.trading_layer_trader_id &&
     row.metaapi_account_id !== row.trading_layer_trader_id
   ) {
-    return true;
+    return "mismatch";
   }
-  return false;
+  return "valid";
+};
+
+// Picks the most-trustworthy row: prefers populated trader_id, then
+// validated credential_status, then most recent verification timestamp.
+const pickActive = (rows: MappingRow[]): MappingRow | null => {
+  if (!rows.length) return null;
+  const score = (r: MappingRow) => {
+    let s = 0;
+    if (r.trading_layer_trader_id) s += 1000;
+    if (r.credential_status === "validated") s += 100;
+    if (r.last_verified_at) s += 10;
+    return s;
+  };
+  return [...rows].sort((a, b) => {
+    const ds = score(b) - score(a);
+    if (ds !== 0) return ds;
+    const ta = a.last_verified_at ? Date.parse(a.last_verified_at) : 0;
+    const tb = b.last_verified_at ? Date.parse(b.last_verified_at) : 0;
+    return tb - ta;
+  })[0] ?? null;
 };
 
 const MT5MappingHealthNotice = () => {
@@ -75,11 +98,10 @@ const MT5MappingHealthNotice = () => {
           "id, login, server_name, status, metaapi_account_id, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, credential_status, last_verified_at, last_tl_error_code"
         )
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq("platform", "mt5");
       if (cancelled) return;
-      setRow((data as MappingRow) ?? null);
+      const picked = pickActive((data ?? []) as MappingRow[]);
+      setRow(picked);
       setLoaded(true);
     })();
     return () => {
@@ -87,8 +109,9 @@ const MT5MappingHealthNotice = () => {
     };
   }, [ready, isRefreshing, user?.id]);
 
-  if (!loaded || !row) return null;
-  if (!isStale(row)) return null;
+  const status: MappingStatus = classify(row);
+  if (!loaded) return null;
+  if (status === "valid") return null;
 
   return (
     <div className="mx-2 mt-2 lg:mx-3 rounded-md border border-[#FFCD05]/40 bg-[#FFCD05]/[0.06] px-3 py-2.5 text-[12px] text-ltr-silver-100">
@@ -115,16 +138,17 @@ const MT5MappingHealthNotice = () => {
               </button>
               {showDiag && (
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 rounded border border-[color:var(--ltr-gold-border)]/60 bg-black/60 px-3 py-2 font-mono text-[10px] text-ltr-silver-300">
-                  <DiagRow k="local_row_id" v={row.id} />
-                  <DiagRow k="mt5_login" v={row.login} />
-                  <DiagRow k="mt5_server" v={row.server_name} />
-                  <DiagRow k="credential_status" v={row.credential_status ?? "—"} />
-                  <DiagRow k="last_verified_at" v={row.last_verified_at ?? "—"} />
-                  <DiagRow k="last_tl_error_code" v={row.last_tl_error_code ?? "—"} />
-                  <DiagRow k="metaapi_account_id" v={row.metaapi_account_id ?? "—"} />
-                  <DiagRow k="trading_layer_account_id" v={row.trading_layer_account_id ?? "—"} />
-                  <DiagRow k="trading_layer_trader_id" v={row.trading_layer_trader_id ?? "—"} />
-                  <DiagRow k="trading_layer_external_trader_id" v={row.trading_layer_external_trader_id ?? "—"} />
+                  <DiagRow k="mapping_status" v={status} />
+                  <DiagRow k="local_row_id" v={row?.id ?? "—"} />
+                  <DiagRow k="mt5_login" v={row?.login ?? "—"} />
+                  <DiagRow k="mt5_server" v={row?.server_name ?? "—"} />
+                  <DiagRow k="credential_status" v={row?.credential_status ?? "—"} />
+                  <DiagRow k="last_verified_at" v={row?.last_verified_at ?? "—"} />
+                  <DiagRow k="last_tl_error_code" v={row?.last_tl_error_code ?? "—"} />
+                  <DiagRow k="metaapi_account_id" v={row?.metaapi_account_id ?? "—"} />
+                  <DiagRow k="trading_layer_account_id" v={row?.trading_layer_account_id ?? "—"} />
+                  <DiagRow k="trading_layer_trader_id" v={row?.trading_layer_trader_id ?? "—"} />
+                  <DiagRow k="trading_layer_external_trader_id" v={row?.trading_layer_external_trader_id ?? "—"} />
                 </div>
               )}
             </div>
