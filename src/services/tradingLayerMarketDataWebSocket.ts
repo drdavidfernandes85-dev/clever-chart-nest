@@ -283,6 +283,8 @@ class TradingLayerMarketDataWebSocketImpl {
 
   /* ---------- Internal: subscriptions ---------- */
 
+  private subscribeDebounceTimer: number | null = null;
+
   private recomputeSubscriptions() {
     const union = new Set<string>();
     if (this.selectedSymbol) union.add(this.selectedSymbol);
@@ -296,9 +298,22 @@ class TradingLayerMarketDataWebSocketImpl {
     if (same) return;
     this.currentSubscribed = arr;
     terminalRealtimeStore.setSubscribedSymbols(arr);
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.sendSubscribe(arr);
+    // Debounce 200ms to coalesce rapid changes (chart change + watchlist
+    // toggle + selected symbol change). Always sends the FULL list.
+    if (this.subscribeDebounceTimer != null) {
+      window.clearTimeout(this.subscribeDebounceTimer);
     }
+    this.subscribeDebounceTimer = window.setTimeout(() => {
+      this.subscribeDebounceTimer = null;
+      this.flushSubscribe();
+    }, 200);
+  }
+
+  private flushSubscribe() {
+    // Only send when upstream is ready. If not, the proxy will buffer for
+    // us once we do send — but we still gate here to keep diagnostics tidy.
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.sendSubscribe(this.currentSubscribed);
   }
 
   private sendSubscribe(symbols: string[]) {
