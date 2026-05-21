@@ -27,7 +27,9 @@ import {
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
 
-const VERSION = "reconcile-execution@1.4.0";
+const VERSION = "reconcile-execution@1.5.0";
+const RATE_LIMIT_DEFAULT_SECONDS = 60;
+const reconcileInFlight = new Map<string, number>();
 
 // MT5 TRADE_RETCODE → short name + human description.
 // Only well-known codes are mapped; anything else returns null/null.
@@ -152,11 +154,29 @@ type ReconcileInput = {
   brokerSymbol?: string | null;
 };
 
+const parseRetryAfter = (value: string | null): number | null => {
+  if (!value) return null;
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return Math.ceil(numeric);
+  const asDate = Date.parse(value);
+  if (Number.isFinite(asDate)) return Math.max(1, Math.ceil((asDate - Date.now()) / 1000));
+  return null;
+};
+
+const extractArray = (data: any): any[] => {
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.positions)) return data.positions;
+  if (Array.isArray(data?.orders)) return data.orders;
+  if (Array.isArray(data?.deals)) return data.deals;
+  if (Array.isArray(data)) return data;
+  return [];
+};
+
 async function tlFetch(
   path: string,
   qs: Record<string, string | number | undefined>,
   apiKey: string,
-): Promise<{ ok: boolean; status: number; data: any; error?: string }> {
+): Promise<{ ok: boolean; status: number; data: any; error?: string; retryAfter: number | null }> {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(qs)) {
     if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
@@ -169,9 +189,9 @@ async function tlFetch(
     const text = await res.text();
     let body: any = {};
     try { body = text ? JSON.parse(text) : {}; } catch { body = { _raw: text }; }
-    return { ok: res.ok, status: res.status, data: body };
+    return { ok: res.ok, status: res.status, data: body, retryAfter: parseRetryAfter(res.headers.get("retry-after")) };
   } catch (e) {
-    return { ok: false, status: 0, data: null, error: e instanceof Error ? e.message : String(e) };
+    return { ok: false, status: 0, data: null, error: e instanceof Error ? e.message : String(e), retryAfter: null };
   }
 }
 
