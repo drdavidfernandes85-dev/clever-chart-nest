@@ -124,6 +124,8 @@ class MarketDataServiceImpl {
       this.startLoop("selected_symbol", this.tickSelected, SELECTED_INTERVAL_MS);
       this.tickSelected();
     }
+    // Forward to WebSocket service (display path).
+    tradingLayerMarketDataWebSocket.setSelectedSymbol(sym);
     this.publishPolledSymbols();
     this.publishActiveLoops();
   }
