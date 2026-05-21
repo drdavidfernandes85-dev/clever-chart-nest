@@ -310,28 +310,38 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Resolve mapping once — purely for diagnostics. execute-trade resolves
-  // and uses metaapi_account_id (= trading_layer_trader_id) internally.
-  let mapping: { localRowId: string | null; traderId: string | null; login: string | null; server: string | null } = {
-    localRowId: null, traderId: null, login: null, server: null,
-  };
+  // Resolve mapping once — used for diagnostics AND to hard-block stale
+  // mappings before any order is forwarded to execute-trade.
+  let mapping: {
+    localRowId: string | null;
+    traderId: string | null;
+    login: string | null;
+    server: string | null;
+    status: "valid" | "stale" | "missing" | "unknown";
+  } = { localRowId: null, traderId: null, login: null, server: null, status: "unknown" };
   if (uid) {
     try {
-      const { data: acc } = await supabase
-        .from("user_mt_accounts")
-        .select("id, metaapi_account_id, trading_layer_trader_id, login, server_name")
-        .eq("user_id", uid)
-        .eq("status", "connected")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (acc) {
-        mapping = {
-          localRowId: String((acc as any).id ?? "") || null,
-          traderId: String((acc as any).trading_layer_trader_id ?? (acc as any).metaapi_account_id ?? "") || null,
-          login: (acc as any).login ?? null,
-          server: (acc as any).server_name ?? null,
-        };
+      const m = await resolveActiveMtMapping(supabase, uid);
+      mapping = {
+        localRowId: m.localRowId,
+        traderId: m.traderId,
+        login: m.login,
+        server: m.server,
+        status: m.status,
+      };
+      if (m.status === "stale" || (m.status !== "missing" && !m.traderId)) {
+        timings.accountResolvedAt = Date.now();
+        timings.finalUiStatusAt = Date.now();
+        return withTimings({
+          success: false,
+          version: VERSION,
+          step: "mapping_validation",
+          liveOrderSent: false,
+          tradeId,
+          error: STALE_MAPPING_ERROR_CODE,
+          message: STALE_MAPPING_USER_MESSAGE,
+          mapping,
+        });
       }
     } catch { /* diagnostics-only */ }
   }
