@@ -220,31 +220,35 @@ Deno.serve(async (req) => {
     });
   }
 
-  // ── Load the connected MT5 account ──────────────────────────────────────
-  const { data: account, error: accErr } = await supabase
-    .from("user_mt_accounts")
-    .select("id, login, server_name, status, metaapi_account_id, broker_name")
-    .eq("user_id", userId)
-    .eq("status", "connected")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (accErr) {
-    return json(500, { ok: false, version: VERSION, error: accErr.message });
-  }
-  if (!account?.metaapi_account_id) {
+  // ── Load the connected MT5 account via the shared mapping resolver ─────
+  // This ensures reconciliation always uses the same Trading Layer trader id
+  // that execute-trade resolves, even when stale ownerAccountId rows exist.
+  const mapping = await resolveActiveMtMapping(supabase, userId);
+  if (mapping.status === "missing") {
     return json(200, {
       ok: false,
       version: VERSION,
       status: "execution_unconfirmed",
       mt5Confirmed: false,
       explanation: "No connected MT5 account found for this user.",
+      mappingStatus: "missing",
+    });
+  }
+  if (mapping.status === "stale" || !mapping.traderId) {
+    return json(409, {
+      ok: false,
+      version: VERSION,
+      status: "execution_unconfirmed",
+      mt5Confirmed: false,
+      error: STALE_MAPPING_ERROR_CODE,
+      explanation: STALE_MAPPING_USER_MESSAGE,
+      mappingStatus: mapping.status,
+      localRowId: mapping.localRowId,
     });
   }
 
-  const accountId = String(account.metaapi_account_id);
-  const traderId = accountId; // Same value per existing get-live-account convention.
+  const accountId = String(mapping.traderId);
+  const traderId = accountId; // Same value per get-live-account / submit convention.
 
   // Date window: ±10 minutes around the click (defaults to "now - 10m").
   const clickMs = input.clientClickAt ? Date.parse(input.clientClickAt) : Date.now();
