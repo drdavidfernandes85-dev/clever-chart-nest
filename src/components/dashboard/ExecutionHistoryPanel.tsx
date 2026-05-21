@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download, Loader2, Search } from "lucide-react";
+import { Download, Loader2, RefreshCw, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDevMode } from "@/hooks/useDevMode";
 import { Input } from "@/components/ui/input";
@@ -154,6 +154,7 @@ const ExecutionHistoryPanel = () => {
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AuditRow | null>(null);
+  const [retryingTradeId, setRetryingTradeId] = useState<string | null>(null);
 
   // filters
   const [symbol, setSymbol] = useState("");
@@ -297,6 +298,47 @@ const ExecutionHistoryPanel = () => {
     setOpCategory("all");
     setDateFrom("");
     setDateTo("");
+  };
+
+  const retryConfirmation = async (row: AuditRow) => {
+    if (!row.trade_id || retryingTradeId) return;
+    setRetryingTradeId(row.trade_id);
+    const raw = row.raw || {};
+    const rec = raw.reconciliation || {};
+    const diag = raw.diagnostics || {};
+    try {
+      await supabase.functions.invoke("reconcile-execution", {
+        body: {
+          tradeId: row.trade_id,
+          symbol: row.symbol,
+          side: row.side,
+          volume: Number(row.volume),
+          requestedPrice: row.requested_price,
+          clientClickAt: rec?.request?.clientClickAt ?? row.created_at,
+          brokerRetcode: row.retcode ?? raw.retcode ?? null,
+          brokerMessage: row.broker_message ?? null,
+          positionTicket: row.ticket ?? raw.positionTicket ?? diag.positionTicket ?? null,
+          orderId: raw.orderId ?? diag.orderId ?? null,
+          dealId: raw.dealId ?? diag.dealId ?? null,
+          requestId: raw.requestId ?? diag.requestId ?? null,
+          clientOrderId: raw.clientOrderId ?? diag.clientOrderId ?? row.trade_id,
+          brokerSymbol: raw.brokerSymbol ?? diag.brokerSymbol ?? row.symbol,
+          rawExecutionResponse: raw,
+        },
+      });
+      const { data } = await supabase
+        .from("execution_audit_events")
+        .select("*")
+        .eq("id", row.id)
+        .maybeSingle();
+      if (data) {
+        const updated = data as unknown as AuditRow;
+        setRows((prev) => prev.map((r) => (r.id === row.id ? updated : r)));
+        setDetail(updated);
+      }
+    } finally {
+      setRetryingTradeId(null);
+    }
   };
 
   const summaryCards: Array<[string, string]> = [
