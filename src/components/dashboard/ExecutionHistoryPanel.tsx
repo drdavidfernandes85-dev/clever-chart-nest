@@ -697,10 +697,14 @@ const ReconciliationView = ({ raw }: { raw: any }) => {
             "Confirmed Price",
             rec.confirmedEntryPrice != null ? String(rec.confirmedEntryPrice) : "—",
           ],
-          ["Positions Checked", String(rec.positionsChecked ?? "—")],
-          ["Orders Checked", String(rec.ordersChecked ?? "—")],
-          ["Deals Checked", String(rec.dealsChecked ?? "—")],
-          ["Pending Checked", String(rec.pendingOrdersChecked ?? "—")],
+          ["Positions Checked", sourceSummary(rec, "positions")],
+          ["Orders Checked", sourceSummary(rec, "orders")],
+          ["Deals Checked", sourceSummary(rec, "deals")],
+          ["Pending Checked", sourceSummary(rec, "pending")],
+          ["Rate Limit Hit", rec.rateLimitHit ? "Yes" : "No"],
+          ["Retry After", rec.retryAfter != null ? `${rec.retryAfter}s` : "No"],
+          ["Next Reconcile", rec.nextReconcileAt || "No"],
+          ["Rate-Limited Endpoint", rec.endpointRateLimited || "No"],
         ]}
       />
       {rec.explanation && (
