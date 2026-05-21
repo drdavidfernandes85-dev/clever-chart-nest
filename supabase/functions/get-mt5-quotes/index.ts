@@ -37,18 +37,36 @@ function json(body: unknown, status = 200) {
 const normalize = (v: string) =>
   String(v || "").trim().replace("/", "").replace("-", "").replace(" ", "").toUpperCase();
 
-async function tlGet(path: string) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${TRADING_LAYER_KEY}`,
-      Accept: "application/json",
-    },
-  });
-  const text = await res.text();
-  let data: any;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  return { ok: res.ok, status: res.status, data };
+async function tlGet(path: string, retries = 2) {
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${BASE_URL}${path}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${TRADING_LAYER_KEY}`,
+          Accept: "application/json",
+        },
+      });
+      const text = await res.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      // Retry on transient upstream failures
+      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+        continue;
+      }
+      return { ok: res.ok, status: res.status, data };
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+        continue;
+      }
+      return { ok: false, status: 0, data: { error: err instanceof Error ? err.message : String(err) } };
+    }
+  }
+  return { ok: false, status: 0, data: { error: String(lastErr) } };
 }
 
 const DEFAULT_BATCH = [
