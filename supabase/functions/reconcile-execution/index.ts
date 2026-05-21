@@ -240,6 +240,20 @@ Deno.serve(async (req) => {
     });
   }
 
+  const reconcileKey = input.tradeId || `${userId}:${wantSym}:${wantSide}:${wantVol}`;
+  const inFlightAt = reconcileInFlight.get(reconcileKey);
+  if (inFlightAt && Date.now() - inFlightAt < 30_000) {
+    return json(202, {
+      ok: false,
+      version: VERSION,
+      status: "confirmation_pending",
+      confirmationStatus: "pending",
+      explanation: "A confirmation check is already running for this trade. No duplicate order was sent.",
+      tradeId: input.tradeId ?? null,
+    });
+  }
+  reconcileInFlight.set(reconcileKey, Date.now());
+
   // ── Load the connected MT5 account via the shared mapping resolver ─────
   // This ensures reconciliation always uses the same Trading Layer trader id
   // that execute-trade resolves, even when stale ownerAccountId rows exist.
@@ -279,7 +293,13 @@ Deno.serve(async (req) => {
   // We intentionally omit the upstream `symbol` filter so a broker that
   // returns a suffixed broker symbol (e.g. "XAUUSD.M") is not silently
   // filtered out. Symbol comparison happens client-side with symEq.
-  const [traderRes, posRes, ordersRes, histOrdersRes, histDealsRes] = await Promise.all([
+  let traderRes: Awaited<ReturnType<typeof tlFetch>>;
+  let posRes: Awaited<ReturnType<typeof tlFetch>>;
+  let ordersRes: Awaited<ReturnType<typeof tlFetch>>;
+  let histOrdersRes: Awaited<ReturnType<typeof tlFetch>>;
+  let histDealsRes: Awaited<ReturnType<typeof tlFetch>>;
+  try {
+    [traderRes, posRes, ordersRes, histOrdersRes, histDealsRes] = await Promise.all([
     tlFetch(`/traders/${encodeURIComponent(traderId)}`, {}, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/positions`, { limit: 200 }, TL_KEY),
     tlFetch(`/accounts/${encodeURIComponent(accountId)}/orders`, { limit: 200 }, TL_KEY),
@@ -297,12 +317,42 @@ Deno.serve(async (req) => {
       sort: "time",
       order: "desc",
     }, TL_KEY),
-  ]);
+    ]);
+  } finally {
+    reconcileInFlight.delete(reconcileKey);
+  }
 
-  const positions: any[] = Array.isArray(posRes.data?.data) ? posRes.data.data : [];
-  const pendingOrders: any[] = Array.isArray(ordersRes.data?.data) ? ordersRes.data.data : [];
-  const historyOrders: any[] = Array.isArray(histOrdersRes.data?.data) ? histOrdersRes.data.data : [];
-  const historyDeals: any[] = Array.isArray(histDealsRes.data?.data) ? histDealsRes.data.data : [];
+  const positions: any[] = extractArray(posRes.data);
+  const pendingOrders: any[] = extractArray(ordersRes.data);
+  const historyOrders: any[] = extractArray(histOrdersRes.data);
+  const historyDeals: any[] = extractArray(histDealsRes.data);
+  const endpointResults = { positions: posRes, orders: histOrdersRes, pending: ordersRes, deals: histDealsRes };
+  const sourcesChecked = {
+    positions: posRes.status !== 429 && posRes.ok,
+    orders: histOrdersRes.status !== 429 && histOrdersRes.ok,
+    deals: histDealsRes.status !== 429 && histDealsRes.ok,
+    pending: ordersRes.status !== 429 && ordersRes.ok,
+  };
+  const reasonFor = (r: Awaited<ReturnType<typeof tlFetch>>): "rate_limited" | "endpoint_error" | null =>
+    r.status === 429 ? "rate_limited" : r.ok ? null : "endpoint_error";
+  const sourcesSkipped = {
+    positions: reasonFor(posRes),
+    orders: reasonFor(histOrdersRes),
+    deals: reasonFor(histDealsRes),
+    pending: reasonFor(ordersRes),
+  };
+  const checkedCounts = {
+    positionsCount: positions.length,
+    ordersCount: historyOrders.length,
+    dealsCount: historyDeals.length,
+    pendingOrdersCount: pendingOrders.length,
+  };
+  const rateLimitedEntries = Object.entries(endpointResults).filter(([, r]) => r.status === 429);
+  const rateLimitHit = rateLimitedEntries.length > 0;
+  const retryAfter = rateLimitHit
+    ? Math.max(...rateLimitedEntries.map(([, r]) => r.retryAfter ?? RATE_LIMIT_DEFAULT_SECONDS))
+    : null;
+  const nextReconcileAt = retryAfter ? new Date(Date.now() + retryAfter * 1000).toISOString() : null;
 
   // ── Matching ────────────────────────────────────────────────────────────
   // Match priority (most specific first):
