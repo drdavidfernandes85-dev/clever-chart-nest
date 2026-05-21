@@ -507,68 +507,6 @@ class TradingLayerMarketDataWebSocketImpl {
     ]);
   }
 
-    terminalRealtimeStore.incFrameReceived(true);
-    // Got a tick — clear no-frames timer (we have real data flowing).
-    this.clearNoFramesTimer();
-    if (terminalRealtimeStore.getState().wsMarketDataStatus === "connected_no_frames") {
-      terminalRealtimeStore.setStatus("connected");
-    }
-
-    const liveQuotes: LiveQuote[] = [];
-    const now = Date.now();
-    for (const t of ticks) {
-      const brokerSymbol = String(
-        t.brokerSymbol || t.symbol || t.s || "",
-      ).toUpperCase();
-      if (!brokerSymbol) {
-        terminalRealtimeStore.incMalformed();
-        continue;
-      }
-      const displaySymbol = String(
-        t.displaySymbol || t.display || brokerSymbol,
-      ).toUpperCase();
-      const bid = num(t.bid ?? t.b);
-      const ask = num(t.ask ?? t.a);
-      const last =
-        num(t.last ?? t.l) ??
-        (bid != null && ask != null ? (bid + ask) / 2 : null);
-      const spread =
-        num(t.spread) ??
-        (bid != null && ask != null ? Math.max(0, ask - bid) : null);
-      const volume = num(t.volume ?? t.v);
-      const ts = num(t.timestamp ?? t.ts ?? t.time) ?? now;
-
-      const tick: RealtimeTick = {
-        brokerSymbol,
-        displaySymbol,
-        bid,
-        ask,
-        last,
-        spread,
-        volume,
-        timestamp: ts,
-        source: "trading_layer_ws",
-      };
-      terminalRealtimeStore.applyTick(tick);
-
-      // Mirror into existing liveMarketDataStore so every legacy widget
-      // (Order Ticket, Quotes Board, Chart header) updates immediately.
-      liveQuotes.push({
-        symbol: brokerSymbol,
-        bid,
-        ask,
-        last,
-        spread,
-        digits: null,
-        timestamp: ts,
-        source: "stream",
-      });
-    }
-    if (liveQuotes.length) {
-      liveMarketDataStore.setQuotes(liveQuotes);
-    }
-  }
-
   private extractTicks(msg: any): any[] {
     if (Array.isArray(msg.ticks)) return msg.ticks;
     if (Array.isArray(msg.quotes)) return msg.quotes;
