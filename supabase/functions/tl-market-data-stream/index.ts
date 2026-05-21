@@ -82,15 +82,20 @@ Deno.serve(async (req) => {
   const { socket: client, response } = Deno.upgradeWebSocket(req);
 
   // ---- Open upstream TL socket ----
+  // The Trading Layer API key never leaves the server. Deno's standard
+  // WebSocket does not accept custom HTTP headers, so we send the bearer
+  // token via the Sec-WebSocket-Protocol subprotocol (the standard
+  // browser/Deno-compatible auth carrier). Pending TL confirmation of
+  // their accepted WS auth scheme.
   const upstreamUrl =
     `${TL_BASE_WS}/api/v1/accounts/${encodeURIComponent(accountId)}/market-data/ws`;
   let upstream: WebSocket | null = null;
   try {
-    upstream = new WebSocket(upstreamUrl, {
-      headers: { Authorization: `Bearer ${TRADING_LAYER_KEY}` },
-    } as any);
+    upstream = new WebSocket(upstreamUrl, [
+      `bearer.${TRADING_LAYER_KEY}`,
+    ]);
   } catch (e) {
-    console.error("tl-market-data-stream: upstream connect failed", e);
+    console.error("tl-market-data-stream: upstream connect failed");
     try { client.close(1011, "upstream connect failed"); } catch { /* */ }
     return response;
   }
