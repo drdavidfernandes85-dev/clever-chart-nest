@@ -489,8 +489,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       return true;
     };
 
-    // Cadence: T+0, +1.5s, +3s, +5s, +8s
-    const cadence = [0, 1500, 1500, 2000, 3000];
+    // Cadence: T+0, +500ms, +1s, +2s, +3.5s, +5s, +8s, +12s
+    const cadence = [0, 500, 500, 1000, 1500, 1500, 3000, 4000];
     for (let i = 0; i < cadence.length; i++) {
       if (cadence[i] > 0) await new Promise((r) => setTimeout(r, cadence[i]));
       try { await refresh(); } catch { /* ignore */ }
@@ -1051,8 +1051,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           });
         };
 
-        // Cadence: T+0, +1.5s, +3s, +5s, +8s
-        const cadence = [0, 1500, 1500, 2000, 3000];
+        // Cadence: T+0, +500ms, +1s, +2s, +3.5s, +5s, +8s, +12s
+        const cadence = [0, 500, 500, 1000, 1500, 1500, 3000, 4000];
         let matched: any = null;
         for (let i = 0; i < cadence.length; i++) {
           if (cadence[i] > 0) await new Promise((r) => setTimeout(r, cadence[i]));
@@ -1083,6 +1083,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 brokerRetcode: res?.retcode ?? null,
                 brokerMessage:
                   res?.brokerMessage ?? res?.retcodeDescription ?? null,
+                // ID-first matching keys (reconcile-execution@1.3.0)
+                positionTicket: res?.positionTicket ?? res?.ticket ?? null,
+                orderId: res?.orderId ?? null,
+                dealId: res?.dealId ?? null,
+                requestId: res?.requestId ?? null,
+                clientOrderId: res?.clientOrderId ?? tradeId,
+                brokerSymbol: res?.brokerSymbol ?? null,
                 rawExecutionResponse: res ?? null,
               },
             },
