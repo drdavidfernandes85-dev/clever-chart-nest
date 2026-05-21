@@ -37,18 +37,36 @@ function json(body: unknown, status = 200) {
 const normalize = (v: string) =>
   String(v || "").trim().replace("/", "").replace("-", "").replace(" ", "").toUpperCase();
 
-async function tlGet(path: string) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${TRADING_LAYER_KEY}`,
-      Accept: "application/json",
-    },
-  });
-  const text = await res.text();
-  let data: any;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  return { ok: res.ok, status: res.status, data };
+async function tlGet(path: string, retries = 2) {
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${BASE_URL}${path}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${TRADING_LAYER_KEY}`,
+          Accept: "application/json",
+        },
+      });
+      const text = await res.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      // Retry on transient upstream failures
+      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+        continue;
+      }
+      return { ok: res.ok, status: res.status, data };
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+        continue;
+      }
+      return { ok: false, status: 0, data: { error: err instanceof Error ? err.message : String(err) } };
+    }
+  }
+  return { ok: false, status: 0, data: { error: String(lastErr) } };
 }
 
 const DEFAULT_BATCH = [
@@ -126,7 +144,7 @@ serve(async (req) => {
 
     const limited = targetUpper.slice(0, 40);
 
-    const CONC = 8;
+    const CONC = 4;
     const quotes: any[] = [];
     let cursor = 0;
     async function worker() {
@@ -199,11 +217,14 @@ serve(async (req) => {
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
+    // Degrade gracefully so the frontend keeps fallback polling without surfacing a 500.
     return json({
       success: false,
       step: "unhandled_exception",
       error: err instanceof Error ? err.message : String(err),
       quotes: [],
-    }, 500);
+      accountConnected: true,
+      timestamp: new Date().toISOString(),
+    }, 200);
   }
 });
