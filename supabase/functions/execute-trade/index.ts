@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  resolveActiveMtMapping,
+  STALE_MAPPING_ERROR_CODE,
+  STALE_MAPPING_USER_MESSAGE,
+} from "../_shared/mtMapping.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
