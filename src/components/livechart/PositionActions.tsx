@@ -157,35 +157,50 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
   }
 
   async function submitClose(volume: number, label: "partial" | "full") {
-    if (!ticket) return toast.error("Position identifier missing on this row. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
+    if (!ticket) return toast.error("Position identifier missing. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
+    if (!position.symbol) return toast.error("Broker symbol missing on this position. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
+    if (!(position.side === "buy" || position.side === "sell")) return toast.error("Position side missing. Refresh positions and try again.");
+    if (!(Number(volume) > 0)) return toast.error("Close volume must be greater than 0.");
     if (isExecutionLocked()) {
       return toast.warning("Another execution is in progress. Please wait.");
     }
     const openVolume = Number(position.volume);
+    const clientCloseId = crypto.randomUUID();
+    const clickClickAt = new Date().toISOString();
     setSubmitting(true);
     lockExecution(label === "full" ? "close_full" : "close_partial", 30000);
     let serverAccepted = false;
     let serverPartial = false;
     let closeAuditEventId: string | null = null;
+    let serverResp: any = null;
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
       const r = await fetch(url, {
         method: "POST", cache: "no-store", headers,
         body: JSON.stringify({
-          closeId: crypto.randomUUID(),
+          closeId: clientCloseId,
+          clientCloseId,
+          requestId: clientCloseId,
           ticket: Number(ticket),
+          positionTicket: Number(ticket),
           symbol: position.symbol,
+          brokerSymbol: position.symbol,
+          displaySymbol: position.symbol,
           openSide: position.side,
           openVolume,
           volume: Number(volume),
+          partialVolume: label === "partial" ? Number(volume) : undefined,
           liveCloseConfirmed: true,
-          clientClickAt: new Date().toISOString(),
+          clientClickAt: clickClickAt,
         }),
       });
       const data = await r.json().catch(() => ({}));
+      serverResp = data;
       if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
       checkAndHandle429(data, null);
+      // Instant UI signal: close request was sent.
+      toast.message("Close request sent", { description: `#${ticket} ${position.symbol}` });
       if (!r.ok || data?.success === false) {
         toast.error(errMessageFrom(data), {
           description: safeStr(data?.brokerMessage),
@@ -196,6 +211,7 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         serverAccepted = true;
         serverPartial = data?.status === "partial_closed" || data?.partial === true;
         closeAuditEventId = typeof data?.auditEventId === "string" ? data.auditEventId : null;
+        toast.success("Broker accepted close request", { description: "Waiting for MT5 confirmation." });
         if (label === "full") setOpenFull(false);
         else setOpenPartial(false);
       } else {
