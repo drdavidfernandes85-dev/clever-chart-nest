@@ -72,6 +72,10 @@ export interface TerminalRealtimeState {
   lastNonTickFrameSample: string | null;
   lastCloseCode: number | null;
   lastCloseReason: string | null;
+  upstreamReady: boolean;
+  lastControlFrame: string | null;
+  confirmedSubscribedSymbols: string[];
+  lastTickSymbol: string | null;
 }
 
 type Listener = (s: TerminalRealtimeState) => void;
