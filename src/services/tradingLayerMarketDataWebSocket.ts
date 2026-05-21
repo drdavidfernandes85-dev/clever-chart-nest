@@ -358,13 +358,29 @@ class TradingLayerMarketDataWebSocketImpl {
     // Tolerate multiple TL payload shapes — pull the first one we recognise.
     const ticks = this.extractTicks(msg);
     if (!ticks.length) {
-      // Non-tick frames (ack, ping, error) are ignored silently.
+      // Non-tick frames (ack, ping, error, hint): count + sample sanitized.
+      const frameType = String(
+        msg.type || msg.event || msg.action || msg.method || "unknown",
+      ).slice(0, 64);
+      let sample: string | undefined;
+      try {
+        const s = JSON.stringify(msg);
+        sample = s.length > 300 ? `${s.slice(0, 300)}…` : s;
+      } catch { /* ignore */ }
+      terminalRealtimeStore.incFrameReceived(false, frameType, sample);
       if (msg.type === "error" || msg.error) {
         terminalRealtimeStore.setLastError(
           String(msg.error?.message || msg.error || msg.message || "WS error"),
         );
       }
       return;
+    }
+
+    terminalRealtimeStore.incFrameReceived(true);
+    // Got a tick — clear no-frames timer (we have real data flowing).
+    this.clearNoFramesTimer();
+    if (terminalRealtimeStore.getState().wsMarketDataStatus === "connected_no_frames") {
+      terminalRealtimeStore.setStatus("connected");
     }
 
     const liveQuotes: LiveQuote[] = [];
