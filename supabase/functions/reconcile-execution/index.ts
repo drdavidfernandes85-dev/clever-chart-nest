@@ -694,6 +694,14 @@ Deno.serve(async (req) => {
         .from("execution_audit_events")
         .update({
           status: auditStatus,
+          outcome: result.mt5Confirmed
+            ? "success"
+            : auditStatus === "confirmation_delayed_rate_limited"
+              ? "pending"
+              : auditStatus === "order_rejected"
+                ? "rejected"
+                : "unconfirmed",
+          retcode: effectiveRetcode != null && Number.isFinite(Number(effectiveRetcode)) ? Number(effectiveRetcode) : null,
           ticket: result.confirmedTicket ?? null,
           executed_price: result.confirmedEntryPrice ?? null,
           broker_message: matchedPosition
