@@ -29,6 +29,7 @@ import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
 import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
+import MT5MappingHealthNotice from "@/components/dashboard/MT5MappingHealthNotice";
 import RiskBadges from "@/components/dashboard/RiskBadges";
 import RiskControlsPanel from "@/components/dashboard/RiskControlsPanel";
 import { useDevMode } from "@/hooks/useDevMode";
