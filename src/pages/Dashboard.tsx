@@ -29,6 +29,7 @@ import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalExecutionLog from "@/components/dashboard/TerminalExecutionLog";
 import ExecutionHistoryPanel from "@/components/dashboard/ExecutionHistoryPanel";
 import TradingLayerPauseBanner from "@/components/dashboard/TradingLayerPauseBanner";
+import MT5MappingHealthNotice from "@/components/dashboard/MT5MappingHealthNotice";
 import RiskBadges from "@/components/dashboard/RiskBadges";
 import RiskControlsPanel from "@/components/dashboard/RiskControlsPanel";
 import { useDevMode } from "@/hooks/useDevMode";
@@ -984,6 +985,7 @@ const DashboardInner = () => {
 
       <TerminalHeader />
       <TradingLayerPauseBanner />
+      <MT5MappingHealthNotice />
 
       <div className="p-2 lg:p-3">
         <div className="grid gap-1.5 lg:gap-2 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_310px]">
