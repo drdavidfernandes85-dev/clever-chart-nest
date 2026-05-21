@@ -56,7 +56,7 @@ export async function reconcileAfterClose(
   opts?: { initialVolume?: number; getVolumeForTicket?: (t: string) => number | null },
 ): Promise<"closed" | "partial" | "pending"> {
   const target = ticket != null ? String(ticket) : null;
-  const delays = [0, 1500, 1500, 2000, 3000];
+  const delays = [0, 500, 500, 1000, 1500, 1500, 3000, 4000];
   for (const d of delays) {
     if (d > 0) await sleep(d);
     try { await refresh(); } catch { /* ignore */ }
