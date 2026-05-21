@@ -22,7 +22,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const VERSION = "reconcile-execution@1.2.0";
+const VERSION = "reconcile-execution@1.3.0";
 
 // MT5 TRADE_RETCODE → short name + human description.
 // Only well-known codes are mapped; anything else returns null/null.
