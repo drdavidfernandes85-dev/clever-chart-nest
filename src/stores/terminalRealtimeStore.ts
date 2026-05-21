@@ -105,6 +105,10 @@ const initial: TerminalRealtimeState = {
   lastNonTickFrameSample: null,
   lastCloseCode: null,
   lastCloseReason: null,
+  upstreamReady: false,
+  lastControlFrame: null,
+  confirmedSubscribedSymbols: [],
+  lastTickSymbol: null,
 };
 
 let state: TerminalRealtimeState = initial;
