@@ -21,8 +21,13 @@
 // by get-live-account and submit-best-execution-order).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  resolveActiveMtMapping,
+  STALE_MAPPING_ERROR_CODE,
+  STALE_MAPPING_USER_MESSAGE,
+} from "../_shared/mtMapping.ts";
 
-const VERSION = "reconcile-execution@1.3.0";
+const VERSION = "reconcile-execution@1.4.0";
 
 // MT5 TRADE_RETCODE → short name + human description.
 // Only well-known codes are mapped; anything else returns null/null.
