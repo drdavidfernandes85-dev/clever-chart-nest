@@ -121,12 +121,19 @@ const ConnectMT = () => {
       const { data: ures } = await supabase.auth.getUser();
       const uid = ures?.user?.id;
       if (!uid) throw new Error("Not authenticated");
-      const { error } = await supabase
-        .from("user_mt_accounts")
-        .delete()
-        .eq("user_id", uid)
-        .eq("status", "connected");
+
+      // Ask the edge function to remove upstream MT5 credentials
+      // (server-side Authorization: Bearer ${TRADING_LAYER_PUBLIC_API_KEY})
+      // and delete the local row in one shot. We never call Trading Layer
+      // from the browser.
+      const { data, error } = await supabase.functions.invoke("connect-mt5-v2", {
+        body: { mode: "disconnect" },
+      });
       if (error) throw error;
+      if (data && data.success === false) {
+        throw new Error(data.message || data.error || "Failed to disconnect");
+      }
+
       setConnectedRowId(null);
       setTraderId(null);
       setSummary(null);
@@ -139,6 +146,7 @@ const ConnectMT = () => {
       setIsDisconnecting(false);
     }
   };
+
 
 
   const callConnect = async (mode: "test" | "connect") => {
