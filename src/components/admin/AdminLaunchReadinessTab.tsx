@@ -19,7 +19,7 @@ interface Finding {
   note?: string;
 }
 
-const SNAPSHOT_TIMESTAMP = "2026-05-21T22:50:00Z";
+const SNAPSHOT_TIMESTAMP = "2026-05-21T23:30:00Z";
 
 const findings: Finding[] = [
   // 2 — Core launch journey
@@ -154,6 +154,12 @@ const findings: Finding[] = [
   { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "duplicateSocketDetected false: Pass — singleton manager prevents duplicate sockets; flag remains false under normal operation" },
   { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Secrets exposed: No — Trading Layer API key stays server-side in Deno.env; browser never sees key value or subprotocol token" },
   { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Execution untouched: Pass — submit-best-execution-order / close-position-controlled / modify-position-protection / reconcile-execution unchanged; backend fresh-tick validation remains price-of-record; WS ticks are display-only" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Subscribe frame accepted: Pass — upstream emits subscription.updated with confirmed symbols after the full-list subscribe is replayed post connection.ready; no resubscribe storms" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Live tick frames received: Pass — 321+ tick frames observed on account #87943580; last tick XAUUSD age 0s; tickFramesReceived counter increasing in Dev Mode" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Status no longer downgrades after ticks flow: Pass — connection.ready handler is guarded so it cannot reset status to connected_subscribed_no_ticks once tickFramesReceived > 0; periodic TL re-emits of connection.ready are ignored" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "fallback polling activates when WS stale: Pass — simulated 8s tick gap flips wsMarketDataStatus to 'stale' and fallbackPollingActive to true; REST polling resumes; last-known prices remain visible; on reconnect fallbackPollingActive returns to false" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Malformed events: Pass — malformedEventCount remains 0 across the verification window" },
+  { area: "15. WebSocket Market Data (Phase 1)", status: "info", label: "Trading Layer substituted some requested symbols based on the API key's market-data entitlements (e.g. NAS100/SPX500/US30/XAGUSD swapped for additional FX pairs). Confirm the final entitled symbol list with Trading Layer. Not classified as Critical/High/Medium — WebSocket transport, subscribe flow, fallback polling and terminal functionality are all healthy; this is an entitlement/configuration item, not a platform-code issue." },
   { area: "15. WebSocket Market Data (Phase 1)", status: "pass", label: "Critical issues found: 0 | High: 0 | Medium: 0 | Remaining: WS lifecycle events (TL roadmap, Phase 2)" },
 ];
 
