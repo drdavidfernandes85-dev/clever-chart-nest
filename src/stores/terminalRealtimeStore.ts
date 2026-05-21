@@ -59,6 +59,16 @@ export interface TerminalRealtimeState {
   connectedSince: number | null;
   accountIdMasked: string | null;
   wsUrlMasked: string | null;
+  subscribeSchema: WsSubscribeSchema;
+  lastSubscribeFrame: string | null;
+  lastSubscribeSentAt: number | null;
+  framesReceived: number;
+  tickFramesReceived: number;
+  nonTickFramesReceived: number;
+  lastNonTickFrameType: string | null;
+  lastNonTickFrameSample: string | null;
+  lastCloseCode: number | null;
+  lastCloseReason: string | null;
 }
 
 type Listener = (s: TerminalRealtimeState) => void;
@@ -78,6 +88,16 @@ const initial: TerminalRealtimeState = {
   connectedSince: null,
   accountIdMasked: null,
   wsUrlMasked: null,
+  subscribeSchema: "current_json_type",
+  lastSubscribeFrame: null,
+  lastSubscribeSentAt: null,
+  framesReceived: 0,
+  tickFramesReceived: 0,
+  nonTickFramesReceived: 0,
+  lastNonTickFrameType: null,
+  lastNonTickFrameSample: null,
+  lastCloseCode: null,
+  lastCloseReason: null,
 };
 
 let state: TerminalRealtimeState = initial;
