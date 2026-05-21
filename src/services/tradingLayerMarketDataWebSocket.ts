@@ -300,10 +300,20 @@ class TradingLayerMarketDataWebSocketImpl {
 
   private sendSubscribe(symbols: string[]) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    const frame = buildMarketDataSubscribeFrame(symbols, this.subscribeSchema);
+    if (frame == null) {
+      // auto_stream: do not send a subscribe frame; record intent only.
+      terminalRealtimeStore.recordSubscribeFrame(
+        `(auto_stream — no subscribe frame; ${symbols.length} symbols)`,
+      );
+      return;
+    }
     try {
-      // Generic subscribe envelope; proxy forwards to Trading Layer.
-      this.ws.send(
-        JSON.stringify({ type: "subscribe", symbols }),
+      this.ws.send(frame);
+      // Sanitize: never contains keys/tokens — schema is fully derivable
+      // from symbols, but truncate defensively.
+      terminalRealtimeStore.recordSubscribeFrame(
+        frame.length > 500 ? `${frame.slice(0, 500)}…` : frame,
       );
     } catch {
       /* ignore send errors — reconnect path will re-send */
