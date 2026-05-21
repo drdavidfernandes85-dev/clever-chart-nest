@@ -24,12 +24,59 @@ import {
 import {
   terminalRealtimeStore,
   type RealtimeTick,
+  type WsSubscribeSchema,
 } from "@/stores/terminalRealtimeStore";
 
 const STALE_THRESHOLD_MS = 8000;
 const STALE_CHECK_MS = 2500;
+const NO_FRAMES_TIMEOUT_MS = 10_000;
 const MAX_BACKOFF_MS = 30_000;
 const BASE_BACKOFF_MS = 1000;
+
+const VALID_SCHEMAS: WsSubscribeSchema[] = [
+  "current_json_type",
+  "action_subscribe",
+  "event_subscribe",
+  "method_subscribe",
+  "channel_subscribe",
+  "plain_text",
+  "auto_stream",
+];
+
+function resolveSubscribeSchema(): WsSubscribeSchema {
+  const raw = String(
+    (import.meta as any).env?.VITE_TL_WS_SUBSCRIBE_SCHEMA || "",
+  ).trim() as WsSubscribeSchema;
+  return VALID_SCHEMAS.includes(raw) ? raw : "current_json_type";
+}
+
+/**
+ * Build the subscribe payload Trading Layer expects. Schema is configurable
+ * via VITE_TL_WS_SUBSCRIBE_SCHEMA so we can switch quickly once TL confirms.
+ * Returns null when no frame should be sent (auto_stream).
+ */
+export function buildMarketDataSubscribeFrame(
+  symbols: string[],
+  schema: WsSubscribeSchema,
+): string | null {
+  switch (schema) {
+    case "action_subscribe":
+      return JSON.stringify({ action: "subscribe", symbols });
+    case "event_subscribe":
+      return JSON.stringify({ event: "subscribe", symbols });
+    case "method_subscribe":
+      return JSON.stringify({ method: "subscribe", params: { symbols } });
+    case "channel_subscribe":
+      return JSON.stringify({ type: "subscribe", channel: "market-data", symbols });
+    case "plain_text":
+      return `subscribe:${symbols.join(",")}`;
+    case "auto_stream":
+      return null;
+    case "current_json_type":
+    default:
+      return JSON.stringify({ type: "subscribe", symbols });
+  }
+}
 
 const num = (v: any): number | null => {
   if (v === null || v === undefined || v === "") return null;
