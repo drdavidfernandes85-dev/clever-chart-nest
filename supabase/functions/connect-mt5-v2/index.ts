@@ -177,29 +177,29 @@ Deno.serve(async (req) => {
   const tlHeaders = tlAuthHeaders(apiKey);
 
   try {
-    // 1. Get tenant
-    const tenantRes = await fetchWithTimeout(
-      `${TRADING_LAYER_BASE}/api/v1/tenant`,
-      { method: "GET", headers: tlHeaders },
-      15000,
-    );
-    const tenantJson = await readJson(tenantRes);
+    // 1. Get tenant (cached, with 429 backoff)
+    const tenantResult = await fetchTenantCached(apiKey, tlHeaders);
+    const tenantJson = tenantResult.json;
 
-    if (tenantRes.status === 401 || tenantRes.status === 403) {
+    if (tenantResult.status === 401 || tenantResult.status === 403) {
       return json(502, {
         success: false,
         step: "tenant",
         error: "TL_AUTH_FAILED",
         message: "Trading Layer rejected the configured credentials.",
-        tradingLayerStatus: tenantRes.status,
+        tradingLayerStatus: tenantResult.status,
       });
     }
-    if (!tenantRes.ok) {
-      return json(502, {
+    if (!tenantResult.ok) {
+      const isRate = tenantResult.status === 429;
+      return json(isRate ? 429 : 502, {
         success: false,
         step: "tenant",
-        error: "Failed to load Trading Layer tenant.",
-        tradingLayerStatus: tenantRes.status,
+        error: isRate ? "TL_RATE_LIMITED" : "Failed to load Trading Layer tenant.",
+        message: isRate
+          ? "Trading Layer is rate limiting requests. Please retry in a few seconds."
+          : undefined,
+        tradingLayerStatus: tenantResult.status,
         tradingLayerResponse: tenantJson,
       });
     }
