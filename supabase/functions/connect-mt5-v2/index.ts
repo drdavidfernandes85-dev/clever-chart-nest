@@ -346,6 +346,15 @@ Deno.serve(async (req) => {
     );
     const persistJson = await readJson(persistRes);
     if (!persistRes.ok) {
+      if (persistRes.status === 401 || persistRes.status === 403) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_save",
+          error: "TL_AUTH_FAILED",
+          message: "Trading Layer rejected the configured credentials.",
+          tradingLayerStatus: persistRes.status,
+        });
+      }
       return json(502, {
         success: false,
         step: "mt5_credentials_save",
@@ -354,6 +363,7 @@ Deno.serve(async (req) => {
         tradingLayerResponse: persistJson,
       });
     }
+
 
     // 9. Persist locally — never store the password. Strict: a save failure
     // means the user will not appear connected on the dashboard, so surface it.
