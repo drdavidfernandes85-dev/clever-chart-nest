@@ -166,6 +166,14 @@ function WsDiagnosticsSection() {
       </div>
       <div className="grid grid-cols-2 gap-2 text-[10.5px] font-mono text-neutral-200">
         <div>
+          <span className="text-neutral-500">auth method: </span>
+          subprotocol bearer
+        </div>
+        <div>
+          <span className="text-neutral-500">required scope: </span>
+          mt5:market-data
+        </div>
+        <div>
           <span className="text-neutral-500">status: </span>
           <span className={tone}>{rt.wsMarketDataStatus.toUpperCase()}</span>
         </div>

@@ -3,6 +3,12 @@
 // WebSocket proxy between the browser and the Trading Layer market-data
 // WebSocket. The Trading Layer API key never leaves the server.
 //
+// Auth (confirmed by Trading Layer):
+//   The upstream WS accepts the API key via the Sec-WebSocket-Protocol
+//   subprotocol fallback in the exact form:
+//     new WebSocket(url, ["bearer", "tl_live_..."])
+//   The key MUST include the `mt5:market-data` scope.
+//
 // Client opens:
 //   wss://<project>.functions.supabase.co/tl-market-data-stream
 //     ?accountId=<TL accountId>&token=<supabase JWT>
@@ -12,7 +18,7 @@
 //   2. Confirm the caller owns `metaapi_account_id = accountId` in
 //      `user_mt_accounts`.
 //   3. Open upstream wss://api.trading-layer.com/api/v1/accounts/{id}/market-data/ws
-//      with Authorization: Bearer <TRADING_LAYER_API_KEY>.
+//      using subprotocol bearer auth.
 //   4. Pipe frames in both directions.
 //
 // This function only proxies *market data*. It does not touch execution,
@@ -20,7 +26,13 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
+// Trading Layer key used for the market-data WebSocket must include the
+// `mt5:market-data` scope. Prefer the explicit env name, fall back to the
+// existing project secret name for backwards compatibility.
+const TRADING_LAYER_KEY =
+  Deno.env.get("TRADING_LAYER_PUBLIC_API_KEY") ||
+  Deno.env.get("TRADING_LAYER_API_KEY") ||
+  "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const TL_BASE_WS = "wss://api.trading-layer.com";
@@ -30,6 +42,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const maskAccountId = (id: string) =>
+  !id ? "" : id.length <= 6 ? "***" : `${id.slice(0, 3)}…${id.slice(-3)}`;
+
+function logEvent(stage: string, errorCode: string | null, extra: Record<string, unknown> = {}) {
+  // Never log keys, tokens, subprotocol values or full upstream URLs.
+  try {
+    console.log(
+      JSON.stringify({
+        fn: "tl-market-data-stream",
+        ts: new Date().toISOString(),
+        stage,
+        errorCode,
+        ...extra,
+      }),
+    );
+  } catch {
+    /* noop */
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -38,15 +70,28 @@ Deno.serve(async (req) => {
   const upgrade = req.headers.get("upgrade") || "";
   if (upgrade.toLowerCase() !== "websocket") {
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Expected WebSocket upgrade",
-      }),
+      JSON.stringify({ success: false, error: "Expected WebSocket upgrade" }),
       { status: 426, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 
-  if (!TRADING_LAYER_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  // --- Validate TL key presence + prefix (no value logged) ---
+  if (!TRADING_LAYER_KEY) {
+    logEvent("config", "TL_CONFIG_MISSING", { reason: "no_key" });
+    return new Response(
+      JSON.stringify({ success: false, errorCode: "TL_CONFIG_MISSING" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  if (!/^tl_(live|test)_/.test(TRADING_LAYER_KEY)) {
+    logEvent("config", "TL_CONFIG_MISSING", { reason: "bad_prefix" });
+    return new Response(
+      JSON.stringify({ success: false, errorCode: "TL_CONFIG_MISSING" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    logEvent("config", "TL_CONFIG_MISSING", { reason: "supabase_env" });
     return new Response("Server misconfigured", { status: 500 });
   }
 
@@ -63,6 +108,7 @@ Deno.serve(async (req) => {
   });
   const { data: userData, error: userErr } = await admin.auth.getUser(token);
   if (userErr || !userData?.user) {
+    logEvent("auth", "UNAUTHORIZED");
     return new Response("Unauthorized", { status: 401 });
   }
   const userId = userData.user.id;
@@ -75,6 +121,7 @@ Deno.serve(async (req) => {
     .eq("metaapi_account_id", accountId)
     .maybeSingle();
   if (ownErr || !ownRow) {
+    logEvent("auth", "FORBIDDEN", { accountId: maskAccountId(accountId) });
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -82,21 +129,22 @@ Deno.serve(async (req) => {
   const { socket: client, response } = Deno.upgradeWebSocket(req);
 
   // ---- Open upstream TL socket ----
-  // The Trading Layer API key never leaves the server. Deno's standard
-  // WebSocket does not accept custom HTTP headers, so we send the bearer
-  // token via the Sec-WebSocket-Protocol subprotocol (the standard
-  // browser/Deno-compatible auth carrier). Pending TL confirmation of
-  // their accepted WS auth scheme.
+  // Confirmed auth: Sec-WebSocket-Protocol subprotocol fallback
+  //   new WebSocket(url, ["bearer", tlApiKey])
+  // The key must include the `mt5:market-data` scope.
   const upstreamUrl =
     `${TL_BASE_WS}/api/v1/accounts/${encodeURIComponent(accountId)}/market-data/ws`;
   let upstream: WebSocket | null = null;
   try {
-    upstream = new WebSocket(upstreamUrl, [
-      `bearer.${TRADING_LAYER_KEY}`,
-    ]);
-  } catch (e) {
-    console.error("tl-market-data-stream: upstream connect failed");
-    try { client.close(1011, "upstream connect failed"); } catch { /* */ }
+    upstream = new WebSocket(upstreamUrl, ["bearer", TRADING_LAYER_KEY]);
+  } catch {
+    logEvent("upstream_connect", "TL_WS_CONNECT_FAILED", {
+      accountId: maskAccountId(accountId),
+    });
+    try {
+      client.send(JSON.stringify({ type: "proxy_error", errorCode: "TL_WS_CONNECT_FAILED" }));
+      client.close(1011, "upstream connect failed");
+    } catch { /* */ }
     return response;
   }
 
@@ -106,19 +154,53 @@ Deno.serve(async (req) => {
   };
 
   upstream.onopen = () => {
-    try { client.send(JSON.stringify({ type: "proxy_ready" })); } catch { /* */ }
+    logEvent("upstream_open", null, { accountId: maskAccountId(accountId) });
+    try {
+      client.send(
+        JSON.stringify({
+          type: "proxy_ready",
+          authMethod: "subprotocol_bearer",
+          requiredScope: "mt5:market-data",
+        }),
+      );
+    } catch { /* */ }
   };
   upstream.onmessage = (ev) => {
     if (client.readyState === WebSocket.OPEN) {
       try { client.send(ev.data); } catch { /* */ }
     }
   };
-  upstream.onerror = (e) => {
-    console.error("tl-market-data-stream upstream error");
-    try { client.send(JSON.stringify({ type: "error", message: "upstream error" })); } catch { /* */ }
+  upstream.onerror = () => {
+    // Never log the raw error body (may include credentials/echoed headers).
+    logEvent("upstream_error", "TL_WS_UPSTREAM_ERROR", {
+      accountId: maskAccountId(accountId),
+    });
+    try {
+      client.send(JSON.stringify({ type: "proxy_error", errorCode: "TL_WS_UPSTREAM_ERROR" }));
+    } catch { /* */ }
   };
   upstream.onclose = (e) => {
-    closeBoth(e.code || 1011, e.reason || "upstream closed");
+    // 4401/1008/4403 commonly indicate auth/scope failure.
+    const code = e.code || 1011;
+    const isAuth = code === 4401 || code === 4403 || code === 1008;
+    const errorCode = isAuth ? "TL_WS_AUTH_FAILED" : null;
+    logEvent("upstream_close", errorCode, {
+      code,
+      accountId: maskAccountId(accountId),
+    });
+    if (isAuth) {
+      try {
+        client.send(
+          JSON.stringify({
+            type: "proxy_error",
+            errorCode: "TL_WS_AUTH_FAILED",
+            message:
+              "Trading Layer WebSocket authentication failed. Confirm the API key includes mt5:market-data scope.",
+          }),
+        );
+      } catch { /* */ }
+    }
+    closeBoth(code, "");
   };
 
   client.onmessage = (ev) => {
