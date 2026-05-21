@@ -25,23 +25,48 @@ const RETCODE_MAP: Record<number, { name: string; description: string }> = {
 
 export interface ExecutionReconcileDebugPayload {
   at: string;
+  /** "open" | "close" | "partial_close" — defaults to "open" for back-compat. */
+  kind?: "open" | "close" | "partial_close";
   account: {
     account_number?: string | number | null;
     server?: string | null;
     trading_layer_trader_id?: string | null;
+    metaapi_account_id?: string | null;
+    local_row_id?: string | null;
+    accountIdUsed?: string | null;
+  };
+  ids?: {
+    tradeId?: string | null;
+    clientOrderId?: string | null;
+    clientCloseId?: string | null;
+    requestId?: string | null;
+    orderId?: string | null;
+    dealId?: string | null;
+    positionTicket?: string | number | null;
+    brokerSymbol?: string | null;
+    displaySymbol?: string | null;
   };
   request: {
     symbol: string;
     side: string;
     volume: number;
-    stopLoss: number | null;
-    takeProfit: number | null;
-    deviation: number | null;
+    stopLoss?: number | null;
+    takeProfit?: number | null;
+    deviation?: number | null;
     endpoint: string;
+    originalVolume?: number | null;
+    closeVolume?: number | null;
+    remainingVolumeExpected?: number | null;
   };
   response: {
     retcode: number | null;
+    retcodeName?: string | null;
+    retcodeDescription?: string | null;
     classification: string | null;
+    brokerAccepted?: boolean | null;
+    mt5Confirmed?: boolean | null;
+    confirmationStatus?: string | null;
+    status?: string | null;
     raw: any;
   };
   reconciliation: {
@@ -49,11 +74,32 @@ export interface ExecutionReconcileDebugPayload {
     positionsAfter: any[];
     matchFound: boolean;
     confirmedTicket: string | number | null;
+    attempts?: number | null;
+    lastAttemptAt?: string | null;
+    sourcesChecked?: { positions?: boolean | null; orders?: boolean | null; deals?: boolean | null } | null;
+    matchingMode?: "positionTicket" | "dealId" | "orderId" | "requestId" | "fallback" | null;
+    matchedTicket?: string | number | null;
+    matchedDealId?: string | null;
+    matchedOrderId?: string | null;
   };
   history?: {
     matchingPendingOrderFound: boolean | null;
     matchingDealFound: boolean | null;
   };
+  /** Backend timing breakpoints (ms epoch). Only present when devMode=true. */
+  timings?: Record<string, number | null | undefined> | null;
+  /** Frontend-derived durations in ms. */
+  durations?: {
+    authMs?: number | null;
+    accountResolveMs?: number | null;
+    riskValidationMs?: number | null;
+    freshTickMs?: number | null;
+    tradingLayerRoundTripMs?: number | null;
+    backendTotalMs?: number | null;
+    clickToBrokerAcceptedMs?: number | null;
+    clickToFirstReconcileMs?: number | null;
+    clickToConfirmedMs?: number | null;
+  } | null;
 }
 
 const fmtNum = (v: any, d = 2): string => {
