@@ -499,8 +499,9 @@ Deno.serve(async (req) => {
           leverage: Number(account?.leverage ?? 0),
           currency: account?.currency ?? "USD",
           metaapi_account_id: String(accountId),
-          trading_layer_account_id: String(accountId),
+          trading_layer_account_id: ownerAccountId ? String(ownerAccountId) : String(accountId),
           trading_layer_trader_id: String(traderId),
+          trading_layer_external_trader_id: resolvedExternalTraderId ? String(resolvedExternalTraderId) : null,
           credential_status: credentialStatus ?? "validated",
           last_verified_at: nowIso,
           last_tl_error_code: null,
@@ -510,7 +511,7 @@ Deno.serve(async (req) => {
         },
         { onConflict: "user_id,platform,login,server_name" },
       )
-      .select("id, user_id, login, server_name, status, metaapi_account_id, trading_layer_account_id, trading_layer_trader_id, credential_status, last_verified_at, last_synced_at")
+      .select("id, user_id, login, server_name, status, metaapi_account_id, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, credential_status, last_verified_at, last_synced_at")
       .single();
 
     if (saveError || !savedRow) {
