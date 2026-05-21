@@ -157,35 +157,50 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
   }
 
   async function submitClose(volume: number, label: "partial" | "full") {
-    if (!ticket) return toast.error("Position identifier missing on this row. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
+    if (!ticket) return toast.error("Position identifier missing. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
+    if (!position.symbol) return toast.error("Broker symbol missing on this position. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
+    if (!(position.side === "buy" || position.side === "sell")) return toast.error("Position side missing. Refresh positions and try again.");
+    if (!(Number(volume) > 0)) return toast.error("Close volume must be greater than 0.");
     if (isExecutionLocked()) {
       return toast.warning("Another execution is in progress. Please wait.");
     }
     const openVolume = Number(position.volume);
+    const clientCloseId = crypto.randomUUID();
+    const clickClickAt = new Date().toISOString();
     setSubmitting(true);
     lockExecution(label === "full" ? "close_full" : "close_partial", 30000);
     let serverAccepted = false;
     let serverPartial = false;
     let closeAuditEventId: string | null = null;
+    let serverResp: any = null;
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
       const r = await fetch(url, {
         method: "POST", cache: "no-store", headers,
         body: JSON.stringify({
-          closeId: crypto.randomUUID(),
+          closeId: clientCloseId,
+          clientCloseId,
+          requestId: clientCloseId,
           ticket: Number(ticket),
+          positionTicket: Number(ticket),
           symbol: position.symbol,
+          brokerSymbol: position.symbol,
+          displaySymbol: position.symbol,
           openSide: position.side,
           openVolume,
           volume: Number(volume),
+          partialVolume: label === "partial" ? Number(volume) : undefined,
           liveCloseConfirmed: true,
-          clientClickAt: new Date().toISOString(),
+          clientClickAt: clickClickAt,
         }),
       });
       const data = await r.json().catch(() => ({}));
+      serverResp = data;
       if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
       checkAndHandle429(data, null);
+      // Instant UI signal: close request was sent.
+      toast.message("Close request sent", { description: `#${ticket} ${position.symbol}` });
       if (!r.ok || data?.success === false) {
         toast.error(errMessageFrom(data), {
           description: safeStr(data?.brokerMessage),
@@ -196,6 +211,7 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         serverAccepted = true;
         serverPartial = data?.status === "partial_closed" || data?.partial === true;
         closeAuditEventId = typeof data?.auditEventId === "string" ? data.auditEventId : null;
+        toast.success("Broker accepted close request", { description: "Waiting for MT5 confirmation." });
         if (label === "full") setOpenFull(false);
         else setOpenPartial(false);
       } else {
@@ -289,6 +305,68 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
           });
           broadcastExec("Close Unconfirmed");
         }
+
+        // Emit close debug event for Dev Mode diagnostics panel.
+        try {
+          const positionsAfter = (positionsRef.current ?? []).map((p) => ({ ...p }));
+          const remaining = (positionsRef.current ?? []).find((p) => String(p.ticket) === String(ticket));
+          window.dispatchEvent(new CustomEvent("mt:execution-reconcile-debug", {
+            detail: {
+              at: new Date().toISOString(),
+              kind: label === "partial" ? "partial_close" : "close",
+              account: {
+                metaapi_account_id: serverResp?.metaapi_account_id ?? null,
+                accountIdUsed: serverResp?.metaapi_account_id ?? null,
+              },
+              ids: {
+                clientCloseId,
+                requestId: serverResp?.requestId ?? clientCloseId,
+                orderId: serverResp?.orderId ?? null,
+                dealId: serverResp?.dealId ?? null,
+                positionTicket: serverResp?.positionTicket ?? ticket,
+                brokerSymbol: serverResp?.brokerSymbol ?? position.symbol,
+                displaySymbol: position.symbol,
+              },
+              request: {
+                symbol: position.symbol,
+                side: position.side,
+                volume: Number(volume),
+                endpoint: "close-position-controlled",
+                originalVolume: openVolume,
+                closeVolume: Number(volume),
+                remainingVolumeExpected: Math.max(0, openVolume - Number(volume)),
+              },
+              response: {
+                retcode: serverResp?.retcode ?? null,
+                retcodeName: serverResp?.retcodeName ?? null,
+                retcodeDescription: serverResp?.retcodeDescription ?? null,
+                classification: serverResp?.classification ?? null,
+                brokerAccepted: serverAccepted,
+                mt5Confirmed: outcome === "closed" || outcome === "partial",
+                confirmationStatus:
+                  outcome === "closed" ? "close_confirmed"
+                  : outcome === "partial" ? "partial_close_confirmed"
+                  : "close_unconfirmed_after_reconciliation",
+                status: serverResp?.status ?? null,
+                raw: serverResp ?? null,
+              },
+              reconciliation: {
+                positionsBefore: [],
+                positionsAfter,
+                matchFound: outcome === "closed" || outcome === "partial",
+                confirmedTicket: ticket,
+                attempts: null,
+                lastAttemptAt: new Date().toISOString(),
+                sourcesChecked: { positions: true, orders: null, deals: null },
+                matchingMode: "positionTicket",
+                matchedTicket: outcome === "closed" ? ticket : (remaining ? ticket : null),
+                matchedDealId: serverResp?.dealId ?? null,
+                matchedOrderId: serverResp?.orderId ?? null,
+              },
+              durations: { backendTotalMs: serverResp?.latencyMs ?? null },
+            },
+          }));
+        } catch { /* ignore */ }
       }
 
       window.dispatchEvent(new CustomEvent("mt:refresh-positions"));

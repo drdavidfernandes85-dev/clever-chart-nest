@@ -25,23 +25,48 @@ const RETCODE_MAP: Record<number, { name: string; description: string }> = {
 
 export interface ExecutionReconcileDebugPayload {
   at: string;
+  /** "open" | "close" | "partial_close" — defaults to "open" for back-compat. */
+  kind?: "open" | "close" | "partial_close";
   account: {
     account_number?: string | number | null;
     server?: string | null;
     trading_layer_trader_id?: string | null;
+    metaapi_account_id?: string | null;
+    local_row_id?: string | null;
+    accountIdUsed?: string | null;
+  };
+  ids?: {
+    tradeId?: string | null;
+    clientOrderId?: string | null;
+    clientCloseId?: string | null;
+    requestId?: string | null;
+    orderId?: string | null;
+    dealId?: string | null;
+    positionTicket?: string | number | null;
+    brokerSymbol?: string | null;
+    displaySymbol?: string | null;
   };
   request: {
     symbol: string;
     side: string;
     volume: number;
-    stopLoss: number | null;
-    takeProfit: number | null;
-    deviation: number | null;
+    stopLoss?: number | null;
+    takeProfit?: number | null;
+    deviation?: number | null;
     endpoint: string;
+    originalVolume?: number | null;
+    closeVolume?: number | null;
+    remainingVolumeExpected?: number | null;
   };
   response: {
     retcode: number | null;
+    retcodeName?: string | null;
+    retcodeDescription?: string | null;
     classification: string | null;
+    brokerAccepted?: boolean | null;
+    mt5Confirmed?: boolean | null;
+    confirmationStatus?: string | null;
+    status?: string | null;
     raw: any;
   };
   reconciliation: {
@@ -49,11 +74,32 @@ export interface ExecutionReconcileDebugPayload {
     positionsAfter: any[];
     matchFound: boolean;
     confirmedTicket: string | number | null;
+    attempts?: number | null;
+    lastAttemptAt?: string | null;
+    sourcesChecked?: { positions?: boolean | null; orders?: boolean | null; deals?: boolean | null } | null;
+    matchingMode?: "positionTicket" | "dealId" | "orderId" | "requestId" | "fallback" | null;
+    matchedTicket?: string | number | null;
+    matchedDealId?: string | null;
+    matchedOrderId?: string | null;
   };
   history?: {
     matchingPendingOrderFound: boolean | null;
     matchingDealFound: boolean | null;
   };
+  /** Backend timing breakpoints (ms epoch). Only present when devMode=true. */
+  timings?: Record<string, number | null | undefined> | null;
+  /** Frontend-derived durations in ms. */
+  durations?: {
+    authMs?: number | null;
+    accountResolveMs?: number | null;
+    riskValidationMs?: number | null;
+    freshTickMs?: number | null;
+    tradingLayerRoundTripMs?: number | null;
+    backendTotalMs?: number | null;
+    clickToBrokerAcceptedMs?: number | null;
+    clickToFirstReconcileMs?: number | null;
+    clickToConfirmedMs?: number | null;
+  } | null;
 }
 
 const fmtNum = (v: any, d = 2): string => {
@@ -156,6 +202,13 @@ const ExecutionReconciliationDebugPanel = () => {
                 </summary>
 
                 <div className="px-3 pb-3 pt-1 space-y-3 text-[10.5px]">
+                  {/* 0. Flow kind */}
+                  {r.kind && r.kind !== "open" && (
+                    <div className="font-mono text-[10px] text-amber-300 uppercase tracking-widest">
+                      flow: {r.kind}
+                    </div>
+                  )}
+
                   {/* 1. Account */}
                   <section>
                     <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Connected Account</div>
@@ -163,8 +216,29 @@ const ExecutionReconciliationDebugPanel = () => {
                       <div><span className="text-neutral-500">account: </span>{r.account.account_number ?? "—"}</div>
                       <div><span className="text-neutral-500">server: </span>{r.account.server ?? "—"}</div>
                       <div><span className="text-neutral-500">trader_id: </span>{r.account.trading_layer_trader_id ?? "—"}</div>
+                      <div className="break-all"><span className="text-neutral-500">metaapi_account_id: </span>{r.account.metaapi_account_id ?? "—"}</div>
+                      <div className="break-all"><span className="text-neutral-500">accountId used: </span>{r.account.accountIdUsed ?? "—"}</div>
+                      <div className="break-all"><span className="text-neutral-500">local row id: </span>{r.account.local_row_id ?? "—"}</div>
                     </div>
                   </section>
+
+                  {/* 1b. Execution IDs */}
+                  {r.ids && (
+                    <section>
+                      <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Execution IDs</div>
+                      <div className="grid grid-cols-2 gap-2 font-mono text-neutral-200">
+                        <div className="break-all"><span className="text-neutral-500">tradeId: </span>{r.ids.tradeId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">clientOrderId: </span>{r.ids.clientOrderId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">clientCloseId: </span>{r.ids.clientCloseId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">requestId: </span>{r.ids.requestId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">orderId: </span>{r.ids.orderId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">dealId: </span>{r.ids.dealId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">positionTicket: </span>{r.ids.positionTicket ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">brokerSymbol: </span>{r.ids.brokerSymbol ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">displaySymbol: </span>{r.ids.displaySymbol ?? "—"}</div>
+                      </div>
+                    </section>
+                  )}
 
                   {/* 2. Order Request */}
                   <section>
@@ -176,6 +250,13 @@ const ExecutionReconciliationDebugPanel = () => {
                       <div><span className="text-neutral-500">SL: </span>{r.request.stopLoss ?? "—"}</div>
                       <div><span className="text-neutral-500">TP: </span>{r.request.takeProfit ?? "—"}</div>
                       <div><span className="text-neutral-500">deviation: </span>{r.request.deviation ?? "—"}</div>
+                      {(r.kind === "close" || r.kind === "partial_close") && (
+                        <>
+                          <div><span className="text-neutral-500">originalVolume: </span>{fmtNum(r.request.originalVolume, 2)}</div>
+                          <div><span className="text-neutral-500">closeVolume: </span>{fmtNum(r.request.closeVolume, 2)}</div>
+                          <div><span className="text-neutral-500">remaining (expected): </span>{fmtNum(r.request.remainingVolumeExpected, 2)}</div>
+                        </>
+                      )}
                       <div className="col-span-3 break-all"><span className="text-neutral-500">endpoint: </span>{r.request.endpoint}</div>
                     </div>
                   </section>
@@ -184,32 +265,85 @@ const ExecutionReconciliationDebugPanel = () => {
                   <section>
                     <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Trading Layer Response</div>
                     <div className="grid grid-cols-3 gap-2 font-mono text-neutral-200">
+                      <div><span className="text-neutral-500">status: </span>{r.response.status ?? "—"}</div>
+                      <div>
+                        <span className="text-neutral-500">brokerAccepted: </span>
+                        <span className={r.response.brokerAccepted ? "text-emerald-300" : "text-neutral-400"}>
+                          {r.response.brokerAccepted == null ? "—" : r.response.brokerAccepted ? "yes" : "no"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500">mt5Confirmed: </span>
+                        <span className={r.response.mt5Confirmed ? "text-emerald-300" : "text-amber-300"}>
+                          {r.response.mt5Confirmed == null ? "—" : r.response.mt5Confirmed ? "yes" : "no"}
+                        </span>
+                      </div>
+                      <div><span className="text-neutral-500">confirmationStatus: </span>{r.response.confirmationStatus ?? "—"}</div>
                       <div><span className="text-neutral-500">retcode: </span>{rc ?? "—"}</div>
-                      <div><span className="text-neutral-500">retcodeName: </span>{meta?.name ?? "—"}</div>
-                      <div><span className="text-neutral-500">classification: </span>{r.response.classification ?? "—"}</div>
+                      <div><span className="text-neutral-500">retcodeName: </span>{r.response.retcodeName ?? meta?.name ?? "—"}</div>
+                      <div className="col-span-3"><span className="text-neutral-500">classification: </span>{r.response.classification ?? "—"}</div>
                     </div>
                     <div className="mt-1 text-neutral-400">
                       <span className="text-neutral-500">retcodeDescription: </span>
-                      {meta?.description ?? "—"}
+                      {r.response.retcodeDescription ?? meta?.description ?? "—"}
                     </div>
                     <pre className="mt-1 max-h-[180px] overflow-auto whitespace-pre-wrap break-all rounded bg-neutral-950 p-2 text-[10px] text-neutral-300 border border-neutral-900">
 {JSON.stringify(r.response.raw, null, 2)}
                     </pre>
                   </section>
 
+                  {/* 3b. Latency / timings */}
+                  {(r.timings || r.durations) && (
+                    <section>
+                      <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Latency / Timings</div>
+                      {r.timings && Object.keys(r.timings).length > 0 && (
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-neutral-200">
+                          {Object.entries(r.timings).map(([k, v]) => (
+                            <div key={k} className="break-all">
+                              <span className="text-neutral-500">{k}: </span>
+                              {v == null || !Number.isFinite(Number(v)) ? "—" : String(v)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {r.durations && (
+                        <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-neutral-200">
+                          {Object.entries(r.durations).map(([k, v]) => (
+                            <div key={k}>
+                              <span className="text-neutral-500">{k}: </span>
+                              {v == null || !Number.isFinite(Number(v)) ? "—" : `${Math.round(Number(v))} ms`}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  )}
+
                   {/* 4. MT5 Reconciliation */}
                   <section className="space-y-2">
                     <div className="text-[10px] uppercase tracking-wider text-neutral-500">MT5 Reconciliation</div>
                     <PositionsTable rows={r.reconciliation.positionsBefore} label="Positions BEFORE" />
                     <PositionsTable rows={r.reconciliation.positionsAfter} label="Positions AFTER" />
-                    <div className="font-mono text-neutral-200">
-                      <span className="text-neutral-500">matching position found: </span>
-                      <span className={r.reconciliation.matchFound ? "text-emerald-400" : "text-amber-400"}>
-                        {r.reconciliation.matchFound ? "yes" : "no"}
-                      </span>
-                      {" · "}
-                      <span className="text-neutral-500">confirmed ticket: </span>
-                      {r.reconciliation.confirmedTicket ?? "—"}
+                    <div className="grid grid-cols-2 gap-2 font-mono text-neutral-200">
+                      <div>
+                        <span className="text-neutral-500">matching position found: </span>
+                        <span className={r.reconciliation.matchFound ? "text-emerald-400" : "text-amber-400"}>
+                          {r.reconciliation.matchFound ? "yes" : "no"}
+                        </span>
+                      </div>
+                      <div><span className="text-neutral-500">confirmed ticket: </span>{r.reconciliation.confirmedTicket ?? "—"}</div>
+                      <div><span className="text-neutral-500">attempts: </span>{r.reconciliation.attempts ?? "—"}</div>
+                      <div><span className="text-neutral-500">last attempt: </span>{r.reconciliation.lastAttemptAt ? new Date(r.reconciliation.lastAttemptAt).toLocaleTimeString() : "—"}</div>
+                      <div><span className="text-neutral-500">matching mode: </span>{r.reconciliation.matchingMode ?? "—"}</div>
+                      <div><span className="text-neutral-500">matched ticket/deal/order: </span>{
+                        r.reconciliation.matchedTicket ?? r.reconciliation.matchedDealId ?? r.reconciliation.matchedOrderId ?? "—"
+                      }</div>
+                      <div className="col-span-2">
+                        <span className="text-neutral-500">sources checked: </span>
+                        positions={String(r.reconciliation.sourcesChecked?.positions ?? "—")}
+                        {" · "}orders={String(r.reconciliation.sourcesChecked?.orders ?? "—")}
+                        {" · "}deals={String(r.reconciliation.sourcesChecked?.deals ?? "—")}
+                      </div>
                     </div>
                   </section>
 
