@@ -217,14 +217,44 @@ const ExecutionReconciliationDebugPanel = () => {
                   {/* 1. Account */}
                   <section>
                     <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Connected Account</div>
-                    <div className="grid grid-cols-3 gap-2 font-mono text-neutral-200">
-                      <div><span className="text-neutral-500">account: </span>{r.account.account_number ?? "—"}</div>
-                      <div><span className="text-neutral-500">server: </span>{r.account.server ?? "—"}</div>
-                      <div><span className="text-neutral-500">trader_id: </span>{r.account.trading_layer_trader_id ?? "—"}</div>
-                      <div className="break-all"><span className="text-neutral-500">metaapi_account_id: </span>{r.account.metaapi_account_id ?? "—"}</div>
-                      <div className="break-all"><span className="text-neutral-500">accountId used: </span>{r.account.accountIdUsed ?? "—"}</div>
-                      <div className="break-all"><span className="text-neutral-500">local row id: </span>{r.account.local_row_id ?? "—"}</div>
-                    </div>
+                    {(() => {
+                      const exec = r.account.executionAccountId ?? r.account.accountIdUsed ?? null;
+                      const reco = r.account.reconciliationAccountId ?? null;
+                      const mismatch = !!(exec && reco && exec !== reco);
+                      const status = r.account.mapping_status ?? null;
+                      const statusColor = status === "valid"
+                        ? "text-emerald-300 border-emerald-500/40"
+                        : "text-amber-300 border-amber-500/40";
+                      return (
+                        <>
+                          {(status || mismatch) && (
+                            <div className="mb-1 flex flex-wrap gap-1 font-mono text-[10px]">
+                              {status && (
+                                <span className={`rounded border px-1.5 py-0.5 uppercase tracking-widest ${statusColor}`}>
+                                  mapping: {status}
+                                </span>
+                              )}
+                              {mismatch && (
+                                <span className="rounded border border-rose-500/60 bg-rose-500/10 px-1.5 py-0.5 uppercase tracking-widest text-rose-300">
+                                  ACCOUNT_ID_MISMATCH
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <div className="grid grid-cols-3 gap-2 font-mono text-neutral-200">
+                            <div><span className="text-neutral-500">account: </span>{r.account.account_number ?? "—"}</div>
+                            <div><span className="text-neutral-500">server: </span>{r.account.server ?? "—"}</div>
+                            <div><span className="text-neutral-500">trader_id: </span>{r.account.trading_layer_trader_id ?? "—"}</div>
+                            <div className="break-all"><span className="text-neutral-500">ext_trader_id: </span>{r.account.trading_layer_external_trader_id ?? "—"}</div>
+                            <div className="break-all"><span className="text-neutral-500">tl_account_id: </span>{r.account.trading_layer_account_id ?? "—"}</div>
+                            <div className="break-all"><span className="text-neutral-500">metaapi_account_id: </span>{r.account.metaapi_account_id ?? "—"}</div>
+                            <div className="break-all"><span className="text-neutral-500">executionAccountId: </span>{exec ?? "—"}</div>
+                            <div className="break-all"><span className="text-neutral-500">reconciliationAccountId: </span>{reco ?? "—"}</div>
+                            <div className="break-all"><span className="text-neutral-500">local row id: </span>{r.account.local_row_id ?? "—"}</div>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </section>
 
                   {/* 1b. Execution IDs */}
