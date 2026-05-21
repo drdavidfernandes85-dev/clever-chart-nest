@@ -24,12 +24,59 @@ import {
 import {
   terminalRealtimeStore,
   type RealtimeTick,
+  type WsSubscribeSchema,
 } from "@/stores/terminalRealtimeStore";
 
 const STALE_THRESHOLD_MS = 8000;
 const STALE_CHECK_MS = 2500;
+const NO_FRAMES_TIMEOUT_MS = 10_000;
 const MAX_BACKOFF_MS = 30_000;
 const BASE_BACKOFF_MS = 1000;
+
+const VALID_SCHEMAS: WsSubscribeSchema[] = [
+  "current_json_type",
+  "action_subscribe",
+  "event_subscribe",
+  "method_subscribe",
+  "channel_subscribe",
+  "plain_text",
+  "auto_stream",
+];
+
+function resolveSubscribeSchema(): WsSubscribeSchema {
+  const raw = String(
+    (import.meta as any).env?.VITE_TL_WS_SUBSCRIBE_SCHEMA || "",
+  ).trim() as WsSubscribeSchema;
+  return VALID_SCHEMAS.includes(raw) ? raw : "current_json_type";
+}
+
+/**
+ * Build the subscribe payload Trading Layer expects. Schema is configurable
+ * via VITE_TL_WS_SUBSCRIBE_SCHEMA so we can switch quickly once TL confirms.
+ * Returns null when no frame should be sent (auto_stream).
+ */
+export function buildMarketDataSubscribeFrame(
+  symbols: string[],
+  schema: WsSubscribeSchema,
+): string | null {
+  switch (schema) {
+    case "action_subscribe":
+      return JSON.stringify({ action: "subscribe", symbols });
+    case "event_subscribe":
+      return JSON.stringify({ event: "subscribe", symbols });
+    case "method_subscribe":
+      return JSON.stringify({ method: "subscribe", params: { symbols } });
+    case "channel_subscribe":
+      return JSON.stringify({ type: "subscribe", channel: "market-data", symbols });
+    case "plain_text":
+      return `subscribe:${symbols.join(",")}`;
+    case "auto_stream":
+      return null;
+    case "current_json_type":
+    default:
+      return JSON.stringify({ type: "subscribe", symbols });
+  }
+}
 
 const num = (v: any): number | null => {
   if (v === null || v === undefined || v === "") return null;
@@ -60,11 +107,13 @@ class TradingLayerMarketDataWebSocketImpl {
   private shouldRun = false;
   private reconnectTimer: number | null = null;
   private staleTimer: number | null = null;
+  private noFramesTimer: number | null = null;
   private backoff = BASE_BACKOFF_MS;
   private subSources: SubscriptionSources = {};
   private selectedSymbol = "";
   private currentSubscribed: string[] = [];
   private instanceCount = 0;
+  private subscribeSchema: WsSubscribeSchema = resolveSubscribeSchema();
 
   /* ---------- Public API ---------- */
 
@@ -78,6 +127,8 @@ class TradingLayerMarketDataWebSocketImpl {
     if (this.shouldRun && this.accountId === id) return;
     this.shouldRun = true;
     this.accountId = id;
+    this.subscribeSchema = resolveSubscribeSchema();
+    terminalRealtimeStore.setSubscribeSchema(this.subscribeSchema);
     terminalRealtimeStore.setMeta({ accountIdMasked: maskAccountId(id) });
     this.connect();
   }
@@ -87,6 +138,7 @@ class TradingLayerMarketDataWebSocketImpl {
     this.accountId = null;
     this.clearReconnect();
     this.clearStaleMonitor();
+    this.clearNoFramesTimer();
     this.closeSocket("client_stop");
     terminalRealtimeStore.setStatus("disabled");
     terminalRealtimeStore.setFallbackPolling(true);
@@ -160,7 +212,9 @@ class TradingLayerMarketDataWebSocketImpl {
         terminalRealtimeStore.setLastError(null);
         terminalRealtimeStore.setDuplicateSocket(false);
         terminalRealtimeStore.setFallbackPolling(false);
+        terminalRealtimeStore.setSubscribeSchema(this.subscribeSchema);
         this.startStaleMonitor();
+        this.startNoFramesTimer();
         // (Re)send current subscriptions.
         this.sendSubscribe(this.currentSubscribed);
       };
@@ -172,10 +226,14 @@ class TradingLayerMarketDataWebSocketImpl {
         terminalRealtimeStore.setStatus("error");
       };
 
-      ws.onclose = () => {
+      ws.onclose = (e) => {
         this.connecting = false;
         this.ws = null;
         this.clearStaleMonitor();
+        this.clearNoFramesTimer();
+        const code = (e as CloseEvent)?.code ?? null;
+        const reason = ((e as CloseEvent)?.reason || "").slice(0, 120) || null;
+        terminalRealtimeStore.recordClose(code, reason);
         if (!this.shouldRun) {
           terminalRealtimeStore.setStatus("disconnected");
           terminalRealtimeStore.setFallbackPolling(true);
@@ -243,10 +301,20 @@ class TradingLayerMarketDataWebSocketImpl {
 
   private sendSubscribe(symbols: string[]) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    const frame = buildMarketDataSubscribeFrame(symbols, this.subscribeSchema);
+    if (frame == null) {
+      // auto_stream: do not send a subscribe frame; record intent only.
+      terminalRealtimeStore.recordSubscribeFrame(
+        `(auto_stream — no subscribe frame; ${symbols.length} symbols)`,
+      );
+      return;
+    }
     try {
-      // Generic subscribe envelope; proxy forwards to Trading Layer.
-      this.ws.send(
-        JSON.stringify({ type: "subscribe", symbols }),
+      this.ws.send(frame);
+      // Sanitize: never contains keys/tokens — schema is fully derivable
+      // from symbols, but truncate defensively.
+      terminalRealtimeStore.recordSubscribeFrame(
+        frame.length > 500 ? `${frame.slice(0, 500)}…` : frame,
       );
     } catch {
       /* ignore send errors — reconnect path will re-send */
@@ -291,13 +359,29 @@ class TradingLayerMarketDataWebSocketImpl {
     // Tolerate multiple TL payload shapes — pull the first one we recognise.
     const ticks = this.extractTicks(msg);
     if (!ticks.length) {
-      // Non-tick frames (ack, ping, error) are ignored silently.
+      // Non-tick frames (ack, ping, error, hint): count + sample sanitized.
+      const frameType = String(
+        msg.type || msg.event || msg.action || msg.method || "unknown",
+      ).slice(0, 64);
+      let sample: string | undefined;
+      try {
+        const s = JSON.stringify(msg);
+        sample = s.length > 300 ? `${s.slice(0, 300)}…` : s;
+      } catch { /* ignore */ }
+      terminalRealtimeStore.incFrameReceived(false, frameType, sample);
       if (msg.type === "error" || msg.error) {
         terminalRealtimeStore.setLastError(
           String(msg.error?.message || msg.error || msg.message || "WS error"),
         );
       }
       return;
+    }
+
+    terminalRealtimeStore.incFrameReceived(true);
+    // Got a tick — clear no-frames timer (we have real data flowing).
+    this.clearNoFramesTimer();
+    if (terminalRealtimeStore.getState().wsMarketDataStatus === "connected_no_frames") {
+      terminalRealtimeStore.setStatus("connected");
     }
 
     const liveQuotes: LiveQuote[] = [];
@@ -386,6 +470,31 @@ class TradingLayerMarketDataWebSocketImpl {
     if (this.staleTimer != null) {
       window.clearInterval(this.staleTimer);
       this.staleTimer = null;
+    }
+  }
+
+  /* ---------- Internal: no-frames timeout ---------- */
+
+  private startNoFramesTimer() {
+    this.clearNoFramesTimer();
+    this.noFramesTimer = window.setTimeout(() => {
+      this.noFramesTimer = null;
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+      const st = terminalRealtimeStore.getState();
+      if (st.tickFramesReceived === 0) {
+        // Connected but Trading Layer sent no tick frames. Stay silent for
+        // end-users (fallback polling is already active) — surface only in
+        // Dev Mode diagnostics.
+        terminalRealtimeStore.setStatus("connected_no_frames");
+        terminalRealtimeStore.setFallbackPolling(true);
+      }
+    }, NO_FRAMES_TIMEOUT_MS);
+  }
+
+  private clearNoFramesTimer() {
+    if (this.noFramesTimer != null) {
+      window.clearTimeout(this.noFramesTimer);
+      this.noFramesTimer = null;
     }
   }
 }

@@ -17,10 +17,20 @@ export type WsMarketDataStatus =
   | "disabled"
   | "connecting"
   | "connected"
+  | "connected_no_frames"
   | "reconnecting"
   | "stale"
   | "disconnected"
   | "error";
+
+export type WsSubscribeSchema =
+  | "current_json_type"
+  | "action_subscribe"
+  | "event_subscribe"
+  | "method_subscribe"
+  | "channel_subscribe"
+  | "plain_text"
+  | "auto_stream";
 
 export interface RealtimeTick {
   brokerSymbol: string;
@@ -49,6 +59,16 @@ export interface TerminalRealtimeState {
   connectedSince: number | null;
   accountIdMasked: string | null;
   wsUrlMasked: string | null;
+  subscribeSchema: WsSubscribeSchema;
+  lastSubscribeFrame: string | null;
+  lastSubscribeSentAt: number | null;
+  framesReceived: number;
+  tickFramesReceived: number;
+  nonTickFramesReceived: number;
+  lastNonTickFrameType: string | null;
+  lastNonTickFrameSample: string | null;
+  lastCloseCode: number | null;
+  lastCloseReason: string | null;
 }
 
 type Listener = (s: TerminalRealtimeState) => void;
@@ -68,6 +88,16 @@ const initial: TerminalRealtimeState = {
   connectedSince: null,
   accountIdMasked: null,
   wsUrlMasked: null,
+  subscribeSchema: "current_json_type",
+  lastSubscribeFrame: null,
+  lastSubscribeSentAt: null,
+  framesReceived: 0,
+  tickFramesReceived: 0,
+  nonTickFramesReceived: 0,
+  lastNonTickFrameType: null,
+  lastNonTickFrameSample: null,
+  lastCloseCode: null,
+  lastCloseReason: null,
 };
 
 let state: TerminalRealtimeState = initial;
@@ -100,10 +130,11 @@ export const terminalRealtimeStore = {
   /* writer-only — service uses these */
   setStatus(s: WsMarketDataStatus) {
     if (state.wsMarketDataStatus !== s) {
+      const isConnectedLike = s === "connected" || s === "connected_no_frames" || s === "stale";
       setState({
         wsMarketDataStatus: s,
         connectedSince:
-          s === "connected"
+          isConnectedLike
             ? state.connectedSince ?? Date.now()
             : s === "disconnected" || s === "disabled"
               ? null
@@ -169,6 +200,29 @@ export const terminalRealtimeStore = {
       wsUrlMasked:
         meta.wsUrlMasked !== undefined ? meta.wsUrlMasked : state.wsUrlMasked,
     });
+  },
+  setSubscribeSchema(s: WsSubscribeSchema) {
+    if (state.subscribeSchema !== s) setState({ subscribeSchema: s });
+  },
+  recordSubscribeFrame(frame: string | null) {
+    setState({
+      lastSubscribeFrame: frame,
+      lastSubscribeSentAt: frame ? Date.now() : state.lastSubscribeSentAt,
+    });
+  },
+  incFrameReceived(isTick: boolean, nonTickType?: string, nonTickSample?: string) {
+    state = {
+      ...state,
+      framesReceived: state.framesReceived + 1,
+      tickFramesReceived: state.tickFramesReceived + (isTick ? 1 : 0),
+      nonTickFramesReceived: state.nonTickFramesReceived + (isTick ? 0 : 1),
+      lastNonTickFrameType: !isTick && nonTickType ? nonTickType : state.lastNonTickFrameType,
+      lastNonTickFrameSample: !isTick && nonTickSample ? nonTickSample : state.lastNonTickFrameSample,
+    };
+    emit();
+  },
+  recordClose(code: number | null, reason: string | null) {
+    setState({ lastCloseCode: code, lastCloseReason: reason });
   },
   reset() {
     state = initial;
