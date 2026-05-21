@@ -106,27 +106,9 @@ serve(async (req) => {
     let accountId = linkedAccount?.metaapi_account_id || null;
     let accountSource = "database";
 
-    if (!accountId) {
-      const tenantRes = await tlGet("/api/v1/tenant");
-      const ownerAccount = tenantRes.data?.data?.ownerAccount;
-      const mt5 = ownerAccount?.mt5;
-      if (tenantRes.ok && ownerAccount?.accountId && mt5?.status === "connected") {
-        accountId = ownerAccount.accountId;
-        accountSource = "tenant_fallback";
-        const nowIso = new Date().toISOString();
-        await supabase.from("user_mt_accounts").insert({
-          user_id: user.id,
-          metaapi_account_id: String(ownerAccount.accountId),
-          login: String(mt5.login || ""),
-          server_name: String(mt5.server || ""),
-          platform: "mt5",
-          broker_name: "Infinox",
-          status: "connected",
-          last_synced_at: nowIso,
-          updated_at: nowIso,
-        });
-      }
-    }
+    // Auto-heal removed: tenant `ownerAccount.accountId` is NOT a valid
+    // Trading Layer trader ID. `connect-mt5-v2` is the only writer.
+
 
     if (!accountId) {
       return json({ success: false, step: "account_lookup", error: "No connected MT5 account found." }, 404);

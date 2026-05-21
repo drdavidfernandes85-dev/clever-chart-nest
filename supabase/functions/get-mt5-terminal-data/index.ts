@@ -136,31 +136,9 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (!account) {
-      const tenantRes = await tlGet("/api/v1/tenant");
-      const owner = tenantRes.data?.data?.ownerAccount;
-      const mt5 = owner?.mt5;
-      if (tenantRes.ok && owner?.accountId && mt5?.status === "connected") {
-        const nowIso = new Date().toISOString();
-        const insertRow = {
-          user_id: user.id,
-          metaapi_account_id: String(owner.accountId),
-          login: String(mt5.login ?? ""),
-          server_name: String(mt5.server ?? ""),
-          platform: "mt5",
-          broker_name: "Infinox",
-          status: "connected",
-          last_synced_at: nowIso,
-          updated_at: nowIso,
-        };
-        const { data: inserted } = await supabase
-          .from("user_mt_accounts")
-          .insert(insertRow)
-          .select("id, login, server_name, status, last_synced_at, metaapi_account_id, created_at")
-          .single();
-        if (inserted) account = inserted;
-      }
-    }
+    // Auto-heal removed: see get-live-account. Only `connect-mt5-v2` is
+    // allowed to write Trading Layer IDs into `user_mt_accounts`.
+
 
     if (!account?.metaapi_account_id) {
       return json({

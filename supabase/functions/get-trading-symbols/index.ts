@@ -165,46 +165,9 @@ serve(async (req) => {
     let accountId = linkedAccount?.trading_layer_trader_id || null;
     let accountSource = "database";
 
-    if (!accountId) {
-      const tenantRes = await tradingLayerGet("/api/v1/tenant");
+    // Auto-heal removed: tenant `ownerAccount.accountId` is NOT a valid
+    // Trading Layer trader ID. `connect-mt5-v2` is the only writer.
 
-      if (!tenantRes.ok) {
-        return json(
-          {
-            success: false,
-            step: "tenant_lookup",
-            error: "No connected MT5 account found and tenant lookup failed.",
-            tradingLayerStatus: tenantRes.status,
-            raw: debug ? tenantRes.data : undefined,
-          },
-          tenantRes.status,
-        );
-      }
-
-      const ownerAccount = tenantRes.data?.data?.ownerAccount;
-      const mt5 = ownerAccount?.mt5;
-
-      if (ownerAccount?.accountId && mt5?.status === "connected") {
-        accountId = ownerAccount.accountId;
-        accountSource = "tenant_fallback";
-
-        await supabase.from("user_mt5_accounts").upsert(
-          {
-            user_id: user.id,
-            trading_layer_trader_id: ownerAccount.accountId,
-            account_number: String(mt5.login || ""),
-            server: String(mt5.server || ""),
-            encrypted_password: null,
-            status: "connected",
-            last_synced: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: "user_id,account_number,server",
-          },
-        );
-      }
-    }
 
     if (!accountId) {
       return json(

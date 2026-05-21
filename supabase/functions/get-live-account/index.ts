@@ -98,35 +98,11 @@ Deno.serve(async (req) => {
 
     if (accErr) return json(500, { success: false, error: accErr.message });
 
-    // Self-heal: ask Trading Layer tenant endpoint if no DB row.
-    if (!account) {
-      try {
-        const tenantRes = await fetch(`${TL_BASE}/tenant`, { headers: tlHeaders });
-        const tenantData = await tenantRes.json().catch(() => ({}));
-        const owner = tenantData?.data?.ownerAccount ?? {};
-        const ownerMt5 = owner?.mt5 ?? {};
-        if (tenantRes.ok && ownerMt5?.status === "connected" && owner?.accountId) {
-          const nowIso = new Date().toISOString();
-          const insertRow = {
-            user_id: userId,
-            metaapi_account_id: String(owner.accountId),
-            login: String(ownerMt5.login ?? ""),
-            server_name: String(ownerMt5.server ?? ""),
-            platform: "mt5",
-            broker_name: "Infinox",
-            status: "connected",
-            last_synced_at: nowIso,
-            updated_at: nowIso,
-          };
-          const { data: inserted, error: insErr } = await supabase
-            .from("user_mt_accounts")
-            .insert(insertRow)
-            .select("id, login, server_name, status, last_synced_at, metaapi_account_id, created_at")
-            .single();
-          if (!insErr && inserted) account = inserted;
-        }
-      } catch (_) { /* fall through */ }
-    }
+    // No tenant-based auto-heal: only `connect-mt5-v2` may write Trading Layer
+    // IDs into `user_mt_accounts`. Auto-healing from `/tenant` would insert the
+    // tenant `ownerAccount.accountId` (a workspace ID) instead of the real
+    // `traderId`, corrupting all downstream calls.
+
 
     if (!account) {
       return json(200, {

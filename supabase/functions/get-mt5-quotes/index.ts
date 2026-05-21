@@ -113,13 +113,10 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (!account?.metaapi_account_id) {
-      const tenantRes = await tlGet("/api/v1/tenant");
-      const owner = tenantRes.data?.data?.ownerAccount;
-      if (tenantRes.ok && owner?.accountId && owner?.mt5?.status === "connected") {
-        account = { metaapi_account_id: owner.accountId, login: owner.mt5.login } as any;
-      }
-    }
+    // Auto-heal removed: previously fell back to tenant `ownerAccount.accountId`,
+    // which is NOT a valid Trading Layer trader ID. Only `connect-mt5-v2` writes
+    // the correct mapping.
+
     if (!account?.metaapi_account_id) {
       return json({
         success: false,
