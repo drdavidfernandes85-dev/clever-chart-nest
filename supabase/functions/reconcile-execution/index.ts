@@ -95,11 +95,37 @@ const mt5TypeToSide = (t: any): "buy" | "sell" | null => {
 
 const eq = (a: number, b: number, eps = 1e-6) => Math.abs(a - b) < eps;
 // Volume tolerance: 0.005 lots absolute OR 1% relative — whichever is larger.
-// Covers float rounding, micro/standard lot conversion and broker netting.
 const volEq = (a: number, b: number) => {
   if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
   const tol = Math.max(0.005, Math.abs(b) * 0.01);
   return Math.abs(a - b) <= tol;
+};
+
+// Suffix-tolerant broker symbol comparison.
+// "XAUUSD" must match "XAUUSD.M", "XAUUSD-T", "XAUUSDm", etc.
+const symEq = (a: string, b: string): boolean => {
+  if (!a || !b) return false;
+  const A = String(a).toUpperCase();
+  const B = String(b).toUpperCase();
+  if (A === B) return true;
+  const strip = (s: string) => s.replace(/[._\-\s]+/g, "").replace(/[A-Z]+$/i, (m) => m.length <= 2 ? "" : m);
+  // Compare with all non-alphanumeric stripped, and with trailing 1-2 letter
+  // suffixes removed ("XAUUSDm" → "XAUUSD"). We never strip > 2 trailing
+  // letters because that would conflate distinct symbols.
+  return strip(A) === strip(B) || A.startsWith(B) || B.startsWith(A);
+};
+
+// Pick a value across many possible field shapes.
+const pickId = (obj: any, paths: string[]): string | null => {
+  if (!obj || typeof obj !== "object") return null;
+  for (const path of paths) {
+    const v = path.split(".").reduce<any>(
+      (acc, k) => (acc && typeof acc === "object" ? acc[k] : undefined),
+      obj,
+    );
+    if (v !== undefined && v !== null && v !== "") return String(v);
+  }
+  return null;
 };
 
 type ReconcileInput = {
@@ -112,6 +138,13 @@ type ReconcileInput = {
   brokerRetcode?: number | null;
   brokerMessage?: string | null;
   rawExecutionResponse?: any;
+  // ID-first matching keys forwarded by the client from the order response.
+  positionTicket?: string | null;
+  orderId?: string | null;
+  dealId?: string | null;
+  requestId?: string | null;
+  clientOrderId?: string | null;
+  brokerSymbol?: string | null;
 };
 
 async function tlFetch(
