@@ -17,10 +17,20 @@ export type WsMarketDataStatus =
   | "disabled"
   | "connecting"
   | "connected"
+  | "connected_no_frames"
   | "reconnecting"
   | "stale"
   | "disconnected"
   | "error";
+
+export type WsSubscribeSchema =
+  | "current_json_type"
+  | "action_subscribe"
+  | "event_subscribe"
+  | "method_subscribe"
+  | "channel_subscribe"
+  | "plain_text"
+  | "auto_stream";
 
 export interface RealtimeTick {
   brokerSymbol: string;
