@@ -165,7 +165,30 @@ Deno.serve(async (req) => {
       );
     } catch { /* */ }
   };
+
+  // Buffer any subscribe/control messages the client sends before Trading
+  // Layer emits `connection.ready`. Replay them once ready arrives.
+  let upstreamReady = false;
+  const pendingClientFrames: string[] = [];
+
   upstream.onmessage = (ev) => {
+    // Detect `connection.ready` and forward it to the client, then flush
+    // any buffered client frames upstream.
+    if (!upstreamReady && typeof ev.data === "string") {
+      try {
+        const parsed = JSON.parse(ev.data);
+        if (parsed && parsed.type === "connection.ready") {
+          upstreamReady = true;
+          logEvent("upstream_ready", null, {
+            accountId: maskAccountId(accountId),
+          });
+          // flush buffered frames
+          for (const f of pendingClientFrames.splice(0)) {
+            try { upstream!.send(f); } catch { /* */ }
+          }
+        }
+      } catch { /* not JSON — just forward */ }
+    }
     if (client.readyState === WebSocket.OPEN) {
       try { client.send(ev.data); } catch { /* */ }
     }
@@ -204,7 +227,14 @@ Deno.serve(async (req) => {
   };
 
   client.onmessage = (ev) => {
-    if (upstream && upstream.readyState === WebSocket.OPEN) {
+    if (!upstream) return;
+    const data = typeof ev.data === "string" ? ev.data : "";
+    if (!upstreamReady) {
+      // Buffer until Trading Layer emits connection.ready.
+      if (data) pendingClientFrames.push(data);
+      return;
+    }
+    if (upstream.readyState === WebSocket.OPEN) {
       try { upstream.send(ev.data); } catch { /* */ }
     }
   };
