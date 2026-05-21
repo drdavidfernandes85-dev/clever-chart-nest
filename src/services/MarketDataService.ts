@@ -148,6 +148,8 @@ class MarketDataServiceImpl {
     } else {
       this.watchlistSources.set(source, cleaned);
     }
+    // Forward to WebSocket service (display path).
+    tradingLayerMarketDataWebSocket.subscribe(source, Array.from(cleaned));
     this.recomputeWatchlist();
   }
 
