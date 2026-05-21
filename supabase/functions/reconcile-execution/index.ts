@@ -259,6 +259,7 @@ Deno.serve(async (req) => {
   // that execute-trade resolves, even when stale ownerAccountId rows exist.
   const mapping = await resolveActiveMtMapping(supabase, userId);
   if (mapping.status === "missing") {
+    reconcileInFlight.delete(reconcileKey);
     return json(200, {
       ok: false,
       version: VERSION,
@@ -269,6 +270,7 @@ Deno.serve(async (req) => {
     });
   }
   if (mapping.status === "stale" || !mapping.traderId) {
+    reconcileInFlight.delete(reconcileKey);
     return json(409, {
       ok: false,
       version: VERSION,
