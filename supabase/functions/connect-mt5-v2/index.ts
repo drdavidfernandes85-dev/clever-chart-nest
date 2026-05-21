@@ -85,28 +85,34 @@ Deno.serve(async (req) => {
   const account_number = String(body.account_number ?? "").trim();
   const server = String(body.server ?? "").trim();
   const password = String(body.password ?? "");
-  const mode = body.mode === "connect" ? "connect" : "test";
+  const mode: "test" | "connect" | "disconnect" =
+    body.mode === "connect" ? "connect" : body.mode === "disconnect" ? "disconnect" : "test";
 
-  if (!account_number || !server || !password) {
-    return json(400, {
-      success: false,
-      error: "Missing required fields: account_number, server, password.",
-    });
-  }
-  if (!/^\d{4,12}$/.test(account_number)) {
-    return json(422, { success: false, error: "Invalid MT5 login number." });
-  }
-  if (password.length < 4) {
-    return json(422, { success: false, error: "Password is too short." });
-  }
-
-  const apiKey = Deno.env.get("TRADING_LAYER_API_KEY");
+  // Sanitized config check — never leak secret-name details to the client.
+  const apiKey = resolveTradingLayerKey();
   if (!apiKey) {
     return json(500, {
       success: false,
-      error: "Trading Layer is not configured (TRADING_LAYER_API_KEY missing).",
+      error: "TL_CONFIG_MISSING",
+      message: "Trading Layer is not configured.",
     });
   }
+
+  if (mode !== "disconnect") {
+    if (!account_number || !server || !password) {
+      return json(400, {
+        success: false,
+        error: "Missing required fields: account_number, server, password.",
+      });
+    }
+    if (!/^\d{4,12}$/.test(account_number)) {
+      return json(422, { success: false, error: "Invalid MT5 login number." });
+    }
+    if (password.length < 4) {
+      return json(422, { success: false, error: "Password is too short." });
+    }
+  }
+
 
   // Authenticate Supabase user
   const authHeader = req.headers.get("Authorization") ?? "";
