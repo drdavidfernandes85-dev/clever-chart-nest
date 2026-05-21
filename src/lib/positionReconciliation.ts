@@ -30,8 +30,8 @@ export async function reconcileAfterOpen(
   expectedTicket: string | number | null | undefined,
 ): Promise<"confirmed" | "pending"> {
   const target = expectedTicket != null ? String(expectedTicket) : null;
-  // Schedule: immediate, +1.5s, +3s, +5s, +8s (deltas: 0, 1500, 1500, 2000, 3000)
-  const delays = [0, 1500, 1500, 2000, 3000];
+  // Schedule: T+0, +500ms, +1s, +2s, +3.5s, +5s, +8s, +12s, +15s
+  const delays = [0, 500, 500, 1000, 1500, 1500, 3000, 4000, 3000];
   for (const d of delays) {
     if (d > 0) await sleep(d);
     try { await refresh(); } catch { /* ignore */ }
