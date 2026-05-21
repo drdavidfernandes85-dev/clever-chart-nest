@@ -253,6 +253,15 @@ Deno.serve(async (req) => {
     // Any non-200 from Trading Layer is not automatically invalid credentials.
     // Only a Trading Layer 422 proves the submitted MT5 credentials are invalid.
     if (testRes.status !== 200) {
+      if (testRes.status === 401 || testRes.status === 403) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_test",
+          error: "TL_AUTH_FAILED",
+          message: "Trading Layer rejected the configured credentials.",
+          tradingLayerStatus: testRes.status,
+        });
+      }
       const retryable = isRetryableTradingLayerFailure(testRes.status, testJson);
       if (retryable) {
         const retryAfter = retryAfterSeconds(testJson) ?? 60;
@@ -277,6 +286,7 @@ Deno.serve(async (req) => {
         tradingLayerResponse: testJson,
       });
     }
+
 
     // 5. Strict shape check
     // Trading Layer semantics:
