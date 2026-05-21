@@ -268,6 +268,26 @@ class TradingLayerMarketDataWebSocketImpl {
       return;
     }
 
+    // Proxy-emitted control frames carry sanitized error codes.
+    if (msg.type === "proxy_error") {
+      const code = String(msg.errorCode || "TL_WS_UNKNOWN");
+      const sanitized =
+        code === "TL_WS_AUTH_FAILED"
+          ? "Trading Layer WebSocket authentication failed. Confirm the API key includes mt5:market-data scope."
+          : code === "TL_CONFIG_MISSING"
+            ? "Trading Layer WebSocket is not configured."
+            : code === "TL_WS_CONNECT_FAILED"
+              ? "Trading Layer WebSocket connect failed."
+              : code === "TL_WS_UPSTREAM_ERROR"
+                ? "Trading Layer WebSocket upstream error."
+                : code;
+      terminalRealtimeStore.setLastError(sanitized);
+      return;
+    }
+    if (msg.type === "proxy_ready") {
+      return;
+    }
+
     // Tolerate multiple TL payload shapes — pull the first one we recognise.
     const ticks = this.extractTicks(msg);
     if (!ticks.length) {
