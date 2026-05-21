@@ -103,22 +103,23 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { data: account, error: accountError } = await supabase
-    .from("user_mt_accounts")
-    .select("id, metaapi_account_id, status")
-    .eq("user_id", user.id)
-    .eq("status", "connected")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (accountError || !account?.metaapi_account_id) {
+  const mapping = await resolveActiveMtMapping(supabase, user.id);
+  if (mapping.status === "missing") {
     return json({
       success: false, version: VERSION,
-      error: accountError?.message || "No connected MT5 account found",
+      error: "No connected MT5 account found",
     }, 404);
   }
-  const accountId = account.metaapi_account_id;
+  if (mapping.status === "stale" || !mapping.traderId) {
+    return json({
+      success: false, version: VERSION,
+      error: STALE_MAPPING_ERROR_CODE,
+      message: STALE_MAPPING_USER_MESSAGE,
+      mappingStatus: mapping.status,
+      localRowId: mapping.localRowId,
+    }, 409);
+  }
+  const accountId = mapping.traderId;
 
   // ---------- Backend risk enforcement (kill switch + live trading flag) ----------
   try {
