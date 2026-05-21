@@ -156,7 +156,10 @@ function WsDiagnosticsSection() {
       ? "text-emerald-400"
       : rt.wsMarketDataStatus === "stale" ||
           rt.wsMarketDataStatus === "reconnecting" ||
-          rt.wsMarketDataStatus === "connected_no_frames"
+          rt.wsMarketDataStatus === "connected_no_frames" ||
+          rt.wsMarketDataStatus === "connected_waiting_ready" ||
+          rt.wsMarketDataStatus === "connected_ready_no_subscription" ||
+          rt.wsMarketDataStatus === "connected_subscribed_no_ticks"
         ? "text-amber-400"
         : rt.wsMarketDataStatus === "error"
           ? "text-red-400"
