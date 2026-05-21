@@ -154,11 +154,17 @@ function WsDiagnosticsSection() {
   const tone =
     rt.wsMarketDataStatus === "connected"
       ? "text-emerald-400"
-      : rt.wsMarketDataStatus === "stale" || rt.wsMarketDataStatus === "reconnecting"
+      : rt.wsMarketDataStatus === "stale" ||
+          rt.wsMarketDataStatus === "reconnecting" ||
+          rt.wsMarketDataStatus === "connected_no_frames"
         ? "text-amber-400"
         : rt.wsMarketDataStatus === "error"
           ? "text-red-400"
           : "text-neutral-400";
+  const lastSubscribeAge =
+    rt.lastSubscribeSentAt != null
+      ? `${Math.max(0, Math.round((Date.now() - rt.lastSubscribeSentAt) / 1000))}s ago`
+      : "—";
   return (
     <div className="mt-3 pt-3 border-t border-neutral-800">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-[#FFCD05] mb-2">
