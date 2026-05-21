@@ -2,3 +2,6 @@ project_id = "oyzbftsjlmucmvnjuadl"
 
 [functions.trading-layer-webhook]
 verify_jwt = false
+
+[functions.tl-market-data-stream]
+verify_jwt = false

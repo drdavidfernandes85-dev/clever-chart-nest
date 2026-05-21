@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 import { MarketDataService } from "@/services/MarketDataService";
+import { tradingLayerMarketDataWebSocket } from "@/services/tradingLayerMarketDataWebSocket";
 import { liveMarketDataStore } from "@/lib/liveMarketDataStore";
 
 export interface LiveAccount {
@@ -100,32 +101,53 @@ export function LiveAccountProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
-  // Tell the service which symbol is currently selected.
+  // Tell both services which symbol is currently selected.
   useEffect(() => {
     MarketDataService.setSelectedSymbol(selectedBrokerSymbol || "");
+    tradingLayerMarketDataWebSocket.setSelectedSymbol(selectedBrokerSymbol || "");
   }, [selectedBrokerSymbol]);
 
-  // Resolve the user's MT account UUID so we can scope realtime filters.
+  // Resolve the user's MT account UUID + TL accountId so we can scope
+  // realtime filters AND start the Trading Layer market-data WebSocket.
+  const [tlAccountId, setTlAccountId] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     if (!user) {
       setAccountId(null);
+      setTlAccountId(null);
       return;
     }
     (async () => {
       const { data } = await supabase
         .from("user_mt_accounts")
-        .select("id")
+        .select("id, metaapi_account_id")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!cancelled) setAccountId(data?.id ?? null);
+      if (!cancelled) {
+        setAccountId(data?.id ?? null);
+        setTlAccountId(data?.metaapi_account_id ?? null);
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, [user, liveAccount?.login]);
+
+  // Start the Trading Layer market-data WebSocket once we have the TL
+  // accountId. Display-only — execution stays on the backend fresh-tick
+  // validation path.
+  useEffect(() => {
+    if (!user || !tlAccountId) {
+      tradingLayerMarketDataWebSocket.stop();
+      return;
+    }
+    tradingLayerMarketDataWebSocket.start(tlAccountId);
+    return () => {
+      tradingLayerMarketDataWebSocket.stop();
+    };
+  }, [user, tlAccountId]);
 
   // Realtime: subscribe scoped to the current account and selected symbol.
   // DB-side changes trigger a service refresh — no independent polling here.

@@ -27,6 +27,8 @@ import {
   type LiveAccountSnapshot,
   type LivePositionRow,
 } from "@/lib/liveMarketDataStore";
+import { tradingLayerMarketDataWebSocket } from "@/services/tradingLayerMarketDataWebSocket";
+import { terminalRealtimeStore } from "@/stores/terminalRealtimeStore";
 
 const SELECTED_INTERVAL_MS = 2000;
 const WATCHLIST_INTERVAL_MS = 10_000;
@@ -122,6 +124,8 @@ class MarketDataServiceImpl {
       this.startLoop("selected_symbol", this.tickSelected, SELECTED_INTERVAL_MS);
       this.tickSelected();
     }
+    // Forward to WebSocket service (display path).
+    tradingLayerMarketDataWebSocket.setSelectedSymbol(sym);
     this.publishPolledSymbols();
     this.publishActiveLoops();
   }
@@ -144,6 +148,8 @@ class MarketDataServiceImpl {
     } else {
       this.watchlistSources.set(source, cleaned);
     }
+    // Forward to WebSocket service (display path).
+    tradingLayerMarketDataWebSocket.subscribe(source, Array.from(cleaned));
     this.recomputeWatchlist();
   }
 
@@ -189,10 +195,13 @@ class MarketDataServiceImpl {
     if (liveMarketDataStore.getState().rateLimit.active) return false;
     if (typeof document !== "undefined" && document.visibilityState !== "visible")
       return false;
-    // Soft request budget — keep total outbound calls under
-    // REQUEST_BUDGET_PER_MINUTE. When exceeded, drop the non-essential
-    // loops (watchlist + system_health) but keep selected_symbol,
-    // account, positions, which drive execution-adjacent UI.
+    // When the Trading Layer market-data WebSocket is healthy, skip the
+    // quote polling loops. They become the fallback path and only run
+    // when terminalRealtimeStore reports fallbackPollingActive=true.
+    if (loop === "selected_symbol" || loop === "watchlist") {
+      const rt = terminalRealtimeStore.getState();
+      if (!rt.fallbackPollingActive) return false;
+    }
     const reqs = liveMarketDataStore.getState().diagnostics.requestsLast60s;
     if (reqs >= REQUEST_BUDGET_PER_MINUTE) {
       if (loop === "watchlist" || loop === "system_health") return false;

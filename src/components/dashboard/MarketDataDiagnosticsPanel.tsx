@@ -10,6 +10,7 @@ import {
   subscribePollingRegistry,
 } from "@/lib/pollingRegistry";
 import { useEffect, useState } from "react";
+import { terminalRealtimeStore, type TerminalRealtimeState } from "@/stores/terminalRealtimeStore";
 
 /**
  * Dev-Mode diagnostics for the centralized market data layer.
@@ -130,8 +131,101 @@ const MarketDataDiagnosticsPanel = () => {
           {diag.polledSymbols.length === 0 ? "—" : diag.polledSymbols.join(" · ")}
         </div>
       </div>
+
+      <WsDiagnosticsSection />
     </div>
   );
 };
+
+function WsDiagnosticsSection() {
+  const [rt, setRt] = useState<TerminalRealtimeState>(terminalRealtimeStore.getState());
+  useEffect(() => terminalRealtimeStore.subscribe(setRt), []);
+  const lastTickAge =
+    rt.lastTickAt != null
+      ? `${Math.max(0, Math.round((Date.now() - rt.lastTickAt) / 1000))}s ago`
+      : "—";
+  const selectedTickAge =
+    rt.selectedSymbol && rt.latestTicks[rt.selectedSymbol]
+      ? `${Math.max(0, Math.round((Date.now() - rt.latestTicks[rt.selectedSymbol].timestamp) / 1000))}s`
+      : "—";
+  const connectedSince = rt.connectedSince
+    ? new Date(rt.connectedSince).toLocaleTimeString()
+    : "—";
+  const tone =
+    rt.wsMarketDataStatus === "connected"
+      ? "text-emerald-400"
+      : rt.wsMarketDataStatus === "stale" || rt.wsMarketDataStatus === "reconnecting"
+        ? "text-amber-400"
+        : rt.wsMarketDataStatus === "error"
+          ? "text-red-400"
+          : "text-neutral-400";
+  return (
+    <div className="mt-3 pt-3 border-t border-neutral-800">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-[#FFCD05] mb-2">
+        Trading Layer Market-Data WebSocket
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-[10.5px] font-mono text-neutral-200">
+        <div>
+          <span className="text-neutral-500">status: </span>
+          <span className={tone}>{rt.wsMarketDataStatus.toUpperCase()}</span>
+        </div>
+        <div>
+          <span className="text-neutral-500">accountId: </span>
+          {rt.accountIdMasked ?? "—"}
+        </div>
+        <div>
+          <span className="text-neutral-500">connected since: </span>
+          {connectedSince}
+        </div>
+        <div>
+          <span className="text-neutral-500">last tick: </span>
+          {lastTickAge}
+        </div>
+        <div>
+          <span className="text-neutral-500">selected tick age: </span>
+          {selectedTickAge}
+        </div>
+        <div>
+          <span className="text-neutral-500">reconnect attempts: </span>
+          {rt.reconnectAttempts}
+        </div>
+        <div>
+          <span className="text-neutral-500">fallback polling: </span>
+          {rt.fallbackPollingActive ? (
+            <span className="text-amber-400">ACTIVE</span>
+          ) : (
+            <span className="text-emerald-400">off</span>
+          )}
+        </div>
+        <div>
+          <span className="text-neutral-500">malformed events: </span>
+          {rt.malformedEventCount}
+        </div>
+        <div>
+          <span className="text-neutral-500">duplicate socket: </span>
+          {rt.duplicateSocketDetected ? (
+            <span className="text-red-400">YES</span>
+          ) : (
+            <span className="text-emerald-400">no</span>
+          )}
+        </div>
+        <div className="break-words">
+          <span className="text-neutral-500">ws url: </span>
+          {rt.wsUrlMasked ?? "—"}
+        </div>
+        <div className="col-span-2 break-words">
+          <span className="text-neutral-500">subscribed ({rt.subscribedSymbols.length}): </span>
+          {rt.subscribedSymbols.length === 0 ? "—" : rt.subscribedSymbols.join(" · ")}
+        </div>
+        {rt.lastError && (
+          <div className="col-span-2 break-words text-red-400">
+            <span className="text-neutral-500">last error: </span>
+            {rt.lastError}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default MarketDataDiagnosticsPanel;
