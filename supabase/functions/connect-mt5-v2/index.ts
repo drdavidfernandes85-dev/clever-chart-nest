@@ -24,7 +24,28 @@ interface Body {
   account_number?: string;
   server?: string;
   password?: string;
-  mode?: "test" | "connect";
+  mode?: "test" | "connect" | "disconnect";
+}
+
+/**
+ * Resolve the Trading Layer API key from edge-function secrets.
+ * Prefer TRADING_LAYER_PUBLIC_API_KEY, fall back to TRADING_LAYER_API_KEY.
+ * Server-side only — never returned, logged, or exposed to the browser.
+ */
+function resolveTradingLayerKey(): string | null {
+  const k =
+    Deno.env.get("TRADING_LAYER_PUBLIC_API_KEY") ||
+    Deno.env.get("TRADING_LAYER_API_KEY") ||
+    "";
+  return k ? k : null;
+}
+
+function tlAuthHeaders(apiKey: string) {
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  } as const;
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 20000) {
