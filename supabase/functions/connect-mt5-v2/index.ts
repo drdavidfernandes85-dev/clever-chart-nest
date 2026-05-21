@@ -24,7 +24,28 @@ interface Body {
   account_number?: string;
   server?: string;
   password?: string;
-  mode?: "test" | "connect";
+  mode?: "test" | "connect" | "disconnect";
+}
+
+/**
+ * Resolve the Trading Layer API key from edge-function secrets.
+ * Prefer TRADING_LAYER_PUBLIC_API_KEY, fall back to TRADING_LAYER_API_KEY.
+ * Server-side only — never returned, logged, or exposed to the browser.
+ */
+function resolveTradingLayerKey(): string | null {
+  const k =
+    Deno.env.get("TRADING_LAYER_PUBLIC_API_KEY") ||
+    Deno.env.get("TRADING_LAYER_API_KEY") ||
+    "";
+  return k ? k : null;
+}
+
+function tlAuthHeaders(apiKey: string) {
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  } as const;
 }
 
 async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 20000) {
@@ -64,28 +85,34 @@ Deno.serve(async (req) => {
   const account_number = String(body.account_number ?? "").trim();
   const server = String(body.server ?? "").trim();
   const password = String(body.password ?? "");
-  const mode = body.mode === "connect" ? "connect" : "test";
+  const mode: "test" | "connect" | "disconnect" =
+    body.mode === "connect" ? "connect" : body.mode === "disconnect" ? "disconnect" : "test";
 
-  if (!account_number || !server || !password) {
-    return json(400, {
-      success: false,
-      error: "Missing required fields: account_number, server, password.",
-    });
-  }
-  if (!/^\d{4,12}$/.test(account_number)) {
-    return json(422, { success: false, error: "Invalid MT5 login number." });
-  }
-  if (password.length < 4) {
-    return json(422, { success: false, error: "Password is too short." });
-  }
-
-  const apiKey = Deno.env.get("TRADING_LAYER_API_KEY");
+  // Sanitized config check — never leak secret-name details to the client.
+  const apiKey = resolveTradingLayerKey();
   if (!apiKey) {
     return json(500, {
       success: false,
-      error: "Trading Layer is not configured (TRADING_LAYER_API_KEY missing).",
+      error: "TL_CONFIG_MISSING",
+      message: "Trading Layer is not configured.",
     });
   }
+
+  if (mode !== "disconnect") {
+    if (!account_number || !server || !password) {
+      return json(400, {
+        success: false,
+        error: "Missing required fields: account_number, server, password.",
+      });
+    }
+    if (!/^\d{4,12}$/.test(account_number)) {
+      return json(422, { success: false, error: "Invalid MT5 login number." });
+    }
+    if (password.length < 4) {
+      return json(422, { success: false, error: "Password is too short." });
+    }
+  }
+
 
   // Authenticate Supabase user
   const authHeader = req.headers.get("Authorization") ?? "";
@@ -107,11 +134,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const tlHeaders = {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  };
+  const tlHeaders = tlAuthHeaders(apiKey);
 
   try {
     // 1. Get tenant
@@ -122,6 +145,15 @@ Deno.serve(async (req) => {
     );
     const tenantJson = await readJson(tenantRes);
 
+    if (tenantRes.status === 401 || tenantRes.status === 403) {
+      return json(502, {
+        success: false,
+        step: "tenant",
+        error: "TL_AUTH_FAILED",
+        message: "Trading Layer rejected the configured credentials.",
+        tradingLayerStatus: tenantRes.status,
+      });
+    }
     if (!tenantRes.ok) {
       return json(502, {
         success: false,
@@ -143,6 +175,57 @@ Deno.serve(async (req) => {
         tradingLayerResponse: tenantJson,
       });
     }
+
+    // Disconnect mode — DELETE upstream credentials, then remove local row.
+    if (mode === "disconnect") {
+      const delRes = await fetchWithTimeout(
+        `${TRADING_LAYER_BASE}/api/v1/accounts/${accountId}/mt5-credentials`,
+        { method: "DELETE", headers: tlHeaders },
+        15000,
+      );
+      const delJson = await readJson(delRes);
+
+      if (delRes.status === 401 || delRes.status === 403) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_delete",
+          error: "TL_AUTH_FAILED",
+          message: "Trading Layer rejected the configured credentials.",
+          tradingLayerStatus: delRes.status,
+        });
+      }
+      // 404 = already disconnected upstream; treat as success.
+      if (!delRes.ok && delRes.status !== 404) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_delete",
+          error: "Failed to remove MT5 credentials in Trading Layer.",
+          tradingLayerStatus: delRes.status,
+          tradingLayerResponse: delJson,
+        });
+      }
+
+      const { error: delLocalError } = await supabase
+        .from("user_mt_accounts")
+        .delete()
+        .eq("user_id", userId)
+        .eq("platform", "mt5");
+      if (delLocalError) {
+        return json(500, {
+          success: false,
+          step: "remove_connected_account",
+          error: delLocalError.message,
+        });
+      }
+
+      return json(200, {
+        success: true,
+        mode,
+        accountId,
+        tradingLayerStatus: delRes.status,
+      });
+    }
+
 
     // 3. Test the form credentials (with retry on transient 5xx from Cloudflare)
     let testRes!: Response;
@@ -170,6 +253,15 @@ Deno.serve(async (req) => {
     // Any non-200 from Trading Layer is not automatically invalid credentials.
     // Only a Trading Layer 422 proves the submitted MT5 credentials are invalid.
     if (testRes.status !== 200) {
+      if (testRes.status === 401 || testRes.status === 403) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_test",
+          error: "TL_AUTH_FAILED",
+          message: "Trading Layer rejected the configured credentials.",
+          tradingLayerStatus: testRes.status,
+        });
+      }
       const retryable = isRetryableTradingLayerFailure(testRes.status, testJson);
       if (retryable) {
         const retryAfter = retryAfterSeconds(testJson) ?? 60;
@@ -194,6 +286,7 @@ Deno.serve(async (req) => {
         tradingLayerResponse: testJson,
       });
     }
+
 
     // 5. Strict shape check
     // Trading Layer semantics:
@@ -253,6 +346,15 @@ Deno.serve(async (req) => {
     );
     const persistJson = await readJson(persistRes);
     if (!persistRes.ok) {
+      if (persistRes.status === 401 || persistRes.status === 403) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_save",
+          error: "TL_AUTH_FAILED",
+          message: "Trading Layer rejected the configured credentials.",
+          tradingLayerStatus: persistRes.status,
+        });
+      }
       return json(502, {
         success: false,
         step: "mt5_credentials_save",
@@ -261,6 +363,7 @@ Deno.serve(async (req) => {
         tradingLayerResponse: persistJson,
       });
     }
+
 
     // 9. Persist locally — never store the password. Strict: a save failure
     // means the user will not appear connected on the dashboard, so surface it.
