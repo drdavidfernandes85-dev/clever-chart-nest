@@ -201,6 +201,29 @@ export const terminalRealtimeStore = {
         meta.wsUrlMasked !== undefined ? meta.wsUrlMasked : state.wsUrlMasked,
     });
   },
+  setSubscribeSchema(s: WsSubscribeSchema) {
+    if (state.subscribeSchema !== s) setState({ subscribeSchema: s });
+  },
+  recordSubscribeFrame(frame: string | null) {
+    setState({
+      lastSubscribeFrame: frame,
+      lastSubscribeSentAt: frame ? Date.now() : state.lastSubscribeSentAt,
+    });
+  },
+  incFrameReceived(isTick: boolean, nonTickType?: string, nonTickSample?: string) {
+    state = {
+      ...state,
+      framesReceived: state.framesReceived + 1,
+      tickFramesReceived: state.tickFramesReceived + (isTick ? 1 : 0),
+      nonTickFramesReceived: state.nonTickFramesReceived + (isTick ? 0 : 1),
+      lastNonTickFrameType: !isTick && nonTickType ? nonTickType : state.lastNonTickFrameType,
+      lastNonTickFrameSample: !isTick && nonTickSample ? nonTickSample : state.lastNonTickFrameSample,
+    };
+    emit();
+  },
+  recordClose(code: number | null, reason: string | null) {
+    setState({ lastCloseCode: code, lastCloseReason: reason });
+  },
   reset() {
     state = initial;
     emit();
