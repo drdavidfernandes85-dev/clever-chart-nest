@@ -19,7 +19,7 @@ interface Finding {
   note?: string;
 }
 
-const SNAPSHOT_TIMESTAMP = "2026-05-21T20:00:00Z";
+const SNAPSHOT_TIMESTAMP = "2026-05-21T21:10:00Z";
 
 const findings: Finding[] = [
   // 2 — Core launch journey
