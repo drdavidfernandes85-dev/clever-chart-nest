@@ -138,6 +138,7 @@ class TradingLayerMarketDataWebSocketImpl {
     this.accountId = null;
     this.clearReconnect();
     this.clearStaleMonitor();
+    this.clearNoFramesTimer();
     this.closeSocket("client_stop");
     terminalRealtimeStore.setStatus("disabled");
     terminalRealtimeStore.setFallbackPolling(true);
