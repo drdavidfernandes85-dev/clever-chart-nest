@@ -138,16 +138,17 @@ const MT5MappingHealthNotice = () => {
               </button>
               {showDiag && (
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 rounded border border-[color:var(--ltr-gold-border)]/60 bg-black/60 px-3 py-2 font-mono text-[10px] text-ltr-silver-300">
-                  <DiagRow k="local_row_id" v={row.id} />
-                  <DiagRow k="mt5_login" v={row.login} />
-                  <DiagRow k="mt5_server" v={row.server_name} />
-                  <DiagRow k="credential_status" v={row.credential_status ?? "—"} />
-                  <DiagRow k="last_verified_at" v={row.last_verified_at ?? "—"} />
-                  <DiagRow k="last_tl_error_code" v={row.last_tl_error_code ?? "—"} />
-                  <DiagRow k="metaapi_account_id" v={row.metaapi_account_id ?? "—"} />
-                  <DiagRow k="trading_layer_account_id" v={row.trading_layer_account_id ?? "—"} />
-                  <DiagRow k="trading_layer_trader_id" v={row.trading_layer_trader_id ?? "—"} />
-                  <DiagRow k="trading_layer_external_trader_id" v={row.trading_layer_external_trader_id ?? "—"} />
+                  <DiagRow k="mapping_status" v={status} />
+                  <DiagRow k="local_row_id" v={row?.id ?? "—"} />
+                  <DiagRow k="mt5_login" v={row?.login ?? "—"} />
+                  <DiagRow k="mt5_server" v={row?.server_name ?? "—"} />
+                  <DiagRow k="credential_status" v={row?.credential_status ?? "—"} />
+                  <DiagRow k="last_verified_at" v={row?.last_verified_at ?? "—"} />
+                  <DiagRow k="last_tl_error_code" v={row?.last_tl_error_code ?? "—"} />
+                  <DiagRow k="metaapi_account_id" v={row?.metaapi_account_id ?? "—"} />
+                  <DiagRow k="trading_layer_account_id" v={row?.trading_layer_account_id ?? "—"} />
+                  <DiagRow k="trading_layer_trader_id" v={row?.trading_layer_trader_id ?? "—"} />
+                  <DiagRow k="trading_layer_external_trader_id" v={row?.trading_layer_external_trader_id ?? "—"} />
                 </div>
               )}
             </div>
