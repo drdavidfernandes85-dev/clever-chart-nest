@@ -164,17 +164,88 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Extract ownerAccount.accountId
-    const accountId = tenantJson?.data?.ownerAccount?.accountId;
-    if (!accountId) {
+    // 2. Resolve the Trading Layer traderId for this MT5 login.
+    //    Trading Layer's /accounts/{accountId} path parameter is the traderId.
+    //    The tenant ownerAccount.accountId is NOT a valid path accountId.
+    const ownerAccountId = tenantJson?.data?.ownerAccount?.accountId ?? null;
+
+    // Try to use a previously-saved traderId for this user+login first.
+    let traderId: string | null = null;
+    let externalTraderId: string | null = null;
+    if (account_number) {
+      const { data: existingRow } = await supabase
+        .from("user_mt_accounts")
+        .select("trading_layer_trader_id, trading_layer_external_trader_id")
+        .eq("user_id", userId)
+        .eq("platform", "mt5")
+        .eq("login", account_number)
+        .maybeSingle();
+      if (existingRow?.trading_layer_trader_id) {
+        traderId = String(existingRow.trading_layer_trader_id);
+        externalTraderId = existingRow.trading_layer_external_trader_id
+          ? String(existingRow.trading_layer_external_trader_id)
+          : null;
+      }
+    }
+
+    // If unknown, list traders and pick the one matching this MT5 login or the user's email.
+    if (!traderId) {
+      const tradersRes = await fetchWithTimeout(
+        `${TRADING_LAYER_BASE}/api/v1/traders?limit=200`,
+        { method: "GET", headers: tlHeaders },
+        15000,
+      );
+      const tradersJson = await readJson(tradersRes);
+      if (tradersRes.status === 401 || tradersRes.status === 403) {
+        return json(502, {
+          success: false,
+          step: "list_traders",
+          error: "TL_AUTH_FAILED",
+          tradingLayerStatus: tradersRes.status,
+        });
+      }
+      if (tradersRes.ok) {
+        const list: any[] = Array.isArray(tradersJson?.data)
+          ? tradersJson.data
+          : Array.isArray(tradersJson?.data?.items)
+          ? tradersJson.data.items
+          : Array.isArray(tradersJson?.items)
+          ? tradersJson.items
+          : [];
+        const userEmail = (await supabase.auth.getUser()).data.user?.email?.toLowerCase() ?? "";
+        const match = list.find((t) => {
+          const tLogin = String(t?.mt5?.login ?? t?.mt5Login ?? "");
+          const tName = String(t?.displayName ?? t?.display_name ?? "").toLowerCase();
+          return (
+            (account_number && tLogin === String(account_number)) ||
+            (userEmail && tName === userEmail)
+          );
+        }) ?? null;
+        if (match) {
+          traderId = String(match.traderId ?? match.trader_id ?? match.id ?? "");
+          externalTraderId = match.externalTraderId
+            ? String(match.externalTraderId)
+            : match.external_trader_id
+            ? String(match.external_trader_id)
+            : null;
+        }
+      }
+    }
+
+    if (!traderId) {
       return json(502, {
         success: false,
-        step: "tenant",
-        error: "Trading Layer tenant has no ownerAccount.accountId.",
-        tradingLayerStatus: tenantRes.status,
-        tradingLayerResponse: tenantJson,
+        step: "resolve_trader",
+        error: "TL_TRADER_NOT_FOUND",
+        message:
+          "Trading Layer account mapping was not found. Please reconnect your MT5 account.",
+        tradingLayerStatus: 404,
       });
     }
+
+    // From here on, the path {accountId} = traderId.
+    const accountId = traderId;
+
 
     // Disconnect mode — DELETE upstream credentials, then remove local row.
     if (mode === "disconnect") {
@@ -260,6 +331,16 @@ Deno.serve(async (req) => {
           error: "TL_AUTH_FAILED",
           message: "Trading Layer rejected the configured credentials.",
           tradingLayerStatus: testRes.status,
+        });
+      }
+      if (testRes.status === 404) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_test",
+          error: "TL_TRADER_NOT_FOUND",
+          message: "Trading Layer account mapping was not found. Please reconnect your MT5 account.",
+          tradingLayerStatus: testRes.status,
+          trading_layer_trader_id: traderId,
         });
       }
       const retryable = isRetryableTradingLayerFailure(testRes.status, testJson);
@@ -355,6 +436,16 @@ Deno.serve(async (req) => {
           tradingLayerStatus: persistRes.status,
         });
       }
+      if (persistRes.status === 404) {
+        return json(502, {
+          success: false,
+          step: "mt5_credentials_save",
+          error: "TL_TRADER_NOT_FOUND",
+          message: "Trading Layer account mapping was not found. Please reconnect your MT5 account.",
+          tradingLayerStatus: persistRes.status,
+          trading_layer_trader_id: traderId,
+        });
+      }
       return json(502, {
         success: false,
         step: "mt5_credentials_save",
@@ -382,8 +473,13 @@ Deno.serve(async (req) => {
       }
     } catch (_e) { /* ignore */ }
 
-    const traderId =
-      account?.traderId ?? account?.trader_id ?? tenantJson?.data?.ownerAccount?.traderId ?? String(accountId);
+    // Refresh externalTraderId from the test response when available.
+    const resolvedExternalTraderId =
+      externalTraderId ??
+      account?.externalTraderId ??
+      account?.external_trader_id ??
+      null;
+
 
     // 9. Persist locally — never store the password.
     const nowIso = new Date().toISOString();
@@ -403,8 +499,9 @@ Deno.serve(async (req) => {
           leverage: Number(account?.leverage ?? 0),
           currency: account?.currency ?? "USD",
           metaapi_account_id: String(accountId),
-          trading_layer_account_id: String(accountId),
+          trading_layer_account_id: ownerAccountId ? String(ownerAccountId) : String(accountId),
           trading_layer_trader_id: String(traderId),
+          trading_layer_external_trader_id: resolvedExternalTraderId ? String(resolvedExternalTraderId) : null,
           credential_status: credentialStatus ?? "validated",
           last_verified_at: nowIso,
           last_tl_error_code: null,
@@ -414,7 +511,7 @@ Deno.serve(async (req) => {
         },
         { onConflict: "user_id,platform,login,server_name" },
       )
-      .select("id, user_id, login, server_name, status, metaapi_account_id, trading_layer_account_id, trading_layer_trader_id, credential_status, last_verified_at, last_synced_at")
+      .select("id, user_id, login, server_name, status, metaapi_account_id, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, credential_status, last_verified_at, last_synced_at")
       .single();
 
     if (saveError || !savedRow) {
@@ -432,8 +529,9 @@ Deno.serve(async (req) => {
       message: "MT5 account connected successfully.",
       mode,
       accountId,
-      trading_layer_account_id: String(accountId),
+      trading_layer_account_id: ownerAccountId ? String(ownerAccountId) : String(accountId),
       trading_layer_trader_id: String(traderId),
+      trading_layer_external_trader_id: resolvedExternalTraderId ? String(resolvedExternalTraderId) : null,
       credential_status: credentialStatus ?? "validated",
       account,
       savedRow,
