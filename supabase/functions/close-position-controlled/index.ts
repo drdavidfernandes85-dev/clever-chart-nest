@@ -231,6 +231,15 @@ Deno.serve(async (req) => {
     });
   } catch { /* swallow audit errors */ }
 
+  // Surface raw TL IDs so the client can ID-first reconcile this close.
+  const orderId = res?.orderId ?? res?.order ?? res?.order_id ?? null;
+  const dealId = res?.dealId ?? res?.deal ?? res?.deal_id ?? null;
+  const requestId = res?.requestId ?? res?.request_id ?? null;
+  const positionTicket = res?.positionTicket ?? res?.position ?? Number(ticket) ?? null;
+  const brokerSymbolOut = res?.brokerSymbol ?? res?.symbol ?? symbol;
+  const retcodeName = res?.retcodeName ?? null;
+  const retcodeDescription = res?.retcodeDescription ?? null;
+
   return json({
     success: outcome === "success",
     version: VERSION,
@@ -238,13 +247,22 @@ Deno.serve(async (req) => {
     status,
     partial: isPartial,
     closeId,
+    clientCloseId: closeId,
     ticket,
+    positionTicket,
+    orderId,
+    dealId,
+    requestId,
+    brokerSymbol: brokerSymbolOut,
     symbol,
     volume,
     retcode,
+    retcodeName,
+    retcodeDescription,
     brokerMessage,
     latencyMs,
     tradingLayerStatus: httpStatus,
+    metaapi_account_id: accountId,
     error: outcome === "success" ? null : (networkError || brokerMessage || "Close failed"),
   });
 });
