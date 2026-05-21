@@ -239,6 +239,55 @@ function WsDiagnosticsSection() {
           <span className="text-neutral-500">subscribed ({rt.subscribedSymbols.length}): </span>
           {rt.subscribedSymbols.length === 0 ? "—" : rt.subscribedSymbols.join(" · ")}
         </div>
+        <div>
+          <span className="text-neutral-500">subscribe schema: </span>
+          <span className="text-neutral-200">{rt.subscribeSchema}</span>
+        </div>
+        <div>
+          <span className="text-neutral-500">last subscribe sent: </span>
+          {lastSubscribeAge}
+        </div>
+        <div className="col-span-2 break-words">
+          <span className="text-neutral-500">last subscribe frame: </span>
+          <span className="text-neutral-300">{rt.lastSubscribeFrame ?? "—"}</span>
+        </div>
+        <div>
+          <span className="text-neutral-500">frames received: </span>
+          {rt.framesReceived}
+        </div>
+        <div>
+          <span className="text-neutral-500">tick frames: </span>
+          <span className={rt.tickFramesReceived > 0 ? "text-emerald-400" : "text-amber-400"}>
+            {rt.tickFramesReceived}
+          </span>
+        </div>
+        <div>
+          <span className="text-neutral-500">non-tick frames: </span>
+          {rt.nonTickFramesReceived}
+        </div>
+        <div>
+          <span className="text-neutral-500">last non-tick type: </span>
+          {rt.lastNonTickFrameType ?? "—"}
+        </div>
+        {rt.lastNonTickFrameSample && (
+          <div className="col-span-2 break-words text-neutral-400">
+            <span className="text-neutral-500">last non-tick sample: </span>
+            {rt.lastNonTickFrameSample}
+          </div>
+        )}
+        {(rt.lastCloseCode != null || rt.lastCloseReason) && (
+          <div className="col-span-2 break-words">
+            <span className="text-neutral-500">last close: </span>
+            <span className="text-neutral-300">
+              code={rt.lastCloseCode ?? "—"} reason={rt.lastCloseReason ?? "—"}
+            </span>
+          </div>
+        )}
+        {rt.wsMarketDataStatus === "connected_no_frames" && (
+          <div className="col-span-2 break-words text-amber-400">
+            WebSocket connected but no market-data frames received. Confirm subscribe schema with Trading Layer.
+          </div>
+        )}
         {rt.lastError && (
           <div className="col-span-2 break-words text-red-400">
             <span className="text-neutral-500">last error: </span>
