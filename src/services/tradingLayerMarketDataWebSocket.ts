@@ -233,6 +233,7 @@ class TradingLayerMarketDataWebSocketImpl {
         this.ws = null;
         this.clearStaleMonitor();
         this.clearNoFramesTimer();
+        terminalRealtimeStore.setUpstreamReady(false);
         const code = (e as CloseEvent)?.code ?? null;
         const reason = ((e as CloseEvent)?.reason || "").slice(0, 120) || null;
         terminalRealtimeStore.recordClose(code, reason);
