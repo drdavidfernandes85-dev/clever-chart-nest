@@ -1,80 +1,65 @@
-# Full Mobile Responsiveness QA + Optimization Pass
+# Execution speed + MT5 confirmation fix
 
-This is a large multi-area pass. To keep it safe (no execution / risk / MT5 / reconciliation logic touched) and reviewable, I'll split it into 4 phases. Each phase ships independently so you can verify before the next.
+This is a cross-cutting fix across the order-entry frontend and ~12 Edge Functions. It does **not** change compliance copy, risk validation, kill switch, fresh tick validation, or mobile read-only behavior.
 
-## Scope guardrails (unchanged)
+## What we will change
 
-Will NOT touch:
-- `supabase/functions/**` (all edge functions, including `reconcile-execution`, `execute-trade`, `close-position-controlled`, `mt-webhook`, risk, market data, symbol source)
-- `src/lib/positionReconciliation.ts`, `src/lib/tradingLayerControl.ts`, `src/lib/quick-trade-validation.ts`
-- Compliance copy in `ComplianceFooter`, `RiskDisclosure`, `Terms`, `TradingRoomDisclaimerModal`
-- Launch readiness gating logic (only adds a new Mobile QA tile, no changes to existing gates)
+### 1. `submit-best-execution-order` (backend)
+- Add a `timings` collector (`requestReceivedAt`, `authValidatedAt`, `accountResolvedAt`, `riskValidatedAt`, `freshTickFetchedAt`, `orderSentToTradingLayerAt`, `tradingLayerResponseAt`, `firstReconcileStartedAt`, `mt5ConfirmedAt`, `finalUiStatusAt`), returned only when `devMode=true` in the body.
+- Parse the raw Trading Layer response and persist: `retcode, retcodeName, retcodeDescription, orderId, dealId, positionId/ticket, requestId, clientOrderId, symbol, side, volume, price, brokerResponseTimeMs` into `trade_execution_logs.response_payload` and surface IDs in the function's JSON response.
+- Return early to the client as soon as TL responds with `broker_accepted` (status: `broker_accepted_pending_confirmation`) carrying all IDs. Audit insert moves to a fire-and-forget after the response is constructed.
+- Resolve `metaapi_account_id` (which equals `trading_layer_trader_id`) **once per request**; never use local row UUID as TL accountId. Add a defensive check that rejects with `TL_MAPPING_INVALID` if mapping looks like a stale ownerAccountId pattern.
 
-Only presentational / layout / nav / a11y code in `src/**`.
+### 2. New `reconcile-execution` cadence
+- Client-driven cadence: 0, 500ms, 1s, 2s, 3.5s, 5s, 8s, 12s, 15s. Stops early on first confirmation.
+- Each attempt runs **positions + orders + deals** queries in parallel against the resolved traderId.
+- Match priority: positionTicket/ticket → dealId → orderId → requestId/clientOrderId → brokerSymbol+side+volume+account within recent time window. Symbol comparison is suffix-tolerant (`XAUUSD` matches `XAUUSD.M`). Entry price is not required.
+- Returns one of: `position_confirmed`, `order_found_not_filled`, `pending_order_placed`, `unconfirmed_after_reconciliation`, `rejected`, `cancelled` plus the `sourcesChecked` map.
 
----
+### 3. Frontend order ticket state machine (`src/components/dashboard/BlackArrowTradePanel.tsx` and the execute helper)
+- On click: instantly show `Sending order…`.
+- On TL `broker_accepted` response: instantly show `Broker accepted — waiting for MT5 confirmation.`
+- On reject: `Order rejected by broker.`
+- On risk/validation block: `Order blocked by risk controls.`
+- Background reconciliation loop using the new cadence; updates UI as soon as a non-pending status arrives.
+- Optimistic states allowed: `sending_order`, `broker_accepted`, `waiting_mt5_confirmation`, `close_request_sent`, `close_broker_accepted`. Never optimistic for `executed` / `position_opened` / `position_closed`.
+- Final fallback copy after full cadence: `Order accepted, but MT5 confirmation was not found yet. Please check MT5 or retry confirmation.`
 
-## Phase 1 — Global foundations + Public site
+### 4. `close-position-controlled` + close modal
+- Modal pre-flight validation: requires `positionTicket`, `brokerSymbol`, `volume>0`, `side`, resolved `traderId`. Bails with a clear inline error otherwise.
+- Payload uses positionTicket + exact broker symbol + exact (or partial) volume + side + traderId. Never closes by symbol only, never uses display symbol if a different broker symbol exists, never sends local row id.
+- Same reconciliation cadence as open (0/500/1s/2s/3.5s/5s/8s/12s), parallel checks, success when position removed or volume reduced (partial).
+- Same instant UI transitions: `Close request sent` → `Broker accepted close request` → terminal status.
 
-Goal: kill horizontal overflow, fix nav, ensure all marketing pages stack cleanly 320–1440px.
+### 5. Account-ID audit pass across edge functions
+Verify and fix where needed (read-only review, surgical edits only):
+- `submit-best-execution-order`, `execute-trade`, `close-position-controlled`, `modify-position-protection`, `reconcile-execution`, `get-live-account`, `get-mt5-terminal-data`, `get-mt5-quotes`, `get-mt5-market-watch`, `get-mt5-symbol-data`, `get-trading-symbols`, `tl-market-data-stream`.
+- All must read `metaapi_account_id` from `user_mt_accounts` (single source of truth post connect-mt5-v2). Any path that synthesizes an ID from a local UUID or tenant ownerAccount is removed.
 
-1. **Global overflow guard** in `src/index.css`: `html, body { overflow-x: hidden; }`, `min-w-0` defaults on flex children where needed, ensure `h-dvh` over `h-screen` on full-height layouts.
-2. **Safe-area utilities**: confirm `env(safe-area-inset-*)` is applied on fixed bars (`MobileBottomNav` already does; audit `FloatingMobileCTA`, modals).
-3. **Navbar / mobile menu** (`src/components/Navbar.tsx`):
-   - Verify hamburger open/close, focus trap, link list matches required public nav (Home, Education, Webinars, Community, News & Calendar, LTR Terminal Pro, FAQ, Login/Dashboard).
-   - Hide unstable modules (Analytics, Leaderboard, Video Library) from mobile menu unless readiness gate allows.
-   - Logo scales; language selector reachable.
-4. **Homepage** (`Index.tsx`, `HeroSection`, `PlatformPillars`, `TeamSection`, `MentoringSection`, `TrustpilotSection`, `FAQSection`, `ContactSection`, `NewsletterSection`, `Footer`):
-   - Stack grids to 1-col < 640px, 2-col md.
-   - Hero: clamp font sizes, prevent 3D scene from causing overflow, lazy already in place.
-   - Footer columns stack cleanly.
-5. **Marketing / legal pages** (`Education`, `Webinars`, `Community`, `News`, `Ideas`, `CommunityGuidelines`, `Terms`, `RiskDisclosure`, `FAQSection`, `Login`, `Register`, `ForgotPassword`, `ResetPassword`): padding, typography scale, form input width, CTA stacking, no fixed widths.
+### 6. Performance
+- Frontend preloads account mapping on terminal mount (TanStack-style cache) and reuses it for the whole reconciliation lifecycle.
+- Broker symbol metadata cached client-side per session.
+- Edge functions skip redundant account lookups inside reconcile attempts by accepting `traderId` from the client (validated server-side against the user's row).
+- Audit writes use `EdgeRuntime.waitUntil` so they never block the response.
 
-## Phase 2 — Dashboard shell + dashboard pages
+### 7. Dev diagnostics panel
+- Extend the existing `ExecutionReconciliationDebugPanel` (Dev Mode only) to show: tradeId/clientOrderId, transport, accountId used, local row id, trading_layer_trader_id, brokerSymbol, displaySymbol, side, volume, risk validation result, fresh tick age, retcode/Name/Description, orderId, dealId, positionTicket, attempt count, sourcesChecked map, final confirmationStatus, full timing breakdown. No secrets, no API key, no MT5 password.
 
-1. **DashboardLayout / MobileSidebarDrawer / DashboardSidebar**: verify drawer open/close, body scroll lock (already present), backdrop dismiss, focus return, active highlight, drawer width on tablet portrait.
-2. **MobileBottomNav**: tap targets ≥44px (currently h-16 = 64px ✓), labels readable, hidden on /chatroom (already).
-3. **Dashboard page** (`src/pages/Dashboard.tsx`): quick action cards stack vertically <640px in this order — Trading Room → Webinar → Ideas → Terminal → Connect MT5; service status card compact; refresh button reachable; admin/dev panels collapsed by default on mobile.
-4. **Chatroom mobile**: input bar above bottom nav, message list height uses `dvh`, hub rail becomes drawer.
-5. **Profile / ConnectMT / ConnectMyMT5**: form fields full-width, status cards stack, errors readable.
-6. **Webinars / Ideas / News / Education modules / Education page**: card grids stack, filters wrap, calendar iframe responsive with retry/open-external buttons visible.
+## What stays untouched
+- Compliance and disclaimer wording.
+- Backend risk validation order (still runs before order send).
+- Kill switch behavior and testing-mode limits.
+- Fresh tick validation (still required before send).
+- Mobile read-only strategy.
+- RLS / auth / secrets handling.
 
-## Phase 3 — LTR Terminal Pro mobile strategy (Option A)
+## Out of scope (will note but not change)
+- Database schema (existing columns on `trade_execution_logs` cover everything we need).
+- `connect-mt5-v2` (already the single writer of TL IDs).
+- WebSocket market data pipeline.
 
-For viewports `< 768px` only: render a **Mobile Terminal Summary** instead of the full pro layout. The full terminal renders unchanged at `≥ 768px`.
+## Risk notes
+- Moving audit writes off the response path means a crash could miss an audit row; we keep the synchronous insert when `outcome=rejected` or `risk_blocked`. Confirmed/pending audits stay async.
+- Symbol-suffix tolerance is fallback-only; primary match still uses exact broker symbol returned by TL.
 
-New component `src/components/livechart/MobileTerminalSummary.tsx`:
-- Connected account status (reuse `ConnectedAccountBadge` data via `useMTAccount` / `LiveAccountContext`)
-- Selected symbol quote (reuse `useSelectedQuote`)
-- Compact open positions summary (read-only, reuse existing data hooks, no new execution paths)
-- Primary CTA: "Open Full Terminal on Desktop" + educational note
-- Link to Trading Room and Connect MT5
-
-`LiveChart.tsx` gets a `useIsMobile()` branch at the top that returns `<MobileTerminalSummary />`. No changes to execution, order ticket, reconciliation, or close-position code paths — they simply aren't mounted on phones.
-
-Tablet 768–1024px: existing layout already responsive; add chart-full-width + collapsed right rail tabs check, no logic change.
-
-## Phase 4 — Modals, tables, perf, a11y, Admin Launch Readiness Mobile QA tile
-
-1. **Modals**: audit `Dialog`/`Drawer` usages (login/register, MT5 connect, execution result, close confirm, SL/TP modify, language selector). On `<640px`, force near-full-screen content with sticky header/footer so action buttons never clip. Add `max-h-[90dvh] overflow-y-auto` defaults where missing.
-2. **Tables**: wrap `Table` containers in `overflow-x-auto` scoped to the card (not page). Positions/history/best-execution: add a mobile card-list fallback where the table is non-trivial.
-3. **Perf**: confirm chart/TradingView is lazy (`lazyWithRetry`), reduce heavy blur/glow on `<md` via Tailwind variants (`md:backdrop-blur-xl`), keep animations gated by `prefers-reduced-motion`.
-4. **A11y sweep**: aria-labels on icon buttons, focus-visible rings, tap target audit.
-5. **Admin Launch Readiness — Mobile QA section** (`src/components/admin/AdminLaunchReadinessTab.tsx`): new card listing public/dashboard/terminal/tablet/modals/nav status, overflow findings, fixes applied, remaining issues, and terminal recommendation = "Option A: mobile summary, full terminal desktop/tablet only". Static content, no gating logic changes.
-
----
-
-## Technical notes
-
-- All work is Tailwind + React. No new deps.
-- Breakpoints: default Tailwind (`sm 640`, `md 768`, `lg 1024`, `xl 1280`). 320/375/390/414 all fall under default mobile-first base styles.
-- Verification per phase: visual check at 320/375/768/1024/1440 via preview viewport tool + targeted `code--view` on the touched files.
-- Mobile terminal swap uses existing `useIsMobile()` hook; no new media-query infra.
-
----
-
-## Deliverable order
-
-Phase 1 → verify → Phase 2 → verify → Phase 3 → verify → Phase 4 + Mobile QA report tile.
-
-Shall I proceed starting with **Phase 1 (global overflow + public site nav/pages)**?
+If this looks right, approve and I'll implement in this order: backend (`submit-best-execution-order` → `reconcile-execution` → `close-position-controlled` → audit pass) → frontend state machine + close modal → Dev diagnostics panel.
