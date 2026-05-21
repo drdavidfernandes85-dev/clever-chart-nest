@@ -10,6 +10,7 @@ import {
   subscribePollingRegistry,
 } from "@/lib/pollingRegistry";
 import { useEffect, useState } from "react";
+import { terminalRealtimeStore, type TerminalRealtimeState } from "@/stores/terminalRealtimeStore";
 
 /**
  * Dev-Mode diagnostics for the centralized market data layer.
