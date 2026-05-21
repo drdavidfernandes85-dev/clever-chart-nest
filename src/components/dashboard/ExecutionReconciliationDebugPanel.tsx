@@ -31,9 +31,14 @@ export interface ExecutionReconcileDebugPayload {
     account_number?: string | number | null;
     server?: string | null;
     trading_layer_trader_id?: string | null;
+    trading_layer_external_trader_id?: string | null;
+    trading_layer_account_id?: string | null;
     metaapi_account_id?: string | null;
     local_row_id?: string | null;
     accountIdUsed?: string | null;
+    executionAccountId?: string | null;
+    reconciliationAccountId?: string | null;
+    mapping_status?: "valid" | "stale" | "missing" | "mismatch" | null;
   };
   ids?: {
     tradeId?: string | null;
