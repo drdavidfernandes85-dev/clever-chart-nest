@@ -1190,7 +1190,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
           let finalReconcile: any = reconcile;
           for (const waitMs of [5000, 7000]) { // cumulative ~+5s, +12s after first
-            if (finalReconcile?.mt5Confirmed === true || finalReconcile?.status === "pending_order_placed") break;
+            if (
+              finalReconcile?.mt5Confirmed === true ||
+              finalReconcile?.status === "pending_order_placed" ||
+              finalReconcile?.status === "confirmation_delayed_rate_limited"
+            ) break;
             await new Promise((r) => setTimeout(r, waitMs));
             try { await refresh(); } catch { /* ignore */ }
             const r2 = await reconcileAgain();
