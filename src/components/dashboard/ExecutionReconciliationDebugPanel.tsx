@@ -202,6 +202,13 @@ const ExecutionReconciliationDebugPanel = () => {
                 </summary>
 
                 <div className="px-3 pb-3 pt-1 space-y-3 text-[10.5px]">
+                  {/* 0. Flow kind */}
+                  {r.kind && r.kind !== "open" && (
+                    <div className="font-mono text-[10px] text-amber-300 uppercase tracking-widest">
+                      flow: {r.kind}
+                    </div>
+                  )}
+
                   {/* 1. Account */}
                   <section>
                     <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Connected Account</div>
@@ -209,8 +216,29 @@ const ExecutionReconciliationDebugPanel = () => {
                       <div><span className="text-neutral-500">account: </span>{r.account.account_number ?? "—"}</div>
                       <div><span className="text-neutral-500">server: </span>{r.account.server ?? "—"}</div>
                       <div><span className="text-neutral-500">trader_id: </span>{r.account.trading_layer_trader_id ?? "—"}</div>
+                      <div className="break-all"><span className="text-neutral-500">metaapi_account_id: </span>{r.account.metaapi_account_id ?? "—"}</div>
+                      <div className="break-all"><span className="text-neutral-500">accountId used: </span>{r.account.accountIdUsed ?? "—"}</div>
+                      <div className="break-all"><span className="text-neutral-500">local row id: </span>{r.account.local_row_id ?? "—"}</div>
                     </div>
                   </section>
+
+                  {/* 1b. Execution IDs */}
+                  {r.ids && (
+                    <section>
+                      <div className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Execution IDs</div>
+                      <div className="grid grid-cols-2 gap-2 font-mono text-neutral-200">
+                        <div className="break-all"><span className="text-neutral-500">tradeId: </span>{r.ids.tradeId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">clientOrderId: </span>{r.ids.clientOrderId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">clientCloseId: </span>{r.ids.clientCloseId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">requestId: </span>{r.ids.requestId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">orderId: </span>{r.ids.orderId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">dealId: </span>{r.ids.dealId ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">positionTicket: </span>{r.ids.positionTicket ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">brokerSymbol: </span>{r.ids.brokerSymbol ?? "—"}</div>
+                        <div className="break-all"><span className="text-neutral-500">displaySymbol: </span>{r.ids.displaySymbol ?? "—"}</div>
+                      </div>
+                    </section>
+                  )}
 
                   {/* 2. Order Request */}
                   <section>
