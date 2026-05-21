@@ -315,6 +315,21 @@ function WsDiagnosticsSection() {
             WebSocket connected but no market-data frames received. Confirm subscribe schema with Trading Layer.
           </div>
         )}
+        {rt.wsMarketDataStatus === "connected_waiting_ready" && (
+          <div className="col-span-2 break-words text-amber-400">
+            Connected to proxy. Waiting for Trading Layer connection.ready…
+          </div>
+        )}
+        {rt.wsMarketDataStatus === "connected_ready_no_subscription" && (
+          <div className="col-span-2 break-words text-amber-400">
+            Ready, but no symbols are currently subscribed.
+          </div>
+        )}
+        {rt.wsMarketDataStatus === "connected_subscribed_no_ticks" && (
+          <div className="col-span-2 break-words text-amber-400">
+            Connected and subscribed, but no tick frames received yet.
+          </div>
+        )}
         {rt.lastError && (
           <div className="col-span-2 break-words text-red-400">
             <span className="text-neutral-500">last error: </span>
