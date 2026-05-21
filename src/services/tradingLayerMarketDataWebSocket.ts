@@ -471,6 +471,31 @@ class TradingLayerMarketDataWebSocketImpl {
       this.staleTimer = null;
     }
   }
+
+  /* ---------- Internal: no-frames timeout ---------- */
+
+  private startNoFramesTimer() {
+    this.clearNoFramesTimer();
+    this.noFramesTimer = window.setTimeout(() => {
+      this.noFramesTimer = null;
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+      const st = terminalRealtimeStore.getState();
+      if (st.tickFramesReceived === 0) {
+        // Connected but Trading Layer sent no tick frames. Stay silent for
+        // end-users (fallback polling is already active) — surface only in
+        // Dev Mode diagnostics.
+        terminalRealtimeStore.setStatus("connected_no_frames");
+        terminalRealtimeStore.setFallbackPolling(true);
+      }
+    }, NO_FRAMES_TIMEOUT_MS);
+  }
+
+  private clearNoFramesTimer() {
+    if (this.noFramesTimer != null) {
+      window.clearTimeout(this.noFramesTimer);
+      this.noFramesTimer = null;
+    }
+  }
 }
 
 export const tradingLayerMarketDataWebSocket =
