@@ -16,6 +16,9 @@
 export type WsMarketDataStatus =
   | "disabled"
   | "connecting"
+  | "connected_waiting_ready"
+  | "connected_ready_no_subscription"
+  | "connected_subscribed_no_ticks"
   | "connected"
   | "connected_no_frames"
   | "reconnecting"
@@ -69,6 +72,10 @@ export interface TerminalRealtimeState {
   lastNonTickFrameSample: string | null;
   lastCloseCode: number | null;
   lastCloseReason: string | null;
+  upstreamReady: boolean;
+  lastControlFrame: string | null;
+  confirmedSubscribedSymbols: string[];
+  lastTickSymbol: string | null;
 }
 
 type Listener = (s: TerminalRealtimeState) => void;
@@ -98,6 +105,10 @@ const initial: TerminalRealtimeState = {
   lastNonTickFrameSample: null,
   lastCloseCode: null,
   lastCloseReason: null,
+  upstreamReady: false,
+  lastControlFrame: null,
+  confirmedSubscribedSymbols: [],
+  lastTickSymbol: null,
 };
 
 let state: TerminalRealtimeState = initial;
@@ -130,7 +141,13 @@ export const terminalRealtimeStore = {
   /* writer-only — service uses these */
   setStatus(s: WsMarketDataStatus) {
     if (state.wsMarketDataStatus !== s) {
-      const isConnectedLike = s === "connected" || s === "connected_no_frames" || s === "stale";
+      const isConnectedLike =
+        s === "connected" ||
+        s === "connected_no_frames" ||
+        s === "connected_waiting_ready" ||
+        s === "connected_ready_no_subscription" ||
+        s === "connected_subscribed_no_ticks" ||
+        s === "stale";
       setState({
         wsMarketDataStatus: s,
         connectedSince:
@@ -223,6 +240,21 @@ export const terminalRealtimeStore = {
   },
   recordClose(code: number | null, reason: string | null) {
     setState({ lastCloseCode: code, lastCloseReason: reason });
+  },
+  setUpstreamReady(v: boolean) {
+    if (state.upstreamReady !== v) setState({ upstreamReady: v });
+  },
+  setLastControlFrame(frame: string | null) {
+    setState({ lastControlFrame: frame });
+  },
+  setConfirmedSubscribedSymbols(syms: string[]) {
+    const norm = Array.from(
+      new Set((syms || []).map((s) => (s || "").toUpperCase()).filter(Boolean)),
+    ).sort();
+    setState({ confirmedSubscribedSymbols: norm });
+  },
+  setLastTickSymbol(sym: string | null) {
+    setState({ lastTickSymbol: sym });
   },
   reset() {
     state = initial;

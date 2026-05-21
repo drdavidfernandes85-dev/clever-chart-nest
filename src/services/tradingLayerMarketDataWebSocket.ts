@@ -207,16 +207,18 @@ class TradingLayerMarketDataWebSocketImpl {
         }
         this.connecting = false;
         this.backoff = BASE_BACKOFF_MS;
-        terminalRealtimeStore.setStatus("connected");
+        // We are connected to the proxy, but not yet upstream-ready.
+        terminalRealtimeStore.setStatus("connected_waiting_ready");
+        terminalRealtimeStore.setUpstreamReady(false);
         terminalRealtimeStore.resetReconnectAttempts();
         terminalRealtimeStore.setLastError(null);
         terminalRealtimeStore.setDuplicateSocket(false);
-        terminalRealtimeStore.setFallbackPolling(false);
+        // Keep fallback polling on until ticks actually flow.
+        terminalRealtimeStore.setFallbackPolling(true);
         terminalRealtimeStore.setSubscribeSchema(this.subscribeSchema);
         this.startStaleMonitor();
         this.startNoFramesTimer();
-        // (Re)send current subscriptions.
-        this.sendSubscribe(this.currentSubscribed);
+        // Note: do NOT send subscribe here. Wait for connection.ready.
       };
 
       ws.onmessage = (ev) => this.handleMessage(ev.data);
@@ -231,6 +233,7 @@ class TradingLayerMarketDataWebSocketImpl {
         this.ws = null;
         this.clearStaleMonitor();
         this.clearNoFramesTimer();
+        terminalRealtimeStore.setUpstreamReady(false);
         const code = (e as CloseEvent)?.code ?? null;
         const reason = ((e as CloseEvent)?.reason || "").slice(0, 120) || null;
         terminalRealtimeStore.recordClose(code, reason);
@@ -281,6 +284,8 @@ class TradingLayerMarketDataWebSocketImpl {
 
   /* ---------- Internal: subscriptions ---------- */
 
+  private subscribeDebounceTimer: number | null = null;
+
   private recomputeSubscriptions() {
     const union = new Set<string>();
     if (this.selectedSymbol) union.add(this.selectedSymbol);
@@ -294,9 +299,22 @@ class TradingLayerMarketDataWebSocketImpl {
     if (same) return;
     this.currentSubscribed = arr;
     terminalRealtimeStore.setSubscribedSymbols(arr);
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.sendSubscribe(arr);
+    // Debounce 200ms to coalesce rapid changes (chart change + watchlist
+    // toggle + selected symbol change). Always sends the FULL list.
+    if (this.subscribeDebounceTimer != null) {
+      window.clearTimeout(this.subscribeDebounceTimer);
     }
+    this.subscribeDebounceTimer = window.setTimeout(() => {
+      this.subscribeDebounceTimer = null;
+      this.flushSubscribe();
+    }, 200);
+  }
+
+  private flushSubscribe() {
+    // Only send when upstream is ready. If not, the proxy will buffer for
+    // us once we do send — but we still gate here to keep diagnostics tidy.
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.sendSubscribe(this.currentSubscribed);
   }
 
   private sendSubscribe(symbols: string[]) {
@@ -356,10 +374,58 @@ class TradingLayerMarketDataWebSocketImpl {
       return;
     }
 
-    // Tolerate multiple TL payload shapes — pull the first one we recognise.
+    // ---- Trading Layer confirmed control frames ----
+    if (msg.type === "connection.ready") {
+      terminalRealtimeStore.setUpstreamReady(true);
+      terminalRealtimeStore.setLastControlFrame("connection.ready");
+      terminalRealtimeStore.incFrameReceived(false, "connection.ready");
+      // Now safe to send the current desired subscription list (full list).
+      this.flushSubscribe();
+      const has = this.currentSubscribed.length > 0;
+      terminalRealtimeStore.setStatus(
+        has ? "connected_subscribed_no_ticks" : "connected_ready_no_subscription",
+      );
+      return;
+    }
+    if (msg.type === "subscription.updated") {
+      const syms = Array.isArray(msg.symbols) ? msg.symbols : [];
+      terminalRealtimeStore.setConfirmedSubscribedSymbols(syms);
+      terminalRealtimeStore.setLastControlFrame("subscription.updated");
+      terminalRealtimeStore.incFrameReceived(false, "subscription.updated");
+      const st = terminalRealtimeStore.getState().wsMarketDataStatus;
+      if (st === "connected_ready_no_subscription" && syms.length > 0) {
+        terminalRealtimeStore.setStatus("connected_subscribed_no_ticks");
+      }
+      return;
+    }
+    if (msg.type === "error" || msg.error) {
+      const errMsg = String(
+        msg.error?.message || msg.error || msg.message || "Trading Layer WS error",
+      );
+      const code = String(msg.code || msg.error?.code || "").toLowerCase();
+      const isAuth =
+        /auth|unauthor|forbidden|scope/.test(errMsg.toLowerCase()) ||
+        /401|403|auth|scope/.test(code);
+      terminalRealtimeStore.setLastError(
+        isAuth
+          ? "Trading Layer WebSocket authentication failed. Confirm the API key includes mt5:market-data scope."
+          : errMsg,
+      );
+      terminalRealtimeStore.setLastControlFrame("error");
+      terminalRealtimeStore.incFrameReceived(false, "error", errMsg.slice(0, 200));
+      return;
+    }
+
+    // ---- Single tick frame (confirmed shape) ----
+    if (msg.type === "tick" && (msg.symbol || msg.brokerSymbol)) {
+      this.applyTickPayload(msg);
+      return;
+    }
+
+    // ---- Tolerant fallback for grouped/legacy shapes ----
     const ticks = this.extractTicks(msg);
     if (!ticks.length) {
-      // Non-tick frames (ack, ping, error, hint): count + sample sanitized.
+      // Unknown control frame: record for diagnostics, never crash.
       const frameType = String(
         msg.type || msg.event || msg.action || msg.method || "unknown",
       ).slice(0, 64);
@@ -369,61 +435,67 @@ class TradingLayerMarketDataWebSocketImpl {
         sample = s.length > 300 ? `${s.slice(0, 300)}…` : s;
       } catch { /* ignore */ }
       terminalRealtimeStore.incFrameReceived(false, frameType, sample);
-      if (msg.type === "error" || msg.error) {
-        terminalRealtimeStore.setLastError(
-          String(msg.error?.message || msg.error || msg.message || "WS error"),
-        );
-      }
       return;
     }
+    for (const t of ticks) this.applyTickPayload(t);
+    return;
+  }
 
+  private applyTickPayload(t: any) {
     terminalRealtimeStore.incFrameReceived(true);
-    // Got a tick — clear no-frames timer (we have real data flowing).
     this.clearNoFramesTimer();
-    if (terminalRealtimeStore.getState().wsMarketDataStatus === "connected_no_frames") {
+    const st = terminalRealtimeStore.getState().wsMarketDataStatus;
+    if (st !== "connected" && st !== "stale") {
       terminalRealtimeStore.setStatus("connected");
     }
+    terminalRealtimeStore.setFallbackPolling(false);
 
-    const liveQuotes: LiveQuote[] = [];
-    const now = Date.now();
-    for (const t of ticks) {
-      const brokerSymbol = String(
-        t.brokerSymbol || t.symbol || t.s || "",
-      ).toUpperCase();
-      if (!brokerSymbol) {
-        terminalRealtimeStore.incMalformed();
-        continue;
-      }
-      const displaySymbol = String(
-        t.displaySymbol || t.display || brokerSymbol,
-      ).toUpperCase();
-      const bid = num(t.bid ?? t.b);
-      const ask = num(t.ask ?? t.a);
-      const last =
-        num(t.last ?? t.l) ??
-        (bid != null && ask != null ? (bid + ask) / 2 : null);
-      const spread =
-        num(t.spread) ??
-        (bid != null && ask != null ? Math.max(0, ask - bid) : null);
-      const volume = num(t.volume ?? t.v);
-      const ts = num(t.timestamp ?? t.ts ?? t.time) ?? now;
+    const brokerSymbol = String(
+      t.brokerSymbol || t.symbol || t.s || "",
+    ).toUpperCase();
+    if (!brokerSymbol) {
+      terminalRealtimeStore.incMalformed();
+      return;
+    }
+    const displaySymbol = String(
+      t.displaySymbol || t.display || brokerSymbol,
+    ).toUpperCase();
+    const bid = num(t.bid ?? t.b);
+    const ask = num(t.ask ?? t.a);
+    const last =
+      num(t.last ?? t.l) ??
+      (bid != null && ask != null ? (bid + ask) / 2 : null);
+    const spread =
+      num(t.spread) ??
+      (bid != null && ask != null ? Math.max(0, ask - bid) : null);
+    const volume = num(t.volume ?? t.v);
+    const tsRaw = t.timestamp ?? t.ts ?? t.time;
+    let ts: number;
+    if (typeof tsRaw === "number" && Number.isFinite(tsRaw)) {
+      ts = tsRaw;
+    } else if (typeof tsRaw === "string") {
+      const parsed = Date.parse(tsRaw);
+      ts = Number.isFinite(parsed) ? parsed : Date.now();
+    } else {
+      ts = Date.now();
+    }
 
-      const tick: RealtimeTick = {
-        brokerSymbol,
-        displaySymbol,
-        bid,
-        ask,
-        last,
-        spread,
-        volume,
-        timestamp: ts,
-        source: "trading_layer_ws",
-      };
-      terminalRealtimeStore.applyTick(tick);
+    const tick: RealtimeTick = {
+      brokerSymbol,
+      displaySymbol,
+      bid,
+      ask,
+      last,
+      spread,
+      volume,
+      timestamp: ts,
+      source: "trading_layer_ws",
+    };
+    terminalRealtimeStore.applyTick(tick);
+    terminalRealtimeStore.setLastTickSymbol(brokerSymbol);
 
-      // Mirror into existing liveMarketDataStore so every legacy widget
-      // (Order Ticket, Quotes Board, Chart header) updates immediately.
-      liveQuotes.push({
+    liveMarketDataStore.setQuotes([
+      {
         symbol: brokerSymbol,
         bid,
         ask,
@@ -432,11 +504,8 @@ class TradingLayerMarketDataWebSocketImpl {
         digits: null,
         timestamp: ts,
         source: "stream",
-      });
-    }
-    if (liveQuotes.length) {
-      liveMarketDataStore.setQuotes(liveQuotes);
-    }
+      },
+    ]);
   }
 
   private extractTicks(msg: any): any[] {
