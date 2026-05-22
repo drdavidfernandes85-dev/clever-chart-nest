@@ -200,6 +200,7 @@ export const ExecutionResultModal = ({
           effective.outcome === "blocked" && "border-amber-500/30",
           effective.outcome === "rejected" && "border-red-500/30",
           (effective.outcome === "pending" || effective.outcome === "unconfirmed") && "border-yellow-500/30",
+          effective.outcome === "dry_run" && "border-neutral-500/30",
         )}
       >
         <TitleBar outcome={effective.outcome} onClose={onClose} />
