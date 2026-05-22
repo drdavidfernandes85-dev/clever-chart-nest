@@ -1,12 +1,19 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, PauseCircle } from "lucide-react";
+import { PauseCircle } from "lucide-react";
 import { getCooldownRemainingMs } from "@/lib/tradingLayerControl";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 /**
- * Terminal-wide banner shown while live auto-refresh is paused for
- * Best-Execution testing. Also surfaces the active 429 cooldown countdown.
+ * Production behaviour:
+ *  - The old "Execution testing mode active — live refresh paused" banner
+ *    is removed. Live refresh is enabled site-wide.
+ *  - This component now ONLY surfaces an active Trading Layer 429 cooldown,
+ *    and only to admin/dev users, so ordinary production users never see
+ *    an internal throttle indicator. Normal users get the silent
+ *    coordinator + last-known-good values instead.
  */
 const TradingLayerPauseBanner = () => {
+  const { isAdmin } = useIsAdmin();
   const [remaining, setRemaining] = useState(getCooldownRemainingMs());
 
   useEffect(() => {
@@ -14,7 +21,8 @@ const TradingLayerPauseBanner = () => {
     return () => window.clearInterval(id);
   }, []);
 
-  const cooling = remaining > 0;
+  if (!isAdmin) return null;
+  if (remaining <= 0) return null;
 
   return (
     <div
@@ -25,16 +33,11 @@ const TradingLayerPauseBanner = () => {
         color: "#FFCD05",
       }}
     >
-      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+      <PauseCircle className="h-3.5 w-3.5 shrink-0" />
       <span className="uppercase tracking-wider">
-        Execution testing mode active — live refresh paused.
+        Trading Layer cooldown · retrying in {Math.ceil(remaining / 1000)}s
       </span>
-      {cooling && (
-        <span className="ml-auto flex items-center gap-1.5 text-[10px]">
-          <PauseCircle className="h-3 w-3" />
-          Rate limit reached. Retrying in {Math.ceil(remaining / 1000)}s.
-        </span>
-      )}
+      <span className="ml-auto text-[10px] opacity-70">admin only</span>
     </div>
   );
 };
