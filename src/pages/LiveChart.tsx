@@ -40,6 +40,7 @@ import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
+import PendingOrdersPanel from "@/components/livechart/PendingOrdersPanel";
 import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalStatusChips from "@/components/livechart/TerminalStatusChips";
 import TerminalStatusBar from "@/components/livechart/TerminalStatusBar";
@@ -571,6 +572,11 @@ const LiveChartInner = () => {
 
             {/* 3. Open positions — exposure on selected/all symbols */}
             <OpenPositionsPanel />
+
+            {/* 3b. Pending orders (admin live testing — usually empty) */}
+            <PendingOrdersPanel />
+
+
 
             {/* 4. Secondary tabs — Quotes / Risk / System
                 Risk and System are tucked away so they never compete with the ticket. */}

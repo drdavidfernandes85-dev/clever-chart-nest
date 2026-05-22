@@ -53,6 +53,14 @@ import {
   PRODUCTION_MODE_EVENT,
   ADMIN_TESTER_MT5_LOGIN,
 } from "@/lib/productionMode";
+import {
+  startAdminLiveTest,
+  updateAdminLiveTest,
+  getAdminLiveTestLimits,
+  type AdminLiveTestLimits,
+} from "@/lib/adminLiveTests";
+import PendingOrderModal, { type PendingType } from "@/components/dashboard/PendingOrderModal";
+
 
 const broadcastExec = (status: string) => {
   try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
@@ -197,6 +205,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const adminLiveTestActive = executionMode === "admin_live_test";
   const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
   const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
+
+  // Admin live-test limits (drives pending-orders gate + cap).
+  const [liveLimits, setLiveLimits] = useState<AdminLiveTestLimits | null>(null);
+  useEffect(() => {
+    if (!adminTestUiVisible) { setLiveLimits(null); return; }
+    let mounted = true;
+    void getAdminLiveTestLimits().then((l) => { if (mounted) setLiveLimits(l); });
+    return () => { mounted = false; };
+  }, [adminTestUiVisible]);
+
+  // Pending-order modal state.
+  const [pendingModal, setPendingModal] = useState<PendingType | null>(null);
+
 
 
   // Post-trade confirmation flow state
@@ -941,7 +962,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     const positionsBeforeSnapshot: any[] = JSON.parse(
       JSON.stringify((positionsRef.current as any[]) || []),
     );
+    // Admin live-test matrix: open a pending row before the call (best-effort).
+    const adminTestId: string | null = adminTestUiVisible
+      ? await startAdminLiveTest({
+          testType: sideArg === "buy" ? "market_buy" : "market_sell",
+          tradeId,
+          brokerSymbol: normalizedSym,
+          side: sideArg,
+          requestedVolume: Number(volNum.toFixed(2)),
+          traderId: (liveAccount as any)?.trading_layer_trader_id ?? null,
+          mt5Login: (liveAccount as any)?.login ? String((liveAccount as any).login) : null,
+          notes: `Market ${sideArg.toUpperCase()} ${normalizedSym} ${volNum.toFixed(2)}`,
+        })
+      : null;
     try {
+
       const payload = {
         tradeId,
         symbol: normalizedSym,
@@ -1099,6 +1134,47 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         });
         setAuditRefreshKey((k) => k + 1);
 
+        // Admin live-test: capture broker-accepted identifiers; final pass/fail
+        // is set when the confirmation coordinator resolves below.
+        if (adminTestId) {
+          void updateAdminLiveTest(adminTestId, {
+            confirmation_status: "broker_accepted_pending_confirmation",
+            request_id: res?.requestId ?? null,
+            order_id: res?.orderId != null ? String(res.orderId) : null,
+            deal_id: res?.dealId != null ? String(res.dealId) : null,
+            position_ticket: res?.positionTicket != null ? String(res.positionTicket) : null,
+            retcode: res?.retcode ?? null,
+            retcode_name: res?.retcodeName ?? null,
+            retcode_description: res?.retcodeDescription ?? res?.brokerMessage ?? null,
+            latency_ms: res?.latencyMs ?? null,
+            evidence: res ?? null,
+          });
+          const unsub = executionConfirmationCoordinator.subscribe((snap) => {
+            const st = snap[tradeId];
+            if (!st) return;
+            if (st.status === "position_confirmed") {
+              const m: any = st.lastMatch;
+              const tk = typeof m === "object" ? (m?.ticket ?? m?.id ?? null) : (m ?? null);
+              void updateAdminLiveTest(adminTestId, {
+                status: "pass",
+                confirmation_status: "position_confirmed",
+                position_ticket: tk != null ? String(tk) : null,
+                verified: true,
+              });
+              unsub();
+            } else if (st.status === "order_rejected") {
+              void updateAdminLiveTest(adminTestId, { status: "fail", confirmation_status: "order_rejected", notes: st.message ?? null });
+              unsub();
+            } else if (st.status === "confirmation_delayed_rate_limited") {
+              void updateAdminLiveTest(adminTestId, { status: "pending", confirmation_status: "confirmation_delayed_rate_limited", rate_limit_hit: true });
+            } else if (st.status === "unconfirmed_after_reconciliation" || st.status === "order_found_not_filled") {
+              void updateAdminLiveTest(adminTestId, { status: "fail", confirmation_status: st.status, notes: st.message ?? null });
+              unsub();
+            }
+          });
+        }
+
+
         // Emit reconciliation debug payload for the Dev panel.
         try {
           const positionsAfterSnapshot: any[] = JSON.parse(
@@ -1245,6 +1321,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             latencyMs: res?.latencyMs ?? null,
           });
         }
+        if (adminTestId) {
+          void updateAdminLiveTest(adminTestId, {
+            status: "fail",
+            confirmation_status: isBlocked ? "blocked_pre_trade" : "order_rejected",
+            retcode: res?.retcode ?? null,
+            retcode_description: res?.brokerMessage ?? res?.error ?? null,
+            latency_ms: res?.latencyMs ?? null,
+            notes: res?.error || (Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null),
+            evidence: res ?? null,
+          });
+        }
+
 
         // Emit reconciliation debug payload for the Dev panel (no MT5 polling on reject/block).
         try {
@@ -1362,7 +1450,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     );
   }
 
-  const pendingDisabled = true; // Limit/Stop pending orders not yet supported by backend
+  // Pending orders are gated by: admin tester + ack + valid mapping + cooldown clear
+  // + symbol supported + fresh bid/ask + admin pending_orders_enabled flag.
+  const pendingEnabledByBackend = liveLimits?.pending_orders_enabled === true;
+  const pendingMaxVolume = Number(liveLimits?.max_order_volume ?? 0.01) || 0.01;
+  const pendingDisabledReason =
+    !adminTestUiVisible ? "Pending orders are only available in admin live testing mode."
+    : !adminAck ? "Acknowledge the admin live-test warning to enable pending orders."
+    : !liveModeGateOk ? "Live execution gate not satisfied."
+    : !pendingEnabledByBackend ? "Pending-order testing unlocks after the required confirmed market open/close tests pass or when enabled in Admin → Production."
+    : cooling ? `Rate limited — retry in ${cooldownSec}s.`
+    : !isBrokerSymbol || !symbolValid ? "Symbol not supported by broker."
+    : !hasValidBidAsk ? "Waiting for fresh market price."
+    : null;
+  const pendingDisabled = !!pendingDisabledReason;
+
   const priceInputDisabled = orderType === "Market";
 
   // "Data delayed" surfaces when:
@@ -1700,10 +1802,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
         {/* Pending orders — 2×2 filled secondary buttons (usable, not dead) */}
         <div className="grid grid-cols-2 gap-1">
-          <SideBtn tone="buy" pending small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
-          <SideBtn tone="sell" pending small disabled={pendingDisabled} title="Pending orders coming soon">Sell Limit</SideBtn>
-          <SideBtn tone="buy" pending small disabled={pendingDisabled} title="Pending orders coming soon">Buy Limit</SideBtn>
-          <SideBtn tone="sell" pending small disabled={pendingDisabled} title="Pending orders coming soon">Sell Stop</SideBtn>
+          <SideBtn tone="buy"  pending small disabled={pendingDisabled} onClick={() => setPendingModal("buy_stop")}   title={pendingDisabledReason ?? "Place a Buy Stop pending order"}>Buy Stop</SideBtn>
+          <SideBtn tone="sell" pending small disabled={pendingDisabled} onClick={() => setPendingModal("sell_limit")} title={pendingDisabledReason ?? "Place a Sell Limit pending order"}>Sell Limit</SideBtn>
+          <SideBtn tone="buy"  pending small disabled={pendingDisabled} onClick={() => setPendingModal("buy_limit")}  title={pendingDisabledReason ?? "Place a Buy Limit pending order"}>Buy Limit</SideBtn>
+          <SideBtn tone="sell" pending small disabled={pendingDisabled} onClick={() => setPendingModal("sell_stop")}  title={pendingDisabledReason ?? "Place a Sell Stop pending order"}>Sell Stop</SideBtn>
+
         </div>
 
         {/* SL / TP — borderless dual column with thin top divider */}
@@ -1870,6 +1973,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       </div>
 
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
+      {pendingModal && (
+        <PendingOrderModal
+          open={true}
+          onClose={() => setPendingModal(null)}
+          pendingType={pendingModal}
+          symbol={normalizedSym}
+          bid={bid}
+          ask={ask}
+          digits={digits}
+          defaultVolume={Math.max(volumeMin, Math.min(volNum || 0.01, pendingMaxVolume))}
+          maxVolume={pendingMaxVolume}
+          traderId={(liveAccount as any)?.trading_layer_trader_id ?? null}
+          mt5Login={(liveAccount as any)?.login ? String((liveAccount as any).login) : null}
+        />
+      )}
+
 
       {liveConfirm && (() => {
         const c = liveConfirm;

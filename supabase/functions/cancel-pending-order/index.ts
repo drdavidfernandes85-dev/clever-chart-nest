@@ -99,6 +99,11 @@ Deno.serve(async (req) => {
   const cancelled = httpOk && (res?.success === true || retcode === 10009 || retcode === 10008);
   const brokerMessage = res?.brokerMessage ?? res?.message ?? res?.error ?? res?.retcodeDescription ?? null;
 
+  // Broker-accepted cancel is NOT a confirmed cancel — client must verify
+  // by checking that the pending order no longer appears.
+  const status = cancelled ? "cancel_broker_accepted_pending_confirmation"
+    : (httpStatus === 429 ? "confirmation_delayed_rate_limited" : "cancel_rejected");
+
   try {
     await supabase.from("execution_audit_events").insert({
       user_id: user.id,
@@ -106,8 +111,8 @@ Deno.serve(async (req) => {
       symbol,
       side: "buy",
       volume: 0,
-      status: cancelled ? "order_cancelled_confirmed" : "cancel_failed",
-      outcome: cancelled ? "success" : "failed",
+      status,
+      outcome: cancelled ? "broker_accepted_pending_confirmation" : (httpStatus === 429 ? "rate_limited" : "failed"),
       latency_ms: latencyMs,
       broker_message: brokerMessage,
       retcode,
@@ -120,7 +125,7 @@ Deno.serve(async (req) => {
     success: cancelled,
     version: VERSION,
     classification: "cancel_pending",
-    status: cancelled ? "order_cancelled_confirmed" : "cancel_failed",
+    status,
     orderId,
     symbol,
     retcode,
@@ -131,3 +136,4 @@ Deno.serve(async (req) => {
     error: cancelled ? null : (networkError || brokerMessage || "Cancel failed"),
   });
 });
+
