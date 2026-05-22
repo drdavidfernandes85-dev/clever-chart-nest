@@ -16,7 +16,10 @@
  * It ONLY bypasses the $100 balance access gate for navigation/screens.
  */
 
-const REVIEW_ACCESS_MODE_DEFAULT = true;
+// Production: review/testing access mode is OFF. The $100 balance gate and
+// real authenticated access rules are enforced. To temporarily re-enable
+// review mode for staging, set VITE_REVIEW_ACCESS_MODE=true.
+const REVIEW_ACCESS_MODE_DEFAULT = false;
 
 const envFlag = import.meta.env.VITE_REVIEW_ACCESS_MODE as string | undefined;
 

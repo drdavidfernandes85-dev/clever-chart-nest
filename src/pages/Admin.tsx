@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio, GraduationCap, BarChart3, Languages } from "lucide-react";
+import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio, GraduationCap, BarChart3, Languages, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,7 @@ import AdminMentorApplicationsTab from "@/components/admin/AdminMentorApplicatio
 import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
 import AdminTranslationQATab from "@/components/admin/AdminTranslationQATab";
 import AdminLaunchReadinessTab from "@/components/admin/AdminLaunchReadinessTab";
+import AdminProductionModeTab from "@/components/admin/AdminProductionModeTab";
 
 interface Channel { id: string; name: string; category: string; }
 interface Profile { user_id: string; display_name: string; }
@@ -132,7 +133,8 @@ const Admin = () => {
         </h1>
 
         <Tabs defaultValue="webinars">
-          <TabsList className="grid w-full grid-cols-9 max-w-5xl">
+          <TabsList className="grid w-full grid-cols-10 max-w-5xl">
+            <TabsTrigger value="prodmode"><Activity className="h-3.5 w-3.5 mr-1.5" /> Production</TabsTrigger>
             <TabsTrigger value="webinars"><Radio className="h-3.5 w-3.5 mr-1.5" /> Webinars</TabsTrigger>
             <TabsTrigger value="channels"><Hash className="h-3.5 w-3.5 mr-1.5" /> Channels</TabsTrigger>
             <TabsTrigger value="messages"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Messages</TabsTrigger>
@@ -143,6 +145,12 @@ const Admin = () => {
             <TabsTrigger value="i18nqa"><Languages className="h-3.5 w-3.5 mr-1.5" /> Translation QA</TabsTrigger>
             <TabsTrigger value="launchqa"><Shield className="h-3.5 w-3.5 mr-1.5" /> Launch QA</TabsTrigger>
           </TabsList>
+
+          {/* PRODUCTION MODE */}
+          <TabsContent value="prodmode" className="mt-4">
+            <AdminProductionModeTab />
+          </TabsContent>
+
 
           {/* WEBINARS */}
           <TabsContent value="webinars" className="mt-4">
