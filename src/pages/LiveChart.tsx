@@ -573,6 +573,11 @@ const LiveChartInner = () => {
             {/* 3. Open positions — exposure on selected/all symbols */}
             <OpenPositionsPanel />
 
+            {/* 3b. Pending orders (admin live testing — usually empty) */}
+            <PendingOrdersPanel />
+
+
+
             {/* 4. Secondary tabs — Quotes / Risk / System
                 Risk and System are tucked away so they never compete with the ticket. */}
             <Tabs defaultValue="quotes" className="rounded-xl bg-[#0A0B0D]/60 p-1">
