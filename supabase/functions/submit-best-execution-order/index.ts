@@ -28,6 +28,10 @@ import {
   STALE_MAPPING_ERROR_CODE,
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
+import {
+  assertLiveExecutionAllowed,
+  LIVE_EXEC_DISABLED_CODE,
+} from "../_shared/executionMode.ts";
 
 const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
