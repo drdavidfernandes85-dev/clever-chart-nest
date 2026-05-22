@@ -280,8 +280,10 @@ const AdminProductionModeTab = () => {
                       const latest = rows.find((r) => r.test_type === def.id);
                       const tone =
                         st.status === "pass" ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
+                        : st.status === "retest_required" ? "bg-amber-500/10 border-amber-500/40 text-amber-300"
                         : st.status === "fail" ? "bg-red-500/10 border-red-500/40 text-red-300"
                         : "bg-muted/20 border-border/40 text-muted-foreground";
+                      const statusLabel = st.status === "retest_required" ? "RETEST REQUIRED" : st.status.toUpperCase();
                       return (
                         <div key={def.id} className={`rounded border px-2 py-1.5 text-left text-[11px] font-mono ${tone}`}>
                           <div className="flex items-center justify-between">
@@ -290,8 +292,13 @@ const AdminProductionModeTab = () => {
                               {def.required && <span className="text-[9px] uppercase tracking-wider opacity-70">required</span>}
                               <span className="text-[9px] opacity-60">{st.rowCount} run{st.rowCount === 1 ? "" : "s"}</span>
                             </span>
-                            <span className="uppercase">{st.status}</span>
+                            <span className="uppercase">{statusLabel}</span>
                           </div>
+                          {st.status === "retest_required" && (
+                            <div className="mt-0.5 text-[9.5px] text-amber-200/90">
+                              Reason: market unavailable/closed at time of broker rejection. Final activation blocker: No, pending valid-session retest.
+                            </div>
+                          )}
                           {latest && (
                             <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] opacity-75">
                               {latest.confirmation_status && <span>conf: {latest.confirmation_status}</span>}
