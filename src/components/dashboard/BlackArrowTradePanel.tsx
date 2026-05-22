@@ -1383,7 +1383,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     );
   }
 
-  const pendingDisabled = true; // Limit/Stop pending orders not yet supported by backend
+  // Pending orders are gated by: admin tester + ack + valid mapping + cooldown clear
+  // + symbol supported + fresh bid/ask + admin pending_orders_enabled flag.
+  const pendingEnabledByBackend = liveLimits?.pending_orders_enabled === true;
+  const pendingMaxVolume = Number(liveLimits?.max_order_volume ?? 0.01) || 0.01;
+  const pendingDisabledReason =
+    !adminTestUiVisible ? "Pending orders are only available in admin live testing mode."
+    : !adminAck ? "Acknowledge the admin live-test warning to enable pending orders."
+    : !liveModeGateOk ? "Live execution gate not satisfied."
+    : !pendingEnabledByBackend ? "Pending-order testing unlocks after the required confirmed market open/close tests pass or when enabled in Admin → Production."
+    : cooling ? `Rate limited — retry in ${cooldownSec}s.`
+    : !isBrokerSymbol || !symbolValid ? "Symbol not supported by broker."
+    : !hasValidBidAsk ? "Waiting for fresh market price."
+    : null;
+  const pendingDisabled = !!pendingDisabledReason;
+
   const priceInputDisabled = orderType === "Market";
 
   // "Data delayed" surfaces when:
