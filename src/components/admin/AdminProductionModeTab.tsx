@@ -47,19 +47,53 @@ const Row = ({ label, value, tone = "neutral" }: { label: string; value: React.R
 };
 
 interface MatrixDef { id: AdminTestType; label: string; required: boolean }
-const MATRIX: MatrixDef[] = [
-  { id: "market_buy", label: "Market Buy 0.01", required: true },
-  { id: "market_sell", label: "Market Sell 0.01", required: false },
-  { id: "full_close", label: "Full close confirmed", required: true },
-  { id: "partial_close", label: "Partial close confirmed", required: false },
-  { id: "modify_sl", label: "SL modification confirmed", required: true },
-  { id: "modify_tp", label: "TP modification confirmed", required: false },
-  { id: "buy_limit", label: "Buy Limit placement", required: true },
-  { id: "sell_limit", label: "Sell Limit placement", required: false },
-  { id: "buy_stop", label: "Buy Stop placement", required: false },
-  { id: "sell_stop", label: "Sell Stop placement", required: false },
-  { id: "cancel_pending", label: "Pending order cancellation", required: true },
+type Readiness = "ready" | "gated_pending" | "implemented_if_confirmed" | "blocked_cap" | "not_ready";
+const SECTIONS: { title: string; readiness: Readiness; note: string; items: MatrixDef[] }[] = [
+  {
+    title: "Ready to Test Now", readiness: "ready",
+    note: "Available now under admin_live_test execution mode.",
+    items: [
+      { id: "market_buy", label: "Market Buy 0.01", required: true },
+      { id: "market_sell", label: "Market Sell 0.01", required: false },
+      { id: "full_close", label: "Full close confirmed", required: true },
+    ],
+  },
+  {
+    title: "Pending Orders — gated", readiness: "gated_pending",
+    note: "Enabled only after Market Open + Close pass and pending_orders_enabled is turned on manually.",
+    items: [
+      { id: "buy_limit", label: "Buy Limit placement", required: true },
+      { id: "sell_limit", label: "Sell Limit placement", required: false },
+      { id: "buy_stop", label: "Buy Stop placement", required: false },
+      { id: "sell_stop", label: "Sell Stop placement", required: false },
+      { id: "cancel_pending", label: "Pending order cancellation", required: true },
+    ],
+  },
+  {
+    title: "Implemented if confirmed by inspection", readiness: "implemented_if_confirmed",
+    note: "Recorded automatically only after MT5-reported SL/TP refresh matches the requested value.",
+    items: [
+      { id: "modify_sl", label: "SL modification confirmed", required: true },
+      { id: "modify_tp", label: "TP modification confirmed", required: false },
+    ],
+  },
+  {
+    title: "Blocked by current 0.01 cap", readiness: "blocked_cap",
+    note: "Partial close requires a position larger than the current 0.01 lot admin-test limit.",
+    items: [
+      { id: "partial_close", label: "Partial close confirmed", required: false },
+    ],
+  },
+  {
+    title: "Not Ready", readiness: "not_ready",
+    note: "Invert/Reverse requires a sequential close-confirmed-then-open-opposite implementation. Not built.",
+    items: [
+      { id: "invert_position", label: "Invert / Reverse position", required: false },
+    ],
+  },
 ];
+const MATRIX: MatrixDef[] = SECTIONS.flatMap((s) => s.items);
+
 
 const AdminProductionModeTab = () => {
   const [, force] = useState(0);
