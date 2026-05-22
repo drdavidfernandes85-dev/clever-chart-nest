@@ -5,6 +5,10 @@ import {
   STALE_MAPPING_ERROR_CODE,
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
+import {
+  assertLiveExecutionAllowed,
+  LIVE_EXEC_DISABLED_CODE,
+} from "../_shared/executionMode.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
