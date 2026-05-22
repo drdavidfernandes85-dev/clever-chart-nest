@@ -1073,7 +1073,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         res?.step === "pretrade_validation";
       if (isDryRunResponse) {
         setExecResult({
-          ...baseFields,
+          symbol: normalizedSym,
+          side: sideArg,
+          volume: Number(volNum.toFixed(2)),
+          digits,
           tradeId,
           outcome: "dry_run" as any,
           brokerAccepted: false,
