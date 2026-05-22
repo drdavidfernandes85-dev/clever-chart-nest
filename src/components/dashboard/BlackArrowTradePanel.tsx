@@ -893,6 +893,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const killSwitchActive = riskFlags.killSwitch;
   const liveDisabled = !riskFlags.liveEnabled;
 
+  // Live-execution gate: if backend is in admin_live_test, only admin testers
+  // with a session acknowledgement may submit. Non-admins are also blocked at
+  // the edge function (LIVE_EXECUTION_NOT_ENABLED_FOR_USER).
+  const liveModeGateOk =
+    executionMode === "live" ||
+    executionMode === "controlled_live_test" /* legacy behaviour */ ||
+    (executionMode === "admin_live_test" && isAuthorisedAdminTester && adminAck);
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
@@ -905,7 +913,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !submitting &&
     !execLocked &&
     !killSwitchActive &&
-    !liveDisabled;
+    !liveDisabled &&
+    liveModeGateOk;
+
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
