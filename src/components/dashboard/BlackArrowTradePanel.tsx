@@ -1836,6 +1836,60 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               Orders placed here are sent to your connected MT5 account (login {ADMIN_TESTER_MT5_LOGIN}).
               Admin live testing mode is active.
             </p>
+
+            {/* Session / tradability state */}
+            <div className="grid grid-cols-2 gap-1 text-[9.5px] font-mono">
+              <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
+                <span className="uppercase tracking-wider text-neutral-500">Session</span>
+                <span
+                  className={cn(
+                    "font-bold uppercase tracking-wider",
+                    sessionAvailability.session === "open" && "text-emerald-400",
+                    sessionAvailability.session === "closed" && "text-red-400",
+                    sessionAvailability.session === "unknown" && "text-amber-400",
+                  )}
+                >
+                  {sessionAvailability.session === "open"
+                    ? "Market Open"
+                    : sessionAvailability.session === "closed"
+                    ? "Market Closed"
+                    : "Session Unknown"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
+                <span className="uppercase tracking-wider text-neutral-500">Tradable</span>
+                <span
+                  className={cn(
+                    "font-bold uppercase",
+                    sessionAvailability.tradable ? "text-emerald-400" : "text-red-400",
+                  )}
+                >
+                  {sessionAvailability.tradable ? "Yes" : "No"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
+                <span className="uppercase tracking-wider text-neutral-500">Tick Age</span>
+                <span className="text-neutral-200">{formatTickAge(sessionAvailability.tickAgeMs)}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
+                <span className="uppercase tracking-wider text-neutral-500">Test</span>
+                <span
+                  className={cn(
+                    "font-bold uppercase",
+                    sessionGateOk ? "text-emerald-400" : "text-amber-400",
+                  )}
+                >
+                  {sessionGateOk ? "Ready" : "Wait For Open Session"}
+                </span>
+              </div>
+            </div>
+
+            {!sessionGateOk && (
+              <p className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber-200">
+                Live test unavailable while {normalizedSym || "this symbol"}'s trading session is closed.
+              </p>
+            )}
+
             {!adminAck && (
               <label className="flex items-start gap-1.5 text-[10px] text-red-200 cursor-pointer">
                 <Checkbox
