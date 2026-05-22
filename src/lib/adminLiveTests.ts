@@ -227,6 +227,9 @@ export async function verifyFromAudit(sinceHours = 48): Promise<{
   for (const r of rows) {
     const klass = ((r as any)?.raw?.classification as string | undefined) || null;
     if (!klass) continue;
+    // Dry-run / pre-trade-check audits are NEVER eligible for final live
+    // verification — they were never sent to MT5.
+    if (klass === "pretrade_check" || klass === "dry_run_no_live_order_sent") continue;
     const status = String((r as any).status || "").toLowerCase();
     const outcome = String((r as any).outcome || "").toLowerCase();
     byType[klass] = byType[klass] || { pass: 0, fail: 0, pending: 0 };
