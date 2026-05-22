@@ -18,6 +18,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { executionConfirmationCoordinator } from "@/services/executionConfirmationCoordinator";
 
 interface AuditRow {
   id: string;
@@ -307,25 +308,24 @@ const ExecutionHistoryPanel = () => {
     const rec = raw.reconciliation || {};
     const diag = raw.diagnostics || {};
     try {
-      await supabase.functions.invoke("reconcile-execution", {
-        body: {
-          tradeId: row.trade_id,
-          symbol: row.symbol,
-          side: row.side,
-          volume: Number(row.volume),
-          requestedPrice: row.requested_price,
-          clientClickAt: rec?.request?.clientClickAt ?? row.created_at,
-          brokerRetcode: row.retcode ?? raw.retcode ?? null,
-          brokerMessage: row.broker_message ?? null,
-          positionTicket: row.ticket ?? raw.positionTicket ?? diag.positionTicket ?? null,
-          orderId: raw.orderId ?? diag.orderId ?? null,
-          dealId: raw.dealId ?? diag.dealId ?? null,
-          requestId: raw.requestId ?? diag.requestId ?? null,
-          clientOrderId: raw.clientOrderId ?? diag.clientOrderId ?? row.trade_id,
-          brokerSymbol: raw.brokerSymbol ?? diag.brokerSymbol ?? row.symbol,
-          rawExecutionResponse: raw,
-        },
+      executionConfirmationCoordinator.retry({
+        tradeId: row.trade_id,
+        symbol: row.symbol,
+        side: row.side as "buy" | "sell",
+        volume: Number(row.volume),
+        requestedPrice: row.requested_price,
+        clientClickAt: rec?.request?.clientClickAt ?? row.created_at,
+        retcode: row.retcode ?? raw.retcode ?? null,
+        brokerMessage: row.broker_message ?? null,
+        positionTicket: row.ticket ?? raw.positionTicket ?? diag.positionTicket ?? null,
+        orderId: raw.orderId ?? diag.orderId ?? null,
+        dealId: raw.dealId ?? diag.dealId ?? null,
+        requestId: raw.requestId ?? diag.requestId ?? null,
+        clientOrderId: raw.clientOrderId ?? diag.clientOrderId ?? row.trade_id,
+        brokerSymbol: raw.brokerSymbol ?? diag.brokerSymbol ?? row.symbol,
+        rawExecutionResponse: raw,
       });
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       const { data } = await supabase
         .from("execution_audit_events")
         .select("*")

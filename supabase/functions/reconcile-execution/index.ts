@@ -30,6 +30,7 @@ import {
 const VERSION = "reconcile-execution@1.5.0";
 const RATE_LIMIT_DEFAULT_SECONDS = 60;
 const reconcileInFlight = new Map<string, number>();
+const accountCooldowns = new Map<string, { cooldownUntil: number; retryAfter: number; endpoint: string; avoided: number }>();
 
 // MT5 TRADE_RETCODE → short name + human description.
 // Only well-known codes are mapped; anything else returns null/null.
@@ -291,81 +292,6 @@ Deno.serve(async (req) => {
   const windowFrom = new Date(clickMs - 10 * 60_000).toISOString();
   const windowTo = new Date(Date.now() + 60_000).toISOString();
 
-  // ── Parallel fetches against Trading Layer ──────────────────────────────
-  // We intentionally omit the upstream `symbol` filter so a broker that
-  // returns a suffixed broker symbol (e.g. "XAUUSD.M") is not silently
-  // filtered out. Symbol comparison happens client-side with symEq.
-  let traderRes: Awaited<ReturnType<typeof tlFetch>>;
-  let posRes: Awaited<ReturnType<typeof tlFetch>>;
-  let ordersRes: Awaited<ReturnType<typeof tlFetch>>;
-  let histOrdersRes: Awaited<ReturnType<typeof tlFetch>>;
-  let histDealsRes: Awaited<ReturnType<typeof tlFetch>>;
-  try {
-    [traderRes, posRes, ordersRes, histOrdersRes, histDealsRes] = await Promise.all([
-    tlFetch(`/traders/${encodeURIComponent(traderId)}`, {}, TL_KEY),
-    tlFetch(`/accounts/${encodeURIComponent(accountId)}/positions`, { limit: 200 }, TL_KEY),
-    tlFetch(`/accounts/${encodeURIComponent(accountId)}/orders`, { limit: 200 }, TL_KEY),
-    tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/orders`, {
-      dateFrom: windowFrom,
-      dateTo: windowTo,
-      limit: 200,
-    }, TL_KEY),
-    tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/deals`, {
-      dateFrom: windowFrom,
-      dateTo: windowTo,
-      limit: 200,
-    }, TL_KEY),
-    ]);
-  } finally {
-    reconcileInFlight.delete(reconcileKey);
-  }
-
-  const positions: any[] = extractArray(posRes.data);
-  const pendingOrders: any[] = extractArray(ordersRes.data);
-  const historyOrders: any[] = extractArray(histOrdersRes.data);
-  const historyDeals: any[] = extractArray(histDealsRes.data);
-  const endpointResults = { positions: posRes, orders: histOrdersRes, pending: ordersRes, deals: histDealsRes };
-  const sourcesChecked = {
-    positions: posRes.status !== 429 && posRes.ok,
-    orders: histOrdersRes.status !== 429 && histOrdersRes.ok,
-    deals: histDealsRes.status !== 429 && histDealsRes.ok,
-    pending: ordersRes.status !== 429 && ordersRes.ok,
-  };
-  const reasonFor = (r: Awaited<ReturnType<typeof tlFetch>>): "rate_limited" | "endpoint_error" | null =>
-    r.status === 429 ? "rate_limited" : r.ok ? null : "endpoint_error";
-  const sourcesSkipped = {
-    positions: reasonFor(posRes),
-    orders: reasonFor(histOrdersRes),
-    deals: reasonFor(histDealsRes),
-    pending: reasonFor(ordersRes),
-  };
-  const checkedCounts = {
-    positionsCount: positions.length,
-    ordersCount: historyOrders.length,
-    dealsCount: historyDeals.length,
-    pendingOrdersCount: pendingOrders.length,
-  };
-  const rateLimitedEntries = Object.entries(endpointResults).filter(([, r]) => r.status === 429);
-  const rateLimitHit = rateLimitedEntries.length > 0;
-  const retryAfter = rateLimitHit
-    ? Math.max(...rateLimitedEntries.map(([, r]) => r.retryAfter ?? RATE_LIMIT_DEFAULT_SECONDS))
-    : null;
-  const nextReconcileAt = retryAfter ? new Date(Date.now() + retryAfter * 1000).toISOString() : null;
-
-  // ── Matching ────────────────────────────────────────────────────────────
-  // Match priority (most specific first):
-  //   1. positionTicket / ticket / positionId
-  //   2. dealId
-  //   3. orderId
-  //   4. requestId / clientOrderId
-  //   5. (fallback) brokerSymbol + side + volume + time window
-  const clickSec = Math.floor(clickMs / 1000);
-  const withinTime = (t: any) => {
-    const n = Number(t);
-    if (!Number.isFinite(n) || n <= 0) return true; // unknown → don't reject on time
-    return Math.abs(n - clickSec) <= 600; // 10 minute window
-  };
-
   const wantPositionTicket = input.positionTicket
     ?? pickId(input.rawExecutionResponse, [
       "positionTicket", "ticket", "position.ticket", "position.id",
@@ -387,6 +313,127 @@ Deno.serve(async (req) => {
       "requestId", "request_id", "clientOrderId", "client_order_id", "tradeId",
     ])
     ?? (input.tradeId ?? null);
+
+  // ── Rate-limit-safe targeted fetches against Trading Layer ──────────────
+  // Never fan out to positions + pending + history orders + deals by default.
+  // One invocation performs a small targeted sequence and stops immediately on 429.
+  type EndpointName = "positions" | "pending" | "orders" | "deals";
+  const emptyRes = (reason = "not_requested"): Awaited<ReturnType<typeof tlFetch>> => ({
+    ok: false,
+    status: 0,
+    data: { skipped: true, reason },
+    retryAfter: null,
+  });
+  let posRes = emptyRes();
+  let ordersRes = emptyRes();
+  let histOrdersRes = emptyRes();
+  let histDealsRes = emptyRes();
+  const calls: Array<{ endpoint: EndpointName; status: number; avoided?: boolean }> = [];
+  const cooldown = accountCooldowns.get(traderId);
+  let cooldownActive = !!cooldown && cooldown.cooldownUntil > Date.now();
+  let requestsAvoidedDuringCooldown = cooldownActive ? (cooldown?.avoided ?? 0) + 1 : 0;
+  if (cooldownActive && cooldown) accountCooldowns.set(traderId, { ...cooldown, avoided: requestsAvoidedDuringCooldown });
+  const endpointPlan: EndpointName[] = wantPositionTicket
+    ? ["positions", "deals"]
+    : wantDealId
+      ? ["deals", "positions"]
+      : wantOrderId || wantRequestId
+        ? ["pending", "orders"]
+        : ["positions", "pending"];
+  const targetLookupMode = wantPositionTicket
+    ? "positionTicket"
+    : wantDealId
+      ? "dealId"
+      : wantOrderId
+        ? "orderId"
+        : wantRequestId
+          ? "requestId"
+          : "fallback";
+  try {
+    if (!cooldownActive) {
+      for (const endpoint of endpointPlan) {
+        const res = endpoint === "positions"
+          ? await tlFetch(`/accounts/${encodeURIComponent(accountId)}/positions`, { limit: 100 }, TL_KEY)
+          : endpoint === "pending"
+            ? await tlFetch(`/accounts/${encodeURIComponent(accountId)}/orders`, { limit: 100 }, TL_KEY)
+            : endpoint === "orders"
+              ? await tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/orders`, { dateFrom: windowFrom, dateTo: windowTo, limit: 100 }, TL_KEY)
+              : await tlFetch(`/accounts/${encodeURIComponent(accountId)}/history/deals`, { dateFrom: windowFrom, dateTo: windowTo, limit: 100 }, TL_KEY);
+        calls.push({ endpoint, status: res.status });
+        if (endpoint === "positions") posRes = res;
+        if (endpoint === "pending") ordersRes = res;
+        if (endpoint === "orders") histOrdersRes = res;
+        if (endpoint === "deals") histDealsRes = res;
+        if (res.status === 429) {
+          const retryAfterSeconds = res.retryAfter ?? RATE_LIMIT_DEFAULT_SECONDS;
+          accountCooldowns.set(traderId, {
+            cooldownUntil: Date.now() + retryAfterSeconds * 1000,
+            retryAfter: retryAfterSeconds,
+            endpoint,
+            avoided: 0,
+          });
+          cooldownActive = true;
+          break;
+        }
+      }
+    } else {
+      calls.push({ endpoint: endpointPlan[0], status: 0, avoided: true });
+    }
+  } finally {
+    reconcileInFlight.delete(reconcileKey);
+  }
+
+  const positions: any[] = extractArray(posRes.data);
+  const pendingOrders: any[] = extractArray(ordersRes.data);
+  const historyOrders: any[] = extractArray(histOrdersRes.data);
+  const historyDeals: any[] = extractArray(histDealsRes.data);
+  const endpointResults = { positions: posRes, orders: histOrdersRes, pending: ordersRes, deals: histDealsRes };
+  const sourcesChecked = {
+    positions: posRes.status !== 429 && posRes.ok,
+    orders: histOrdersRes.status !== 429 && histOrdersRes.ok,
+    deals: histDealsRes.status !== 429 && histDealsRes.ok,
+    pending: ordersRes.status !== 429 && ordersRes.ok,
+  };
+  const reasonFor = (r: Awaited<ReturnType<typeof tlFetch>>): "rate_limited" | "cooldown_active" | "not_requested" | "endpoint_error" | null =>
+    cooldownActive && r.status === 0 ? "cooldown_active" : r.status === 429 ? "rate_limited" : r.ok ? null : r.status === 0 ? "not_requested" : "endpoint_error";
+  const sourcesSkipped = {
+    positions: reasonFor(posRes),
+    orders: reasonFor(histOrdersRes),
+    deals: reasonFor(histDealsRes),
+    pending: reasonFor(ordersRes),
+  };
+  const checkedCounts = {
+    positionsCount: positions.length,
+    ordersCount: historyOrders.length,
+    dealsCount: historyDeals.length,
+    pendingOrdersCount: pendingOrders.length,
+  };
+  const rateLimitedEntries = Object.entries(endpointResults).filter(([, r]) => r.status === 429);
+  const rateLimitHit = rateLimitedEntries.length > 0 || cooldownActive;
+  const retryAfter = rateLimitHit
+    ? Math.max(
+      cooldown?.cooldownUntil && cooldown.cooldownUntil > Date.now()
+        ? Math.ceil((cooldown.cooldownUntil - Date.now()) / 1000)
+        : 0,
+      ...rateLimitedEntries.map(([, r]) => r.retryAfter ?? RATE_LIMIT_DEFAULT_SECONDS),
+      RATE_LIMIT_DEFAULT_SECONDS,
+    )
+    : null;
+  const nextReconcileAt = retryAfter ? new Date(Date.now() + retryAfter * 1000).toISOString() : null;
+
+  // ── Matching ────────────────────────────────────────────────────────────
+  // Match priority (most specific first):
+  //   1. positionTicket / ticket / positionId
+  //   2. dealId
+  //   3. orderId
+  //   4. requestId / clientOrderId
+  //   5. (fallback) brokerSymbol + side + volume + time window
+  const clickSec = Math.floor(clickMs / 1000);
+  const withinTime = (t: any) => {
+    const n = Number(t);
+    if (!Number.isFinite(n) || n <= 0) return true; // unknown → don't reject on time
+    return Math.abs(n - clickSec) <= 600; // 10 minute window
+  };
 
   const idOf = (o: any, paths: string[]) => pickId(o, paths);
 
@@ -635,9 +682,24 @@ Deno.serve(async (req) => {
     rateLimitHit,
     retryAfter,
     nextReconcileAt,
-    upstreamStatus: rateLimitHit ? "rate_limited" : (traderRes.ok ? "ok" : `trader_${traderRes.status}`),
+    upstreamStatus: rateLimitHit ? "rate_limited" : "ok",
     endpointRateLimited: rateLimitedEntries[0]?.[0] ?? null,
-    matchingMode: matchedPosition ? "position" : matchedDeal ? "dealId" : matchedPendingOrder ? "pending" : matchedHistoryOrder ? "orderId" : "fallback",
+    matchingMode: matchedPosition ? "positionTicket" : matchedDeal ? "dealId" : matchedPendingOrder ? "orderId" : matchedHistoryOrder ? "orderId" : targetLookupMode,
+    targetLookupMode,
+    confirmationCoordinator: {
+      activeJobsCount: reconcileInFlight.size,
+      currentTradeId: input.tradeId ?? null,
+      coordinatorStatus: rateLimitHit ? "confirmation_delayed_rate_limited" : "checking",
+      nextCheckAt: nextReconcileAt,
+      accountCooldownUntil: retryAfter ? nextReconcileAt : null,
+      requestsAvoidedDuringCooldown,
+      lastEndpointCalled: calls[calls.length - 1]?.endpoint ?? null,
+      lastHttpStatus: calls[calls.length - 1]?.status ?? null,
+      targetLookupMode,
+      cachedStateUsed: false,
+      endpointPlan,
+      upstreamCalls: calls,
+    },
     matchedTicket: matchedPosition ? String(matchedPosition.ticket ?? matchedPosition.id ?? "") : null,
     matchedDealId: matchedDeal ? String(matchedDeal.ticket ?? matchedDeal.id ?? matchedDeal.dealId ?? "") : null,
     matchedOrderId: (matchedPendingOrder || matchedHistoryOrder)
@@ -652,7 +714,7 @@ Deno.serve(async (req) => {
       metaapi_account_id: accountId,
       local_row_id: mapping.localRowId,
       mapping_status: mapping.status,
-      trader_status: traderRes.ok ? (traderRes.data?.data?.status ?? null) : null,
+      trader_status: null,
     },
     request: {
       tradeId: input.tradeId ?? null,
