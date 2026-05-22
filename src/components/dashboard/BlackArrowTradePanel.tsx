@@ -962,7 +962,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     const positionsBeforeSnapshot: any[] = JSON.parse(
       JSON.stringify((positionsRef.current as any[]) || []),
     );
+    // Admin live-test matrix: open a pending row before the call (best-effort).
+    const adminTestId: string | null = adminTestUiVisible
+      ? await startAdminLiveTest({
+          testType: sideArg === "buy" ? "market_buy" : "market_sell",
+          tradeId,
+          brokerSymbol: normalizedSym,
+          side: sideArg,
+          requestedVolume: Number(volNum.toFixed(2)),
+          traderId: (liveAccount as any)?.trading_layer_trader_id ?? null,
+          mt5Login: (liveAccount as any)?.login ? String((liveAccount as any).login) : null,
+          notes: `Market ${sideArg.toUpperCase()} ${normalizedSym} ${volNum.toFixed(2)}`,
+        })
+      : null;
     try {
+
       const payload = {
         tradeId,
         symbol: normalizedSym,
