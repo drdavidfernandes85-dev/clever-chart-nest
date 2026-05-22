@@ -9,10 +9,11 @@ const outcomeToExecStatus = (outcome: ExecutionOutcome): ExecStatus => {
     case "rejected": return "rejected";
     case "pending": return "broker_accepted";
     case "unconfirmed": return "execution_unconfirmed";
+    case "dry_run": return "risk_blocked";
   }
 };
 
-export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed";
+export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed" | "dry_run";
 
 export interface ExecutionResultPayload {
   outcome: ExecutionOutcome;
