@@ -394,15 +394,30 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         if (outcome === "closed") {
           toast.success("Position closed", { description: `#${ticket} ${position.symbol} — ticket removed from MT5.` });
           broadcastExec("Position Closed");
+          if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+            status: label === "full" ? "pass" : "pass",
+            confirmation_status: "close_confirmed", verified: true,
+            confirmed_volume: Number(volume),
+          });
         } else if (outcome === "partial") {
           toast.success("Partial close completed", { description: `#${ticket} ${position.symbol}` });
           broadcastExec("Partial Closed");
+          if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+            status: label === "partial" ? "pass" : "fail",
+            confirmation_status: "partial_close_confirmed", verified: label === "partial",
+            confirmed_volume: Number(volume),
+            notes: label === "full" ? "full close requested but only partial volume reduced" : null,
+          });
         } else {
           toast.warning("Close request sent but position is still open in MT5.", {
             description: `#${ticket} ${position.symbol} — please verify in MetaTrader.`,
           });
           broadcastExec("Close Unconfirmed");
+          if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+            status: "fail", confirmation_status: "close_unconfirmed_after_reconciliation",
+          });
         }
+
 
         // Emit close debug event for Dev Mode diagnostics panel.
         try {
