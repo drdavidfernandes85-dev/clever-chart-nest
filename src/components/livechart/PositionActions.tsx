@@ -124,8 +124,26 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     if (isExecutionLocked()) {
       return toast.warning("Another execution is in progress. Please wait.");
     }
+    const prevSl = position.stop_loss;
+    const prevTp = position.take_profit;
+    // Record one row per requested protection (SL or TP). Both may be set.
+    const slTestId = stopLoss !== null && stopLoss !== prevSl
+      ? await startAdminLiveTest({
+          testType: "modify_sl",
+          positionTicket: ticket, brokerSymbol: position.symbol, side: position.side,
+          notes: `prev_sl=${prevSl ?? "none"} -> requested_sl=${stopLoss}`,
+        })
+      : null;
+    const tpTestId = takeProfit !== null && takeProfit !== prevTp
+      ? await startAdminLiveTest({
+          testType: "modify_tp",
+          positionTicket: ticket, brokerSymbol: position.symbol, side: position.side,
+          notes: `prev_tp=${prevTp ?? "none"} -> requested_tp=${takeProfit}`,
+        })
+      : null;
     setSubmitting(true);
     lockExecution("modify_sl_tp", 20000);
+    const startedAt = Date.now();
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/modify-position-protection`;
@@ -138,25 +156,70 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         }),
       });
       const data = await r.json().catch(() => ({}));
-      if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
+      const latencyMs = Date.now() - startedAt;
+      if (isRateLimited(r.status, data)) {
+        broadcastExec("Rate Limited");
+        if (slTestId) await updateAdminLiveTest(slTestId, { status: "pending", confirmation_status: "confirmation_delayed_rate_limited", rate_limit_hit: true, latency_ms: latencyMs });
+        if (tpTestId) await updateAdminLiveTest(tpTestId, { status: "pending", confirmation_status: "confirmation_delayed_rate_limited", rate_limit_hit: true, latency_ms: latencyMs });
+        return;
+      }
       checkAndHandle429(data, null);
       if (!r.ok || data?.success === false) {
         toast.error(errMessageFrom(data), { description: safeStr(data?.brokerMessage) });
         broadcastExec("SL/TP Failed");
+        if (slTestId) await updateAdminLiveTest(slTestId, { status: "fail", confirmation_status: "modify_rejected", retcode: data?.retcode ?? null, latency_ms: latencyMs, evidence: data });
+        if (tpTestId) await updateAdminLiveTest(tpTestId, { status: "fail", confirmation_status: "modify_rejected", retcode: data?.retcode ?? null, latency_ms: latencyMs, evidence: data });
       } else {
         toast.success("SL/TP updated successfully", { description: `#${ticket} ${position.symbol}` });
         broadcastExec("SL/TP Updated");
         setOpenModify(false);
+        // Broker accepted. Verify against refreshed MT5 position state.
+        await refreshAll();
+        // Poll mt_positions briefly for the requested value to appear.
+        const verify = async (kind: "sl" | "tp", requested: number) => {
+          for (let i = 0; i < 6; i++) {
+            await new Promise((res) => setTimeout(res, 1500));
+            const { data: rows } = await supabase
+              .from("mt_positions")
+              .select("stop_loss,take_profit,updated_at")
+              .eq("ticket", ticket).limit(1);
+            const row0: any = (rows ?? [])[0];
+            if (!row0) continue;
+            const got = kind === "sl" ? Number(row0.stop_loss) : Number(row0.take_profit);
+            if (Number.isFinite(got) && Math.abs(got - requested) < 1e-6) return true;
+          }
+          return false;
+        };
+        if (slTestId && stopLoss !== null) {
+          const ok = await verify("sl", stopLoss);
+          await updateAdminLiveTest(slTestId, {
+            status: ok ? "pass" : "fail",
+            confirmation_status: ok ? "sl_modification_confirmed" : "modify_unconfirmed_after_reconciliation",
+            verified: ok, latency_ms: latencyMs, evidence: data,
+          });
+        }
+        if (tpTestId && takeProfit !== null) {
+          const ok = await verify("tp", takeProfit);
+          await updateAdminLiveTest(tpTestId, {
+            status: ok ? "pass" : "fail",
+            confirmation_status: ok ? "tp_modification_confirmed" : "modify_unconfirmed_after_reconciliation",
+            verified: ok, latency_ms: latencyMs, evidence: data,
+          });
+        }
+        return;
       }
     } catch (e: any) {
       toast.error("Could not modify protection", { description: e?.message });
       broadcastExec("Modify Failed");
+      if (slTestId) await updateAdminLiveTest(slTestId, { status: "fail", notes: e?.message });
+      if (tpTestId) await updateAdminLiveTest(tpTestId, { status: "fail", notes: e?.message });
     } finally {
       setSubmitting(false);
       unlockExecution();
       await refreshAll();
     }
   }
+
 
   async function submitClose(volume: number, label: "partial" | "full") {
     if (!ticket) return toast.error("Position identifier missing. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
