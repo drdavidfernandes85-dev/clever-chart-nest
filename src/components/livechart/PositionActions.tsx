@@ -238,6 +238,13 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     let serverPartial = false;
     let closeAuditEventId: string | null = null;
     let serverResp: any = null;
+    const adminCloseTestId = await startAdminLiveTest({
+      testType: label === "full" ? "full_close" : "partial_close",
+      positionTicket: ticket, brokerSymbol: position.symbol, side: position.side,
+      requestedVolume: Number(volume), clientCloseId,
+      notes: `${label} close ${volume} of ${openVolume}`,
+    });
+
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
