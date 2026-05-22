@@ -44,7 +44,7 @@ import { useDevMode } from "@/hooks/useDevMode";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import RiskBadges from "@/components/dashboard/RiskBadges";
 import { executionConfirmationCoordinator } from "@/services/executionConfirmationCoordinator";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
+// useIsAdmin lives on useDevMode; admin live test gate reads from productionMode.
 import {
   getExecutionMode,
   refreshExecutionMode,
