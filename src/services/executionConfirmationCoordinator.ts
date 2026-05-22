@@ -235,7 +235,7 @@ export function retryConfirmation(input: ConfirmationJobInput) {
 export function subscribeConfirmation(listener: Listener) {
   listeners.add(listener);
   listener(Object.fromEntries(jobs.entries()));
-  return () => listeners.delete(listener);
+  return () => { listeners.delete(listener); };
 }
 
 export function diagnostics() {
