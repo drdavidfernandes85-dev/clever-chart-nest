@@ -915,6 +915,20 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const killSwitchActive = riskFlags.killSwitch;
   const liveDisabled = !riskFlags.liveEnabled;
 
+  // Market/session availability — read-only inference. Used to gate admin live
+  // test submissions and to surface clear "Market closed" copy instead of
+  // letting orders reach the broker only to come back as TRADE_DISABLED.
+  const sessionAvailability = useMemo(
+    () =>
+      getSessionAvailability({
+        symbol: normalizedSym,
+        bid: bid as number | null,
+        ask: ask as number | null,
+        tickUpdatedAt: tickUpdatedAt ?? null,
+      }),
+    [normalizedSym, bid, ask, tickUpdatedAt],
+  );
+
   // Live-execution gate: if backend is in admin_live_test, only admin testers
   // with a session acknowledgement may submit. Non-admins are also blocked at
   // the edge function (LIVE_EXECUTION_NOT_ENABLED_FOR_USER).
@@ -922,6 +936,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     executionMode === "live" ||
     executionMode === "controlled_live_test" /* legacy behaviour */ ||
     (executionMode === "admin_live_test" && isAuthorisedAdminTester && adminAck);
+
+  // For admin_live_test mode, also require the symbol to be currently tradable.
+  // Closed/unavailable sessions must not produce a failed live-test row.
+  const sessionGateOk =
+    executionMode !== "admin_live_test" || sessionAvailability.tradable;
 
   const canSubmitMarket =
     !!user &&
@@ -936,7 +955,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !execLocked &&
     !killSwitchActive &&
     !liveDisabled &&
-    liveModeGateOk;
+    liveModeGateOk &&
+    sessionGateOk;
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
