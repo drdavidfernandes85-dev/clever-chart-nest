@@ -966,6 +966,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       else if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
       else if (!symbolValid) toast.error("Symbol not available on broker");
+      else if (!sessionGateOk) {
+        toast.error(
+          sessionAvailability.session === "closed"
+            ? "Market closed. No test order was submitted. Try again during an active EURUSD trading session."
+            : "Live test unavailable — symbol is not currently tradable.",
+        );
+      }
       else if (volumeError) toast.error(volumeError);
       else if (slTpError) toast.error(slTpError);
       return;
