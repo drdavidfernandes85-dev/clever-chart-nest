@@ -406,9 +406,16 @@ Deno.serve(async (req) => {
         volume: Number(volume),
         stopLoss: stopLoss == null ? null : Number(stopLoss),
         takeProfit: takeProfit == null ? null : Number(takeProfit),
+        executionIntent,
+        acknowledgedLiveTest,
+        requestedDryRun: false,
+        effectiveDryRun: false,
+        liveOrderAttempted: true,
+        executionMode: gate.mode ?? null,
       },
     },
   );
+
   timings.tradingLayerResponseAt = Date.now();
 
   const serverLatencyMs = Date.now() - startedAt;
