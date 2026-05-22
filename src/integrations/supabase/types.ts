@@ -14,6 +14,147 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_live_execution_tests: {
+        Row: {
+          account_id_mismatch: boolean
+          broker_symbol: string | null
+          client_close_id: string | null
+          client_order_id: string | null
+          confirmation_status: string | null
+          confirmed_volume: number | null
+          created_at: string
+          deal_id: string | null
+          duplicate_detected: boolean
+          evidence_json: Json | null
+          id: string
+          latency_ms: number | null
+          mt5_login: string | null
+          notes: string | null
+          order_id: string | null
+          position_ticket: string | null
+          rate_limit_hit: boolean
+          request_id: string | null
+          requested_volume: number | null
+          retcode: number | null
+          retcode_description: string | null
+          retcode_name: string | null
+          side: string | null
+          status: string
+          test_type: string
+          tested_at: string | null
+          tester_user_id: string
+          trade_id: string | null
+          trading_layer_trader_id: string | null
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          account_id_mismatch?: boolean
+          broker_symbol?: string | null
+          client_close_id?: string | null
+          client_order_id?: string | null
+          confirmation_status?: string | null
+          confirmed_volume?: number | null
+          created_at?: string
+          deal_id?: string | null
+          duplicate_detected?: boolean
+          evidence_json?: Json | null
+          id?: string
+          latency_ms?: number | null
+          mt5_login?: string | null
+          notes?: string | null
+          order_id?: string | null
+          position_ticket?: string | null
+          rate_limit_hit?: boolean
+          request_id?: string | null
+          requested_volume?: number | null
+          retcode?: number | null
+          retcode_description?: string | null
+          retcode_name?: string | null
+          side?: string | null
+          status?: string
+          test_type: string
+          tested_at?: string | null
+          tester_user_id: string
+          trade_id?: string | null
+          trading_layer_trader_id?: string | null
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          account_id_mismatch?: boolean
+          broker_symbol?: string | null
+          client_close_id?: string | null
+          client_order_id?: string | null
+          confirmation_status?: string | null
+          confirmed_volume?: number | null
+          created_at?: string
+          deal_id?: string | null
+          duplicate_detected?: boolean
+          evidence_json?: Json | null
+          id?: string
+          latency_ms?: number | null
+          mt5_login?: string | null
+          notes?: string | null
+          order_id?: string | null
+          position_ticket?: string | null
+          rate_limit_hit?: boolean
+          request_id?: string | null
+          requested_volume?: number | null
+          retcode?: number | null
+          retcode_description?: string | null
+          retcode_name?: string | null
+          side?: string | null
+          status?: string
+          test_type?: string
+          tested_at?: string | null
+          tester_user_id?: string
+          trade_id?: string | null
+          trading_layer_trader_id?: string | null
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
+      admin_live_test_limits: {
+        Row: {
+          created_at: string
+          id: string
+          max_daily_live_test_orders: number
+          max_daily_test_loss_usd: number
+          max_order_volume: number
+          max_simultaneous_test_positions: number
+          partial_close_cap_increase_enabled: boolean
+          pending_orders_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_daily_live_test_orders?: number
+          max_daily_test_loss_usd?: number
+          max_order_volume?: number
+          max_simultaneous_test_positions?: number
+          partial_close_cap_increase_enabled?: boolean
+          pending_orders_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_daily_live_test_orders?: number
+          max_daily_test_loss_usd?: number
+          max_order_volume?: number
+          max_simultaneous_test_positions?: number
+          partial_close_cap_increase_enabled?: boolean
+          pending_orders_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string
