@@ -234,6 +234,23 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Admin live-test intent gate. When the client sends
+  // executionIntent="admin_live_test_live_order" the user MUST also flag
+  // acknowledgedLiveTest=true. The mode/admin/mapping checks below
+  // (assertLiveExecutionAllowed) enforce who may execute; we never silently
+  // downgrade the request to a dry run.
+  if (executionIntent === "admin_live_test_live_order" && acknowledgedLiveTest !== true) {
+    return withTimings({
+      success: false,
+      version: VERSION,
+      step: "pretrade_validation",
+      liveOrderSent: false,
+      error: "Admin live test requires session acknowledgement.",
+      reasons: ["Missing admin live-test acknowledgement"],
+    });
+  }
+
+
   // ---------- Backend risk enforcement (always synchronous) ----------
   try {
     if (uid) {
