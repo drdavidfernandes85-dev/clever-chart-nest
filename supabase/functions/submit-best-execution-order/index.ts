@@ -394,7 +394,121 @@ Deno.serve(async (req) => {
     }, 403);
   }
 
-  // Forward to execute-trade (existing broker integration).
+  // ---------- Admin live-test session precheck ----------
+  // For admin live verification orders only, refuse to forward to the broker
+  // when the symbol's session is not eligible. This mirrors the frontend
+  // gate and prevents broker rejections (e.g. retcode 10017 outside session)
+  // from polluting the live-test matrix.
+  //
+  // Source priority:
+  //   1. explicit Trading Layer / broker trade-mode (not yet exposed — TODO)
+  //   2. explicit MT5 trade-session data (not yet exposed — TODO)
+  //   3. recent executable tick inference (quoteTimestamp + bid/ask)
+  //   4. forex weekend rule
+  //   5. unknown — do not block
+  if (executionIntent === "admin_live_test_live_order") {
+    const symU = String(symbol).toUpperCase();
+    const isCrypto = /(BTC|ETH|USDT|SOL|XRP|ADA|DOGE|BNB|MATIC|DOT)/.test(symU);
+    const isForexLike = !isCrypto && /^(?:[A-Z]{6}|XAU|XAG|GOLD|SILV|WTI|USOIL|UKOIL|BRENT|NGAS)/.test(symU);
+    const nowMs = Date.now();
+    const tickMs = quoteTimestamp ? Date.parse(quoteTimestamp) : NaN;
+    const tickAgeMs = Number.isFinite(tickMs) ? Math.max(0, nowMs - tickMs) : null;
+    const hasExecutableTick =
+      requestedBid != null && requestedAsk != null &&
+      tickAgeMs != null && tickAgeMs <= 60_000;
+
+    const nowDate = new Date(nowMs);
+    const day = nowDate.getUTCDay();
+    const hour = nowDate.getUTCHours();
+    const isForexWeekend =
+      day === 6 || (day === 5 && hour >= 22) || (day === 0 && hour < 22);
+
+    let sessionEligibility: "eligible" | "blocked" | "unknown" = "unknown";
+    let sessionSource: "broker_status" | "recent_tick_inference" | "weekend_rule" | "unknown" = "unknown";
+    let precheckClassification: string | null = null;
+    let precheckMessage = "";
+
+    if (isCrypto) {
+      sessionEligibility = "eligible";
+      sessionSource = "recent_tick_inference";
+    } else if (isForexLike && isForexWeekend) {
+      sessionEligibility = "blocked";
+      sessionSource = "weekend_rule";
+      precheckClassification = "market_closed_precheck";
+      precheckMessage = "Market closed. No test order was submitted. Try again during an active trading session.";
+    } else if (hasExecutableTick) {
+      sessionEligibility = "eligible";
+      sessionSource = "recent_tick_inference";
+    } else if (isForexLike) {
+      // Forex weekday but no fresh executable tick — treat as not eligible.
+      sessionEligibility = "blocked";
+      sessionSource = "recent_tick_inference";
+      precheckClassification = "no_executable_tick_precheck";
+      precheckMessage = "No executable tick available — trading is currently unavailable for this symbol.";
+    }
+
+    if (precheckClassification) {
+      // Informational audit row only — excluded from pass/fail matrix.
+      if (uid) {
+        fireAndForget(supabase.from("execution_audit_events").insert({
+          user_id: uid,
+          trade_id: tradeId ?? null,
+          symbol,
+          side,
+          volume: Number(volume),
+          status: "blocked",
+          outcome: "blocked",
+          requested_price: requestedPrice,
+          executed_price: null,
+          slippage: null,
+          latency_ms: Math.round(Date.now() - startedAt),
+          spread:
+            requestedBid != null && requestedAsk != null
+              ? Math.max(0, requestedAsk - requestedBid)
+              : null,
+          bid: requestedBid,
+          ask: requestedAsk,
+          broker_message: precheckMessage,
+          retcode: null,
+          reason: precheckClassification,
+          rule_violated: null,
+          ticket: null,
+          raw: {
+            classification: precheckClassification,
+            version: VERSION,
+            step: "session_precheck",
+            liveOrderAttempted: false,
+            liveOrderSent: false,
+            brokerAccepted: false,
+            sessionEligibility,
+            sessionSource,
+            tickAgeMs,
+            quote_timestamp: quoteTimestamp,
+            quote_source: quoteSource,
+            informational: true,
+          },
+        }));
+      }
+      timings.finalUiStatusAt = Date.now();
+      return withTimings({
+        success: false,
+        version: VERSION,
+        step: "session_precheck",
+        classification: precheckClassification,
+        liveOrderAttempted: false,
+        liveOrderSent: false,
+        brokerAccepted: false,
+        sessionEligibility,
+        sessionSource,
+        tickAgeMs,
+        tradeId,
+        error: precheckMessage,
+        message: precheckMessage,
+      });
+    }
+  }
+
+
   timings.orderSentToTradingLayerAt = Date.now();
   const { data: execData, error: execError } = await supabase.functions.invoke(
     "execute-trade",
