@@ -1060,7 +1060,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         setPrice("");
         if (autoReset) { setVol(volumeMin.toFixed(2)); setOrderType("Market"); }
 
-        executionConfirmationCoordinator.enqueue({
+        const coordinatedConfirmation = executionConfirmationCoordinator.enqueue({
           tradeId,
           clientOrderId: res?.clientOrderId ?? tradeId,
           requestId: res?.requestId ?? null,
@@ -1101,7 +1101,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             backendTotalMs: finalUi && reqRecv ? finalUi - reqRecv : null,
             clickToBrokerAcceptedMs: tlResp && clickMs ? tlResp - clickMs : null,
             clickToFirstReconcileMs: Number.isFinite(clickMs) ? Date.now() - clickMs : null,
-            clickToConfirmedMs: matched && Number.isFinite(clickMs) ? Date.now() - clickMs : null,
+            clickToConfirmedMs: null,
           };
           window.dispatchEvent(new CustomEvent("mt:execution-reconcile-debug", {
             detail: {
@@ -1109,22 +1109,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               kind: "open",
               account: {
                 account_number:
-                  reconcile?.account?.mt5_login ??
                   (liveAccount as any)?.login ?? null,
                 server:
-                  reconcile?.account?.server ??
                   (liveAccount as any)?.server ?? null,
                 trading_layer_trader_id:
-                  reconcile?.account?.trading_layer_trader_id ??
                   (res as any)?.trading_layer_trader_id ??
                   (res as any)?.diagnostics?.trader_id ??
                   (res as any)?.diagnostics?.accountId ??
                   null,
                 metaapi_account_id:
-                  (res as any)?.metaapi_account_id ??
-                  reconcile?.account?.metaapi_account_id ?? null,
+                  (res as any)?.metaapi_account_id ?? null,
                 local_row_id:
-                  reconcile?.account?.local_row_id ??
                   (res as any)?.diagnostics?.local_row_id ?? null,
                 accountIdUsed:
                   (res as any)?.diagnostics?.accountId ??
@@ -1154,45 +1149,41 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 retcodeName: (res as any)?.retcodeName ?? null,
                 retcodeDescription: (res as any)?.retcodeDescription ?? null,
                 classification:
-                  reconcile?.status ?? (res as any)?.classification ?? null,
+                  coordinatedConfirmation.status ?? (res as any)?.classification ?? null,
                 brokerAccepted: true,
-                mt5Confirmed: !!matched || reconcile?.mt5Confirmed === true,
-                confirmationStatus: reconcile?.status ?? (matched ? "position_confirmed" : "pending"),
+                mt5Confirmed: false,
+                confirmationStatus: coordinatedConfirmation.status ?? "queued",
                 status: (res as any)?.status ?? null,
                 raw: res ?? null,
               },
               reconciliation: {
                 positionsBefore: positionsBeforeSnapshot,
                 positionsAfter: positionsAfterSnapshot,
-                matchFound: !!matched || reconcile?.mt5Confirmed === true,
-                confirmedTicket:
-                  reconcile?.confirmedTicket ??
-                  (matched ? (matched.ticket ?? matched.id ?? null) : null),
-                attempts: reconcile?.attempts ?? null,
+                matchFound: false,
+                confirmedTicket: null,
+                attempts: coordinatedConfirmation.attempts,
                 lastAttemptAt: reconcile?.lastAttemptAt ?? new Date().toISOString(),
                 sourcesChecked: {
-                  positions: reconcile?.sourcesChecked?.positions ?? false,
-                  orders: reconcile?.sourcesChecked?.orders ?? false,
-                  deals: reconcile?.sourcesChecked?.deals ?? false,
-                  pending: reconcile?.sourcesChecked?.pending ?? false,
+                  positions: coordinatedConfirmation.lastSourcesChecked?.positions ?? false,
+                  orders: coordinatedConfirmation.lastSourcesChecked?.orders ?? false,
+                  deals: coordinatedConfirmation.lastSourcesChecked?.deals ?? false,
+                  pending: coordinatedConfirmation.lastSourcesChecked?.pending ?? false,
                 },
-                sourcesSkipped: reconcile?.sourcesSkipped ?? null,
-                checked: reconcile?.checked ?? null,
-                rateLimitHit: reconcile?.rateLimitHit ?? false,
-                retryAfter: reconcile?.retryAfter ?? null,
-                nextReconcileAt: reconcile?.nextReconcileAt ?? null,
-                endpointRateLimited: reconcile?.endpointRateLimited ?? null,
-                matchingMode: reconcile?.matchingMode ?? null,
-                matchedTicket: reconcile?.confirmedTicket ?? (matched?.ticket ?? null),
-                matchedDealId: reconcile?.matchedDealId ?? null,
-                matchedOrderId: reconcile?.matchedOrderId ?? null,
+                sourcesSkipped: coordinatedConfirmation.lastSourcesSkipped ?? null,
+                checked: null,
+                rateLimitHit: coordinatedConfirmation.status === "confirmation_delayed_rate_limited",
+                retryAfter: coordinatedConfirmation.lastRateLimit?.retryAfter ?? null,
+                nextReconcileAt: coordinatedConfirmation.nextCheckAt ? new Date(coordinatedConfirmation.nextCheckAt).toISOString() : null,
+                endpointRateLimited: coordinatedConfirmation.lastRateLimit?.endpoint ?? null,
+                matchingMode: coordinatedConfirmation.targetLookupMode,
+                matchedTicket: null,
+                matchedDealId: null,
+                matchedOrderId: null,
               },
               history: {
                 matchingPendingOrderFound:
-                  reconcile?.checked?.pendingOrders?.matchFound ??
                   (res as any)?.diagnostics?.matchingPendingOrderFound ?? null,
                 matchingDealFound:
-                  reconcile?.checked?.historyDeals?.matchFound ??
                   (res as any)?.diagnostics?.matchingDealFound ?? null,
               },
               timings,
