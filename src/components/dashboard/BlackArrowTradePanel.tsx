@@ -206,6 +206,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
   const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
 
+  // Admin live-test limits (drives pending-orders gate + cap).
+  const [liveLimits, setLiveLimits] = useState<AdminLiveTestLimits | null>(null);
+  useEffect(() => {
+    if (!adminTestUiVisible) { setLiveLimits(null); return; }
+    let mounted = true;
+    void getAdminLiveTestLimits().then((l) => { if (mounted) setLiveLimits(l); });
+    return () => { mounted = false; };
+  }, [adminTestUiVisible]);
+
+  // Pending-order modal state.
+  const [pendingModal, setPendingModal] = useState<PendingType | null>(null);
+
+
 
   // Post-trade confirmation flow state
   type LiveConfirmPhase = "placing" | "confirming" | "confirmed" | "pending_verification" | "rejected";
