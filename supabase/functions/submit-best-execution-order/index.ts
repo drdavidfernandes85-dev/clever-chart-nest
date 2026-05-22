@@ -540,15 +540,19 @@ Deno.serve(async (req) => {
     status = "broker_accepted_pending_confirmation";
     outcome = "broker_accepted";
     step = "execution_result";
-    classification = "broker_accepted";
+    classification = "broker_accepted_pending_confirmation";
     brokerMessage = "Broker accepted — waiting for MT5 confirmation.";
   } else {
+    // Broker REJECTED a real live request. This is NOT a dry run, and NOT a
+    // pre-trade validation block. The request reached Trading Layer and the
+    // broker refused it (e.g. retcode 10017 TRADE_RETCODE_TRADE_DISABLED).
     success = false;
     status = "rejected";
     outcome = "rejected";
-    step = "pretrade_validation";
-    classification = "rejected";
+    step = "execution_result";
+    classification = retcodeNum === 10017 ? "order_rejected_trade_disabled" : "order_rejected";
   }
+
 
   const spread =
     requestedBid != null && requestedAsk != null
