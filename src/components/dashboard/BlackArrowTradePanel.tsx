@@ -1092,6 +1092,32 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       // classification and the request must not carry any broker retcode.
       // ----------------------------------------------------------------
       const classificationStr = String(res?.classification ?? "").toLowerCase();
+
+      // SESSION-PRECHECK GUARD — backend refused to submit the order because
+      // the symbol's session is not eligible. Do not start the confirmation
+      // coordinator, do not create a failed live-test row.
+      if (
+        stepStr === "session_precheck" ||
+        classificationStr === "market_closed_precheck" ||
+        classificationStr === "symbol_not_tradable_precheck" ||
+        classificationStr === "no_executable_tick_precheck"
+      ) {
+        toast.error(
+          res?.message ||
+            "Market closed. No test order was submitted. Try again during an active trading session.",
+        );
+        if (adminTestId) {
+          // Remove the pre-opened pending row — this attempt never reached the broker.
+          try {
+            await supabase
+              .from("admin_live_execution_tests")
+              .delete()
+              .eq("id", adminTestId);
+          } catch { /* ignore */ }
+        }
+        return;
+      }
+
       const hasBrokerRetcode = res?.retcode != null && Number.isFinite(Number(res?.retcode));
       const isDryRunResponse =
         res?.effectiveDryRun === true ||
