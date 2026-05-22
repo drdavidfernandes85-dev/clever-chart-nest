@@ -120,6 +120,24 @@ Deno.serve(async (req) => {
   }
   const accountId = mapping.traderId;
 
+  // ---------- Execution-mode allowlist (admin live testing gate) ----------
+  {
+    const gate = await assertLiveExecutionAllowed(supabase, user.id, {
+      traderId: mapping.traderId,
+      login: mapping.login,
+    });
+    if (!gate.allowed) {
+      return json({
+        success: false,
+        version: VERSION,
+        error: gate.code || LIVE_EXEC_DISABLED_CODE,
+        reason: gate.reason,
+        executionMode: gate.mode,
+      }, 403);
+    }
+  }
+
+
   // ---------- Backend risk enforcement ----------
   try {
     const settings = await loadRiskSettings(supabase, user.id);
