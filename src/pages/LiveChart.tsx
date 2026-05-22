@@ -570,11 +570,30 @@ const LiveChartInner = () => {
               <BlackArrowTradePanel />
             </div>
 
-            {/* 3. Open positions — exposure on selected/all symbols */}
-            <OpenPositionsPanel />
+            {/* 3. Blotter — Positions tab + Orders tab (mutually exclusive) */}
+            <Tabs defaultValue="positions" className="rounded-xl bg-[#0A0B0D]/60 p-1">
+              <TabsList className="grid w-full grid-cols-2 bg-transparent h-8 p-0 gap-1">
+                <TabsTrigger
+                  value="positions"
+                  className="h-7 text-[9.5px] font-mono uppercase tracking-[0.18em] data-[state=active]:bg-[#FFCD05]/10 data-[state=active]:text-[#FFCD05] data-[state=active]:shadow-none text-[#8E949C]"
+                >
+                  Positions
+                </TabsTrigger>
+                <TabsTrigger
+                  value="orders"
+                  className="h-7 text-[9.5px] font-mono uppercase tracking-[0.18em] data-[state=active]:bg-[#FFCD05]/10 data-[state=active]:text-[#FFCD05] data-[state=active]:shadow-none text-[#8E949C]"
+                >
+                  Orders
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="positions" className="mt-1">
+                <OpenPositionsPanel />
+              </TabsContent>
+              <TabsContent value="orders" className="mt-1">
+                <PendingOrdersPanel />
+              </TabsContent>
+            </Tabs>
 
-            {/* 3b. Pending orders (admin live testing — usually empty) */}
-            <PendingOrdersPanel />
 
 
 
