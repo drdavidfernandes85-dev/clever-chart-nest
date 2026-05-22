@@ -212,6 +212,8 @@ Deno.serve(async (req) => {
           version: VERSION,
           step: "dry_run",
           liveOrderSent: false,
+          liveOrderAttempted: false,
+          effectiveDryRun: true,
         },
       }));
     }
@@ -219,9 +221,13 @@ Deno.serve(async (req) => {
       success: true,
       version: VERSION,
       step: "dry_run",
+      classification: "pretrade_check",
       liveOrderSent: false,
+      liveOrderAttempted: false,
+      effectiveDryRun: true,
     });
   }
+
 
   if (liveExecutionConfirmed !== true) {
     return withTimings({
