@@ -335,15 +335,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             mt5Confirmed: false,
             confirmationStatus: "pending",
           });
-          toast.success("Order placed — confirming position in MT5...");
-          runPostTradeConfirmation({
+          toast.success("Order placed — confirmation pending.");
+          executionConfirmationCoordinator.enqueue({
             symbol: payload.symbol,
             side: payload.side,
             volume: payload.volume,
-            status: rawStatus || "placed",
             retcode: Number.isFinite(retcode) ? retcode : undefined,
             brokerMessage,
             tradeId: payload.tradeId,
+            clientOrderId: data?.clientOrderId ?? payload.tradeId,
+            requestId: data?.requestId ?? null,
+            orderId: data?.orderId ?? null,
+            dealId: data?.dealId ?? null,
+            positionTicket: data?.positionTicket ?? data?.ticket ?? null,
+            brokerSymbol: data?.brokerSymbol ?? payload.symbol,
+            requestedPrice: data?.requestedPrice ?? null,
+            rawExecutionResponse: data,
           });
         }
       } else {
@@ -394,6 +401,15 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     status: string; retcode?: number; brokerMessage?: string;
     tradeId?: string;
   }) {
+    executionConfirmationCoordinator.enqueue({
+      tradeId: args.tradeId || crypto.randomUUID(),
+      symbol: args.symbol,
+      side: args.side as "buy" | "sell",
+      volume: args.volume,
+      retcode: args.retcode ?? null,
+      brokerMessage: args.brokerMessage ?? null,
+    });
+    return;
     const startedAt = Date.now();
     let auditUpdated = false;
     const updateAuditRow = async (match: any) => {
