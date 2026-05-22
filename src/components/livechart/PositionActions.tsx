@@ -269,7 +269,14 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       });
       const data = await r.json().catch(() => ({}));
       serverResp = data;
-      if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
+      if (isRateLimited(r.status, data)) {
+        broadcastExec("Rate Limited");
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "pending", confirmation_status: "confirmation_delayed_rate_limited",
+          rate_limit_hit: true, request_id: clientCloseId, evidence: data,
+        });
+        return;
+      }
       checkAndHandle429(data, null);
       // Instant UI signal: close request was sent.
       toast.message("Close request sent", { description: `#${ticket} ${position.symbol}` });
@@ -279,6 +286,12 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
           action: { label: "Refresh", onClick: refreshPositionsNow },
         });
         broadcastExec("Close Rejected");
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "fail", confirmation_status: "close_rejected",
+          retcode: data?.retcode ?? null, retcode_name: data?.retcodeName ?? null,
+          retcode_description: data?.retcodeDescription ?? null,
+          request_id: clientCloseId, evidence: data,
+        });
       } else if (data?.status === "closed" || data?.status === "partial_closed") {
         serverAccepted = true;
         serverPartial = data?.status === "partial_closed" || data?.partial === true;
@@ -286,12 +299,25 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         toast.success("Broker accepted close request", { description: "Waiting for MT5 confirmation." });
         if (label === "full") setOpenFull(false);
         else setOpenPartial(false);
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "pending", confirmation_status: "close_broker_accepted_pending_confirmation",
+          request_id: clientCloseId, order_id: data?.orderId ?? null,
+          deal_id: data?.dealId ?? null, position_ticket: ticket,
+          retcode: data?.retcode ?? null, retcode_name: data?.retcodeName ?? null,
+          retcode_description: data?.retcodeDescription ?? null,
+          latency_ms: data?.latencyMs ?? null, evidence: data,
+        });
       } else {
         toast.warning(`Close ${safeStr(data?.status) || "pending"}`, {
           description: safeStr(data?.brokerMessage),
         });
         broadcastExec("Close Pending");
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "pending", confirmation_status: safeStr(data?.status) || "close_pending",
+          request_id: clientCloseId, evidence: data,
+        });
       }
+
     } catch (e: any) {
       toast.error("Could not close position", { description: safeStr(e?.message) });
       broadcastExec("Close Failed");
