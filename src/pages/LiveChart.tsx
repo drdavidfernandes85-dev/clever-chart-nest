@@ -40,6 +40,7 @@ import SystemHealthWidget from "@/components/dashboard/SystemHealthWidget";
 
 import BidAskBoard from "@/components/livechart/BidAskBoard";
 import OpenPositionsPanel from "@/components/livechart/OpenPositionsPanel";
+import PendingOrdersPanel from "@/components/livechart/PendingOrdersPanel";
 import CompactQuoteHeader from "@/components/livechart/CompactQuoteHeader";
 import TerminalStatusChips from "@/components/livechart/TerminalStatusChips";
 import TerminalStatusBar from "@/components/livechart/TerminalStatusBar";
