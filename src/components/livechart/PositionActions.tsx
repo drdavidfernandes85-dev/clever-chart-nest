@@ -506,14 +506,17 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         </button>
         <button
           type="button"
-          title="Partial Close"
-          disabled={busy}
+          title={Number(position.volume) <= TEST_CLOSE_MAX_VOLUME
+            ? `Partial close requires a position larger than the current ${TEST_CLOSE_MAX_VOLUME.toFixed(2)} lot admin-test limit.`
+            : "Partial Close"}
+          disabled={busy || Number(position.volume) <= TEST_CLOSE_MAX_VOLUME}
           onClick={() => setOpenPartial(true)}
           className="inline-flex h-5 items-center gap-1 rounded border border-neutral-800 bg-[#0a0a0a] px-1.5 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-amber-500/50 hover:text-amber-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Scissors className="h-3 w-3" />
           Partial
         </button>
+
         <button
           type="button"
           title={cooling ? `Rate limited (${cooldownSec}s)` : "Close Full Position"}
