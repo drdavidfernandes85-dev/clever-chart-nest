@@ -1134,6 +1134,47 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         });
         setAuditRefreshKey((k) => k + 1);
 
+        // Admin live-test: capture broker-accepted identifiers; final pass/fail
+        // is set when the confirmation coordinator resolves below.
+        if (adminTestId) {
+          void updateAdminLiveTest(adminTestId, {
+            confirmation_status: "broker_accepted_pending_confirmation",
+            request_id: res?.requestId ?? null,
+            order_id: res?.orderId != null ? String(res.orderId) : null,
+            deal_id: res?.dealId != null ? String(res.dealId) : null,
+            position_ticket: res?.positionTicket != null ? String(res.positionTicket) : null,
+            retcode: res?.retcode ?? null,
+            retcode_name: res?.retcodeName ?? null,
+            retcode_description: res?.retcodeDescription ?? res?.brokerMessage ?? null,
+            latency_ms: res?.latencyMs ?? null,
+            evidence: res ?? null,
+          });
+          const unsub = executionConfirmationCoordinator.subscribe((snap) => {
+            const st = snap[tradeId];
+            if (!st) return;
+            if (st.status === "position_confirmed") {
+              const m: any = st.lastMatch;
+              const tk = typeof m === "object" ? (m?.ticket ?? m?.id ?? null) : (m ?? null);
+              void updateAdminLiveTest(adminTestId, {
+                status: "pass",
+                confirmation_status: "position_confirmed",
+                position_ticket: tk != null ? String(tk) : null,
+                verified: true,
+              });
+              unsub();
+            } else if (st.status === "order_rejected") {
+              void updateAdminLiveTest(adminTestId, { status: "fail", confirmation_status: "order_rejected", notes: st.message ?? null });
+              unsub();
+            } else if (st.status === "confirmation_delayed_rate_limited") {
+              void updateAdminLiveTest(adminTestId, { status: "pending", confirmation_status: "confirmation_delayed_rate_limited", rate_limit_hit: true });
+            } else if (st.status === "unconfirmed_after_reconciliation" || st.status === "order_found_not_filled") {
+              void updateAdminLiveTest(adminTestId, { status: "fail", confirmation_status: st.status, notes: st.message ?? null });
+              unsub();
+            }
+          });
+        }
+
+
         // Emit reconciliation debug payload for the Dev panel.
         try {
           const positionsAfterSnapshot: any[] = JSON.parse(
