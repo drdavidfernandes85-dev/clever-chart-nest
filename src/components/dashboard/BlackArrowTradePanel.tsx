@@ -1162,7 +1162,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 matchFound: false,
                 confirmedTicket: null,
                 attempts: coordinatedConfirmation.attempts,
-                lastAttemptAt: reconcile?.lastAttemptAt ?? new Date().toISOString(),
+                lastAttemptAt: new Date().toISOString(),
                 sourcesChecked: {
                   positions: coordinatedConfirmation.lastSourcesChecked?.positions ?? false,
                   orders: coordinatedConfirmation.lastSourcesChecked?.orders ?? false,
