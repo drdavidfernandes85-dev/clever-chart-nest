@@ -28,6 +28,10 @@ import {
   STALE_MAPPING_ERROR_CODE,
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
+import {
+  assertLiveExecutionAllowed,
+  LIVE_EXEC_DISABLED_CODE,
+} from "../_shared/executionMode.ts";
 
 const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
@@ -346,6 +350,24 @@ Deno.serve(async (req) => {
     } catch { /* diagnostics-only */ }
   }
   timings.accountResolvedAt = Date.now();
+
+  // ---------- Execution-mode allowlist (admin live testing gate) ----------
+  const gate = await assertLiveExecutionAllowed(supabase, uid, {
+    traderId: mapping.traderId,
+    login: mapping.login,
+  });
+  if (!gate.allowed) {
+    return withTimings({
+      success: false,
+      version: VERSION,
+      step: "execution_mode_gate",
+      liveOrderSent: false,
+      tradeId,
+      error: gate.code || LIVE_EXEC_DISABLED_CODE,
+      reason: gate.reason,
+      executionMode: gate.mode,
+    }, 403);
+  }
 
   // Forward to execute-trade (existing broker integration).
   timings.orderSentToTradingLayerAt = Date.now();

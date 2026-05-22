@@ -44,6 +44,15 @@ import { useDevMode } from "@/hooks/useDevMode";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import RiskBadges from "@/components/dashboard/RiskBadges";
 import { executionConfirmationCoordinator } from "@/services/executionConfirmationCoordinator";
+// useIsAdmin lives on useDevMode; admin live test gate reads from productionMode.
+import {
+  getExecutionMode,
+  refreshExecutionMode,
+  hasAdminLiveTestAck,
+  setAdminLiveTestAck,
+  PRODUCTION_MODE_EVENT,
+  ADMIN_TESTER_MT5_LOGIN,
+} from "@/lib/productionMode";
 
 const broadcastExec = (status: string) => {
   try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
@@ -171,6 +180,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [liveTestConfirmed, setLiveTestConfirmed] = useState(false);
   const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
+
+  // Admin live testing mode (single source of truth in site_settings).
+  // Note: `isAdmin` already pulled from useDevMode above.
+  const [executionMode, setExecutionModeState] = useState(getExecutionMode());
+  const [adminAck, setAdminAckState] = useState(hasAdminLiveTestAck());
+  useEffect(() => {
+    refreshExecutionMode().then((m) => setExecutionModeState(m));
+    const onChange = () => {
+      setExecutionModeState(getExecutionMode());
+      setAdminAckState(hasAdminLiveTestAck());
+    };
+    window.addEventListener(PRODUCTION_MODE_EVENT, onChange);
+    return () => window.removeEventListener(PRODUCTION_MODE_EVENT, onChange);
+  }, []);
+  const adminLiveTestActive = executionMode === "admin_live_test";
+  const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
+  const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
+
 
   // Post-trade confirmation flow state
   type LiveConfirmPhase = "placing" | "confirming" | "confirmed" | "pending_verification" | "rejected";
@@ -866,6 +893,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const killSwitchActive = riskFlags.killSwitch;
   const liveDisabled = !riskFlags.liveEnabled;
 
+  // Live-execution gate: if backend is in admin_live_test, only admin testers
+  // with a session acknowledgement may submit. Non-admins are also blocked at
+  // the edge function (LIVE_EXECUTION_NOT_ENABLED_FOR_USER).
+  const liveModeGateOk =
+    executionMode === "live" ||
+    executionMode === "controlled_live_test" /* legacy behaviour */ ||
+    (executionMode === "admin_live_test" && isAuthorisedAdminTester && adminAck);
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
@@ -878,7 +913,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !submitting &&
     !execLocked &&
     !killSwitchActive &&
-    !liveDisabled;
+    !liveDisabled &&
+    liveModeGateOk;
+
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
@@ -1584,12 +1621,40 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
 
+        {/* Admin live testing — warning + per-session acknowledgement. */}
+        {adminTestUiVisible && (
+          <div className="rounded-sm border-2 border-red-600/70 bg-red-950/30 p-1.5 space-y-1">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
+              <AlertTriangle className="h-3 w-3" />
+              Admin Live Test — Real MT5 Orders
+            </div>
+            <p className="text-[10px] leading-snug text-red-300">
+              Orders placed here are sent to your connected MT5 account (login {ADMIN_TESTER_MT5_LOGIN}).
+              Admin live testing mode is active.
+            </p>
+            {!adminAck && (
+              <label className="flex items-start gap-1.5 text-[10px] text-red-200 cursor-pointer">
+                <Checkbox
+                  checked={adminAck}
+                  onCheckedChange={(v) => {
+                    const next = v === true;
+                    setAdminLiveTestAck(next);
+                    setAdminAckState(next);
+                  }}
+                  className="mt-0.5 border-red-500 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                />
+                <span>I understand that this sends real orders to my connected MT5 account.</span>
+              </label>
+            )}
+          </div>
+        )}
+
         <p className="px-1 text-[8.5px] leading-tight text-neutral-500/80">
           Real order to connected MT5 account. User remains responsible. Not investment advice.
         </p>
 
-        {/* Dev-only dry-run best-execution test */}
-        {devMode && (
+        {/* Dev-only dry-run best-execution test (hidden once admin live test is active) */}
+        {devMode && !adminLiveTestActive && (
           <div className="flex justify-center">
             <button
               type="button"
@@ -1601,8 +1666,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         )}
 
-        {/* Dev-only LIVE CONTROLLED 0.01 test */}
-        {devMode && (
+
+        {/* Dev-only LIVE CONTROLLED 0.01 test (hidden when admin live test is active — use main Buy/Sell instead). */}
+        {devMode && !adminLiveTestActive && (
           <div className="mt-1 rounded-sm border-2 border-red-600/70 bg-red-950/30 p-1.5 space-y-1.5">
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
               <AlertTriangle className="h-3 w-3" />

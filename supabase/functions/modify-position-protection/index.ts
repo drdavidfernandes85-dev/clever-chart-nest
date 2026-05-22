@@ -8,6 +8,10 @@ import {
   STALE_MAPPING_ERROR_CODE,
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
+import {
+  assertLiveExecutionAllowed,
+  LIVE_EXEC_DISABLED_CODE,
+} from "../_shared/executionMode.ts";
 
 const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
@@ -120,6 +124,24 @@ Deno.serve(async (req) => {
     }, 409);
   }
   const accountId = mapping.traderId;
+
+  // ---------- Execution-mode allowlist (admin live testing gate) ----------
+  {
+    const gate = await assertLiveExecutionAllowed(supabase, user.id, {
+      traderId: mapping.traderId,
+      login: mapping.login,
+    });
+    if (!gate.allowed) {
+      return json({
+        success: false,
+        version: VERSION,
+        error: gate.code || LIVE_EXEC_DISABLED_CODE,
+        reason: gate.reason,
+        executionMode: gate.mode,
+      }, 403);
+    }
+  }
+
 
   // ---------- Backend risk enforcement (kill switch + live trading flag) ----------
   try {

@@ -5,6 +5,10 @@ import {
   STALE_MAPPING_ERROR_CODE,
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
+import {
+  assertLiveExecutionAllowed,
+  LIVE_EXEC_DISABLED_CODE,
+} from "../_shared/executionMode.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
@@ -229,6 +233,23 @@ serve(async (req) => {
     }
 
     const accountId = mapping.traderId;
+
+    // Execution-mode allowlist (admin live testing gate)
+    {
+      const gate = await assertLiveExecutionAllowed(supabase, user.id, {
+        traderId: mapping.traderId,
+        login: mapping.login,
+      });
+      if (!gate.allowed) {
+        return json({
+          success: false,
+          step: "execution_mode_gate",
+          error: gate.code || LIVE_EXEC_DISABLED_CODE,
+          reason: gate.reason,
+          executionMode: gate.mode,
+        }, 403);
+      }
+    }
     const idempotencyKey = `trade-${tradeId}-${user.id}`;
 
     const orderPayload: Record<string, unknown> = {
