@@ -1906,6 +1906,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       </div>
 
       <ExecutionResultModal result={execResult} onClose={() => setExecResult(null)} />
+      {pendingModal && (
+        <PendingOrderModal
+          open={true}
+          onClose={() => setPendingModal(null)}
+          pendingType={pendingModal}
+          symbol={normalizedSym}
+          bid={bid}
+          ask={ask}
+          digits={digits}
+          defaultVolume={Math.max(volumeMin, Math.min(volNum || 0.01, pendingMaxVolume))}
+          maxVolume={pendingMaxVolume}
+          traderId={(liveAccount as any)?.trading_layer_trader_id ?? null}
+          mt5Login={(liveAccount as any)?.login ? String((liveAccount as any).login) : null}
+        />
+      )}
+
 
       {liveConfirm && (() => {
         const c = liveConfirm;
