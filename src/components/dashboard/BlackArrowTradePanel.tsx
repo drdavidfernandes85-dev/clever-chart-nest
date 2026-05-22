@@ -693,8 +693,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     return () => clearTimeout(t);
   }, [askFlash]);
 
-  // "Retry Confirmation" from the result modal — re-runs reconcile-execution
-  // against Trading Layer without re-sending the order.
+  useEffect(() => executionConfirmationCoordinator.subscribe((snapshot) => {
+    setExecResult((prev) => {
+      if (!prev?.tradeId) return prev;
+      const state = snapshot[prev.tradeId];
+      if (!state) return prev;
+      if (state.status === "position_confirmed") {
+        const match: any = state.lastMatch;
+        const ticket = typeof match === "object" ? (match.ticket ?? match.id ?? prev.confirmedTicket) : (match ?? prev.confirmedTicket);
+        return { ...prev, outcome: "success", brokerAccepted: true, mt5Confirmed: true, confirmationStatus: "confirmed", status: "position_confirmed", ticket, confirmedTicket: ticket, brokerMessage: `Position confirmed in MT5. Ticket: ${ticket}` };
+      }
+      if (state.status === "order_rejected") return { ...prev, outcome: "rejected", brokerAccepted: true, mt5Confirmed: false, confirmationStatus: "failed", status: state.status, brokerMessage: state.message ?? "Order rejected." };
+      if (state.status === "pending_order_placed") return { ...prev, outcome: "pending", brokerAccepted: true, mt5Confirmed: false, confirmationStatus: "pending", status: state.status, brokerMessage: "Pending order located in MT5." };
+      if (state.status === "confirmation_delayed_rate_limited") return { ...prev, outcome: "unconfirmed", brokerAccepted: true, mt5Confirmed: false, confirmationStatus: "delayed_rate_limited", status: state.status, brokerMessage: state.message ?? "Order accepted. Confirmation is delayed due to connection limits. We will check again automatically." };
+      if (state.status === "unconfirmed_after_reconciliation" || state.status === "order_found_not_filled") return { ...prev, outcome: "unconfirmed", brokerAccepted: true, mt5Confirmed: false, confirmationStatus: "not_found", status: state.status, brokerMessage: state.message ?? "Confirmation checks completed without a matching MT5 position/order/deal." };
+      return { ...prev, outcome: "pending", brokerAccepted: true, mt5Confirmed: false, confirmationStatus: "pending", status: state.status, brokerMessage: prev.brokerMessage ?? "Trade request accepted by broker; confirmation pending." };
+    });
+  }), []);
+
+  // "Retry Confirmation" from the result modal — routes through the shared coordinator only.
   useEffect(() => {
     const onRetry = async (evt: Event) => {
       const detail = (evt as CustomEvent).detail || {};
@@ -702,56 +719,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       const side = String(detail.side || "").toLowerCase();
       const volume = Number(detail.volume);
       if (!symbol || (side !== "buy" && side !== "sell") || !Number.isFinite(volume)) return;
-      try {
-        const { data: rec } = await supabase.functions.invoke("reconcile-execution", {
-          body: {
-            tradeId: detail.tradeId ?? null,
-            symbol, side, volume,
-            requestedPrice: detail.requestedPrice ?? null,
-            clientClickAt: detail.clientClickAt ?? new Date().toISOString(),
-            brokerRetcode: detail.retcode ?? null,
-            brokerMessage: detail.brokerMessage ?? null,
-            positionTicket: detail.positionTicket ?? null,
-            orderId: detail.orderId ?? null,
-            dealId: detail.dealId ?? null,
-            requestId: detail.requestId ?? null,
-            clientOrderId: detail.clientOrderId ?? detail.tradeId ?? null,
-            brokerSymbol: detail.brokerSymbol ?? symbol,
-          },
-        });
-        if (!rec) return;
-        setExecResult((prev) => {
-          if (!prev) return prev;
-          if (rec.mt5Confirmed === true && rec.confirmedTicket) {
-            return {
-              ...prev,
-              outcome: "success",
-              brokerAccepted: true,
-              mt5Confirmed: true,
-              confirmationStatus: "confirmed",
-              confirmedTicket: rec.confirmedTicket,
-              confirmedEntryPrice: rec.confirmedEntryPrice,
-              confirmedVolume: rec.confirmedVolume,
-              confirmedAt: new Date().toISOString(),
-              executedPrice: rec.confirmedEntryPrice,
-              ticket: rec.confirmedTicket,
-              status: "position_confirmed",
-              brokerMessage: `Position confirmed in MT5. Ticket: ${rec.confirmedTicket}`,
-            };
-          }
-          const isPending = rec.status === "pending_order_placed";
-          const isRateLimited = rec.status === "confirmation_delayed_rate_limited";
-          return {
-            ...prev,
-            outcome: "unconfirmed",
-            brokerAccepted: true,
-            mt5Confirmed: false,
-            confirmationStatus: isRateLimited ? "delayed_rate_limited" : isPending ? "pending" : "not_found",
-            status: rec.status ?? "execution_unconfirmed",
-            brokerMessage: rec.explanation ?? prev.brokerMessage ?? null,
-          };
-        });
-      } catch { /* ignore */ }
+      executionConfirmationCoordinator.retry({
+        tradeId: detail.tradeId ?? detail.clientOrderId ?? crypto.randomUUID(),
+        symbol,
+        side: side as "buy" | "sell",
+        volume,
+        requestedPrice: detail.requestedPrice ?? null,
+        retcode: detail.retcode ?? null,
+        brokerMessage: detail.brokerMessage ?? null,
+        positionTicket: detail.positionTicket ?? null,
+        orderId: detail.orderId ?? null,
+        dealId: detail.dealId ?? null,
+        requestId: detail.requestId ?? null,
+        clientOrderId: detail.clientOrderId ?? detail.tradeId ?? null,
+        brokerSymbol: detail.brokerSymbol ?? symbol,
+      });
     };
     window.addEventListener("mt:retry-confirmation", onRetry);
     return () => window.removeEventListener("mt:retry-confirmation", onRetry);
