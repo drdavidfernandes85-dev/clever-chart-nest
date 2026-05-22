@@ -1379,16 +1379,33 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           });
         }
         if (adminTestId) {
+          const rcNum = Number(res?.retcode);
+          const isTradeDisabled = rcNum === 10017;
           void updateAdminLiveTest(adminTestId, {
             status: "fail",
-            confirmation_status: isBlocked ? "blocked_pre_trade" : "order_rejected",
+            confirmation_status: isBlocked
+              ? "blocked_pre_trade"
+              : isTradeDisabled
+                ? "order_rejected_trade_disabled"
+                : "order_rejected",
             retcode: res?.retcode ?? null,
-            retcode_description: res?.brokerMessage ?? res?.error ?? null,
+            retcode_name: res?.retcodeName ?? (isTradeDisabled ? "TRADE_RETCODE_TRADE_DISABLED" : null),
+            retcode_description: res?.retcodeDescription ?? res?.brokerMessage ?? res?.error ?? null,
             latency_ms: res?.latencyMs ?? null,
-            notes: res?.error || (Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null),
-            evidence: res ?? null,
+            notes: isBlocked
+              ? (res?.error || (Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null))
+              : `Real live request reached Trading Layer and was rejected by broker: ${res?.brokerMessage ?? res?.retcodeDescription ?? "rejected"}.`,
+            evidence: {
+              ...(res ?? {}),
+              effectiveDryRun: false,
+              liveOrderAttempted: true,
+              brokerRequestSent: true,
+              brokerAccepted: false,
+              is_eligible_for_final_verification: false,
+            },
           });
         }
+
 
 
         // Emit reconciliation debug payload for the Dev panel (no MT5 polling on reject/block).
