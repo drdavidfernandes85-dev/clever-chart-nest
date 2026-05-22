@@ -1667,8 +1667,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         )}
 
 
-        {/* Dev-only LIVE CONTROLLED 0.01 test */}
-        {devMode && (
+        {/* Dev-only LIVE CONTROLLED 0.01 test (hidden when admin live test is active — use main Buy/Sell instead). */}
+        {devMode && !adminLiveTestActive && (
           <div className="mt-1 rounded-sm border-2 border-red-600/70 bg-red-950/30 p-1.5 space-y-1.5">
             <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
               <AlertTriangle className="h-3 w-3" />
