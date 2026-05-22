@@ -1321,6 +1321,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             latencyMs: res?.latencyMs ?? null,
           });
         }
+        if (adminTestId) {
+          void updateAdminLiveTest(adminTestId, {
+            status: "fail",
+            confirmation_status: isBlocked ? "blocked_pre_trade" : "order_rejected",
+            retcode: res?.retcode ?? null,
+            retcode_description: res?.brokerMessage ?? res?.error ?? null,
+            latency_ms: res?.latencyMs ?? null,
+            notes: res?.error || (Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null),
+            evidence: res ?? null,
+          });
+        }
+
 
         // Emit reconciliation debug payload for the Dev panel (no MT5 polling on reject/block).
         try {
