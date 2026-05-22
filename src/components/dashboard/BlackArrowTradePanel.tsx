@@ -1735,10 +1735,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
         {/* Pending orders — 2×2 filled secondary buttons (usable, not dead) */}
         <div className="grid grid-cols-2 gap-1">
-          <SideBtn tone="buy" pending small disabled={pendingDisabled} title="Pending orders coming soon">Buy Stop</SideBtn>
-          <SideBtn tone="sell" pending small disabled={pendingDisabled} title="Pending orders coming soon">Sell Limit</SideBtn>
-          <SideBtn tone="buy" pending small disabled={pendingDisabled} title="Pending orders coming soon">Buy Limit</SideBtn>
-          <SideBtn tone="sell" pending small disabled={pendingDisabled} title="Pending orders coming soon">Sell Stop</SideBtn>
+          <SideBtn tone="buy"  pending small disabled={pendingDisabled} onClick={() => setPendingModal("buy_stop")}   title={pendingDisabledReason ?? "Place a Buy Stop pending order"}>Buy Stop</SideBtn>
+          <SideBtn tone="sell" pending small disabled={pendingDisabled} onClick={() => setPendingModal("sell_limit")} title={pendingDisabledReason ?? "Place a Sell Limit pending order"}>Sell Limit</SideBtn>
+          <SideBtn tone="buy"  pending small disabled={pendingDisabled} onClick={() => setPendingModal("buy_limit")}  title={pendingDisabledReason ?? "Place a Buy Limit pending order"}>Buy Limit</SideBtn>
+          <SideBtn tone="sell" pending small disabled={pendingDisabled} onClick={() => setPendingModal("sell_stop")}  title={pendingDisabledReason ?? "Place a Sell Stop pending order"}>Sell Stop</SideBtn>
+
         </div>
 
         {/* SL / TP — borderless dual column with thin top divider */}
