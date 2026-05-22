@@ -15,6 +15,10 @@ import {
   STALE_MAPPING_ERROR_CODE,
   STALE_MAPPING_USER_MESSAGE,
 } from "../_shared/mtMapping.ts";
+import {
+  assertLiveExecutionAllowed,
+  LIVE_EXEC_DISABLED_CODE,
+} from "../_shared/executionMode.ts";
 
 const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
