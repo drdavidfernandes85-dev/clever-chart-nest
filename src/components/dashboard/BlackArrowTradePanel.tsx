@@ -181,6 +181,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [liveTestConfirmed, setLiveTestConfirmed] = useState(false);
   const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
 
+  // Admin live testing mode (single source of truth in site_settings).
+  const { isAdmin } = useIsAdmin();
+  const [executionMode, setExecutionModeState] = useState(getExecutionMode());
+  const [adminAck, setAdminAckState] = useState(hasAdminLiveTestAck());
+  useEffect(() => {
+    refreshExecutionMode().then((m) => setExecutionModeState(m));
+    const onChange = () => {
+      setExecutionModeState(getExecutionMode());
+      setAdminAckState(hasAdminLiveTestAck());
+    };
+    window.addEventListener(PRODUCTION_MODE_EVENT, onChange);
+    return () => window.removeEventListener(PRODUCTION_MODE_EVENT, onChange);
+  }, []);
+  const adminLiveTestActive = executionMode === "admin_live_test";
+  const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
+  const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
+
+
   // Post-trade confirmation flow state
   type LiveConfirmPhase = "placing" | "confirming" | "confirmed" | "pending_verification" | "rejected";
   interface LiveConfirmState {
