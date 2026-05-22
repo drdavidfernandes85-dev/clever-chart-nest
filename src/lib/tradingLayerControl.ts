@@ -13,9 +13,10 @@
 
 import { toast } from "sonner";
 
-// Hard switch: when true, no automatic interval poll is allowed to hit the
-// Trading Layer. Manual `mt:refresh-*` events still fire and bypass this.
-const AUTO_REFRESH_DISABLED = true;
+// Production: live auto-refresh is enabled. The rate-limit-safe execution
+// confirmation coordinator + cooldown logic below still throttles requests
+// when Trading Layer returns 429, so re-enabling auto-refresh is safe.
+const AUTO_REFRESH_DISABLED = false;
 
 /* ---------------- Global execution lock ---------------- */
 /**
