@@ -1061,16 +1061,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       }
 
       // ----------------------------------------------------------------
-      // DRY-RUN GUARD — if the backend short-circuited as a dry-run
-      // (step="dry_run" or liveOrderSent===false), do NOT treat it as a
-      // live broker acceptance. No coordinator, no reconciliation, no
-      // false "ORDER ACCEPTED" modal, and the admin live-test row is
-      // marked as excluded from final live verification.
+      // DRY-RUN GUARD — only treat the response as a dry run when the
+      // backend explicitly says so. A broker REJECTION (e.g. retcode
+      // 10017 TRADE_RETCODE_TRADE_DISABLED) also has liveOrderSent=false,
+      // but it is NOT a dry run — Trading Layer was called and the broker
+      // refused the order. Mislabelling that as dry-run produced the
+      // previous false `dry_run_no_live_order_sent` rows. The strict
+      // criteria below require the backend to declare the dry-run
+      // classification and the request must not carry any broker retcode.
       // ----------------------------------------------------------------
+      const classificationStr = String(res?.classification ?? "").toLowerCase();
+      const hasBrokerRetcode = res?.retcode != null && Number.isFinite(Number(res?.retcode));
       const isDryRunResponse =
-        stepStr === "dry_run" ||
-        res?.liveOrderSent === false ||
-        res?.step === "pretrade_validation";
+        res?.effectiveDryRun === true ||
+        ((stepStr === "dry_run" || classificationStr === "pretrade_check") &&
+          res?.liveOrderSent === false &&
+          res?.brokerAccepted !== true &&
+          !hasBrokerRetcode);
       if (isDryRunResponse) {
         setExecResult({
           symbol: normalizedSym,
@@ -1099,6 +1106,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
         return;
       }
+
 
 
 
