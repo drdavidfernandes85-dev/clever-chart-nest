@@ -120,6 +120,13 @@ const TitleBar = ({
       chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
       bar: "bg-yellow-500/70",
     },
+    dry_run: {
+      title: "DRY RUN VALIDATED — NO LIVE ORDER SENT",
+      Icon: ShieldAlert,
+      ring: "border-neutral-500/50",
+      chip: "bg-neutral-500/15 text-neutral-200 border-neutral-500/40",
+      bar: "bg-neutral-500/70",
+    },
   }[outcome];
   const { title, Icon, chip, bar } = config;
   return (
