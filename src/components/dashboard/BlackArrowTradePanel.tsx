@@ -1621,12 +1621,40 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
 
+        {/* Admin live testing — warning + per-session acknowledgement. */}
+        {adminTestUiVisible && (
+          <div className="rounded-sm border-2 border-red-600/70 bg-red-950/30 p-1.5 space-y-1">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-red-400">
+              <AlertTriangle className="h-3 w-3" />
+              Admin Live Test — Real MT5 Orders
+            </div>
+            <p className="text-[10px] leading-snug text-red-300">
+              Orders placed here are sent to your connected MT5 account (login {ADMIN_TESTER_MT5_LOGIN}).
+              Admin live testing mode is active.
+            </p>
+            {!adminAck && (
+              <label className="flex items-start gap-1.5 text-[10px] text-red-200 cursor-pointer">
+                <Checkbox
+                  checked={adminAck}
+                  onCheckedChange={(v) => {
+                    const next = v === true;
+                    setAdminLiveTestAck(next);
+                    setAdminAckState(next);
+                  }}
+                  className="mt-0.5 border-red-500 data-[state=checked]:bg-red-600 data-[state=checked]:border-red-600"
+                />
+                <span>I understand that this sends real orders to my connected MT5 account.</span>
+              </label>
+            )}
+          </div>
+        )}
+
         <p className="px-1 text-[8.5px] leading-tight text-neutral-500/80">
           Real order to connected MT5 account. User remains responsible. Not investment advice.
         </p>
 
-        {/* Dev-only dry-run best-execution test */}
-        {devMode && (
+        {/* Dev-only dry-run best-execution test (hidden once admin live test is active) */}
+        {devMode && !adminLiveTestActive && (
           <div className="flex justify-center">
             <button
               type="button"
@@ -1637,6 +1665,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </button>
           </div>
         )}
+
 
         {/* Dev-only LIVE CONTROLLED 0.01 test */}
         {devMode && (
