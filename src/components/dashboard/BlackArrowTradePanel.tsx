@@ -1060,6 +1060,44 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         toast.warning(`Unexpected response step: ${res?.step}`);
       }
 
+      // ----------------------------------------------------------------
+      // DRY-RUN GUARD — if the backend short-circuited as a dry-run
+      // (step="dry_run" or liveOrderSent===false), do NOT treat it as a
+      // live broker acceptance. No coordinator, no reconciliation, no
+      // false "ORDER ACCEPTED" modal, and the admin live-test row is
+      // marked as excluded from final live verification.
+      // ----------------------------------------------------------------
+      const isDryRunResponse =
+        stepStr === "dry_run" ||
+        res?.liveOrderSent === false ||
+        res?.step === "pretrade_validation";
+      if (isDryRunResponse) {
+        setExecResult({
+          ...baseFields,
+          tradeId,
+          outcome: "dry_run" as any,
+          brokerAccepted: false,
+          mt5Confirmed: false,
+          confirmationStatus: "not_found",
+          liveOrderSent: false,
+          brokerMessage:
+            "Validation completed in dry-run mode. No order was sent to your MT5 account.",
+          status: "dry_run",
+        } as any);
+        toast.info("Dry run validated — no live order sent.");
+        if (adminTestId) {
+          void updateAdminLiveTest(adminTestId, {
+            status: "pending",
+            confirmation_status: "dry_run_no_live_order_sent",
+            notes:
+              "Excluded from live verification: request was submitted with dryRun=true and no MT5 order was sent.",
+            evidence: { ...(res ?? {}), is_eligible_for_final_verification: false },
+          });
+        }
+        return;
+      }
+
+
 
       // Always trigger downstream refreshes regardless of outcome.
       window.dispatchEvent(new CustomEvent("trade-executed", { detail: { symbol: normalizedSym, tradeId } }));
