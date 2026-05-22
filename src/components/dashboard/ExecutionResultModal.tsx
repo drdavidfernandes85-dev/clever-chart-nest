@@ -263,12 +263,26 @@ export const ExecutionResultModal = ({
 
           {effective.outcome === "rejected" && (
             <>
-              <Row
-                label="Broker Message"
-                value={effective.brokerMessage || "Order rejected"}
-                accent="text-red-300"
-              />
+              {Number(effective.retcode) === 10017 ? (
+                <Row
+                  label="Reason"
+                  value="Trading is disabled for this account or symbol. Confirm trading permissions before retrying."
+                  accent="text-red-300"
+                />
+              ) : (
+                <Row
+                  label="Broker Message"
+                  value={effective.brokerMessage || "Order rejected"}
+                  accent="text-red-300"
+                />
+              )}
+              <Row label="Status" value={Number(effective.retcode) === 10017 ? "Trade Disabled" : "Rejected"} accent="text-red-300" />
+              <Row label="Broker Accepted" value="NO" accent="text-red-300" />
+              <Row label="MT5 Confirmed" value="NOT APPLICABLE" accent="text-neutral-400" />
               <Row label="Retcode" value={effective.retcode != null ? String(effective.retcode) : "—"} />
+              {Number(effective.retcode) === 10017 && (
+                <Row label="Retcode Name" value="TRADE_RETCODE_TRADE_DISABLED" accent="text-red-300" />
+              )}
               <Row label="Symbol" value={effective.symbol} accent="text-[#FFCD05]" />
               <Row label="Side" value={sideLabel} accent={sideAccent} />
               <Row label="Requested Price" value={fmtPx(effective.requestedPrice, digits)} />
@@ -277,6 +291,7 @@ export const ExecutionResultModal = ({
               <Row label="Latency" value={fmtMs(effective.latencyMs)} />
             </>
           )}
+
 
           {(effective.outcome === "pending" || effective.outcome === "unconfirmed") && (
             <>

@@ -1045,32 +1045,32 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
       }
 
-      // Guard — submit-best-execution-order must NOT forward to execute-trade
-      // while we're still in dry-run validation mode.
+      // The response step is now informational. Valid live steps are
+      // "execution_result" (broker accepted or rejected) and "dry_run"
+      // (true pre-trade check). Older defensive warnings are removed —
+      // they were firing on legitimate broker rejections and confusing
+      // the operator. The dry-run guard below handles classification.
       const stepStr = String(res?.step ?? "").toLowerCase();
-      if (stepStr === "trade_execution") {
-        // eslint-disable-next-line no-console
-        console.warn("[OrderTicket] WARNING: response step is 'trade_execution' — live execution path was hit.");
-        toast.error("⚠️ Live execution path triggered (step: trade_execution). Stopping.");
-        return;
-      }
-      if (stepStr && stepStr !== "dry_run") {
-        // eslint-disable-next-line no-console
-        console.warn("[OrderTicket] Unexpected step in dry-run mode:", res?.step);
-        toast.warning(`Unexpected response step: ${res?.step}`);
-      }
+
 
       // ----------------------------------------------------------------
-      // DRY-RUN GUARD — if the backend short-circuited as a dry-run
-      // (step="dry_run" or liveOrderSent===false), do NOT treat it as a
-      // live broker acceptance. No coordinator, no reconciliation, no
-      // false "ORDER ACCEPTED" modal, and the admin live-test row is
-      // marked as excluded from final live verification.
+      // DRY-RUN GUARD — only treat the response as a dry run when the
+      // backend explicitly says so. A broker REJECTION (e.g. retcode
+      // 10017 TRADE_RETCODE_TRADE_DISABLED) also has liveOrderSent=false,
+      // but it is NOT a dry run — Trading Layer was called and the broker
+      // refused the order. Mislabelling that as dry-run produced the
+      // previous false `dry_run_no_live_order_sent` rows. The strict
+      // criteria below require the backend to declare the dry-run
+      // classification and the request must not carry any broker retcode.
       // ----------------------------------------------------------------
+      const classificationStr = String(res?.classification ?? "").toLowerCase();
+      const hasBrokerRetcode = res?.retcode != null && Number.isFinite(Number(res?.retcode));
       const isDryRunResponse =
-        stepStr === "dry_run" ||
-        res?.liveOrderSent === false ||
-        res?.step === "pretrade_validation";
+        res?.effectiveDryRun === true ||
+        ((stepStr === "dry_run" || classificationStr === "pretrade_check") &&
+          res?.liveOrderSent === false &&
+          res?.brokerAccepted !== true &&
+          !hasBrokerRetcode);
       if (isDryRunResponse) {
         setExecResult({
           symbol: normalizedSym,
@@ -1099,6 +1099,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
         return;
       }
+
 
 
 
@@ -1378,16 +1379,33 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           });
         }
         if (adminTestId) {
+          const rcNum = Number(res?.retcode);
+          const isTradeDisabled = rcNum === 10017;
           void updateAdminLiveTest(adminTestId, {
             status: "fail",
-            confirmation_status: isBlocked ? "blocked_pre_trade" : "order_rejected",
+            confirmation_status: isBlocked
+              ? "blocked_pre_trade"
+              : isTradeDisabled
+                ? "order_rejected_trade_disabled"
+                : "order_rejected",
             retcode: res?.retcode ?? null,
-            retcode_description: res?.brokerMessage ?? res?.error ?? null,
+            retcode_name: res?.retcodeName ?? (isTradeDisabled ? "TRADE_RETCODE_TRADE_DISABLED" : null),
+            retcode_description: res?.retcodeDescription ?? res?.brokerMessage ?? res?.error ?? null,
             latency_ms: res?.latencyMs ?? null,
-            notes: res?.error || (Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null),
-            evidence: res ?? null,
+            notes: isBlocked
+              ? (res?.error || (Array.isArray(res?.reasons) ? res.reasons.join(" · ") : null))
+              : `Real live request reached Trading Layer and was rejected by broker: ${res?.brokerMessage ?? res?.retcodeDescription ?? "rejected"}.`,
+            evidence: {
+              ...(res ?? {}),
+              effectiveDryRun: false,
+              liveOrderAttempted: true,
+              brokerRequestSent: true,
+              brokerAccepted: false,
+              is_eligible_for_final_verification: false,
+            },
           });
         }
+
 
 
         // Emit reconciliation debug payload for the Dev panel (no MT5 polling on reject/block).

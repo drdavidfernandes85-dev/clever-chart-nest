@@ -212,6 +212,8 @@ Deno.serve(async (req) => {
           version: VERSION,
           step: "dry_run",
           liveOrderSent: false,
+          liveOrderAttempted: false,
+          effectiveDryRun: true,
         },
       }));
     }
@@ -219,9 +221,13 @@ Deno.serve(async (req) => {
       success: true,
       version: VERSION,
       step: "dry_run",
+      classification: "pretrade_check",
       liveOrderSent: false,
+      liveOrderAttempted: false,
+      effectiveDryRun: true,
     });
   }
+
 
   if (liveExecutionConfirmed !== true) {
     return withTimings({
@@ -400,9 +406,16 @@ Deno.serve(async (req) => {
         volume: Number(volume),
         stopLoss: stopLoss == null ? null : Number(stopLoss),
         takeProfit: takeProfit == null ? null : Number(takeProfit),
+        executionIntent,
+        acknowledgedLiveTest,
+        requestedDryRun: false,
+        effectiveDryRun: false,
+        liveOrderAttempted: true,
+        executionMode: gate.mode ?? null,
       },
     },
   );
+
   timings.tradingLayerResponseAt = Date.now();
 
   const serverLatencyMs = Date.now() - startedAt;
@@ -527,15 +540,19 @@ Deno.serve(async (req) => {
     status = "broker_accepted_pending_confirmation";
     outcome = "broker_accepted";
     step = "execution_result";
-    classification = "broker_accepted";
+    classification = "broker_accepted_pending_confirmation";
     brokerMessage = "Broker accepted — waiting for MT5 confirmation.";
   } else {
+    // Broker REJECTED a real live request. This is NOT a dry run, and NOT a
+    // pre-trade validation block. The request reached Trading Layer and the
+    // broker refused it (e.g. retcode 10017 TRADE_RETCODE_TRADE_DISABLED).
     success = false;
     status = "rejected";
     outcome = "rejected";
-    step = "pretrade_validation";
-    classification = "rejected";
+    step = "execution_result";
+    classification = retcodeNum === 10017 ? "order_rejected_trade_disabled" : "order_rejected";
   }
+
 
   const spread =
     requestedBid != null && requestedAsk != null
@@ -675,9 +692,17 @@ Deno.serve(async (req) => {
     version: VERSION,
     step,
     liveOrderSent,
+    liveOrderAttempted: true,
+    effectiveDryRun: false,
+    requestedDryRun: false,
+    executionIntent,
+    acknowledgedLiveTest,
     brokerAccepted,
     mt5Confirmed: false, // never true here — client owns confirmation
-    confirmationStatus: brokerAccepted ? "broker_accepted_pending_confirmation" : (isBlocked ? "blocked" : "rejected"),
+    confirmationStatus: brokerAccepted
+      ? "broker_accepted_pending_confirmation"
+      : (isBlocked ? "blocked" : (retcodeNum === 10017 ? "order_rejected_trade_disabled" : "order_rejected")),
+
     tradeId,
     status,
     outcome,
