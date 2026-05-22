@@ -135,15 +135,30 @@ const AdminProductionModeTab = () => {
   };
 
   // Derive per-test-type aggregate status from DB rows. A type is "pass" if
-  // the most recent row with that type has status='pass'; otherwise the worst-
-  // case current state shows.
+  // the most recent row with that type has status='pass'; "retest_required"
+  // when the latest row failed only due to a closed/unavailable market session;
+  // otherwise the most-recent state shows.
+  const isRetestRequired = (r: AdminLiveTestRow | undefined): boolean => {
+    if (!r || r.status !== "fail") return false;
+    const ev = (r.evidence_json ?? {}) as Record<string, unknown>;
+    if (ev.finalActivationBlocker === false && ev.retestRequired === true) return true;
+    const klass = String(ev.classification ?? "");
+    return klass === "order_rejected_market_closed"
+      || klass === "order_rejected_trade_disabled_outside_session";
+  };
   const matrixState = useMemo(() => {
-    const out: Record<AdminTestType, { status: "pending" | "pass" | "fail"; rowCount: number; lastAt: string | null }> = {} as any;
+    const out: Record<AdminTestType, { status: "pending" | "pass" | "fail" | "retest_required"; rowCount: number; lastAt: string | null }> = {} as any;
     for (const def of MATRIX) {
       const all = rows.filter((r) => r.test_type === def.id);
       const latest = all[0];
+      let status: "pending" | "pass" | "fail" | "retest_required" = "pending";
+      if (latest) {
+        if (latest.status === "pass") status = "pass";
+        else if (isRetestRequired(latest)) status = "retest_required";
+        else if (latest.status === "fail") status = "fail";
+      }
       out[def.id] = {
-        status: latest ? (latest.status === "pass" ? "pass" : latest.status === "fail" ? "fail" : "pending") : "pending",
+        status,
         rowCount: all.length,
         lastAt: latest?.created_at ?? null,
       };
