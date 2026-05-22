@@ -112,6 +112,8 @@ Deno.serve(async (req) => {
     clientClickAt,
     dryRun = false,
     liveExecutionConfirmed = false,
+    executionIntent = null,
+    acknowledgedLiveTest = false,
     devModeAllowMissingQuote = false,
     devMode = false,
   } = payload || {};
