@@ -77,17 +77,58 @@ const PendingOrdersPanel = () => {
       const data = await r.json().catch(() => ({}));
       if (!r.ok || data?.success === false) {
         toast.error(data?.error || "Cancel failed", { description: data?.brokerMessage });
-        if (testId) await updateAdminLiveTest(testId, { status: "fail", confirmation_status: "cancel_failed", retcode: data?.retcode ?? null, latency_ms: data?.latencyMs ?? null, evidence: data });
-      } else {
+        if (testId) await updateAdminLiveTest(testId, {
+          status: "fail",
+          confirmation_status: data?.status || "cancel_rejected",
+          retcode: data?.retcode ?? null,
+          latency_ms: data?.latencyMs ?? null,
+          rate_limit_hit: data?.tradingLayerStatus === 429,
+          evidence: data,
+        });
+        return;
+      }
+
+      // Broker accepted — verify by re-checking the pending orders list.
+      toast.message("Cancel accepted by broker — verifying…", { description: `#${row.ticket}` });
+      if (testId) await updateAdminLiveTest(testId, {
+        status: "pending",
+        confirmation_status: "cancel_broker_accepted_pending_confirmation",
+        order_id: String(row.ticket),
+        latency_ms: data?.latencyMs ?? null,
+        evidence: data,
+      });
+
+      // Poll up to ~12s for the order to disappear from the active pending set.
+      let confirmed = false;
+      for (let i = 0; i < 6; i++) {
+        await new Promise((res) => setTimeout(res, 2000));
+        const { data: rows } = await supabase
+          .from("mt_pending_orders")
+          .select("ea_ticket,status")
+          .eq("ea_ticket", String(row.ticket))
+          .limit(1);
+        const stillActive = (rows ?? []).some((x: any) => x.status !== "cancelled" && x.status !== "executed");
+        if (!stillActive) { confirmed = true; break; }
+      }
+      await load();
+
+      if (confirmed) {
         toast.success("Pending order cancelled", { description: `#${row.ticket} ${row.symbol}` });
-        if (testId) await updateAdminLiveTest(testId, { status: "pass", confirmation_status: "order_cancelled_confirmed", order_id: row.ticket, latency_ms: data?.latencyMs ?? null, evidence: data, verified: true });
-        await load();
+        if (testId) await updateAdminLiveTest(testId, {
+          status: "pass", confirmation_status: "order_cancelled_confirmed", verified: true,
+        });
+      } else {
+        toast.warning("Cancel unconfirmed", { description: "Broker accepted but order still appears active." });
+        if (testId) await updateAdminLiveTest(testId, {
+          status: "fail", confirmation_status: "cancel_unconfirmed_after_reconciliation",
+        });
       }
     } catch (e: any) {
       toast.error("Cancel failed", { description: e?.message });
       if (testId) await updateAdminLiveTest(testId, { status: "fail", notes: e?.message });
     } finally { setCancellingId(null); }
   };
+
 
   return (
     <div className="flex flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden text-neutral-100">
