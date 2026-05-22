@@ -156,7 +156,7 @@ export async function updateAdminLiveTest(id: string, patch: Partial<{
       else if (k === "verified") row.verified_at = v ? new Date().toISOString() : null;
       else if (v !== undefined) row[k] = v as unknown;
     }
-    await supabase.from(TABLE).update(row).eq("id", id);
+    await supabase.from(TABLE).update(row as any).eq("id", id);
   } catch { /* ignore */ }
 }
 
