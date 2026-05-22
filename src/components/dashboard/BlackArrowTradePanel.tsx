@@ -977,7 +977,17 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       : null;
     try {
 
-      const payload = {
+      // Live execution gating is already enforced by canSubmitMarket
+      // (liveModeGateOk). When we reach this point we are either in `live`
+      // mode, or in `admin_live_test` mode with the authorised admin tester
+      // who has acknowledged the live-test warning. Send a REAL order — do
+      // NOT silently downgrade to dryRun:true (that produced false
+      // "broker accepted" UI on prior runs).
+      const isAdminLiveTestLiveOrder =
+        executionMode === "admin_live_test" &&
+        isAuthorisedAdminTester &&
+        adminAck;
+      const payload: Record<string, unknown> = {
         tradeId,
         symbol: normalizedSym,
         side: sideArg,
@@ -985,9 +995,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         volume: Number(volNum.toFixed(2)),
         stopLoss: noStops ? null : (sl ? Number(sl) : null),
         takeProfit: noStops ? null : (tp ? Number(tp) : null),
-        dryRun: true,
+        dryRun: false,
+        liveExecutionConfirmed: true,
         clientClickAt,
       };
+      if (isAdminLiveTestLiveOrder) {
+        payload.executionIntent = "admin_live_test_live_order";
+        payload.acknowledgedLiveTest = true;
+      }
 
       // Debug: log + show in temporary debug panel BEFORE the call
       // eslint-disable-next-line no-console
