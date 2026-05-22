@@ -338,6 +338,22 @@ export const ExecutionResultModal = ({
               )}
             </>
           )}
+
+          {effective.outcome === "dry_run" && (
+            <>
+              <Row label="Symbol" value={effective.symbol} accent="text-[#FFCD05]" />
+              <Row label="Side" value={sideLabel} accent={sideAccent} />
+              <Row label="Volume" value={effective.volume.toFixed(2)} />
+              <Row label="Status" value="Dry Run Only" accent="text-neutral-200" />
+              <Row label="Broker Accepted" value="NO" accent="text-neutral-300" />
+              <Row label="MT5 Confirmed" value="NOT APPLICABLE" accent="text-neutral-400" />
+              <Row label="Confirmation" value="NOT APPLICABLE" accent="text-neutral-400" />
+              <Row
+                label="Broker Message"
+                value="Validation completed in dry-run mode. No order was sent to your MT5 account."
+              />
+            </>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-neutral-800 px-3 py-2 bg-[#070707]">
