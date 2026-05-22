@@ -1060,206 +1060,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         setPrice("");
         if (autoReset) { setVol(volumeMin.toFixed(2)); setOrderType("Market"); }
 
-        // Snapshot pre-existing tickets so we only count NEW positions.
-        const preTickets = new Set(
-          ((positionsRef.current as any[]) || []).map((p: any) => String(p?.ticket ?? p?.id ?? "")),
-        );
-        const matchSym = normalizedSym.toUpperCase();
-        const wantSide = sideArg.toLowerCase();
-        const wantVol = Number(volNum.toFixed(2));
-
-        const tryMatch = () => {
-          const list: any[] = (positionsRef.current as any) || [];
-          return list.find((p: any) => {
-            const pTicket = String(p?.ticket ?? p?.id ?? "");
-            if (!pTicket || preTickets.has(pTicket)) return false;
-            const pSym = String(p?.symbol ?? "").toUpperCase();
-            const pSide = String(p?.side ?? p?.type ?? "").toLowerCase();
-            const pVol = Number(p?.volume ?? p?.lots ?? 0);
-            return pSym === matchSym
-              && (pSide === wantSide || pSide.startsWith(wantSide))
-              && Math.abs(pVol - wantVol) < 1e-6;
-          });
-        };
-
-        // Cadence: T+0, +500ms, +1s, +2s, +3.5s, +5s, +8s, +12s
-        const cadence = [0, 500, 500, 1000, 1500, 1500, 3000, 4000];
-        let matched: any = null;
-        for (let i = 0; i < cadence.length; i++) {
-          if (cadence[i] > 0) await new Promise((r) => setTimeout(r, cadence[i]));
-          try { await refresh(); } catch { /* ignore */ }
-          window.dispatchEvent(new CustomEvent("mt:refresh-positions"));
-          window.dispatchEvent(new CustomEvent("mt:refresh-terminal-data"));
-          matched = tryMatch();
-          if (matched) break;
-        }
-
-        // ── Authoritative server-side reconciliation against Trading Layer ──
-        // Inspects positions + pending orders + history orders + history deals
-        // and returns one of:
-        //   position_confirmed | deal_found_no_open_position |
-        //   order_found_not_filled | execution_unconfirmed
-        let reconcile: any = null;
-        try {
-          const { data: rec } = await supabase.functions.invoke(
-            "reconcile-execution",
-            {
-              body: {
-                tradeId,
-                symbol: normalizedSym,
-                side: sideArg,
-                volume: Number(volNum.toFixed(2)),
-                requestedPrice: res?.requestedPrice ?? null,
-                clientClickAt,
-                brokerRetcode: res?.retcode ?? null,
-                brokerMessage:
-                  res?.brokerMessage ?? res?.retcodeDescription ?? null,
-                // ID-first matching keys (reconcile-execution@1.3.0)
-                positionTicket: res?.positionTicket ?? res?.ticket ?? null,
-                orderId: res?.orderId ?? null,
-                dealId: res?.dealId ?? null,
-                requestId: res?.requestId ?? null,
-                clientOrderId: res?.clientOrderId ?? tradeId,
-                brokerSymbol: res?.brokerSymbol ?? null,
-                rawExecutionResponse: res ?? null,
-              },
-            },
-          );
-          reconcile = rec ?? null;
-        } catch { /* reconcile is best-effort */ }
-
-        // Reconcile is authoritative when it confirms an MT5 position.
-        if (reconcile?.mt5Confirmed === true && reconcile?.confirmedTicket) {
-          matched = matched || {
-            ticket: reconcile.confirmedTicket,
-            entry_price: reconcile.confirmedEntryPrice,
-            price_open: reconcile.confirmedEntryPrice,
-            volume: reconcile.confirmedVolume,
-          };
-        }
-
-        // Build a unified broker-result view for the canonical mapper.
-        const brokerView = {
-          success: res?.success,
-          status: matched ? "position_confirmed" : (liveOrderSent ? "placed" : (res?.status ?? "placed")),
-          retcode: res?.retcode,
-          liveOrderSent,
-        };
-
-        let confirmedPos: any = null;
-        if (matched) {
-          confirmedPos = {
-            ticket: matched.ticket ?? matched.id ?? null,
-            entry_price: matched.entry_price ?? null,
-            price_open: matched.price_open ?? null,
-            openPrice: matched.openPrice ?? matched.entryPrice ?? matched.current_price ?? null,
-            volume: matched.volume ?? null,
-            lots: matched.lots ?? null,
-          };
-        }
-
-        const display = getExecutionDisplayState(brokerView, confirmedPos);
-
-        if (display.status === "CONFIRMED") {
-          setExecResult((prev) => prev ? {
-            ...prev,
-            outcome: "success",
-            brokerAccepted: true,
-            mt5Confirmed: true,
-            confirmationStatus: "confirmed",
-            confirmedTicket: display.confirmedTicket,
-            confirmedEntryPrice: display.confirmedEntryPrice,
-            confirmedVolume: display.confirmedVolume,
-            confirmedAt: new Date().toISOString(),
-            executedPrice: display.confirmedEntryPrice,
-            ticket: display.confirmedTicket,
-            status: "position_confirmed",
-            brokerMessage: `Position confirmed in MT5. Ticket: ${display.confirmedTicket}`,
-          } : prev);
-          toast.success("Position confirmed", { description: `#${display.confirmedTicket ?? ""} ${normalizedSym}` });
-        } else {
-          // MT5 not confirmed yet. Run delayed re-reconciliation against TL
-          // (no resend) at +5s and +15s to absorb broker→position propagation.
-          const reconcileAgain = async () => {
-            try {
-              const { data: r2 } = await supabase.functions.invoke("reconcile-execution", {
-                body: {
-                  tradeId,
-                  symbol: normalizedSym,
-                  side: sideArg,
-                  volume: Number(volNum.toFixed(2)),
-                  requestedPrice: res?.requestedPrice ?? null,
-                  clientClickAt,
-                  brokerRetcode: res?.retcode ?? null,
-                  brokerMessage: res?.brokerMessage ?? res?.retcodeDescription ?? null,
-                  positionTicket: res?.positionTicket ?? res?.ticket ?? null,
-                  orderId: res?.orderId ?? null,
-                  dealId: res?.dealId ?? null,
-                  requestId: res?.requestId ?? null,
-                  clientOrderId: res?.clientOrderId ?? tradeId,
-                  brokerSymbol: res?.brokerSymbol ?? null,
-                  rawExecutionResponse: res ?? null,
-                },
-              });
-              return r2;
-            } catch { return null; }
-          };
-
-          let finalReconcile: any = reconcile;
-          for (const waitMs of [5000, 7000]) { // cumulative ~+5s, +12s after first
-            if (
-              finalReconcile?.mt5Confirmed === true ||
-              finalReconcile?.status === "pending_order_placed" ||
-              finalReconcile?.status === "confirmation_delayed_rate_limited"
-            ) break;
-            await new Promise((r) => setTimeout(r, waitMs));
-            try { await refresh(); } catch { /* ignore */ }
-            const r2 = await reconcileAgain();
-            if (r2) finalReconcile = r2;
-          }
-
-          if (finalReconcile?.mt5Confirmed === true && finalReconcile?.confirmedTicket) {
-            setExecResult((prev) => prev ? {
-              ...prev,
-              outcome: "success",
-              brokerAccepted: true,
-              mt5Confirmed: true,
-              confirmationStatus: "confirmed",
-              confirmedTicket: finalReconcile.confirmedTicket,
-              confirmedEntryPrice: finalReconcile.confirmedEntryPrice,
-              confirmedVolume: finalReconcile.confirmedVolume,
-              confirmedAt: new Date().toISOString(),
-              executedPrice: finalReconcile.confirmedEntryPrice,
-              ticket: finalReconcile.confirmedTicket,
-              status: "position_confirmed",
-              brokerMessage: `Position confirmed in MT5. Ticket: ${finalReconcile.confirmedTicket}`,
-            } : prev);
-            toast.success("Position confirmed", { description: `#${finalReconcile.confirmedTicket} ${normalizedSym}` });
-          } else {
-            const recStatus: string = finalReconcile?.status ?? "execution_unconfirmed";
-            const recExplanation: string =
-              finalReconcile?.explanation ??
-              "Broker accepted the order, but MT5 confirmation was not found.";
-            const isPendingOrder = recStatus === "pending_order_placed";
-            const isRateLimited = recStatus === "confirmation_delayed_rate_limited";
-            setExecResult((prev) => prev ? {
-              ...prev,
-              outcome: "unconfirmed",
-              brokerAccepted: true,
-              mt5Confirmed: false,
-              confirmationStatus: isRateLimited ? "delayed_rate_limited" : isPendingOrder ? "pending" : "not_found",
-              status: recStatus,
-              brokerMessage: isPendingOrder
-                ? "Pending order placed in MT5. Awaiting trigger/fill."
-                : recExplanation,
-            } : prev);
-            if (isPendingOrder) {
-              toast.info("Pending order placed", { description: `${normalizedSym} ${sideArg.toUpperCase()} ${wantVol}` });
-            } else {
-              toast.warning(isRateLimited ? "Confirmation delayed by API rate limit" : "Order accepted — MT5 confirmation not found", { description: recExplanation });
-            }
-          }
-        }
+        executionConfirmationCoordinator.enqueue({
+          tradeId,
+          clientOrderId: res?.clientOrderId ?? tradeId,
+          requestId: res?.requestId ?? null,
+          orderId: res?.orderId ?? null,
+          dealId: res?.dealId ?? null,
+          positionTicket: res?.positionTicket ?? res?.ticket ?? null,
+          brokerSymbol: res?.brokerSymbol ?? normalizedSym,
+          symbol: normalizedSym,
+          side: sideArg,
+          volume: Number(volNum.toFixed(2)),
+          requestedPrice: res?.requestedPrice ?? null,
+          retcode: res?.retcode ?? null,
+          brokerMessage: res?.brokerMessage ?? res?.retcodeDescription ?? null,
+          clientClickAt,
+          rawExecutionResponse: res ?? null,
+          traderId: res?.diagnostics?.tradingLayerTraderId ?? res?.diagnostics?.accountIdUsed ?? null,
+          accountId: res?.diagnostics?.accountIdUsed ?? null,
+        });
         setAuditRefreshKey((k) => k + 1);
 
         // Emit reconciliation debug payload for the Dev panel.
