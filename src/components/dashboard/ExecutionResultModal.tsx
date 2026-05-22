@@ -9,10 +9,11 @@ const outcomeToExecStatus = (outcome: ExecutionOutcome): ExecStatus => {
     case "rejected": return "rejected";
     case "pending": return "broker_accepted";
     case "unconfirmed": return "execution_unconfirmed";
+    case "dry_run": return "risk_blocked";
   }
 };
 
-export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed";
+export type ExecutionOutcome = "success" | "blocked" | "rejected" | "pending" | "unconfirmed" | "dry_run";
 
 export interface ExecutionResultPayload {
   outcome: ExecutionOutcome;
@@ -119,6 +120,13 @@ const TitleBar = ({
       chip: "bg-yellow-500/15 text-yellow-300 border-yellow-500/40",
       bar: "bg-yellow-500/70",
     },
+    dry_run: {
+      title: "DRY RUN VALIDATED — NO LIVE ORDER SENT",
+      Icon: ShieldAlert,
+      ring: "border-neutral-500/50",
+      chip: "bg-neutral-500/15 text-neutral-200 border-neutral-500/40",
+      bar: "bg-neutral-500/70",
+    },
   }[outcome];
   const { title, Icon, chip, bar } = config;
   return (
@@ -192,6 +200,7 @@ export const ExecutionResultModal = ({
           effective.outcome === "blocked" && "border-amber-500/30",
           effective.outcome === "rejected" && "border-red-500/30",
           (effective.outcome === "pending" || effective.outcome === "unconfirmed") && "border-yellow-500/30",
+          effective.outcome === "dry_run" && "border-neutral-500/30",
         )}
       >
         <TitleBar outcome={effective.outcome} onClose={onClose} />
@@ -327,6 +336,22 @@ export const ExecutionResultModal = ({
                   accent="text-yellow-300"
                 />
               )}
+            </>
+          )}
+
+          {effective.outcome === "dry_run" && (
+            <>
+              <Row label="Symbol" value={effective.symbol} accent="text-[#FFCD05]" />
+              <Row label="Side" value={sideLabel} accent={sideAccent} />
+              <Row label="Volume" value={effective.volume.toFixed(2)} />
+              <Row label="Status" value="Dry Run Only" accent="text-neutral-200" />
+              <Row label="Broker Accepted" value="NO" accent="text-neutral-300" />
+              <Row label="MT5 Confirmed" value="NOT APPLICABLE" accent="text-neutral-400" />
+              <Row label="Confirmation" value="NOT APPLICABLE" accent="text-neutral-400" />
+              <Row
+                label="Broker Message"
+                value="Validation completed in dry-run mode. No order was sent to your MT5 account."
+              />
             </>
           )}
         </div>
