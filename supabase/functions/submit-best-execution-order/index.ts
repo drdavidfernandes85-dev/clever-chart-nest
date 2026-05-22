@@ -571,8 +571,8 @@ Deno.serve(async (req) => {
       : null,
   };
 
-  // Audit insert — fire-and-forget for accepted/unconfirmed paths; synchronous
-  // ONLY for rejection (so the UI can rely on it for incident reporting).
+  // Audit insert — confirmation-critical IDs for accepted/unconfirmed paths are
+  // synchronous. Only non-critical enrichment may be deferred elsewhere.
   if (uid) {
     const auditRow = {
       user_id: uid,
@@ -603,6 +603,13 @@ Deno.serve(async (req) => {
         step,
         liveOrderSent,
         brokerAccepted,
+        submittedAt,
+        responseReceivedAt,
+        responseIdentifiers,
+        idsPresent,
+        idsMessage: idsPresent
+          ? null
+          : "Trading Layer response did not return confirmation identifiers.",
         positionTicket: diagnostics.positionTicket,
         orderId: diagnostics.orderId,
         dealId: diagnostics.dealId,
@@ -615,7 +622,7 @@ Deno.serve(async (req) => {
         diagnostics,
       },
     };
-    if (outcome === "rejected") {
+    if (outcome === "rejected" || brokerAccepted) {
       try { await supabase.from("execution_audit_events").insert(auditRow); } catch { /* swallow */ }
     } else {
       fireAndForget(supabase.from("execution_audit_events").insert(auditRow));
@@ -651,8 +658,13 @@ Deno.serve(async (req) => {
     dealId: diagnostics.dealId,
     requestId: diagnostics.requestId,
     clientOrderId: diagnostics.clientOrderId,
+    responseIdentifiers,
+    idsPresent,
+    idsMessage: idsPresent ? null : "Trading Layer response did not return confirmation identifiers.",
     brokerSymbol: diagnostics.brokerSymbol,
     retcode: retcodeNum,
+    retcodeName: diagnostics.retcodeName,
+    retcodeDescription: diagnostics.retcodeDescription,
     error: success ? null : (res.error || brokerMessage || "Order rejected"),
     reasons: res.reasons ?? null,
     diagnostics,
