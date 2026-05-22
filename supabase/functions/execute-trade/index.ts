@@ -174,6 +174,35 @@ serve(async (req) => {
     const stopLoss = toOptionalNumber(body.stopLoss);
     const takeProfit = toOptionalNumber(body.takeProfit);
 
+    // Admin live-test intent metadata (forwarded from
+    // submit-best-execution-order). Persisted into request_payload so the
+    // execution log carries end-to-end proof of liveness.
+    const executionIntent = body.executionIntent ?? null;
+    const acknowledgedLiveTest = body.acknowledgedLiveTest === true;
+    const requestedDryRun = body.requestedDryRun === true;
+    const effectiveDryRun = body.effectiveDryRun === true;
+    const liveOrderAttempted = body.liveOrderAttempted !== false;
+    const executionModeMeta = body.executionMode ?? null;
+
+    // Hard guard — if the caller declares admin_live_test intent but did not
+    // pass the acknowledgement, refuse before any broker submission. This
+    // prevents a silent downgrade and never produces a misleading
+    // dry-run/false-success row.
+    if (executionIntent === "admin_live_test_live_order" && !acknowledgedLiveTest) {
+      return json(
+        {
+          success: false,
+          step: "intent_validation",
+          error: "ADMIN_LIVE_TEST_INTENT_MISSING",
+          message: "Admin live-test request reached execute-trade without acknowledgement.",
+          liveOrderSent: false,
+          liveOrderAttempted: false,
+        },
+        400,
+      );
+    }
+
+
     if (!symbol) {
       return json(
         {
