@@ -16,10 +16,20 @@
  */
 
 export type SessionState = "open" | "closed" | "unknown";
+export type SessionSource =
+  | "broker_status"
+  | "recent_tick_inference"
+  | "weekend_rule"
+  | "unknown";
+export type ExecutionPrecheck = "eligible" | "blocked" | "unknown";
 
 export interface SessionAvailability {
   /** Inferred session state for the symbol. */
   session: SessionState;
+  /** Execution precheck verdict — backend re-checks independently. */
+  precheck: ExecutionPrecheck;
+  /** Origin of the decision (explicit broker > tick inference > weekend > unknown). */
+  source: SessionSource;
   /** Whether the symbol is currently tradable as far as we can tell. */
   tradable: boolean;
   /** Age of the most recent executable tick in ms, or null. */
