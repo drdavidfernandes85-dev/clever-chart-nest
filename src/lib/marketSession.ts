@@ -16,10 +16,20 @@
  */
 
 export type SessionState = "open" | "closed" | "unknown";
+export type SessionSource =
+  | "broker_status"
+  | "recent_tick_inference"
+  | "weekend_rule"
+  | "unknown";
+export type ExecutionPrecheck = "eligible" | "blocked" | "unknown";
 
 export interface SessionAvailability {
   /** Inferred session state for the symbol. */
   session: SessionState;
+  /** Execution precheck verdict — backend re-checks independently. */
+  precheck: ExecutionPrecheck;
+  /** Origin of the decision (explicit broker > tick inference > weekend > unknown). */
+  source: SessionSource;
   /** Whether the symbol is currently tradable as far as we can tell. */
   tradable: boolean;
   /** Age of the most recent executable tick in ms, or null. */
@@ -80,10 +90,12 @@ export function getSessionAvailability(input: {
   const hasExecutableTick =
     (bidOk || askOk) && tickAgeMs != null && tickAgeMs <= FRESH_TICK_MAX_AGE_MS;
 
-  // 1) Recent executable tick is the strongest signal.
+  // 1) Recent executable tick is the strongest signal we have client-side.
   if (hasExecutableTick) {
     return {
       session: "open",
+      precheck: "eligible",
+      source: "recent_tick_inference",
       tradable: true,
       tickAgeMs,
       reason: "Recent executable tick observed.",
@@ -95,6 +107,8 @@ export function getSessionAvailability(input: {
   if (CRYPTO_RE.test(sym)) {
     return {
       session: "open",
+      precheck: "eligible",
+      source: "recent_tick_inference",
       tradable: true,
       tickAgeMs,
       reason: "Crypto market trades 24/7.",
@@ -106,16 +120,19 @@ export function getSessionAvailability(input: {
     if (isForexWeekend(now)) {
       return {
         session: "closed",
+        precheck: "blocked",
+        source: "weekend_rule",
         tradable: false,
         tickAgeMs,
         reason: "Forex weekend — market closed.",
         precheckClassification: "market_closed_precheck",
       };
     }
-    // Weekday but no recent executable tick — could be a broker session gap.
     if (!bidOk && !askOk) {
       return {
         session: "unknown",
+        precheck: "blocked",
+        source: "recent_tick_inference",
         tradable: false,
         tickAgeMs,
         reason: "No executable tick available for symbol.",
@@ -124,6 +141,8 @@ export function getSessionAvailability(input: {
     }
     return {
       session: "unknown",
+      precheck: "unknown",
+      source: "recent_tick_inference",
       tradable: true,
       tickAgeMs,
       reason: "Last-known tick available but not fresh.",
@@ -134,6 +153,8 @@ export function getSessionAvailability(input: {
   // 3) Unknown asset class — do not assert state.
   return {
     session: "unknown",
+    precheck: "unknown",
+    source: "unknown",
     tradable: bidOk || askOk,
     tickAgeMs,
     reason: "Session state unknown for this symbol.",

@@ -1092,6 +1092,32 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       // classification and the request must not carry any broker retcode.
       // ----------------------------------------------------------------
       const classificationStr = String(res?.classification ?? "").toLowerCase();
+
+      // SESSION-PRECHECK GUARD — backend refused to submit the order because
+      // the symbol's session is not eligible. Do not start the confirmation
+      // coordinator, do not create a failed live-test row.
+      if (
+        stepStr === "session_precheck" ||
+        classificationStr === "market_closed_precheck" ||
+        classificationStr === "symbol_not_tradable_precheck" ||
+        classificationStr === "no_executable_tick_precheck"
+      ) {
+        toast.error(
+          res?.message ||
+            "Market closed. No test order was submitted. Try again during an active trading session.",
+        );
+        if (adminTestId) {
+          // Remove the pre-opened pending row — this attempt never reached the broker.
+          try {
+            await supabase
+              .from("admin_live_execution_tests")
+              .delete()
+              .eq("id", adminTestId);
+          } catch { /* ignore */ }
+        }
+        return;
+      }
+
       const hasBrokerRetcode = res?.retcode != null && Number.isFinite(Number(res?.retcode));
       const isDryRunResponse =
         res?.effectiveDryRun === true ||
@@ -1837,42 +1863,31 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               Admin live testing mode is active.
             </p>
 
-            {/* Session / tradability state */}
+            {/* Execution precheck diagnostics */}
             <div className="grid grid-cols-2 gap-1 text-[9.5px] font-mono">
               <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
-                <span className="uppercase tracking-wider text-neutral-500">Session</span>
+                <span className="uppercase tracking-wider text-neutral-500">Execution precheck</span>
                 <span
                   className={cn(
                     "font-bold uppercase tracking-wider",
-                    sessionAvailability.session === "open" && "text-emerald-400",
-                    sessionAvailability.session === "closed" && "text-red-400",
-                    sessionAvailability.session === "unknown" && "text-amber-400",
+                    sessionAvailability.precheck === "eligible" && "text-emerald-400",
+                    sessionAvailability.precheck === "blocked" && "text-red-400",
+                    sessionAvailability.precheck === "unknown" && "text-amber-400",
                   )}
                 >
-                  {sessionAvailability.session === "open"
-                    ? "Market Open"
-                    : sessionAvailability.session === "closed"
-                    ? "Market Closed"
-                    : "Session Unknown"}
+                  {sessionAvailability.precheck}
                 </span>
               </div>
               <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
-                <span className="uppercase tracking-wider text-neutral-500">Tradable</span>
-                <span
-                  className={cn(
-                    "font-bold uppercase",
-                    sessionAvailability.tradable ? "text-emerald-400" : "text-red-400",
-                  )}
-                >
-                  {sessionAvailability.tradable ? "Yes" : "No"}
-                </span>
+                <span className="uppercase tracking-wider text-neutral-500">Session source</span>
+                <span className="text-neutral-200 lowercase">{sessionAvailability.source}</span>
               </div>
               <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
                 <span className="uppercase tracking-wider text-neutral-500">Tick Age</span>
                 <span className="text-neutral-200">{formatTickAge(sessionAvailability.tickAgeMs)}</span>
               </div>
               <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
-                <span className="uppercase tracking-wider text-neutral-500">Test</span>
+                <span className="uppercase tracking-wider text-neutral-500">Test eligibility</span>
                 <span
                   className={cn(
                     "font-bold uppercase",
@@ -1884,11 +1899,23 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               </div>
             </div>
 
+            {sessionAvailability.source === "recent_tick_inference" && (
+              <p className="text-[9px] leading-snug text-neutral-400">
+                Eligibility inferred from fresh quote availability; final broker acceptance is determined at submission. Backend independently re-checks before any Trading Layer call.
+              </p>
+            )}
+            {sessionAvailability.source === "weekend_rule" && (
+              <p className="text-[9px] leading-snug text-neutral-400">
+                Source: forex weekend rule (Fri 22:00 UTC → Sun 22:00 UTC).
+              </p>
+            )}
+
             {!sessionGateOk && (
               <p className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber-200">
                 Live test unavailable while {normalizedSym || "this symbol"}'s trading session is closed.
               </p>
             )}
+
 
             {!adminAck && (
               <label className="flex items-start gap-1.5 text-[10px] text-red-200 cursor-pointer">
