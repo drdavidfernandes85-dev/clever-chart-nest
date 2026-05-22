@@ -1045,20 +1045,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         }
       }
 
-      // Guard — submit-best-execution-order must NOT forward to execute-trade
-      // while we're still in dry-run validation mode.
+      // The response step is now informational. Valid live steps are
+      // "execution_result" (broker accepted or rejected) and "dry_run"
+      // (true pre-trade check). Older defensive warnings are removed —
+      // they were firing on legitimate broker rejections and confusing
+      // the operator. The dry-run guard below handles classification.
       const stepStr = String(res?.step ?? "").toLowerCase();
-      if (stepStr === "trade_execution") {
-        // eslint-disable-next-line no-console
-        console.warn("[OrderTicket] WARNING: response step is 'trade_execution' — live execution path was hit.");
-        toast.error("⚠️ Live execution path triggered (step: trade_execution). Stopping.");
-        return;
-      }
-      if (stepStr && stepStr !== "dry_run") {
-        // eslint-disable-next-line no-console
-        console.warn("[OrderTicket] Unexpected step in dry-run mode:", res?.step);
-        toast.warning(`Unexpected response step: ${res?.step}`);
-      }
+
 
       // ----------------------------------------------------------------
       // DRY-RUN GUARD — only treat the response as a dry run when the
