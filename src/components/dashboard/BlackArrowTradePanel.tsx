@@ -182,7 +182,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [liveTestSubmitting, setLiveTestSubmitting] = useState(false);
 
   // Admin live testing mode (single source of truth in site_settings).
-  const { isAdmin } = useIsAdmin();
+  // Note: `isAdmin` already pulled from useDevMode above.
   const [executionMode, setExecutionModeState] = useState(getExecutionMode());
   const [adminAck, setAdminAckState] = useState(hasAdminLiveTestAck());
   useEffect(() => {
