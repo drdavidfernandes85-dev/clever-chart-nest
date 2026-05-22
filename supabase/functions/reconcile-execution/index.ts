@@ -435,28 +435,6 @@ Deno.serve(async (req) => {
     return Math.abs(n - clickSec) <= 600; // 10 minute window
   };
 
-  const wantPositionTicket = input.positionTicket
-    ?? pickId(input.rawExecutionResponse, [
-      "positionTicket", "ticket", "position.ticket", "position.id",
-      "data.positionTicket", "data.ticket",
-    ]);
-  const wantOrderId = input.orderId
-    ?? pickId(input.rawExecutionResponse, [
-      "orderId", "order_id", "order.id", "order.ticket",
-      "data.orderId", "data.order.ticket",
-    ]);
-  const wantDealId = input.dealId
-    ?? pickId(input.rawExecutionResponse, [
-      "dealId", "deal_id", "deal.id", "deal.ticket",
-      "data.dealId", "data.deal.ticket",
-    ]);
-  const wantRequestId = input.requestId
-    ?? input.clientOrderId
-    ?? pickId(input.rawExecutionResponse, [
-      "requestId", "request_id", "clientOrderId", "client_order_id", "tradeId",
-    ])
-    ?? (input.tradeId ?? null);
-
   const idOf = (o: any, paths: string[]) => pickId(o, paths);
 
   // (A) Position matching — ID first, then suffix-tolerant symbol fallback.
