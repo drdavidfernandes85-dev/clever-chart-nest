@@ -233,6 +233,23 @@ serve(async (req) => {
     }
 
     const accountId = mapping.traderId;
+
+    // Execution-mode allowlist (admin live testing gate)
+    {
+      const gate = await assertLiveExecutionAllowed(supabase, user.id, {
+        traderId: mapping.traderId,
+        login: mapping.login,
+      });
+      if (!gate.allowed) {
+        return json({
+          success: false,
+          step: "execution_mode_gate",
+          error: gate.code || LIVE_EXEC_DISABLED_CODE,
+          reason: gate.reason,
+          executionMode: gate.mode,
+        }, 403);
+      }
+    }
     const idempotencyKey = `trade-${tradeId}-${user.id}`;
 
     const orderPayload: Record<string, unknown> = {
