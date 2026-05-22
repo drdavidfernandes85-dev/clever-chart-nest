@@ -44,6 +44,15 @@ import { useDevMode } from "@/hooks/useDevMode";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import RiskBadges from "@/components/dashboard/RiskBadges";
 import { executionConfirmationCoordinator } from "@/services/executionConfirmationCoordinator";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import {
+  getExecutionMode,
+  refreshExecutionMode,
+  hasAdminLiveTestAck,
+  setAdminLiveTestAck,
+  PRODUCTION_MODE_EVENT,
+  ADMIN_TESTER_MT5_LOGIN,
+} from "@/lib/productionMode";
 
 const broadcastExec = (status: string) => {
   try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
