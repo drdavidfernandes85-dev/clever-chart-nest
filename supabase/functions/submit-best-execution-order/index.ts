@@ -3,10 +3,10 @@
 //
 // SPEED CONTRACT (v3):
 //   - This function returns to the client as soon as Trading Layer responds.
-//   - Reconciliation is owned by the client (BlackArrowTradePanel) which calls
-//     reconcile-execution on a fast cadence carrying the IDs we surface here.
-//   - Audit-row writes for accepted / unconfirmed orders run inside
-//     EdgeRuntime.waitUntil so they never block the HTTP response.
+//   - Reconciliation is owned by the shared client coordinator, which calls
+//     reconcile-execution on a rate-limit-safe cadence carrying the IDs surfaced here.
+//   - Confirmation-critical identifiers for accepted / unconfirmed orders are
+//     written synchronously before returning to the client.
 //   - Risk-block / freshness / dry-run audits remain synchronous because the
 //     client uses them to decide whether to even continue.
 //
@@ -408,8 +408,11 @@ Deno.serve(async (req) => {
     "data.deal.ticket", "data.deal.id",
   ]);
   const requestId = pick(result, [
-    "requestId", "request_id", "clientOrderId", "client_order_id",
-    "tradeId", "data.requestId",
+    "requestId", "request_id", "data.requestId", "data.request_id",
+    "broker.requestId", "raw.requestId",
+  ]);
+  const clientOrderId = pick(result, [
+    "clientOrderId", "client_order_id", "data.clientOrderId", "data.client_order_id",
   ]) ?? tradeId ?? null;
   const responseSymbol = pick(result, ["symbol", "data.symbol", "order.symbol", "position.symbol"]);
   const responseVolume = pick(result, ["volume", "data.volume", "order.volume", "deal.volume"]);
@@ -433,6 +436,11 @@ Deno.serve(async (req) => {
   const retcodeNum = res.retcode != null && Number.isFinite(Number(res.retcode))
     ? Number(res.retcode)
     : null;
+  const retcodeName = pick(res, ["retcodeName", "retcode_name", "data.retcodeName", "data.retcode_name"]);
+  const retcodeDescription = pick(res, [
+    "retcodeDescription", "retcode_description", "comment", "message",
+    "data.retcodeDescription", "data.retcode_description",
+  ]) ?? brokerMessageRaw;
 
   // Retcode taxonomy for market orders
   //   10009 = TRADE_RETCODE_DONE       → filled
@@ -495,6 +503,43 @@ Deno.serve(async (req) => {
   const reasonsText = Array.isArray(res.reasons) ? res.reasons.join(" · ") : null;
 
   // Sanitized diagnostics (no secrets) — surfaced in Dev Mode by the UI.
+  const submittedAt = timings.orderSentToTradingLayerAt
+    ? new Date(timings.orderSentToTradingLayerAt).toISOString()
+    : null;
+  const responseReceivedAt = timings.tradingLayerResponseAt
+    ? new Date(timings.tradingLayerResponseAt).toISOString()
+    : null;
+  const responseIdentifiers = {
+    tradeId: tradeId ?? null,
+    clientOrderId,
+    requestId: requestId != null ? String(requestId) : null,
+    retcode: retcodeNum,
+    retcodeName: retcodeName != null ? String(retcodeName) : null,
+    retcodeDescription: retcodeDescription != null ? String(retcodeDescription) : null,
+    orderId: orderTicket != null ? String(orderTicket) : null,
+    order: orderTicket != null ? String(orderTicket) : null,
+    dealId: dealId != null ? String(dealId) : null,
+    deal: dealId != null ? String(dealId) : null,
+    positionTicket: positionTicket != null ? String(positionTicket) : null,
+    ticket: positionTicket != null ? String(positionTicket) : null,
+    positionId: positionTicket != null ? String(positionTicket) : null,
+    brokerSymbol: responseSymbol ?? symbol,
+    side: responseSide ?? side,
+    volume: responseVolume != null ? Number(responseVolume) : Number(volume),
+    requestedPrice,
+    tradingLayerTraderId: mapping.traderId,
+    tradingLayerAccountId: mapping.traderId,
+    brokerAccepted,
+    submittedAt,
+    responseReceivedAt,
+  };
+  const idsPresent = Boolean(
+    responseIdentifiers.requestId ||
+    responseIdentifiers.orderId ||
+    responseIdentifiers.dealId ||
+    responseIdentifiers.positionTicket
+  );
+
   const diagnostics = {
     payloadSent: {
       tradeId, symbol, side, orderType, volume: Number(volume),
@@ -512,13 +557,15 @@ Deno.serve(async (req) => {
     side: responseSide ?? side,
     volume: responseVolume != null ? Number(responseVolume) : Number(volume),
     retcode: retcodeNum,
-    retcodeDescription:
-      res.retcodeDescription ?? res.retcode_description ?? brokerMessageRaw ?? null,
-    orderId: orderTicket != null ? String(orderTicket) : null,
-    dealId: dealId != null ? String(dealId) : null,
-    positionTicket: positionTicket != null ? String(positionTicket) : null,
-    requestId: requestId != null ? String(requestId) : null,
-    clientOrderId: tradeId ?? null,
+    retcodeName: responseIdentifiers.retcodeName,
+    retcodeDescription: responseIdentifiers.retcodeDescription,
+    orderId: responseIdentifiers.orderId,
+    dealId: responseIdentifiers.dealId,
+    positionTicket: responseIdentifiers.positionTicket,
+    requestId: responseIdentifiers.requestId,
+    clientOrderId: responseIdentifiers.clientOrderId,
+    idsPresent,
+    responseIdentifiers,
     brokerResponseTimeMs: timings.tradingLayerResponseAt && timings.orderSentToTradingLayerAt
       ? (timings.tradingLayerResponseAt - timings.orderSentToTradingLayerAt)
       : null,
