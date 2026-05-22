@@ -351,6 +351,24 @@ Deno.serve(async (req) => {
   }
   timings.accountResolvedAt = Date.now();
 
+  // ---------- Execution-mode allowlist (admin live testing gate) ----------
+  const gate = await assertLiveExecutionAllowed(supabase, uid, {
+    traderId: mapping.traderId,
+    login: mapping.login,
+  });
+  if (!gate.allowed) {
+    return withTimings({
+      success: false,
+      version: VERSION,
+      step: "execution_mode_gate",
+      liveOrderSent: false,
+      tradeId,
+      error: gate.code || LIVE_EXEC_DISABLED_CODE,
+      reason: gate.reason,
+      executionMode: gate.mode,
+    }, 403);
+  }
+
   // Forward to execute-trade (existing broker integration).
   timings.orderSentToTradingLayerAt = Date.now();
   const { data: execData, error: execError } = await supabase.functions.invoke(
