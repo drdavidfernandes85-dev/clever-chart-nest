@@ -135,15 +135,30 @@ const AdminProductionModeTab = () => {
   };
 
   // Derive per-test-type aggregate status from DB rows. A type is "pass" if
-  // the most recent row with that type has status='pass'; otherwise the worst-
-  // case current state shows.
+  // the most recent row with that type has status='pass'; "retest_required"
+  // when the latest row failed only due to a closed/unavailable market session;
+  // otherwise the most-recent state shows.
+  const isRetestRequired = (r: AdminLiveTestRow | undefined): boolean => {
+    if (!r || r.status !== "fail") return false;
+    const ev = (r.evidence_json ?? {}) as Record<string, unknown>;
+    if (ev.finalActivationBlocker === false && ev.retestRequired === true) return true;
+    const klass = String(ev.classification ?? "");
+    return klass === "order_rejected_market_closed"
+      || klass === "order_rejected_trade_disabled_outside_session";
+  };
   const matrixState = useMemo(() => {
-    const out: Record<AdminTestType, { status: "pending" | "pass" | "fail"; rowCount: number; lastAt: string | null }> = {} as any;
+    const out: Record<AdminTestType, { status: "pending" | "pass" | "fail" | "retest_required"; rowCount: number; lastAt: string | null }> = {} as any;
     for (const def of MATRIX) {
       const all = rows.filter((r) => r.test_type === def.id);
       const latest = all[0];
+      let status: "pending" | "pass" | "fail" | "retest_required" = "pending";
+      if (latest) {
+        if (latest.status === "pass") status = "pass";
+        else if (isRetestRequired(latest)) status = "retest_required";
+        else if (latest.status === "fail") status = "fail";
+      }
       out[def.id] = {
-        status: latest ? (latest.status === "pass" ? "pass" : latest.status === "fail" ? "fail" : "pending") : "pending",
+        status,
         rowCount: all.length,
         lastAt: latest?.created_at ?? null,
       };
@@ -265,8 +280,10 @@ const AdminProductionModeTab = () => {
                       const latest = rows.find((r) => r.test_type === def.id);
                       const tone =
                         st.status === "pass" ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
+                        : st.status === "retest_required" ? "bg-amber-500/10 border-amber-500/40 text-amber-300"
                         : st.status === "fail" ? "bg-red-500/10 border-red-500/40 text-red-300"
                         : "bg-muted/20 border-border/40 text-muted-foreground";
+                      const statusLabel = st.status === "retest_required" ? "RETEST REQUIRED" : st.status.toUpperCase();
                       return (
                         <div key={def.id} className={`rounded border px-2 py-1.5 text-left text-[11px] font-mono ${tone}`}>
                           <div className="flex items-center justify-between">
@@ -275,8 +292,13 @@ const AdminProductionModeTab = () => {
                               {def.required && <span className="text-[9px] uppercase tracking-wider opacity-70">required</span>}
                               <span className="text-[9px] opacity-60">{st.rowCount} run{st.rowCount === 1 ? "" : "s"}</span>
                             </span>
-                            <span className="uppercase">{st.status}</span>
+                            <span className="uppercase">{statusLabel}</span>
                           </div>
+                          {st.status === "retest_required" && (
+                            <div className="mt-0.5 text-[9.5px] text-amber-200/90">
+                              Reason: market unavailable/closed at time of broker rejection. Final activation blocker: No, pending valid-session retest.
+                            </div>
+                          )}
                           {latest && (
                             <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] opacity-75">
                               {latest.confirmation_status && <span>conf: {latest.confirmation_status}</span>}

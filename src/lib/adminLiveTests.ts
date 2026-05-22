@@ -224,15 +224,31 @@ export async function verifyFromAudit(sinceHours = 48): Promise<{
     "modify_unconfirmed_after_reconciliation",
   ]);
   // Pending: broker_accepted_pending_confirmation, rate_limited, confirmation_delayed_*
+  // Excluded from pass/fail: dry runs, pre-submission market/session checks.
+  // Recorded but non-blocking pending retest: market-closed broker rejections.
+  const EXCLUDED_CLASSIFICATIONS = new Set([
+    "pretrade_check",
+    "dry_run_no_live_order_sent",
+    "market_closed_precheck",
+    "symbol_not_tradable_precheck",
+    "no_executable_tick_precheck",
+  ]);
+  const NON_BLOCKING_REJECTIONS = new Set([
+    "order_rejected_market_closed",
+    "order_rejected_trade_disabled_outside_session",
+  ]);
   for (const r of rows) {
     const klass = ((r as any)?.raw?.classification as string | undefined) || null;
     if (!klass) continue;
-    // Dry-run / pre-trade-check audits are NEVER eligible for final live
-    // verification — they were never sent to MT5.
-    if (klass === "pretrade_check" || klass === "dry_run_no_live_order_sent") continue;
+    if (EXCLUDED_CLASSIFICATIONS.has(klass)) continue;
     const status = String((r as any).status || "").toLowerCase();
     const outcome = String((r as any).outcome || "").toLowerCase();
     byType[klass] = byType[klass] || { pass: 0, fail: 0, pending: 0 };
+    if (NON_BLOCKING_REJECTIONS.has(klass)) {
+      // Recorded but counted as pending — does not block final activation.
+      byType[klass].pending += 1;
+      continue;
+    }
     if (PASS_STATUSES.has(status) || PASS_STATUSES.has(outcome) || outcome === "success") {
       byType[klass].pass += 1;
     } else if (FAIL_STATUSES.has(status) || FAIL_STATUSES.has(outcome)) {
