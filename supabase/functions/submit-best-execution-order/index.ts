@@ -692,9 +692,17 @@ Deno.serve(async (req) => {
     version: VERSION,
     step,
     liveOrderSent,
+    liveOrderAttempted: true,
+    effectiveDryRun: false,
+    requestedDryRun: false,
+    executionIntent,
+    acknowledgedLiveTest,
     brokerAccepted,
     mt5Confirmed: false, // never true here — client owns confirmation
-    confirmationStatus: brokerAccepted ? "broker_accepted_pending_confirmation" : (isBlocked ? "blocked" : "rejected"),
+    confirmationStatus: brokerAccepted
+      ? "broker_accepted_pending_confirmation"
+      : (isBlocked ? "blocked" : (retcodeNum === 10017 ? "order_rejected_trade_disabled" : "order_rejected")),
+
     tradeId,
     status,
     outcome,
