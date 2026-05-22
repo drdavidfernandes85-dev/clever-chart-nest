@@ -1,65 +1,90 @@
-# Execution speed + MT5 confirmation fix
+## Scope
 
-This is a cross-cutting fix across the order-entry frontend and ~12 Edge Functions. It does **not** change compliance copy, risk validation, kill switch, fresh tick validation, or mobile read-only behavior.
+Build the complete admin live testing surface for real MT5 execution from the authorised admin account (login `87943580`, trader `29008868…`) while keeping all other clients gated. This is a multi-part backend + frontend + DB effort. I want to confirm direction before writing ~15+ files.
 
-## What we will change
+## Approach
 
-### 1. `submit-best-execution-order` (backend)
-- Add a `timings` collector (`requestReceivedAt`, `authValidatedAt`, `accountResolvedAt`, `riskValidatedAt`, `freshTickFetchedAt`, `orderSentToTradingLayerAt`, `tradingLayerResponseAt`, `firstReconcileStartedAt`, `mt5ConfirmedAt`, `finalUiStatusAt`), returned only when `devMode=true` in the body.
-- Parse the raw Trading Layer response and persist: `retcode, retcodeName, retcodeDescription, orderId, dealId, positionId/ticket, requestId, clientOrderId, symbol, side, volume, price, brokerResponseTimeMs` into `trade_execution_logs.response_payload` and surface IDs in the function's JSON response.
-- Return early to the client as soon as TL responds with `broker_accepted` (status: `broker_accepted_pending_confirmation`) carrying all IDs. Audit insert moves to a fire-and-forget after the response is constructed.
-- Resolve `metaapi_account_id` (which equals `trading_layer_trader_id`) **once per request**; never use local row UUID as TL accountId. Add a defensive check that rejects with `TL_MAPPING_INVALID` if mapping looks like a stale ownerAccountId pattern.
+### 1. Database (one migration)
 
-### 2. New `reconcile-execution` cadence
-- Client-driven cadence: 0, 500ms, 1s, 2s, 3.5s, 5s, 8s, 12s, 15s. Stops early on first confirmation.
-- Each attempt runs **positions + orders + deals** queries in parallel against the resolved traderId.
-- Match priority: positionTicket/ticket → dealId → orderId → requestId/clientOrderId → brokerSymbol+side+volume+account within recent time window. Symbol comparison is suffix-tolerant (`XAUUSD` matches `XAUUSD.M`). Entry price is not required.
-- Returns one of: `position_confirmed`, `order_found_not_filled`, `pending_order_placed`, `unconfirmed_after_reconciliation`, `rejected`, `cancelled` plus the `sourcesChecked` map.
+New table `public.admin_live_execution_tests` with the fields listed in the brief.
+- RLS: SELECT/INSERT/UPDATE restricted to `has_role(auth.uid(),'admin')`. Service role bypasses RLS for backend writes from edge functions.
+- New table `public.admin_live_test_limits` (single row, admin-managed) for `max_order_volume`, `max_simultaneous_test_positions`, `max_daily_live_test_orders`, `max_daily_test_loss_usd`, `pending_orders_enabled`, `partial_close_cap_increase_enabled`.
+- No raw passwords/tokens/Authorization headers ever written.
 
-### 3. Frontend order ticket state machine (`src/components/dashboard/BlackArrowTradePanel.tsx` and the execute helper)
-- On click: instantly show `Sending order…`.
-- On TL `broker_accepted` response: instantly show `Broker accepted — waiting for MT5 confirmation.`
-- On reject: `Order rejected by broker.`
-- On risk/validation block: `Order blocked by risk controls.`
-- Background reconciliation loop using the new cadence; updates UI as soon as a non-pending status arrives.
-- Optimistic states allowed: `sending_order`, `broker_accepted`, `waiting_mt5_confirmation`, `close_request_sent`, `close_broker_accepted`. Never optimistic for `executed` / `position_opened` / `position_closed`.
-- Final fallback copy after full cadence: `Order accepted, but MT5 confirmation was not found yet. Please check MT5 or retry confirmation.`
+### 2. Backend (edge functions)
 
-### 4. `close-position-controlled` + close modal
-- Modal pre-flight validation: requires `positionTicket`, `brokerSymbol`, `volume>0`, `side`, resolved `traderId`. Bails with a clear inline error otherwise.
-- Payload uses positionTicket + exact broker symbol + exact (or partial) volume + side + traderId. Never closes by symbol only, never uses display symbol if a different broker symbol exists, never sends local row id.
-- Same reconciliation cadence as open (0/500/1s/2s/3.5s/5s/8s/12s), parallel checks, success when position removed or volume reduced (partial).
-- Same instant UI transitions: `Close request sent` → `Broker accepted close request` → terminal status.
+Reuse existing `assertLiveExecutionAllowed`. Add a small shared helper `admin_live_tests.ts` that:
+- creates a test row when a flow starts (called by submit/close/modify/place-pending/cancel-pending),
+- patches it synchronously with TL identifiers,
+- finalises it as `pass`/`fail` once the confirmation coordinator reports.
 
-### 5. Account-ID audit pass across edge functions
-Verify and fix where needed (read-only review, surgical edits only):
-- `submit-best-execution-order`, `execute-trade`, `close-position-controlled`, `modify-position-protection`, `reconcile-execution`, `get-live-account`, `get-mt5-terminal-data`, `get-mt5-quotes`, `get-mt5-market-watch`, `get-mt5-symbol-data`, `get-trading-symbols`, `tl-market-data-stream`.
-- All must read `metaapi_account_id` from `user_mt_accounts` (single source of truth post connect-mt5-v2). Any path that synthesizes an ID from a local UUID or tenant ownerAccount is removed.
+New / extended edge functions:
+- `submit-best-execution-order` — already exists; add test-row write-through for `market_buy` / `market_sell`.
+- `close-position-controlled` — extend for `full_close` and `partial_close` (validates `0 < closeVolume < currentVolume`, lot step) and writes test row.
+- `modify-position-protection` — extend to write `modify_sl` / `modify_tp` rows, return refreshed SL/TP for verification.
+- `submit-pending-order` (new) — handles BUY/SELL LIMIT/STOP with side-of-market validation against fresh tick.
+- `cancel-pending-order` (new) — cancels by orderId, verifies removal.
+- All gated by `assertLiveExecutionAllowed` + `admin_live_test_limits` enforcement.
 
-### 6. Performance
-- Frontend preloads account mapping on terminal mount (TanStack-style cache) and reuses it for the whole reconciliation lifecycle.
-- Broker symbol metadata cached client-side per session.
-- Edge functions skip redundant account lookups inside reconcile attempts by accepting `traderId` from the client (validated server-side against the user's row).
-- Audit writes use `EdgeRuntime.waitUntil` so they never block the response.
+Invert/reverse stays disabled at the API layer (returns `INVERT_NOT_IMPLEMENTED`).
 
-### 7. Dev diagnostics panel
-- Extend the existing `ExecutionReconciliationDebugPanel` (Dev Mode only) to show: tradeId/clientOrderId, transport, accountId used, local row id, trading_layer_trader_id, brokerSymbol, displaySymbol, side, volume, risk validation result, fresh tick age, retcode/Name/Description, orderId, dealId, positionTicket, attempt count, sourcesChecked map, final confirmationStatus, full timing breakdown. No secrets, no API key, no MT5 password.
+### 3. Coordinator
 
-## What stays untouched
-- Compliance and disclaimer wording.
-- Backend risk validation order (still runs before order send).
-- Kill switch behavior and testing-mode limits.
-- Fresh tick validation (still required before send).
-- Mobile read-only strategy.
-- RLS / auth / secrets handling.
+Extend `executionConfirmationCoordinator` to handle these confirmation kinds:
+- `position_confirmed`, `close_confirmed`, `partial_close_confirmed`, `sl_updated_confirmed`, `tp_updated_confirmed`, `pending_order_placed`, `order_cancelled_confirmed`.
+Each terminal status calls a small `recordAdminLiveTestOutcome(testId, status, evidence)` helper that updates the DB row.
 
-## Out of scope (will note but not change)
-- Database schema (existing columns on `trade_execution_logs` cover everything we need).
-- `connect-mt5-v2` (already the single writer of TL IDs).
-- WebSocket market data pipeline.
+### 4. Admin Production panel
 
-## Risk notes
-- Moving audit writes off the response path means a crash could miss an audit row; we keep the synchronous insert when `outcome=rejected` or `risk_blocked`. Confirmed/pending audits stay async.
-- Symbol-suffix tolerance is fallback-only; primary match still uses exact broker symbol returned by TL.
+- Replace localStorage matrix with Supabase-backed read. Subscribe to `admin_live_execution_tests` realtime for live updates.
+- “Run Verification From Audit” → calls a backend RPC `verify_admin_live_tests_from_audit` that re-derives status from `execution_audit_events` and writes verified rows. Removes manual cycle-through-status toggle.
+- Add Limits sub-card editable by admin (writes to `admin_live_test_limits`).
 
-If this looks right, approve and I'll implement in this order: backend (`submit-best-execution-order` → `reconcile-execution` → `close-position-controlled` → audit pass) → frontend state machine + close modal → Dev diagnostics panel.
+### 5. Trade panel UI additions
+
+- `OpenPositionsPanel` rows: `Close` (full), `Partial Close`, `SL/TP` buttons; modal flows for each.
+- New `PendingOrdersPanel` with rows showing order ticket / type / entry / SL / TP / Cancel button.
+- Ticket controls (BUY/SELL LIMIT/STOP) wired to `submit-pending-order` with side-of-market validation against the live quote.
+- Invert button stays disabled with the tooltip from the brief.
+- Admin session acknowledgement gate already exists; reuse it for all new live actions.
+
+### 6. Ordinary-user protection
+
+All new edge functions call `assertLiveExecutionAllowed` and return `LIVE_EXECUTION_NOT_ENABLED_FOR_USER` for non-admins. Frontend hides the new test controls behind `isAdmin && execution_mode === 'admin_live_test'`. No changes to risk/kill-switch/fresh-tick code.
+
+## Out of scope (explicit)
+
+- Activating `execution_mode = 'live'` for general users.
+- Implementing Invert/reverse logic (stays disabled per brief).
+- Touching the existing risk/kill-switch/fresh-tick modules.
+- Rotating secrets (user must do manually).
+
+## Files I will create/edit
+
+Migration:
+- `supabase/migrations/<ts>_admin_live_execution_tests.sql`
+
+Backend:
+- `supabase/functions/_shared/adminLiveTests.ts` (new)
+- `supabase/functions/submit-best-execution-order/index.ts` (extend)
+- `supabase/functions/close-position-controlled/index.ts` (extend — partial close)
+- `supabase/functions/modify-position-protection/index.ts` (extend — test rows)
+- `supabase/functions/submit-pending-order/index.ts` (new)
+- `supabase/functions/cancel-pending-order/index.ts` (new)
+
+Frontend:
+- `src/services/executionConfirmationCoordinator.ts` (extend kinds + DB hook)
+- `src/components/admin/AdminProductionModeTab.tsx` (DB-backed matrix + Limits card)
+- `src/components/admin/AdminLiveTestLimitsCard.tsx` (new)
+- `src/components/dashboard/BlackArrowTradePanel.tsx` (pending ticket wiring, invert disabled tooltip)
+- `src/components/livechart/OpenPositionsPanel.tsx` (Close / Partial Close / SL-TP buttons)
+- `src/components/livechart/PartialCloseModal.tsx` (new)
+- `src/components/livechart/ModifySLTPModal.tsx` (new)
+- `src/components/livechart/PendingOrdersPanel.tsx` (new)
+- `src/lib/adminLiveTests.ts` (client helper to create/update test rows + queries)
+
+## After implementation
+
+I will not place any live orders myself. You will run Stage A → C from the terminal; results stream into the matrix automatically. Stage D unlocks only after Stage A passes and you raise the cap. Stage E (invert) remains intentionally disabled.
+
+Please confirm to proceed, or tell me which parts to drop / sequence first (e.g. ship DB + Market + Close + SL/TP first, defer Pending/Cancel to a second pass).
