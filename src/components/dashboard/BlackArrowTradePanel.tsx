@@ -44,6 +44,7 @@ import { useDevMode } from "@/hooks/useDevMode";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import RiskBadges from "@/components/dashboard/RiskBadges";
 import { getExecutionDisplayState } from "@/lib/executionDisplayState";
+import { executionConfirmationCoordinator } from "@/services/executionConfirmationCoordinator";
 
 const broadcastExec = (status: string) => {
   try { window.dispatchEvent(new CustomEvent("mt:exec-result", { detail: { status } })); }
