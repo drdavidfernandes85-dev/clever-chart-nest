@@ -47,19 +47,53 @@ const Row = ({ label, value, tone = "neutral" }: { label: string; value: React.R
 };
 
 interface MatrixDef { id: AdminTestType; label: string; required: boolean }
-const MATRIX: MatrixDef[] = [
-  { id: "market_buy", label: "Market Buy 0.01", required: true },
-  { id: "market_sell", label: "Market Sell 0.01", required: false },
-  { id: "full_close", label: "Full close confirmed", required: true },
-  { id: "partial_close", label: "Partial close confirmed", required: false },
-  { id: "modify_sl", label: "SL modification confirmed", required: true },
-  { id: "modify_tp", label: "TP modification confirmed", required: false },
-  { id: "buy_limit", label: "Buy Limit placement", required: true },
-  { id: "sell_limit", label: "Sell Limit placement", required: false },
-  { id: "buy_stop", label: "Buy Stop placement", required: false },
-  { id: "sell_stop", label: "Sell Stop placement", required: false },
-  { id: "cancel_pending", label: "Pending order cancellation", required: true },
+type Readiness = "ready" | "gated_pending" | "implemented_if_confirmed" | "blocked_cap" | "not_ready";
+const SECTIONS: { title: string; readiness: Readiness; note: string; items: MatrixDef[] }[] = [
+  {
+    title: "Ready to Test Now", readiness: "ready",
+    note: "Available now under admin_live_test execution mode.",
+    items: [
+      { id: "market_buy", label: "Market Buy 0.01", required: true },
+      { id: "market_sell", label: "Market Sell 0.01", required: false },
+      { id: "full_close", label: "Full close confirmed", required: true },
+    ],
+  },
+  {
+    title: "Pending Orders — gated", readiness: "gated_pending",
+    note: "Enabled only after Market Open + Close pass and pending_orders_enabled is turned on manually.",
+    items: [
+      { id: "buy_limit", label: "Buy Limit placement", required: true },
+      { id: "sell_limit", label: "Sell Limit placement", required: false },
+      { id: "buy_stop", label: "Buy Stop placement", required: false },
+      { id: "sell_stop", label: "Sell Stop placement", required: false },
+      { id: "cancel_pending", label: "Pending order cancellation", required: true },
+    ],
+  },
+  {
+    title: "Implemented if confirmed by inspection", readiness: "implemented_if_confirmed",
+    note: "Recorded automatically only after MT5-reported SL/TP refresh matches the requested value.",
+    items: [
+      { id: "modify_sl", label: "SL modification confirmed", required: true },
+      { id: "modify_tp", label: "TP modification confirmed", required: false },
+    ],
+  },
+  {
+    title: "Blocked by current 0.01 cap", readiness: "blocked_cap",
+    note: "Partial close requires a position larger than the current 0.01 lot admin-test limit.",
+    items: [
+      { id: "partial_close", label: "Partial close confirmed", required: false },
+    ],
+  },
+  {
+    title: "Not Ready", readiness: "not_ready",
+    note: "Invert/Reverse requires a sequential close-confirmed-then-open-opposite implementation. Not built.",
+    items: [
+      { id: "invert_position", label: "Invert / Reverse position", required: false },
+    ],
+  },
 ];
+const MATRIX: MatrixDef[] = SECTIONS.flatMap((s) => s.items);
+
 
 const AdminProductionModeTab = () => {
   const [, force] = useState(0);
@@ -208,32 +242,71 @@ const AdminProductionModeTab = () => {
         {loading && rows.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">Loading test history…</p>
         ) : (
-          <div className="grid gap-1">
-            {MATRIX.map((def) => {
-              const st = matrixState[def.id];
-              const tone =
-                st.status === "pass" ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
-                : st.status === "fail" ? "bg-red-500/10 border-red-500/40 text-red-300"
-                : "bg-muted/20 border-border/40 text-muted-foreground";
+          <div className="space-y-4">
+            {SECTIONS.map((section) => {
+              const readinessTone: Record<Readiness, string> = {
+                ready: "border-emerald-500/40 text-emerald-300",
+                gated_pending: "border-amber-500/40 text-amber-300",
+                implemented_if_confirmed: "border-sky-500/40 text-sky-300",
+                blocked_cap: "border-orange-500/40 text-orange-300",
+                not_ready: "border-red-500/40 text-red-300",
+              };
               return (
-                <div key={def.id} className={`flex items-center justify-between rounded border px-2 py-1.5 text-left text-[11px] font-mono ${tone}`}>
-                  <span className="flex items-center gap-2">
-                    {def.label}
-                    {def.required && <span className="text-[9px] uppercase tracking-wider opacity-70">required</span>}
-                    <span className="text-[9px] opacity-60">{st.rowCount} run{st.rowCount === 1 ? "" : "s"}</span>
-                  </span>
-                  <span className="uppercase">{st.status}</span>
+                <div key={section.title}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-[10px] font-mono uppercase tracking-wider rounded border px-1.5 py-0.5 ${readinessTone[section.readiness]}`}>
+                      {section.title}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mb-1.5 leading-relaxed">{section.note}</p>
+                  <div className="grid gap-1">
+                    {section.items.map((def) => {
+                      const st = matrixState[def.id];
+                      const latest = rows.find((r) => r.test_type === def.id);
+                      const tone =
+                        st.status === "pass" ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-300"
+                        : st.status === "fail" ? "bg-red-500/10 border-red-500/40 text-red-300"
+                        : "bg-muted/20 border-border/40 text-muted-foreground";
+                      return (
+                        <div key={def.id} className={`rounded border px-2 py-1.5 text-left text-[11px] font-mono ${tone}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                              {def.label}
+                              {def.required && <span className="text-[9px] uppercase tracking-wider opacity-70">required</span>}
+                              <span className="text-[9px] opacity-60">{st.rowCount} run{st.rowCount === 1 ? "" : "s"}</span>
+                            </span>
+                            <span className="uppercase">{st.status}</span>
+                          </div>
+                          {latest && (
+                            <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-[9px] opacity-75">
+                              {latest.confirmation_status && <span>conf: {latest.confirmation_status}</span>}
+                              {latest.position_ticket && <span>pos#: {latest.position_ticket}</span>}
+                              {latest.order_id && <span>order#: {latest.order_id}</span>}
+                              {latest.trade_id && <span>trade: {latest.trade_id.slice(0, 8)}…</span>}
+                              {latest.latency_ms != null && <span>latency: {latest.latency_ms}ms</span>}
+                              {latest.tested_at && <span>at: {new Date(latest.tested_at).toLocaleTimeString()}</span>}
+                              {latest.rate_limit_hit && <span className="text-amber-300">rate-limited</span>}
+                              {latest.account_id_mismatch && <span className="text-red-300">ACCOUNT_ID_MISMATCH</span>}
+                              {latest.duplicate_detected && <span className="text-red-300">duplicate</span>}
+                              {latest.notes && <span className="col-span-2 opacity-60">note: {latest.notes}</span>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
-        <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+        <p className="text-[10px] text-muted-foreground mt-3 leading-relaxed">
           Status reflects the latest <code>admin_live_execution_tests</code> row per type. Tests are recorded
-          automatically when you execute real MT5 actions from the terminal. Use “Run Verification From Audit”
+          automatically by real MT5 actions; there is no manual pass override. Use “Run Verification From Audit”
           to reconcile against <code>execution_audit_events</code>.
         </p>
       </Card>
+
     </div>
   );
 };

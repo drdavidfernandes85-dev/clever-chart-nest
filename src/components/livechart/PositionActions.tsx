@@ -27,6 +27,8 @@ import {
 import { useExecutionLock } from "@/hooks/useExecutionLock";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import { reconcileAfterClose } from "@/lib/positionReconciliation";
+import { startAdminLiveTest, updateAdminLiveTest } from "@/lib/adminLiveTests";
+
 
 const TEST_CLOSE_MAX_VOLUME = 0.01;
 
@@ -122,8 +124,26 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     if (isExecutionLocked()) {
       return toast.warning("Another execution is in progress. Please wait.");
     }
+    const prevSl = position.stop_loss;
+    const prevTp = position.take_profit;
+    // Record one row per requested protection (SL or TP). Both may be set.
+    const slTestId = stopLoss !== null && stopLoss !== prevSl
+      ? await startAdminLiveTest({
+          testType: "modify_sl",
+          positionTicket: ticket, brokerSymbol: position.symbol, side: position.side,
+          notes: `prev_sl=${prevSl ?? "none"} -> requested_sl=${stopLoss}`,
+        })
+      : null;
+    const tpTestId = takeProfit !== null && takeProfit !== prevTp
+      ? await startAdminLiveTest({
+          testType: "modify_tp",
+          positionTicket: ticket, brokerSymbol: position.symbol, side: position.side,
+          notes: `prev_tp=${prevTp ?? "none"} -> requested_tp=${takeProfit}`,
+        })
+      : null;
     setSubmitting(true);
     lockExecution("modify_sl_tp", 20000);
+    const startedAt = Date.now();
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/modify-position-protection`;
@@ -136,25 +156,70 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         }),
       });
       const data = await r.json().catch(() => ({}));
-      if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
+      const latencyMs = Date.now() - startedAt;
+      if (isRateLimited(r.status, data)) {
+        broadcastExec("Rate Limited");
+        if (slTestId) await updateAdminLiveTest(slTestId, { status: "pending", confirmation_status: "confirmation_delayed_rate_limited", rate_limit_hit: true, latency_ms: latencyMs });
+        if (tpTestId) await updateAdminLiveTest(tpTestId, { status: "pending", confirmation_status: "confirmation_delayed_rate_limited", rate_limit_hit: true, latency_ms: latencyMs });
+        return;
+      }
       checkAndHandle429(data, null);
       if (!r.ok || data?.success === false) {
         toast.error(errMessageFrom(data), { description: safeStr(data?.brokerMessage) });
         broadcastExec("SL/TP Failed");
+        if (slTestId) await updateAdminLiveTest(slTestId, { status: "fail", confirmation_status: "modify_rejected", retcode: data?.retcode ?? null, latency_ms: latencyMs, evidence: data });
+        if (tpTestId) await updateAdminLiveTest(tpTestId, { status: "fail", confirmation_status: "modify_rejected", retcode: data?.retcode ?? null, latency_ms: latencyMs, evidence: data });
       } else {
         toast.success("SL/TP updated successfully", { description: `#${ticket} ${position.symbol}` });
         broadcastExec("SL/TP Updated");
         setOpenModify(false);
+        // Broker accepted. Verify against refreshed MT5 position state.
+        await refreshAll();
+        // Poll mt_positions briefly for the requested value to appear.
+        const verify = async (kind: "sl" | "tp", requested: number) => {
+          for (let i = 0; i < 6; i++) {
+            await new Promise((res) => setTimeout(res, 1500));
+            const { data: rows } = await supabase
+              .from("mt_positions")
+              .select("stop_loss,take_profit,updated_at")
+              .eq("ticket", ticket).limit(1);
+            const row0: any = (rows ?? [])[0];
+            if (!row0) continue;
+            const got = kind === "sl" ? Number(row0.stop_loss) : Number(row0.take_profit);
+            if (Number.isFinite(got) && Math.abs(got - requested) < 1e-6) return true;
+          }
+          return false;
+        };
+        if (slTestId && stopLoss !== null) {
+          const ok = await verify("sl", stopLoss);
+          await updateAdminLiveTest(slTestId, {
+            status: ok ? "pass" : "fail",
+            confirmation_status: ok ? "sl_modification_confirmed" : "modify_unconfirmed_after_reconciliation",
+            verified: ok, latency_ms: latencyMs, evidence: data,
+          });
+        }
+        if (tpTestId && takeProfit !== null) {
+          const ok = await verify("tp", takeProfit);
+          await updateAdminLiveTest(tpTestId, {
+            status: ok ? "pass" : "fail",
+            confirmation_status: ok ? "tp_modification_confirmed" : "modify_unconfirmed_after_reconciliation",
+            verified: ok, latency_ms: latencyMs, evidence: data,
+          });
+        }
+        return;
       }
     } catch (e: any) {
       toast.error("Could not modify protection", { description: e?.message });
       broadcastExec("Modify Failed");
+      if (slTestId) await updateAdminLiveTest(slTestId, { status: "fail", notes: e?.message });
+      if (tpTestId) await updateAdminLiveTest(tpTestId, { status: "fail", notes: e?.message });
     } finally {
       setSubmitting(false);
       unlockExecution();
       await refreshAll();
     }
   }
+
 
   async function submitClose(volume: number, label: "partial" | "full") {
     if (!ticket) return toast.error("Position identifier missing. Refresh positions and try again.", { action: { label: "Refresh", onClick: refreshPositionsNow } });
@@ -173,6 +238,13 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
     let serverPartial = false;
     let closeAuditEventId: string | null = null;
     let serverResp: any = null;
+    const adminCloseTestId = await startAdminLiveTest({
+      testType: label === "full" ? "full_close" : "partial_close",
+      positionTicket: ticket, brokerSymbol: position.symbol, side: position.side,
+      requestedVolume: Number(volume), clientCloseId,
+      notes: `${label} close ${volume} of ${openVolume}`,
+    });
+
     try {
       const headers = await authHeaders();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/close-position-controlled`;
@@ -197,7 +269,14 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       });
       const data = await r.json().catch(() => ({}));
       serverResp = data;
-      if (isRateLimited(r.status, data)) { broadcastExec("Rate Limited"); return; }
+      if (isRateLimited(r.status, data)) {
+        broadcastExec("Rate Limited");
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "pending", confirmation_status: "confirmation_delayed_rate_limited",
+          rate_limit_hit: true, request_id: clientCloseId, evidence: data,
+        });
+        return;
+      }
       checkAndHandle429(data, null);
       // Instant UI signal: close request was sent.
       toast.message("Close request sent", { description: `#${ticket} ${position.symbol}` });
@@ -207,6 +286,12 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
           action: { label: "Refresh", onClick: refreshPositionsNow },
         });
         broadcastExec("Close Rejected");
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "fail", confirmation_status: "close_rejected",
+          retcode: data?.retcode ?? null, retcode_name: data?.retcodeName ?? null,
+          retcode_description: data?.retcodeDescription ?? null,
+          request_id: clientCloseId, evidence: data,
+        });
       } else if (data?.status === "closed" || data?.status === "partial_closed") {
         serverAccepted = true;
         serverPartial = data?.status === "partial_closed" || data?.partial === true;
@@ -214,12 +299,25 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         toast.success("Broker accepted close request", { description: "Waiting for MT5 confirmation." });
         if (label === "full") setOpenFull(false);
         else setOpenPartial(false);
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "pending", confirmation_status: "close_broker_accepted_pending_confirmation",
+          request_id: clientCloseId, order_id: data?.orderId ?? null,
+          deal_id: data?.dealId ?? null, position_ticket: ticket,
+          retcode: data?.retcode ?? null, retcode_name: data?.retcodeName ?? null,
+          retcode_description: data?.retcodeDescription ?? null,
+          latency_ms: data?.latencyMs ?? null, evidence: data,
+        });
       } else {
         toast.warning(`Close ${safeStr(data?.status) || "pending"}`, {
           description: safeStr(data?.brokerMessage),
         });
         broadcastExec("Close Pending");
+        if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+          status: "pending", confirmation_status: safeStr(data?.status) || "close_pending",
+          request_id: clientCloseId, evidence: data,
+        });
       }
+
     } catch (e: any) {
       toast.error("Could not close position", { description: safeStr(e?.message) });
       broadcastExec("Close Failed");
@@ -296,15 +394,30 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         if (outcome === "closed") {
           toast.success("Position closed", { description: `#${ticket} ${position.symbol} — ticket removed from MT5.` });
           broadcastExec("Position Closed");
+          if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+            status: label === "full" ? "pass" : "pass",
+            confirmation_status: "close_confirmed", verified: true,
+            confirmed_volume: Number(volume),
+          });
         } else if (outcome === "partial") {
           toast.success("Partial close completed", { description: `#${ticket} ${position.symbol}` });
           broadcastExec("Partial Closed");
+          if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+            status: label === "partial" ? "pass" : "fail",
+            confirmation_status: "partial_close_confirmed", verified: label === "partial",
+            confirmed_volume: Number(volume),
+            notes: label === "full" ? "full close requested but only partial volume reduced" : null,
+          });
         } else {
           toast.warning("Close request sent but position is still open in MT5.", {
             description: `#${ticket} ${position.symbol} — please verify in MetaTrader.`,
           });
           broadcastExec("Close Unconfirmed");
+          if (adminCloseTestId) await updateAdminLiveTest(adminCloseTestId, {
+            status: "fail", confirmation_status: "close_unconfirmed_after_reconciliation",
+          });
         }
+
 
         // Emit close debug event for Dev Mode diagnostics panel.
         try {
@@ -393,14 +506,17 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
         </button>
         <button
           type="button"
-          title="Partial Close"
-          disabled={busy}
+          title={Number(position.volume) <= TEST_CLOSE_MAX_VOLUME
+            ? `Partial close requires a position larger than the current ${TEST_CLOSE_MAX_VOLUME.toFixed(2)} lot admin-test limit.`
+            : "Partial Close"}
+          disabled={busy || Number(position.volume) <= TEST_CLOSE_MAX_VOLUME}
           onClick={() => setOpenPartial(true)}
           className="inline-flex h-5 items-center gap-1 rounded border border-neutral-800 bg-[#0a0a0a] px-1.5 text-[9px] font-bold uppercase tracking-widest text-neutral-300 hover:border-amber-500/50 hover:text-amber-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Scissors className="h-3 w-3" />
           Partial
         </button>
+
         <button
           type="button"
           title={cooling ? `Rate limited (${cooldownSec}s)` : "Close Full Position"}

@@ -195,11 +195,12 @@ export async function updateAdminLiveTestLimits(
 
 /**
  * Re-derive matrix status from execution_audit_events for the last N hours.
- * Returns counts per test_type for an admin "Run Verification From Audit".
+ * Only persisted evidence counts as a pass — broker-accepted-but-unconfirmed
+ * states remain pending, rate-limited stays pending, never pass.
  */
 export async function verifyFromAudit(sinceHours = 48): Promise<{
   scanned: number;
-  byType: Record<string, { pass: number; fail: number }>;
+  byType: Record<string, { pass: number; fail: number; pending: number }>;
 }> {
   const since = new Date(Date.now() - sinceHours * 3600_000).toISOString();
   const { data } = await supabase
@@ -207,16 +208,36 @@ export async function verifyFromAudit(sinceHours = 48): Promise<{
     .select("status,outcome,raw,created_at")
     .gte("created_at", since)
     .order("created_at", { ascending: false })
-    .limit(500);
+    .limit(1000);
   const rows = data ?? [];
-  const byType: Record<string, { pass: number; fail: number }> = {};
+  const byType: Record<string, { pass: number; fail: number; pending: number }> = {};
+
+  const PASS_STATUSES = new Set([
+    "position_confirmed", "closed", "partial_closed",
+    "protection_modified", "sl_modification_confirmed", "tp_modification_confirmed",
+    "pending_order_placed", "order_cancelled_confirmed",
+  ]);
+  const FAIL_STATUSES = new Set([
+    "order_rejected", "close_rejected", "cancel_rejected",
+    "modify_rejected", "blocked", "rule_violation",
+    "close_unconfirmed_after_reconciliation", "cancel_unconfirmed_after_reconciliation",
+    "modify_unconfirmed_after_reconciliation",
+  ]);
+  // Pending: broker_accepted_pending_confirmation, rate_limited, confirmation_delayed_*
   for (const r of rows) {
-    const klass = (r as any)?.raw?.classification as string | undefined;
+    const klass = ((r as any)?.raw?.classification as string | undefined) || null;
     if (!klass) continue;
-    const ok = (r as any).outcome === "success" || (r as any).status === "closed" || (r as any).status === "partial_closed" || (r as any).status === "protection_modified";
-    const key = klass;
-    byType[key] = byType[key] || { pass: 0, fail: 0 };
-    if (ok) byType[key].pass += 1; else byType[key].fail += 1;
+    const status = String((r as any).status || "").toLowerCase();
+    const outcome = String((r as any).outcome || "").toLowerCase();
+    byType[klass] = byType[klass] || { pass: 0, fail: 0, pending: 0 };
+    if (PASS_STATUSES.has(status) || PASS_STATUSES.has(outcome) || outcome === "success") {
+      byType[klass].pass += 1;
+    } else if (FAIL_STATUSES.has(status) || FAIL_STATUSES.has(outcome)) {
+      byType[klass].fail += 1;
+    } else {
+      byType[klass].pending += 1;
+    }
   }
   return { scanned: rows.length, byType };
 }
+

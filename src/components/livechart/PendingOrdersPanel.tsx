@@ -98,17 +98,38 @@ const PendingOrdersPanel = () => {
         evidence: data,
       });
 
-      // Poll up to ~12s for the order to disappear from the active pending set.
+      // Poll up to ~16s for fresh broker-reported evidence that the order
+      // was cancelled/expired/removed by MT5. Absence alone (e.g. local
+      // optimistic removal) is NOT treated as confirmation — we require an
+      // explicit status the broker wrote into mt_pending_orders, or no
+      // matching row AND a fetched_at timestamp newer than the cancel call.
+      const cancelSentAt = Date.now();
       let confirmed = false;
-      for (let i = 0; i < 6; i++) {
+      let confirmationSource: "broker_status" | "fresh_absence" | null = null;
+      for (let i = 0; i < 8; i++) {
         await new Promise((res) => setTimeout(res, 2000));
         const { data: rows } = await supabase
           .from("mt_pending_orders")
-          .select("ea_ticket,status")
+          .select("ea_ticket,status,fetched_at,updated_at")
           .eq("ea_ticket", String(row.ticket))
           .limit(1);
-        const stillActive = (rows ?? []).some((x: any) => x.status !== "cancelled" && x.status !== "executed");
-        if (!stillActive) { confirmed = true; break; }
+        const r0: any = (rows ?? [])[0];
+        if (r0 && ["cancelled", "canceled", "expired", "removed"].includes(String(r0.status).toLowerCase())) {
+          confirmed = true; confirmationSource = "broker_status"; break;
+        }
+        if (!r0) {
+          // Only accept absence if the broker-reported feed has refreshed AFTER
+          // the cancel call (so we know it's not just optimistic removal).
+          const { data: any2 } = await supabase
+            .from("mt_pending_orders")
+            .select("fetched_at")
+            .order("fetched_at", { ascending: false, nullsFirst: false })
+            .limit(1);
+          const lastFetch = (any2 ?? [])[0]?.fetched_at;
+          if (lastFetch && new Date(lastFetch).getTime() > cancelSentAt) {
+            confirmed = true; confirmationSource = "fresh_absence"; break;
+          }
+        }
       }
       await load();
 
@@ -116,11 +137,13 @@ const PendingOrdersPanel = () => {
         toast.success("Pending order cancelled", { description: `#${row.ticket} ${row.symbol}` });
         if (testId) await updateAdminLiveTest(testId, {
           status: "pass", confirmation_status: "order_cancelled_confirmed", verified: true,
+          evidence: { ...(data || {}), confirmationSource },
         });
       } else {
-        toast.warning("Cancel unconfirmed", { description: "Broker accepted but order still appears active." });
+        toast.warning("Cancel unconfirmed", { description: "Broker accepted but no fresh MT5 evidence yet." });
         if (testId) await updateAdminLiveTest(testId, {
           status: "fail", confirmation_status: "cancel_unconfirmed_after_reconciliation",
+          evidence: { ...(data || {}), confirmationSource: null },
         });
       }
     } catch (e: any) {
@@ -128,6 +151,7 @@ const PendingOrdersPanel = () => {
       if (testId) await updateAdminLiveTest(testId, { status: "fail", notes: e?.message });
     } finally { setCancellingId(null); }
   };
+
 
 
   return (
