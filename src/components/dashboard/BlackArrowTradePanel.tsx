@@ -219,6 +219,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
   const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
 
+  // Trading Layer execution eligibility (account.trade_mode + symbol.trade_mode).
+  // Source of truth for whether a live order may be submitted at all.
+  const [eligibility, setEligibility] = useState<ExecutionEligibility | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
+
   // Admin live-test limits (drives pending-orders gate + cap).
   const [liveLimits, setLiveLimits] = useState<AdminLiveTestLimits | null>(null);
   useEffect(() => {
