@@ -130,20 +130,23 @@ Deno.serve(async (req) => {
 
   // Resolve active mapping for this user.
   const mapping = await resolveActiveMtMapping(supabaseService, uid);
-  if (!mapping?.traderId) {
+  const traderId: string | null = mapping?.tradingLayerTraderId ?? null;
+  let accountId: string | null = mapping?.tradingLayerAccountId ?? null;
+  if (!traderId) {
     return json({
       success: false,
       step: "mapping",
       eligibility: "unknown",
-      blockedReason: "No connected MT5 mapping",
+      blockedReason: "No connected Trading Layer trader mapping",
     });
   }
-  const traderId: string = mapping.traderId;
 
-  // 1) Account trade mode
+  // 1) Trader endpoint → account.trade_mode and account.id verification.
   let accountTradeMode: string | null = null;
   let accountInterpretation: ModeInterpretation = "unknown";
   let traderFetchError: string | null = null;
+  let accountIdFromTrader: string | null = null;
+  let accountIdRelationshipVerified = false;
   try {
     const r = await fetch(`${BASE_URL}/api/v1/traders/${traderId}`, {
       headers: {
@@ -164,82 +167,112 @@ Deno.serve(async (req) => {
       const interp = interpretTradeMode(tm);
       accountTradeMode = interp.raw;
       accountInterpretation = interp.interpretation;
+      const acctId = pick(parsed, [
+        "data.account.id", "data.account.accountId",
+        "account.id", "account.accountId",
+        "data.accountId", "accountId",
+      ]);
+      if (acctId) accountIdFromTrader = String(acctId);
+      if (accountIdFromTrader && accountId) {
+        accountIdRelationshipVerified = accountIdFromTrader === accountId;
+      } else if (accountIdFromTrader && !accountId) {
+        // Adopt the verified accountId for this run.
+        accountId = accountIdFromTrader;
+        accountIdRelationshipVerified = true;
+      }
     }
   } catch (e) {
     traderFetchError = (e as Error).message || "trader_fetch_failed";
   }
   const accountTradeEligible = accountInterpretation === "eligible";
 
-  // 2) Symbols catalogue — always upsert when refresh is requested,
-  //    independent of account-level trade_mode.
+  // 2) Symbols catalogue — MUST use accountId for /accounts/{id}/symbols.
+  //    Fail closed (skip upsert) when accountId is unknown/unverified, but
+  //    never suppress read-only diagnostics.
   let symbolsFetchError: string | null = null;
   let upsertedCount = 0;
+  let symbolsSourceAccountId: string | null = null;
+  let symbolsTotal: number | null = null;
 
   if (refreshCatalog) {
-    try {
-      const r = await fetch(
-        `${BASE_URL}/api/v1/accounts/${traderId}/symbols`,
-        {
-          headers: {
-            Authorization: `Bearer ${TRADING_LAYER_KEY}`,
-            "Content-Type": "application/json",
+    if (!accountId) {
+      symbolsFetchError = "trading_layer_account_id_missing";
+    } else {
+      symbolsSourceAccountId = accountId;
+      try {
+        const r = await fetch(
+          `${BASE_URL}/api/v1/accounts/${accountId}/symbols`,
+          {
+            headers: {
+              Authorization: `Bearer ${TRADING_LAYER_KEY}`,
+              "Content-Type": "application/json",
+            },
           },
-        },
-      );
-      const txt = await r.text();
-      let parsed: any = null;
-      try { parsed = JSON.parse(txt); } catch { parsed = { raw: txt }; }
-      if (!r.ok) {
-        symbolsFetchError = `symbols_fetch_${r.status}`;
-      } else {
-        const list: any[] = Array.isArray(parsed?.data)
-          ? parsed.data
-          : Array.isArray(parsed) ? parsed : [];
-        const now = new Date().toISOString();
-        const rows = list.map((s) => {
-          const broker = String(
-            pick(s, ["symbol", "name", "brokerSymbol", "broker_symbol"]) ?? "",
-          ).trim();
-          const canonical = canonicalize(broker);
-          const tm = pick(s, ["trade_mode", "tradeMode"]);
-          return {
-            trading_layer_trader_id: traderId,
-            mt5_login: mapping.login ? String(mapping.login) : null,
-            mt5_server: mapping.server ?? null,
-            display_symbol: canonical,
-            canonical_symbol: canonical,
-            broker_symbol: broker,
-            description: pick(s, ["description", "desc"]) ?? null,
-            asset_class: pick(s, ["assetClass", "asset_class", "category"]) ?? null,
-            digits: Number(pick(s, ["digits"])) || null,
-            contract_size: Number(pick(s, ["contractSize", "contract_size"])) || null,
-            trade_mode: tm != null ? String(tm) : null,
-            trade_eligible: isTradable(tm),
-            source: "trading_layer_symbols",
-            last_synced_at: now,
-            raw_metadata: null,
-          };
-        }).filter((r) => r.broker_symbol);
-        if (rows.length > 0) {
-          const { error: upErr } = await supabaseService
-            .from("broker_symbol_catalog")
-            .upsert(rows, { onConflict: "trading_layer_trader_id,broker_symbol" });
-          if (!upErr) upsertedCount = rows.length;
+        );
+        const txt = await r.text();
+        let parsed: any = null;
+        try { parsed = JSON.parse(txt); } catch { parsed = { raw: txt }; }
+        if (!r.ok) {
+          symbolsFetchError = `symbols_fetch_${r.status}`;
+        } else {
+          const list: any[] = Array.isArray(parsed?.data)
+            ? parsed.data
+            : Array.isArray(parsed) ? parsed : [];
+          symbolsTotal = list.length;
+          const now = new Date().toISOString();
+          const rows = list.map((s) => {
+            const broker = String(
+              pick(s, ["symbol", "name", "brokerSymbol", "broker_symbol"]) ?? "",
+            ).trim();
+            const canonical = canonicalize(broker);
+            const tm = pick(s, ["trade_mode", "tradeMode"]);
+            return {
+              trading_layer_trader_id: traderId,
+              trading_layer_account_id: accountId,
+              source_endpoint_account_id: accountId,
+              source_verified: accountIdRelationshipVerified,
+              mt5_login: mapping.login ? String(mapping.login) : null,
+              mt5_server: mapping.server ?? null,
+              display_symbol: canonical,
+              canonical_symbol: canonical,
+              broker_symbol: broker,
+              description: pick(s, ["description", "desc"]) ?? null,
+              asset_class: pick(s, ["assetClass", "asset_class", "category"]) ?? null,
+              digits: Number(pick(s, ["digits"])) || null,
+              contract_size: Number(pick(s, ["contractSize", "contract_size"])) || null,
+              trade_mode: tm != null ? String(tm) : null,
+              trade_eligible: isTradable(tm),
+              source: "trading_layer_symbols",
+              last_synced_at: now,
+              raw_metadata: null,
+            };
+          }).filter((r) => r.broker_symbol);
+          if (rows.length > 0) {
+            const { error: upErr } = await supabaseService
+              .from("broker_symbol_catalog")
+              .upsert(rows, { onConflict: "trading_layer_trader_id,broker_symbol" });
+            if (!upErr) upsertedCount = rows.length;
+          }
         }
+      } catch (e) {
+        symbolsFetchError = (e as Error).message || "symbols_fetch_failed";
       }
-    } catch (e) {
-      symbolsFetchError = (e as Error).message || "symbols_fetch_failed";
     }
   }
 
   // 3) Resolve broker symbol(s) for the requested display symbol from
-  //    catalogue. Read-only — never suppressed by account-level block.
+  //    catalogue. Only trust rows whose source_endpoint_account_id matches
+  //    the verified accountId — older rows (keyed only by traderId) are
+  //    surfaced separately as unverified.
   type CatRow = {
     broker_symbol: string;
     canonical_symbol: string | null;
     trade_mode: string | null;
     trade_eligible: boolean | null;
     last_synced_at: string | null;
+    source_endpoint_account_id: string | null;
+    source_verified: boolean | null;
+    trading_layer_account_id: string | null;
   };
   let brokerSymbol: string | null = null;
   let symbolTradeMode: string | null = null;
@@ -251,12 +284,16 @@ Deno.serve(async (req) => {
     tradeMode: string | null;
     interpretation: ModeInterpretation;
     checkedAt: string | null;
+    sourceAccountId: string | null;
+    sourceVerified: boolean;
   }> = [];
 
   if (symbolCanonical) {
     const { data: catRows } = await supabaseService
       .from("broker_symbol_catalog")
-      .select("broker_symbol,canonical_symbol,trade_mode,trade_eligible,last_synced_at")
+      .select(
+        "broker_symbol,canonical_symbol,trade_mode,trade_eligible,last_synced_at,source_endpoint_account_id,source_verified,trading_layer_account_id",
+      )
       .eq("trading_layer_trader_id", traderId);
     const candidates: CatRow[] = (catRows ?? []).filter((r: any) => {
       const c = canonicalize(r.canonical_symbol || r.broker_symbol);
@@ -271,12 +308,17 @@ Deno.serve(async (req) => {
         tradeMode: r.trade_mode,
         interpretation: interp.interpretation,
         checkedAt: r.last_synced_at,
+        sourceAccountId: r.source_endpoint_account_id,
+        sourceVerified: !!r.source_verified,
       };
     });
-    const exact = candidates.find((r) =>
-      canonicalize(r.canonical_symbol || r.broker_symbol) === symbolCanonical
+    // Prefer a verified, exact canonical match from the correct accountId.
+    const exactVerified = candidates.find((r) =>
+      canonicalize(r.canonical_symbol || r.broker_symbol) === symbolCanonical &&
+      r.source_verified === true &&
+      (!accountId || r.source_endpoint_account_id === accountId)
     );
-    const chosen = exact ?? candidates[0] ?? null;
+    const chosen = exactVerified ?? null;
     if (chosen) {
       brokerSymbol = chosen.broker_symbol;
       symbolTradeMode = chosen.trade_mode ?? null;
@@ -287,7 +329,6 @@ Deno.serve(async (req) => {
   }
 
   // 4) Mutation eligibility decision — fail closed.
-  // Read-only diagnostics above are NOT suppressed by this block.
   let eligibility:
     | "eligible"
     | "blocked"
@@ -295,7 +336,13 @@ Deno.serve(async (req) => {
     | "unknown" = "unknown";
   let blockedReason: string | null = null;
 
-  if (traderFetchError || symbolsFetchError) {
+  if (!accountId) {
+    eligibility = "blocked";
+    blockedReason = "trading_layer_account_id_missing";
+  } else if (accountIdFromTrader && !accountIdRelationshipVerified) {
+    eligibility = "blocked";
+    blockedReason = "account_id_relationship_unverified";
+  } else if (traderFetchError || symbolsFetchError) {
     eligibility = "unknown";
     blockedReason = traderFetchError || symbolsFetchError;
   } else if (accountInterpretation === "awaiting_enum_confirmation") {
@@ -327,16 +374,21 @@ Deno.serve(async (req) => {
   return json({
     success: true,
     traderId,
+    traderIdUsed: traderId,
+    accountIdUsedForSymbols: symbolsSourceAccountId,
+    accountIdFromTrader,
+    accountIdRelationshipVerified,
     accountTradeMode,
     accountTradeEligible,
     accountTradeModeInterpretation: accountInterpretation,
-    enumMappingSource: null, // No official TL enum mapping confirmed yet.
+    enumMappingSource: null,
     displaySymbol: symbolCanonical || null,
     brokerSymbol,
     symbolTradeMode,
     symbolTradeEligible,
     symbolTradeModeInterpretation: symbolInterpretation,
     variants,
+    symbolsTotal,
     eligibility,
     blockedReason,
     catalogUpsertedCount: upsertedCount,

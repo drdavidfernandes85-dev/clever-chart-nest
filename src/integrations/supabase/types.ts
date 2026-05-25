@@ -258,8 +258,11 @@ export type Database = {
           mt5_server: string | null
           raw_metadata: Json | null
           source: string
+          source_endpoint_account_id: string | null
+          source_verified: boolean
           trade_eligible: boolean
           trade_mode: string | null
+          trading_layer_account_id: string | null
           trading_layer_trader_id: string
           updated_at: string
         }
@@ -278,8 +281,11 @@ export type Database = {
           mt5_server?: string | null
           raw_metadata?: Json | null
           source?: string
+          source_endpoint_account_id?: string | null
+          source_verified?: boolean
           trade_eligible?: boolean
           trade_mode?: string | null
+          trading_layer_account_id?: string | null
           trading_layer_trader_id: string
           updated_at?: string
         }
@@ -298,8 +304,11 @@ export type Database = {
           mt5_server?: string | null
           raw_metadata?: Json | null
           source?: string
+          source_endpoint_account_id?: string | null
+          source_verified?: boolean
           trade_eligible?: boolean
           trade_mode?: string | null
+          trading_layer_account_id?: string | null
           trading_layer_trader_id?: string
           updated_at?: string
         }

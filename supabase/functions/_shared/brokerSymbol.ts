@@ -58,7 +58,13 @@ export interface FreshTradeModeResult {
  */
 export async function refreshTradeModeFromTradingLayer(
   supabaseService: any,
-  args: { traderId: string; brokerSymbol: string; login?: string | null; server?: string | null },
+  args: {
+    traderId: string;
+    accountId?: string | null; // REQUIRED for the /accounts/{id}/symbols endpoint
+    brokerSymbol: string;
+    login?: string | null;
+    server?: string | null;
+  },
 ): Promise<FreshTradeModeResult> {
   const TL_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
   const empty: FreshTradeModeResult = {
@@ -71,6 +77,15 @@ export async function refreshTradeModeFromTradingLayer(
   if (!TL_KEY) return { ...empty, errorCode: "TL_API_KEY_MISSING", message: "Trading Layer key not configured." };
   if (!args.traderId) return { ...empty, errorCode: ERR_BROKER_SYMBOL_UNRESOLVED, message: "Missing trader id." };
   if (!args.brokerSymbol) return { ...empty, errorCode: ERR_BROKER_SYMBOL_UNRESOLVED, message: "Missing broker symbol." };
+  // Fail closed when the account-scoped symbols endpoint id is not supplied.
+  // /accounts/{accountId}/symbols MUST use trading_layer_account_id, not traderId.
+  if (!args.accountId) {
+    return {
+      ...empty,
+      errorCode: "TRADING_LAYER_ACCOUNT_ID_MISSING",
+      message: "Trading Layer account id is required for symbol trade-mode refresh.",
+    };
+  }
 
   const headers = { Authorization: `Bearer ${TL_KEY}`, "Content-Type": "application/json" };
   const now = new Date().toISOString();
@@ -105,7 +120,7 @@ export async function refreshTradeModeFromTradingLayer(
   // 2) Symbols catalogue — find this brokerSymbol live
   let symbolTradeMode: string | null = null;
   try {
-    const r = await fetch(`${TL_BASE_URL}/api/v1/accounts/${args.traderId}/symbols`, { headers });
+    const r = await fetch(`${TL_BASE_URL}/api/v1/accounts/${args.accountId}/symbols`, { headers });
     if (r.ok) {
       const parsed = await r.json().catch(() => null);
       const list: any[] = Array.isArray(parsed?.data) ? parsed.data : Array.isArray(parsed) ? parsed : [];
@@ -116,6 +131,9 @@ export async function refreshTradeModeFromTradingLayer(
         const tm = pickField(s, ["trade_mode", "tradeMode"]);
         return {
           trading_layer_trader_id: args.traderId,
+          trading_layer_account_id: args.accountId,
+          source_endpoint_account_id: args.accountId,
+          source_verified: true,
           mt5_login: args.login ? String(args.login) : null,
           mt5_server: args.server ?? null,
           display_symbol: canonical,

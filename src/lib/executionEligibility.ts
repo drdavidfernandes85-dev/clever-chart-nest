@@ -24,11 +24,17 @@ export interface EligibilityVariant {
   tradeMode: string | null;
   interpretation: ModeInterpretation;
   checkedAt: string | null;
+  sourceAccountId?: string | null;
+  sourceVerified?: boolean;
 }
 
 export interface ExecutionEligibility {
   success: boolean;
   traderId: string | null;
+  traderIdUsed?: string | null;
+  accountIdUsedForSymbols?: string | null;
+  accountIdFromTrader?: string | null;
+  accountIdRelationshipVerified?: boolean;
   accountTradeMode: string | null;
   accountTradeEligible: boolean;
   accountTradeModeInterpretation?: ModeInterpretation;
@@ -39,6 +45,7 @@ export interface ExecutionEligibility {
   symbolTradeEligible: boolean;
   symbolTradeModeInterpretation?: ModeInterpretation;
   variants?: EligibilityVariant[];
+  symbolsTotal?: number | null;
   eligibility: EligibilityStatus;
   blockedReason: string | null;
   checkedAt: string | null;
