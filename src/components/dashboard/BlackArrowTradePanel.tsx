@@ -1970,6 +1970,65 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               </p>
             )}
 
+            {/* Trading Layer execution permission (account + symbol trade_mode) */}
+            <div className="rounded-sm border border-neutral-800/80 bg-black/40 p-1.5 space-y-1 text-[9.5px] font-mono">
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Instrument</span>
+                <span className="text-neutral-100">{normalizedSym || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Broker symbol</span>
+                <span className="text-neutral-100">{eligibility?.brokerSymbol ?? (eligibilityLoading ? "…" : "—")}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Account trade_mode</span>
+                <span className={cn(
+                  eligibility?.accountTradeEligible ? "text-emerald-400" : eligibility?.accountTradeMode ? "text-red-400" : "text-amber-400",
+                )}>
+                  {eligibility?.accountTradeMode ?? "unknown"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Symbol trade_mode</span>
+                <span className={cn(
+                  eligibility?.symbolTradeEligible ? "text-emerald-400" : eligibility?.symbolTradeMode ? "text-red-400" : "text-amber-400",
+                )}>
+                  {eligibility?.symbolTradeMode ?? "unknown"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Execution eligibility</span>
+                <span className={cn(
+                  "font-bold uppercase",
+                  eligibility?.eligibility === "eligible" && "text-emerald-400",
+                  eligibility?.eligibility === "blocked" && "text-red-400",
+                  (!eligibility || eligibility.eligibility === "unknown") && "text-amber-400",
+                )}>
+                  {eligibility?.eligibility ?? (eligibilityLoading ? "checking" : "unknown")}
+                </span>
+              </div>
+              <p className="text-[9px] leading-snug text-neutral-400">
+                Source: Trading Layer trade_mode. Live ticks do not prove trading permission.
+              </p>
+              {eligibility?.eligibility === "blocked" && (
+                <p className="rounded-sm border border-red-500/50 bg-red-600/15 px-1.5 py-1 text-[9.5px] text-red-200">
+                  {eligibility.blockedReason === "account_trade_mode_blocked"
+                    ? "Trading Layer reports that trading is disabled for this account."
+                    : "Trading Layer reports that this broker symbol is not currently tradable."}
+                </p>
+              )}
+              {(!eligibility || eligibility.eligibility === "unknown") && !eligibilityLoading && (
+                <p className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-1 text-[9.5px] text-amber-200">
+                  Execution permission could not be confirmed. Live test order is disabled.
+                </p>
+              )}
+              {eligibility?.eligibility === "eligible" && eligibility?.brokerSymbol && (
+                <p className="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-1 text-[9.5px] text-emerald-200">
+                  Execution permission confirmed by Trading Layer for broker symbol {eligibility.brokerSymbol}.
+                </p>
+              )}
+            </div>
+
             {/* Execution precheck diagnostics */}
             <div className="grid grid-cols-2 gap-1 text-[9.5px] font-mono">
               <div className="flex items-center justify-between rounded-sm border border-neutral-800/80 bg-black/40 px-1.5 py-0.5">
