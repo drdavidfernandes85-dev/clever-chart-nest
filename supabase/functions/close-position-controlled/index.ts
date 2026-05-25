@@ -19,6 +19,10 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  resolveEligibleBrokerSymbol,
+  brokerSymbolGateResponse,
+} from "../_shared/brokerSymbol.ts";
 
 const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
@@ -67,6 +71,7 @@ Deno.serve(async (req) => {
   }
   const ticket = payload?.ticket != null ? String(payload.ticket) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
+  const suppliedBrokerSymbol = payload?.brokerSymbol ? String(payload.brokerSymbol) : null;
   const volume = Number(payload?.volume);
   const openVolume = Number(payload?.openVolume);
   const openSideRaw = payload?.openSide ? String(payload.openSide).toLowerCase() : null;
@@ -162,10 +167,23 @@ Deno.serve(async (req) => {
   } catch { /* fall through */ }
 
 
+  // Broker-symbol gate — close must use exact MT5 broker symbol from the position.
+  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+    userId: user.id,
+    traderId: accountId,
+    requestedDisplaySymbol: symbol,
+    suppliedBrokerSymbol,
+    operationType: "close_position",
+  });
+  if (!eligible.ok) {
+    return json(brokerSymbolGateResponse(VERSION, eligible, { ticket, closeId, volume }), 200);
+  }
+  const brokerSymbol = eligible.brokerSymbol as string;
+
   const idempotencyKey = closeId;
   const closePayload = {
     side: closeSide,
-    symbol,
+    symbol: brokerSymbol,
     volume,
     position: Number(ticket),
     deviation: 20,
@@ -257,6 +275,10 @@ Deno.serve(async (req) => {
         openVolume: Number.isFinite(openVolume) ? openVolume : null,
         partial: isPartial,
         clientClickAt: typeof payload?.clientClickAt === "string" ? payload.clientClickAt : null,
+        displaySymbol: symbol,
+        brokerSymbol,
+        symbolMappingSource: eligible.symbolMappingSource,
+        symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
       },
     });
   } catch { /* swallow audit errors */ }
@@ -266,7 +288,7 @@ Deno.serve(async (req) => {
   const dealId = res?.dealId ?? res?.deal ?? res?.deal_id ?? null;
   const requestId = res?.requestId ?? res?.request_id ?? null;
   const positionTicket = res?.positionTicket ?? res?.position ?? Number(ticket) ?? null;
-  const brokerSymbolOut = res?.brokerSymbol ?? res?.symbol ?? symbol;
+  const brokerSymbolOut = res?.brokerSymbol ?? res?.symbol ?? brokerSymbol;
   const retcodeName = res?.retcodeName ?? null;
   const retcodeDescription = res?.retcodeDescription ?? null;
 
@@ -283,8 +305,11 @@ Deno.serve(async (req) => {
     orderId,
     dealId,
     requestId,
+    displaySymbol: symbol,
     brokerSymbol: brokerSymbolOut,
-    symbol,
+    symbol: brokerSymbolOut,
+    symbolMappingSource: eligible.symbolMappingSource,
+    symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
     volume,
     retcode,
     retcodeName,

@@ -12,6 +12,10 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  resolveEligibleBrokerSymbol,
+  brokerSymbolGateResponse,
+} from "../_shared/brokerSymbol.ts";
 
 const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
@@ -57,6 +61,7 @@ Deno.serve(async (req) => {
   }
   const ticket = payload?.ticket != null ? String(payload.ticket) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
+  const suppliedBrokerSymbol = payload?.brokerSymbol ? String(payload.brokerSymbol) : null;
   const side = payload?.side ? String(payload.side).toLowerCase() : null;
   const volume = Number(payload?.volume);
   const currentPrice = Number(payload?.currentPrice);
@@ -163,9 +168,22 @@ Deno.serve(async (req) => {
   } catch { /* fall through */ }
 
 
+  // Broker-symbol gate — SL/TP modification must use the exact MT5 position broker symbol.
+  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+    userId: user.id,
+    traderId: accountId,
+    requestedDisplaySymbol: symbol,
+    suppliedBrokerSymbol,
+    operationType: "modify_protection",
+  });
+  if (!eligible.ok) {
+    return json(brokerSymbolGateResponse(VERSION, eligible, { ticket }), 200);
+  }
+  const brokerSymbol = eligible.brokerSymbol as string;
+
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
   const modifyPayload: Record<string, unknown> = {
-    symbol,
+    symbol: brokerSymbol,
     position: Number(ticket),
   };
   if (stopLoss !== null) modifyPayload.stopLoss = stopLoss;
@@ -243,6 +261,10 @@ Deno.serve(async (req) => {
         networkError,
         appliedStopLoss: stopLoss,
         appliedTakeProfit: takeProfit,
+        displaySymbol: symbol,
+        brokerSymbol,
+        symbolMappingSource: eligible.symbolMappingSource,
+        symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
       },
     });
   } catch { /* ignore audit errors */ }
@@ -254,7 +276,11 @@ Deno.serve(async (req) => {
     status,
     outcome,
     ticket,
-    symbol,
+    displaySymbol: symbol,
+    brokerSymbol,
+    symbol: brokerSymbol,
+    symbolMappingSource: eligible.symbolMappingSource,
+    symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
     stopLoss,
     takeProfit,
     retcode,

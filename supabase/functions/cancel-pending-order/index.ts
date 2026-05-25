@@ -12,6 +12,10 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  resolveEligibleBrokerSymbol,
+  brokerSymbolGateResponse,
+} from "../_shared/brokerSymbol.ts";
 
 const VERSION = "CANCEL_PENDING_ORDER_V1_2026_05_22";
 const BASE_URL = "https://api.trading-layer.com";
@@ -46,7 +50,16 @@ Deno.serve(async (req) => {
 
   const orderId = payload?.orderId != null ? String(payload.orderId) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
+  const suppliedBrokerSymbol = payload?.brokerSymbol ? String(payload.brokerSymbol) : null;
   if (!orderId) return json({ success: false, version: VERSION, error: "orderId is required" }, 400);
+  if (!suppliedBrokerSymbol && !symbol) {
+    return json({
+      success: false,
+      version: VERSION,
+      error: "BROKER_SYMBOL_REQUIRED_FOR_CANCEL",
+      message: "Broker execution symbol is missing for this legacy order. Refresh from MT5 before cancellation.",
+    }, 400);
+  }
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
   if (mapping.status === "missing") return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
@@ -73,8 +86,25 @@ Deno.serve(async (req) => {
     if (s.kill_switch_enabled) return json({ success: false, version: VERSION, error: "Trading disabled by kill switch.", rule: "kill_switch" }, 403);
   } catch { /* ignore */ }
 
+  // Broker-symbol gate — use stored brokerSymbol if provided, else look up via canonical symbol.
+  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+    userId: user.id,
+    traderId: accountId,
+    requestedDisplaySymbol: symbol,
+    suppliedBrokerSymbol,
+    operationType: "cancel_pending",
+  });
+  if (!eligible.ok) {
+    return json(brokerSymbolGateResponse(VERSION, eligible, { orderId }), 200);
+  }
+  const brokerSymbol = eligible.brokerSymbol as string;
+
   const idempotencyKey = `cancel-${orderId}-${Date.now()}`;
-  const tlPayload = { actionType: "ORDER_CANCEL", orderId: Number(orderId) || orderId };
+  const tlPayload = {
+    actionType: "ORDER_CANCEL",
+    orderId: Number(orderId) || orderId,
+    symbol: brokerSymbol,
+  };
 
   const startedAt = Date.now();
   let httpStatus = 0; let res: any = null; let networkError: string | null = null;
@@ -117,7 +147,13 @@ Deno.serve(async (req) => {
       broker_message: brokerMessage,
       retcode,
       ticket: orderId,
-      raw: { classification: "cancel_pending", version: VERSION, tradingLayerStatus: httpStatus, request: tlPayload, response: res, networkError },
+      raw: {
+        classification: "cancel_pending", version: VERSION,
+        tradingLayerStatus: httpStatus, request: tlPayload, response: res, networkError,
+        displaySymbol: symbol, brokerSymbol,
+        symbolMappingSource: eligible.symbolMappingSource,
+        symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
+      },
     });
   } catch { /* ignore */ }
 
@@ -127,7 +163,11 @@ Deno.serve(async (req) => {
     classification: "cancel_pending",
     status,
     orderId,
-    symbol,
+    displaySymbol: symbol,
+    brokerSymbol,
+    symbol: brokerSymbol,
+    symbolMappingSource: eligible.symbolMappingSource,
+    symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
     retcode,
     brokerMessage,
     latencyMs,

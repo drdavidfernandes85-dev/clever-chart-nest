@@ -16,6 +16,10 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  resolveEligibleBrokerSymbol,
+  brokerSymbolGateResponse,
+} from "../_shared/brokerSymbol.ts";
 
 const VERSION = "SUBMIT_PENDING_ORDER_V1_2026_05_22";
 const BASE_URL = "https://api.trading-layer.com";
@@ -134,6 +138,19 @@ Deno.serve(async (req) => {
     }
   } catch { /* fall through */ }
 
+  // Broker-symbol + symbol trade_mode gate — fail closed if unresolved/stale/blocked.
+  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+    userId: user.id,
+    traderId: accountId,
+    requestedDisplaySymbol: symbol,
+    suppliedBrokerSymbol: payload?.brokerSymbol ?? null,
+    operationType: "pending_order",
+  });
+  if (!eligible.ok) {
+    return json(brokerSymbolGateResponse(VERSION, eligible, { tradeId, pendingType, volume, entryPrice }), 200);
+  }
+  const brokerSymbol = eligible.brokerSymbol as string;
+
   // Trading Layer payload — generic shape; backend maps to MT5 pending order types.
   // 2 = ORDER_TYPE_BUY_LIMIT, 3 = SELL_LIMIT, 4 = BUY_STOP, 5 = SELL_STOP (MT5).
   const tlTypeNumeric =
@@ -144,7 +161,7 @@ Deno.serve(async (req) => {
   const tlPayload: Record<string, unknown> = {
     actionType: "ORDER_TYPE_" + pendingType.toUpperCase(),
     type: tlTypeNumeric,
-    symbol,
+    symbol: brokerSymbol,
     volume,
     openPrice: entryPrice,
     price: entryPrice,
@@ -208,6 +225,11 @@ Deno.serve(async (req) => {
         request: tlPayload,
         response: res,
         networkError,
+        displaySymbol: symbol,
+        brokerSymbol,
+        symbolMappingSource: eligible.symbolMappingSource,
+        symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
+        symbolTradeMode: eligible.symbolTradeMode,
       },
     });
   } catch { /* ignore audit failures */ }
@@ -221,7 +243,11 @@ Deno.serve(async (req) => {
     orderId,
     requestId,
     pendingType,
-    symbol,
+    displaySymbol: symbol,
+    brokerSymbol,
+    symbol: brokerSymbol,
+    symbolMappingSource: eligible.symbolMappingSource,
+    symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
     volume,
     entryPrice,
     stopLoss,
