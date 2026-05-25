@@ -626,7 +626,17 @@ Deno.serve(async (req) => {
     {
       body: {
         tradeId,
-        symbol,
+        // Real execution must use the exact broker symbol returned by
+        // Trading Layer (e.g. XAUUSD+); only fall back to canonical/display
+        // symbol for non-admin-live-test paths where no eligibility check
+        // ran.
+        symbol: brokerSymbol || symbol,
+        displaySymbol: symbol,
+        brokerSymbol,
+        symbolTradeMode,
+        accountTradeMode,
+        symbolMappingSource: mappingSource,
+        symbolMappingCheckedAt: mappingCheckedAt,
         side,
         volume: Number(volume),
         stopLoss: stopLoss == null ? null : Number(stopLoss),
