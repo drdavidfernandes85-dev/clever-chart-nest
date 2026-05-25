@@ -168,9 +168,22 @@ Deno.serve(async (req) => {
   } catch { /* fall through */ }
 
 
+  // Broker-symbol gate — SL/TP modification must use the exact MT5 position broker symbol.
+  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+    userId: user.id,
+    traderId: accountId,
+    requestedDisplaySymbol: symbol,
+    suppliedBrokerSymbol,
+    operationType: "modify_protection",
+  });
+  if (!eligible.ok) {
+    return json(brokerSymbolGateResponse(VERSION, eligible, { ticket }), 200);
+  }
+  const brokerSymbol = eligible.brokerSymbol as string;
+
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
   const modifyPayload: Record<string, unknown> = {
-    symbol,
+    symbol: brokerSymbol,
     position: Number(ticket),
   };
   if (stopLoss !== null) modifyPayload.stopLoss = stopLoss;
