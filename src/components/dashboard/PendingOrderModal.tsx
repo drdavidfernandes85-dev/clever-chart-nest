@@ -137,6 +137,12 @@ const PendingOrderModal = ({
         body: JSON.stringify({
           tradeId,
           symbol,
+          displaySymbol: symbol,
+          brokerSymbol: eligibility?.brokerSymbol ?? symbol,
+          symbolMappingSource: "trading_layer_symbols",
+          symbolMappingCheckedAt: eligibility?.checkedAt ?? null,
+          accountTradeMode: eligibility?.accountTradeMode ?? null,
+          symbolTradeMode: eligibility?.symbolTradeMode ?? null,
           pendingType,
           volume: volNum,
           entryPrice: entryNum,
