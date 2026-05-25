@@ -407,7 +407,7 @@ Deno.serve(async (req) => {
     try {
       const { data: elig } = await supabase.functions.invoke(
         "get-trading-execution-eligibility",
-        { body: { symbol, refresh: false } },
+        { body: { symbol, refresh: true } }, // PART 1 — always fetch fresh trade_mode + symbols before real mutation.
       );
       if (elig && typeof elig === "object") {
         brokerSymbol = (elig as any).brokerSymbol ?? null;
