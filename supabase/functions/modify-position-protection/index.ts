@@ -261,6 +261,10 @@ Deno.serve(async (req) => {
         networkError,
         appliedStopLoss: stopLoss,
         appliedTakeProfit: takeProfit,
+        displaySymbol: symbol,
+        brokerSymbol,
+        symbolMappingSource: eligible.symbolMappingSource,
+        symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
       },
     });
   } catch { /* ignore audit errors */ }
@@ -272,7 +276,11 @@ Deno.serve(async (req) => {
     status,
     outcome,
     ticket,
-    symbol,
+    displaySymbol: symbol,
+    brokerSymbol,
+    symbol: brokerSymbol,
+    symbolMappingSource: eligible.symbolMappingSource,
+    symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
     stopLoss,
     takeProfit,
     retcode,
