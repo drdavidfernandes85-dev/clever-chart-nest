@@ -437,36 +437,52 @@ Deno.serve(async (req) => {
 
   const idOf = (o: any, paths: string[]) => pickId(o, paths);
 
-  // (A) Position matching — ID first, then suffix-tolerant symbol fallback.
+  // Track how each match was found for audit transparency.
+  // Values: "ticket" | "deal_id" | "order_id" | "request_id" |
+  //         "exact_broker_symbol" | "canonical_suffix_fallback_legacy"
+  let positionMatchMode: string | null = null;
+  let dealMatchMode: string | null = null;
+  let pendingOrderMatchMode: string | null = null;
+  let historyOrderMatchMode: string | null = null;
+  const supplied = String(input.brokerSymbol ?? "").trim();
+  const symMatchMode = (candSym: string, recSym: string) => {
+    if (supplied && candSym === supplied && String(recSym).trim() === supplied) {
+      return "exact_broker_symbol";
+    }
+    return "canonical_suffix_fallback_legacy";
+  };
+
+  // (A) Position matching — ID first, then exact-then-suffix-tolerant symbol fallback.
   const matchedPosition = positions.find((p: any) => {
     const pTicket = idOf(p, ["ticket", "id", "identifier", "positionTicket"]);
-    if (wantPositionTicket && pTicket && pTicket === wantPositionTicket) return true;
+    if (wantPositionTicket && pTicket && pTicket === wantPositionTicket) {
+      positionMatchMode = "ticket"; return true;
+    }
     if (wantDealId) {
       const pDeal = idOf(p, ["dealId", "deal_id", "deal.id"]);
-      if (pDeal && pDeal === wantDealId) return true;
+      if (pDeal && pDeal === wantDealId) { positionMatchMode = "deal_id"; return true; }
     }
-    // Fallback — symbol/side/vol/time. brokerSymbol takes precedence over
-    // the user-typed display symbol.
     const pSym = String(p?.symbol ?? "");
     const candSym = input.brokerSymbol ?? wantSym;
     if (!symEq(pSym, candSym)) return false;
     if (mt5TypeToSide(p?.type) !== wantSide) return false;
     if (!volEq(Number(p?.volume), wantVol)) return false;
     if (!withinTime(p?.time)) return false;
+    positionMatchMode = symMatchMode(candSym, pSym);
     return true;
   });
 
   // (B) Deals — ID first, then fallback.
   const matchedDeal = historyDeals.find((d: any) => {
     const dId = idOf(d, ["ticket", "id", "dealId"]);
-    if (wantDealId && dId && dId === wantDealId) return true;
+    if (wantDealId && dId && dId === wantDealId) { dealMatchMode = "deal_id"; return true; }
     if (wantOrderId) {
       const dOrd = idOf(d, ["order", "orderId", "order_id"]);
-      if (dOrd && dOrd === wantOrderId) return true;
+      if (dOrd && dOrd === wantOrderId) { dealMatchMode = "order_id"; return true; }
     }
     if (wantPositionTicket) {
       const dPos = idOf(d, ["position_id", "positionId", "position"]);
-      if (dPos && dPos === wantPositionTicket) return true;
+      if (dPos && dPos === wantPositionTicket) { dealMatchMode = "ticket"; return true; }
     }
     const dSym = String(d?.symbol ?? "");
     const candSym = input.brokerSymbol ?? wantSym;
@@ -475,16 +491,17 @@ Deno.serve(async (req) => {
     const vol = Number(d?.volume);
     if (!Number.isFinite(vol) || !volEq(vol, wantVol)) return false;
     if (!withinTime(d?.time)) return false;
+    dealMatchMode = symMatchMode(candSym, dSym);
     return true;
   });
 
   // (C) Pending orders — ID first, then fallback.
   const matchedPendingOrder = pendingOrders.find((o: any) => {
     const oId = idOf(o, ["ticket", "id", "orderId"]);
-    if (wantOrderId && oId && oId === wantOrderId) return true;
+    if (wantOrderId && oId && oId === wantOrderId) { pendingOrderMatchMode = "order_id"; return true; }
     if (wantRequestId) {
       const oReq = idOf(o, ["requestId", "clientOrderId", "request_id"]);
-      if (oReq && oReq === wantRequestId) return true;
+      if (oReq && oReq === wantRequestId) { pendingOrderMatchMode = "request_id"; return true; }
     }
     const oSym = String(o?.symbol ?? "");
     const candSym = input.brokerSymbol ?? wantSym;
@@ -492,16 +509,17 @@ Deno.serve(async (req) => {
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
     if (!volEq(Number(o?.volume_current ?? o?.volume_initial ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
+    pendingOrderMatchMode = symMatchMode(candSym, oSym);
     return true;
   });
 
   // (D) History orders — ID first, then fallback.
   const matchedHistoryOrder = historyOrders.find((o: any) => {
     const oId = idOf(o, ["ticket", "id", "orderId"]);
-    if (wantOrderId && oId && oId === wantOrderId) return true;
+    if (wantOrderId && oId && oId === wantOrderId) { historyOrderMatchMode = "order_id"; return true; }
     if (wantRequestId) {
       const oReq = idOf(o, ["requestId", "clientOrderId", "request_id"]);
-      if (oReq && oReq === wantRequestId) return true;
+      if (oReq && oReq === wantRequestId) { historyOrderMatchMode = "request_id"; return true; }
     }
     const oSym = String(o?.symbol ?? "");
     const candSym = input.brokerSymbol ?? wantSym;
@@ -509,6 +527,7 @@ Deno.serve(async (req) => {
     if (mt5TypeToSide(o?.type) !== wantSide) return false;
     if (!volEq(Number(o?.volume_initial ?? o?.volume_current ?? 0), wantVol)) return false;
     if (!withinTime(o?.time_setup)) return false;
+    historyOrderMatchMode = symMatchMode(candSym, oSym);
     return true;
   });
 
