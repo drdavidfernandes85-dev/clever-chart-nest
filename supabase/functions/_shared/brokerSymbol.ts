@@ -131,6 +131,9 @@ export async function refreshTradeModeFromTradingLayer(
         const tm = pickField(s, ["trade_mode", "tradeMode"]);
         return {
           trading_layer_trader_id: args.traderId,
+          trading_layer_account_id: args.accountId,
+          source_endpoint_account_id: args.accountId,
+          source_verified: true,
           mt5_login: args.login ? String(args.login) : null,
           mt5_server: args.server ?? null,
           display_symbol: canonical,
