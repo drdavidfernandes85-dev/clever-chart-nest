@@ -639,6 +639,14 @@ Deno.serve(async (req) => {
           ? "rejected"
           : "not_found";
   (result as any).confirmationStatus = confirmationStatus;
+  const activeMatchMode = positionMatchMode ?? dealMatchMode ?? pendingOrderMatchMode ?? historyOrderMatchMode ?? null;
+  (result as any).matchMode = activeMatchMode;
+  (result as any).exactSymbolMatch = activeMatchMode === "exact_broker_symbol" ||
+    activeMatchMode === "ticket" || activeMatchMode === "deal_id" ||
+    activeMatchMode === "order_id" || activeMatchMode === "request_id";
+  (result as any).displaySymbol = wantSym;
+  (result as any).brokerSymbol = input.brokerSymbol ?? null;
+  (result as any).symbolMappingSource = "trading_layer_symbols";
   (result as any).brokerAccepted =
     Number(input?.brokerRetcode) === 10008 ||
     Number(input?.brokerRetcode) === 10009 ||
