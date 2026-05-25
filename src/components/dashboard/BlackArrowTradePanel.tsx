@@ -1950,7 +1950,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
             {sessionAvailability.source === "recent_tick_inference" && (
               <p className="text-[9px] leading-snug text-neutral-400">
-                Eligibility inferred from fresh quote availability; final broker acceptance is determined at submission. Backend independently re-checks before any Trading Layer call.
+                Fresh prices indicate the symbol may be executable. Final order acceptance is determined by the broker — eligibility here does not prove broker trading permission is enabled.
               </p>
             )}
             {sessionAvailability.source === "weekend_rule" && (
