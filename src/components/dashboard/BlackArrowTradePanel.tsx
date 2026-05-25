@@ -965,6 +965,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const adminExecPermissionGateOk =
     executionMode !== "admin_live_test" || !permissionBlocked;
 
+  // Trading Layer eligibility gate — Buy/Sell disabled unless TL has
+  // explicitly returned account.trade_mode + symbol.trade_mode = eligible
+  // AND we have a brokerSymbol to submit with.
+  const tlEligibilityGateOk =
+    executionMode !== "admin_live_test" ||
+    (eligibility?.eligibility === "eligible" && !!eligibility?.brokerSymbol);
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
