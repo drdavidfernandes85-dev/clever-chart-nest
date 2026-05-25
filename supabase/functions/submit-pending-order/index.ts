@@ -138,6 +138,19 @@ Deno.serve(async (req) => {
     }
   } catch { /* fall through */ }
 
+  // Broker-symbol + symbol trade_mode gate — fail closed if unresolved/stale/blocked.
+  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+    userId: user.id,
+    traderId: accountId,
+    requestedDisplaySymbol: symbol,
+    suppliedBrokerSymbol: payload?.brokerSymbol ?? null,
+    operationType: "pending_order",
+  });
+  if (!eligible.ok) {
+    return json(brokerSymbolGateResponse(VERSION, eligible, { tradeId, pendingType, volume, entryPrice }), 200);
+  }
+  const brokerSymbol = eligible.brokerSymbol as string;
+
   // Trading Layer payload — generic shape; backend maps to MT5 pending order types.
   // 2 = ORDER_TYPE_BUY_LIMIT, 3 = SELL_LIMIT, 4 = BUY_STOP, 5 = SELL_STOP (MT5).
   const tlTypeNumeric =
@@ -148,15 +161,11 @@ Deno.serve(async (req) => {
   const tlPayload: Record<string, unknown> = {
     actionType: "ORDER_TYPE_" + pendingType.toUpperCase(),
     type: tlTypeNumeric,
-    symbol,
+    symbol: brokerSymbol,
     volume,
     openPrice: entryPrice,
     price: entryPrice,
   };
-  if (stopLoss != null) tlPayload.stopLoss = stopLoss;
-  if (takeProfit != null) tlPayload.takeProfit = takeProfit;
-
-  const startedAt = Date.now();
   let httpStatus = 0;
   let res: any = null;
   let networkError: string | null = null;
