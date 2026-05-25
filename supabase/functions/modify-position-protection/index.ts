@@ -12,6 +12,10 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  resolveEligibleBrokerSymbol,
+  brokerSymbolGateResponse,
+} from "../_shared/brokerSymbol.ts";
 
 const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
