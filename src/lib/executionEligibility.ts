@@ -28,16 +28,36 @@ export interface EligibilityVariant {
   sourceVerified?: boolean;
 }
 
+export interface CatalogueDiagnostics {
+  status: "partial" | "complete" | "direct_lookup_complete" | "unknown";
+  complete: boolean;
+  paginationComplete: boolean;
+  symbolsLoaded: number;
+  totalReported: number | null;
+  pagesFetched: number;
+  paginationParamsUsed: string[];
+  pageMeta: Array<Record<string, unknown>>;
+  directSearchAttempted: boolean;
+  directSearchHits: number;
+}
+
 export interface ExecutionEligibility {
   success: boolean;
   traderId: string | null;
   traderIdUsed?: string | null;
+  traderHttpStatus?: number | null;
   accountIdUsedForSymbols?: string | null;
   accountIdFromTrader?: string | null;
   accountIdRelationshipVerified?: boolean;
   accountTradeMode: string | null;
+  accountTradeModeRaw?: string | null;
   accountTradeEligible: boolean;
-  accountTradeModeInterpretation?: ModeInterpretation;
+  accountTradeModeInterpretation?: ModeInterpretation | string;
+  accountTypeInterpretation?: string | null;
+  accountExecutionPermission?: string;
+  accountExecutionPermissionSource?: string | null;
+  traderAccountKeysSeen?: string[];
+  permissionFieldsFound?: Record<string, unknown>;
   enumMappingSource?: string | null;
   displaySymbol: string | null;
   brokerSymbol: string | null;
@@ -45,6 +65,7 @@ export interface ExecutionEligibility {
   symbolTradeEligible: boolean;
   symbolTradeModeInterpretation?: ModeInterpretation;
   variants?: EligibilityVariant[];
+  catalogue?: CatalogueDiagnostics;
   symbolsTotal?: number | null;
   eligibility: EligibilityStatus;
   blockedReason: string | null;
