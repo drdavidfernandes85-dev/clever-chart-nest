@@ -949,6 +949,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const sessionGateOk =
     executionMode !== "admin_live_test" || sessionAvailability.tradable;
 
+  // External execution-permission blocker: if Trading Layer has rejected
+  // recent real orders with TRADE_DISABLED across symbols, gate further
+  // admin live-order submissions until manually cleared.
+  const adminExecPermissionGateOk =
+    executionMode !== "admin_live_test" || !permissionBlocked;
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
@@ -963,13 +969,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !killSwitchActive &&
     !liveDisabled &&
     liveModeGateOk &&
-    sessionGateOk;
+    sessionGateOk &&
+    adminExecPermissionGateOk;
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
       if (killSwitchActive) toast.error("Trading disabled by kill switch.");
       else if (liveDisabled) toast.error("Live trading is disabled by your risk settings.");
+      else if (!adminExecPermissionGateOk) {
+        toast.error(
+          "Live execution blocked: Trading Layer rejected recent orders with TRADE_DISABLED. Awaiting account/API trading permission confirmation.",
+        );
+      }
       else if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
       else if (!symbolValid) toast.error("Symbol not available on broker");
