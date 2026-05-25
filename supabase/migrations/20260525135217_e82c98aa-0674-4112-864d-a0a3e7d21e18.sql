@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users update own execution audit" ON public.execution_audit_events;
