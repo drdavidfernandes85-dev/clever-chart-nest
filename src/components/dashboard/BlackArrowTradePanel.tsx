@@ -233,6 +233,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     return () => { mounted = false; };
   }, [adminTestUiVisible]);
 
+  // Fetch Trading Layer execution eligibility whenever the admin tester
+  // changes symbol; hydrate from localStorage cache instantly.
+  useEffect(() => {
+    if (!adminTestUiVisible) { setEligibility(null); return; }
+    const sym = (ctxSymbol || "").replace(/\//g, "").toUpperCase();
+    if (!sym) return;
+    setEligibility(readCachedEligibility(sym));
+    let cancelled = false;
+    setEligibilityLoading(true);
+    fetchExecutionEligibility(sym, { refresh: true })
+      .then((r) => { if (!cancelled) setEligibility(r); })
+      .finally(() => { if (!cancelled) setEligibilityLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminTestUiVisible, ctxSymbol]);
+
   // Pending-order modal state.
   const [pendingModal, setPendingModal] = useState<PendingType | null>(null);
 
