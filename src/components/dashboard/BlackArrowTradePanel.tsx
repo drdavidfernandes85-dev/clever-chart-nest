@@ -197,15 +197,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   // Note: `isAdmin` already pulled from useDevMode above.
   const [executionMode, setExecutionModeState] = useState(getExecutionMode());
   const [adminAck, setAdminAckState] = useState(hasAdminLiveTestAck());
+  const [permState, setPermState] = useState(getExecutionPermissionState());
   useEffect(() => {
     refreshExecutionMode().then((m) => setExecutionModeState(m));
+    refreshExecutionPermissionStatus().then((s) => setPermState(s));
     const onChange = () => {
       setExecutionModeState(getExecutionMode());
       setAdminAckState(hasAdminLiveTestAck());
+      setPermState(getExecutionPermissionState());
     };
     window.addEventListener(PRODUCTION_MODE_EVENT, onChange);
     return () => window.removeEventListener(PRODUCTION_MODE_EVENT, onChange);
   }, []);
+  const permissionBlocked = permState.status === "blocked_trade_disabled";
   const adminLiveTestActive = executionMode === "admin_live_test";
   const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
   const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
