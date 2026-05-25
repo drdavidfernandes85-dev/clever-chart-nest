@@ -1,90 +1,106 @@
-## Scope
+## Goal
 
-Build the complete admin live testing surface for real MT5 execution from the authorised admin account (login `87943580`, trader `29008868…`) while keeping all other clients gated. This is a multi-part backend + frontend + DB effort. I want to confirm direction before writing ~15+ files.
+Replace inferred execution eligibility with **explicit Trading Layer `account.trade_mode` and `symbol.trade_mode` checks**, and force all real MT5 execution to use the **exact broker symbol** (e.g. `XAUUSD+`) returned by Trading Layer instead of the canonical/display symbol. No live order will be submitted during this pass.
 
-## Approach
+## Scope guardrails (unchanged)
 
-### 1. Database (one migration)
+Risk validation, kill switch, admin-only execution gate, max testing limits, fresh-tick requirement, WebSocket market-data architecture, trader mapping resolver, confirmation coordinator, no-fake-success rule, and the disabled client live execution all remain untouched.
 
-New table `public.admin_live_execution_tests` with the fields listed in the brief.
-- RLS: SELECT/INSERT/UPDATE restricted to `has_role(auth.uid(),'admin')`. Service role bypasses RLS for backend writes from edge functions.
-- New table `public.admin_live_test_limits` (single row, admin-managed) for `max_order_volume`, `max_simultaneous_test_positions`, `max_daily_live_test_orders`, `max_daily_test_loss_usd`, `pending_orders_enabled`, `partial_close_cap_increase_enabled`.
-- No raw passwords/tokens/Authorization headers ever written.
+---
 
-### 2. Backend (edge functions)
+## Part A — Backend: trade-mode + broker-symbol catalogue
 
-Reuse existing `assertLiveExecutionAllowed`. Add a small shared helper `admin_live_tests.ts` that:
-- creates a test row when a flow starts (called by submit/close/modify/place-pending/cancel-pending),
-- patches it synchronously with TL identifiers,
-- finalises it as `pass`/`fail` once the confirmation coordinator reports.
+1. **New edge function `get-trading-execution-eligibility`**
+   - Authenticated; resolves active validated mapping (traderId, login, server).
+   - Server-side calls:
+     - `GET /api/v1/traders/{traderId}` → `account.trade_mode`
+     - `GET /api/v1/accounts/{traderId}/symbols` → per-symbol `trade_mode`, exact broker symbol, digits, contract size, description.
+   - Upserts the symbol list into `broker_symbol_catalog` (see below).
+   - Returns sanitized JSON only: `accountTradeMode`, `accountTradeEligible`, `displaySymbol`, `brokerSymbol`, `symbolTradeMode`, `symbolTradeEligible`, `eligibility` (eligible|blocked|unknown), `blockedReason`, `checkedAt`. Never returns API keys, MT5 passwords, or auth headers.
 
-New / extended edge functions:
-- `submit-best-execution-order` — already exists; add test-row write-through for `market_buy` / `market_sell`.
-- `close-position-controlled` — extend for `full_close` and `partial_close` (validates `0 < closeVolume < currentVolume`, lot step) and writes test row.
-- `modify-position-protection` — extend to write `modify_sl` / `modify_tp` rows, return refreshed SL/TP for verification.
-- `submit-pending-order` (new) — handles BUY/SELL LIMIT/STOP with side-of-market validation against fresh tick.
-- `cancel-pending-order` (new) — cancels by orderId, verifies removal.
-- All gated by `assertLiveExecutionAllowed` + `admin_live_test_limits` enforcement.
+2. **New table `broker_symbol_catalog`** (migration)
+   - Columns: id, trading_layer_trader_id, mt5_login, mt5_server, display_symbol, canonical_symbol, broker_symbol, description, asset_class, digits, contract_size, trade_mode, trade_eligible, source (`trading_layer_symbols`), last_synced_at, raw_metadata, created_at, updated_at.
+   - Unique on (trading_layer_trader_id, broker_symbol).
+   - RLS: admins manage; authenticated users select rows that match their own mapping.
 
-Invert/reverse stays disabled at the API layer (returns `INVERT_NOT_IMPLEMENTED`).
+3. **Persist mapping fields on execution evidence** in `admin_live_execution_tests`, `execution_audit_events`, `trade_execution_logs`:
+   - `display_symbol`, `broker_symbol`, `symbol_trade_mode`, `account_trade_mode`, `symbol_mapping_source`, `symbol_mapping_checked_at` (stored inside existing `evidence_json` / `sync_meta` / `request_payload` jsonb to avoid schema churn on hot tables).
 
-### 3. Coordinator
+## Part B — Execution path hard gates
 
-Extend `executionConfirmationCoordinator` to handle these confirmation kinds:
-- `position_confirmed`, `close_confirmed`, `partial_close_confirmed`, `sl_updated_confirmed`, `tp_updated_confirmed`, `pending_order_placed`, `order_cancelled_confirmed`.
-Each terminal status calls a small `recordAdminLiveTestOutcome(testId, status, evidence)` helper that updates the DB row.
+Update `submit-best-execution-order`, `execute-trade`, `submit-pending-order`, `cancel-pending-order`, `close-position-controlled`, `modify-position-protection`, `reconcile-execution` to:
 
-### 4. Admin Production panel
+- Call the eligibility resolver (or read fresh catalogue row) before any transport.
+- Submit `brokerSymbol` to Trading Layer, never `displaySymbol`/`canonicalSymbol` when they differ.
+- Pre-submission classifications (no broker call, no coordinator, no pass/fail):
+  - `account_trade_mode_blocked`
+  - `symbol_trade_mode_blocked`
+  - `broker_symbol_unresolved`
+  - `broker_symbol_mapping_stale`
+- Fresh-tick + risk validation use `brokerSymbol` where the live price source supports it; record both symbols in audit.
 
-- Replace localStorage matrix with Supabase-backed read. Subscribe to `admin_live_execution_tests` realtime for live updates.
-- “Run Verification From Audit” → calls a backend RPC `verify_admin_live_tests_from_audit` that re-derives status from `execution_audit_events` and writes verified rows. Removes manual cycle-through-status toggle.
-- Add Limits sub-card editable by admin (writes to `admin_live_test_limits`).
+## Part C — Reconciliation
 
-### 5. Trade panel UI additions
+- Primary match: exact `brokerSymbol`.
+- Fallbacks: ticket → orderId → dealId → canonical/suffix normalisation.
+- Record `match_mode` (`exact_broker_symbol | ticket | orderId | dealId | suffix_fallback`).
 
-- `OpenPositionsPanel` rows: `Close` (full), `Partial Close`, `SL/TP` buttons; modal flows for each.
-- New `PendingOrdersPanel` with rows showing order ticket / type / entry / SL / TP / Cancel button.
-- Ticket controls (BUY/SELL LIMIT/STOP) wired to `submit-pending-order` with side-of-market validation against the live quote.
-- Invert button stays disabled with the tooltip from the brief.
-- Admin session acknowledgement gate already exists; reuse it for all new live actions.
+## Part D — Order Ticket UI (`BlackArrowTradePanel`)
 
-### 6. Ordinary-user protection
+In `admin_live_test` mode add an **Execution Permission** block:
+- Instrument: displaySymbol
+- Broker symbol: brokerSymbol (only when returned)
+- Account trade mode / Symbol trade mode / Execution eligibility chip (READY / BLOCKED / UNKNOWN)
+- Session source: `Trading Layer trade_mode`
+- Separate **Market data** row keeps tick age — copy clarifies that live ticks ≠ trading permission.
+- Buy/Sell disabled unless `eligibility = eligible`.
 
-All new edge functions call `assertLiveExecutionAllowed` and return `LIVE_EXECUTION_NOT_ENABLED_FOR_USER` for non-admins. Frontend hides the new test controls behind `isAdmin && execution_mode === 'admin_live_test'`. No changes to risk/kill-switch/fresh-tick code.
+## Part E — Admin Production panel
 
-## Out of scope (explicit)
+Add "Trading Execution Eligibility" card:
+- account.trade_mode + last sync
+- broker-symbol catalogue last sync
+- XAUUSD and EURUSD rows: display → broker → trade_mode
+- Execution blocker reason
+- "Ready for broker-symbol verified test" yes/no
+- Manual "Refresh eligibility" button (calls the new edge function)
+- Live test matrix splits pre-fix rejected attempts from post-fix verification.
 
-- Activating `execution_mode = 'live'` for general users.
-- Implementing Invert/reverse logic (stays disabled per brief).
-- Touching the existing risk/kill-switch/fresh-tick modules.
-- Rotating secrets (user must do manually).
+## Part F — Data reclassification (no deletion)
 
-## Files I will create/edit
+Update the two prior failed rows (`c6828ad8` EURUSD, `b9a9c292` XAUUSD) via insert tool:
+- `confirmation_status = order_rejected_trade_disabled_before_broker_symbol_fix`
+- Notes describe pre-fix submission; retest required with exact brokerSymbol after trade_mode confirmation.
+- Site setting `execution_permission_status` annotated: blocker reason now `awaiting_broker_symbol_verified_retest`.
 
-Migration:
-- `supabase/migrations/<ts>_admin_live_execution_tests.sql`
+## Part G — Read-only verification (Part 10)
 
-Backend:
-- `supabase/functions/_shared/adminLiveTests.ts` (new)
-- `supabase/functions/submit-best-execution-order/index.ts` (extend)
-- `supabase/functions/close-position-controlled/index.ts` (extend — partial close)
-- `supabase/functions/modify-position-protection/index.ts` (extend — test rows)
-- `supabase/functions/submit-pending-order/index.ts` (new)
-- `supabase/functions/cancel-pending-order/index.ts` (new)
+After deploy, call `get-trading-execution-eligibility` once for trader `29008868-d583-4ab5-a6c1-57586fe92007` for both EURUSD and XAUUSD and report:
+- account.trade_mode
+- per-symbol display → brokerSymbol → trade_mode
+- eligibility + reason
 
-Frontend:
-- `src/services/executionConfirmationCoordinator.ts` (extend kinds + DB hook)
-- `src/components/admin/AdminProductionModeTab.tsx` (DB-backed matrix + Limits card)
-- `src/components/admin/AdminLiveTestLimitsCard.tsx` (new)
-- `src/components/dashboard/BlackArrowTradePanel.tsx` (pending ticket wiring, invert disabled tooltip)
-- `src/components/livechart/OpenPositionsPanel.tsx` (Close / Partial Close / SL-TP buttons)
-- `src/components/livechart/PartialCloseModal.tsx` (new)
-- `src/components/livechart/ModifySLTPModal.tsx` (new)
-- `src/components/livechart/PendingOrdersPanel.tsx` (new)
-- `src/lib/adminLiveTests.ts` (client helper to create/update test rows + queries)
+**No live order is submitted during this pass.** Stage A retest is left for the user to trigger only after the read-only report shows account + EURUSD broker symbol explicitly eligible.
 
-## After implementation
+---
 
-I will not place any live orders myself. You will run Stage A → C from the terminal; results stream into the matrix automatically. Stage D unlocks only after Stage A passes and you raise the cap. Stage E (invert) remains intentionally disabled.
+## Technical notes
 
-Please confirm to proceed, or tell me which parts to drop / sequence first (e.g. ship DB + Market + Close + SL/TP first, defer Pending/Cancel to a second pass).
+- Schema migration creates only `broker_symbol_catalog`; existing execution evidence tables get new fields inside their existing jsonb columns to avoid risky alterations.
+- Edge function uses `TRADING_LAYER_API_KEY` secret; sanitizes responses before returning.
+- All UI tokens go through existing semantic CSS variables; no hardcoded colors.
+- Translations: English copy only (matches existing admin/tester UI).
+
+Files to add/edit:
+- `supabase/migrations/<new>.sql` — `broker_symbol_catalog` + RLS
+- `supabase/functions/get-trading-execution-eligibility/index.ts` — new
+- `supabase/functions/submit-best-execution-order/index.ts` — gates + brokerSymbol
+- `supabase/functions/execute-trade/index.ts` — gates + brokerSymbol
+- `supabase/functions/submit-pending-order/index.ts`, `cancel-pending-order/index.ts`, `close-position-controlled/index.ts`, `modify-position-protection/index.ts`, `reconcile-execution/index.ts` — brokerSymbol usage + match_mode
+- `src/lib/executionEligibility.ts` — new client helper
+- `src/components/dashboard/BlackArrowTradePanel.tsx` — UI block + gate
+- `src/components/admin/AdminProductionModeTab.tsx` — eligibility card + refresh
+- `src/lib/productionMode.ts` — extend permission state with eligibility snapshot
+- Data updates via `supabase--insert` for the two test rows + `site_settings`.
+
+Acceptance: Critical/High/Medium = 0 after static verification; ordinary users still blocked; no live order placed.
