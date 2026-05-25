@@ -190,7 +190,7 @@ const AdminProductionModeTab = () => {
 
   const matrixPassCount = MATRIX.filter((d) => matrixState[d.id]?.status === "pass").length;
   const requiredMet = MATRIX.filter((d) => d.required).every((d) => matrixState[d.id]?.status === "pass");
-  const canActivateLive = requiredMet && finalEligible;
+  const canActivateLive = requiredMet && finalEligible && !permissionBlocked;
 
   const runVerification = async () => {
     setVerifying(true);
