@@ -987,7 +987,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !liveDisabled &&
     liveModeGateOk &&
     sessionGateOk &&
-    adminExecPermissionGateOk;
+    adminExecPermissionGateOk &&
+    tlEligibilityGateOk;
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
