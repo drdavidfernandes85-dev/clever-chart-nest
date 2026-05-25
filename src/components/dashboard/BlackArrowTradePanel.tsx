@@ -1173,20 +1173,37 @@ const BlackArrowTradePanel = ({ className }: Props) => {
         digits,
       };
 
+      // ---- HARD REJECTION GUARD (runs BEFORE brokerAccepted detection) ----
+      // A broker-rejected response must never be routed through the
+      // "broker accepted / pending confirmation" path, even if the backend
+      // step is "execution_result" (which it is for BOTH accepts and rejects).
+      const rcNumGuard = Number(res?.retcode);
+      const classificationLc = String(res?.classification ?? "").toLowerCase();
+      const stepLc = String(res?.step ?? "").toLowerCase();
+      const outcomeLc = String(res?.outcome ?? "").toLowerCase();
+      const PLACED_RETCODES = new Set([10008, 10009, 10010]);
+      const isExplicitRejection =
+        res?.brokerAccepted === false ||
+        classificationLc === "rejected" ||
+        classificationLc.startsWith("order_rejected") ||
+        outcomeLc === "rejected" ||
+        stepLc === "order_rejected" ||
+        (Number.isFinite(rcNumGuard) && rcNumGuard !== 0 && !PLACED_RETCODES.has(rcNumGuard));
+
       // Treat broker-accepted / placed_unconfirmed as a confirmation-pending
-      // case (NOT a rejection). The server now returns success=false +
+      // case (NOT a rejection). The server returns success=false +
       // step="execution_unconfirmed" for retcode 10008 with no live position.
       const brokerAccepted =
-        res?.success === true ||
-        res?.brokerAccepted === true ||
-        res?.liveOrderSent === true ||
-        String(res?.step ?? "").toLowerCase() === "execution_result" ||
-        String(res?.step ?? "").toLowerCase() === "execution_unconfirmed" ||
-        String(res?.classification ?? "").toLowerCase() === "placed_unconfirmed" ||
-        String(res?.classification ?? "").toLowerCase() === "placed_confirmed" ||
-        String(res?.outcome ?? "").toLowerCase() === "broker_accepted_no_position" ||
-        Number(res?.retcode) === 10008 ||
-        Number(res?.retcode) === 10009;
+        !isExplicitRejection && (
+          res?.success === true ||
+          res?.brokerAccepted === true ||
+          res?.liveOrderSent === true ||
+          stepLc === "execution_unconfirmed" ||
+          classificationLc === "placed_unconfirmed" ||
+          classificationLc === "placed_confirmed" ||
+          outcomeLc === "broker_accepted_no_position" ||
+          PLACED_RETCODES.has(rcNumGuard)
+        );
 
       if (brokerAccepted) {
         const liveOrderSent = res?.liveOrderSent === true || brokerAccepted;
