@@ -116,7 +116,10 @@ const AdminProductionModeTab = () => {
     refreshExecutionMode();
     refreshExecutionPermissionStatus().then(setPermState);
     void loadRows();
-    const re = () => force((n) => n + 1);
+    const re = () => {
+      force((n) => n + 1);
+      setPermState(getExecutionPermissionState());
+    };
     window.addEventListener(PRODUCTION_MODE_EVENT, re);
     const id = window.setInterval(() => setCooldown(getCooldownRemainingMs()), 1000);
     const ch = supabase
