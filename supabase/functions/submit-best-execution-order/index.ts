@@ -394,6 +394,117 @@ Deno.serve(async (req) => {
     }, 403);
   }
 
+  // ---------- Trading Layer execution eligibility (broker-symbol gate) ----------
+  // Real execution must use the exact broker-returned symbol (e.g. XAUUSD+),
+  // and Trading Layer must explicitly report that both the account and the
+  // symbol are tradable. We never silently fall back to the canonical symbol.
+  let brokerSymbol: string | null = null;
+  let symbolTradeMode: string | null = null;
+  let accountTradeMode: string | null = null;
+  let mappingCheckedAt: string | null = null;
+  let mappingSource: string | null = null;
+  if (executionIntent === "admin_live_test_live_order") {
+    try {
+      const { data: elig } = await supabase.functions.invoke(
+        "get-trading-execution-eligibility",
+        { body: { symbol, refresh: false } },
+      );
+      if (elig && typeof elig === "object") {
+        brokerSymbol = (elig as any).brokerSymbol ?? null;
+        symbolTradeMode = (elig as any).symbolTradeMode ?? null;
+        accountTradeMode = (elig as any).accountTradeMode ?? null;
+        mappingCheckedAt = (elig as any).checkedAt ?? null;
+        mappingSource = "trading_layer_symbols";
+        const eligibility = (elig as any).eligibility;
+        const blockedReason = (elig as any).blockedReason;
+        const accountEligible = (elig as any).accountTradeEligible === true;
+        const symbolEligible = (elig as any).symbolTradeEligible === true;
+
+        const block = (
+          classification: string,
+          message: string,
+        ) =>
+          withTimings({
+            success: false,
+            version: VERSION,
+            step: "execution_eligibility_gate",
+            classification,
+            liveOrderAttempted: false,
+            liveOrderSent: false,
+            brokerAccepted: false,
+            tradeId,
+            displaySymbol: symbol,
+            brokerSymbol,
+            symbolTradeMode,
+            accountTradeMode,
+            symbolMappingSource: mappingSource,
+            symbolMappingCheckedAt: mappingCheckedAt,
+            error: message,
+            message,
+          });
+
+        if (!accountEligible && accountTradeMode != null) {
+          return block(
+            "account_trade_mode_blocked",
+            "Trading Layer reports that trading is disabled for this account.",
+          );
+        }
+        if (!brokerSymbol) {
+          return block(
+            "broker_symbol_unresolved",
+            "Execution symbol could not be resolved from Trading Layer. No order was submitted.",
+          );
+        }
+        if (!symbolEligible && symbolTradeMode != null) {
+          return block(
+            "symbol_trade_mode_blocked",
+            "Trading Layer reports that this broker symbol is not currently tradable.",
+          );
+        }
+        if (eligibility !== "eligible") {
+          return block(
+            blockedReason === "broker_symbol_mapping_stale"
+              ? "broker_symbol_mapping_stale"
+              : "execution_eligibility_unknown",
+            blockedReason === "broker_symbol_mapping_stale"
+              ? "Broker symbol mapping must be refreshed before placing a live order."
+              : "Trading Layer execution permission could not be confirmed. Live order is disabled.",
+          );
+        }
+      } else {
+        return withTimings({
+          success: false,
+          version: VERSION,
+          step: "execution_eligibility_gate",
+          classification: "execution_eligibility_unknown",
+          liveOrderAttempted: false,
+          liveOrderSent: false,
+          brokerAccepted: false,
+          tradeId,
+          displaySymbol: symbol,
+          error:
+            "Trading Layer execution permission could not be confirmed. Live order is disabled.",
+        });
+      }
+    } catch (e) {
+      return withTimings({
+        success: false,
+        version: VERSION,
+        step: "execution_eligibility_gate",
+        classification: "execution_eligibility_unknown",
+        liveOrderAttempted: false,
+        liveOrderSent: false,
+        brokerAccepted: false,
+        tradeId,
+        displaySymbol: symbol,
+        error: (e as Error)?.message ||
+          "Trading Layer execution permission could not be confirmed. Live order is disabled.",
+      });
+    }
+  }
+
+
+
   // ---------- Admin live-test session precheck ----------
   // For admin live verification orders only, refuse to forward to the broker
   // when the symbol's session is not eligible. This mirrors the frontend
@@ -515,7 +626,17 @@ Deno.serve(async (req) => {
     {
       body: {
         tradeId,
-        symbol,
+        // Real execution must use the exact broker symbol returned by
+        // Trading Layer (e.g. XAUUSD+); only fall back to canonical/display
+        // symbol for non-admin-live-test paths where no eligibility check
+        // ran.
+        symbol: brokerSymbol || symbol,
+        displaySymbol: symbol,
+        brokerSymbol,
+        symbolTradeMode,
+        accountTradeMode,
+        symbolMappingSource: mappingSource,
+        symbolMappingCheckedAt: mappingCheckedAt,
         side,
         volume: Number(volume),
         stopLoss: stopLoss == null ? null : Number(stopLoss),

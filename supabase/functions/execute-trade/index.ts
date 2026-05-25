@@ -183,6 +183,16 @@ serve(async (req) => {
     const effectiveDryRun = body.effectiveDryRun === true;
     const liveOrderAttempted = body.liveOrderAttempted !== false;
     const executionModeMeta = body.executionMode ?? null;
+    const displaySymbolMeta: string | null = body.displaySymbol
+      ? String(body.displaySymbol)
+      : null;
+    const brokerSymbolMeta: string | null = body.brokerSymbol
+      ? String(body.brokerSymbol)
+      : null;
+    const symbolTradeModeMeta = body.symbolTradeMode ?? null;
+    const accountTradeModeMeta = body.accountTradeMode ?? null;
+    const symbolMappingSourceMeta = body.symbolMappingSource ?? null;
+    const symbolMappingCheckedAtMeta = body.symbolMappingCheckedAt ?? null;
 
     // Hard guard — if the caller declares admin_live_test intent but did not
     // pass the acknowledgement, refuse before any broker submission. This
@@ -382,7 +392,12 @@ serve(async (req) => {
         tradeId,
         accountIdUsed: accountId,
         mappingStatus: mapping.status,
-        brokerSymbol: symbol,
+        brokerSymbol: brokerSymbolMeta ?? symbol,
+        displaySymbol: displaySymbolMeta ?? symbol,
+        symbolTradeMode: symbolTradeModeMeta,
+        accountTradeMode: accountTradeModeMeta,
+        symbolMappingSource: symbolMappingSourceMeta,
+        symbolMappingCheckedAt: symbolMappingCheckedAtMeta,
       },
 
       response_payload: tradeData,

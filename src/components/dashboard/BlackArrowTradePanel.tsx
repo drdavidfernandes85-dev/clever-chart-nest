@@ -57,6 +57,11 @@ import {
   isExecutionPermissionBlocked,
 } from "@/lib/productionMode";
 import {
+  fetchExecutionEligibility,
+  readCachedEligibility,
+  type ExecutionEligibility,
+} from "@/lib/executionEligibility";
+import {
   startAdminLiveTest,
   updateAdminLiveTest,
   getAdminLiveTestLimits,
@@ -214,6 +219,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
   const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
 
+  // Trading Layer execution eligibility (account.trade_mode + symbol.trade_mode).
+  // Source of truth for whether a live order may be submitted at all.
+  const [eligibility, setEligibility] = useState<ExecutionEligibility | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
+
   // Admin live-test limits (drives pending-orders gate + cap).
   const [liveLimits, setLiveLimits] = useState<AdminLiveTestLimits | null>(null);
   useEffect(() => {
@@ -222,6 +232,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     void getAdminLiveTestLimits().then((l) => { if (mounted) setLiveLimits(l); });
     return () => { mounted = false; };
   }, [adminTestUiVisible]);
+
+  // Fetch Trading Layer execution eligibility whenever the admin tester
+  // changes symbol; hydrate from localStorage cache instantly.
+  useEffect(() => {
+    if (!adminTestUiVisible) { setEligibility(null); return; }
+    const sym = (ctxSymbol || "").replace(/\//g, "").toUpperCase();
+    if (!sym) return;
+    setEligibility(readCachedEligibility(sym));
+    let cancelled = false;
+    setEligibilityLoading(true);
+    fetchExecutionEligibility(sym, { refresh: true })
+      .then((r) => { if (!cancelled) setEligibility(r); })
+      .finally(() => { if (!cancelled) setEligibilityLoading(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminTestUiVisible, ctxSymbol]);
 
   // Pending-order modal state.
   const [pendingModal, setPendingModal] = useState<PendingType | null>(null);
@@ -955,6 +981,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const adminExecPermissionGateOk =
     executionMode !== "admin_live_test" || !permissionBlocked;
 
+  // Trading Layer eligibility gate — Buy/Sell disabled unless TL has
+  // explicitly returned account.trade_mode + symbol.trade_mode = eligible
+  // AND we have a brokerSymbol to submit with.
+  const tlEligibilityGateOk =
+    executionMode !== "admin_live_test" ||
+    (eligibility?.eligibility === "eligible" && !!eligibility?.brokerSymbol);
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
@@ -970,7 +1003,8 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !liveDisabled &&
     liveModeGateOk &&
     sessionGateOk &&
-    adminExecPermissionGateOk;
+    adminExecPermissionGateOk &&
+    tlEligibilityGateOk;
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
@@ -1935,6 +1969,65 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                 Previous XAUUSD live test was rejected: TRADE_RETCODE_TRADE_DISABLED (10017). Confirm broker/API permission for XAUUSD before retrying this symbol. Prefer EURUSD · Market Buy · 0.01 for the next proof test.
               </p>
             )}
+
+            {/* Trading Layer execution permission (account + symbol trade_mode) */}
+            <div className="rounded-sm border border-neutral-800/80 bg-black/40 p-1.5 space-y-1 text-[9.5px] font-mono">
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Instrument</span>
+                <span className="text-neutral-100">{normalizedSym || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Broker symbol</span>
+                <span className="text-neutral-100">{eligibility?.brokerSymbol ?? (eligibilityLoading ? "…" : "—")}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Account trade_mode</span>
+                <span className={cn(
+                  eligibility?.accountTradeEligible ? "text-emerald-400" : eligibility?.accountTradeMode ? "text-red-400" : "text-amber-400",
+                )}>
+                  {eligibility?.accountTradeMode ?? "unknown"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Symbol trade_mode</span>
+                <span className={cn(
+                  eligibility?.symbolTradeEligible ? "text-emerald-400" : eligibility?.symbolTradeMode ? "text-red-400" : "text-amber-400",
+                )}>
+                  {eligibility?.symbolTradeMode ?? "unknown"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-wider text-neutral-500">Execution eligibility</span>
+                <span className={cn(
+                  "font-bold uppercase",
+                  eligibility?.eligibility === "eligible" && "text-emerald-400",
+                  eligibility?.eligibility === "blocked" && "text-red-400",
+                  (!eligibility || eligibility.eligibility === "unknown") && "text-amber-400",
+                )}>
+                  {eligibility?.eligibility ?? (eligibilityLoading ? "checking" : "unknown")}
+                </span>
+              </div>
+              <p className="text-[9px] leading-snug text-neutral-400">
+                Source: Trading Layer trade_mode. Live ticks do not prove trading permission.
+              </p>
+              {eligibility?.eligibility === "blocked" && (
+                <p className="rounded-sm border border-red-500/50 bg-red-600/15 px-1.5 py-1 text-[9.5px] text-red-200">
+                  {eligibility.blockedReason === "account_trade_mode_blocked"
+                    ? "Trading Layer reports that trading is disabled for this account."
+                    : "Trading Layer reports that this broker symbol is not currently tradable."}
+                </p>
+              )}
+              {(!eligibility || eligibility.eligibility === "unknown") && !eligibilityLoading && (
+                <p className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-1 text-[9.5px] text-amber-200">
+                  Execution permission could not be confirmed. Live test order is disabled.
+                </p>
+              )}
+              {eligibility?.eligibility === "eligible" && eligibility?.brokerSymbol && (
+                <p className="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-1 text-[9.5px] text-emerald-200">
+                  Execution permission confirmed by Trading Layer for broker symbol {eligibility.brokerSymbol}.
+                </p>
+              )}
+            </div>
 
             {/* Execution precheck diagnostics */}
             <div className="grid grid-cols-2 gap-1 text-[9.5px] font-mono">
