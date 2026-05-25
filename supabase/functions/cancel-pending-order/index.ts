@@ -15,6 +15,8 @@ import {
 import {
   resolveEligibleBrokerSymbol,
   brokerSymbolGateResponse,
+  refreshTradeModeFromTradingLayer,
+  freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
 
 const VERSION = "CANCEL_PENDING_ORDER_V1_2026_05_22";
@@ -98,6 +100,15 @@ Deno.serve(async (req) => {
     return json(brokerSymbolGateResponse(VERSION, eligible, { orderId }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
+
+  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate).
+  const fresh = await refreshTradeModeFromTradingLayer(supabase, {
+    traderId: accountId, brokerSymbol, login: mapping.login, server: mapping.server,
+  });
+  if (!fresh.ok) {
+    return json(freshTradeModeGateResponse(VERSION, fresh, { orderId }), 200);
+  }
+
 
   const idempotencyKey = `cancel-${orderId}-${Date.now()}`;
   const tlPayload = {

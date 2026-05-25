@@ -15,6 +15,8 @@ import {
 import {
   resolveEligibleBrokerSymbol,
   brokerSymbolGateResponse,
+  refreshTradeModeFromTradingLayer,
+  freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
 
 const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
@@ -180,6 +182,15 @@ Deno.serve(async (req) => {
     return json(brokerSymbolGateResponse(VERSION, eligible, { ticket }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
+
+  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate).
+  const fresh = await refreshTradeModeFromTradingLayer(supabase, {
+    traderId: accountId, brokerSymbol, login: mapping.login, server: mapping.server,
+  });
+  if (!fresh.ok) {
+    return json(freshTradeModeGateResponse(VERSION, fresh, { ticket }), 200);
+  }
+
 
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
   const modifyPayload: Record<string, unknown> = {
