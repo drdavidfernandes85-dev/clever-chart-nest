@@ -143,3 +143,105 @@ export function setAdminLiveTestAck(v: boolean) {
 }
 
 export const PRODUCTION_MODE_EVENT = EVT;
+
+/* ============================================================
+ * Execution permission status (external broker/TL permission gate)
+ * ============================================================
+ *
+ * Tracks the result of real Trading Layer order attempts that returned
+ * TRADE_RETCODE_TRADE_DISABLED across multiple symbols. This is an
+ * external blocker — code does not change account/risk/coordinator
+ * behaviour, it only prevents further admin live-order submissions
+ * while the issue is being resolved with Trading Layer / INFINOX.
+ *
+ * Persisted in site_settings under key `execution_permission_status`.
+ */
+export type ExecutionPermissionStatus =
+  | "unknown"
+  | "blocked_trade_disabled"
+  | "cleared_for_retest";
+
+export interface ExecutionPermissionState {
+  status: ExecutionPermissionStatus;
+  reason: string | null;
+  evidence: string[];
+  updatedAt: string | null;
+}
+
+const PERM_KEY = "ltr.executionPermissionStatus";
+const DEFAULT_PERM: ExecutionPermissionState = {
+  status: "unknown",
+  reason: null,
+  evidence: [],
+  updatedAt: null,
+};
+
+function normalizePerm(v: unknown): ExecutionPermissionState {
+  const raw = (v as any) ?? {};
+  const status: ExecutionPermissionStatus =
+    raw.status === "blocked_trade_disabled" ||
+    raw.status === "cleared_for_retest" ||
+    raw.status === "unknown"
+      ? raw.status
+      : "unknown";
+  return {
+    status,
+    reason: typeof raw.reason === "string" ? raw.reason : null,
+    evidence: Array.isArray(raw.evidence) ? raw.evidence.map(String) : [],
+    updatedAt: typeof raw.updated_at === "string" ? raw.updated_at : null,
+  };
+}
+
+export function getExecutionPermissionState(): ExecutionPermissionState {
+  try {
+    const cached = localStorage.getItem(PERM_KEY);
+    if (cached) return normalizePerm(JSON.parse(cached));
+  } catch { /* ignore */ }
+  return DEFAULT_PERM;
+}
+
+export async function refreshExecutionPermissionStatus(): Promise<ExecutionPermissionState> {
+  try {
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "execution_permission_status")
+      .maybeSingle();
+    const state = normalizePerm(data?.value);
+    try {
+      localStorage.setItem(PERM_KEY, JSON.stringify(state));
+      window.dispatchEvent(new CustomEvent(EVT));
+    } catch { /* ignore */ }
+    return state;
+  } catch {
+    return getExecutionPermissionState();
+  }
+}
+
+export async function setExecutionPermissionStatus(
+  status: ExecutionPermissionStatus,
+  reason?: string,
+): Promise<void> {
+  const prev = getExecutionPermissionState();
+  const next = {
+    status,
+    reason: reason ?? prev.reason ?? null,
+    evidence: prev.evidence ?? [],
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert(
+      { key: "execution_permission_status", value: next as any },
+      { onConflict: "key" },
+    );
+  if (error) throw error;
+  try {
+    localStorage.setItem(PERM_KEY, JSON.stringify(normalizePerm(next)));
+    window.dispatchEvent(new CustomEvent(EVT));
+  } catch { /* ignore */ }
+}
+
+export function isExecutionPermissionBlocked(): boolean {
+  return getExecutionPermissionState().status === "blocked_trade_disabled";
+}

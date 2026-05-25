@@ -52,6 +52,9 @@ import {
   setAdminLiveTestAck,
   PRODUCTION_MODE_EVENT,
   ADMIN_TESTER_MT5_LOGIN,
+  getExecutionPermissionState,
+  refreshExecutionPermissionStatus,
+  isExecutionPermissionBlocked,
 } from "@/lib/productionMode";
 import {
   startAdminLiveTest,
@@ -194,15 +197,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   // Note: `isAdmin` already pulled from useDevMode above.
   const [executionMode, setExecutionModeState] = useState(getExecutionMode());
   const [adminAck, setAdminAckState] = useState(hasAdminLiveTestAck());
+  const [permState, setPermState] = useState(getExecutionPermissionState());
   useEffect(() => {
     refreshExecutionMode().then((m) => setExecutionModeState(m));
+    refreshExecutionPermissionStatus().then((s) => setPermState(s));
     const onChange = () => {
       setExecutionModeState(getExecutionMode());
       setAdminAckState(hasAdminLiveTestAck());
+      setPermState(getExecutionPermissionState());
     };
     window.addEventListener(PRODUCTION_MODE_EVENT, onChange);
     return () => window.removeEventListener(PRODUCTION_MODE_EVENT, onChange);
   }, []);
+  const permissionBlocked = permState.status === "blocked_trade_disabled";
   const adminLiveTestActive = executionMode === "admin_live_test";
   const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
   const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
@@ -942,6 +949,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const sessionGateOk =
     executionMode !== "admin_live_test" || sessionAvailability.tradable;
 
+  // External execution-permission blocker: if Trading Layer has rejected
+  // recent real orders with TRADE_DISABLED across symbols, gate further
+  // admin live-order submissions until manually cleared.
+  const adminExecPermissionGateOk =
+    executionMode !== "admin_live_test" || !permissionBlocked;
+
   const canSubmitMarket =
     !!user &&
     connected === true &&
@@ -956,13 +969,19 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !killSwitchActive &&
     !liveDisabled &&
     liveModeGateOk &&
-    sessionGateOk;
+    sessionGateOk &&
+    adminExecPermissionGateOk;
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
     if (!canSubmitMarket) {
       if (killSwitchActive) toast.error("Trading disabled by kill switch.");
       else if (liveDisabled) toast.error("Live trading is disabled by your risk settings.");
+      else if (!adminExecPermissionGateOk) {
+        toast.error(
+          "Live execution blocked: Trading Layer rejected recent orders with TRADE_DISABLED. Awaiting account/API trading permission confirmation.",
+        );
+      }
       else if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
       else if (!symbolValid) toast.error("Symbol not available on broker");
@@ -1904,6 +1923,11 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             {!adminAck && (
               <p className="rounded-sm border border-amber-500/50 bg-amber-500/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber-200">
                 Confirm real-order acknowledgement below to enable live testing.
+              </p>
+            )}
+            {permissionBlocked && (
+              <p className="rounded-sm border border-red-500/70 bg-red-600/25 px-1.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-100">
+                Live execution blocked: Trading Layer rejected both XAUUSD and EURUSD orders with TRADE_DISABLED. Awaiting account/API trading permission confirmation. Buy/Sell are disabled until an admin sets execution_permission_status = cleared_for_retest.
               </p>
             )}
             {normalizedSym === "XAUUSD" && (

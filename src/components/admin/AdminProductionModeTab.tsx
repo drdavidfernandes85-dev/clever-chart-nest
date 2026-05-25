@@ -15,7 +15,11 @@ import {
   PRODUCTION_MODE_EVENT,
   ADMIN_TESTER_TRADER_ID,
   ADMIN_TESTER_MT5_LOGIN,
+  getExecutionPermissionState,
+  refreshExecutionPermissionStatus,
+  setExecutionPermissionStatus,
   type ExecutionMode,
+  type ExecutionPermissionStatus,
 } from "@/lib/productionMode";
 import { reviewAccessModeEnabled } from "@/lib/accessMode";
 import { getCooldownRemainingMs } from "@/lib/tradingLayerControl";
@@ -101,6 +105,7 @@ const AdminProductionModeTab = () => {
   const [rows, setRows] = useState<AdminLiveTestRow[]>([]);
   const [verifying, setVerifying] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [permState, setPermState] = useState(getExecutionPermissionState());
 
   const loadRows = async () => {
     setLoading(true);
@@ -109,8 +114,12 @@ const AdminProductionModeTab = () => {
 
   useEffect(() => {
     refreshExecutionMode();
+    refreshExecutionPermissionStatus().then(setPermState);
     void loadRows();
-    const re = () => force((n) => n + 1);
+    const re = () => {
+      force((n) => n + 1);
+      setPermState(getExecutionPermissionState());
+    };
     window.addEventListener(PRODUCTION_MODE_EVENT, re);
     const id = window.setInterval(() => setCooldown(getCooldownRemainingMs()), 1000);
     const ch = supabase
@@ -133,6 +142,19 @@ const AdminProductionModeTab = () => {
     try { await setExecutionMode(mode); toast.success(`execution_mode → ${mode}`); }
     catch (e: any) { toast.error(e?.message || "Failed to update execution mode"); }
   };
+
+  const permissionBlocked = permState.status === "blocked_trade_disabled";
+  const updatePermStatus = async (status: ExecutionPermissionStatus, reason?: string) => {
+    try {
+      await setExecutionPermissionStatus(status, reason);
+      const next = await refreshExecutionPermissionStatus();
+      setPermState(next);
+      toast.success(`execution_permission_status → ${status}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update permission status");
+    }
+  };
+
 
   // Derive per-test-type aggregate status from DB rows. A type is "pass" if
   // the most recent row with that type has status='pass'; "retest_required"
@@ -168,7 +190,7 @@ const AdminProductionModeTab = () => {
 
   const matrixPassCount = MATRIX.filter((d) => matrixState[d.id]?.status === "pass").length;
   const requiredMet = MATRIX.filter((d) => d.required).every((d) => matrixState[d.id]?.status === "pass");
-  const canActivateLive = requiredMet && finalEligible;
+  const canActivateLive = requiredMet && finalEligible && !permissionBlocked;
 
   const runVerification = async () => {
     setVerifying(true);
@@ -210,9 +232,68 @@ const AdminProductionModeTab = () => {
         <Row label="confirmation_coordinator" value="active" tone="ok" />
         <Row label="kill_switch" value="available" tone="ok" />
         <Row label="trading_layer_cooldown" value={cooldown > 0 ? `${Math.ceil(cooldown / 1000)}s remaining` : "clear"} tone={cooldown > 0 ? "warn" : "ok"} />
-        <Row label="client_live_execution" value={execMode === "live" ? "ENABLED" : "disabled pending verification"} tone={execMode === "live" ? "ok" : "warn"} />
+        <Row
+          label="client_live_execution"
+          value={permissionBlocked ? "BLOCKED — TL/broker trade-disabled" : execMode === "live" ? "ENABLED" : "disabled pending verification"}
+          tone={permissionBlocked ? "danger" : execMode === "live" ? "ok" : "warn"}
+        />
         <Row label="final_live_test_passed" value={finalEligible ? "yes" : "no"} tone={finalEligible ? "ok" : "warn"} />
+        <Row
+          label="final_live_activation_eligible"
+          value={finalEligible && !permissionBlocked ? "yes" : "no"}
+          tone={finalEligible && !permissionBlocked ? "ok" : "warn"}
+        />
+        <Row
+          label="execution_permission_status"
+          value={permState.status}
+          tone={permState.status === "blocked_trade_disabled" ? "danger" : permState.status === "cleared_for_retest" ? "ok" : "warn"}
+        />
+        <Row
+          label="external_blocker"
+          value={permissionBlocked ? "TL_OR_BROKER_TRADE_DISABLED" : "none"}
+          tone={permissionBlocked ? "danger" : "ok"}
+        />
       </Card>
+
+      {permissionBlocked && (
+        <Card className="p-4 border-red-500/50 bg-red-500/5">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="h-4 w-4 text-red-400" />
+            <h3 className="text-sm font-semibold text-red-300">External execution blocker — TL/broker TRADE_DISABLED</h3>
+          </div>
+          <p className="text-[11px] text-red-200/90 leading-relaxed mb-3">
+            Live execution blocked: Trading Layer rejected both XAUUSD and EURUSD orders with TRADE_DISABLED.
+            Awaiting account/API trading permission confirmation. Admin live-order Buy/Sell submission is disabled
+            until an admin sets status to <code>cleared_for_retest</code> after broker/Trading Layer resolution.
+          </p>
+          {permState.reason && (
+            <p className="text-[10px] text-red-200/70 font-mono mb-3">reason: {permState.reason}</p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => updatePermStatus("cleared_for_retest", "Manually cleared after Trading Layer / INFINOX confirmation.")}>
+              Mark cleared_for_retest
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => updatePermStatus("unknown", "Reset to unknown pending re-investigation.")}>
+              Reset to unknown
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {!permissionBlocked && permState.status === "cleared_for_retest" && (
+        <Card className="p-4 border-amber-500/40 bg-amber-500/5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] text-amber-200 leading-relaxed">
+              Execution permission marked <strong>cleared_for_retest</strong>. Admin live Buy/Sell is re-enabled —
+              a single 0.01 EURUSD market order is the recommended next proof. Re-block immediately if a TRADE_DISABLED
+              rejection recurs.
+            </p>
+            <Button size="sm" variant="outline" onClick={() => updatePermStatus("blocked_trade_disabled", "Manually re-blocked.")}>
+              Re-block
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <Card className="p-4">
         <h3 className="text-sm font-semibold mb-3">Admin actions</h3>
