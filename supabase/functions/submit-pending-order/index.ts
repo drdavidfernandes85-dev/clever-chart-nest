@@ -16,6 +16,10 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  resolveEligibleBrokerSymbol,
+  brokerSymbolGateResponse,
+} from "../_shared/brokerSymbol.ts";
 
 const VERSION = "SUBMIT_PENDING_ORDER_V1_2026_05_22";
 const BASE_URL = "https://api.trading-layer.com";
