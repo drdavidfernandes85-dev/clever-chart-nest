@@ -1896,6 +1896,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               Orders placed here are sent to your connected MT5 account (login {ADMIN_TESTER_MT5_LOGIN}).
               Admin live testing mode is active.
             </p>
+            {adminAck && sessionGateOk && (
+              <p className="rounded-sm border border-red-500/60 bg-red-600/20 px-1.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-200">
+                Execution mode: Real Order Submission — next Buy/Sell click sends a real MT5 order (effectiveDryRun=false).
+              </p>
+            )}
+            {!adminAck && (
+              <p className="rounded-sm border border-amber-500/50 bg-amber-500/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber-200">
+                Confirm real-order acknowledgement below to enable live testing.
+              </p>
+            )}
+            {normalizedSym === "XAUUSD" && (
+              <p className="rounded-sm border border-amber-500/60 bg-amber-500/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber-200">
+                Previous XAUUSD live test was rejected: TRADE_RETCODE_TRADE_DISABLED (10017). Confirm broker/API permission for XAUUSD before retrying this symbol. Prefer EURUSD · Market Buy · 0.01 for the next proof test.
+              </p>
+            )}
 
             {/* Execution precheck diagnostics */}
             <div className="grid grid-cols-2 gap-1 text-[9.5px] font-mono">
