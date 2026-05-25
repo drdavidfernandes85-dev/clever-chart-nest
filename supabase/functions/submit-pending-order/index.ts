@@ -19,6 +19,8 @@ import {
 import {
   resolveEligibleBrokerSymbol,
   brokerSymbolGateResponse,
+  refreshTradeModeFromTradingLayer,
+  freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
 
 const VERSION = "SUBMIT_PENDING_ORDER_V1_2026_05_22";
@@ -150,6 +152,15 @@ Deno.serve(async (req) => {
     return json(brokerSymbolGateResponse(VERSION, eligible, { tradeId, pendingType, volume, entryPrice }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
+
+  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate).
+  const fresh = await refreshTradeModeFromTradingLayer(supabase, {
+    traderId: accountId, brokerSymbol, login: mapping.login, server: mapping.server,
+  });
+  if (!fresh.ok) {
+    return json(freshTradeModeGateResponse(VERSION, fresh, { tradeId, pendingType, volume, entryPrice }), 200);
+  }
+
 
   // Trading Layer payload — generic shape; backend maps to MT5 pending order types.
   // 2 = ORDER_TYPE_BUY_LIMIT, 3 = SELL_LIMIT, 4 = BUY_STOP, 5 = SELL_STOP (MT5).

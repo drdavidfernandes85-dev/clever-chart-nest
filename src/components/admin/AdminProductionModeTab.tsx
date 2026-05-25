@@ -34,6 +34,7 @@ import {
 import { listAdminLiveTests, verifyFromAudit, type AdminLiveTestRow, type AdminTestType } from "@/lib/adminLiveTests";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLiveTestLimitsCard from "./AdminLiveTestLimitsCard";
+import AdminExecutionEligibilityCard from "./AdminExecutionEligibilityCard";
 
 const maskTraderId = (id: string) =>
   id.length <= 12 ? "••••" : `${id.slice(0, 8)}…${id.slice(-4)}`;
@@ -326,6 +327,8 @@ const AdminProductionModeTab = () => {
           fresh-tick gates and the reconciliation coordinator remain the authoritative enforcement layer in all modes.
         </p>
       </Card>
+
+      <AdminExecutionEligibilityCard />
 
       <AdminLiveTestLimitsCard />
 

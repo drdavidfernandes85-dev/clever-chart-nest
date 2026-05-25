@@ -150,7 +150,8 @@ export default function PositionActions({ position, onAfter, cooling, cooldownSe
       const r = await fetch(url, {
         method: "POST", cache: "no-store", headers,
         body: JSON.stringify({
-          ticket, symbol: position.symbol, side: position.side,
+          ticket, symbol: position.symbol, brokerSymbol: position.symbol, displaySymbol: position.symbol,
+          side: position.side,
           volume: Number(position.volume), currentPrice: Number(position.current_price),
           stopLoss, takeProfit,
         }),

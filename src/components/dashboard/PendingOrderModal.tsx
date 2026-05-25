@@ -14,6 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { startAdminLiveTest, updateAdminLiveTest, type AdminTestType } from "@/lib/adminLiveTests";
 import { executionConfirmationCoordinator } from "@/services/executionConfirmationCoordinator";
+import {
+  fetchExecutionEligibility,
+  readCachedEligibility,
+  type ExecutionEligibility,
+} from "@/lib/executionEligibility";
 
 export type PendingType = "buy_limit" | "sell_limit" | "buy_stop" | "sell_stop";
 
@@ -59,14 +64,22 @@ const PendingOrderModal = ({
   const [tp, setTp] = useState("");
   const [ack, setAck] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [eligibility, setEligibility] = useState<ExecutionEligibility | null>(
+    () => readCachedEligibility(symbol),
+  );
+  const [eligLoading, setEligLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       setEntry("");
       setVol(defaultVolume.toFixed(2));
       setSl(""); setTp(""); setAck(false);
+      setEligLoading(true);
+      fetchExecutionEligibility(symbol, { refresh: true })
+        .then(setEligibility)
+        .finally(() => setEligLoading(false));
     }
-  }, [open, defaultVolume]);
+  }, [open, defaultVolume, symbol]);
 
   const entryNum = Number(entry);
   const volNum = Number(vol);
@@ -78,7 +91,23 @@ const PendingOrderModal = ({
     !Number.isFinite(volNum) || volNum <= 0 ? "Volume must be > 0" :
     volNum > maxVolume ? `Volume exceeds admin test cap ${maxVolume}` : null;
 
-  const canSubmit = !entryErr && !volErr && ack && !submitting;
+  const eligOk =
+    !!eligibility &&
+    eligibility.eligibility === "eligible" &&
+    !!eligibility.brokerSymbol &&
+    eligibility.accountTradeEligible === true &&
+    eligibility.symbolTradeEligible === true;
+  const eligBlockerCopy = !eligibility
+    ? "Loading execution eligibility…"
+    : !eligibility.brokerSymbol
+      ? "Broker symbol unresolved — refresh execution eligibility before submitting."
+      : !eligibility.accountTradeEligible
+        ? `Account trade_mode not eligible (${eligibility.accountTradeMode ?? "unknown"}).`
+        : !eligibility.symbolTradeEligible
+          ? `Symbol ${eligibility.brokerSymbol} trade_mode not eligible (${eligibility.symbolTradeMode ?? "unknown"}).`
+          : null;
+
+  const canSubmit = !entryErr && !volErr && ack && !submitting && eligOk;
 
   const submit = async () => {
     if (!canSubmit) return;
@@ -108,6 +137,12 @@ const PendingOrderModal = ({
         body: JSON.stringify({
           tradeId,
           symbol,
+          displaySymbol: symbol,
+          brokerSymbol: eligibility?.brokerSymbol ?? symbol,
+          symbolMappingSource: "trading_layer_symbols",
+          symbolMappingCheckedAt: eligibility?.checkedAt ?? null,
+          accountTradeMode: eligibility?.accountTradeMode ?? null,
+          symbolTradeMode: eligibility?.symbolTradeMode ?? null,
           pendingType,
           volume: volNum,
           entryPrice: entryNum,

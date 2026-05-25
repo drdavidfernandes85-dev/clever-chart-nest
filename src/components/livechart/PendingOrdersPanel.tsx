@@ -72,7 +72,7 @@ const PendingOrdersPanel = () => {
           Authorization: `Bearer ${session?.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
         },
-        body: JSON.stringify({ orderId: row.ticket, symbol: row.symbol }),
+        body: JSON.stringify({ orderId: row.ticket, symbol: row.symbol, brokerSymbol: row.symbol, displaySymbol: row.symbol }),
       });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || data?.success === false) {
