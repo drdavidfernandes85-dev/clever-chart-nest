@@ -50,7 +50,16 @@ Deno.serve(async (req) => {
 
   const orderId = payload?.orderId != null ? String(payload.orderId) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
+  const suppliedBrokerSymbol = payload?.brokerSymbol ? String(payload.brokerSymbol) : null;
   if (!orderId) return json({ success: false, version: VERSION, error: "orderId is required" }, 400);
+  if (!suppliedBrokerSymbol && !symbol) {
+    return json({
+      success: false,
+      version: VERSION,
+      error: "BROKER_SYMBOL_REQUIRED_FOR_CANCEL",
+      message: "Broker execution symbol is missing for this legacy order. Refresh from MT5 before cancellation.",
+    }, 400);
+  }
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
   if (mapping.status === "missing") return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
