@@ -143,6 +143,19 @@ const AdminProductionModeTab = () => {
     catch (e: any) { toast.error(e?.message || "Failed to update execution mode"); }
   };
 
+  const permissionBlocked = permState.status === "blocked_trade_disabled";
+  const updatePermStatus = async (status: ExecutionPermissionStatus, reason?: string) => {
+    try {
+      await setExecutionPermissionStatus(status, reason);
+      const next = await refreshExecutionPermissionStatus();
+      setPermState(next);
+      toast.success(`execution_permission_status → ${status}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to update permission status");
+    }
+  };
+
+
   // Derive per-test-type aggregate status from DB rows. A type is "pass" if
   // the most recent row with that type has status='pass'; "retest_required"
   // when the latest row failed only due to a closed/unavailable market session;
