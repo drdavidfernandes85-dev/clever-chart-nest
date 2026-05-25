@@ -127,11 +127,19 @@ export default function AdminExecutionEligibilityCard() {
 
       <div className="rounded border border-border/40 p-2.5 mb-3 bg-muted/10">
         <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
-          Account
+          IDs & Account
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-mono">
-          <span className="text-muted-foreground">trader_id</span>
-          <span>{maskTraderId(anyData?.traderId ?? null)}</span>
+          <span className="text-muted-foreground">Trader ID</span>
+          <span>{maskTraderId(anyData?.traderIdUsed ?? anyData?.traderId ?? null)}</span>
+          <span className="text-muted-foreground">Account ID (for /symbols)</span>
+          <span>{maskTraderId(anyData?.accountIdUsedForSymbols ?? null)}</span>
+          <span className="text-muted-foreground">Account ID from /traders</span>
+          <span>{maskTraderId(anyData?.accountIdFromTrader ?? null)}</span>
+          <span className="text-muted-foreground">ID relationship verified</span>
+          <span className={anyData?.accountIdRelationshipVerified ? "text-emerald-300" : "text-amber-300"}>
+            {anyData?.accountIdRelationshipVerified ? "yes" : "no"}
+          </span>
           <span className="text-muted-foreground">account.trade_mode (raw)</span>
           <span>{anyData?.accountTradeMode ?? "—"}</span>
           <span className="text-muted-foreground">interpreted</span>
