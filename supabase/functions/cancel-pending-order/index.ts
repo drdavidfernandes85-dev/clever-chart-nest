@@ -147,7 +147,13 @@ Deno.serve(async (req) => {
       broker_message: brokerMessage,
       retcode,
       ticket: orderId,
-      raw: { classification: "cancel_pending", version: VERSION, tradingLayerStatus: httpStatus, request: tlPayload, response: res, networkError },
+      raw: {
+        classification: "cancel_pending", version: VERSION,
+        tradingLayerStatus: httpStatus, request: tlPayload, response: res, networkError,
+        displaySymbol: symbol, brokerSymbol,
+        symbolMappingSource: eligible.symbolMappingSource,
+        symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
+      },
     });
   } catch { /* ignore */ }
 
@@ -157,7 +163,11 @@ Deno.serve(async (req) => {
     classification: "cancel_pending",
     status,
     orderId,
-    symbol,
+    displaySymbol: symbol,
+    brokerSymbol,
+    symbol: brokerSymbol,
+    symbolMappingSource: eligible.symbolMappingSource,
+    symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
     retcode,
     brokerMessage,
     latencyMs,
