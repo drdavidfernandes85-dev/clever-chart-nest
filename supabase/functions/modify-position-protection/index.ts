@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
 
   // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate).
   const fresh = await refreshTradeModeFromTradingLayer(supabase, {
-    traderId: accountId, brokerSymbol, login: mapping.login, server: mapping.server,
+    traderId: accountId, accountId: mapping.tradingLayerAccountId, brokerSymbol, login: mapping.login, server: mapping.server,
   });
   if (!fresh.ok) {
     return json(freshTradeModeGateResponse(VERSION, fresh, { ticket }), 200);
