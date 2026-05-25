@@ -61,6 +61,7 @@ Deno.serve(async (req) => {
   }
   const ticket = payload?.ticket != null ? String(payload.ticket) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
+  const suppliedBrokerSymbol = payload?.brokerSymbol ? String(payload.brokerSymbol) : null;
   const side = payload?.side ? String(payload.side).toLowerCase() : null;
   const volume = Number(payload?.volume);
   const currentPrice = Number(payload?.currentPrice);
