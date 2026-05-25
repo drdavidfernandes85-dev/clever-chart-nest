@@ -184,6 +184,8 @@ export default function AdminExecutionEligibilityCard() {
                       <th className="text-left font-normal py-0.5">canonical</th>
                       <th className="text-left font-normal py-0.5">trade_mode (raw)</th>
                       <th className="text-left font-normal py-0.5">interpreted</th>
+                      <th className="text-left font-normal py-0.5">source acctId</th>
+                      <th className="text-left font-normal py-0.5">verified</th>
                       <th className="text-left font-normal py-0.5">checkedAt</th>
                     </tr>
                   </thead>
@@ -195,6 +197,10 @@ export default function AdminExecutionEligibilityCard() {
                         <td className="py-0.5">{v.tradeMode ?? "—"}</td>
                         <td className={`py-0.5 ${interpretationTone(v.interpretation)}`}>
                           {interpretationLabel(v.interpretation)}
+                        </td>
+                        <td className="py-0.5">{maskTraderId(v.sourceAccountId ?? null)}</td>
+                        <td className={`py-0.5 ${v.sourceVerified ? "text-emerald-300" : "text-amber-300"}`}>
+                          {v.sourceVerified ? "yes" : "no"}
                         </td>
                         <td className="py-0.5">{ageString(v.checkedAt)}</td>
                       </tr>
