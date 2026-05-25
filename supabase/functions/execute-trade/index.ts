@@ -392,7 +392,12 @@ serve(async (req) => {
         tradeId,
         accountIdUsed: accountId,
         mappingStatus: mapping.status,
-        brokerSymbol: symbol,
+        brokerSymbol: brokerSymbolMeta ?? symbol,
+        displaySymbol: displaySymbolMeta ?? symbol,
+        symbolTradeMode: symbolTradeModeMeta,
+        accountTradeMode: accountTradeModeMeta,
+        symbolMappingSource: symbolMappingSourceMeta,
+        symbolMappingCheckedAt: symbolMappingCheckedAtMeta,
       },
 
       response_payload: tradeData,
