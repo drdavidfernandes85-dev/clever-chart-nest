@@ -57,6 +57,11 @@ import {
   isExecutionPermissionBlocked,
 } from "@/lib/productionMode";
 import {
+  fetchExecutionEligibility,
+  readCachedEligibility,
+  type ExecutionEligibility,
+} from "@/lib/executionEligibility";
+import {
   startAdminLiveTest,
   updateAdminLiveTest,
   getAdminLiveTestLimits,
