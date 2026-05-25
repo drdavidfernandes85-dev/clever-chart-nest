@@ -6,17 +6,39 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
-export type EligibilityStatus = "eligible" | "blocked" | "unknown";
+export type EligibilityStatus =
+  | "eligible"
+  | "blocked"
+  | "blocked_pending_trade_mode_interpretation"
+  | "unknown";
+
+export type ModeInterpretation =
+  | "eligible"
+  | "blocked"
+  | "awaiting_enum_confirmation"
+  | "unknown";
+
+export interface EligibilityVariant {
+  brokerSymbol: string;
+  canonicalSymbol: string | null;
+  tradeMode: string | null;
+  interpretation: ModeInterpretation;
+  checkedAt: string | null;
+}
 
 export interface ExecutionEligibility {
   success: boolean;
   traderId: string | null;
   accountTradeMode: string | null;
   accountTradeEligible: boolean;
+  accountTradeModeInterpretation?: ModeInterpretation;
+  enumMappingSource?: string | null;
   displaySymbol: string | null;
   brokerSymbol: string | null;
   symbolTradeMode: string | null;
   symbolTradeEligible: boolean;
+  symbolTradeModeInterpretation?: ModeInterpretation;
+  variants?: EligibilityVariant[];
   eligibility: EligibilityStatus;
   blockedReason: string | null;
   checkedAt: string | null;
