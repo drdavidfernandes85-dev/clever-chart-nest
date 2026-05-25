@@ -29,25 +29,47 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const TRADABLE_MODES = new Set([
-  "full",
-  "long_only",
-  "short_only",
-  "close_only",
-  "enabled",
-  "tradable",
-  "full_access",
-  "0", // some brokers return numeric "0" for full access in MT5 SYMBOL_TRADE_MODE_FULL
-  "4",
+// Until Trading Layer publishes a definitive enum mapping we only treat
+// string values that explicitly say "full/long/short/enabled/tradable" as
+// eligible. Numeric values are surfaced raw and marked
+// "awaiting Trading Layer enum confirmation" — never auto-interpreted.
+const CONFIRMED_TRADABLE_STRINGS = new Set([
+  "full", "long_only", "short_only", "close_only",
+  "enabled", "tradable", "full_access",
 ]);
+const CONFIRMED_BLOCKED_STRINGS = new Set(["disabled", "no", "false", "off"]);
+
+type ModeInterpretation =
+  | "eligible" | "blocked" | "awaiting_enum_confirmation" | "unknown";
+
+function interpretTradeMode(mode: unknown): {
+  raw: string | null;
+  interpretation: ModeInterpretation;
+  isNumeric: boolean;
+} {
+  if (mode == null || mode === "") {
+    return { raw: null, interpretation: "unknown", isNumeric: false };
+  }
+  const raw = String(mode).trim();
+  const lower = raw.toLowerCase();
+  const isNumeric = /^-?\d+$/.test(raw);
+  if (isNumeric) {
+    return { raw, interpretation: "awaiting_enum_confirmation", isNumeric: true };
+  }
+  if (CONFIRMED_BLOCKED_STRINGS.has(lower)) {
+    return { raw, interpretation: "blocked", isNumeric: false };
+  }
+  if (
+    CONFIRMED_TRADABLE_STRINGS.has(lower) ||
+    lower.includes("full") || lower.includes("long") || lower.includes("short")
+  ) {
+    return { raw, interpretation: "eligible", isNumeric: false };
+  }
+  return { raw, interpretation: "awaiting_enum_confirmation", isNumeric: false };
+}
 
 function isTradable(mode: unknown): boolean {
-  if (mode == null) return false;
-  const s = String(mode).trim().toLowerCase();
-  if (!s) return false;
-  if (s === "disabled" || s === "no" || s === "false") return false;
-  return TRADABLE_MODES.has(s) || s.includes("full") || s.includes("long") ||
-    s.includes("short");
+  return interpretTradeMode(mode).interpretation === "eligible";
 }
 
 function canonicalize(sym: string): string {
