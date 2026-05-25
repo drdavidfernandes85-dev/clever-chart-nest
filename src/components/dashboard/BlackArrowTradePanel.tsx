@@ -1650,9 +1650,26 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-neutral-800 bg-[#0a0a0a]">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">{t("terminal.orderTicket" as never)}</span>
-          <span className="px-1 py-[1px] rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
-            Dry Run
-          </span>
+          {executionMode === "admin_live_test" && isAuthorisedAdminTester ? (
+            <span
+              className="px-1 py-[1px] rounded-sm border border-red-500/70 bg-red-600/20 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-red-300"
+              title="Admin live test mode — Buy/Sell sends real MT5 orders"
+            >
+              Admin Live · Real MT5
+            </span>
+          ) : executionMode === "live" ? (
+            <span className="px-1 py-[1px] rounded-sm border border-emerald-500/60 bg-emerald-600/15 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-emerald-300">
+              Live
+            </span>
+          ) : executionMode === "controlled_live_test" && isAuthorisedAdminTester ? (
+            <span className="px-1 py-[1px] rounded-sm border border-amber-500/60 bg-amber-600/15 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-amber-300">
+              Live Test
+            </span>
+          ) : (
+            <span className="px-1 py-[1px] rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
+              Dry Run
+            </span>
+          )}
           {tickStale ? (
             <span className="inline-flex items-center gap-1 px-1 py-[1px] rounded-sm bg-amber-500/15 text-[8px] font-mono uppercase tracking-[0.18em] text-amber-400">
               <span className="inline-flex h-1 w-1 rounded-full bg-amber-400" /> Stale
@@ -1879,6 +1896,21 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               Orders placed here are sent to your connected MT5 account (login {ADMIN_TESTER_MT5_LOGIN}).
               Admin live testing mode is active.
             </p>
+            {adminAck && sessionGateOk && (
+              <p className="rounded-sm border border-red-500/60 bg-red-600/20 px-1.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-200">
+                Execution mode: Real Order Submission — next Buy/Sell click sends a real MT5 order (effectiveDryRun=false).
+              </p>
+            )}
+            {!adminAck && (
+              <p className="rounded-sm border border-amber-500/50 bg-amber-500/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber-200">
+                Confirm real-order acknowledgement below to enable live testing.
+              </p>
+            )}
+            {normalizedSym === "XAUUSD" && (
+              <p className="rounded-sm border border-amber-500/60 bg-amber-500/10 px-1.5 py-1 text-[9.5px] leading-snug text-amber-200">
+                Previous XAUUSD live test was rejected: TRADE_RETCODE_TRADE_DISABLED (10017). Confirm broker/API permission for XAUUSD before retrying this symbol. Prefer EURUSD · Market Buy · 0.01 for the next proof test.
+              </p>
+            )}
 
             {/* Execution precheck diagnostics */}
             <div className="grid grid-cols-2 gap-1 text-[9.5px] font-mono">
@@ -1918,7 +1950,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
             {sessionAvailability.source === "recent_tick_inference" && (
               <p className="text-[9px] leading-snug text-neutral-400">
-                Eligibility inferred from fresh quote availability; final broker acceptance is determined at submission. Backend independently re-checks before any Trading Layer call.
+                Fresh prices indicate the symbol may be executable. Final order acceptance is determined by the broker — eligibility here does not prove broker trading permission is enabled.
               </p>
             )}
             {sessionAvailability.source === "weekend_rule" && (
