@@ -83,12 +83,22 @@ export default function AdminExecutionEligibilityCard() {
   useEffect(() => { loadFromCache(); }, [loadFromCache]);
 
   const anyData = Object.values(data).find(Boolean) ?? null;
-  const accountInterp = anyData?.accountTradeModeInterpretation ?? "unknown";
-  const accountEligible = accountInterp === "eligible";
-  const enumSource = anyData?.enumMappingSource ?? null;
+  const rawAccountInterp = anyData?.accountTradeModeInterpretation ?? "unknown";
+  const accountInterp: ModeInterpretation =
+    rawAccountInterp === "eligible" || rawAccountInterp === "blocked" ||
+    rawAccountInterp === "awaiting_enum_confirmation"
+      ? rawAccountInterp
+      : (typeof rawAccountInterp === "string" && rawAccountInterp.toLowerCase().includes("awaiting"))
+      ? "awaiting_enum_confirmation"
+      : "unknown";
+  const accountEligible = anyData?.accountTradeEligible === true;
+  const permissionFields = anyData?.permissionFieldsFound ?? {};
+  const permissionFieldEntries = Object.entries(permissionFields);
+  const catalogue = anyData?.catalogue;
 
   const readyForVerifiedTest =
     accountEligible &&
+    catalogue?.complete === true &&
     TRACKED_SYMBOLS.some((s) => {
       const e = data[s];
       return !!e?.brokerSymbol &&
@@ -109,7 +119,7 @@ export default function AdminExecutionEligibilityCard() {
           ) : (
             <Badge variant="outline" className="gap-1 border-amber-500/40 text-amber-300 text-[10px]">
               <AlertTriangle className="h-3 w-3" />
-              BLOCKED — Awaiting Trading Layer trade-mode interpretation
+              BLOCKED — Awaiting complete Trading Layer broker-symbol catalogue and confirmed execution-permission interpretation
             </Badge>
           )}
         </div>
@@ -120,9 +130,10 @@ export default function AdminExecutionEligibilityCard() {
       </div>
 
       <p className="text-[10.5px] text-muted-foreground mb-3 leading-relaxed">
-        Trading Layer returned numeric trade-mode values. Live execution remains
-        blocked until those values are mapped to confirmed executable states.
-        Market-data availability and execution permission are independent.
+        Account execution permission is independent of market-data visibility.
+        Numeric account.trade_mode values are surfaced raw and never auto-interpreted
+        as "trade disabled" — live mutation stays fail-closed until Trading Layer
+        confirms the enum mapping or returns an explicit trading-allowed boolean.
       </p>
 
       <div className="rounded border border-border/40 p-2.5 mb-3 bg-muted/10">
@@ -138,28 +149,76 @@ export default function AdminExecutionEligibilityCard() {
           <span>{maskTraderId(anyData?.accountIdFromTrader ?? null)}</span>
           <span className="text-muted-foreground">ID relationship verified</span>
           <span className={anyData?.accountIdRelationshipVerified ? "text-emerald-300" : "text-amber-300"}>
-            {anyData?.accountIdRelationshipVerified ? "yes" : "no"}
+            {anyData?.accountIdRelationshipVerified ? "yes" : "unverified"}
           </span>
+          <span className="text-muted-foreground">trader HTTP status</span>
+          <span>{anyData?.traderHttpStatus ?? "—"}</span>
           <span className="text-muted-foreground">account.trade_mode (raw)</span>
-          <span>{anyData?.accountTradeMode ?? "—"}</span>
-          <span className="text-muted-foreground">interpreted</span>
+          <span>{anyData?.accountTradeModeRaw ?? anyData?.accountTradeMode ?? "—"}</span>
+          <span className="text-muted-foreground">trade_mode interpretation</span>
           <span className={interpretationTone(accountInterp)}>
-            {interpretationLabel(accountInterp)}
+            {String(anyData?.accountTradeModeInterpretation ?? interpretationLabel(accountInterp))}
           </span>
-          <span className="text-muted-foreground">mutation eligibility</span>
-          <span className={accountEligible ? "text-emerald-300" : "text-red-300"}>
-            {accountEligible ? "eligible" : "blocked until confirmed"}
+          <span className="text-muted-foreground">account type interpretation</span>
+          <span className="text-amber-300">
+            {anyData?.accountTypeInterpretation ?? "—"}
           </span>
-          <span className="text-muted-foreground">enum mapping source</span>
-          <span>{enumSource ?? "none — awaiting Trading Layer confirmation"}</span>
+          <span className="text-muted-foreground">account execution permission</span>
+          <span className={accountEligible ? "text-emerald-300" : "text-amber-300"}>
+            {anyData?.accountExecutionPermission ?? "unknown"}
+          </span>
+          <span className="text-muted-foreground">permission source</span>
+          <span>{anyData?.accountExecutionPermissionSource ?? "none — awaiting Trading Layer confirmation"}</span>
           <span className="text-muted-foreground">checkedAt</span>
           <span>{ageString(anyData?.checkedAt ?? null)}</span>
+        </div>
+        {permissionFieldEntries.length > 0 ? (
+          <div className="mt-2 pt-2 border-t border-border/30">
+            <div className="text-[9.5px] uppercase text-muted-foreground mb-1">
+              Explicit permission fields exposed by /traders
+            </div>
+            <pre className="text-[10px] font-mono whitespace-pre-wrap break-all">
+              {JSON.stringify(permissionFields, null, 2)}
+            </pre>
+          </div>
+        ) : (
+          <div className="mt-2 pt-2 border-t border-border/30 text-[10px] text-amber-300">
+            Trading Layer trader response exposes account.trade_mode but no explicit account execution-permission boolean.
+          </div>
+        )}
+      </div>
+
+      <div className="rounded border border-border/40 p-2.5 mb-3 bg-muted/10">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
+          Broker-symbol catalogue
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-mono">
+          <span className="text-muted-foreground">Catalogue status</span>
+          <span className={catalogue?.complete ? "text-emerald-300" : "text-amber-300"}>
+            {catalogue?.status ?? "unknown"}
+          </span>
+          <span className="text-muted-foreground">Symbols loaded</span>
+          <span>{catalogue?.symbolsLoaded ?? 0}</span>
+          <span className="text-muted-foreground">Total available</span>
+          <span>{catalogue?.totalReported ?? "not reported"}</span>
+          <span className="text-muted-foreground">Pages fetched</span>
+          <span>{catalogue?.pagesFetched ?? 0}</span>
+          <span className="text-muted-foreground">Pagination complete</span>
+          <span className={catalogue?.paginationComplete ? "text-emerald-300" : "text-amber-300"}>
+            {catalogue?.paginationComplete ? "yes" : "no"}
+          </span>
+          <span className="text-muted-foreground">Direct symbol lookup</span>
+          <span>
+            {catalogue?.directSearchAttempted
+              ? `attempted — ${catalogue.directSearchHits} hit(s)`
+              : "not needed"}
+          </span>
         </div>
       </div>
 
       <div className="space-y-2 mb-3">
         <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-          Symbol catalogue (read-only; not suppressed by account block)
+          Tracked symbols (read-only; not suppressed by account block)
         </div>
         {TRACKED_SYMBOLS.map((s) => {
           const e = data[s];
@@ -174,7 +233,7 @@ export default function AdminExecutionEligibilityCard() {
               </div>
               {variants.length === 0 ? (
                 <div className="text-[10px] text-amber-300">
-                  No matching catalogue rows. Click Refresh to upsert.
+                  No matching catalogue rows. Click Refresh to crawl + direct-lookup.
                 </div>
               ) : (
                 <table className="w-full text-[10px]">
@@ -219,12 +278,13 @@ export default function AdminExecutionEligibilityCard() {
           <span className={readyForVerifiedTest ? "text-emerald-300" : "text-amber-300"}>
             {readyForVerifiedTest
               ? "READY — exact broker symbol with confirmed eligibility"
-              : "BLOCKED — Awaiting Trading Layer trade-mode interpretation and verified broker symbol eligibility"}
+              : "BLOCKED — Awaiting complete Trading Layer broker-symbol catalogue and confirmed execution-permission interpretation"}
           </span>
         </div>
         <div className="text-muted-foreground">
-          Required next action: Confirm Trading Layer trade_mode enum values and
-          review exact EURUSD/XAUUSD broker-symbol rows above.
+          Required next action: Confirm Trading Layer trade_mode enum or
+          explicit trading-allowed field, and complete broker-symbol catalogue
+          pagination so EURUSD/XAUUSD exact broker symbols can be verified.
         </div>
       </div>
     </Card>
