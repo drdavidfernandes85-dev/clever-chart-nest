@@ -166,6 +166,10 @@ Deno.serve(async (req) => {
     openPrice: entryPrice,
     price: entryPrice,
   };
+  if (stopLoss != null) tlPayload.stopLoss = stopLoss;
+  if (takeProfit != null) tlPayload.takeProfit = takeProfit;
+
+  const startedAt = Date.now();
   let httpStatus = 0;
   let res: any = null;
   let networkError: string | null = null;
