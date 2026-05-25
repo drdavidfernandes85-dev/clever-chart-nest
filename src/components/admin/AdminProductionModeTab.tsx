@@ -105,6 +105,7 @@ const AdminProductionModeTab = () => {
   const [rows, setRows] = useState<AdminLiveTestRow[]>([]);
   const [verifying, setVerifying] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [permState, setPermState] = useState(getExecutionPermissionState());
 
   const loadRows = async () => {
     setLoading(true);
@@ -113,6 +114,7 @@ const AdminProductionModeTab = () => {
 
   useEffect(() => {
     refreshExecutionMode();
+    refreshExecutionPermissionStatus().then(setPermState);
     void loadRows();
     const re = () => force((n) => n + 1);
     window.addEventListener(PRODUCTION_MODE_EVENT, re);
