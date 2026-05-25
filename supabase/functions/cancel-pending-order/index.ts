@@ -86,8 +86,25 @@ Deno.serve(async (req) => {
     if (s.kill_switch_enabled) return json({ success: false, version: VERSION, error: "Trading disabled by kill switch.", rule: "kill_switch" }, 403);
   } catch { /* ignore */ }
 
+  // Broker-symbol gate — use stored brokerSymbol if provided, else look up via canonical symbol.
+  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+    userId: user.id,
+    traderId: accountId,
+    requestedDisplaySymbol: symbol,
+    suppliedBrokerSymbol,
+    operationType: "cancel_pending",
+  });
+  if (!eligible.ok) {
+    return json(brokerSymbolGateResponse(VERSION, eligible, { orderId }), 200);
+  }
+  const brokerSymbol = eligible.brokerSymbol as string;
+
   const idempotencyKey = `cancel-${orderId}-${Date.now()}`;
-  const tlPayload = { actionType: "ORDER_CANCEL", orderId: Number(orderId) || orderId };
+  const tlPayload = {
+    actionType: "ORDER_CANCEL",
+    orderId: Number(orderId) || orderId,
+    symbol: brokerSymbol,
+  };
 
   const startedAt = Date.now();
   let httpStatus = 0; let res: any = null; let networkError: string | null = null;
