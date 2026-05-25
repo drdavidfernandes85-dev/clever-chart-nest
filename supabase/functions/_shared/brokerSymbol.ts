@@ -120,7 +120,7 @@ export async function refreshTradeModeFromTradingLayer(
   // 2) Symbols catalogue — find this brokerSymbol live
   let symbolTradeMode: string | null = null;
   try {
-    const r = await fetch(`${TL_BASE_URL}/api/v1/accounts/${args.traderId}/symbols`, { headers });
+    const r = await fetch(`${TL_BASE_URL}/api/v1/accounts/${args.accountId}/symbols`, { headers });
     if (r.ok) {
       const parsed = await r.json().catch(() => null);
       const list: any[] = Array.isArray(parsed?.data) ? parsed.data : Array.isArray(parsed) ? parsed : [];
