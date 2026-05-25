@@ -275,6 +275,10 @@ Deno.serve(async (req) => {
         openVolume: Number.isFinite(openVolume) ? openVolume : null,
         partial: isPartial,
         clientClickAt: typeof payload?.clientClickAt === "string" ? payload.clientClickAt : null,
+        displaySymbol: symbol,
+        brokerSymbol,
+        symbolMappingSource: eligible.symbolMappingSource,
+        symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
       },
     });
   } catch { /* swallow audit errors */ }
@@ -284,7 +288,7 @@ Deno.serve(async (req) => {
   const dealId = res?.dealId ?? res?.deal ?? res?.deal_id ?? null;
   const requestId = res?.requestId ?? res?.request_id ?? null;
   const positionTicket = res?.positionTicket ?? res?.position ?? Number(ticket) ?? null;
-  const brokerSymbolOut = res?.brokerSymbol ?? res?.symbol ?? symbol;
+  const brokerSymbolOut = res?.brokerSymbol ?? res?.symbol ?? brokerSymbol;
   const retcodeName = res?.retcodeName ?? null;
   const retcodeDescription = res?.retcodeDescription ?? null;
 
@@ -301,8 +305,11 @@ Deno.serve(async (req) => {
     orderId,
     dealId,
     requestId,
+    displaySymbol: symbol,
     brokerSymbol: brokerSymbolOut,
-    symbol,
+    symbol: brokerSymbolOut,
+    symbolMappingSource: eligible.symbolMappingSource,
+    symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
     volume,
     retcode,
     retcodeName,
