@@ -1650,9 +1650,26 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-neutral-800 bg-[#0a0a0a]">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#FFCD05]">{t("terminal.orderTicket" as never)}</span>
-          <span className="px-1 py-[1px] rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
-            Dry Run
-          </span>
+          {executionMode === "admin_live_test" && isAuthorisedAdminTester ? (
+            <span
+              className="px-1 py-[1px] rounded-sm border border-red-500/70 bg-red-600/20 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-red-300"
+              title="Admin live test mode — Buy/Sell sends real MT5 orders"
+            >
+              Admin Live · Real MT5
+            </span>
+          ) : executionMode === "live" ? (
+            <span className="px-1 py-[1px] rounded-sm border border-emerald-500/60 bg-emerald-600/15 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-emerald-300">
+              Live
+            </span>
+          ) : executionMode === "controlled_live_test" && isAuthorisedAdminTester ? (
+            <span className="px-1 py-[1px] rounded-sm border border-amber-500/60 bg-amber-600/15 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-amber-300">
+              Live Test
+            </span>
+          ) : (
+            <span className="px-1 py-[1px] rounded-sm border border-[#FFCD05]/40 bg-[#FFCD05]/10 text-[8px] font-mono font-bold uppercase tracking-[0.18em] text-[#FFCD05]">
+              Dry Run
+            </span>
+          )}
           {tickStale ? (
             <span className="inline-flex items-center gap-1 px-1 py-[1px] rounded-sm bg-amber-500/15 text-[8px] font-mono uppercase tracking-[0.18em] text-amber-400">
               <span className="inline-flex h-1 w-1 rounded-full bg-amber-400" /> Stale
