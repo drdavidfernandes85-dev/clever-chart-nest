@@ -242,6 +242,69 @@ export type Database = {
         }
         Relationships: []
       }
+      broker_symbol_catalog: {
+        Row: {
+          asset_class: string | null
+          broker_symbol: string
+          canonical_symbol: string
+          contract_size: number | null
+          created_at: string
+          description: string | null
+          digits: number | null
+          display_symbol: string
+          id: string
+          last_synced_at: string
+          mt5_login: string | null
+          mt5_server: string | null
+          raw_metadata: Json | null
+          source: string
+          trade_eligible: boolean
+          trade_mode: string | null
+          trading_layer_trader_id: string
+          updated_at: string
+        }
+        Insert: {
+          asset_class?: string | null
+          broker_symbol: string
+          canonical_symbol: string
+          contract_size?: number | null
+          created_at?: string
+          description?: string | null
+          digits?: number | null
+          display_symbol: string
+          id?: string
+          last_synced_at?: string
+          mt5_login?: string | null
+          mt5_server?: string | null
+          raw_metadata?: Json | null
+          source?: string
+          trade_eligible?: boolean
+          trade_mode?: string | null
+          trading_layer_trader_id: string
+          updated_at?: string
+        }
+        Update: {
+          asset_class?: string | null
+          broker_symbol?: string
+          canonical_symbol?: string
+          contract_size?: number | null
+          created_at?: string
+          description?: string | null
+          digits?: number | null
+          display_symbol?: string
+          id?: string
+          last_synced_at?: string
+          mt5_login?: string | null
+          mt5_server?: string | null
+          raw_metadata?: Json | null
+          source?: string
+          trade_eligible?: boolean
+          trade_mode?: string | null
+          trading_layer_trader_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       channels: {
         Row: {
           category: string
