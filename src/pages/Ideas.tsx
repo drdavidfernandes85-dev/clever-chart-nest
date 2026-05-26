@@ -115,9 +115,8 @@ const Ideas = () => {
           </Suspense>
         </div>
       </div>
-
-      <ComplianceFooter />
     </>
+
   );
 };
 
