@@ -347,6 +347,72 @@ export type Database = {
         }
         Relationships: []
       }
+      broker_symbol_catalog_syncs: {
+        Row: {
+          catalogue_complete: boolean | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          initiated_by: string | null
+          local_mt_account_id: string | null
+          metadata: Json | null
+          mt5_login: string | null
+          mt5_server: string | null
+          pages_fetched: number | null
+          requested_symbols: string[] | null
+          rows_received: number | null
+          started_at: string
+          sync_type: string
+          trading_layer_account_id: string | null
+          trading_layer_trader_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          catalogue_complete?: boolean | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          local_mt_account_id?: string | null
+          metadata?: Json | null
+          mt5_login?: string | null
+          mt5_server?: string | null
+          pages_fetched?: number | null
+          requested_symbols?: string[] | null
+          rows_received?: number | null
+          started_at?: string
+          sync_type: string
+          trading_layer_account_id?: string | null
+          trading_layer_trader_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          catalogue_complete?: boolean | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          local_mt_account_id?: string | null
+          metadata?: Json | null
+          mt5_login?: string | null
+          mt5_server?: string | null
+          pages_fetched?: number | null
+          requested_symbols?: string[] | null
+          rows_received?: number | null
+          started_at?: string
+          sync_type?: string
+          trading_layer_account_id?: string | null
+          trading_layer_trader_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       channels: {
         Row: {
           category: string
