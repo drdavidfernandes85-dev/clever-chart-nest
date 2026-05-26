@@ -134,19 +134,20 @@ const Admin = () => {
         </h1>
 
         <Tabs defaultValue="webinars">
-          <TabsList className="grid w-full grid-cols-11 max-w-5xl">
-            <TabsTrigger value="prodmode"><Activity className="h-3.5 w-3.5 mr-1.5" /> Production</TabsTrigger>
-            <TabsTrigger value="brokersymbols"><Coins className="h-3.5 w-3.5 mr-1.5" /> Broker Symbols</TabsTrigger>
-            <TabsTrigger value="webinars"><Radio className="h-3.5 w-3.5 mr-1.5" /> Webinars</TabsTrigger>
-            <TabsTrigger value="channels"><Hash className="h-3.5 w-3.5 mr-1.5" /> Channels</TabsTrigger>
-            <TabsTrigger value="messages"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Messages</TabsTrigger>
-            <TabsTrigger value="mutes"><UserX className="h-3.5 w-3.5 mr-1.5" /> Mutes</TabsTrigger>
-            <TabsTrigger value="mentors"><GraduationCap className="h-3.5 w-3.5 mr-1.5" /> Mentors</TabsTrigger>
-            <TabsTrigger value="announce"><Megaphone className="h-3.5 w-3.5 mr-1.5" /> Banner</TabsTrigger>
-            <TabsTrigger value="analytics"><BarChart3 className="h-3.5 w-3.5 mr-1.5" /> Analytics</TabsTrigger>
-            <TabsTrigger value="i18nqa"><Languages className="h-3.5 w-3.5 mr-1.5" /> Translation QA</TabsTrigger>
-            <TabsTrigger value="launchqa"><Shield className="h-3.5 w-3.5 mr-1.5" /> Launch QA</TabsTrigger>
+          <TabsList className="flex w-full flex-wrap gap-1 h-auto p-1">
+            <TabsTrigger value="prodmode" className="gap-1.5"><Activity className="h-3.5 w-3.5" /> Production</TabsTrigger>
+            <TabsTrigger value="brokersymbols" className="gap-1.5"><Coins className="h-3.5 w-3.5" /> Broker Symbols</TabsTrigger>
+            <TabsTrigger value="webinars" className="gap-1.5"><Radio className="h-3.5 w-3.5" /> Webinars</TabsTrigger>
+            <TabsTrigger value="channels" className="gap-1.5"><Hash className="h-3.5 w-3.5" /> Channels</TabsTrigger>
+            <TabsTrigger value="messages" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" /> Messages</TabsTrigger>
+            <TabsTrigger value="mutes" className="gap-1.5"><UserX className="h-3.5 w-3.5" /> Mutes</TabsTrigger>
+            <TabsTrigger value="mentors" className="gap-1.5"><GraduationCap className="h-3.5 w-3.5" /> Mentors</TabsTrigger>
+            <TabsTrigger value="announce" className="gap-1.5"><Megaphone className="h-3.5 w-3.5" /> Banner</TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Analytics</TabsTrigger>
+            <TabsTrigger value="i18nqa" className="gap-1.5"><Languages className="h-3.5 w-3.5" /> Translation QA</TabsTrigger>
+            <TabsTrigger value="launchqa" className="gap-1.5"><Shield className="h-3.5 w-3.5" /> Launch QA</TabsTrigger>
           </TabsList>
+
 
           {/* PRODUCTION MODE */}
           <TabsContent value="prodmode" className="mt-4">
