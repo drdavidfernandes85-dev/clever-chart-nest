@@ -170,24 +170,22 @@ Deno.serve(async (req) => {
     }, transient ? 503 : 502);
   }
 
-  // NOTE: account.trade_mode in MT5 semantics is the account TYPE
-  // (0=demo, 1=contest, 2=real) — NOT the symbol directional enum.
-  // We do NOT translate it via interpretTradeMode (which is the symbol enum).
-  // Account-level execution permission is governed solely by trade_allowed.
-  const ACCOUNT_TYPE_LABELS: Record<number, string> = {
-    0: "ACCOUNT_TRADE_MODE_DEMO",
-    1: "ACCOUNT_TRADE_MODE_CONTEST",
-    2: "ACCOUNT_TRADE_MODE_REAL",
-  };
+  // Trading Layer OpenAPI: Mt5AccountInfo.trade_mode uses ENUM_SYMBOL_TRADE_MODE
+  // (the SAME enum as per-symbol trade_mode). It is directional, not just an
+  // account-type tag. `trade_allowed` is a separate boolean.
   const accTm = account.data.trade_mode;
+  const accInterp = interpretTradeMode(accTm);
   const result: Record<string, unknown> = {
     success: true,
     accountRouteIdUsed: accountId,
     accountRouteVerified: true,
     accountTradeAllowed: account.data.trade_allowed,
     accountTradeModeRaw: accTm,
-    accountTradeModeLabel: accTm != null ? (ACCOUNT_TYPE_LABELS[accTm] ?? `ACCOUNT_TYPE_${accTm}`) : null,
-    accountTradeModeMeaning: "account_type_informational_not_directional",
+    accountTradeModeLabel: accInterp.label,
+    accountTradeModeMeaning: "enum_symbol_trade_mode_directional",
+    accountCanOpenBuy: accInterp.raw != null && (accInterp.raw === 1 || accInterp.raw === 4),
+    accountCanOpenSell: accInterp.raw != null && (accInterp.raw === 2 || accInterp.raw === 4),
+    accountCanClose: accInterp.raw != null && accInterp.raw !== 0,
     mt5Login: account.data.login,
     mt5Server: account.data.server,
     accountPermissionCheckedAt: now,
