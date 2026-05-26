@@ -260,22 +260,116 @@ const AdminProductionModeTab = () => {
         <Card className="p-4 border-red-500/50 bg-red-500/5">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="h-4 w-4 text-red-400" />
-            <h3 className="text-sm font-semibold text-red-300">External execution blocker — TL/broker TRADE_DISABLED</h3>
+            <h3 className="text-sm font-semibold text-red-300">Upstream execution blocker — broker TRADE_DISABLED after verified pre-trade</h3>
           </div>
           <p className="text-[11px] text-red-200/90 leading-relaxed mb-3">
-            Live execution blocked: Trading Layer rejected both XAUUSD and EURUSD orders with TRADE_DISABLED.
-            Awaiting account/API trading permission confirmation. Admin live-order Buy/Sell submission is disabled
-            until an admin sets status to <code>cleared_for_retest</code> after broker/Trading Layer resolution.
+            Live testing paused. Two real EURUSD SELL 0.01 submissions reached Trading Layer and were rejected by the
+            broker with <code>TRADE_RETCODE_TRADE_DISABLED</code> (10017) after the verified pre-trade pipeline
+            (route 559…bcfe, brokerSymbol EURUSD, account trade_mode SHORTONLY, symbol trade_mode FULL,
+            fresh server tick) all passed. Application validation passes for EURUSD SELL using brokerSymbol EURUSD,
+            but live execution is disabled at the admin layer pending upstream broker / Trading Layer permission
+            clarification. Technical readiness is preserved separately from this live execution block.
           </p>
           {permState.reason && (
             <p className="text-[10px] text-red-200/70 font-mono mb-3">reason: {permState.reason}</p>
           )}
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => updatePermStatus("cleared_for_retest", "Manually cleared after Trading Layer / INFINOX confirmation.")}>
-              Mark cleared_for_retest
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (!window.confirm("Clear upstream block? Only do this after Trading Layer / broker has confirmed the EURUSD SELL TRADE_DISABLED contradiction is resolved. This action is audited.")) return;
+                updatePermStatus("cleared_for_retest", "Clear Upstream Block After Broker Confirmation — manually acknowledged by admin after Trading Layer / INFINOX resolution.");
+              }}
+            >
+              Clear Upstream Block After Broker Confirmation
             </Button>
             <Button size="sm" variant="ghost" onClick={() => updatePermStatus("unknown", "Reset to unknown pending re-investigation.")}>
               Reset to unknown
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                const payload = {
+                  title: "Trading Layer Execution Rejection Evidence — MT5 87943580 — EURUSD SELL",
+                  exportedAt: new Date().toISOString(),
+                  mt5: { login: "87943580", server: "InfinoxLimited-MT5Live" },
+                  verifiedExecutionRoute: "559a12e4-16d8-4db3-be48-40fbea54bcfe",
+                  symbol: { displaySymbol: "EURUSD", resolvedBrokerSymbol: "EURUSD" },
+                  side: "sell",
+                  volume: 0.01,
+                  pretradeReadOnlyState: {
+                    tradeAllowed: true,
+                    accountTradeModeRaw: 2,
+                    accountTradeMode: "SYMBOL_TRADE_MODE_SHORTONLY",
+                    symbolTradeModeRaw: 4,
+                    symbolTradeMode: "SYMBOL_TRADE_MODE_FULL",
+                    sellReady: true,
+                    buyReady: false,
+                  },
+                  freshTickAtSubmission: {
+                    source: "trading_layer_latest_tick",
+                    bid: 1.16321,
+                    ask: 1.16332,
+                    requestedPrice: 1.16321,
+                    ageMsThreshold: 15000,
+                  },
+                  attempts: [
+                    {
+                      attempt: 1,
+                      adminTestId: "dc4b6690-7f8c-4417-8eb1-fced2dbff100",
+                      auditEventId: "78821bde-f13f-4f8f-83a5-ad680070693c",
+                      submittedAtUtc: "2026-05-26T21:59:46.342Z",
+                      retcode: 10017,
+                      retcodeName: "TRADE_RETCODE_TRADE_DISABLED",
+                      retcodeDescription: "Trade is disabled",
+                      brokerAccepted: false,
+                      mt5Confirmed: false,
+                      positionOpened: false,
+                    },
+                    {
+                      attempt: 2,
+                      adminTestId: "958cc603-3dd5-4c70-8a66-5615488858d3",
+                      auditEventId: "5f56fdf9-15d6-40ec-a440-28605ab939df",
+                      submittedAtUtc: "2026-05-26T22:05:53.171Z",
+                      retcode: 10017,
+                      retcodeName: "TRADE_RETCODE_TRADE_DISABLED",
+                      retcodeDescription: "Trade is disabled",
+                      brokerAccepted: false,
+                      mt5Confirmed: false,
+                      positionOpened: false,
+                      latencyMs: 2179,
+                    },
+                  ],
+                  policyVersions: {
+                    execution: "TL_EXACT_SYMBOL_OPERATION_INTENT_V1_2026_05_26",
+                    freshTick: "FRESH_TICK_SERVER_AUTHORITATIVE_V1_2026_05_26",
+                  },
+                  classification: "broker_rejected_trade_disabled_after_verified_pretrade",
+                  finalActivationBlocker: true,
+                  retestRequired: false,
+                  noSecretsIncluded: true,
+                  questionsForTradingLayer: [
+                    "Why does the read-only permission metadata for MT5 87943580 / EURUSD report account trade_mode=2 (SHORTONLY) and symbol trade_mode=4 (FULL), yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
+                    "Is there an account-level or symbol-level execution flag (e.g. expert/API trading disabled, group restriction, session restriction) that is not surfaced through the symbols / account endpoints?",
+                    "Is the account in an investor/read-only state, or is API trading disabled at the broker level for this login?",
+                    "Is the verified execution route 559a12e4-16d8-4db3-be48-40fbea54bcfe the correct route for live order submission for MT5 login 87943580 on InfinoxLimited-MT5Live?",
+                    "What is the broker-side action required to enable SELL execution for EURUSD on this account, and how can we re-validate before retesting?",
+                  ],
+                };
+                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `tl-execution-rejection-evidence-87943580-EURUSD-SELL-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Download Escalation Evidence (JSON)
             </Button>
           </div>
         </Card>
