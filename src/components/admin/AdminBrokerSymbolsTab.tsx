@@ -50,6 +50,10 @@ interface SyncResponse {
   accountTradeAllowed?: boolean;
   accountTradeModeRaw?: number | null;
   accountTradeModeLabel?: string | null;
+  accountTradeModeMeaning?: string | null;
+  accountCanOpenBuy?: boolean;
+  accountCanOpenSell?: boolean;
+  accountCanClose?: boolean;
   mt5Login?: string | number | null;
   mt5Server?: string | null;
   accountPermissionCheckedAt?: string;
