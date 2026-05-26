@@ -121,7 +121,10 @@ Deno.serve(async (req) => {
 
   const withTimings = (body: Record<string, unknown>, status = 200) => {
     timings.finalUiStatusAt = Date.now();
-    return json(devMode ? { ...body, timings } : body, status);
+    const enriched = devMode
+      ? { ...body, timings, executionPolicyVersion: EXECUTION_POLICY_VERSION }
+      : body;
+    return json(enriched, status);
   };
 
   if (!symbol || !side || !volume) {
