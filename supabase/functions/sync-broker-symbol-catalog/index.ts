@@ -153,17 +153,21 @@ Deno.serve(async (req) => {
   // Account info (confirms the verified route is still healthy)
   const account = await getAccountInfo(accountId);
   if (!account.ok || !account.data) {
-    const is429 = account.status === 429 || account.error === "account_fetch_429";
+    const is429 = account.status === 429;
+    const isAuthFlap = account.status === 401;
+    const transient = is429 || isAuthFlap || account.status >= 500;
     return json({
       success: false, step: "account_fetch",
       error: account.error ?? "account_fetch_failed",
       status: account.status,
-      retryable: is429,
+      retryable: transient,
       message: is429
         ? "Trading Layer rate limit hit (429). Wait a few seconds and retry."
-        : "Account info fetch failed.",
+        : isAuthFlap
+          ? "Trading Layer returned 401 transiently for this account. Wait a moment and retry; if it persists the upstream key/route may be revoked."
+          : "Account info fetch failed.",
       mapping: baseMapping,
-    }, is429 ? 429 : 502);
+    }, transient ? 503 : 502);
   }
 
   // NOTE: account.trade_mode in MT5 semantics is the account TYPE
