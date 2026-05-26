@@ -75,7 +75,16 @@ Deno.serve(async (req) => {
     ? body.symbols.map((s: any) => String(s)).filter(Boolean)
     : [];
 
-  const mapping = await resolveActiveMtMapping(supabaseService, uid);
+  // Admin override: allow resolving the mapping for a different user_id
+  let resolveUid = uid;
+  const targetUserId: string | null = typeof body?.targetUserId === "string" ? body.targetUserId : null;
+  if (targetUserId && targetUserId !== uid) {
+    const { data: isAdmin } = await supabaseService.rpc("has_role", { _user_id: uid, _role: "admin" });
+    if (isAdmin === true) resolveUid = targetUserId;
+  }
+
+  const mapping = await resolveActiveMtMapping(supabaseService, resolveUid);
+
   if (mapping.status === "missing" || !mapping.traderId) {
     return json({ success: false, error: "No connected MT account." }, 404);
   }

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, RefreshCw, Search, Database, ShieldCheck, ShieldAlert } from "lucide-react";
 
 interface VerifiedMapping {
+  id: string;
   user_id: string;
   mt5_login: string | null;
   mt5_server: string | null;
@@ -15,7 +16,9 @@ interface VerifiedMapping {
   trading_layer_external_trader_id: string | null;
   mapping_status: string | null;
   credential_status: string | null;
+  last_verified_at: string | null;
 }
+
 
 interface Variant {
   brokerSymbol: string;
@@ -97,17 +100,38 @@ export default function AdminBrokerSymbolsTab() {
 
   const loadMapping = useCallback(async () => {
     setLoadingMapping(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoadingMapping(false); return; }
+    // Admins can SELECT all rows (RLS: "Admins view all mt accounts").
+    // Eligible mapping requires Trading Layer IDs + validated credentials.
     const { data } = await (supabase.from as any)("user_mt_accounts")
-      .select("user_id, mt5_login, mt5_server, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, mapping_status, credential_status")
-      .eq("user_id", user.id)
-      .or("ignored_for_execution.is.null,ignored_for_execution.eq.false")
+      .select("id, user_id, mt5_login, mt5_server, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, mapping_status, credential_status, last_verified_at, login, server_name")
       .eq("status", "connected")
-      .maybeSingle();
-    setMapping((data as VerifiedMapping) ?? null);
+      .eq("credential_status", "validated")
+      .eq("mapping_status", "valid")
+      .not("trading_layer_account_id", "is", null)
+      .not("trading_layer_trader_id", "is", null)
+      .or("ignored_for_execution.is.null,ignored_for_execution.eq.false")
+      .order("last_verified_at", { ascending: false, nullsFirst: false })
+      .limit(50);
+    const rows = (data ?? []) as any[];
+    // Normalize: prefer mt5_login/mt5_server but fall back to login/server_name
+    const normalized: VerifiedMapping[] = rows.map((r) => ({
+      id: r.id,
+      user_id: r.user_id,
+      mt5_login: r.mt5_login ?? (r.login != null ? String(r.login) : null),
+      mt5_server: r.mt5_server ?? r.server_name ?? null,
+      trading_layer_account_id: r.trading_layer_account_id,
+      trading_layer_trader_id: r.trading_layer_trader_id,
+      trading_layer_external_trader_id: r.trading_layer_external_trader_id,
+      mapping_status: r.mapping_status,
+      credential_status: r.credential_status,
+      last_verified_at: r.last_verified_at,
+    }));
+    // Prefer the verified Infinox live login 87943580 if present, otherwise first row
+    const preferred = normalized.find((r) => r.mt5_login === "87943580") ?? normalized[0] ?? null;
+    setMapping(preferred);
     setLoadingMapping(false);
   }, []);
+
 
   const loadCatalog = useCallback(async () => {
     if (!mapping?.trading_layer_account_id) return;
@@ -125,7 +149,8 @@ export default function AdminBrokerSymbolsTab() {
   const invoke = async (action: string, body: any) => {
     setBusy(action);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-broker-symbol-catalog", { body });
+      const payload = { ...body, targetUserId: mapping?.user_id };
+      const { data, error } = await supabase.functions.invoke("sync-broker-symbol-catalog", { body: payload });
       if (error) {
         toast.error(error.message || "Request failed");
         setLastResp({ success: false, error: error.message });
@@ -145,6 +170,7 @@ export default function AdminBrokerSymbolsTab() {
       setBusy(null);
     }
   };
+
 
   const refreshPermission = () => invoke("Account permission", { mode: "targeted", symbols: ["EURUSD"] });
   const lookupEURUSD = () => invoke("EURUSD lookup", { mode: "targeted", symbols: ["EURUSD"] });
