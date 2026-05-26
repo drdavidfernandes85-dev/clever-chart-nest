@@ -286,7 +286,9 @@ Deno.serve(async (req) => {
               source_verified: true,
               route_identity_verified: true,
               execution_usable: tm != null && tm !== TRADE_MODE_DISABLED,
-              mapping_status: "verified_route",
+              mapping_status: tm != null && tm !== TRADE_MODE_DISABLED
+                ? "executable_discovered_inspected"
+                : "inspected_disabled",
               mt5_login: mapping.login ? String(mapping.login) : null,
               mt5_server: mapping.server ?? null,
               display_symbol: canonical,
