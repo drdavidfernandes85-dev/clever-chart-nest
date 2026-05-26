@@ -479,6 +479,7 @@ export function brokerSymbolGateResponse(
     symbolTradeMode: result.symbolTradeMode,
     symbolMappingSource: result.symbolMappingSource,
     symbolMappingCheckedAt: result.symbolMappingCheckedAt,
+    ambiguousVariants: result.ambiguousVariants ?? null,
     ...extra,
   };
 }
