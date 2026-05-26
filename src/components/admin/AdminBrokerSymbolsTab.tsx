@@ -480,6 +480,77 @@ export default function AdminBrokerSymbolsTab() {
         </Card>
       )}
 
+      {/* Raw '+' Symbol Probe Results */}
+      {(lastResp?.searchProbes || lastResp?.directProbes) && (
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Raw '+' Symbol Probe (read-only Trading Layer evidence)</h3>
+          {lastResp?.searchProbes && lastResp.searchProbes.length > 0 && (
+            <div className="mb-4">
+              <div className="text-xs font-semibold mb-2 text-muted-foreground">Search probes</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="border-b border-border/50 text-muted-foreground">
+                    <tr>
+                      <th className="text-left py-2 px-2">search</th>
+                      <th className="text-left py-2 px-2">visible</th>
+                      <th className="text-left py-2 px-2">HTTP</th>
+                      <th className="text-left py-2 px-2">count</th>
+                      <th className="text-left py-2 px-2">any '+'</th>
+                      <th className="text-left py-2 px-2">raw names</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {lastResp.searchProbes.map((p, i) => (
+                      <tr key={i}>
+                        <td className="py-1.5 px-2 font-mono">{p.searchTerm}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.visibleFilter == null ? "any" : String(p.visibleFilter)}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.httpStatus}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.count}</td>
+                        <td className="py-1.5 px-2">{yesNoBadge(p.anyPlus)}</td>
+                        <td className="py-1.5 px-2 font-mono text-[10px] break-all max-w-md">{p.rawNames.slice(0, 20).join(", ") || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {lastResp?.directProbes && lastResp.directProbes.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold mb-2 text-muted-foreground">Direct symbol-info probes</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="border-b border-border/50 text-muted-foreground">
+                    <tr>
+                      <th className="text-left py-2 px-2">requested</th>
+                      <th className="text-left py-2 px-2">HTTP</th>
+                      <th className="text-left py-2 px-2">raw name</th>
+                      <th className="text-left py-2 px-2">preserved</th>
+                      <th className="text-left py-2 px-2">trade_mode</th>
+                      <th className="text-left py-2 px-2">vol min/step</th>
+                      <th className="text-left py-2 px-2">visible</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {lastResp.directProbes.map((p, i) => (
+                      <tr key={i}>
+                        <td className="py-1.5 px-2 font-mono">{p.requestedSymbol}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.httpStatus}</td>
+                        <td className="py-1.5 px-2 font-mono text-primary">{p.rawName ?? "—"}</td>
+                        <td className="py-1.5 px-2">{p.ok ? yesNoBadge(p.rawPreservedExactly) : "—"}</td>
+                        <td className="py-1.5 px-2">{tradeModeBadge(p.tradeModeRaw, p.tradeModeLabel)}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.volumeMin ?? "—"} / {p.volumeStep ?? "—"}</td>
+                        <td className="py-1.5 px-2">{p.visible == null ? "—" : yesNoBadge(p.visible)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+
       {/* Stored Catalogue */}
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
