@@ -9,6 +9,11 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  refreshTradeModeFromTradingLayer,
+  freshTradeModeGateResponse,
+} from "../_shared/brokerSymbol.ts";
+import { sideToOperation } from "../_shared/tradingLayerTradeMode.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
@@ -289,6 +294,22 @@ serve(async (req) => {
         }, 403);
       }
     }
+
+    // Account.trade_allowed + symbol directional eligibility (OpenAPI enum).
+    // Uses the verified brokerSymbol from the caller; never appends suffixes.
+    const brokerSymbolForGate = brokerSymbolMeta || symbol;
+    const gateFresh = await refreshTradeModeFromTradingLayer(supabase, {
+      traderId: mapping.traderId!,
+      accountId: mapping.tradingLayerAccountId,
+      brokerSymbol: brokerSymbolForGate,
+      login: mapping.login,
+      server: mapping.server,
+      operation: sideToOperation(side, "market"),
+    });
+    if (!gateFresh.ok) {
+      return json(freshTradeModeGateResponse("execute-trade@v2", gateFresh, { tradeId, symbol, side, volume }), 200);
+    }
+
     const idempotencyKey = `trade-${tradeId}-${user.id}`;
 
     const orderPayload: Record<string, unknown> = {
