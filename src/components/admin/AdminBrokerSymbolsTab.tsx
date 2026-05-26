@@ -859,7 +859,11 @@ export default function AdminBrokerSymbolsTab() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
           <div><div className="text-muted-foreground">Route verified</div><div>{yesNoBadge(routeVerified)}</div></div>
           <div><div className="text-muted-foreground">Account trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unknown</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-          <div><div className="text-muted-foreground">Account type</div><div className="text-muted-foreground">{lastResp?.accountTradeModeLabel ?? "—"} (informational)</div></div>
+          <div><div className="text-muted-foreground">Account trade_mode</div><div>{tradeModeBadge(accountTradeModeRaw, accountTradeModeLabel)}</div></div>
+
+          <div><div className="text-muted-foreground">Account BUY allowed</div><div>{yesNoBadge(accountCanBuy)}</div></div>
+          <div><div className="text-muted-foreground">Account SELL allowed</div><div>{yesNoBadge(accountCanSell)}</div></div>
+          <div />
 
           <div><div className="text-muted-foreground">EURUSD brokerSymbol</div><div className="font-mono">{eurResolved?.brokerSymbol ?? (eurVariants.length === 0 ? "not inspected" : "ambiguous")}</div></div>
           <div><div className="text-muted-foreground">EURUSD symbol.trade_mode</div><div>{eurResolved ? tradeModeBadge(eurResolved.symbolTradeModeRaw, eurResolved.symbolTradeModeLabel) : "—"}</div></div>
@@ -870,8 +874,24 @@ export default function AdminBrokerSymbolsTab() {
           <div><div className="text-muted-foreground">EURUSD CLOSE symbol eligible</div><div>{yesNoBadge(eurSymbolCloseEligible)}</div></div>
 
           <div><div className="text-muted-foreground">Discrepancy ack recorded</div><div>{yesNoBadge(ack.acknowledged)}</div></div>
-          <div><div className="text-muted-foreground">EURUSD BUY ready for test</div><div>{yesNoBadge(eurBuyReady)}</div></div>
-          <div><div className="text-muted-foreground">EURUSD SELL ready for test</div><div>{yesNoBadge(eurSellReady)}</div></div>
+          <div>
+            <div className="text-muted-foreground">EURUSD BUY ready for test</div>
+            <div>{yesNoBadge(eurBuyReady)}</div>
+            {!eurBuyReady && eurResolved && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {!accountCanBuy ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolBuyEligible ? "symbol does not permit BUY" : !ack.acknowledged ? "ack required" : ""}
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="text-muted-foreground">EURUSD SELL ready for test</div>
+            <div>{yesNoBadge(eurSellReady)}</div>
+            {!eurSellReady && eurResolved && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {!accountCanSell ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolSellEligible ? "symbol does not permit SELL" : !ack.acknowledged ? "ack required" : ""}
+              </div>
+            )}
+          </div>
 
           <div><div className="text-muted-foreground">XAUUSD brokerSymbol</div><div className="font-mono">{xauAmbiguous ? "ambiguous" : (xauResolved?.brokerSymbol ?? (xauVariants.length === 0 ? "not inspected" : "—"))}</div></div>
           <div><div className="text-muted-foreground">XAUUSD test readiness</div><div>{yesNoBadge(false)}</div></div>
