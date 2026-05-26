@@ -1041,13 +1041,20 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
-    if (!canSubmitMarket) {
+    const sideGated = sideArg === "buy" ? canSubmitBuy : canSubmitSell;
+    if (!sideGated) {
       if (killSwitchActive) toast.error("Trading disabled by kill switch.");
       else if (liveDisabled) toast.error("Live trading is disabled by your risk settings.");
       else if (!adminExecPermissionGateOk) {
         toast.error(
           "Live execution blocked: Trading Layer rejected recent orders with TRADE_DISABLED. Awaiting account/API trading permission confirmation.",
         );
+      }
+      else if (executionMode === "admin_live_test" && termEligibility) {
+        const reason = sideArg === "buy"
+          ? termEligibility.buyBlockedReason
+          : termEligibility.sellBlockedReason;
+        toast.error(`Live ${sideArg.toUpperCase()} blocked: ${reason ?? "not eligible"}.`);
       }
       else if (!connected) toast.error("Account not connected");
       else if (!isBrokerSymbol) toast.error("Invalid symbol");
