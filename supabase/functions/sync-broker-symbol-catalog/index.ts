@@ -94,18 +94,62 @@ Deno.serve(async (req) => {
   if (mapping.status === "missing" || !mapping.traderId) {
     return json({ success: false, error: "No connected MT account." }, 404);
   }
-  if (!mapping.tradingLayerAccountId) {
+
+  // Load route verification state from user_mt_accounts.
+  const { data: mtRow } = await supabaseService
+    .from("user_mt_accounts")
+    .select("id, account_route_verified, account_route_verified_at, trading_layer_account_route_id, account_route_mt5_login, account_route_mt5_server")
+    .eq("id", mapping.localRowId)
+    .maybeSingle();
+
+  const verifiedRouteId: string | null = (mtRow as any)?.trading_layer_account_route_id ?? null;
+  const routeVerified: boolean = !!(mtRow as any)?.account_route_verified && !!verifiedRouteId;
+
+  const baseMapping = {
+    id: mapping.localRowId,
+    user_id: resolveUid,
+    mt5_login: mapping.login ? String(mapping.login) : null,
+    mt5_server: mapping.server ?? null,
+    trading_layer_account_id: mapping.tradingLayerAccountId,
+    trading_layer_trader_id: mapping.tradingLayerTraderId,
+    trading_layer_external_trader_id: mapping.tradingLayerExternalTraderId,
+    trading_layer_account_route_id: verifiedRouteId,
+    account_route_verified: routeVerified,
+    account_route_verified_at: (mtRow as any)?.account_route_verified_at ?? null,
+    mapping_status: mapping.status,
+    credential_status: mapping.credentialStatus,
+    last_verified_at: mapping.lastVerifiedAt,
+  };
+
+  // INFO mode: cheap, no TL crawl, no verification required.
+  if (mode === "info") {
+    return json({
+      success: true,
+      mode,
+      accountRouteVerified: routeVerified,
+      verifiedRouteIdUsed: verifiedRouteId,
+      mapping: baseMapping,
+      blocker: routeVerified
+        ? null
+        : "Trading Layer account route must be verified against the connected MT5 login/server before broker symbols can be used for execution.",
+    });
+  }
+
+  // From here on, only the verified route is allowed.
+  if (!routeVerified || !verifiedRouteId) {
     return json({
       success: false,
-      error: "TRADING_LAYER_ACCOUNT_ID_MISSING",
-      message: "Verified Trading Layer accountId is required for symbol sync.",
+      error: "ACCOUNT_ROUTE_UNVERIFIED",
+      message: "Trading Layer account route must be verified before symbol sync.",
+      mode,
+      mapping: baseMapping,
     }, 409);
   }
 
-  const accountId = mapping.tradingLayerAccountId;
+  const accountId = verifiedRouteId;
   const now = new Date().toISOString();
 
-  // Account info (also confirms the route id is healthy)
+  // Account info (confirms the verified route is still healthy)
   const account = await getAccountInfo(accountId);
   if (!account.ok || !account.data) {
     const is429 = account.status === 429 || account.error === "account_fetch_429";
@@ -117,12 +161,14 @@ Deno.serve(async (req) => {
       message: is429
         ? "Trading Layer rate limit hit (429). Wait a few seconds and retry."
         : "Account info fetch failed.",
+      mapping: baseMapping,
     }, is429 ? 429 : 502);
   }
 
   const result: Record<string, unknown> = {
     success: true,
     accountRouteIdUsed: accountId,
+    accountRouteVerified: true,
     accountTradeAllowed: account.data.trade_allowed,
     accountTradeModeRaw: account.data.trade_mode,
     accountTradeModeLabel: interpretTradeMode(account.data.trade_mode).label,
@@ -130,29 +176,13 @@ Deno.serve(async (req) => {
     mt5Server: account.data.server,
     accountPermissionCheckedAt: now,
     mode,
-    mapping: {
-      id: mapping.localRowId,
-      user_id: resolveUid,
-      mt5_login: mapping.login ? String(mapping.login) : null,
-      mt5_server: mapping.server ?? null,
-      trading_layer_account_id: mapping.tradingLayerAccountId,
-      trading_layer_trader_id: mapping.tradingLayerTraderId,
-      trading_layer_external_trader_id: mapping.tradingLayerExternalTraderId,
-      mapping_status: mapping.status,
-      credential_status: mapping.credentialStatus,
-      last_verified_at: mapping.lastVerifiedAt,
-    },
+    mapping: baseMapping,
   };
-
-  if (mode === "info") {
-    return json(result);
-  }
 
   if (mode === "targeted") {
     const out: Array<{ displaySymbol: string; variants: Variant[] }> = [];
     for (const display of requestedSymbols) {
       const canonical = canonicalize(display);
-      // 1) search list (no visible filter — visible is unreliable in list endpoint).
       const list = await listSymbols(accountId, {
         search: canonical, limit: 1000, offset: 0, sort: "name", order: "asc",
       });
@@ -179,12 +209,16 @@ Deno.serve(async (req) => {
         if (d?.name) {
           try {
             await supabaseService.from("broker_symbol_catalog").upsert([{
-              user_id: uid,
+              user_id: resolveUid,
               local_mt_account_id: mapping.localRowId ?? null,
               trading_layer_trader_id: mapping.traderId,
               trading_layer_account_id: accountId,
               source_endpoint_account_id: accountId,
+              source_account_route_id: accountId,
               source_verified: true,
+              route_identity_verified: true,
+              execution_usable: tm != null && tm !== TRADE_MODE_DISABLED,
+              mapping_status: "verified_route",
               mt5_login: mapping.login ? String(mapping.login) : null,
               mt5_server: mapping.server ?? null,
               display_symbol: canonical,
@@ -212,7 +246,7 @@ Deno.serve(async (req) => {
     return json({ ...result, results: out });
   }
 
-  // FULL catalogue sync — paginated offset crawl, no visible filter
+  // FULL catalogue sync — paginated offset crawl
   const crawl = await listAllSymbols(accountId, { sort: "name", order: "asc" });
   let stored = 0;
   if (crawl.ok && crawl.rows.length > 0) {
@@ -220,12 +254,18 @@ Deno.serve(async (req) => {
       const broker = String(s?.name ?? "").trim();
       const canonical = canonicalize(broker);
       return broker ? {
-        user_id: uid,
+        user_id: resolveUid,
         local_mt_account_id: mapping.localRowId ?? null,
         trading_layer_trader_id: mapping.traderId,
         trading_layer_account_id: accountId,
         source_endpoint_account_id: accountId,
+        source_account_route_id: accountId,
         source_verified: true,
+        route_identity_verified: true,
+        // List endpoint does not populate trade_mode for every row;
+        // execution remains gated until per-symbol info is loaded.
+        execution_usable: false,
+        mapping_status: "verified_route",
         mt5_login: mapping.login ? String(mapping.login) : null,
         mt5_server: mapping.server ?? null,
         display_symbol: canonical,
