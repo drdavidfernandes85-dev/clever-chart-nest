@@ -682,6 +682,7 @@ Deno.serve(async (req) => {
     blockedReason,
     catalogUpsertedCount: upsertedCount,
     checkedAt: new Date().toISOString(),
+    executionPolicyVersion: EXECUTION_POLICY_VERSION,
     diagnostics: { traderFetchError, symbolsFetchError },
   });
 });
