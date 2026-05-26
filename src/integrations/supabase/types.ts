@@ -247,6 +247,9 @@ export type Database = {
           asset_class: string | null
           broker_symbol: string
           canonical_symbol: string
+          catalogue_complete: boolean
+          chart_symbol: string | null
+          checked_at: string | null
           contract_size: number | null
           created_at: string
           description: string | null
@@ -254,22 +257,33 @@ export type Database = {
           display_symbol: string
           id: string
           last_synced_at: string
+          local_mt_account_id: string | null
           mt5_login: string | null
           mt5_server: string | null
           raw_metadata: Json | null
           source: string
           source_endpoint_account_id: string | null
           source_verified: boolean
+          stale_at: string | null
           trade_eligible: boolean
           trade_mode: string | null
+          trade_mode_interpretation: string | null
+          trade_mode_raw: string | null
           trading_layer_account_id: string | null
           trading_layer_trader_id: string
           updated_at: string
+          user_id: string | null
+          volume_max: number | null
+          volume_min: number | null
+          volume_step: number | null
         }
         Insert: {
           asset_class?: string | null
           broker_symbol: string
           canonical_symbol: string
+          catalogue_complete?: boolean
+          chart_symbol?: string | null
+          checked_at?: string | null
           contract_size?: number | null
           created_at?: string
           description?: string | null
@@ -277,22 +291,33 @@ export type Database = {
           display_symbol: string
           id?: string
           last_synced_at?: string
+          local_mt_account_id?: string | null
           mt5_login?: string | null
           mt5_server?: string | null
           raw_metadata?: Json | null
           source?: string
           source_endpoint_account_id?: string | null
           source_verified?: boolean
+          stale_at?: string | null
           trade_eligible?: boolean
           trade_mode?: string | null
+          trade_mode_interpretation?: string | null
+          trade_mode_raw?: string | null
           trading_layer_account_id?: string | null
           trading_layer_trader_id: string
           updated_at?: string
+          user_id?: string | null
+          volume_max?: number | null
+          volume_min?: number | null
+          volume_step?: number | null
         }
         Update: {
           asset_class?: string | null
           broker_symbol?: string
           canonical_symbol?: string
+          catalogue_complete?: boolean
+          chart_symbol?: string | null
+          checked_at?: string | null
           contract_size?: number | null
           created_at?: string
           description?: string | null
@@ -300,17 +325,25 @@ export type Database = {
           display_symbol?: string
           id?: string
           last_synced_at?: string
+          local_mt_account_id?: string | null
           mt5_login?: string | null
           mt5_server?: string | null
           raw_metadata?: Json | null
           source?: string
           source_endpoint_account_id?: string | null
           source_verified?: boolean
+          stale_at?: string | null
           trade_eligible?: boolean
           trade_mode?: string | null
+          trade_mode_interpretation?: string | null
+          trade_mode_raw?: string | null
           trading_layer_account_id?: string | null
           trading_layer_trader_id?: string
           updated_at?: string
+          user_id?: string | null
+          volume_max?: number | null
+          volume_min?: number | null
+          volume_step?: number | null
         }
         Relationships: []
       }
@@ -669,6 +702,7 @@ export type Database = {
       mt_pending_orders: {
         Row: {
           account_id: string | null
+          broker_symbol: string | null
           created_at: string
           ea_message: string | null
           ea_ticket: string | null
@@ -689,6 +723,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
+          broker_symbol?: string | null
           created_at?: string
           ea_message?: string | null
           ea_ticket?: string | null
@@ -709,6 +744,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
+          broker_symbol?: string | null
           created_at?: string
           ea_message?: string | null
           ea_ticket?: string | null
@@ -732,6 +768,7 @@ export type Database = {
       mt_positions: {
         Row: {
           account_id: string
+          broker_symbol: string | null
           commission: number | null
           current_price: number | null
           id: string
@@ -750,6 +787,7 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          broker_symbol?: string | null
           commission?: number | null
           current_price?: number | null
           id?: string
@@ -768,6 +806,7 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          broker_symbol?: string | null
           commission?: number | null
           current_price?: number | null
           id?: string
