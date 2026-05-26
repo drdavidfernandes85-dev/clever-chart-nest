@@ -33,6 +33,12 @@ import {
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
 import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
+import {
+  resolveFreshExecutionTick,
+  FRESH_TICK_OK,
+  FRESH_TICK_POLICY_VERSION,
+  type FreshTickResult,
+} from "../_shared/freshTick.ts";
 
 const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
@@ -151,31 +157,50 @@ Deno.serve(async (req) => {
   const uid = userData?.user?.id ?? null;
   timings.authValidatedAt = Date.now();
 
-  // Pre-trade quote snapshot for slippage measurement + freshness gate.
+  // ---------------------------------------------------------------------------
+  // Pre-trade authoritative server-side fresh-tick validation.
+  //
+  // ROUTE: verified Trading Layer account route (user_mt_accounts.trading_layer_account_id).
+  // SYMBOL: exact broker symbol (caller-resolved). Display ticks (WebSocket /
+  // /get-mt5-quotes) are NEVER trusted as price-of-record.
+  // ---------------------------------------------------------------------------
   let requestedBid: number | null = null;
   let requestedAsk: number | null = null;
   let quoteTimestamp: string | null = null;
-  let quoteSource: string | null = null;
-  try {
-    const { data: q } = await supabase.functions.invoke("get-mt5-quotes", {
-      body: { selectedSymbol: symbol, symbols: [symbol], debug: false },
-    });
-    const row = Array.isArray(q?.quotes)
-      ? q.quotes.find((r: any) => String(r?.symbol || "").toUpperCase() === String(symbol).toUpperCase())
-      : null;
-    if (row) {
-      requestedBid = row.bid != null ? Number(row.bid) : null;
-      requestedAsk = row.ask != null ? Number(row.ask) : null;
-      quoteTimestamp = row.timestamp ?? row.time ?? row.ts ?? new Date().toISOString();
-      quoteSource = row.source ?? "get-mt5-quotes";
-    }
-  } catch { /* ignore — quote snapshot is best-effort */ }
+  let quoteSource: string = "trading_layer_latest_tick";
+  let freshTick: FreshTickResult | null = null;
+  let routeAccountIdForTick: string | null = null;
+  const tickBrokerSymbol = String((payload as any)?.brokerSymbol || symbol || "").trim().toUpperCase();
+  if (uid) {
+    try {
+      const { data: acct } = await supabase
+        .from("user_mt_accounts")
+        .select("trading_layer_account_id")
+        .eq("user_id", uid)
+        .eq("platform", "mt5")
+        .eq("status", "connected")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      routeAccountIdForTick = (acct as any)?.trading_layer_account_id ?? null;
+    } catch { /* ignore — handled by missing-route code below */ }
+  }
+  freshTick = await resolveFreshExecutionTick({
+    routeAccountId: routeAccountIdForTick,
+    brokerSymbol: tickBrokerSymbol || null,
+    displaySymbol: symbol,
+  });
+  requestedBid = freshTick.bid;
+  requestedAsk = freshTick.ask;
+  quoteTimestamp = freshTick.timestamp;
+  quoteSource = freshTick.source;
   timings.freshTickFetchedAt = Date.now();
 
   const requestedPrice =
     side === "buy" ? requestedAsk : side === "sell" ? requestedBid : null;
   const haveFreshQuote =
-    requestedBid != null && requestedAsk != null && requestedPrice != null;
+    freshTick.fresh && requestedBid != null && requestedAsk != null && requestedPrice != null;
+
 
   const startedAt = Date.now();
   const clientLatencyMs = clientClickAt
@@ -291,7 +316,12 @@ Deno.serve(async (req) => {
   timings.riskValidatedAt = Date.now();
 
   // Freshness gate — refuse live execution without a fresh server-side tick.
-  if (!haveFreshQuote && devModeAllowMissingQuote !== true) {
+  // devModeAllowMissingQuote is honored ONLY for dry-runs (handled earlier);
+  // for real orders we never bypass this gate.
+  if (!haveFreshQuote) {
+    const ftCode = freshTick?.code ?? "FRESH_TICK_UNAVAILABLE";
+    const ftMessage =
+      freshTick?.message ?? "Live order blocked: no fresh server-side quote is available for execution validation.";
     if (uid) {
       fireAndForget(supabase.from("execution_audit_events").insert({
         user_id: uid,
@@ -311,37 +341,56 @@ Deno.serve(async (req) => {
             : null,
         bid: requestedBid,
         ask: requestedAsk,
-        broker_message: "Blocked: no fresh server-side tick available.",
+        broker_message: ftMessage,
         retcode: null,
-        reason: "missing_fresh_tick",
+        reason: ftCode.toLowerCase(),
         rule_violated: "fresh_tick_required",
         ticket: null,
         raw: {
-          classification: "blocked",
+          classification: "blocked_missing_fresh_server_tick",
           version: VERSION,
-          step: "pretrade_validation",
+          step: "pretrade_fresh_tick_validation",
+          liveOrderAttempted: false,
           liveOrderSent: false,
+          brokerAccepted: false,
           quote_bid: requestedBid,
           quote_ask: requestedAsk,
           quote_timestamp: quoteTimestamp,
           quote_source: quoteSource,
+          quote_age_ms: freshTick?.ageMs ?? null,
+          quote_threshold_ms: freshTick?.thresholdMs ?? null,
+          route_account_id_masked: freshTick?.routeAccountIdMasked ?? null,
+          broker_symbol: freshTick?.brokerSymbol ?? null,
+          upstream_status: freshTick?.upstreamStatus ?? null,
+          fresh_tick_policy_version: FRESH_TICK_POLICY_VERSION,
+          fresh_tick_code: ftCode,
         },
       }));
     }
     return withTimings({
       success: false,
       version: VERSION,
-      step: "pretrade_validation",
+      step: "pretrade_fresh_tick_validation",
+      classification: "blocked_missing_fresh_server_tick",
+      liveOrderAttempted: false,
       liveOrderSent: false,
+      brokerAccepted: false,
       tradeId,
-      error: "No fresh server-side tick available — refusing to send live order.",
-      reasons: ["Missing fresh bid/ask snapshot. Try again or enable Dev Mode bypass."],
+      error: ftCode,
+      message: ftMessage,
+      reasons: [ftMessage],
       requestedPrice,
       bid: requestedBid,
       ask: requestedAsk,
       quoteTimestamp,
+      quoteAgeMs: freshTick?.ageMs ?? null,
+      quoteThresholdMs: freshTick?.thresholdMs ?? null,
+      brokerSymbol: freshTick?.brokerSymbol ?? null,
+      routeAccountIdMasked: freshTick?.routeAccountIdMasked ?? null,
+      freshTickPolicyVersion: FRESH_TICK_POLICY_VERSION,
     });
   }
+
 
   // Resolve mapping once — used for diagnostics AND to hard-block stale
   // mappings before any order is forwarded to execute-trade.
