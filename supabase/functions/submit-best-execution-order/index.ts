@@ -162,20 +162,130 @@ Deno.serve(async (req) => {
   timings.authValidatedAt = Date.now();
 
   // ---------------------------------------------------------------------------
+  // Shared verified execution-instrument resolution.
+  //
+  // Single source of truth for: route, exact broker symbol, account+symbol
+  // trade-mode, per-side eligibility. Used by both the Order Ticket
+  // (get-terminal-execution-eligibility) and this submission path so they
+  // can never disagree. We always run it for live orders; dry-run requests
+  // tolerate failures here and continue to the dry-run short-circuit below.
+  // ---------------------------------------------------------------------------
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseService = createClient(SUPABASE_URL, SERVICE_KEY);
+  const intendedOperation = sideToOperation(String(side ?? ""), String(orderType ?? "market"));
+  const clientExpectedBrokerSymbol = (payload as any)?.brokerSymbol
+    ? String((payload as any).brokerSymbol).trim()
+    : null;
+  let verifiedInstrument: any = null;
+  if (uid) {
+    try {
+      verifiedInstrument = await resolveVerifiedExecutionInstrument(supabaseService, {
+        userId: uid,
+        displaySymbol: String(symbol),
+        operation: intendedOperation,
+        expectedBrokerSymbol: clientExpectedBrokerSymbol,
+      });
+    } catch (e) {
+      verifiedInstrument = {
+        success: false,
+        errorCode: "INSTRUMENT_RESOLVER_FAILED",
+        message: (e as Error)?.message ?? "Verified execution-instrument resolver failed.",
+        resolutionStatus: "unresolved",
+      };
+    }
+  }
+
+  // Hard pre-trade gate for live orders: if the shared resolver did not
+  // produce a verified executable instrument, do not even reach the fresh
+  // tick / mutation path. Dry-run requests are allowed through to the
+  // dry-run short-circuit (handled below).
+  const isLiveOrder = dryRun !== true && liveExecutionConfirmed === true;
+  if (isLiveOrder && verifiedInstrument && (!verifiedInstrument.success || !verifiedInstrument.brokerSymbol || verifiedInstrument.operationEligible === false)) {
+    const code = verifiedInstrument.errorCode || verifiedInstrument.operationBlockedReason || "BROKER_SYMBOL_RESOLUTION_FAILED_PRETRADE";
+    const message = verifiedInstrument.message
+      || verifiedInstrument.operationBlockedReason
+      || "Live order blocked: the exact executable broker symbol could not be validated at submission time. No order was sent.";
+    if (uid) {
+      fireAndForget(supabase.from("execution_audit_events").insert({
+        user_id: uid,
+        trade_id: tradeId ?? null,
+        symbol,
+        side,
+        volume: Number(volume),
+        status: "blocked",
+        outcome: "blocked",
+        requested_price: null,
+        executed_price: null,
+        slippage: null,
+        latency_ms: 0,
+        spread: null,
+        bid: null,
+        ask: null,
+        broker_message: message,
+        retcode: null,
+        reason: "blocked_broker_symbol_resolution_pretrade",
+        rule_violated: "verified_execution_instrument_required",
+        ticket: null,
+        raw: {
+          classification: "blocked_broker_symbol_resolution_pretrade",
+          version: VERSION,
+          step: "pretrade_symbol_resolution",
+          liveOrderAttempted: false,
+          liveOrderSent: false,
+          brokerAccepted: false,
+          resolverVersion: VERIFIED_EXECUTION_INSTRUMENT_VERSION,
+          executionPolicyVersion: EXECUTION_POLICY_VERSION,
+          verifiedInstrument: verifiedInstrument ?? null,
+        },
+      }));
+    }
+    return withTimings({
+      success: false,
+      version: VERSION,
+      step: "pretrade_symbol_resolution",
+      classification: "blocked_broker_symbol_resolution_pretrade",
+      blocked: true,
+      liveOrderAttempted: false,
+      liveOrderSent: false,
+      brokerAccepted: false,
+      tradeId,
+      displaySymbol: verifiedInstrument?.displaySymbol ?? symbol,
+      brokerSymbol: verifiedInstrument?.brokerSymbol ?? null,
+      resolutionStatus: verifiedInstrument?.resolutionStatus ?? null,
+      routeAccountIdMasked: verifiedInstrument?.routeAccountIdMasked ?? null,
+      accountTradeModeRaw: verifiedInstrument?.accountTradeModeRaw ?? null,
+      accountTradeModeLabel: verifiedInstrument?.accountTradeModeLabel ?? null,
+      symbolTradeModeRaw: verifiedInstrument?.symbolTradeModeRaw ?? null,
+      symbolTradeModeLabel: verifiedInstrument?.symbolTradeModeLabel ?? null,
+      operationIntent: intendedOperation,
+      operationEligible: verifiedInstrument?.operationEligible ?? false,
+      operationBlockedReason: verifiedInstrument?.operationBlockedReason ?? null,
+      executionPolicyVersion: EXECUTION_POLICY_VERSION,
+      resolverVersion: VERIFIED_EXECUTION_INSTRUMENT_VERSION,
+      error: code,
+      message,
+      reasons: [message],
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Pre-trade authoritative server-side fresh-tick validation.
   //
-  // ROUTE: verified Trading Layer account route (user_mt_accounts.trading_layer_account_id).
-  // SYMBOL: exact broker symbol (caller-resolved). Display ticks (WebSocket /
-  // /get-mt5-quotes) are NEVER trusted as price-of-record.
+  // ROUTE: verified Trading Layer account route (from shared resolver when
+  // available; otherwise best-effort lookup).
+  // SYMBOL: exact broker symbol resolved server-side (NEVER from display
+  // ticks / WebSocket / /get-mt5-quotes).
   // ---------------------------------------------------------------------------
   let requestedBid: number | null = null;
   let requestedAsk: number | null = null;
   let quoteTimestamp: string | null = null;
   let quoteSource: string = "trading_layer_latest_tick";
   let freshTick: FreshTickResult | null = null;
-  let routeAccountIdForTick: string | null = null;
-  const tickBrokerSymbol = String((payload as any)?.brokerSymbol || symbol || "").trim().toUpperCase();
-  if (uid) {
+  let routeAccountIdForTick: string | null = verifiedInstrument?.routeAccountId ?? null;
+  const tickBrokerSymbol =
+    verifiedInstrument?.brokerSymbol
+    || String((payload as any)?.brokerSymbol || symbol || "").trim().toUpperCase();
+  if (!routeAccountIdForTick && uid) {
     try {
       const { data: acct } = await supabase
         .from("user_mt_accounts")
@@ -204,6 +314,9 @@ Deno.serve(async (req) => {
     side === "buy" ? requestedAsk : side === "sell" ? requestedBid : null;
   const haveFreshQuote =
     freshTick.fresh && requestedBid != null && requestedAsk != null && requestedPrice != null;
+
+
+
 
 
   const startedAt = Date.now();
