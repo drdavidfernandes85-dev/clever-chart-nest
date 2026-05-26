@@ -37,17 +37,23 @@ export async function getAccountInfo(accountId: string): Promise<{
 }> {
   let r: Response | null = null;
   let txt = "";
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 4; attempt++) {
     r = await fetch(`${BASE_URL}/api/v1/accounts/${accountId}`, { headers: headers() });
     txt = await r.text();
-    if (r.status !== 429) break;
+    // Retry on transient upstream failures: 401 (TL gateway flakiness), 429, 5xx.
+    const transient = r.status === 401 || r.status === 429 || r.status >= 500;
+    if (!transient) break;
+    if (attempt === 3) break;
     const retryAfter = Number(r.headers.get("retry-after")) || 0;
-    const wait = retryAfter > 0 ? retryAfter * 1000 : 500 * Math.pow(2, attempt);
+    const wait = retryAfter > 0 ? retryAfter * 1000 : 400 * Math.pow(2, attempt);
     await new Promise((res) => setTimeout(res, wait));
   }
   let parsed: any = null;
   try { parsed = JSON.parse(txt); } catch { parsed = { raw: txt }; }
-  if (!r || !r.ok) return { ok: false, status: r?.status ?? 0, data: null, error: `account_fetch_${r?.status ?? "network"}` };
+  if (!r || !r.ok) {
+    const snippet = txt ? txt.slice(0, 240) : "";
+    return { ok: false, status: r?.status ?? 0, data: null, error: `account_fetch_${r?.status ?? "network"}${snippet ? `: ${snippet}` : ""}` };
+  }
   const d = parsed?.data ?? parsed;
   return {
     ok: true,
