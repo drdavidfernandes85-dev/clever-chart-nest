@@ -1961,17 +1961,35 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           <div className="grid grid-cols-2 gap-px bg-neutral-800/60">
             <SideBtn
               tone="sell"
-              disabled={!canSubmitMarket}
+              disabled={!canSubmitSell}
               loading={submitting && side === "sell"}
               onClick={() => submitMarket("sell")}
+              title={
+                executionMode === "admin_live_test"
+                  ? (sellReadyByTL
+                    ? `SELL eligible using verified broker symbol ${termEligibility?.brokerSymbol}.`
+                    : (termEligibility?.sellBlockedReason
+                      ? `SELL blocked: ${termEligibility.sellBlockedReason}.`
+                      : "Checking SELL eligibility…"))
+                  : undefined
+              }
             >
               Sell @ MKT
             </SideBtn>
             <SideBtn
               tone="buy"
-              disabled={!canSubmitMarket}
+              disabled={!canSubmitBuy}
               loading={submitting && side === "buy"}
               onClick={() => submitMarket("buy")}
+              title={
+                executionMode === "admin_live_test"
+                  ? (buyReadyByTL
+                    ? `BUY eligible using verified broker symbol ${termEligibility?.brokerSymbol}.`
+                    : (termEligibility?.buyBlockedReason
+                      ? `BUY blocked: ${termEligibility.buyBlockedReason}.`
+                      : "Checking BUY eligibility…"))
+                  : undefined
+              }
             >
               Buy @ MKT
             </SideBtn>
