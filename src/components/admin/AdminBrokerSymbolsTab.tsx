@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, RefreshCw, Search, Database, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Loader2, RefreshCw, Search, Database, ShieldCheck, ShieldAlert, KeyRound } from "lucide-react";
 
 interface VerifiedMapping {
   id: string;
@@ -14,11 +14,13 @@ interface VerifiedMapping {
   trading_layer_account_id: string | null;
   trading_layer_trader_id: string | null;
   trading_layer_external_trader_id: string | null;
+  trading_layer_account_route_id?: string | null;
+  account_route_verified?: boolean;
+  account_route_verified_at?: string | null;
   mapping_status: string | null;
   credential_status: string | null;
   last_verified_at: string | null;
 }
-
 
 interface Variant {
   brokerSymbol: string;
@@ -38,7 +40,10 @@ interface TargetedResult {
 interface SyncResponse {
   success: boolean;
   error?: string;
+  blocker?: string | null;
   accountRouteIdUsed?: string;
+  accountRouteVerified?: boolean;
+  verifiedRouteIdUsed?: string | null;
   accountTradeAllowed?: boolean;
   accountTradeModeRaw?: number | null;
   accountTradeModeLabel?: string | null;
@@ -52,6 +57,34 @@ interface SyncResponse {
   rowsStored?: number;
   errors?: unknown;
   mode?: string;
+  mapping?: VerifiedMapping;
+}
+
+interface CandidateReport {
+  label: "trader_route" | "stored_account_route";
+  id: string;
+  idMasked: string | null;
+  httpStatus: number;
+  ok: boolean;
+  login: string | number | null;
+  server: string | null;
+  tradeAllowed: boolean | null;
+  tradeModeRaw: number | null;
+  tradeModeLabel: string | null;
+  identityMatchesExpectedLogin: boolean;
+  identityMatchesExpectedServer: boolean;
+  matches: boolean;
+}
+
+interface VerifyResponse {
+  success: boolean;
+  error?: string;
+  blocker?: string | null;
+  verified?: boolean;
+  verifiedRouteId?: string | null;
+  verifiedRouteIdMasked?: string | null;
+  expected?: { mt5Login: string | null; mt5Server: string | null };
+  candidates?: CandidateReport[];
 }
 
 interface CatalogRow {
@@ -62,6 +95,8 @@ interface CatalogRow {
   trade_mode_raw: string | null;
   trade_mode_interpretation: string | null;
   trade_eligible: boolean;
+  execution_usable?: boolean;
+  route_identity_verified?: boolean;
   checked_at: string | null;
   last_synced_at: string | null;
 }
@@ -73,7 +108,7 @@ const fmtTime = (v: string | null | undefined) =>
   v ? new Date(v).toLocaleString() : "—";
 
 const tradeModeBadge = (raw: number | null | undefined, label?: string | null) => {
-  if (raw == null) return <Badge variant="outline">unknown</Badge>;
+  if (raw == null) return <Badge variant="outline">Not inspected</Badge>;
   const color =
     raw === 4 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
     raw === 0 ? "bg-destructive/15 text-destructive border-destructive/30" :
@@ -96,11 +131,12 @@ export default function AdminBrokerSymbolsTab() {
   const [loadingMapping, setLoadingMapping] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [lastResp, setLastResp] = useState<SyncResponse | null>(null);
+  const [verifyResp, setVerifyResp] = useState<VerifyResponse | null>(null);
   const [catalog, setCatalog] = useState<CatalogRow[]>([]);
 
   const loadMappingFromDB = useCallback(async (): Promise<VerifiedMapping | null> => {
     const { data } = await (supabase.from as any)("user_mt_accounts")
-      .select("id, user_id, mt5_login, mt5_server, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, mapping_status, credential_status, last_verified_at, login, server_name, status")
+      .select("id, user_id, mt5_login, mt5_server, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, trading_layer_account_route_id, account_route_verified, account_route_verified_at, mapping_status, credential_status, last_verified_at, login, server_name, status")
       .eq("status", "connected")
       .not("trading_layer_account_id", "is", null)
       .not("trading_layer_trader_id", "is", null)
@@ -115,6 +151,9 @@ export default function AdminBrokerSymbolsTab() {
       trading_layer_account_id: r.trading_layer_account_id,
       trading_layer_trader_id: r.trading_layer_trader_id,
       trading_layer_external_trader_id: r.trading_layer_external_trader_id,
+      trading_layer_account_route_id: r.trading_layer_account_route_id ?? null,
+      account_route_verified: !!r.account_route_verified,
+      account_route_verified_at: r.account_route_verified_at ?? null,
       mapping_status: r.mapping_status,
       credential_status: r.credential_status,
       last_verified_at: r.last_verified_at,
@@ -122,20 +161,17 @@ export default function AdminBrokerSymbolsTab() {
     return normalized.find((r) => r.mt5_login === "87943580") ?? normalized[0] ?? null;
   }, []);
 
-  const loadCatalog = useCallback(async (accountId?: string | null) => {
-    const id = accountId ?? mapping?.trading_layer_account_id;
+  const loadCatalog = useCallback(async (routeId?: string | null) => {
+    const id = routeId ?? mapping?.trading_layer_account_route_id ?? mapping?.trading_layer_account_id;
     if (!id) return;
     const { data } = await (supabase.from as any)("broker_symbol_catalog")
-      .select("broker_symbol, display_symbol, canonical_symbol, description, trade_mode_raw, trade_mode_interpretation, trade_eligible, checked_at, last_synced_at")
+      .select("broker_symbol, display_symbol, canonical_symbol, description, trade_mode_raw, trade_mode_interpretation, trade_eligible, execution_usable, route_identity_verified, checked_at, last_synced_at")
       .eq("trading_layer_account_id", id)
       .order("broker_symbol", { ascending: true })
       .limit(1000);
     setCatalog((data as CatalogRow[]) ?? []);
-  }, [mapping?.trading_layer_account_id]);
+  }, [mapping?.trading_layer_account_route_id, mapping?.trading_layer_account_id]);
 
-  // Bootstrap: try local DB first, then fall back to the edge function's
-  // server-resolved mapping (authoritative). This avoids "No connected MT
-  // account" when the admin browser session can't see the row via RLS.
   useEffect(() => {
     (async () => {
       setLoadingMapping(true);
@@ -143,10 +179,9 @@ export default function AdminBrokerSymbolsTab() {
       if (fromDb) {
         setMapping(fromDb);
         setLoadingMapping(false);
-        loadCatalog(fromDb.trading_layer_account_id);
+        loadCatalog(fromDb.trading_layer_account_route_id ?? fromDb.trading_layer_account_id);
         return;
       }
-      // Fallback: ask the edge function (cheap info mode, no TL crawl).
       try {
         const { data } = await supabase.functions.invoke("sync-broker-symbol-catalog", {
           body: { mode: "info" },
@@ -155,7 +190,7 @@ export default function AdminBrokerSymbolsTab() {
         if (m?.trading_layer_account_id) {
           setMapping(m as VerifiedMapping);
           setLastResp(data as SyncResponse);
-          loadCatalog(m.trading_layer_account_id);
+          loadCatalog(m.trading_layer_account_route_id ?? m.trading_layer_account_id);
         }
       } catch { /* ignore */ }
       setLoadingMapping(false);
@@ -173,16 +208,17 @@ export default function AdminBrokerSymbolsTab() {
         return;
       }
       setLastResp(data as SyncResponse);
-      const respMapping = (data as any)?.mapping;
-      if (respMapping?.trading_layer_account_id && !mapping) {
-        setMapping(respMapping as VerifiedMapping);
-      }
-      const accountId = (data as any)?.accountRouteIdUsed
+      const respMapping = (data as any)?.mapping as VerifiedMapping | undefined;
+      if (respMapping) setMapping(respMapping);
+      const routeId = (data as any)?.accountRouteIdUsed
+        ?? (data as any)?.verifiedRouteIdUsed
+        ?? respMapping?.trading_layer_account_route_id
         ?? respMapping?.trading_layer_account_id
+        ?? mapping?.trading_layer_account_route_id
         ?? mapping?.trading_layer_account_id;
       if ((data as any)?.success) {
         toast.success(`${action} complete`);
-        await loadCatalog(accountId);
+        await loadCatalog(routeId);
       } else {
         toast.error((data as any)?.error || "Sync failed");
       }
@@ -194,35 +230,66 @@ export default function AdminBrokerSymbolsTab() {
     }
   };
 
+  const verifyRoute = async () => {
+    setBusy("Verify Account Route");
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "verify-trading-layer-account-route",
+        { body: { targetUserId: mapping?.user_id, localMtAccountId: mapping?.id } },
+      );
+      if (error) {
+        toast.error(error.message || "Verification failed");
+        return;
+      }
+      setVerifyResp(data as VerifyResponse);
+      if ((data as any)?.verified) {
+        toast.success("Account route verified");
+        // refresh mapping + info
+        const fresh = await loadMappingFromDB();
+        if (fresh) setMapping(fresh);
+      } else {
+        toast.error("No candidate route matched the connected MT5 login/server");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Network error");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const refreshPermission = () => invoke("Account permission", { mode: "info" });
   const lookupEURUSD = () => invoke("EURUSD lookup", { mode: "targeted", symbols: ["EURUSD"] });
   const lookupXAUUSD = () => invoke("XAUUSD lookup", { mode: "targeted", symbols: ["XAUUSD"] });
   const fullSync = () => invoke("Full catalogue sync", { mode: "full" });
 
-  const eurResolved = lastResp?.results?.find(r => r.displaySymbol === "EURUSD")?.variants?.[0]?.brokerSymbol
-    ?? catalog.find(c => c.canonical_symbol === "EURUSD")?.broker_symbol ?? null;
-  const xauResolved = lastResp?.results?.find(r => r.displaySymbol === "XAUUSD")?.variants?.[0]?.brokerSymbol
-    ?? catalog.find(c => c.canonical_symbol === "XAUUSD")?.broker_symbol ?? null;
-  const tradeAllowed = lastResp?.accountTradeAllowed;
-  const accountTradeModeRaw = lastResp?.accountTradeModeRaw;
+  const routeVerified = !!mapping?.account_route_verified && !!mapping?.trading_layer_account_route_id;
+
+  const eurResolved = lastResp?.results?.find(r => r.displaySymbol === "EURUSD")?.variants?.[0] ?? null;
+  const xauResolved = lastResp?.results?.find(r => r.displaySymbol === "XAUUSD")?.variants?.[0] ?? null;
+  const tradeAllowed = routeVerified ? lastResp?.accountTradeAllowed : undefined;
+  const accountTradeModeRaw = routeVerified ? lastResp?.accountTradeModeRaw : null;
   const isShortOnly = accountTradeModeRaw === 2;
   const isLongOnly = accountTradeModeRaw === 1;
   const isDisabled = accountTradeModeRaw === 0;
   const accountCanBuy = tradeAllowed === true && (accountTradeModeRaw === 1 || accountTradeModeRaw === 4);
   const accountCanSell = tradeAllowed === true && (accountTradeModeRaw === 2 || accountTradeModeRaw === 4);
-  const readyForTest = !!eurResolved && tradeAllowed === true && !isDisabled;
-  const blocker = !mapping?.trading_layer_account_id ? "No verified Trading Layer accountId"
+
+  const eurBuyReady = routeVerified && accountCanBuy && !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
+  const eurSellReady = routeVerified && accountCanSell && !!eurResolved && canSell(eurResolved.symbolTradeModeRaw);
+
+  const blocker = !routeVerified
+    ? "Wrong or unverified Trading Layer account route; executable symbol catalogue not verified."
     : tradeAllowed === false ? "Account trade_allowed = false"
     : tradeAllowed == null ? "Account permission not yet checked"
     : isDisabled ? "Account trade_mode = DISABLED — no orders allowed"
-    : isShortOnly ? "BUY is blocked under SHORTONLY mode. SELL test pending exact EURUSD broker-symbol and symbol-permission verification."
-    : isLongOnly ? "SELL is blocked under LONGONLY mode."
-    : !eurResolved ? "EURUSD broker symbol not yet resolved"
+    : isShortOnly ? "Account is SHORTONLY. BUY blocked; SELL test pending symbol-info verification."
+    : isLongOnly ? "Account is LONGONLY. SELL blocked."
+    : !eurResolved ? "EURUSD exact broker symbol not yet inspected for the verified route"
     : null;
 
   return (
     <div className="space-y-4">
+      {/* Selected Account */}
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <ShieldCheck className="h-4 w-4 text-primary" />
@@ -240,33 +307,91 @@ export default function AdminBrokerSymbolsTab() {
             <div><div className="text-muted-foreground">Credential</div><div><Badge variant="outline">{mapping.credential_status ?? "—"}</Badge></div></div>
             <div><div className="text-muted-foreground">TL accountId</div><div className="font-mono">{mask(mapping.trading_layer_account_id)}</div></div>
             <div><div className="text-muted-foreground">TL traderId</div><div className="font-mono">{mask(mapping.trading_layer_trader_id)}</div></div>
+            <div><div className="text-muted-foreground">Verified Route</div><div className="font-mono">{routeVerified ? mask(mapping.trading_layer_account_route_id) : <span className="text-amber-400">unverified</span>}</div></div>
+            <div><div className="text-muted-foreground">Verified At</div><div className="font-mono">{fmtTime(mapping.account_route_verified_at)}</div></div>
           </div>
         )}
       </Card>
 
+      {/* Route Verification */}
       <Card className="p-4">
-        <div className="flex items-center gap-2 mb-3">
-          {tradeAllowed ? <ShieldCheck className="h-4 w-4 text-emerald-400" /> : <ShieldAlert className="h-4 w-4 text-amber-400" />}
-          <h3 className="text-sm font-semibold">Account Execution Permission</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Trading Layer Route Verification</h3>
+          </div>
+          <Button size="sm" variant={routeVerified ? "outline" : "default"} onClick={verifyRoute} disabled={busy !== null || !mapping}>
+            {busy === "Verify Account Route" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />}
+            {routeVerified ? "Re-verify Account Route" : "Verify Account Route"}
+          </Button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-          <div><div className="text-muted-foreground">Account trade_mode</div><div>{tradeModeBadge(lastResp?.accountTradeModeRaw, lastResp?.accountTradeModeLabel)}</div></div>
-          <div><div className="text-muted-foreground">Buy (account)</div><div>{yesNoBadge(accountCanBuy)}</div></div>
-          <div><div className="text-muted-foreground">Sell (account)</div><div>{yesNoBadge(accountCanSell)}</div></div>
-          <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
-          <div className="md:col-span-3"><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="border-b border-border/50 text-muted-foreground">
+              <tr>
+                <th className="text-left py-2 px-2">Candidate</th>
+                <th className="text-left py-2 px-2">ID</th>
+                <th className="text-left py-2 px-2">HTTP</th>
+                <th className="text-left py-2 px-2">Login</th>
+                <th className="text-left py-2 px-2">Server</th>
+                <th className="text-left py-2 px-2">trade_allowed</th>
+                <th className="text-left py-2 px-2">trade_mode</th>
+                <th className="text-left py-2 px-2">MT5 Match</th>
+                <th className="text-left py-2 px-2">Use for Exec</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {!verifyResp?.candidates?.length ? (
+                <tr><td colSpan={9} className="py-4 text-center text-muted-foreground">Click "Verify Account Route" to query Trading Layer (read-only).</td></tr>
+              ) : verifyResp.candidates.map((c) => (
+                <tr key={c.id}>
+                  <td className="py-2 px-2">{c.label === "trader_route" ? "Trader route" : "Stored route"}</td>
+                  <td className="py-2 px-2 font-mono">{c.idMasked}</td>
+                  <td className="py-2 px-2 font-mono">{c.httpStatus}</td>
+                  <td className="py-2 px-2 font-mono">{c.login ?? "—"}</td>
+                  <td className="py-2 px-2 font-mono">{c.server ?? "—"}</td>
+                  <td className="py-2 px-2">{c.tradeAllowed == null ? "—" : yesNoBadge(c.tradeAllowed)}</td>
+                  <td className="py-2 px-2">{tradeModeBadge(c.tradeModeRaw, c.tradeModeLabel)}</td>
+                  <td className="py-2 px-2">{yesNoBadge(c.matches)}</td>
+                  <td className="py-2 px-2">{yesNoBadge(c.matches)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        {isShortOnly && (
-          <p className="mt-3 text-[11px] text-amber-400">
-            SHORTONLY restriction: BUY / open-long is blocked. SELL may be permitted subject to exact symbol trade_mode.
+        {verifyResp?.expected && (
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Expected MT5 identity: login <span className="font-mono">{verifyResp.expected.mt5Login ?? "—"}</span> / server <span className="font-mono">{verifyResp.expected.mt5Server ?? "—"}</span>
           </p>
         )}
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Execution uses the exact broker symbol returned by Trading Layer for this connected MT5 account. Symbols are never guessed or manually suffixed.
-        </p>
+        {!routeVerified && (
+          <p className="mt-2 text-[11px] text-amber-400">
+            Trading Layer account route must be verified against the connected MT5 login/server before broker symbols can be used for execution.
+          </p>
+        )}
       </Card>
 
+      {/* Account Execution Permission */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          {routeVerified && tradeAllowed ? <ShieldCheck className="h-4 w-4 text-emerald-400" /> : <ShieldAlert className="h-4 w-4 text-amber-400" />}
+          <h3 className="text-sm font-semibold">Account Execution Permission</h3>
+        </div>
+        {!routeVerified ? (
+          <p className="text-xs text-amber-400">unverified — verify the account route first.</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
+            <div><div className="text-muted-foreground">Account trade_mode</div><div>{tradeModeBadge(lastResp?.accountTradeModeRaw, lastResp?.accountTradeModeLabel)}</div></div>
+            <div><div className="text-muted-foreground">Buy (account)</div><div>{yesNoBadge(accountCanBuy)}</div></div>
+            <div><div className="text-muted-foreground">Sell (account)</div><div>{yesNoBadge(accountCanSell)}</div></div>
+            <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
+            <div className="md:col-span-3"><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
+          </div>
+        )}
+      </Card>
+
+      {/* Actions */}
       <Card className="p-4">
         <h3 className="text-sm font-semibold mb-3">Actions (read-only)</h3>
         <div className="flex flex-wrap gap-2">
@@ -274,21 +399,27 @@ export default function AdminBrokerSymbolsTab() {
             {busy === "Account permission" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
             Refresh Account Permission
           </Button>
-          <Button size="sm" variant="outline" onClick={lookupEURUSD} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={lookupEURUSD} disabled={busy !== null || !routeVerified}>
             {busy === "EURUSD lookup" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
             Lookup EURUSD
           </Button>
-          <Button size="sm" variant="outline" onClick={lookupXAUUSD} disabled={busy !== null}>
+          <Button size="sm" variant="outline" onClick={lookupXAUUSD} disabled={busy !== null || !routeVerified}>
             {busy === "XAUUSD lookup" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
             Lookup XAUUSD
           </Button>
-          <Button size="sm" variant="default" onClick={fullSync} disabled={busy !== null}>
+          <Button size="sm" variant="default" onClick={fullSync} disabled={busy !== null || !routeVerified}>
             {busy === "Full catalogue sync" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Database className="h-3.5 w-3.5 mr-1.5" />}
             Sync Full Visible Catalogue
           </Button>
         </div>
+        {!routeVerified && (
+          <p className="mt-2 text-[11px] text-amber-400">
+            Symbol-sync and lookup actions are disabled until the account route is verified.
+          </p>
+        )}
       </Card>
 
+      {/* Targeted Lookup Results */}
       {lastResp?.results && lastResp.results.length > 0 && (
         <Card className="p-4">
           <h3 className="text-sm font-semibold mb-3">Targeted Lookup Results</h3>
@@ -325,6 +456,7 @@ export default function AdminBrokerSymbolsTab() {
         </Card>
       )}
 
+      {/* Stored Catalogue */}
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold">Stored Catalogue ({catalog.length})</h3>
@@ -342,13 +474,14 @@ export default function AdminBrokerSymbolsTab() {
                 <th className="text-left py-2 px-2">Broker Symbol</th>
                 <th className="text-left py-2 px-2">Description</th>
                 <th className="text-left py-2 px-2">Trade Mode</th>
-                <th className="text-left py-2 px-2">Eligible</th>
+                <th className="text-left py-2 px-2">Exec Usable</th>
+                <th className="text-left py-2 px-2">Route Verified</th>
                 <th className="text-left py-2 px-2">Checked</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
               {catalog.length === 0 ? (
-                <tr><td colSpan={6} className="py-4 text-center text-muted-foreground">No symbols cached yet. Run a sync.</td></tr>
+                <tr><td colSpan={7} className="py-4 text-center text-muted-foreground">No symbols cached yet. Verify the route, then run a sync.</td></tr>
               ) : catalog.map(c => {
                 const raw = c.trade_mode_raw != null ? Number(c.trade_mode_raw) : null;
                 return (
@@ -357,7 +490,8 @@ export default function AdminBrokerSymbolsTab() {
                     <td className="py-1.5 px-2 font-mono text-primary">{c.broker_symbol}</td>
                     <td className="py-1.5 px-2 text-muted-foreground">{c.description ?? "—"}</td>
                     <td className="py-1.5 px-2">{tradeModeBadge(raw, c.trade_mode_interpretation)}</td>
-                    <td className="py-1.5 px-2">{yesNoBadge(c.trade_eligible)}</td>
+                    <td className="py-1.5 px-2">{yesNoBadge(!!c.execution_usable)}</td>
+                    <td className="py-1.5 px-2">{yesNoBadge(!!c.route_identity_verified)}</td>
                     <td className="py-1.5 px-2 text-muted-foreground">{fmtTime(c.checked_at ?? c.last_synced_at)}</td>
                   </tr>
                 );
@@ -367,13 +501,16 @@ export default function AdminBrokerSymbolsTab() {
         </div>
       </Card>
 
+      {/* Readiness */}
       <Card className="p-4">
         <h3 className="text-sm font-semibold mb-3">Readiness Summary</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-          <div><div className="text-muted-foreground">EURUSD brokerSymbol</div><div className="font-mono">{eurResolved ?? "unresolved"}</div></div>
-          <div><div className="text-muted-foreground">XAUUSD brokerSymbol</div><div className="font-mono">{xauResolved ?? "unresolved"}</div></div>
+          <div><div className="text-muted-foreground">Route verified</div><div>{yesNoBadge(routeVerified)}</div></div>
+          <div><div className="text-muted-foreground">EURUSD brokerSymbol</div><div className="font-mono">{eurResolved?.brokerSymbol ?? "unresolved"}</div></div>
+          <div><div className="text-muted-foreground">XAUUSD brokerSymbol</div><div className="font-mono">{xauResolved?.brokerSymbol ?? "unresolved"}</div></div>
           <div><div className="text-muted-foreground">Account trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unknown</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-          <div><div className="text-muted-foreground">Ready for controlled EURUSD test</div><div>{yesNoBadge(readyForTest)}</div></div>
+          <div><div className="text-muted-foreground">EURUSD BUY ready</div><div>{yesNoBadge(eurBuyReady)}</div></div>
+          <div><div className="text-muted-foreground">EURUSD SELL ready</div><div>{yesNoBadge(eurSellReady)}</div></div>
           {blocker && (
             <div className="col-span-2 md:col-span-3">
               <div className="text-muted-foreground">Blocker</div>

@@ -255,13 +255,18 @@ export type Database = {
           description: string | null
           digits: number | null
           display_symbol: string
+          execution_usable: boolean
           id: string
           last_synced_at: string
           local_mt_account_id: string | null
+          mapping_status: string | null
           mt5_login: string | null
           mt5_server: string | null
+          notes: string | null
           raw_metadata: Json | null
+          route_identity_verified: boolean
           source: string
+          source_account_route_id: string | null
           source_endpoint_account_id: string | null
           source_verified: boolean
           stale_at: string | null
@@ -289,13 +294,18 @@ export type Database = {
           description?: string | null
           digits?: number | null
           display_symbol: string
+          execution_usable?: boolean
           id?: string
           last_synced_at?: string
           local_mt_account_id?: string | null
+          mapping_status?: string | null
           mt5_login?: string | null
           mt5_server?: string | null
+          notes?: string | null
           raw_metadata?: Json | null
+          route_identity_verified?: boolean
           source?: string
+          source_account_route_id?: string | null
           source_endpoint_account_id?: string | null
           source_verified?: boolean
           stale_at?: string | null
@@ -323,13 +333,18 @@ export type Database = {
           description?: string | null
           digits?: number | null
           display_symbol?: string
+          execution_usable?: boolean
           id?: string
           last_synced_at?: string
           local_mt_account_id?: string | null
+          mapping_status?: string | null
           mt5_login?: string | null
           mt5_server?: string | null
+          notes?: string | null
           raw_metadata?: Json | null
+          route_identity_verified?: boolean
           source?: string
+          source_account_route_id?: string | null
           source_endpoint_account_id?: string | null
           source_verified?: boolean
           stale_at?: string | null
@@ -1535,6 +1550,11 @@ export type Database = {
       user_mt_accounts: {
         Row: {
           account_id_relationship_verified: boolean
+          account_route_mt5_login: string | null
+          account_route_mt5_server: string | null
+          account_route_verification_evidence: Json | null
+          account_route_verified: boolean
+          account_route_verified_at: string | null
           account_type: string
           balance: number | null
           broker_name: string
@@ -1564,6 +1584,7 @@ export type Database = {
           status: string
           status_message: string | null
           trading_layer_account_id: string | null
+          trading_layer_account_route_id: string | null
           trading_layer_external_trader_id: string | null
           trading_layer_trader_id: string | null
           updated_at: string
@@ -1571,6 +1592,11 @@ export type Database = {
         }
         Insert: {
           account_id_relationship_verified?: boolean
+          account_route_mt5_login?: string | null
+          account_route_mt5_server?: string | null
+          account_route_verification_evidence?: Json | null
+          account_route_verified?: boolean
+          account_route_verified_at?: string | null
           account_type?: string
           balance?: number | null
           broker_name: string
@@ -1600,6 +1626,7 @@ export type Database = {
           status?: string
           status_message?: string | null
           trading_layer_account_id?: string | null
+          trading_layer_account_route_id?: string | null
           trading_layer_external_trader_id?: string | null
           trading_layer_trader_id?: string | null
           updated_at?: string
@@ -1607,6 +1634,11 @@ export type Database = {
         }
         Update: {
           account_id_relationship_verified?: boolean
+          account_route_mt5_login?: string | null
+          account_route_mt5_server?: string | null
+          account_route_verification_evidence?: Json | null
+          account_route_verified?: boolean
+          account_route_verified_at?: string | null
           account_type?: string
           balance?: number | null
           broker_name?: string
@@ -1636,6 +1668,7 @@ export type Database = {
           status?: string
           status_message?: string | null
           trading_layer_account_id?: string | null
+          trading_layer_account_route_id?: string | null
           trading_layer_external_trader_id?: string | null
           trading_layer_trader_id?: string | null
           updated_at?: string
