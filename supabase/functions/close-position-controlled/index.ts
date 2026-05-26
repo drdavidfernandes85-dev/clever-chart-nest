@@ -183,9 +183,10 @@ Deno.serve(async (req) => {
   }
   const brokerSymbol = eligible.brokerSymbol as string;
 
-  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate).
+  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate, close).
   const fresh = await refreshTradeModeFromTradingLayer(supabase, {
     traderId: accountId, accountId: mapping.tradingLayerAccountId, brokerSymbol, login: mapping.login, server: mapping.server,
+    operation: "close_position",
   });
   if (!fresh.ok) {
     return json(freshTradeModeGateResponse(VERSION, fresh, { ticket, closeId, volume }), 200);
