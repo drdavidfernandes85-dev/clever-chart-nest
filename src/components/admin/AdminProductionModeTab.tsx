@@ -407,6 +407,90 @@ const AdminProductionModeTab = () => {
             <RefreshCw className={`h-3 w-3 mr-1 ${verifying ? "animate-spin" : ""}`} />
             Run Verification From Audit
           </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              const payload = {
+                title: "Trading Layer Execution Rejection Evidence — MT5 87943580 — EURUSD SELL",
+                exportedAt: new Date().toISOString(),
+                mt5: { login: "87943580", server: "InfinoxLimited-MT5Live" },
+                verifiedExecutionRoute: "559a12e4-16d8-4db3-be48-40fbea54bcfe",
+                symbol: { displaySymbol: "EURUSD", resolvedBrokerSymbol: "EURUSD" },
+                side: "sell",
+                volume: 0.01,
+                pretradeReadOnlyState: {
+                  tradeAllowed: true,
+                  accountTradeModeRaw: 2,
+                  accountTradeMode: "SYMBOL_TRADE_MODE_SHORTONLY",
+                  symbolTradeModeRaw: 4,
+                  symbolTradeMode: "SYMBOL_TRADE_MODE_FULL",
+                  sellReady: true,
+                  buyReady: false,
+                },
+                freshTickAtSubmission: {
+                  source: "trading_layer_latest_tick",
+                  bid: 1.16321,
+                  ask: 1.16332,
+                  requestedPrice: 1.16321,
+                  ageMsThreshold: 15000,
+                },
+                attempts: [
+                  {
+                    attempt: 1,
+                    adminTestId: "dc4b6690-7f8c-4417-8eb1-fced2dbff100",
+                    auditEventId: "78821bde-f13f-4f8f-83a5-ad680070693c",
+                    submittedAtUtc: "2026-05-26T21:59:46.342Z",
+                    retcode: 10017,
+                    retcodeName: "TRADE_RETCODE_TRADE_DISABLED",
+                    retcodeDescription: "Trade is disabled",
+                    brokerAccepted: false,
+                    mt5Confirmed: false,
+                    positionOpened: false,
+                  },
+                  {
+                    attempt: 2,
+                    adminTestId: "958cc603-3dd5-4c70-8a66-5615488858d3",
+                    auditEventId: "5f56fdf9-15d6-40ec-a440-28605ab939df",
+                    submittedAtUtc: "2026-05-26T22:05:53.171Z",
+                    retcode: 10017,
+                    retcodeName: "TRADE_RETCODE_TRADE_DISABLED",
+                    retcodeDescription: "Trade is disabled",
+                    brokerAccepted: false,
+                    mt5Confirmed: false,
+                    positionOpened: false,
+                    latencyMs: 2179,
+                  },
+                ],
+                policyVersions: {
+                  execution: "TL_EXACT_SYMBOL_OPERATION_INTENT_V1_2026_05_26",
+                  freshTick: "FRESH_TICK_SERVER_AUTHORITATIVE_V1_2026_05_26",
+                },
+                classification: "broker_rejected_trade_disabled_after_verified_pretrade",
+                finalActivationBlocker: true,
+                retestRequired: false,
+                noSecretsIncluded: true,
+                questionsForTradingLayer: [
+                  "Why does read-only permission metadata report account trade_mode=2 (SHORTONLY) and symbol trade_mode=4 (FULL) for EURUSD, yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
+                  "Is there an account-level or symbol-level execution flag (expert/API trading disabled, group restriction, session restriction) not surfaced via symbols/account endpoints?",
+                  "Is the account in investor/read-only state, or is API trading disabled at the broker level for MT5 login 87943580?",
+                  "Is verified execution route 559a12e4-16d8-4db3-be48-40fbea54bcfe correct for live order submission for MT5 login 87943580 on InfinoxLimited-MT5Live?",
+                  "What broker-side action is required to enable SELL execution for EURUSD on this account, and how can we re-validate before retesting?",
+                ],
+              };
+              const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `tl-execution-rejection-evidence-87943580-EURUSD-SELL-${Date.now()}.json`;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Download Escalation Evidence (JSON)
+          </Button>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
           {finalEligible ? (
