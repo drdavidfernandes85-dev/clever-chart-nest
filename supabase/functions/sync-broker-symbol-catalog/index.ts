@@ -76,8 +76,9 @@ Deno.serve(async (req) => {
   // Normalize mode. Treat missing mode, "info", or targeted-without-symbols as a
   // cheap info call so we never 400 on the permission/refresh path.
   const rawMode = body?.mode;
-  const mode: "targeted" | "full" | "info" =
+  const mode: "targeted" | "full" | "info" | "probe" =
     rawMode === "full" ? "full"
+    : rawMode === "probe" ? "probe"
     : rawMode === "targeted" && requestedSymbols.length > 0 ? "targeted"
     : "info";
 
