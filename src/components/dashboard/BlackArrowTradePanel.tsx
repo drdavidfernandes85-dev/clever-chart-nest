@@ -2036,53 +2036,95 @@ const BlackArrowTradePanel = ({ className }: Props) => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="uppercase tracking-wider text-neutral-500">Broker symbol</span>
-                <span className="text-neutral-100">{eligibility?.brokerSymbol ?? (eligibilityLoading ? "…" : "—")}</span>
+                <span className="text-neutral-100">
+                  {termEligibility?.brokerSymbol
+                    ?? (termEligibilityLoading ? "Resolving…" : "—")}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="uppercase tracking-wider text-neutral-500">Account trade_mode</span>
                 <span className={cn(
-                  eligibility?.accountTradeEligible ? "text-emerald-400" : eligibility?.accountTradeMode ? "text-red-400" : "text-amber-400",
+                  termEligibility?.accountTradeModeRaw == null
+                    ? "text-amber-400"
+                    : (termEligibility.accountTradeModeRaw === 4 ? "text-emerald-400" : "text-red-400"),
                 )}>
-                  {eligibility?.accountTradeMode ?? "unknown"}
+                  {termEligibility?.accountTradeModeRaw != null
+                    ? `${termEligibility.accountTradeModeRaw} · ${(termEligibility.accountTradeModeLabel || "").replace("SYMBOL_TRADE_MODE_", "") || "unknown"}`
+                    : (termEligibilityLoading ? "Checking…" : "unknown")}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="uppercase tracking-wider text-neutral-500">Symbol trade_mode</span>
                 <span className={cn(
-                  eligibility?.symbolTradeEligible ? "text-emerald-400" : eligibility?.symbolTradeMode ? "text-red-400" : "text-amber-400",
+                  termEligibility?.symbolTradeModeRaw == null
+                    ? "text-amber-400"
+                    : (termEligibility.symbolTradeModeRaw === 4 ? "text-emerald-400" : "text-red-400"),
                 )}>
-                  {eligibility?.symbolTradeMode ?? "unknown"}
+                  {termEligibility?.symbolTradeModeRaw != null
+                    ? `${termEligibility.symbolTradeModeRaw} · ${(termEligibility.symbolTradeModeLabel || "").replace("SYMBOL_TRADE_MODE_", "") || "unknown"}`
+                    : (termEligibilityLoading ? "Checking…" : "unknown")}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="uppercase tracking-wider text-neutral-500">Execution eligibility</span>
                 <span className={cn(
                   "font-bold uppercase",
-                  eligibility?.eligibility === "eligible" && "text-emerald-400",
-                  eligibility?.eligibility === "blocked" && "text-red-400",
-                  (!eligibility || eligibility.eligibility === "unknown") && "text-amber-400",
+                  termEligibilityLoading && "text-amber-400",
+                  !termEligibilityLoading && (sellReadyByTL || buyReadyByTL) && "text-emerald-400",
+                  !termEligibilityLoading && !(sellReadyByTL || buyReadyByTL) && termEligibility && "text-red-400",
                 )}>
-                  {eligibility?.eligibility ?? (eligibilityLoading ? "checking" : "unknown")}
+                  {termEligibilityLoading
+                    ? "Checking…"
+                    : sellReadyByTL && buyReadyByTL
+                      ? "BUY + SELL ready"
+                      : sellReadyByTL
+                        ? "SELL ready · BUY blocked"
+                        : buyReadyByTL
+                          ? "BUY ready · SELL blocked"
+                          : "blocked"}
                 </span>
               </div>
+              {termEligibility?.routeAccountIdMasked && (
+                <div className="flex items-center justify-between">
+                  <span className="uppercase tracking-wider text-neutral-500">Route</span>
+                  <span className="text-neutral-300">{termEligibility.routeAccountIdMasked}</span>
+                </div>
+              )}
               <p className="text-[9px] leading-snug text-neutral-400">
-                Source: Trading Layer trade_mode. Live ticks do not prove trading permission.
+                Source: backend get-terminal-execution-eligibility. Live ticks do not prove trading permission.
               </p>
-              {eligibility?.eligibility === "blocked" && (
+              {termEligibility && !buyReadyByTL && termEligibility.buyBlockedReason && (
                 <p className="rounded-sm border border-red-500/50 bg-red-600/15 px-1.5 py-1 text-[9.5px] text-red-200">
-                  {eligibility.blockedReason === "account_trade_mode_blocked"
-                    ? "Trading Layer reports that trading is disabled for this account."
-                    : "Trading Layer reports that this broker symbol is not currently tradable."}
+                  BUY blocked: {termEligibility.buyBlockedReason}
                 </p>
               )}
-              {(!eligibility || eligibility.eligibility === "unknown") && !eligibilityLoading && (
-                <p className="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-1 text-[9.5px] text-amber-200">
-                  Execution permission could not be confirmed. Live test order is disabled.
-                </p>
-              )}
-              {eligibility?.eligibility === "eligible" && eligibility?.brokerSymbol && (
+              {termEligibility && sellReadyByTL && (
                 <p className="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-1 text-[9.5px] text-emerald-200">
-                  Execution permission confirmed by Trading Layer for broker symbol {eligibility.brokerSymbol}.
+                  SELL eligible using verified broker symbol {termEligibility.brokerSymbol}.
+                </p>
+              )}
+              {termEligibility && !sellReadyByTL && termEligibility.sellBlockedReason && (
+                <p className="rounded-sm border border-red-500/50 bg-red-600/15 px-1.5 py-1 text-[9.5px] text-red-200">
+                  SELL blocked: {termEligibility.sellBlockedReason}
+                </p>
+              )}
+              {(termEligibilityError || (termEligibility && !termEligibility.success)) && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] text-amber-300">
+                    {termEligibilityError || termEligibility?.message || "Eligibility check failed."}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={refreshTermEligibility}
+                    className="rounded-sm border border-neutral-700 bg-neutral-900 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-neutral-200 hover:bg-neutral-800"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {devMode && termEligibility?.executionPolicyVersion && (
+                <p className="text-[8.5px] leading-snug text-neutral-500 font-mono">
+                  policy: {termEligibility.executionPolicyVersion}
                 </p>
               )}
             </div>
