@@ -173,6 +173,7 @@ Deno.serve(async (req) => {
   const eligible = await resolveEligibleBrokerSymbol(supabase, {
     userId: user.id,
     traderId: accountId,
+    accountId: mapping.tradingLayerAccountId,
     requestedDisplaySymbol: symbol,
     suppliedBrokerSymbol,
     operationType: "close_position",

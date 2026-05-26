@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
   const eligible = await resolveEligibleBrokerSymbol(supabase, {
     userId: user.id,
     traderId: accountId,
+    accountId: mapping.tradingLayerAccountId,
     requestedDisplaySymbol: symbol,
     suppliedBrokerSymbol: payload?.brokerSymbol ?? null,
     operationType: "pending_order",
