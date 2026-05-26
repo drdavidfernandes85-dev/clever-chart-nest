@@ -144,14 +144,11 @@ Deno.serve(async (req) => {
     },
   };
 
-  if (body?.mode === "info") {
+  if (mode === "info") {
     return json(result);
   }
 
   if (mode === "targeted") {
-    if (requestedSymbols.length === 0) {
-      return json({ ...result, success: false, error: "symbols[] required for targeted mode" }, 400);
-    }
     const out: Array<{ displaySymbol: string; variants: Variant[] }> = [];
     for (const display of requestedSymbols) {
       const canonical = canonicalize(display);
