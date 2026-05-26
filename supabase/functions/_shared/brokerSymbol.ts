@@ -161,6 +161,28 @@ export async function refreshTradeModeFromTradingLayer(
     };
   }
 
+  // Account-level directional gating using ENUM_SYMBOL_TRADE_MODE (per OpenAPI).
+  // account.trade_mode is NOT informational — values 0/1/2/3/4 directly restrict
+  // which operations the account permits at the MT5 layer.
+  if (args.operation) {
+    const accDir = checkAccountOperationEligibility(args.operation, accountTradeAllowed, accountTradeModeRaw);
+    if (!accDir.allowed) {
+      return {
+        ...empty,
+        errorCode: ERR_ACCOUNT_DIRECTION_BLOCKED,
+        message: `Account trade_mode=${accountTradeModeRaw} (${accountInfo.label}) does not permit ${args.operation}: ${accDir.reason}`,
+        accountTradeAllowed, accountTradeModeRaw,
+        accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+        accountTradeModeLabel: accountInfo.label,
+        accountTradeEligible: false,
+        operation: args.operation,
+        directionAllowed: false,
+        directionReason: accDir.reason,
+        accountTradeModeCheckedAt: now,
+      };
+    }
+  }
+
   // 2) Symbol detail — exact endpoint, no list pagination guessing
   let symbolTradeModeRaw: number | null = null;
   try {
