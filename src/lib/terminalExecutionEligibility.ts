@@ -108,11 +108,13 @@ export function useTerminalExecutionEligibility(
     if (!symbol) { setData(null); return; }
     setLoading(true);
     setError(null);
+    const reqAt = Date.now();
     fetchTerminalExecutionEligibility(symbol)
       .then((res) => {
         if (cancelledRef.current) return;
         setData(res);
         if (!res.success && res.fetchError) setError(res.fetchError);
+        else setError(null);
       })
       .catch((e) => {
         if (cancelledRef.current) return;
@@ -122,6 +124,23 @@ export function useTerminalExecutionEligibility(
     return () => { cancelledRef.current = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbol, nonce, ...deps]);
+
+  // Self-heal stale failed/blocked states without forcing the user to reload.
+  // Re-fetch when the tab regains focus and at most once per minute in the
+  // background so backend redeploys/permission changes propagate quickly.
+  useEffect(() => {
+    if (!symbol) return;
+    const onFocus = () => refresh();
+    const onVis = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+    const id = window.setInterval(() => refresh(), 60_000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+      window.clearInterval(id);
+    };
+  }, [symbol, refresh]);
 
   return { data, loading, error, refresh };
 }
