@@ -314,8 +314,17 @@ Deno.serve(async (req) => {
     return json({ ...result, results: out });
   }
 
-  // FULL catalogue sync — paginated offset crawl
-  const crawl = await listAllSymbols(accountId, { sort: "name", order: "asc" });
+  // FULL catalogue sync — paginated offset crawl.
+  // `catalogueScope`:
+  //   - "visible_market_watch" → uses visible=true. UI-only view, NEVER authoritative for execution.
+  //   - "full_execution_catalogue" (default) → no visible filter. Authoritative for execution discovery.
+  const catalogueScope: "visible_market_watch" | "full_execution_catalogue" =
+    body?.catalogueScope === "visible_market_watch"
+      ? "visible_market_watch"
+      : "full_execution_catalogue";
+  const crawlParams: Record<string, unknown> = { sort: "name", order: "asc" };
+  if (catalogueScope === "visible_market_watch") crawlParams.visible = true;
+  const crawl = await listAllSymbols(accountId, crawlParams as any);
   let stored = 0;
   if (crawl.ok && crawl.rows.length > 0) {
     const rows = crawl.rows.map((s: any) => {
@@ -333,14 +342,18 @@ Deno.serve(async (req) => {
         // List endpoint does not populate trade_mode for every row;
         // execution remains gated until per-symbol info is loaded.
         execution_usable: false,
-        mapping_status: "verified_route",
+        mapping_status: catalogueScope === "visible_market_watch"
+          ? "visible_market_watch_listed"
+          : "executable_discovered_pending_inspection",
         mt5_login: mapping.login ? String(mapping.login) : null,
         mt5_server: mapping.server ?? null,
         display_symbol: canonical,
         canonical_symbol: canonical,
         broker_symbol: broker,
         description: s?.description ?? null,
-        source: "trading_layer_symbols_list",
+        source: catalogueScope === "visible_market_watch"
+          ? "trading_layer_symbols_list_visible"
+          : "trading_layer_symbols_list_full",
         last_synced_at: now,
         catalogue_complete: crawl.complete,
         checked_at: now,
@@ -357,6 +370,7 @@ Deno.serve(async (req) => {
   }
   return json({
     ...result,
+    catalogueScope,
     pages: crawl.pages,
     rowsFetched: crawl.rows.length,
     catalogueComplete: crawl.complete,
