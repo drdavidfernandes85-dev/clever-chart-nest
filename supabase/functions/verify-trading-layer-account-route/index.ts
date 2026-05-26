@@ -47,6 +47,15 @@ interface CandidateReport {
   tradeModeLabel: string | null;
   identityMatchesExpectedLogin: boolean;
   identityMatchesExpectedServer: boolean;
+  identityMatch: boolean;
+  executionAllowed: boolean;
+  useForExecution: boolean;
+  routeStatus:
+    | "identity_match_execution_allowed_pending_symbol_verification"
+    | "identity_match_execution_blocked"
+    | "identity_mismatch"
+    | "unavailable";
+  reason: string;
   matches: boolean;
 }
 
@@ -120,6 +129,24 @@ Deno.serve(async (req) => {
     const retServer = normServer(d?.server);
     const matchLogin = !!(expectedLogin && retLogin && expectedLogin === retLogin);
     const matchServer = !!(expectedServer && retServer && expectedServer === retServer);
+    const identityMatch = matchLogin && matchServer;
+    const tradeAllowed = d?.trade_allowed ?? null;
+    const executionAllowed = identityMatch && tradeAllowed === true;
+    let routeStatus: CandidateReport["routeStatus"];
+    let reason = "";
+    if (!r.ok) {
+      routeStatus = "unavailable";
+      reason = `Trading Layer returned HTTP ${r.status}.`;
+    } else if (!identityMatch) {
+      routeStatus = "identity_mismatch";
+      reason = "Returned login/server does not match the connected MT5 identity.";
+    } else if (tradeAllowed !== true) {
+      routeStatus = "identity_match_execution_blocked";
+      reason = "Trading Layer returned trade_allowed=false.";
+    } else {
+      routeStatus = "identity_match_execution_allowed_pending_symbol_verification";
+      reason = "Trading Layer returned trade_allowed=true; exact broker-symbol verification required.";
+    }
     reports.push({
       label: c.label,
       id: c.id,
@@ -130,22 +157,35 @@ Deno.serve(async (req) => {
       login: d?.login ?? null,
       server: d?.server ?? null,
       currency: d?.currency ?? null,
-      tradeAllowed: d?.trade_allowed ?? null,
+      tradeAllowed,
       tradeModeRaw: d?.trade_mode ?? null,
       tradeModeLabel: interpretTradeMode(d?.trade_mode ?? null).label,
       identityMatchesExpectedLogin: matchLogin,
       identityMatchesExpectedServer: matchServer,
-      matches: matchLogin && matchServer,
+      identityMatch,
+      executionAllowed,
+      useForExecution: executionAllowed,
+      routeStatus,
+      reason,
+      matches: identityMatch,
     });
   }
 
-  const winners = reports.filter((r) => r.matches);
+  // Execution-capable winners = identity match AND trade_allowed===true.
+  const execWinners = reports.filter((r) => r.executionAllowed);
+  const identityWinners = reports.filter((r) => r.identityMatch);
   let verifiedRouteId: string | null = null;
   let verified = false;
-  if (winners.length === 1) {
-    const w = winners[0];
+  let ambiguous = false;
+  let verificationNote = "";
+
+  if (execWinners.length === 1) {
+    const w = execWinners[0];
     verifiedRouteId = w.id;
     verified = true;
+    verificationNote = identityWinners.length > 1
+      ? "Multiple routes matched MT5 identity; selected the only one with trade_allowed=true."
+      : "Exactly one route matched MT5 identity with trade_allowed=true.";
     await supa
       .from("user_mt_accounts")
       .update({
@@ -157,11 +197,20 @@ Deno.serve(async (req) => {
         account_route_verification_evidence: {
           expectedLogin,
           expectedServer,
-          reports: reports.map((r) => ({ ...r, id: undefined })),
+          reports,
+          execWinnerLabel: w.label,
           checkedAt: new Date().toISOString(),
+          note: verificationNote,
         },
       })
       .eq("id", row.id);
+  } else if (execWinners.length > 1) {
+    ambiguous = true;
+    verificationNote = "Multiple Trading Layer routes returned trade_allowed=true for this MT5 identity — manual clarification required.";
+  } else if (identityWinners.length > 0) {
+    verificationNote = "Routes matched MT5 identity but none returned trade_allowed=true.";
+  } else {
+    verificationNote = "No Trading Layer route returned the expected MT5 login/server.";
   }
 
   return json({
@@ -173,10 +222,14 @@ Deno.serve(async (req) => {
     },
     candidates: reports,
     verified,
+    ambiguous,
+    verificationNote,
     verifiedRouteId,
     verifiedRouteIdMasked: mask(verifiedRouteId),
     blocker: verified
       ? null
-      : "Trading Layer account route must be verified against the connected MT5 login/server before broker symbols can be used for execution.",
+      : (ambiguous
+          ? "ambiguous_execution_routes — multiple Trading Layer routes returned trade_allowed=true."
+          : "Trading Layer account route must be verified against the connected MT5 login/server (and return trade_allowed=true) before broker symbols can be used for execution."),
   });
 });
