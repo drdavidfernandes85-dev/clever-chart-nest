@@ -1,89 +1,98 @@
-## Account-Specific Broker Symbol Resolution — Implementation Plan
+# Account-Route Identity Verification & Catalogue Quarantine
 
-This is a large, multi-file refactor of the symbol-resolution and execution pipeline. Below is the concrete plan I will execute before placing any live order.
+## Problem
+The Broker Symbols module synced 364 rows from TL accountId `559a12e4…bcfe`, but the connected MT5 account is login `87943580` / server `InfinoxLimited-MT5Live` whose real symbols carry `+` suffixes. The synced catalogue has no `+` symbols, proving the route is wrong (or at least unverified) for this user. The other candidate `29008868…2007` (the traderId) is more likely the executable route per TL OpenAPI, but must be confirmed remotely.
 
-### Scope summary
+No live orders, no weakening of risk/coordinator/kill-switch gates.
 
-Every live trading mutation (market order, close, partial close, SL/TP, pending placement/cancel) must submit the **exact `brokerSymbol`** returned by Trading Layer for the **specific connected MT5 account** of the acting user. No suffix is hardcoded, no canonical/display value is ever sent, and no mapping is ever shared across users or accounts.
+## Part A — Schema additions
 
----
+Migration on `user_mt_accounts`:
+- `account_route_verified boolean default false`
+- `account_route_verified_at timestamptz`
+- `account_route_mt5_login text`
+- `account_route_mt5_server text`
+- `account_route_verification_evidence jsonb`
+- `trading_layer_account_route_id text` (the route confirmed to belong to this MT5 login/server)
 
-### Phase 1 — Data model (DB migration)
+Migration on `broker_symbol_catalog`:
+- `execution_usable boolean default false`
+- `route_identity_verified boolean default false`
+- `source_account_route_id text`
+- `notes text`
 
-Extend `broker_symbol_catalog`:
-- Add: `user_id`, `local_mt_account_id`, `mt5_login`, `mt5_server`, `chart_symbol`, `volume_min`, `volume_max`, `volume_step`, `trade_mode_raw`, `trade_mode_interpretation`, `catalogue_complete`, `stale_at`, `checked_at`
-- Drop old unique constraint, add new unique `(trading_layer_account_id, broker_symbol)`
-- Tighten RLS: users may read only rows where `user_id = auth.uid()`; admin/service-role manages writes
+Quarantine existing rows (data update): all rows sourced from `559a12e4…bcfe` → `execution_usable=false`, `route_identity_verified=false`, `mapping_status='route_unverified_or_wrong_account'`, with notes string.
 
-No data deletion — existing rows reclassified as `source_verified=false`, `catalogue_complete=false`.
+## Part B — New edge function `verify-trading-layer-account-route`
 
-### Phase 2 — Account-scoped catalogue sync
+Admin/owner only. Inputs: `localMtAccountId` (admin can pass `targetUserId`).
+- Resolve expected MT5 `login`/`server` from `user_mt_accounts` row.
+- For each candidate in `[trading_layer_trader_id, trading_layer_account_id]` (dedup), call `GET /api/v1/accounts/{id}` via `tlClient`.
+- Return per candidate: HTTP status, returned `login`, `server`, `currency`, `company`, `trade_allowed`, `trade_mode` raw+label, `identityMatchesExpectedLogin`, `identityMatchesExpectedServer`.
+- If exactly one candidate matches both login and server → persist as verified: set `account_route_verified=true`, `account_route_verified_at=now()`, `trading_layer_account_route_id=<that id>`, `account_route_mt5_login/server`, `account_route_verification_evidence=<sanitized response>`.
+- If none match → leave unverified, return diagnostic comparison.
+- No mutations to TL. No secrets returned.
 
-New shared module `supabase/functions/_shared/symbolCatalogue.ts`:
-- `syncAccountCatalogue({ userId, traderId, accountId, login, server })`
-- Calls `GET /api/v1/accounts/{trading_layer_account_id}/symbols` with full pagination (offset + cursor, page=500, hard cap)
-- Stores raw broker symbol untouched
-- Derives `canonical_symbol` and `display_symbol` via a deterministic `canonicaliseBrokerSymbol()` (strips only registered known suffixes: `+`, `.m`, `.pro`, `.cash`, `.a`, `.crp` — never blindly)
-- Sets `catalogue_complete=true` only when last page returns < pageSize OR cursor is null
-- Invoked from `connect-mt5-v2` and `sync-mt-account` on successful (re)connect
+## Part C — Update `sync-broker-symbol-catalog`
 
-### Phase 3 — Resolver hardening (`_shared/brokerSymbol.ts`)
+- Refuse `mode:"full"` and `mode:"targeted"` unless `account_route_verified=true`. Return `{error:"ACCOUNT_ROUTE_UNVERIFIED"}` with the comparison hint.
+- Use `trading_layer_account_route_id` (verified) — never raw `trading_layer_account_id`.
+- Stamp inserted rows: `source_account_route_id`, `route_identity_verified=true`, `execution_usable=true` (subject to per-symbol info loading later — list mode keeps `trade_mode_raw=null` → display "Not inspected").
+- `mode:"info"` still cheap; also returns `accountRouteVerified` and both candidates so UI can render the verification table.
 
-- `resolveEligibleBrokerSymbol` now scoped by `trading_layer_account_id`, not trader
-- Returns `ambiguous` status when multiple variants match the requested display symbol — execution blocked, admin must select default
-- Position/pending actions: prefer `suppliedBrokerSymbol` from the live MT5 record over catalogue derivation
-- Adds `recoverPositionBrokerSymbol(ticket)` that re-reads the MT5 position to recover the exact broker symbol when missing
+## Part D — Targeted EURUSD/XAUUSD symbol-info
 
-### Phase 4 — Mutation paths
+Extend sync function (or new small endpoint `get-broker-symbol-info`):
+- For a specific exact `brokerSymbol`, call `GET /api/v1/accounts/{verifiedId}/symbols/{encodeURIComponent(symbol)}`.
+- Persist full metadata into the catalogue row (`trade_mode_raw`, `trade_mode_interpretation`, `volume_min/max/step`, `digits`, `contract_size`, `raw_metadata`).
+- Used by admin "Inspect symbol" action.
 
-Update every execution edge function to:
-1. Require `mapping.tradingLayerAccountId`
-2. Resolve `brokerSymbol` via account-scoped resolver
-3. Send `symbol: brokerSymbol` exactly to Trading Layer
-4. Audit `displaySymbol`, `canonicalSymbol`, `brokerSymbol`, `tradingLayerAccountId`, `symbolMappingCheckedAt`, `symbolMappingSource`, `accountTradeModeRaw`, `symbolTradeModeRaw`
+## Part E — Shared resolver gate (`_shared/brokerSymbol.ts`)
 
-Files: `execute-trade`, `submit-best-execution-order`, `submit-pending-order`, `cancel-pending-order`, `close-position-controlled`, `modify-position-protection`, `reconcile-execution`.
+Tighten `resolveExecutionBrokerSymbol()` to require:
+- `account_route_verified=true` on the user's MT row.
+- catalogue row `route_identity_verified=true` AND `source_account_route_id === user_mt_accounts.trading_layer_account_route_id`.
+- exact brokerSymbol present, `trade_mode_raw` loaded.
+- `account.trade_allowed=true` and direction permitted by both account trade_mode and symbol trade_mode.
 
-### Phase 5 — Position/pending records
+Emits explicit failure codes: `ACCOUNT_ROUTE_UNVERIFIED`, `BROKER_SYMBOL_CATALOGUE_WRONG_ACCOUNT`, `BROKER_SYMBOL_UNRESOLVED`, `SYMBOL_METADATA_NOT_LOADED`, `ACCOUNT_TRADE_NOT_ALLOWED`, `BUY_NOT_ALLOWED_BY_TRADE_MODE`, `SELL_NOT_ALLOWED_BY_TRADE_MODE`.
 
-Migration: ensure `mt_positions` and `mt_pending_orders` have `broker_symbol` (nullable for legacy). Sync paths persist exact broker symbol from MT5. UI disables Close/Modify/Cancel when `broker_symbol` is null and recovery fails.
+No changes to risk/fresh-tick/kill-switch/coordinator beyond consuming these new codes.
 
-### Phase 6 — Frontend
+## Part F — Admin Broker Symbols UI
 
-- `BrokerSymbolsContext`: load catalogue scoped to active `trading_layer_account_id`; expose `{ displaySymbol, canonicalSymbol, chartSymbol, brokerSymbol, variants[] }`
-- `BlackArrowTradePanel`, `PendingOrderModal`, `PositionActions`, `PendingOrdersPanel`: include `brokerSymbol` (and full identity quad) in every mutation payload; disable action when unresolved/ambiguous with clear message
-- Account switching invalidates the cached catalogue
+New section above "Account Execution Permission":
 
-### Phase 7 — Admin Eligibility card
+```text
+Trading Layer Route Verification
+| Candidate     | ID Mask  | Login | Server | MT5 Match | Use for Exec |
+| Trader route  | 290…007  | ...   | ...    | yes/no    | yes/no       |
+| Stored route  | 559…cfe  | ...   | ...    | yes/no    | yes/no       |
+[Verify Account Route]
+```
 
-`AdminExecutionEligibilityCard.tsx`: show masked traderId + accountId, catalogue completeness + last sync, account trade_mode raw+interpretation, per-symbol (EURUSD, XAUUSD) variants table with broker symbol, raw trade_mode, ambiguity flag, readiness verdict, and a **Refresh Catalogue** button (read-only — never submits an order).
+While not verified:
+- Permission card → "unverified"; catalogue → "unusable for execution"; readiness → NO with blocker copy.
+- All live-test buttons disabled.
 
-### Phase 8 — Read-only verification
+After verification:
+- Use verified route for Refresh Permission, Sync Full, Targeted EURUSD/XAUUSD.
+- Show per-side readiness "EURUSD BUY ready: yes/no", "EURUSD SELL ready: yes/no".
+- Catalogue rows without inspected metadata render "Not inspected" rather than "Not eligible".
 
-After deployment, call `get-trading-execution-eligibility` (read-only) for the admin tester account and report:
-- pagination handled (yes/no, pages fetched, total symbols)
-- exact EURUSD brokerSymbol(s)
-- exact XAUUSD brokerSymbol(s)
-- mix of suffixed and unsuffixed examples
-- raw account + symbol `trade_mode`
-- whether enum meaning is confirmed (no — awaiting TL)
-- whether all mutation paths use exact brokerSymbol (code-level audit)
-- next live test → **blocked** until TL confirms enum + ambiguity resolved
+## Part G — Read-only verification run (Part 10)
 
----
+After deploy, call `verify-trading-layer-account-route` then (only if verified) run targeted EURUSD/XAUUSD sync and per-symbol info. Report results — no live orders.
 
-### Guardrails preserved
+## Files
 
-- No live order submitted in this pass
-- Kill switch / risk / fresh-tick / coordinator unchanged
-- Ordinary users remain execution-blocked (admin_live_test mode gate)
-- No secrets exposed; no client-side credential storage
-- RLS tightened, never loosened
+- `supabase/migrations/<new>.sql` — schema + quarantine UPDATE
+- `supabase/functions/verify-trading-layer-account-route/index.ts` — NEW
+- `supabase/functions/sync-broker-symbol-catalog/index.ts` — gate by verified route, stamp new columns, add per-symbol info
+- `supabase/functions/_shared/brokerSymbol.ts` — tighten resolver, add failure codes
+- `src/components/admin/AdminBrokerSymbolsTab.tsx` — verification UI + new readiness + per-symbol inspect
 
-### Technical notes
-
-- Canonicalisation suffix list is configurable in `site_settings.broker_symbol_suffixes` (default `["+", ".m", ".pro", ".cash", ".a", ".crp", ".raw", ".ecn"]`) — never hardcoded in TS
-- Ambiguity resolution stored in `site_settings.broker_symbol_defaults[trading_layer_account_id][canonical_symbol] = broker_symbol`
-- `submit-best-execution-order` & `execute-trade` early-return `400 brokerSymbolAmbiguous` when multiple variants and no admin default
-
-After your approval I will run this end-to-end and return the read-only verification report — no live orders.
+## Out of scope
+- No live trades.
+- No changes to risk caps, kill switch, fresh-tick, coordinator, exact-broker-symbol gate semantics (only stricter inputs).
+- No deletion of quarantined rows.
