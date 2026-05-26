@@ -435,13 +435,18 @@ Deno.serve(async (req) => {
 
       if (allBrokerRows.length > 0) {
         const now = new Date().toISOString();
+        const completeFlag = !crawl.hasMoreFinal && crawl.errors.length === 0 &&
+          (crawl.totalReported == null || crawl.rows.length >= crawl.totalReported);
         const rows = allBrokerRows.map((s) => {
           const broker = String(
             pick(s, ["symbol", "name", "brokerSymbol", "broker_symbol"]) ?? "",
           ).trim();
           const canonical = canonicalize(broker);
           const tm = pick(s, ["trade_mode", "tradeMode"]);
+          const interp = interpretTradeMode(tm);
           return {
+            user_id: uid,
+            local_mt_account_id: mapping.localRowId ?? null,
             trading_layer_trader_id: traderId,
             trading_layer_account_id: accountId,
             source_endpoint_account_id: accountId,
@@ -450,22 +455,42 @@ Deno.serve(async (req) => {
             mt5_server: mapping.server ?? null,
             display_symbol: canonical,
             canonical_symbol: canonical,
+            chart_symbol: null,
             broker_symbol: broker,
             description: pick(s, ["description", "desc"]) ?? null,
             asset_class: pick(s, ["assetClass", "asset_class", "category"]) ?? null,
             digits: Number(pick(s, ["digits"])) || null,
             contract_size: Number(pick(s, ["contractSize", "contract_size"])) || null,
+            volume_min: Number(pick(s, ["volume_min", "volumeMin", "min_volume", "minVolume"])) || null,
+            volume_max: Number(pick(s, ["volume_max", "volumeMax", "max_volume", "maxVolume"])) || null,
+            volume_step: Number(pick(s, ["volume_step", "volumeStep", "step"])) || null,
             trade_mode: tm != null ? String(tm) : null,
+            trade_mode_raw: tm != null ? String(tm) : null,
+            trade_mode_interpretation: interp.interpretation,
             trade_eligible: isTradable(tm),
+            catalogue_complete: completeFlag,
             source: "trading_layer_symbols",
             last_synced_at: now,
+            checked_at: now,
+            stale_at: null,
             raw_metadata: null,
           };
         }).filter((r) => r.broker_symbol);
         if (rows.length > 0) {
-          const { error: upErr } = await supabaseService
-            .from("broker_symbol_catalog")
-            .upsert(rows, { onConflict: "trading_layer_trader_id,broker_symbol" });
+          // Prefer new account-scoped uniqueness; fall back to legacy if needed.
+          let upErr: any = null;
+          {
+            const { error } = await supabaseService
+              .from("broker_symbol_catalog")
+              .upsert(rows, { onConflict: "trading_layer_account_id,broker_symbol" });
+            upErr = error;
+          }
+          if (upErr) {
+            const { error: legacyErr } = await supabaseService
+              .from("broker_symbol_catalog")
+              .upsert(rows, { onConflict: "trading_layer_trader_id,broker_symbol" });
+            upErr = legacyErr;
+          }
           if (!upErr) upsertedCount = rows.length;
         }
       }
