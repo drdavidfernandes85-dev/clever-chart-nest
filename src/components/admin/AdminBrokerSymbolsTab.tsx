@@ -855,7 +855,12 @@ export default function AdminBrokerSymbolsTab() {
 
       {/* Readiness */}
       <Card className="p-4">
-        <h3 className="text-sm font-semibold mb-3">Readiness Summary</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold">Readiness Summary</h3>
+          <Badge variant="outline" className="font-mono text-[10px]">
+            policy: TL_EXACT_SYMBOL_OPERATION_INTENT_V1_2026_05_26
+          </Badge>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
           <div><div className="text-muted-foreground">Route verified</div><div>{yesNoBadge(routeVerified)}</div></div>
           <div><div className="text-muted-foreground">Account trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unknown</Badge> : yesNoBadge(tradeAllowed)}</div></div>

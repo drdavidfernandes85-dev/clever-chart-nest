@@ -193,3 +193,10 @@ export const ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE =
   "ACCOUNT_TRADE_PERMISSION_UNAVAILABLE";
 export const ERR_ACCOUNT_DIRECTION_BLOCKED = "ACCOUNT_DIRECTION_BLOCKED";
 export const ERR_SYMBOL_DIRECTION_BLOCKED = "SYMBOL_DIRECTION_BLOCKED";
+
+// Deployed execution-policy version marker. Bump when account-route,
+// exact-symbol or operation-intent rules change. Returned only in admin/dev
+// diagnostics and persisted in audit evidence so live tests can prove the
+// deployed rule set.
+export const EXECUTION_POLICY_VERSION =
+  "TL_EXACT_SYMBOL_OPERATION_INTENT_V1_2026_05_26";

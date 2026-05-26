@@ -11,6 +11,7 @@
 // permission is confirmed AND a verified executable broker symbol resolves.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveActiveMtMapping } from "../_shared/mtMapping.ts";
+import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
@@ -681,6 +682,7 @@ Deno.serve(async (req) => {
     blockedReason,
     catalogUpsertedCount: upsertedCount,
     checkedAt: new Date().toISOString(),
+    executionPolicyVersion: EXECUTION_POLICY_VERSION,
     diagnostics: { traderFetchError, symbolsFetchError },
   });
 });

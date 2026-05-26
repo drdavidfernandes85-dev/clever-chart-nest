@@ -25,6 +25,7 @@ import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
+import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
 
 const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
@@ -86,6 +87,7 @@ Deno.serve(async (req) => {
   const closeId = typeof payload?.closeId === "string" && payload.closeId.length > 0
     ? payload.closeId
     : `close-${ticket}-${Date.now()}`;
+  const devMode = payload?.devMode === true;
 
   if (!ticket || !symbol || !Number.isFinite(volume) || volume <= 0 || (closeSide !== "buy" && closeSide !== "sell")) {
     return json({
@@ -331,6 +333,7 @@ Deno.serve(async (req) => {
     latencyMs,
     tradingLayerStatus: httpStatus,
     metaapi_account_id: accountId,
+    ...(devMode ? { executionPolicyVersion: EXECUTION_POLICY_VERSION } : {}),
     error: outcome === "success" ? null : (networkError || brokerMessage || "Close failed"),
   });
 });

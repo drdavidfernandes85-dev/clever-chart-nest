@@ -32,6 +32,7 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
 
 const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
@@ -120,7 +121,10 @@ Deno.serve(async (req) => {
 
   const withTimings = (body: Record<string, unknown>, status = 200) => {
     timings.finalUiStatusAt = Date.now();
-    return json(devMode ? { ...body, timings } : body, status);
+    const enriched = devMode
+      ? { ...body, timings, executionPolicyVersion: EXECUTION_POLICY_VERSION }
+      : body;
+    return json(enriched, status);
   };
 
   if (!symbol || !side || !volume) {
