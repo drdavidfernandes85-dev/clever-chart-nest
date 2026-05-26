@@ -403,24 +403,36 @@ export default function AdminBrokerSymbolsTab() {
   const xauResolved = xauExecutable.length === 1 ? xauExecutable[0] : null;
 
   const tradeAllowed = routeVerified ? lastResp?.accountTradeAllowed : undefined;
-  const accountExecPermitted = tradeAllowed === true;
+  const accountTradeModeRaw = lastResp?.accountTradeModeRaw ?? null;
+  const accountTradeModeLabel = lastResp?.accountTradeModeLabel ?? null;
+  // Per Trading Layer OpenAPI: account.trade_mode uses ENUM_SYMBOL_TRADE_MODE
+  // (0=DISABLED, 1=LONGONLY, 2=SHORTONLY, 3=CLOSEONLY, 4=FULL) — directional.
+  const accountCanBuy = tradeAllowed === true && canBuy(accountTradeModeRaw);
+  const accountCanSell = tradeAllowed === true && canSell(accountTradeModeRaw);
+  const accountExecPermitted = tradeAllowed === true && accountTradeModeRaw != null && accountTradeModeRaw !== 0;
 
   // Symbol-level eligibility (independent of ack — ack only gates "ready for live test").
   const eurSymbolBuyEligible = !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
   const eurSymbolSellEligible = !!eurResolved && canSell(eurResolved.symbolTradeModeRaw);
   const eurSymbolCloseEligible = !!eurResolved && canClose(eurResolved.symbolTradeModeRaw);
 
-  // Ready-for-controlled-test gate: requires route + perm + symbol eligibility + ack.
-  const eurBuyReady = routeVerified && accountExecPermitted && eurSymbolBuyEligible && ack.acknowledged;
-  const eurSellReady = routeVerified && accountExecPermitted && eurSymbolSellEligible && ack.acknowledged;
+  // Combined account+symbol eligibility (no ack yet).
+  const eurBuyCombined = accountCanBuy && eurSymbolBuyEligible;
+  const eurSellCombined = accountCanSell && eurSymbolSellEligible;
+
+  // Ready-for-controlled-test gate: route + combined + ack.
+  const eurBuyReady = routeVerified && eurBuyCombined && ack.acknowledged;
+  const eurSellReady = routeVerified && eurSellCombined && ack.acknowledged;
 
   const eurBlocker = !routeVerified
     ? "Wrong or unverified Trading Layer account route; executable symbol catalogue not verified."
     : tradeAllowed === false ? "Account trade_allowed = false"
     : tradeAllowed == null ? "Account permission not yet checked"
     : !eurResolved ? "EURUSD exact broker symbol not yet inspected — run Lookup EURUSD."
-    : !(eurSymbolBuyEligible || eurSymbolSellEligible)
+    : !eurSymbolBuyEligible && !eurSymbolSellEligible
       ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
+    : (!accountCanBuy && !accountCanSell)
+      ? `Account trade_mode = ${accountTradeModeRaw} (${accountTradeModeLabel}) blocks BUY and SELL at the account level`
     : !ack.acknowledged
       ? "API execution symbol resolved as EURUSD; acknowledgement required due to MT5 suffix-display discrepancy."
       : null;
