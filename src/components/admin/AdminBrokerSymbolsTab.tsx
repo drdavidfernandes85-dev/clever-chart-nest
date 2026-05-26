@@ -178,6 +178,29 @@ export default function AdminBrokerSymbolsTab() {
     acknowledged: false, at: null, by: null,
   });
   const [ackSaving, setAckSaving] = useState(false);
+  const [execTickBusy, setExecTickBusy] = useState(false);
+  const [execTick, setExecTick] = useState<any | null>(null);
+
+  const checkExecutionTick = async (sym: string) => {
+    setExecTickBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("check-execution-tick", {
+        body: { symbol: sym, brokerSymbol: sym },
+      });
+      if (error) throw error;
+      setExecTick(data);
+      if ((data as any)?.fresh) {
+        toast.success(`Execution tick OK — ${sym} fresh (${(data as any).ageMs}ms)`);
+      } else {
+        toast.warning(`${sym}: ${(data as any)?.code ?? "no fresh tick"}`);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Tick check failed");
+      setExecTick(null);
+    } finally {
+      setExecTickBusy(false);
+    }
+  };
 
   const loadMappingFromDB = useCallback(async (): Promise<VerifiedMapping | null> => {
     const { data } = await (supabase.from as any)("user_mt_accounts")
