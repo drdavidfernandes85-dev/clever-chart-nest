@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Loader2, RefreshCw, Search, Database, ShieldCheck, ShieldAlert } from "lucide-react";
 
 interface VerifiedMapping {
+  id: string;
   user_id: string;
   mt5_login: string | null;
   mt5_server: string | null;
@@ -15,7 +16,9 @@ interface VerifiedMapping {
   trading_layer_external_trader_id: string | null;
   mapping_status: string | null;
   credential_status: string | null;
+  last_verified_at: string | null;
 }
+
 
 interface Variant {
   brokerSymbol: string;
