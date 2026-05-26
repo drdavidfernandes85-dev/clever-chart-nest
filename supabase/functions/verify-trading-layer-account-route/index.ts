@@ -222,10 +222,14 @@ Deno.serve(async (req) => {
     },
     candidates: reports,
     verified,
+    ambiguous,
+    verificationNote,
     verifiedRouteId,
     verifiedRouteIdMasked: mask(verifiedRouteId),
     blocker: verified
       ? null
-      : "Trading Layer account route must be verified against the connected MT5 login/server before broker symbols can be used for execution.",
+      : (ambiguous
+          ? "ambiguous_execution_routes — multiple Trading Layer routes returned trade_allowed=true."
+          : "Trading Layer account route must be verified against the connected MT5 login/server (and return trade_allowed=true) before broker symbols can be used for execution."),
   });
 });
