@@ -157,31 +157,50 @@ Deno.serve(async (req) => {
   const uid = userData?.user?.id ?? null;
   timings.authValidatedAt = Date.now();
 
-  // Pre-trade quote snapshot for slippage measurement + freshness gate.
+  // ---------------------------------------------------------------------------
+  // Pre-trade authoritative server-side fresh-tick validation.
+  //
+  // ROUTE: verified Trading Layer account route (user_mt_accounts.trading_layer_account_id).
+  // SYMBOL: exact broker symbol (caller-resolved). Display ticks (WebSocket /
+  // /get-mt5-quotes) are NEVER trusted as price-of-record.
+  // ---------------------------------------------------------------------------
   let requestedBid: number | null = null;
   let requestedAsk: number | null = null;
   let quoteTimestamp: string | null = null;
-  let quoteSource: string | null = null;
-  try {
-    const { data: q } = await supabase.functions.invoke("get-mt5-quotes", {
-      body: { selectedSymbol: symbol, symbols: [symbol], debug: false },
-    });
-    const row = Array.isArray(q?.quotes)
-      ? q.quotes.find((r: any) => String(r?.symbol || "").toUpperCase() === String(symbol).toUpperCase())
-      : null;
-    if (row) {
-      requestedBid = row.bid != null ? Number(row.bid) : null;
-      requestedAsk = row.ask != null ? Number(row.ask) : null;
-      quoteTimestamp = row.timestamp ?? row.time ?? row.ts ?? new Date().toISOString();
-      quoteSource = row.source ?? "get-mt5-quotes";
-    }
-  } catch { /* ignore — quote snapshot is best-effort */ }
+  let quoteSource: string = "trading_layer_latest_tick";
+  let freshTick: FreshTickResult | null = null;
+  let routeAccountIdForTick: string | null = null;
+  const tickBrokerSymbol = String((payload as any)?.brokerSymbol || symbol || "").trim().toUpperCase();
+  if (uid) {
+    try {
+      const { data: acct } = await supabase
+        .from("user_mt_accounts")
+        .select("trading_layer_account_id")
+        .eq("user_id", uid)
+        .eq("platform", "mt5")
+        .eq("status", "connected")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      routeAccountIdForTick = (acct as any)?.trading_layer_account_id ?? null;
+    } catch { /* ignore — handled by missing-route code below */ }
+  }
+  freshTick = await resolveFreshExecutionTick({
+    routeAccountId: routeAccountIdForTick,
+    brokerSymbol: tickBrokerSymbol || null,
+    displaySymbol: symbol,
+  });
+  requestedBid = freshTick.bid;
+  requestedAsk = freshTick.ask;
+  quoteTimestamp = freshTick.timestamp;
+  quoteSource = freshTick.source;
   timings.freshTickFetchedAt = Date.now();
 
   const requestedPrice =
     side === "buy" ? requestedAsk : side === "sell" ? requestedBid : null;
   const haveFreshQuote =
-    requestedBid != null && requestedAsk != null && requestedPrice != null;
+    freshTick.fresh && requestedBid != null && requestedAsk != null && requestedPrice != null;
+
 
   const startedAt = Date.now();
   const clientLatencyMs = clientClickAt
