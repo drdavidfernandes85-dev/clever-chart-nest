@@ -178,6 +178,34 @@ export default function AdminExecutionEligibilityCard() {
         confirms the enum mapping or returns an explicit trading-allowed boolean.
       </p>
 
+      {mapping && (
+        <div className="rounded border border-emerald-500/30 p-2.5 mb-3 bg-emerald-500/5">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-300 mb-1.5">
+            Verified MT5 → Trading Layer mapping
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-mono">
+            <span className="text-muted-foreground">MT5 login</span>
+            <span>{mapping.login ?? "—"}</span>
+            <span className="text-muted-foreground">Server</span>
+            <span>{mapping.server ?? "—"}</span>
+            <span className="text-muted-foreground">Trader ID</span>
+            <span>{maskTraderId(mapping.traderId)}</span>
+            <span className="text-muted-foreground">Account ID (for /symbols)</span>
+            <span>{maskTraderId(mapping.accountId)}</span>
+            <span className="text-muted-foreground">External trader ID</span>
+            <span>{maskTraderId(mapping.externalTraderId)}</span>
+            <span className="text-muted-foreground">ID relationship verified</span>
+            <span className={mapping.relationshipVerified ? "text-emerald-300" : "text-amber-300"}>
+              {mapping.relationshipVerified ? "YES" : "no"}
+            </span>
+            <span className="text-muted-foreground">Ignored stale mapping rows</span>
+            <span className={mapping.ignoredCount > 0 ? "text-emerald-300" : "text-muted-foreground"}>
+              {mapping.ignoredCount} excluded from execution
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="rounded border border-border/40 p-2.5 mb-3 bg-muted/10">
         <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
           IDs & Account
