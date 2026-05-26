@@ -68,11 +68,42 @@ const interpretationTone = (i: ModeInterpretation | undefined): string => {
 export default function AdminExecutionEligibilityCard() {
   const [data, setData] = useState<Record<string, ExecutionEligibility | null>>({});
   const [busy, setBusy] = useState(false);
+  const [mapping, setMapping] = useState<VerifiedMapping | null>(null);
 
   const loadFromCache = useCallback(() => {
     const next: Record<string, ExecutionEligibility | null> = {};
     for (const s of TRACKED_SYMBOLS) next[s] = readCachedEligibility(s);
     setData(next);
+  }, []);
+
+  const loadMapping = useCallback(async () => {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u?.user?.id;
+    if (!uid) return;
+    const { data: active } = await supabase
+      .from("user_mt_accounts")
+      .select("login, server_name, trading_layer_trader_id, trading_layer_account_id, trading_layer_external_trader_id, account_id_relationship_verified")
+      .eq("user_id", uid)
+      .eq("platform", "mt5")
+      .eq("status", "connected")
+      .or("ignored_for_execution.is.null,ignored_for_execution.eq.false")
+      .order("last_verified_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { count: ignoredCount } = await supabase
+      .from("user_mt_accounts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid)
+      .eq("ignored_for_execution", true);
+    setMapping({
+      login: active?.login ?? null,
+      server: active?.server_name ?? null,
+      traderId: active?.trading_layer_trader_id ?? null,
+      accountId: active?.trading_layer_account_id ?? null,
+      externalTraderId: active?.trading_layer_external_trader_id ?? null,
+      relationshipVerified: !!active?.account_id_relationship_verified,
+      ignoredCount: ignoredCount ?? 0,
+    });
   }, []);
 
   const refreshAll = useCallback(async () => {
