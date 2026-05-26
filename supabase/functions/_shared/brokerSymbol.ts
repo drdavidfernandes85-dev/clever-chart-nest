@@ -246,10 +246,12 @@ export const ERR_SYMBOL_TRADE_MODE_BLOCKED = "SYMBOL_TRADE_MODE_BLOCKED";
 export const ERR_BROKER_SYMBOL_UNRESOLVED = "BROKER_SYMBOL_UNRESOLVED";
 export const ERR_BROKER_SYMBOL_MAPPING_STALE = "BROKER_SYMBOL_MAPPING_STALE";
 export const ERR_BROKER_SYMBOL_MISMATCH = "BROKER_SYMBOL_MISMATCH";
+export const ERR_BROKER_SYMBOL_AMBIGUOUS = "BROKER_SYMBOL_AMBIGUOUS";
 
 export interface ResolveInput {
   userId: string;
   traderId: string;
+  accountId?: string | null; // trading_layer_account_id — preferred scope
   requestedDisplaySymbol?: string | null;
   suppliedBrokerSymbol?: string | null;
   operationType:
@@ -277,6 +279,7 @@ export interface ResolveResult {
   symbolMappingSource: string | null;
   symbolMappingCheckedAt: string | null;
   catalogRowId?: string | null;
+  ambiguousVariants?: string[];
 }
 
 function canonicalize(sym: string | null | undefined): string {
@@ -303,16 +306,23 @@ export async function resolveEligibleBrokerSymbol(
     symbolMappingCheckedAt: null,
   };
 
-  if (!input.traderId) {
-    return { ...empty, errorCode: ERR_BROKER_SYMBOL_UNRESOLVED, message: "Missing trader id" };
+  if (!input.traderId && !input.accountId) {
+    return { ...empty, errorCode: ERR_BROKER_SYMBOL_UNRESOLVED, message: "Missing trader/account id" };
   }
 
-  const { data: rows, error } = await supabaseService
+  // Scope catalogue query by account when available (per-user/per-account isolation),
+  // otherwise fall back to trader-scoped lookup for legacy rows only.
+  let query = supabaseService
     .from("broker_symbol_catalog")
     .select(
-      "id, display_symbol, canonical_symbol, broker_symbol, trade_mode, trade_eligible, source, last_synced_at",
-    )
-    .eq("trading_layer_trader_id", input.traderId);
+      "id, display_symbol, canonical_symbol, broker_symbol, trade_mode, trade_eligible, source, last_synced_at, source_endpoint_account_id, source_verified, trading_layer_account_id",
+    );
+  if (input.accountId) {
+    query = query.eq("trading_layer_account_id", input.accountId);
+  } else {
+    query = query.eq("trading_layer_trader_id", input.traderId);
+  }
+  const { data: rows, error } = await query;
 
   if (error) {
     return { ...empty, errorCode: ERR_BROKER_SYMBOL_UNRESOLVED, message: "Catalog read failed" };
@@ -323,16 +333,15 @@ export async function resolveEligibleBrokerSymbol(
       ...empty,
       errorCode: ERR_BROKER_SYMBOL_MAPPING_STALE,
       message:
-        "Broker symbol catalog is empty for this trader. Refresh execution eligibility first.",
+        "Broker symbol catalog is empty for this account. Refresh execution eligibility first.",
     };
   }
 
-  // Pick row by supplied broker symbol first (close/modify/cancel path), then canonical.
+  // 1) If caller supplied an exact broker symbol (close/modify/cancel path), prefer that.
   let chosen: any | null = null;
   if (wantBroker) {
     chosen = all.find((r) => String(r.broker_symbol).trim() === wantBroker) ?? null;
     if (!chosen && wantCanonical) {
-      // Supplied broker symbol doesn't exist in current catalog.
       const fallback = all.find(
         (r) => canonicalize(r.canonical_symbol || r.broker_symbol) === wantCanonical,
       );
@@ -355,17 +364,34 @@ export async function resolveEligibleBrokerSymbol(
       }
     }
   }
+
+  // 2) Canonical-driven resolution with ambiguity detection.
   if (!chosen && wantCanonical) {
-    // exact canonical match preferred
-    chosen = all.find(
+    const exactMatches = all.filter(
       (r) => canonicalize(r.canonical_symbol || r.broker_symbol) === wantCanonical,
-    ) ?? null;
-    if (!chosen) {
-      // suffix/prefix tolerant fallback
-      chosen = all.find((r) => {
-        const c = canonicalize(r.canonical_symbol || r.broker_symbol);
-        return c.startsWith(wantCanonical) || wantCanonical.startsWith(c);
-      }) ?? null;
+    );
+    if (exactMatches.length === 1) {
+      chosen = exactMatches[0];
+    } else if (exactMatches.length > 1) {
+      // Multiple broker variants for one canonical symbol — never auto-pick.
+      return {
+        ...empty,
+        errorCode: ERR_BROKER_SYMBOL_AMBIGUOUS,
+        message: `Multiple broker execution instruments match ${wantCanonical} for this account. An admin must select the permitted default before live trading.`,
+        ambiguousVariants: exactMatches.map((r) => String(r.broker_symbol)),
+        symbolMappingSource: "trading_layer_symbols",
+        symbolMappingCheckedAt: exactMatches[0]?.last_synced_at ?? null,
+      };
+    } else {
+      // No exact canonical match — DO NOT silently accept startsWith fallback,
+      // since a hardcoded suffix assumption is exactly what the user wants to avoid.
+      // Surface as unresolved instead.
+      return {
+        ...empty,
+        errorCode: ERR_BROKER_SYMBOL_UNRESOLVED,
+        message:
+          `No exact catalogue entry for ${wantCanonical} on this account. Refresh execution eligibility or check that the instrument is available on this MT5 account.`,
+      };
     }
   }
 
@@ -423,7 +449,7 @@ export async function resolveEligibleBrokerSymbol(
     displaySymbol: input.requestedDisplaySymbol ?? canonicalize(chosen.canonical_symbol),
     brokerSymbol: chosen.broker_symbol,
     canonicalSymbol: canonicalize(chosen.canonical_symbol || chosen.broker_symbol),
-    accountTradeMode: null, // account-level mode is gated by submit-best-execution-order; cache-only path leaves null
+    accountTradeMode: null,
     symbolTradeMode: chosen.trade_mode ?? null,
     accountTradeEligible: true,
     symbolTradeEligible: true,
