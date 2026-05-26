@@ -1,106 +1,89 @@
-## Goal
+## Account-Specific Broker Symbol Resolution — Implementation Plan
 
-Replace inferred execution eligibility with **explicit Trading Layer `account.trade_mode` and `symbol.trade_mode` checks**, and force all real MT5 execution to use the **exact broker symbol** (e.g. `XAUUSD+`) returned by Trading Layer instead of the canonical/display symbol. No live order will be submitted during this pass.
+This is a large, multi-file refactor of the symbol-resolution and execution pipeline. Below is the concrete plan I will execute before placing any live order.
 
-## Scope guardrails (unchanged)
+### Scope summary
 
-Risk validation, kill switch, admin-only execution gate, max testing limits, fresh-tick requirement, WebSocket market-data architecture, trader mapping resolver, confirmation coordinator, no-fake-success rule, and the disabled client live execution all remain untouched.
-
----
-
-## Part A — Backend: trade-mode + broker-symbol catalogue
-
-1. **New edge function `get-trading-execution-eligibility`**
-   - Authenticated; resolves active validated mapping (traderId, login, server).
-   - Server-side calls:
-     - `GET /api/v1/traders/{traderId}` → `account.trade_mode`
-     - `GET /api/v1/accounts/{traderId}/symbols` → per-symbol `trade_mode`, exact broker symbol, digits, contract size, description.
-   - Upserts the symbol list into `broker_symbol_catalog` (see below).
-   - Returns sanitized JSON only: `accountTradeMode`, `accountTradeEligible`, `displaySymbol`, `brokerSymbol`, `symbolTradeMode`, `symbolTradeEligible`, `eligibility` (eligible|blocked|unknown), `blockedReason`, `checkedAt`. Never returns API keys, MT5 passwords, or auth headers.
-
-2. **New table `broker_symbol_catalog`** (migration)
-   - Columns: id, trading_layer_trader_id, mt5_login, mt5_server, display_symbol, canonical_symbol, broker_symbol, description, asset_class, digits, contract_size, trade_mode, trade_eligible, source (`trading_layer_symbols`), last_synced_at, raw_metadata, created_at, updated_at.
-   - Unique on (trading_layer_trader_id, broker_symbol).
-   - RLS: admins manage; authenticated users select rows that match their own mapping.
-
-3. **Persist mapping fields on execution evidence** in `admin_live_execution_tests`, `execution_audit_events`, `trade_execution_logs`:
-   - `display_symbol`, `broker_symbol`, `symbol_trade_mode`, `account_trade_mode`, `symbol_mapping_source`, `symbol_mapping_checked_at` (stored inside existing `evidence_json` / `sync_meta` / `request_payload` jsonb to avoid schema churn on hot tables).
-
-## Part B — Execution path hard gates
-
-Update `submit-best-execution-order`, `execute-trade`, `submit-pending-order`, `cancel-pending-order`, `close-position-controlled`, `modify-position-protection`, `reconcile-execution` to:
-
-- Call the eligibility resolver (or read fresh catalogue row) before any transport.
-- Submit `brokerSymbol` to Trading Layer, never `displaySymbol`/`canonicalSymbol` when they differ.
-- Pre-submission classifications (no broker call, no coordinator, no pass/fail):
-  - `account_trade_mode_blocked`
-  - `symbol_trade_mode_blocked`
-  - `broker_symbol_unresolved`
-  - `broker_symbol_mapping_stale`
-- Fresh-tick + risk validation use `brokerSymbol` where the live price source supports it; record both symbols in audit.
-
-## Part C — Reconciliation
-
-- Primary match: exact `brokerSymbol`.
-- Fallbacks: ticket → orderId → dealId → canonical/suffix normalisation.
-- Record `match_mode` (`exact_broker_symbol | ticket | orderId | dealId | suffix_fallback`).
-
-## Part D — Order Ticket UI (`BlackArrowTradePanel`)
-
-In `admin_live_test` mode add an **Execution Permission** block:
-- Instrument: displaySymbol
-- Broker symbol: brokerSymbol (only when returned)
-- Account trade mode / Symbol trade mode / Execution eligibility chip (READY / BLOCKED / UNKNOWN)
-- Session source: `Trading Layer trade_mode`
-- Separate **Market data** row keeps tick age — copy clarifies that live ticks ≠ trading permission.
-- Buy/Sell disabled unless `eligibility = eligible`.
-
-## Part E — Admin Production panel
-
-Add "Trading Execution Eligibility" card:
-- account.trade_mode + last sync
-- broker-symbol catalogue last sync
-- XAUUSD and EURUSD rows: display → broker → trade_mode
-- Execution blocker reason
-- "Ready for broker-symbol verified test" yes/no
-- Manual "Refresh eligibility" button (calls the new edge function)
-- Live test matrix splits pre-fix rejected attempts from post-fix verification.
-
-## Part F — Data reclassification (no deletion)
-
-Update the two prior failed rows (`c6828ad8` EURUSD, `b9a9c292` XAUUSD) via insert tool:
-- `confirmation_status = order_rejected_trade_disabled_before_broker_symbol_fix`
-- Notes describe pre-fix submission; retest required with exact brokerSymbol after trade_mode confirmation.
-- Site setting `execution_permission_status` annotated: blocker reason now `awaiting_broker_symbol_verified_retest`.
-
-## Part G — Read-only verification (Part 10)
-
-After deploy, call `get-trading-execution-eligibility` once for trader `29008868-d583-4ab5-a6c1-57586fe92007` for both EURUSD and XAUUSD and report:
-- account.trade_mode
-- per-symbol display → brokerSymbol → trade_mode
-- eligibility + reason
-
-**No live order is submitted during this pass.** Stage A retest is left for the user to trigger only after the read-only report shows account + EURUSD broker symbol explicitly eligible.
+Every live trading mutation (market order, close, partial close, SL/TP, pending placement/cancel) must submit the **exact `brokerSymbol`** returned by Trading Layer for the **specific connected MT5 account** of the acting user. No suffix is hardcoded, no canonical/display value is ever sent, and no mapping is ever shared across users or accounts.
 
 ---
 
-## Technical notes
+### Phase 1 — Data model (DB migration)
 
-- Schema migration creates only `broker_symbol_catalog`; existing execution evidence tables get new fields inside their existing jsonb columns to avoid risky alterations.
-- Edge function uses `TRADING_LAYER_API_KEY` secret; sanitizes responses before returning.
-- All UI tokens go through existing semantic CSS variables; no hardcoded colors.
-- Translations: English copy only (matches existing admin/tester UI).
+Extend `broker_symbol_catalog`:
+- Add: `user_id`, `local_mt_account_id`, `mt5_login`, `mt5_server`, `chart_symbol`, `volume_min`, `volume_max`, `volume_step`, `trade_mode_raw`, `trade_mode_interpretation`, `catalogue_complete`, `stale_at`, `checked_at`
+- Drop old unique constraint, add new unique `(trading_layer_account_id, broker_symbol)`
+- Tighten RLS: users may read only rows where `user_id = auth.uid()`; admin/service-role manages writes
 
-Files to add/edit:
-- `supabase/migrations/<new>.sql` — `broker_symbol_catalog` + RLS
-- `supabase/functions/get-trading-execution-eligibility/index.ts` — new
-- `supabase/functions/submit-best-execution-order/index.ts` — gates + brokerSymbol
-- `supabase/functions/execute-trade/index.ts` — gates + brokerSymbol
-- `supabase/functions/submit-pending-order/index.ts`, `cancel-pending-order/index.ts`, `close-position-controlled/index.ts`, `modify-position-protection/index.ts`, `reconcile-execution/index.ts` — brokerSymbol usage + match_mode
-- `src/lib/executionEligibility.ts` — new client helper
-- `src/components/dashboard/BlackArrowTradePanel.tsx` — UI block + gate
-- `src/components/admin/AdminProductionModeTab.tsx` — eligibility card + refresh
-- `src/lib/productionMode.ts` — extend permission state with eligibility snapshot
-- Data updates via `supabase--insert` for the two test rows + `site_settings`.
+No data deletion — existing rows reclassified as `source_verified=false`, `catalogue_complete=false`.
 
-Acceptance: Critical/High/Medium = 0 after static verification; ordinary users still blocked; no live order placed.
+### Phase 2 — Account-scoped catalogue sync
+
+New shared module `supabase/functions/_shared/symbolCatalogue.ts`:
+- `syncAccountCatalogue({ userId, traderId, accountId, login, server })`
+- Calls `GET /api/v1/accounts/{trading_layer_account_id}/symbols` with full pagination (offset + cursor, page=500, hard cap)
+- Stores raw broker symbol untouched
+- Derives `canonical_symbol` and `display_symbol` via a deterministic `canonicaliseBrokerSymbol()` (strips only registered known suffixes: `+`, `.m`, `.pro`, `.cash`, `.a`, `.crp` — never blindly)
+- Sets `catalogue_complete=true` only when last page returns < pageSize OR cursor is null
+- Invoked from `connect-mt5-v2` and `sync-mt-account` on successful (re)connect
+
+### Phase 3 — Resolver hardening (`_shared/brokerSymbol.ts`)
+
+- `resolveEligibleBrokerSymbol` now scoped by `trading_layer_account_id`, not trader
+- Returns `ambiguous` status when multiple variants match the requested display symbol — execution blocked, admin must select default
+- Position/pending actions: prefer `suppliedBrokerSymbol` from the live MT5 record over catalogue derivation
+- Adds `recoverPositionBrokerSymbol(ticket)` that re-reads the MT5 position to recover the exact broker symbol when missing
+
+### Phase 4 — Mutation paths
+
+Update every execution edge function to:
+1. Require `mapping.tradingLayerAccountId`
+2. Resolve `brokerSymbol` via account-scoped resolver
+3. Send `symbol: brokerSymbol` exactly to Trading Layer
+4. Audit `displaySymbol`, `canonicalSymbol`, `brokerSymbol`, `tradingLayerAccountId`, `symbolMappingCheckedAt`, `symbolMappingSource`, `accountTradeModeRaw`, `symbolTradeModeRaw`
+
+Files: `execute-trade`, `submit-best-execution-order`, `submit-pending-order`, `cancel-pending-order`, `close-position-controlled`, `modify-position-protection`, `reconcile-execution`.
+
+### Phase 5 — Position/pending records
+
+Migration: ensure `mt_positions` and `mt_pending_orders` have `broker_symbol` (nullable for legacy). Sync paths persist exact broker symbol from MT5. UI disables Close/Modify/Cancel when `broker_symbol` is null and recovery fails.
+
+### Phase 6 — Frontend
+
+- `BrokerSymbolsContext`: load catalogue scoped to active `trading_layer_account_id`; expose `{ displaySymbol, canonicalSymbol, chartSymbol, brokerSymbol, variants[] }`
+- `BlackArrowTradePanel`, `PendingOrderModal`, `PositionActions`, `PendingOrdersPanel`: include `brokerSymbol` (and full identity quad) in every mutation payload; disable action when unresolved/ambiguous with clear message
+- Account switching invalidates the cached catalogue
+
+### Phase 7 — Admin Eligibility card
+
+`AdminExecutionEligibilityCard.tsx`: show masked traderId + accountId, catalogue completeness + last sync, account trade_mode raw+interpretation, per-symbol (EURUSD, XAUUSD) variants table with broker symbol, raw trade_mode, ambiguity flag, readiness verdict, and a **Refresh Catalogue** button (read-only — never submits an order).
+
+### Phase 8 — Read-only verification
+
+After deployment, call `get-trading-execution-eligibility` (read-only) for the admin tester account and report:
+- pagination handled (yes/no, pages fetched, total symbols)
+- exact EURUSD brokerSymbol(s)
+- exact XAUUSD brokerSymbol(s)
+- mix of suffixed and unsuffixed examples
+- raw account + symbol `trade_mode`
+- whether enum meaning is confirmed (no — awaiting TL)
+- whether all mutation paths use exact brokerSymbol (code-level audit)
+- next live test → **blocked** until TL confirms enum + ambiguity resolved
+
+---
+
+### Guardrails preserved
+
+- No live order submitted in this pass
+- Kill switch / risk / fresh-tick / coordinator unchanged
+- Ordinary users remain execution-blocked (admin_live_test mode gate)
+- No secrets exposed; no client-side credential storage
+- RLS tightened, never loosened
+
+### Technical notes
+
+- Canonicalisation suffix list is configurable in `site_settings.broker_symbol_suffixes` (default `["+", ".m", ".pro", ".cash", ".a", ".crp", ".raw", ".ecn"]`) — never hardcoded in TS
+- Ambiguity resolution stored in `site_settings.broker_symbol_defaults[trading_layer_account_id][canonical_symbol] = broker_symbol`
+- `submit-best-execution-order` & `execute-trade` early-return `400 brokerSymbolAmbiguous` when multiple variants and no admin default
+
+After your approval I will run this end-to-end and return the read-only verification report — no live orders.
