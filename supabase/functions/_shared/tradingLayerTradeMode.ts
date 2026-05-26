@@ -140,8 +140,56 @@ export function sideToOperation(
   return s === "sell" ? "market_sell" : "market_buy";
 }
 
+// Account-level directional gating.
+// Trading Layer OpenAPI defines Mt5AccountInfo.trade_mode using
+// ENUM_SYMBOL_TRADE_MODE — the SAME enum as per-symbol trade_mode.
+// 0=DISABLED, 1=LONGONLY, 2=SHORTONLY, 3=CLOSEONLY, 4=FULL.
+// `trade_allowed` is a separate boolean account flag.
+export function checkAccountOperationEligibility(
+  operation: ExecutionOperation,
+  accountTradeAllowed: boolean | null | undefined,
+  accountTradeMode: TradeModeRaw,
+): DirectionalEligibility {
+  if (accountTradeAllowed === false) {
+    return { allowed: false, reason: "ACCOUNT_TRADE_NOT_ALLOWED" };
+  }
+  if (accountTradeAllowed == null) {
+    return { allowed: false, reason: "ACCOUNT_TRADE_PERMISSION_UNAVAILABLE" };
+  }
+  const info = interpretTradeMode(accountTradeMode);
+  if (!info.known) {
+    // No explicit account mode → don't gate at account level, defer to symbol.
+    return { allowed: true, reason: null };
+  }
+  const tail = info.label?.replace("SYMBOL_TRADE_MODE_", "") ?? String(info.raw);
+  switch (operation) {
+    case "market_buy":
+    case "pending_buy_limit":
+    case "pending_buy_stop":
+      return canOpenBuy(accountTradeMode)
+        ? { allowed: true, reason: null }
+        : { allowed: false, reason: `BUY_NOT_ALLOWED_BY_ACCOUNT_TRADE_MODE_${tail}` };
+    case "market_sell":
+    case "pending_sell_limit":
+    case "pending_sell_stop":
+      return canOpenSell(accountTradeMode)
+        ? { allowed: true, reason: null }
+        : { allowed: false, reason: `SELL_NOT_ALLOWED_BY_ACCOUNT_TRADE_MODE_${tail}` };
+    case "close_position":
+    case "cancel_pending":
+      return canClosePosition(accountTradeMode)
+        ? { allowed: true, reason: null }
+        : { allowed: false, reason: "ACCOUNT_TRADE_DISABLED" };
+    case "modify_protection":
+      return canModifyProtection(accountTradeMode)
+        ? { allowed: true, reason: null }
+        : { allowed: false, reason: "ACCOUNT_TRADE_DISABLED" };
+  }
+}
+
 // Error codes
 export const ERR_ACCOUNT_TRADE_NOT_ALLOWED = "ACCOUNT_TRADE_NOT_ALLOWED";
 export const ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE =
   "ACCOUNT_TRADE_PERMISSION_UNAVAILABLE";
+export const ERR_ACCOUNT_DIRECTION_BLOCKED = "ACCOUNT_DIRECTION_BLOCKED";
 export const ERR_SYMBOL_DIRECTION_BLOCKED = "SYMBOL_DIRECTION_BLOCKED";
