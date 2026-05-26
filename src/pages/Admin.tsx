@@ -134,8 +134,9 @@ const Admin = () => {
         </h1>
 
         <Tabs defaultValue="webinars">
-          <TabsList className="grid w-full grid-cols-10 max-w-5xl">
+          <TabsList className="grid w-full grid-cols-11 max-w-5xl">
             <TabsTrigger value="prodmode"><Activity className="h-3.5 w-3.5 mr-1.5" /> Production</TabsTrigger>
+            <TabsTrigger value="brokersymbols"><Coins className="h-3.5 w-3.5 mr-1.5" /> Broker Symbols</TabsTrigger>
             <TabsTrigger value="webinars"><Radio className="h-3.5 w-3.5 mr-1.5" /> Webinars</TabsTrigger>
             <TabsTrigger value="channels"><Hash className="h-3.5 w-3.5 mr-1.5" /> Channels</TabsTrigger>
             <TabsTrigger value="messages"><MessageSquare className="h-3.5 w-3.5 mr-1.5" /> Messages</TabsTrigger>
@@ -150,6 +151,11 @@ const Admin = () => {
           {/* PRODUCTION MODE */}
           <TabsContent value="prodmode" className="mt-4">
             <AdminProductionModeTab />
+          </TabsContent>
+
+          {/* BROKER SYMBOLS */}
+          <TabsContent value="brokersymbols" className="mt-4">
+            <AdminBrokerSymbolsTab />
           </TabsContent>
 
 
