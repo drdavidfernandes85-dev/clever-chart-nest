@@ -35,101 +35,170 @@ function pickField(obj: any, paths: string[]): any {
   return null;
 }
 
+import {
+  checkOperationEligibility,
+  ERR_ACCOUNT_TRADE_NOT_ALLOWED,
+  ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE,
+  ERR_SYMBOL_DIRECTION_BLOCKED,
+  ExecutionOperation,
+  interpretTradeMode as interpretTradeModeEnum,
+  TRADE_MODE_DISABLED,
+} from "./tradingLayerTradeMode.ts";
+
 export interface FreshTradeModeResult {
   ok: boolean;
   errorCode?: string;
   message?: string;
-  accountTradeMode: string | null;
+  accountTradeMode: string | null;        // raw value, kept as string for back-compat
   accountTradeEligible: boolean;
+  accountTradeAllowed: boolean | null;    // trade_allowed boolean from /accounts/{id}
+  accountTradeModeRaw: number | null;
+  accountTradeModeLabel: string | null;
   symbolTradeMode: string | null;
   symbolTradeEligible: boolean;
+  symbolTradeModeRaw: number | null;
+  symbolTradeModeLabel: string | null;
   brokerSymbol: string | null;
+  operation: ExecutionOperation | null;
+  directionAllowed: boolean | null;
+  directionReason: string | null;
   accountTradeModeCheckedAt: string | null;
   symbolTradeModeCheckedAt: string | null;
 }
 
 /**
- * Refresh account.trade_mode AND symbol.trade_mode directly from Trading Layer
- * for the supplied trader + broker symbol. Always performs live HTTPS reads —
- * never trusts cache for execution permission. Upserts the latest catalogue row
- * so subsequent reads observe fresh state.
+ * Refresh account-level permission + per-symbol trade_mode directly from
+ * Trading Layer. Uses the OpenAPI account info endpoint (`/accounts/{id}`)
+ * and the symbol detail endpoint (`/accounts/{id}/symbols/{name}`).
  *
- * Use this immediately before any real Trading Layer trade mutation.
+ * Account-level gate uses `trade_allowed`. Per-symbol gate uses the enum
+ * mapping from `tradingLayerTradeMode.ts`. When an explicit operation is
+ * supplied, directional eligibility (BUY/SELL/close/modify) is enforced.
  */
 export async function refreshTradeModeFromTradingLayer(
   supabaseService: any,
   args: {
     traderId: string;
-    accountId?: string | null; // REQUIRED for the /accounts/{id}/symbols endpoint
+    accountId?: string | null; // REQUIRED — used for both account & symbol calls
     brokerSymbol: string;
     login?: string | null;
     server?: string | null;
+    operation?: ExecutionOperation | null;
   },
 ): Promise<FreshTradeModeResult> {
   const TL_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
   const empty: FreshTradeModeResult = {
     ok: false,
     accountTradeMode: null, accountTradeEligible: false,
+    accountTradeAllowed: null, accountTradeModeRaw: null, accountTradeModeLabel: null,
     symbolTradeMode: null, symbolTradeEligible: false,
+    symbolTradeModeRaw: null, symbolTradeModeLabel: null,
     brokerSymbol: args.brokerSymbol,
+    operation: args.operation ?? null,
+    directionAllowed: null, directionReason: null,
     accountTradeModeCheckedAt: null, symbolTradeModeCheckedAt: null,
   };
   if (!TL_KEY) return { ...empty, errorCode: "TL_API_KEY_MISSING", message: "Trading Layer key not configured." };
-  if (!args.traderId) return { ...empty, errorCode: ERR_BROKER_SYMBOL_UNRESOLVED, message: "Missing trader id." };
   if (!args.brokerSymbol) return { ...empty, errorCode: ERR_BROKER_SYMBOL_UNRESOLVED, message: "Missing broker symbol." };
-  // Fail closed when the account-scoped symbols endpoint id is not supplied.
-  // /accounts/{accountId}/symbols MUST use trading_layer_account_id, not traderId.
   if (!args.accountId) {
     return {
       ...empty,
-      errorCode: "TRADING_LAYER_ACCOUNT_ID_MISSING",
-      message: "Trading Layer account id is required for symbol trade-mode refresh.",
+      errorCode: ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE,
+      message: "Trading Layer account id is required for execution permission refresh.",
     };
   }
 
   const headers = { Authorization: `Bearer ${TL_KEY}`, "Content-Type": "application/json" };
   const now = new Date().toISOString();
 
-  // 1) Account trade_mode
-  let accountTradeMode: string | null = null;
+  // 1) Account info — trade_allowed + trade_mode
+  let accountTradeAllowed: boolean | null = null;
+  let accountTradeModeRaw: number | null = null;
   try {
-    const r = await fetch(`${TL_BASE_URL}/api/v1/traders/${args.traderId}`, { headers });
-    if (r.ok) {
-      const parsed = await r.json().catch(() => null);
-      const v = pickField(parsed, ["data.account.trade_mode", "account.trade_mode", "data.trade_mode", "trade_mode"]);
-      if (v != null) accountTradeMode = String(v);
-    } else {
-      return { ...empty, errorCode: "ACCOUNT_FETCH_FAILED", message: `trader_fetch_${r.status}`, accountTradeModeCheckedAt: now };
+    const r = await fetch(`${TL_BASE_URL}/api/v1/accounts/${args.accountId}`, { headers });
+    if (!r.ok) {
+      return {
+        ...empty,
+        errorCode: ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE,
+        message: `account_fetch_${r.status}`,
+        accountTradeModeCheckedAt: now,
+      };
     }
+    const parsed = await r.json().catch(() => null);
+    const d = parsed?.data ?? parsed;
+    if (typeof d?.trade_allowed === "boolean") accountTradeAllowed = d.trade_allowed;
+    if (typeof d?.trade_mode === "number") accountTradeModeRaw = d.trade_mode;
   } catch (e) {
-    return { ...empty, errorCode: "ACCOUNT_FETCH_FAILED", message: (e as Error).message, accountTradeModeCheckedAt: now };
-  }
-  const accountEligible = isTradableMode(accountTradeMode);
-  if (accountTradeMode != null && !accountEligible) {
     return {
-      ok: false,
-      errorCode: ERR_ACCOUNT_TRADE_MODE_BLOCKED,
-      message: `Trading Layer reports account trading disabled (trade_mode=${accountTradeMode}).`,
-      accountTradeMode, accountTradeEligible: false,
-      symbolTradeMode: null, symbolTradeEligible: false,
-      brokerSymbol: args.brokerSymbol,
-      accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: null,
+      ...empty,
+      errorCode: ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE,
+      message: (e as Error).message,
+      accountTradeModeCheckedAt: now,
+    };
+  }
+  const accountInfo = interpretTradeModeEnum(accountTradeModeRaw);
+
+  if (accountTradeAllowed === null) {
+    return {
+      ...empty,
+      errorCode: ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE,
+      message: "Trading Layer did not return account.trade_allowed.",
+      accountTradeModeRaw, accountTradeModeLabel: accountInfo.label,
+      accountTradeModeCheckedAt: now,
+    };
+  }
+  if (accountTradeAllowed === false) {
+    return {
+      ...empty,
+      errorCode: ERR_ACCOUNT_TRADE_NOT_ALLOWED,
+      message: "Account-level trading is not allowed (trade_allowed=false).",
+      accountTradeAllowed, accountTradeModeRaw,
+      accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+      accountTradeModeLabel: accountInfo.label,
+      accountTradeModeCheckedAt: now,
     };
   }
 
-  // 2) Symbols catalogue — find this brokerSymbol live
-  let symbolTradeMode: string | null = null;
+  // 2) Symbol detail — exact endpoint, no list pagination guessing
+  let symbolTradeModeRaw: number | null = null;
   try {
-    const r = await fetch(`${TL_BASE_URL}/api/v1/accounts/${args.accountId}/symbols`, { headers });
-    if (r.ok) {
-      const parsed = await r.json().catch(() => null);
-      const list: any[] = Array.isArray(parsed?.data) ? parsed.data : Array.isArray(parsed) ? parsed : [];
-      // Upsert the catalogue with fresh data for staleness tracking elsewhere.
-      const upsertRows = list.map((s) => {
-        const broker = String(pickField(s, ["symbol", "name", "brokerSymbol", "broker_symbol"]) ?? "").trim();
+    const r = await fetch(
+      `${TL_BASE_URL}/api/v1/accounts/${args.accountId}/symbols/${encodeURIComponent(args.brokerSymbol)}`,
+      { headers },
+    );
+    if (r.status === 404) {
+      return {
+        ...empty,
+        errorCode: ERR_BROKER_SYMBOL_UNRESOLVED,
+        message: `Broker symbol ${args.brokerSymbol} not found at /accounts/${args.accountId}/symbols.`,
+        accountTradeAllowed, accountTradeModeRaw,
+        accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+        accountTradeModeLabel: accountInfo.label, accountTradeEligible: true,
+        accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
+      };
+    }
+    if (!r.ok) {
+      return {
+        ...empty,
+        errorCode: "SYMBOLS_FETCH_FAILED",
+        message: `symbol_fetch_${r.status}`,
+        accountTradeAllowed, accountTradeModeRaw,
+        accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+        accountTradeModeLabel: accountInfo.label, accountTradeEligible: true,
+        accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
+      };
+    }
+    const parsed = await r.json().catch(() => null);
+    const d = parsed?.data ?? parsed;
+    if (typeof d?.trade_mode === "number") symbolTradeModeRaw = d.trade_mode;
+
+    // Best-effort catalogue upsert for the one resolved symbol so the
+    // staleness/age tracking elsewhere stays accurate.
+    if (d && d.name) {
+      try {
+        const broker = String(d.name);
         const canonical = broker.toUpperCase().replace(/[^A-Z0-9]/g, "");
-        const tm = pickField(s, ["trade_mode", "tradeMode"]);
-        return {
+        await supabaseService.from("broker_symbol_catalog").upsert([{
           trading_layer_trader_id: args.traderId,
           trading_layer_account_id: args.accountId,
           source_endpoint_account_id: args.accountId,
@@ -139,88 +208,93 @@ export async function refreshTradeModeFromTradingLayer(
           display_symbol: canonical,
           canonical_symbol: canonical,
           broker_symbol: broker,
-          description: pickField(s, ["description", "desc"]) ?? null,
-          asset_class: pickField(s, ["assetClass", "asset_class", "category"]) ?? null,
-          digits: Number(pickField(s, ["digits"])) || null,
-          contract_size: Number(pickField(s, ["contractSize", "contract_size"])) || null,
-          trade_mode: tm != null ? String(tm) : null,
-          trade_eligible: isTradableMode(tm),
-          source: "trading_layer_symbols",
+          description: d.description ?? null,
+          digits: d.digits ?? null,
+          contract_size: d.trade_contract_size ?? null,
+          volume_min: d.volume_min ?? null,
+          volume_max: d.volume_max ?? null,
+          volume_step: d.volume_step ?? null,
+          trade_mode: symbolTradeModeRaw != null ? String(symbolTradeModeRaw) : null,
+          trade_mode_raw: symbolTradeModeRaw != null ? String(symbolTradeModeRaw) : null,
+          trade_mode_interpretation: interpretTradeModeEnum(symbolTradeModeRaw).label,
+          trade_eligible: symbolTradeModeRaw != null && symbolTradeModeRaw !== TRADE_MODE_DISABLED,
+          source: "trading_layer_symbol_detail",
           last_synced_at: now,
-        };
-      }).filter((r) => r.broker_symbol);
-      if (upsertRows.length > 0) {
-        try {
-          let upErr: any = null;
-          {
-            const { error } = await supabaseService.from("broker_symbol_catalog").upsert(upsertRows, {
-              onConflict: "trading_layer_account_id,broker_symbol",
-            });
-            upErr = error;
-          }
-          if (upErr) {
-            await supabaseService.from("broker_symbol_catalog").upsert(upsertRows, {
-              onConflict: "trading_layer_trader_id,broker_symbol",
-            });
-          }
-        } catch { /* ignore — upsert is best-effort */ }
-      }
-      const match = list.find((s) => {
-        const broker = String(pickField(s, ["symbol", "name", "brokerSymbol", "broker_symbol"]) ?? "").trim();
-        return broker === args.brokerSymbol;
-      });
-      if (match) {
-        const tm = pickField(match, ["trade_mode", "tradeMode"]);
-        if (tm != null) symbolTradeMode = String(tm);
-      } else {
-        return {
-          ok: false,
-          errorCode: ERR_BROKER_SYMBOL_UNRESOLVED,
-          message: `Broker symbol ${args.brokerSymbol} not present in fresh Trading Layer symbols list.`,
-          accountTradeMode, accountTradeEligible: accountEligible,
-          symbolTradeMode: null, symbolTradeEligible: false,
-          brokerSymbol: args.brokerSymbol,
-          accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
-        };
-      }
-    } else {
-      return {
-        ok: false, errorCode: "SYMBOLS_FETCH_FAILED",
-        message: `symbols_fetch_${r.status}`,
-        accountTradeMode, accountTradeEligible: accountEligible,
-        symbolTradeMode: null, symbolTradeEligible: false,
-        brokerSymbol: args.brokerSymbol,
-        accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
-      };
+          checked_at: now,
+        }], { onConflict: "trading_layer_account_id,broker_symbol" });
+      } catch { /* best-effort */ }
     }
   } catch (e) {
     return {
-      ok: false, errorCode: "SYMBOLS_FETCH_FAILED",
+      ...empty,
+      errorCode: "SYMBOLS_FETCH_FAILED",
       message: (e as Error).message,
-      accountTradeMode, accountTradeEligible: accountEligible,
-      symbolTradeMode: null, symbolTradeEligible: false,
-      brokerSymbol: args.brokerSymbol,
+      accountTradeAllowed, accountTradeModeRaw,
+      accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+      accountTradeModeLabel: accountInfo.label, accountTradeEligible: true,
       accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
     };
   }
 
-  const symbolEligible = isTradableMode(symbolTradeMode);
-  if (symbolTradeMode != null && !symbolEligible) {
-    return {
-      ok: false, errorCode: ERR_SYMBOL_TRADE_MODE_BLOCKED,
-      message: `Trading Layer reports symbol ${args.brokerSymbol} not currently tradable (trade_mode=${symbolTradeMode}).`,
-      accountTradeMode, accountTradeEligible: accountEligible,
-      symbolTradeMode, symbolTradeEligible: false,
-      brokerSymbol: args.brokerSymbol,
-      accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
-    };
+  const symbolInfo = interpretTradeModeEnum(symbolTradeModeRaw);
+
+  // Directional gating using OpenAPI enum, when an operation is supplied.
+  let directionAllowed: boolean | null = null;
+  let directionReason: string | null = null;
+  if (args.operation) {
+    const dir = checkOperationEligibility(args.operation, symbolTradeModeRaw);
+    directionAllowed = dir.allowed;
+    directionReason = dir.reason;
+    if (!dir.allowed) {
+      return {
+        ok: false,
+        errorCode: dir.reason === "SYMBOL_TRADE_DISABLED"
+          ? ERR_SYMBOL_TRADE_MODE_BLOCKED
+          : ERR_SYMBOL_DIRECTION_BLOCKED,
+        message: `Trading Layer symbol ${args.brokerSymbol} trade_mode=${symbolTradeModeRaw} (${symbolInfo.label}) does not permit ${args.operation}.`,
+        accountTradeAllowed, accountTradeModeRaw,
+        accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+        accountTradeModeLabel: accountInfo.label, accountTradeEligible: true,
+        symbolTradeModeRaw, symbolTradeModeLabel: symbolInfo.label,
+        symbolTradeMode: symbolTradeModeRaw != null ? String(symbolTradeModeRaw) : null,
+        symbolTradeEligible: symbolTradeModeRaw !== TRADE_MODE_DISABLED && symbolTradeModeRaw != null,
+        brokerSymbol: args.brokerSymbol,
+        operation: args.operation,
+        directionAllowed, directionReason,
+        accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
+      };
+    }
+  } else {
+    // No explicit operation — fall back to "is the instrument tradable at all"
+    if (symbolTradeModeRaw == null || symbolTradeModeRaw === TRADE_MODE_DISABLED) {
+      return {
+        ok: false,
+        errorCode: ERR_SYMBOL_TRADE_MODE_BLOCKED,
+        message: `Trading Layer symbol ${args.brokerSymbol} is not currently tradable (trade_mode=${symbolTradeModeRaw}).`,
+        accountTradeAllowed, accountTradeModeRaw,
+        accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+        accountTradeModeLabel: accountInfo.label, accountTradeEligible: true,
+        symbolTradeModeRaw, symbolTradeModeLabel: symbolInfo.label,
+        symbolTradeMode: symbolTradeModeRaw != null ? String(symbolTradeModeRaw) : null,
+        symbolTradeEligible: false,
+        brokerSymbol: args.brokerSymbol,
+        operation: null, directionAllowed: null, directionReason: null,
+        accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
+      };
+    }
   }
 
   return {
     ok: true,
-    accountTradeMode, accountTradeEligible: accountEligible,
-    symbolTradeMode, symbolTradeEligible: symbolEligible,
+    accountTradeAllowed, accountTradeModeRaw,
+    accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
+    accountTradeModeLabel: accountInfo.label, accountTradeEligible: true,
+    symbolTradeModeRaw, symbolTradeModeLabel: symbolInfo.label,
+    symbolTradeMode: symbolTradeModeRaw != null ? String(symbolTradeModeRaw) : null,
+    symbolTradeEligible: true,
     brokerSymbol: args.brokerSymbol,
+    operation: args.operation ?? null,
+    directionAllowed, directionReason,
     accountTradeModeCheckedAt: now, symbolTradeModeCheckedAt: now,
   };
 }
