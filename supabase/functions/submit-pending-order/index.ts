@@ -154,9 +154,13 @@ Deno.serve(async (req) => {
   }
   const brokerSymbol = eligible.brokerSymbol as string;
 
-  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate).
+  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate, directional).
+  const pendingOperation: any = pendingType === "buy_limit" ? "pending_buy_limit"
+    : pendingType === "sell_limit" ? "pending_sell_limit"
+    : pendingType === "buy_stop" ? "pending_buy_stop" : "pending_sell_stop";
   const fresh = await refreshTradeModeFromTradingLayer(supabase, {
     traderId: accountId, accountId: mapping.tradingLayerAccountId, brokerSymbol, login: mapping.login, server: mapping.server,
+    operation: pendingOperation,
   });
   if (!fresh.ok) {
     return json(freshTradeModeGateResponse(VERSION, fresh, { tradeId, pendingType, volume, entryPrice }), 200);
