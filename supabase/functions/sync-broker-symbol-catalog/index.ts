@@ -93,10 +93,16 @@ Deno.serve(async (req) => {
   // Account info (also confirms the route id is healthy)
   const account = await getAccountInfo(accountId);
   if (!account.ok || !account.data) {
+    const is429 = account.status === 429 || account.error === "account_fetch_429";
     return json({
       success: false, step: "account_fetch",
       error: account.error ?? "account_fetch_failed",
-    }, 502);
+      status: account.status,
+      retryable: is429,
+      message: is429
+        ? "Trading Layer rate limit hit (429). Wait a few seconds and retry."
+        : "Account info fetch failed.",
+    }, is429 ? 429 : 502);
   }
 
   const result: Record<string, unknown> = {
