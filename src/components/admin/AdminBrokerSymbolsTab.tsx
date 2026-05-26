@@ -73,6 +73,11 @@ interface CandidateReport {
   tradeModeLabel: string | null;
   identityMatchesExpectedLogin: boolean;
   identityMatchesExpectedServer: boolean;
+  identityMatch?: boolean;
+  executionAllowed?: boolean;
+  useForExecution?: boolean;
+  routeStatus?: string;
+  reason?: string;
   matches: boolean;
 }
 
@@ -81,6 +86,8 @@ interface VerifyResponse {
   error?: string;
   blocker?: string | null;
   verified?: boolean;
+  ambiguous?: boolean;
+  verificationNote?: string;
   verifiedRouteId?: string | null;
   verifiedRouteIdMasked?: string | null;
   expected?: { mt5Login: string | null; mt5Server: string | null };
