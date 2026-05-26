@@ -268,6 +268,7 @@ export default function AdminBrokerSymbolsTab() {
   const refreshPermission = () => invoke("Account permission", { mode: "info" });
   const lookupEURUSD = () => invoke("EURUSD lookup", { mode: "targeted", symbols: ["EURUSD"] });
   const lookupXAUUSD = () => invoke("XAUUSD lookup", { mode: "targeted", symbols: ["XAUUSD"] });
+  const probePlusSymbols = () => invoke("Probe + symbols", { mode: "probe", symbols: ["EURUSD", "XAUUSD"] });
   const fullSync = () => invoke("Full catalogue sync", { mode: "full" });
 
   const routeVerified = !!mapping?.account_route_verified && !!mapping?.trading_layer_account_route_id;
