@@ -124,7 +124,23 @@ Deno.serve(async (req) => {
     mt5Server: account.data.server,
     accountPermissionCheckedAt: now,
     mode,
+    mapping: {
+      id: mapping.localRowId,
+      user_id: resolveUid,
+      mt5_login: mapping.login ? String(mapping.login) : null,
+      mt5_server: mapping.server ?? null,
+      trading_layer_account_id: mapping.tradingLayerAccountId,
+      trading_layer_trader_id: mapping.tradingLayerTraderId,
+      trading_layer_external_trader_id: mapping.tradingLayerExternalTraderId,
+      mapping_status: mapping.status,
+      credential_status: mapping.credentialStatus,
+      last_verified_at: mapping.lastVerifiedAt,
+    },
   };
+
+  if (body?.mode === "info") {
+    return json(result);
+  }
 
   if (mode === "targeted") {
     if (requestedSymbols.length === 0) {

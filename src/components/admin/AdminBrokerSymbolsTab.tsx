@@ -98,22 +98,15 @@ export default function AdminBrokerSymbolsTab() {
   const [lastResp, setLastResp] = useState<SyncResponse | null>(null);
   const [catalog, setCatalog] = useState<CatalogRow[]>([]);
 
-  const loadMapping = useCallback(async () => {
-    setLoadingMapping(true);
-    // Admins can SELECT all rows (RLS: "Admins view all mt accounts").
-    // Eligible mapping requires Trading Layer IDs + validated credentials.
+  const loadMappingFromDB = useCallback(async (): Promise<VerifiedMapping | null> => {
     const { data } = await (supabase.from as any)("user_mt_accounts")
-      .select("id, user_id, mt5_login, mt5_server, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, mapping_status, credential_status, last_verified_at, login, server_name")
+      .select("id, user_id, mt5_login, mt5_server, trading_layer_account_id, trading_layer_trader_id, trading_layer_external_trader_id, mapping_status, credential_status, last_verified_at, login, server_name, status")
       .eq("status", "connected")
-      .eq("credential_status", "validated")
-      .eq("mapping_status", "valid")
       .not("trading_layer_account_id", "is", null)
       .not("trading_layer_trader_id", "is", null)
-      .or("ignored_for_execution.is.null,ignored_for_execution.eq.false")
       .order("last_verified_at", { ascending: false, nullsFirst: false })
       .limit(50);
     const rows = (data ?? []) as any[];
-    // Normalize: prefer mt5_login/mt5_server but fall back to login/server_name
     const normalized: VerifiedMapping[] = rows.map((r) => ({
       id: r.id,
       user_id: r.user_id,
@@ -126,25 +119,48 @@ export default function AdminBrokerSymbolsTab() {
       credential_status: r.credential_status,
       last_verified_at: r.last_verified_at,
     }));
-    // Prefer the verified Infinox live login 87943580 if present, otherwise first row
-    const preferred = normalized.find((r) => r.mt5_login === "87943580") ?? normalized[0] ?? null;
-    setMapping(preferred);
-    setLoadingMapping(false);
+    return normalized.find((r) => r.mt5_login === "87943580") ?? normalized[0] ?? null;
   }, []);
 
-
-  const loadCatalog = useCallback(async () => {
-    if (!mapping?.trading_layer_account_id) return;
+  const loadCatalog = useCallback(async (accountId?: string | null) => {
+    const id = accountId ?? mapping?.trading_layer_account_id;
+    if (!id) return;
     const { data } = await (supabase.from as any)("broker_symbol_catalog")
       .select("broker_symbol, display_symbol, canonical_symbol, description, trade_mode_raw, trade_mode_interpretation, trade_eligible, checked_at, last_synced_at")
-      .eq("trading_layer_account_id", mapping.trading_layer_account_id)
+      .eq("trading_layer_account_id", id)
       .order("broker_symbol", { ascending: true })
-      .limit(500);
+      .limit(1000);
     setCatalog((data as CatalogRow[]) ?? []);
   }, [mapping?.trading_layer_account_id]);
 
-  useEffect(() => { loadMapping(); }, [loadMapping]);
-  useEffect(() => { loadCatalog(); }, [loadCatalog]);
+  // Bootstrap: try local DB first, then fall back to the edge function's
+  // server-resolved mapping (authoritative). This avoids "No connected MT
+  // account" when the admin browser session can't see the row via RLS.
+  useEffect(() => {
+    (async () => {
+      setLoadingMapping(true);
+      const fromDb = await loadMappingFromDB();
+      if (fromDb) {
+        setMapping(fromDb);
+        setLoadingMapping(false);
+        loadCatalog(fromDb.trading_layer_account_id);
+        return;
+      }
+      // Fallback: ask the edge function (cheap info mode, no TL crawl).
+      try {
+        const { data } = await supabase.functions.invoke("sync-broker-symbol-catalog", {
+          body: { mode: "info" },
+        });
+        const m = (data as any)?.mapping;
+        if (m?.trading_layer_account_id) {
+          setMapping(m as VerifiedMapping);
+          setLastResp(data as SyncResponse);
+          loadCatalog(m.trading_layer_account_id);
+        }
+      } catch { /* ignore */ }
+      setLoadingMapping(false);
+    })();
+  }, [loadMappingFromDB, loadCatalog]);
 
   const invoke = async (action: string, body: any) => {
     setBusy(action);
@@ -157,9 +173,16 @@ export default function AdminBrokerSymbolsTab() {
         return;
       }
       setLastResp(data as SyncResponse);
+      const respMapping = (data as any)?.mapping;
+      if (respMapping?.trading_layer_account_id && !mapping) {
+        setMapping(respMapping as VerifiedMapping);
+      }
+      const accountId = (data as any)?.accountRouteIdUsed
+        ?? respMapping?.trading_layer_account_id
+        ?? mapping?.trading_layer_account_id;
       if ((data as any)?.success) {
         toast.success(`${action} complete`);
-        await loadCatalog();
+        await loadCatalog(accountId);
       } else {
         toast.error((data as any)?.error || "Sync failed");
       }
@@ -172,7 +195,7 @@ export default function AdminBrokerSymbolsTab() {
   };
 
 
-  const refreshPermission = () => invoke("Account permission", { mode: "targeted", symbols: ["EURUSD"] });
+  const refreshPermission = () => invoke("Account permission", { mode: "info" });
   const lookupEURUSD = () => invoke("EURUSD lookup", { mode: "targeted", symbols: ["EURUSD"] });
   const lookupXAUUSD = () => invoke("XAUUSD lookup", { mode: "targeted", symbols: ["XAUUSD"] });
   const fullSync = () => invoke("Full catalogue sync", { mode: "full" });
@@ -182,10 +205,19 @@ export default function AdminBrokerSymbolsTab() {
   const xauResolved = lastResp?.results?.find(r => r.displaySymbol === "XAUUSD")?.variants?.[0]?.brokerSymbol
     ?? catalog.find(c => c.canonical_symbol === "XAUUSD")?.broker_symbol ?? null;
   const tradeAllowed = lastResp?.accountTradeAllowed;
-  const readyForTest = !!eurResolved && tradeAllowed === true;
+  const accountTradeModeRaw = lastResp?.accountTradeModeRaw;
+  const isShortOnly = accountTradeModeRaw === 2;
+  const isLongOnly = accountTradeModeRaw === 1;
+  const isDisabled = accountTradeModeRaw === 0;
+  const accountCanBuy = tradeAllowed === true && (accountTradeModeRaw === 1 || accountTradeModeRaw === 4);
+  const accountCanSell = tradeAllowed === true && (accountTradeModeRaw === 2 || accountTradeModeRaw === 4);
+  const readyForTest = !!eurResolved && tradeAllowed === true && !isDisabled;
   const blocker = !mapping?.trading_layer_account_id ? "No verified Trading Layer accountId"
     : tradeAllowed === false ? "Account trade_allowed = false"
     : tradeAllowed == null ? "Account permission not yet checked"
+    : isDisabled ? "Account trade_mode = DISABLED — no orders allowed"
+    : isShortOnly ? "BUY is blocked under SHORTONLY mode. SELL test pending exact EURUSD broker-symbol and symbol-permission verification."
+    : isLongOnly ? "SELL is blocked under LONGONLY mode."
     : !eurResolved ? "EURUSD broker symbol not yet resolved"
     : null;
 
@@ -220,10 +252,17 @@ export default function AdminBrokerSymbolsTab() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
           <div><div className="text-muted-foreground">Account trade_mode</div><div>{tradeModeBadge(lastResp?.accountTradeModeRaw, lastResp?.accountTradeModeLabel)}</div></div>
+          <div><div className="text-muted-foreground">Buy (account)</div><div>{yesNoBadge(accountCanBuy)}</div></div>
+          <div><div className="text-muted-foreground">Sell (account)</div><div>{yesNoBadge(accountCanSell)}</div></div>
           <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
-          <div><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
+          <div className="md:col-span-3"><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
         </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">
+        {isShortOnly && (
+          <p className="mt-3 text-[11px] text-amber-400">
+            SHORTONLY restriction: BUY / open-long is blocked. SELL may be permitted subject to exact symbol trade_mode.
+          </p>
+        )}
+        <p className="mt-2 text-[11px] text-muted-foreground">
           Execution uses the exact broker symbol returned by Trading Layer for this connected MT5 account. Symbols are never guessed or manually suffixed.
         </p>
       </Card>
