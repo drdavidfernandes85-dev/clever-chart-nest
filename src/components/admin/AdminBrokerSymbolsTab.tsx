@@ -250,12 +250,13 @@ export default function AdminBrokerSymbolsTab() {
       }
       setVerifyResp(data as VerifyResponse);
       if ((data as any)?.verified) {
-        toast.success("Account route verified");
-        // refresh mapping + info
+        toast.success("Account route verified (execution-allowed candidate selected)");
         const fresh = await loadMappingFromDB();
         if (fresh) setMapping(fresh);
+      } else if ((data as any)?.ambiguous) {
+        toast.error("Ambiguous: multiple routes returned trade_allowed=true. Manual clarification required.");
       } else {
-        toast.error("No candidate route matched the connected MT5 login/server");
+        toast.error((data as any)?.verificationNote || "No execution-allowed route matched the connected MT5 identity");
       }
     } catch (e: any) {
       toast.error(e?.message || "Network error");
