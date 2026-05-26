@@ -47,6 +47,15 @@ interface CandidateReport {
   tradeModeLabel: string | null;
   identityMatchesExpectedLogin: boolean;
   identityMatchesExpectedServer: boolean;
+  identityMatch: boolean;
+  executionAllowed: boolean;
+  useForExecution: boolean;
+  routeStatus:
+    | "identity_match_execution_allowed_pending_symbol_verification"
+    | "identity_match_execution_blocked"
+    | "identity_mismatch"
+    | "unavailable";
+  reason: string;
   matches: boolean;
 }
 
