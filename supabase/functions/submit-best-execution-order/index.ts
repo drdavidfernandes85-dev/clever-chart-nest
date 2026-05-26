@@ -316,7 +316,12 @@ Deno.serve(async (req) => {
   timings.riskValidatedAt = Date.now();
 
   // Freshness gate — refuse live execution without a fresh server-side tick.
-  if (!haveFreshQuote && devModeAllowMissingQuote !== true) {
+  // devModeAllowMissingQuote is honored ONLY for dry-runs (handled earlier);
+  // for real orders we never bypass this gate.
+  if (!haveFreshQuote) {
+    const ftCode = freshTick?.code ?? "FRESH_TICK_UNAVAILABLE";
+    const ftMessage =
+      freshTick?.message ?? "Live order blocked: no fresh server-side quote is available for execution validation.";
     if (uid) {
       fireAndForget(supabase.from("execution_audit_events").insert({
         user_id: uid,
@@ -336,37 +341,56 @@ Deno.serve(async (req) => {
             : null,
         bid: requestedBid,
         ask: requestedAsk,
-        broker_message: "Blocked: no fresh server-side tick available.",
+        broker_message: ftMessage,
         retcode: null,
-        reason: "missing_fresh_tick",
+        reason: ftCode.toLowerCase(),
         rule_violated: "fresh_tick_required",
         ticket: null,
         raw: {
-          classification: "blocked",
+          classification: "blocked_missing_fresh_server_tick",
           version: VERSION,
-          step: "pretrade_validation",
+          step: "pretrade_fresh_tick_validation",
+          liveOrderAttempted: false,
           liveOrderSent: false,
+          brokerAccepted: false,
           quote_bid: requestedBid,
           quote_ask: requestedAsk,
           quote_timestamp: quoteTimestamp,
           quote_source: quoteSource,
+          quote_age_ms: freshTick?.ageMs ?? null,
+          quote_threshold_ms: freshTick?.thresholdMs ?? null,
+          route_account_id_masked: freshTick?.routeAccountIdMasked ?? null,
+          broker_symbol: freshTick?.brokerSymbol ?? null,
+          upstream_status: freshTick?.upstreamStatus ?? null,
+          fresh_tick_policy_version: FRESH_TICK_POLICY_VERSION,
+          fresh_tick_code: ftCode,
         },
       }));
     }
     return withTimings({
       success: false,
       version: VERSION,
-      step: "pretrade_validation",
+      step: "pretrade_fresh_tick_validation",
+      classification: "blocked_missing_fresh_server_tick",
+      liveOrderAttempted: false,
       liveOrderSent: false,
+      brokerAccepted: false,
       tradeId,
-      error: "No fresh server-side tick available — refusing to send live order.",
-      reasons: ["Missing fresh bid/ask snapshot. Try again or enable Dev Mode bypass."],
+      error: ftCode,
+      message: ftMessage,
+      reasons: [ftMessage],
       requestedPrice,
       bid: requestedBid,
       ask: requestedAsk,
       quoteTimestamp,
+      quoteAgeMs: freshTick?.ageMs ?? null,
+      quoteThresholdMs: freshTick?.thresholdMs ?? null,
+      brokerSymbol: freshTick?.brokerSymbol ?? null,
+      routeAccountIdMasked: freshTick?.routeAccountIdMasked ?? null,
+      freshTickPolicyVersion: FRESH_TICK_POLICY_VERSION,
     });
   }
+
 
   // Resolve mapping once — used for diagnostics AND to hard-block stale
   // mappings before any order is forwarded to execute-trade.
