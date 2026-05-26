@@ -1468,6 +1468,7 @@ export type Database = {
       }
       user_mt_accounts: {
         Row: {
+          account_id_relationship_verified: boolean
           account_type: string
           balance: number | null
           broker_name: string
@@ -1477,6 +1478,7 @@ export type Database = {
           equity: number | null
           free_margin: number | null
           id: string
+          ignored_for_execution: boolean
           investor_password_encrypted: string | null
           last_error: string | null
           last_synced_at: string | null
@@ -1484,6 +1486,7 @@ export type Database = {
           last_verified_at: string | null
           leverage: number | null
           login: string
+          mapping_status: string | null
           margin: number | null
           margin_level: number | null
           metaapi_account_id: string | null
@@ -1501,6 +1504,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_id_relationship_verified?: boolean
           account_type?: string
           balance?: number | null
           broker_name: string
@@ -1510,6 +1514,7 @@ export type Database = {
           equity?: number | null
           free_margin?: number | null
           id?: string
+          ignored_for_execution?: boolean
           investor_password_encrypted?: string | null
           last_error?: string | null
           last_synced_at?: string | null
@@ -1517,6 +1522,7 @@ export type Database = {
           last_verified_at?: string | null
           leverage?: number | null
           login: string
+          mapping_status?: string | null
           margin?: number | null
           margin_level?: number | null
           metaapi_account_id?: string | null
@@ -1534,6 +1540,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_id_relationship_verified?: boolean
           account_type?: string
           balance?: number | null
           broker_name?: string
@@ -1543,6 +1550,7 @@ export type Database = {
           equity?: number | null
           free_margin?: number | null
           id?: string
+          ignored_for_execution?: boolean
           investor_password_encrypted?: string | null
           last_error?: string | null
           last_synced_at?: string | null
@@ -1550,6 +1558,7 @@ export type Database = {
           last_verified_at?: string | null
           leverage?: number | null
           login?: string
+          mapping_status?: string | null
           margin?: number | null
           margin_level?: number | null
           metaapi_account_id?: string | null

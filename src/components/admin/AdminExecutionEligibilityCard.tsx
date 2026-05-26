@@ -18,7 +18,18 @@ import {
   type ExecutionEligibility,
   type ModeInterpretation,
 } from "@/lib/executionEligibility";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface VerifiedMapping {
+  login: string | null;
+  server: string | null;
+  traderId: string | null;
+  accountId: string | null;
+  externalTraderId: string | null;
+  relationshipVerified: boolean;
+  ignoredCount: number;
+}
 
 const TRACKED_SYMBOLS = ["EURUSD", "XAUUSD"] as const;
 
@@ -57,11 +68,42 @@ const interpretationTone = (i: ModeInterpretation | undefined): string => {
 export default function AdminExecutionEligibilityCard() {
   const [data, setData] = useState<Record<string, ExecutionEligibility | null>>({});
   const [busy, setBusy] = useState(false);
+  const [mapping, setMapping] = useState<VerifiedMapping | null>(null);
 
   const loadFromCache = useCallback(() => {
     const next: Record<string, ExecutionEligibility | null> = {};
     for (const s of TRACKED_SYMBOLS) next[s] = readCachedEligibility(s);
     setData(next);
+  }, []);
+
+  const loadMapping = useCallback(async () => {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u?.user?.id;
+    if (!uid) return;
+    const { data: active } = await supabase
+      .from("user_mt_accounts")
+      .select("login, server_name, trading_layer_trader_id, trading_layer_account_id, trading_layer_external_trader_id, account_id_relationship_verified")
+      .eq("user_id", uid)
+      .eq("platform", "mt5")
+      .eq("status", "connected")
+      .or("ignored_for_execution.is.null,ignored_for_execution.eq.false")
+      .order("last_verified_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { count: ignoredCount } = await supabase
+      .from("user_mt_accounts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid)
+      .eq("ignored_for_execution", true);
+    setMapping({
+      login: active?.login ?? null,
+      server: active?.server_name ?? null,
+      traderId: active?.trading_layer_trader_id ?? null,
+      accountId: active?.trading_layer_account_id ?? null,
+      externalTraderId: active?.trading_layer_external_trader_id ?? null,
+      relationshipVerified: !!active?.account_id_relationship_verified,
+      ignoredCount: ignoredCount ?? 0,
+    });
   }, []);
 
   const refreshAll = useCallback(async () => {
@@ -80,7 +122,7 @@ export default function AdminExecutionEligibilityCard() {
     }
   }, []);
 
-  useEffect(() => { loadFromCache(); }, [loadFromCache]);
+  useEffect(() => { loadFromCache(); loadMapping(); }, [loadFromCache, loadMapping]);
 
   const anyData = Object.values(data).find(Boolean) ?? null;
   const rawAccountInterp = anyData?.accountTradeModeInterpretation ?? "unknown";
@@ -135,6 +177,34 @@ export default function AdminExecutionEligibilityCard() {
         as "trade disabled" — live mutation stays fail-closed until Trading Layer
         confirms the enum mapping or returns an explicit trading-allowed boolean.
       </p>
+
+      {mapping && (
+        <div className="rounded border border-emerald-500/30 p-2.5 mb-3 bg-emerald-500/5">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-300 mb-1.5">
+            Verified MT5 → Trading Layer mapping
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] font-mono">
+            <span className="text-muted-foreground">MT5 login</span>
+            <span>{mapping.login ?? "—"}</span>
+            <span className="text-muted-foreground">Server</span>
+            <span>{mapping.server ?? "—"}</span>
+            <span className="text-muted-foreground">Trader ID</span>
+            <span>{maskTraderId(mapping.traderId)}</span>
+            <span className="text-muted-foreground">Account ID (for /symbols)</span>
+            <span>{maskTraderId(mapping.accountId)}</span>
+            <span className="text-muted-foreground">External trader ID</span>
+            <span>{maskTraderId(mapping.externalTraderId)}</span>
+            <span className="text-muted-foreground">ID relationship verified</span>
+            <span className={mapping.relationshipVerified ? "text-emerald-300" : "text-amber-300"}>
+              {mapping.relationshipVerified ? "YES" : "no"}
+            </span>
+            <span className="text-muted-foreground">Ignored stale mapping rows</span>
+            <span className={mapping.ignoredCount > 0 ? "text-emerald-300" : "text-muted-foreground"}>
+              {mapping.ignoredCount} excluded from execution
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="rounded border border-border/40 p-2.5 mb-3 bg-muted/10">
         <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1.5">
