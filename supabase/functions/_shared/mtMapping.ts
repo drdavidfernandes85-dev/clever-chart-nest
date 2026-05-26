@@ -55,11 +55,12 @@ export async function resolveActiveMtMapping(
   const { data, error } = await supabase
     .from("user_mt_accounts")
     .select(
-      "id, platform, login, server_name, status, credential_status, last_verified_at, created_at, metaapi_account_id, trading_layer_trader_id, trading_layer_external_trader_id, trading_layer_account_id",
+      "id, platform, login, server_name, status, credential_status, last_verified_at, created_at, metaapi_account_id, trading_layer_trader_id, trading_layer_external_trader_id, trading_layer_account_id, mapping_status, account_id_relationship_verified, ignored_for_execution",
     )
     .eq("user_id", userId)
     .eq("platform", "mt5")
-    .eq("status", "connected");
+    .eq("status", "connected")
+    .or("ignored_for_execution.is.null,ignored_for_execution.eq.false");
 
   if (error || !Array.isArray(data) || data.length === 0) return empty;
 
