@@ -35,13 +35,19 @@ export async function getAccountInfo(accountId: string): Promise<{
   data: AccountInfo | null;
   error?: string;
 }> {
-  const r = await fetch(`${BASE_URL}/api/v1/accounts/${accountId}`, {
-    headers: headers(),
-  });
-  const txt = await r.text();
+  let r: Response | null = null;
+  let txt = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    r = await fetch(`${BASE_URL}/api/v1/accounts/${accountId}`, { headers: headers() });
+    txt = await r.text();
+    if (r.status !== 429) break;
+    const retryAfter = Number(r.headers.get("retry-after")) || 0;
+    const wait = retryAfter > 0 ? retryAfter * 1000 : 500 * Math.pow(2, attempt);
+    await new Promise((res) => setTimeout(res, wait));
+  }
   let parsed: any = null;
   try { parsed = JSON.parse(txt); } catch { parsed = { raw: txt }; }
-  if (!r.ok) return { ok: false, status: r.status, data: null, error: `account_fetch_${r.status}` };
+  if (!r || !r.ok) return { ok: false, status: r?.status ?? 0, data: null, error: `account_fetch_${r?.status ?? "network"}` };
   const d = parsed?.data ?? parsed;
   return {
     ok: true,
