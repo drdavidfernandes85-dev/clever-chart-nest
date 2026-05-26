@@ -457,9 +457,11 @@ export default function AdminBrokerSymbolsTab() {
       mt5: { login: mapping?.mt5_login ?? null, server: mapping?.mt5_server ?? null },
       account: {
         trade_allowed: tradeAllowed ?? null,
-        trade_mode_raw: lastResp?.accountTradeModeRaw ?? null,
-        trade_mode_label: lastResp?.accountTradeModeLabel ?? null,
-        trade_mode_meaning: "account_type_informational_not_directional",
+        trade_mode_raw: accountTradeModeRaw,
+        trade_mode_label: accountTradeModeLabel,
+        trade_mode_meaning: "enum_symbol_trade_mode_directional",
+        account_can_buy: accountCanBuy,
+        account_can_sell: accountCanSell,
       },
       targeted: {
         EURUSD: targetedCache["EURUSD"] ?? null,
