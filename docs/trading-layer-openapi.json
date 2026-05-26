@@ -1,0 +1,74 @@
+{
+  "_comment": "Pinned partial of the Trading Layer OpenAPI surface currently used server-side. Full spec is provided by Trading Layer; this snapshot documents the fields the backend depends on so changes are reviewable.",
+  "openapi": "3.0.0",
+  "info": { "title": "Trading Layer API (subset)", "version": "1.0" },
+  "paths": {
+    "/api/v1/accounts/{accountId}": {
+      "get": {
+        "summary": "Get MT5 account info",
+        "parameters": [{ "name": "accountId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "login": { "type": "integer" },
+                        "server": { "type": "string" },
+                        "trade_allowed": { "type": "boolean" },
+                        "trade_mode": { "type": "integer", "enum": [0, 1, 2, 3, 4] }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{accountId}/symbols": {
+      "get": {
+        "summary": "List broker symbols",
+        "parameters": [
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "group", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "visible", "in": "query", "schema": { "type": "boolean", "nullable": true } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 20 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0, "default": 0 } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["name", "path", "visible"] } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"] } }
+        ]
+      }
+    },
+    "/api/v1/accounts/{accountId}/symbols/{symbol}": {
+      "get": {
+        "summary": "Get broker symbol detail",
+        "parameters": [
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "symbol", "in": "path", "required": true, "schema": { "type": "string" } }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SymbolTradeMode": {
+        "type": "integer",
+        "enum": [0, 1, 2, 3, 4],
+        "x-enum-varnames": [
+          "SYMBOL_TRADE_MODE_DISABLED",
+          "SYMBOL_TRADE_MODE_LONGONLY",
+          "SYMBOL_TRADE_MODE_SHORTONLY",
+          "SYMBOL_TRADE_MODE_CLOSEONLY",
+          "SYMBOL_TRADE_MODE_FULL"
+        ]
+      }
+    }
+  }
+}
