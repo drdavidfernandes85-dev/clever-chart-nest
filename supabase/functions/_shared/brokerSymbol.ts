@@ -337,7 +337,9 @@ export const ERR_SYMBOL_TRADE_MODE_BLOCKED = "SYMBOL_TRADE_MODE_BLOCKED";
 export const ERR_BROKER_SYMBOL_UNRESOLVED = "BROKER_SYMBOL_UNRESOLVED";
 export const ERR_BROKER_SYMBOL_MAPPING_STALE = "BROKER_SYMBOL_MAPPING_STALE";
 export const ERR_BROKER_SYMBOL_MISMATCH = "BROKER_SYMBOL_MISMATCH";
-export const ERR_BROKER_SYMBOL_AMBIGUOUS = "BROKER_SYMBOL_AMBIGUOUS";
+export const ERR_BROKER_SYMBOL_AMBIGUOUS = "BROKER_SYMBOL_AMBIGUOUS_MULTIPLE_EXECUTABLE_VARIANTS";
+export const ERR_BROKER_SYMBOL_DISCREPANCY_ACK_REQUIRED = "BROKER_SYMBOL_DISCREPANCY_ACK_REQUIRED";
+export const ERR_BROKER_SYMBOL_NOT_LIST_DISCOVERED = "BROKER_SYMBOL_NOT_LIST_DISCOVERED";
 
 export interface ResolveInput {
   userId: string;
@@ -406,7 +408,7 @@ export async function resolveEligibleBrokerSymbol(
   let query = supabaseService
     .from("broker_symbol_catalog")
     .select(
-      "id, display_symbol, canonical_symbol, broker_symbol, trade_mode, trade_eligible, source, last_synced_at, source_endpoint_account_id, source_verified, trading_layer_account_id, route_identity_verified, execution_usable, source_account_route_id",
+      "id, display_symbol, canonical_symbol, broker_symbol, trade_mode, trade_eligible, source, last_synced_at, source_endpoint_account_id, source_verified, trading_layer_account_id, route_identity_verified, execution_usable, source_account_route_id, mapping_status",
     )
     // Hard gate: never resolve from rows whose route identity has not been
     // remotely verified against the connected MT5 login/server.
@@ -537,6 +539,58 @@ export async function resolveEligibleBrokerSymbol(
       symbolMappingCheckedAt: chosen.last_synced_at ?? null,
       catalogRowId: chosen.id ?? null,
     };
+  }
+
+  // Block resolution from non-LIST/SEARCH-discovered rows (e.g. legacy alias
+  // probes). Inspected list/search rows are tagged "executable_discovered_*"
+  // by sync-broker-symbol-catalog and refreshTradeModeFromTradingLayer.
+  const ms = String((chosen as any).mapping_status ?? "");
+  if (ms && !ms.startsWith("executable_discovered") && ms !== "verified_route" && ms !== "trading_layer_symbol_detail") {
+    return {
+      ...empty,
+      errorCode: ERR_BROKER_SYMBOL_NOT_LIST_DISCOVERED,
+      message:
+        `Broker symbol ${chosen.broker_symbol} originates from an alias probe (mapping_status=${ms}) and is not LIST/SEARCH-discovered. Refresh execution eligibility via Lookup before retrying.`,
+      brokerSymbol: chosen.broker_symbol,
+      canonicalSymbol: canonicalize(chosen.canonical_symbol || chosen.broker_symbol),
+      symbolMappingSource: chosen.source ?? "trading_layer_symbols",
+      symbolMappingCheckedAt: chosen.last_synced_at ?? null,
+      catalogRowId: chosen.id ?? null,
+    };
+  }
+
+  // EURUSD-specific gate: require admin acknowledgement of the MT5 suffix
+  // display discrepancy (Trading Layer returns `EURUSD` as the executable
+  // broker symbol while the native MT5 terminal shows suffixed instruments).
+  const canonicalNorm = canonicalize(chosen.canonical_symbol || chosen.broker_symbol);
+  if (canonicalNorm === "EURUSD") {
+    let ackOk = false;
+    try {
+      const { data: ackRow } = await supabaseService
+        .from("site_settings")
+        .select("value")
+        .eq("key", "broker_symbol_acknowledgements")
+        .maybeSingle();
+      ackOk = !!(ackRow as any)?.value?.eurusd_mt5_suffix_discrepancy?.acknowledged;
+    } catch { /* ackOk stays false */ }
+    if (!ackOk) {
+      return {
+        ok: false,
+        errorCode: ERR_BROKER_SYMBOL_DISCREPANCY_ACK_REQUIRED,
+        message:
+          "API execution symbol resolved as EURUSD; admin acknowledgement required due to MT5 suffix-display discrepancy. Record the acknowledgement in Admin → Broker Symbols before retrying.",
+        displaySymbol: input.requestedDisplaySymbol ?? canonicalNorm,
+        brokerSymbol: chosen.broker_symbol,
+        canonicalSymbol: canonicalNorm,
+        accountTradeMode: null,
+        symbolTradeMode: chosen.trade_mode ?? null,
+        accountTradeEligible: true,
+        symbolTradeEligible: true,
+        symbolMappingSource: chosen.source ?? "trading_layer_symbols",
+        symbolMappingCheckedAt: chosen.last_synced_at ?? null,
+        catalogRowId: chosen.id ?? null,
+      };
+    }
   }
 
   return {
