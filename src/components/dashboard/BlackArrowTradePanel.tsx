@@ -2019,7 +2019,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             )}
             {permissionBlocked && (
               <p className="rounded-sm border border-red-500/70 bg-red-600/25 px-1.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-100">
-                Live execution blocked: Trading Layer rejected both XAUUSD and EURUSD orders with TRADE_DISABLED. Awaiting account/API trading permission confirmation. Buy/Sell are disabled until an admin sets execution_permission_status = cleared_for_retest.
+                Live testing paused: Trading Layer/broker rejected an eligible EURUSD SELL with TRADE_RETCODE_TRADE_DISABLED (10017) after verified pre-trade checks. Application validation passes for EURUSD SELL using brokerSymbol EURUSD, but live execution is disabled because the broker rejected the request. Buy/Sell are disabled until an admin clears the upstream block after broker confirmation.
               </p>
             )}
             {normalizedSym === "XAUUSD" && (
