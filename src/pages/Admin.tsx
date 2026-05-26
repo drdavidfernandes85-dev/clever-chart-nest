@@ -17,6 +17,7 @@ import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
 import AdminTranslationQATab from "@/components/admin/AdminTranslationQATab";
 import AdminLaunchReadinessTab from "@/components/admin/AdminLaunchReadinessTab";
 import AdminProductionModeTab from "@/components/admin/AdminProductionModeTab";
+import AdminBrokerSymbolsTab from "@/components/admin/AdminBrokerSymbolsTab";
 
 interface Channel { id: string; name: string; category: string; }
 interface Profile { user_id: string; display_name: string; }
