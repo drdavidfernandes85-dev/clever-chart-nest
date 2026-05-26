@@ -36,7 +36,9 @@ function pickField(obj: any, paths: string[]): any {
 }
 
 import {
+  checkAccountOperationEligibility,
   checkOperationEligibility,
+  ERR_ACCOUNT_DIRECTION_BLOCKED,
   ERR_ACCOUNT_TRADE_NOT_ALLOWED,
   ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE,
   ERR_SYMBOL_DIRECTION_BLOCKED,
