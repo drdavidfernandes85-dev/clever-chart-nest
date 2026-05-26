@@ -25,6 +25,7 @@ import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
+import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
 
 const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
