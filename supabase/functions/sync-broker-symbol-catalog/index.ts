@@ -70,10 +70,16 @@ Deno.serve(async (req) => {
 
   let body: any = {};
   try { body = await req.json(); } catch { /* allow empty */ }
-  const mode: "targeted" | "full" = body?.mode === "full" ? "full" : "targeted";
   const requestedSymbols: string[] = Array.isArray(body?.symbols)
     ? body.symbols.map((s: any) => String(s)).filter(Boolean)
     : [];
+  // Normalize mode. Treat missing mode, "info", or targeted-without-symbols as a
+  // cheap info call so we never 400 on the permission/refresh path.
+  const rawMode = body?.mode;
+  const mode: "targeted" | "full" | "info" =
+    rawMode === "full" ? "full"
+    : rawMode === "targeted" && requestedSymbols.length > 0 ? "targeted"
+    : "info";
 
   // Admin override: allow resolving the mapping for a different user_id
   let resolveUid = uid;
@@ -138,14 +144,11 @@ Deno.serve(async (req) => {
     },
   };
 
-  if (body?.mode === "info") {
+  if (mode === "info") {
     return json(result);
   }
 
   if (mode === "targeted") {
-    if (requestedSymbols.length === 0) {
-      return json({ ...result, success: false, error: "symbols[] required for targeted mode" }, 400);
-    }
     const out: Array<{ displaySymbol: string; variants: Variant[] }> = [];
     for (const display of requestedSymbols) {
       const canonical = canonicalize(display);
