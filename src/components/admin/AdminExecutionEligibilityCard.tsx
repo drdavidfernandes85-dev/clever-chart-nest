@@ -122,7 +122,7 @@ export default function AdminExecutionEligibilityCard() {
     }
   }, []);
 
-  useEffect(() => { loadFromCache(); }, [loadFromCache]);
+  useEffect(() => { loadFromCache(); loadMapping(); }, [loadFromCache, loadMapping]);
 
   const anyData = Object.values(data).find(Boolean) ?? null;
   const rawAccountInterp = anyData?.accountTradeModeInterpretation ?? "unknown";
