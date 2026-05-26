@@ -408,7 +408,7 @@ export async function resolveEligibleBrokerSymbol(
   let query = supabaseService
     .from("broker_symbol_catalog")
     .select(
-      "id, display_symbol, canonical_symbol, broker_symbol, trade_mode, trade_eligible, source, last_synced_at, source_endpoint_account_id, source_verified, trading_layer_account_id, route_identity_verified, execution_usable, source_account_route_id",
+      "id, display_symbol, canonical_symbol, broker_symbol, trade_mode, trade_eligible, source, last_synced_at, source_endpoint_account_id, source_verified, trading_layer_account_id, route_identity_verified, execution_usable, source_account_route_id, mapping_status",
     )
     // Hard gate: never resolve from rows whose route identity has not been
     // remotely verified against the connected MT5 login/server.
