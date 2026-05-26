@@ -151,9 +151,18 @@ export async function refreshTradeModeFromTradingLayer(
       }).filter((r) => r.broker_symbol);
       if (upsertRows.length > 0) {
         try {
-          await supabaseService.from("broker_symbol_catalog").upsert(upsertRows, {
-            onConflict: "trading_layer_trader_id,broker_symbol",
-          });
+          let upErr: any = null;
+          {
+            const { error } = await supabaseService.from("broker_symbol_catalog").upsert(upsertRows, {
+              onConflict: "trading_layer_account_id,broker_symbol",
+            });
+            upErr = error;
+          }
+          if (upErr) {
+            await supabaseService.from("broker_symbol_catalog").upsert(upsertRows, {
+              onConflict: "trading_layer_trader_id,broker_symbol",
+            });
+          }
         } catch { /* ignore — upsert is best-effort */ }
       }
       const match = list.find((s) => {
