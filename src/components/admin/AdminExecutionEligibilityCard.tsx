@@ -18,7 +18,18 @@ import {
   type ExecutionEligibility,
   type ModeInterpretation,
 } from "@/lib/executionEligibility";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface VerifiedMapping {
+  login: string | null;
+  server: string | null;
+  traderId: string | null;
+  accountId: string | null;
+  externalTraderId: string | null;
+  relationshipVerified: boolean;
+  ignoredCount: number;
+}
 
 const TRACKED_SYMBOLS = ["EURUSD", "XAUUSD"] as const;
 
