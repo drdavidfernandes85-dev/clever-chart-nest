@@ -427,6 +427,10 @@ export default function AdminBrokerSymbolsTab() {
             {busy === "XAUUSD lookup" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
             Lookup XAUUSD
           </Button>
+          <Button size="sm" variant="outline" onClick={probePlusSymbols} disabled={busy !== null || !routeVerified}>
+            {busy === "Probe + symbols" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
+            Probe '+' Symbols (raw)
+          </Button>
           <Button size="sm" variant="default" onClick={fullSync} disabled={busy !== null || !routeVerified}>
             {busy === "Full catalogue sync" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Database className="h-3.5 w-3.5 mr-1.5" />}
             Sync Full Visible Catalogue
