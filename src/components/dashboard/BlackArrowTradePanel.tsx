@@ -1004,14 +1004,20 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const adminExecPermissionGateOk =
     executionMode !== "admin_live_test" || !permissionBlocked;
 
-  // Trading Layer eligibility gate — Buy/Sell disabled unless TL has
-  // explicitly returned account.trade_mode + symbol.trade_mode = eligible
-  // AND we have a brokerSymbol to submit with.
-  const tlEligibilityGateOk =
-    executionMode !== "admin_live_test" ||
-    (eligibility?.eligibility === "eligible" && !!eligibility?.brokerSymbol);
+  // Backend-authoritative per-side gate. Buy/Sell only enable when the
+  // terminal eligibility resolver confirms the verified route, exact
+  // brokerSymbol, and account+symbol trade_mode permit that side.
+  // In `admin_live_test` mode this is a hard requirement; in other modes the
+  // existing risk/coordinator checks remain in charge but we still surface
+  // the same brokerSymbol + reasons in the ticket.
+  const buyReadyByTL = termEligibility?.buyReady === true && !!termEligibility?.brokerSymbol;
+  const sellReadyByTL = termEligibility?.sellReady === true && !!termEligibility?.brokerSymbol;
+  const tlEligibilityGateBuy =
+    executionMode !== "admin_live_test" || buyReadyByTL;
+  const tlEligibilityGateSell =
+    executionMode !== "admin_live_test" || sellReadyByTL;
 
-  const canSubmitMarket =
+  const canSubmitMarketBase =
     !!user &&
     connected === true &&
     isBrokerSymbol &&
@@ -1026,8 +1032,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !liveDisabled &&
     liveModeGateOk &&
     sessionGateOk &&
-    adminExecPermissionGateOk &&
-    tlEligibilityGateOk;
+    adminExecPermissionGateOk;
+
+  const canSubmitBuy = canSubmitMarketBase && tlEligibilityGateBuy;
+  const canSubmitSell = canSubmitMarketBase && tlEligibilityGateSell;
+  // Backwards-compatible alias used by older logging/branching below.
+  const canSubmitMarket = canSubmitBuy || canSubmitSell;
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
