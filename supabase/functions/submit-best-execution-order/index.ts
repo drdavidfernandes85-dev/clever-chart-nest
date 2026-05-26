@@ -32,6 +32,7 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
 
 const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
