@@ -58,6 +58,8 @@ interface SyncResponse {
   errors?: unknown;
   mode?: string;
   mapping?: VerifiedMapping;
+  searchProbes?: Array<{ searchTerm: string; visibleFilter: boolean | null; httpStatus: number; ok: boolean; count: number; rawNames: string[]; anyPlus: boolean; error: string | null }>;
+  directProbes?: Array<{ requestedSymbol: string; httpStatus: number; ok: boolean; rawName: string | null; rawPreservedExactly: boolean; description: string | null; visible: boolean | null; tradeModeRaw: number | null; tradeModeLabel: string | null; tradeExemode: number | null; orderMode: number | null; fillingMode: number | null; volumeMin: number | null; volumeStep: number | null; error: string | null }>;
 }
 
 interface CandidateReport {
