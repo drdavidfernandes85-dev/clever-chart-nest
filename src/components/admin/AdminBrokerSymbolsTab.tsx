@@ -252,10 +252,17 @@ export default function AdminBrokerSymbolsTab() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
           <div><div className="text-muted-foreground">Account trade_mode</div><div>{tradeModeBadge(lastResp?.accountTradeModeRaw, lastResp?.accountTradeModeLabel)}</div></div>
+          <div><div className="text-muted-foreground">Buy (account)</div><div>{yesNoBadge(accountCanBuy)}</div></div>
+          <div><div className="text-muted-foreground">Sell (account)</div><div>{yesNoBadge(accountCanSell)}</div></div>
           <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
-          <div><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
+          <div className="md:col-span-3"><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
         </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">
+        {isShortOnly && (
+          <p className="mt-3 text-[11px] text-amber-400">
+            SHORTONLY restriction: BUY / open-long is blocked. SELL may be permitted subject to exact symbol trade_mode.
+          </p>
+        )}
+        <p className="mt-2 text-[11px] text-muted-foreground">
           Execution uses the exact broker symbol returned by Trading Layer for this connected MT5 account. Symbols are never guessed or manually suffixed.
         </p>
       </Card>
