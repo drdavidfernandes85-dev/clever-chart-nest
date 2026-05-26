@@ -548,18 +548,23 @@ Deno.serve(async (req) => {
         sourceVerified: !!r.source_verified,
       };
     });
-    const exactVerified = candidates.find((r) =>
+    const exactVerifiedAll = candidates.filter((r) =>
       canonicalize(r.canonical_symbol || r.broker_symbol) === symbolCanonical &&
       r.source_verified === true &&
       (!accountId || r.source_endpoint_account_id === accountId)
     );
-    const chosen = exactVerified ?? null;
-    if (chosen) {
+    if (exactVerifiedAll.length === 1) {
+      const chosen = exactVerifiedAll[0];
       brokerSymbol = chosen.broker_symbol;
       symbolTradeMode = chosen.trade_mode ?? null;
       const interp = interpretTradeMode(chosen.trade_mode);
       symbolInterpretation = interp.interpretation;
       symbolTradeEligible = interp.interpretation === "eligible";
+    } else if (exactVerifiedAll.length > 1) {
+      // Ambiguous — multiple broker variants for this canonical symbol on this account.
+      symbolInterpretation = "unknown";
+      symbolTradeEligible = false;
+      brokerSymbol = null; // never auto-pick
     }
   }
 
