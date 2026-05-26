@@ -276,23 +276,22 @@ export default function AdminBrokerSymbolsTab() {
   const xauResolved = lastResp?.results?.find(r => r.displaySymbol === "XAUUSD")?.variants?.[0] ?? null;
   const tradeAllowed = routeVerified ? lastResp?.accountTradeAllowed : undefined;
   const accountTradeModeRaw = routeVerified ? lastResp?.accountTradeModeRaw : null;
-  const isShortOnly = accountTradeModeRaw === 2;
-  const isLongOnly = accountTradeModeRaw === 1;
-  const isDisabled = accountTradeModeRaw === 0;
-  const accountCanBuy = tradeAllowed === true && (accountTradeModeRaw === 1 || accountTradeModeRaw === 4);
-  const accountCanSell = tradeAllowed === true && (accountTradeModeRaw === 2 || accountTradeModeRaw === 4);
 
-  const eurBuyReady = routeVerified && accountCanBuy && !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
-  const eurSellReady = routeVerified && accountCanSell && !!eurResolved && canSell(eurResolved.symbolTradeModeRaw);
+  // ACCOUNT-LEVEL gate is ONLY trade_allowed. account.trade_mode is the MT5
+  // account TYPE (0=demo / 1=contest / 2=real) — NOT a directional restriction.
+  // Symbol direction is decided exclusively by symbol.trade_mode on the exact
+  // broker symbol returned by Trading Layer.
+  const accountExecPermitted = tradeAllowed === true;
+
+  const eurBuyReady = routeVerified && accountExecPermitted && !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
+  const eurSellReady = routeVerified && accountExecPermitted && !!eurResolved && canSell(eurResolved.symbolTradeModeRaw);
 
   const blocker = !routeVerified
     ? "Wrong or unverified Trading Layer account route; executable symbol catalogue not verified."
     : tradeAllowed === false ? "Account trade_allowed = false"
     : tradeAllowed == null ? "Account permission not yet checked"
-    : isDisabled ? "Account trade_mode = DISABLED — no orders allowed"
-    : isShortOnly ? "Account is SHORTONLY. BUY blocked; SELL test pending symbol-info verification."
-    : isLongOnly ? "Account is LONGONLY. SELL blocked."
-    : !eurResolved ? "EURUSD exact broker symbol not yet inspected for the verified route"
+    : !eurResolved ? "EURUSD exact broker symbol not yet inspected — run Lookup or Probe '+' symbols."
+    : !canBuy(eurResolved.symbolTradeModeRaw) && !canSell(eurResolved.symbolTradeModeRaw) ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
     : null;
 
   return (
