@@ -62,6 +62,10 @@ import {
   type ExecutionEligibility,
 } from "@/lib/executionEligibility";
 import {
+  useTerminalExecutionEligibility,
+  type TerminalExecutionEligibility,
+} from "@/lib/terminalExecutionEligibility";
+import {
   startAdminLiveTest,
   updateAdminLiveTest,
   getAdminLiveTestLimits,
