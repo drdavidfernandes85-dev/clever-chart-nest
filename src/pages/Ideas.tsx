@@ -2,7 +2,7 @@ import { lazy, Suspense, useState } from "react";
 import SEO from "@/components/SEO";
 import { Lightbulb, Wrench, Info } from "lucide-react";
 import PoweredByTradingLayer from "@/components/PoweredByTradingLayer";
-import ComplianceFooter from "@/components/ComplianceFooter";
+
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const TradingSignals = lazy(() => import("@/pages/TradingSignals"));
