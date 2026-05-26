@@ -87,6 +87,7 @@ Deno.serve(async (req) => {
   const closeId = typeof payload?.closeId === "string" && payload.closeId.length > 0
     ? payload.closeId
     : `close-${ticket}-${Date.now()}`;
+  const devMode = payload?.devMode === true;
 
   if (!ticket || !symbol || !Number.isFinite(volume) || volume <= 0 || (closeSide !== "buy" && closeSide !== "sell")) {
     return json({
