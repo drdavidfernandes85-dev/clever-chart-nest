@@ -253,6 +253,25 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminTestUiVisible, ctxSymbol]);
 
+  // Backend-authoritative terminal eligibility for the Order Ticket.
+  // Single source of truth for brokerSymbol display + per-side enablement.
+  // Re-fetches whenever the selected symbol, connected account, route
+  // verification, ack toggle, or admin live-test mode change.
+  const liveAccountId = (liveAccount as any)?.id ?? null;
+  const liveAccountRouteId =
+    (liveAccount as any)?.trading_layer_account_route_id ?? null;
+  const {
+    data: termEligibility,
+    loading: termEligibilityLoading,
+    error: termEligibilityError,
+    refresh: refreshTermEligibility,
+  } = useTerminalExecutionEligibility(ctxSymbol, [
+    liveAccountId,
+    liveAccountRouteId,
+    adminTestUiVisible,
+    adminAck,
+  ]);
+
   // Pending-order modal state.
   const [pendingModal, setPendingModal] = useState<PendingType | null>(null);
 
