@@ -149,7 +149,8 @@ export default function AdminBrokerSymbolsTab() {
   const invoke = async (action: string, body: any) => {
     setBusy(action);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-broker-symbol-catalog", { body });
+      const payload = { ...body, targetUserId: mapping?.user_id };
+      const { data, error } = await supabase.functions.invoke("sync-broker-symbol-catalog", { body: payload });
       if (error) {
         toast.error(error.message || "Request failed");
         setLastResp({ success: false, error: error.message });
@@ -169,6 +170,7 @@ export default function AdminBrokerSymbolsTab() {
       setBusy(null);
     }
   };
+
 
   const refreshPermission = () => invoke("Account permission", { mode: "targeted", symbols: ["EURUSD"] });
   const lookupEURUSD = () => invoke("EURUSD lookup", { mode: "targeted", symbols: ["EURUSD"] });
