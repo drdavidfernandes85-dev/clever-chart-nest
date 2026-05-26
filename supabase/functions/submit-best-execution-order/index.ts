@@ -32,13 +32,17 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
-import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
+import { EXECUTION_POLICY_VERSION, sideToOperation } from "../_shared/tradingLayerTradeMode.ts";
 import {
   resolveFreshExecutionTick,
   FRESH_TICK_OK,
   FRESH_TICK_POLICY_VERSION,
   type FreshTickResult,
 } from "../_shared/freshTick.ts";
+import {
+  resolveVerifiedExecutionInstrument,
+  VERIFIED_EXECUTION_INSTRUMENT_VERSION,
+} from "../_shared/executionInstrument.ts";
 
 const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
