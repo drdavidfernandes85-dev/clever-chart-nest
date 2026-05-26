@@ -14,6 +14,8 @@ import {
   refreshTradeModeFromTradingLayer,
   ERR_BROKER_SYMBOL_AMBIGUOUS,
   ERR_BROKER_SYMBOL_DISCREPANCY_ACK_REQUIRED,
+  ERR_SYMBOL_TRADE_MODE_BLOCKED,
+  ERR_BROKER_SYMBOL_MAPPING_STALE,
 } from "../_shared/brokerSymbol.ts";
 import {
   EXECUTION_POLICY_VERSION,
@@ -149,7 +151,18 @@ Deno.serve(async (req) => {
   // surface a clear ack reason and block both sides until acknowledged.
   const ackRequired = !resolved.ok && resolved.errorCode === ERR_BROKER_SYMBOL_DISCREPANCY_ACK_REQUIRED;
 
-  if (!resolved.ok && !ackRequired) {
+  // Catalogue-cached trade_mode may be stale/null — when we already have a
+  // brokerSymbol the authoritative answer comes from refreshTradeModeFromTradingLayer
+  // below, NOT from the catalog row. Only fail closed when we truly have no
+  // brokerSymbol to refresh.
+  const catalogStaleButResolvable =
+    !resolved.ok &&
+    !ackRequired &&
+    !!resolved.brokerSymbol &&
+    (resolved.errorCode === ERR_SYMBOL_TRADE_MODE_BLOCKED ||
+      resolved.errorCode === ERR_BROKER_SYMBOL_MAPPING_STALE);
+
+  if (!resolved.ok && !ackRequired && !catalogStaleButResolvable) {
     return json({
       success: false,
       version: VERSION,
