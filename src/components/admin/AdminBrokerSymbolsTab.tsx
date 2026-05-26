@@ -677,7 +677,49 @@ export default function AdminBrokerSymbolsTab() {
         )}
       </Card>
 
+      {/* Server-Side Execution Tick Diagnostic (read-only) */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <h3 className="text-sm font-semibold">Server-Side Execution Tick (read-only)</h3>
+          </div>
+          <Badge variant="outline" className="font-mono text-[10px]">
+            policy: FRESH_TICK_SERVER_AUTHORITATIVE_V1_2026_05_26
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Calls the same Trading Layer server-side latest-tick path used by <code className="text-primary">submit-best-execution-order</code> for pre-trade validation. No order is submitted. Display/WebSocket ticks are never trusted as price-of-record.
+        </p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Button size="sm" variant="outline" onClick={() => checkExecutionTick("EURUSD")} disabled={execTickBusy}>
+            {execTickBusy ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+            Check Execution Tick — EURUSD
+          </Button>
+        </div>
+        {execTick && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div><div className="text-muted-foreground">Verified route</div><div className="font-mono">{execTick.routeAccountIdMasked ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Broker symbol</div><div className="font-mono text-primary">{execTick.brokerSymbol ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Source</div><div className="font-mono">{execTick.source ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Fresh</div><div>{yesNoBadge(!!execTick.fresh)}</div></div>
+            <div><div className="text-muted-foreground">Bid</div><div className="font-mono">{execTick.bid ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Ask</div><div className="font-mono">{execTick.ask ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Spread</div><div className="font-mono">{execTick.spread ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Tick age (ms)</div><div className="font-mono">{execTick.ageMs ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Tick timestamp</div><div className="font-mono">{execTick.timestamp ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Threshold (ms)</div><div className="font-mono">{execTick.thresholdMs ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Upstream status</div><div className="font-mono">{execTick.upstreamStatus ?? "—"}</div></div>
+            <div><div className="text-muted-foreground">Code</div><div className="font-mono">{execTick.code ?? "—"}</div></div>
+            {!execTick.fresh && (
+              <div className="col-span-2 md:col-span-4 text-[11px] text-amber-400">{execTick.message}</div>
+            )}
+          </div>
+        )}
+      </Card>
+
       {/* MT5 Suffix Discrepancy Acknowledgement */}
+
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <ShieldAlert className="h-4 w-4 text-amber-400" />
