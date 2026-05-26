@@ -333,6 +333,7 @@ Deno.serve(async (req) => {
     latencyMs,
     tradingLayerStatus: httpStatus,
     metaapi_account_id: accountId,
+    ...(devMode ? { executionPolicyVersion: EXECUTION_POLICY_VERSION } : {}),
     error: outcome === "success" ? null : (networkError || brokerMessage || "Close failed"),
   });
 });
