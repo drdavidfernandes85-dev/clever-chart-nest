@@ -50,6 +50,10 @@ interface SyncResponse {
   accountTradeAllowed?: boolean;
   accountTradeModeRaw?: number | null;
   accountTradeModeLabel?: string | null;
+  accountTradeModeMeaning?: string | null;
+  accountCanOpenBuy?: boolean;
+  accountCanOpenSell?: boolean;
+  accountCanClose?: boolean;
   mt5Login?: string | number | null;
   mt5Server?: string | null;
   accountPermissionCheckedAt?: string;
@@ -399,24 +403,36 @@ export default function AdminBrokerSymbolsTab() {
   const xauResolved = xauExecutable.length === 1 ? xauExecutable[0] : null;
 
   const tradeAllowed = routeVerified ? lastResp?.accountTradeAllowed : undefined;
-  const accountExecPermitted = tradeAllowed === true;
+  const accountTradeModeRaw = lastResp?.accountTradeModeRaw ?? null;
+  const accountTradeModeLabel = lastResp?.accountTradeModeLabel ?? null;
+  // Per Trading Layer OpenAPI: account.trade_mode uses ENUM_SYMBOL_TRADE_MODE
+  // (0=DISABLED, 1=LONGONLY, 2=SHORTONLY, 3=CLOSEONLY, 4=FULL) — directional.
+  const accountCanBuy = tradeAllowed === true && canBuy(accountTradeModeRaw);
+  const accountCanSell = tradeAllowed === true && canSell(accountTradeModeRaw);
+  const accountExecPermitted = tradeAllowed === true && accountTradeModeRaw != null && accountTradeModeRaw !== 0;
 
   // Symbol-level eligibility (independent of ack — ack only gates "ready for live test").
   const eurSymbolBuyEligible = !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
   const eurSymbolSellEligible = !!eurResolved && canSell(eurResolved.symbolTradeModeRaw);
   const eurSymbolCloseEligible = !!eurResolved && canClose(eurResolved.symbolTradeModeRaw);
 
-  // Ready-for-controlled-test gate: requires route + perm + symbol eligibility + ack.
-  const eurBuyReady = routeVerified && accountExecPermitted && eurSymbolBuyEligible && ack.acknowledged;
-  const eurSellReady = routeVerified && accountExecPermitted && eurSymbolSellEligible && ack.acknowledged;
+  // Combined account+symbol eligibility (no ack yet).
+  const eurBuyCombined = accountCanBuy && eurSymbolBuyEligible;
+  const eurSellCombined = accountCanSell && eurSymbolSellEligible;
+
+  // Ready-for-controlled-test gate: route + combined + ack.
+  const eurBuyReady = routeVerified && eurBuyCombined && ack.acknowledged;
+  const eurSellReady = routeVerified && eurSellCombined && ack.acknowledged;
 
   const eurBlocker = !routeVerified
     ? "Wrong or unverified Trading Layer account route; executable symbol catalogue not verified."
     : tradeAllowed === false ? "Account trade_allowed = false"
     : tradeAllowed == null ? "Account permission not yet checked"
     : !eurResolved ? "EURUSD exact broker symbol not yet inspected — run Lookup EURUSD."
-    : !(eurSymbolBuyEligible || eurSymbolSellEligible)
+    : !eurSymbolBuyEligible && !eurSymbolSellEligible
       ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
+    : (!accountCanBuy && !accountCanSell)
+      ? `Account trade_mode = ${accountTradeModeRaw} (${accountTradeModeLabel}) blocks BUY and SELL at the account level`
     : !ack.acknowledged
       ? "API execution symbol resolved as EURUSD; acknowledgement required due to MT5 suffix-display discrepancy."
       : null;
@@ -441,9 +457,11 @@ export default function AdminBrokerSymbolsTab() {
       mt5: { login: mapping?.mt5_login ?? null, server: mapping?.mt5_server ?? null },
       account: {
         trade_allowed: tradeAllowed ?? null,
-        trade_mode_raw: lastResp?.accountTradeModeRaw ?? null,
-        trade_mode_label: lastResp?.accountTradeModeLabel ?? null,
-        trade_mode_meaning: "account_type_informational_not_directional",
+        trade_mode_raw: accountTradeModeRaw,
+        trade_mode_label: accountTradeModeLabel,
+        trade_mode_meaning: "enum_symbol_trade_mode_directional",
+        account_can_buy: accountCanBuy,
+        account_can_sell: accountCanSell,
       },
       targeted: {
         EURUSD: targetedCache["EURUSD"] ?? null,
@@ -576,11 +594,18 @@ export default function AdminBrokerSymbolsTab() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-            <div className="md:col-span-2"><div className="text-muted-foreground">Account trade_mode (raw / type)</div><div className="flex items-center gap-2"><Badge variant="outline">{lastResp?.accountTradeModeRaw ?? "—"}</Badge><span className="text-muted-foreground">{lastResp?.accountTradeModeLabel ?? "—"} — informational, not directional</span></div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Account trade_mode (ENUM_SYMBOL_TRADE_MODE)</div><div className="flex items-center gap-2">{tradeModeBadge(accountTradeModeRaw, accountTradeModeLabel)}</div></div>
             <div><div className="text-muted-foreground">Account exec permitted</div><div>{yesNoBadge(accountExecPermitted)}</div></div>
-            <div className="md:col-span-2"><div className="text-muted-foreground">Directional gating source</div><div className="text-muted-foreground">selected exact symbol.trade_mode (not account.trade_mode)</div></div>
+            <div><div className="text-muted-foreground">BUY at account level</div><div>{yesNoBadge(accountCanBuy)}</div></div>
+            <div><div className="text-muted-foreground">SELL at account level</div><div>{yesNoBadge(accountCanSell)}</div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Account directional rule</div><div className="text-muted-foreground">Trading Layer OpenAPI: Mt5AccountInfo.trade_mode uses ENUM_SYMBOL_TRADE_MODE — directional, not informational.</div></div>
             <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
             <div><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
+            {accountTradeModeRaw === 2 && tradeAllowed === true && (
+              <div className="col-span-2 md:col-span-4 text-[11px] text-amber-400">
+                Trading is allowed on this MT5 route, but new BUY/open-long actions are restricted by the account trade mode (SHORTONLY).
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -834,7 +859,11 @@ export default function AdminBrokerSymbolsTab() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
           <div><div className="text-muted-foreground">Route verified</div><div>{yesNoBadge(routeVerified)}</div></div>
           <div><div className="text-muted-foreground">Account trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unknown</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-          <div><div className="text-muted-foreground">Account type</div><div className="text-muted-foreground">{lastResp?.accountTradeModeLabel ?? "—"} (informational)</div></div>
+          <div><div className="text-muted-foreground">Account trade_mode</div><div>{tradeModeBadge(accountTradeModeRaw, accountTradeModeLabel)}</div></div>
+
+          <div><div className="text-muted-foreground">Account BUY allowed</div><div>{yesNoBadge(accountCanBuy)}</div></div>
+          <div><div className="text-muted-foreground">Account SELL allowed</div><div>{yesNoBadge(accountCanSell)}</div></div>
+          <div />
 
           <div><div className="text-muted-foreground">EURUSD brokerSymbol</div><div className="font-mono">{eurResolved?.brokerSymbol ?? (eurVariants.length === 0 ? "not inspected" : "ambiguous")}</div></div>
           <div><div className="text-muted-foreground">EURUSD symbol.trade_mode</div><div>{eurResolved ? tradeModeBadge(eurResolved.symbolTradeModeRaw, eurResolved.symbolTradeModeLabel) : "—"}</div></div>
@@ -845,8 +874,24 @@ export default function AdminBrokerSymbolsTab() {
           <div><div className="text-muted-foreground">EURUSD CLOSE symbol eligible</div><div>{yesNoBadge(eurSymbolCloseEligible)}</div></div>
 
           <div><div className="text-muted-foreground">Discrepancy ack recorded</div><div>{yesNoBadge(ack.acknowledged)}</div></div>
-          <div><div className="text-muted-foreground">EURUSD BUY ready for test</div><div>{yesNoBadge(eurBuyReady)}</div></div>
-          <div><div className="text-muted-foreground">EURUSD SELL ready for test</div><div>{yesNoBadge(eurSellReady)}</div></div>
+          <div>
+            <div className="text-muted-foreground">EURUSD BUY ready for test</div>
+            <div>{yesNoBadge(eurBuyReady)}</div>
+            {!eurBuyReady && eurResolved && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {!accountCanBuy ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolBuyEligible ? "symbol does not permit BUY" : !ack.acknowledged ? "ack required" : ""}
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="text-muted-foreground">EURUSD SELL ready for test</div>
+            <div>{yesNoBadge(eurSellReady)}</div>
+            {!eurSellReady && eurResolved && (
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {!accountCanSell ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolSellEligible ? "symbol does not permit SELL" : !ack.acknowledged ? "ack required" : ""}
+              </div>
+            )}
+          </div>
 
           <div><div className="text-muted-foreground">XAUUSD brokerSymbol</div><div className="font-mono">{xauAmbiguous ? "ambiguous" : (xauResolved?.brokerSymbol ?? (xauVariants.length === 0 ? "not inspected" : "—"))}</div></div>
           <div><div className="text-muted-foreground">XAUUSD test readiness</div><div>{yesNoBadge(false)}</div></div>
