@@ -58,6 +58,8 @@ interface SyncResponse {
   errors?: unknown;
   mode?: string;
   mapping?: VerifiedMapping;
+  searchProbes?: Array<{ searchTerm: string; visibleFilter: boolean | null; httpStatus: number; ok: boolean; count: number; rawNames: string[]; anyPlus: boolean; error: string | null }>;
+  directProbes?: Array<{ requestedSymbol: string; httpStatus: number; ok: boolean; rawName: string | null; rawPreservedExactly: boolean; description: string | null; visible: boolean | null; tradeModeRaw: number | null; tradeModeLabel: string | null; tradeExemode: number | null; orderMode: number | null; fillingMode: number | null; volumeMin: number | null; volumeStep: number | null; error: string | null }>;
 }
 
 interface CandidateReport {
@@ -268,6 +270,7 @@ export default function AdminBrokerSymbolsTab() {
   const refreshPermission = () => invoke("Account permission", { mode: "info" });
   const lookupEURUSD = () => invoke("EURUSD lookup", { mode: "targeted", symbols: ["EURUSD"] });
   const lookupXAUUSD = () => invoke("XAUUSD lookup", { mode: "targeted", symbols: ["XAUUSD"] });
+  const probePlusSymbols = () => invoke("Probe + symbols", { mode: "probe", symbols: ["EURUSD", "XAUUSD"] });
   const fullSync = () => invoke("Full catalogue sync", { mode: "full" });
 
   const routeVerified = !!mapping?.account_route_verified && !!mapping?.trading_layer_account_route_id;
@@ -276,23 +279,22 @@ export default function AdminBrokerSymbolsTab() {
   const xauResolved = lastResp?.results?.find(r => r.displaySymbol === "XAUUSD")?.variants?.[0] ?? null;
   const tradeAllowed = routeVerified ? lastResp?.accountTradeAllowed : undefined;
   const accountTradeModeRaw = routeVerified ? lastResp?.accountTradeModeRaw : null;
-  const isShortOnly = accountTradeModeRaw === 2;
-  const isLongOnly = accountTradeModeRaw === 1;
-  const isDisabled = accountTradeModeRaw === 0;
-  const accountCanBuy = tradeAllowed === true && (accountTradeModeRaw === 1 || accountTradeModeRaw === 4);
-  const accountCanSell = tradeAllowed === true && (accountTradeModeRaw === 2 || accountTradeModeRaw === 4);
 
-  const eurBuyReady = routeVerified && accountCanBuy && !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
-  const eurSellReady = routeVerified && accountCanSell && !!eurResolved && canSell(eurResolved.symbolTradeModeRaw);
+  // ACCOUNT-LEVEL gate is ONLY trade_allowed. account.trade_mode is the MT5
+  // account TYPE (0=demo / 1=contest / 2=real) — NOT a directional restriction.
+  // Symbol direction is decided exclusively by symbol.trade_mode on the exact
+  // broker symbol returned by Trading Layer.
+  const accountExecPermitted = tradeAllowed === true;
+
+  const eurBuyReady = routeVerified && accountExecPermitted && !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
+  const eurSellReady = routeVerified && accountExecPermitted && !!eurResolved && canSell(eurResolved.symbolTradeModeRaw);
 
   const blocker = !routeVerified
     ? "Wrong or unverified Trading Layer account route; executable symbol catalogue not verified."
     : tradeAllowed === false ? "Account trade_allowed = false"
     : tradeAllowed == null ? "Account permission not yet checked"
-    : isDisabled ? "Account trade_mode = DISABLED — no orders allowed"
-    : isShortOnly ? "Account is SHORTONLY. BUY blocked; SELL test pending symbol-info verification."
-    : isLongOnly ? "Account is LONGONLY. SELL blocked."
-    : !eurResolved ? "EURUSD exact broker symbol not yet inspected for the verified route"
+    : !eurResolved ? "EURUSD exact broker symbol not yet inspected — run Lookup or Probe '+' symbols."
+    : !canBuy(eurResolved.symbolTradeModeRaw) && !canSell(eurResolved.symbolTradeModeRaw) ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
     : null;
 
   return (
@@ -400,11 +402,11 @@ export default function AdminBrokerSymbolsTab() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-            <div><div className="text-muted-foreground">Account trade_mode</div><div>{tradeModeBadge(lastResp?.accountTradeModeRaw, lastResp?.accountTradeModeLabel)}</div></div>
-            <div><div className="text-muted-foreground">Buy (account)</div><div>{yesNoBadge(accountCanBuy)}</div></div>
-            <div><div className="text-muted-foreground">Sell (account)</div><div>{yesNoBadge(accountCanSell)}</div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Account trade_mode (raw / type)</div><div className="flex items-center gap-2"><Badge variant="outline">{lastResp?.accountTradeModeRaw ?? "—"}</Badge><span className="text-muted-foreground">{lastResp?.accountTradeModeLabel ?? "—"} — informational, not directional</span></div></div>
+            <div><div className="text-muted-foreground">Account exec permitted</div><div>{yesNoBadge(accountExecPermitted)}</div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Directional gating source</div><div className="text-muted-foreground">selected exact symbol.trade_mode (not account.trade_mode)</div></div>
             <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
-            <div className="md:col-span-3"><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
+            <div><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
           </div>
         )}
       </Card>
@@ -424,6 +426,10 @@ export default function AdminBrokerSymbolsTab() {
           <Button size="sm" variant="outline" onClick={lookupXAUUSD} disabled={busy !== null || !routeVerified}>
             {busy === "XAUUSD lookup" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
             Lookup XAUUSD
+          </Button>
+          <Button size="sm" variant="outline" onClick={probePlusSymbols} disabled={busy !== null || !routeVerified}>
+            {busy === "Probe + symbols" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Search className="h-3.5 w-3.5 mr-1.5" />}
+            Probe '+' Symbols (raw)
           </Button>
           <Button size="sm" variant="default" onClick={fullSync} disabled={busy !== null || !routeVerified}>
             {busy === "Full catalogue sync" ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Database className="h-3.5 w-3.5 mr-1.5" />}
@@ -471,6 +477,77 @@ export default function AdminBrokerSymbolsTab() {
               </tbody>
             </table>
           </div>
+        </Card>
+      )}
+
+      {/* Raw '+' Symbol Probe Results */}
+      {(lastResp?.searchProbes || lastResp?.directProbes) && (
+        <Card className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Raw '+' Symbol Probe (read-only Trading Layer evidence)</h3>
+          {lastResp?.searchProbes && lastResp.searchProbes.length > 0 && (
+            <div className="mb-4">
+              <div className="text-xs font-semibold mb-2 text-muted-foreground">Search probes</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="border-b border-border/50 text-muted-foreground">
+                    <tr>
+                      <th className="text-left py-2 px-2">search</th>
+                      <th className="text-left py-2 px-2">visible</th>
+                      <th className="text-left py-2 px-2">HTTP</th>
+                      <th className="text-left py-2 px-2">count</th>
+                      <th className="text-left py-2 px-2">any '+'</th>
+                      <th className="text-left py-2 px-2">raw names</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {lastResp.searchProbes.map((p, i) => (
+                      <tr key={i}>
+                        <td className="py-1.5 px-2 font-mono">{p.searchTerm}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.visibleFilter == null ? "any" : String(p.visibleFilter)}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.httpStatus}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.count}</td>
+                        <td className="py-1.5 px-2">{yesNoBadge(p.anyPlus)}</td>
+                        <td className="py-1.5 px-2 font-mono text-[10px] break-all max-w-md">{p.rawNames.slice(0, 20).join(", ") || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {lastResp?.directProbes && lastResp.directProbes.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold mb-2 text-muted-foreground">Direct symbol-info probes</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="border-b border-border/50 text-muted-foreground">
+                    <tr>
+                      <th className="text-left py-2 px-2">requested</th>
+                      <th className="text-left py-2 px-2">HTTP</th>
+                      <th className="text-left py-2 px-2">raw name</th>
+                      <th className="text-left py-2 px-2">preserved</th>
+                      <th className="text-left py-2 px-2">trade_mode</th>
+                      <th className="text-left py-2 px-2">vol min/step</th>
+                      <th className="text-left py-2 px-2">visible</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {lastResp.directProbes.map((p, i) => (
+                      <tr key={i}>
+                        <td className="py-1.5 px-2 font-mono">{p.requestedSymbol}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.httpStatus}</td>
+                        <td className="py-1.5 px-2 font-mono text-primary">{p.rawName ?? "—"}</td>
+                        <td className="py-1.5 px-2">{p.ok ? yesNoBadge(p.rawPreservedExactly) : "—"}</td>
+                        <td className="py-1.5 px-2">{tradeModeBadge(p.tradeModeRaw, p.tradeModeLabel)}</td>
+                        <td className="py-1.5 px-2 font-mono">{p.volumeMin ?? "—"} / {p.volumeStep ?? "—"}</td>
+                        <td className="py-1.5 px-2">{p.visible == null ? "—" : yesNoBadge(p.visible)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

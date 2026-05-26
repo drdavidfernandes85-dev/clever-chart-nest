@@ -76,8 +76,9 @@ Deno.serve(async (req) => {
   // Normalize mode. Treat missing mode, "info", or targeted-without-symbols as a
   // cheap info call so we never 400 on the permission/refresh path.
   const rawMode = body?.mode;
-  const mode: "targeted" | "full" | "info" =
+  const mode: "targeted" | "full" | "info" | "probe" =
     rawMode === "full" ? "full"
+    : rawMode === "probe" ? "probe"
     : rawMode === "targeted" && requestedSymbols.length > 0 ? "targeted"
     : "info";
 
@@ -165,19 +166,82 @@ Deno.serve(async (req) => {
     }, is429 ? 429 : 502);
   }
 
+  // NOTE: account.trade_mode in MT5 semantics is the account TYPE
+  // (0=demo, 1=contest, 2=real) — NOT the symbol directional enum.
+  // We do NOT translate it via interpretTradeMode (which is the symbol enum).
+  // Account-level execution permission is governed solely by trade_allowed.
+  const ACCOUNT_TYPE_LABELS: Record<number, string> = {
+    0: "ACCOUNT_TRADE_MODE_DEMO",
+    1: "ACCOUNT_TRADE_MODE_CONTEST",
+    2: "ACCOUNT_TRADE_MODE_REAL",
+  };
+  const accTm = account.data.trade_mode;
   const result: Record<string, unknown> = {
     success: true,
     accountRouteIdUsed: accountId,
     accountRouteVerified: true,
     accountTradeAllowed: account.data.trade_allowed,
-    accountTradeModeRaw: account.data.trade_mode,
-    accountTradeModeLabel: interpretTradeMode(account.data.trade_mode).label,
+    accountTradeModeRaw: accTm,
+    accountTradeModeLabel: accTm != null ? (ACCOUNT_TYPE_LABELS[accTm] ?? `ACCOUNT_TYPE_${accTm}`) : null,
+    accountTradeModeMeaning: "account_type_informational_not_directional",
     mt5Login: account.data.login,
     mt5Server: account.data.server,
     accountPermissionCheckedAt: now,
     mode,
     mapping: baseMapping,
   };
+
+  // PROBE mode: read-only diagnostic for raw broker symbol names ('+' investigation).
+  if (mode === "probe") {
+    const probes = requestedSymbols.length > 0 ? requestedSymbols : ["EURUSD", "XAUUSD"];
+    const searchProbes: any[] = [];
+    const directProbes: any[] = [];
+
+    for (const base of probes) {
+      const variants = [base, `${base}+`, `${base}.m`, `${base}.crp`];
+      // search probes: each variant, with and without visible filter
+      for (const v of [base, `${base}+`]) {
+        for (const visibleFilter of [null, true]) {
+          const r = await listSymbols(accountId, {
+            search: v, visible: visibleFilter, limit: 1000, offset: 0, sort: "name", order: "asc",
+          });
+          const names = (r.data ?? []).map((x: any) => String(x?.name ?? ""));
+          searchProbes.push({
+            searchTerm: v,
+            visibleFilter,
+            httpStatus: r.status,
+            ok: r.ok,
+            count: names.length,
+            rawNames: names,
+            anyPlus: names.some(n => n.includes("+")),
+            error: r.error ?? null,
+          });
+        }
+      }
+      // direct symbol-info probes
+      for (const v of variants) {
+        const d = await getSymbolInfo(accountId, v);
+        directProbes.push({
+          requestedSymbol: v,
+          httpStatus: d.status,
+          ok: d.ok,
+          rawName: d.data?.name ?? null,
+          rawPreservedExactly: d.ok && d.data?.name === v,
+          description: d.data?.description ?? null,
+          visible: d.data?.visible ?? null,
+          tradeModeRaw: typeof d.data?.trade_mode === "number" ? d.data.trade_mode : null,
+          tradeModeLabel: interpretTradeMode(d.data?.trade_mode ?? null).label,
+          tradeExemode: d.data?.trade_exemode ?? null,
+          orderMode: d.data?.order_mode ?? null,
+          fillingMode: d.data?.filling_mode ?? null,
+          volumeMin: d.data?.volume_min ?? null,
+          volumeStep: d.data?.volume_step ?? null,
+          error: d.error ?? null,
+        });
+      }
+    }
+    return json({ ...result, searchProbes, directProbes });
+  }
 
   if (mode === "targeted") {
     const out: Array<{ displaySymbol: string; variants: Variant[] }> = [];
