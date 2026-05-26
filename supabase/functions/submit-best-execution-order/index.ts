@@ -32,13 +32,17 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
-import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
+import { EXECUTION_POLICY_VERSION, sideToOperation } from "../_shared/tradingLayerTradeMode.ts";
 import {
   resolveFreshExecutionTick,
   FRESH_TICK_OK,
   FRESH_TICK_POLICY_VERSION,
   type FreshTickResult,
 } from "../_shared/freshTick.ts";
+import {
+  resolveVerifiedExecutionInstrument,
+  VERIFIED_EXECUTION_INSTRUMENT_VERSION,
+} from "../_shared/executionInstrument.ts";
 
 const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
 
@@ -158,20 +162,130 @@ Deno.serve(async (req) => {
   timings.authValidatedAt = Date.now();
 
   // ---------------------------------------------------------------------------
+  // Shared verified execution-instrument resolution.
+  //
+  // Single source of truth for: route, exact broker symbol, account+symbol
+  // trade-mode, per-side eligibility. Used by both the Order Ticket
+  // (get-terminal-execution-eligibility) and this submission path so they
+  // can never disagree. We always run it for live orders; dry-run requests
+  // tolerate failures here and continue to the dry-run short-circuit below.
+  // ---------------------------------------------------------------------------
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseService = createClient(SUPABASE_URL, SERVICE_KEY);
+  const intendedOperation = sideToOperation(String(side ?? ""), String(orderType ?? "market"));
+  const clientExpectedBrokerSymbol = (payload as any)?.brokerSymbol
+    ? String((payload as any).brokerSymbol).trim()
+    : null;
+  let verifiedInstrument: any = null;
+  if (uid) {
+    try {
+      verifiedInstrument = await resolveVerifiedExecutionInstrument(supabaseService, {
+        userId: uid,
+        displaySymbol: String(symbol),
+        operation: intendedOperation,
+        expectedBrokerSymbol: clientExpectedBrokerSymbol,
+      });
+    } catch (e) {
+      verifiedInstrument = {
+        success: false,
+        errorCode: "INSTRUMENT_RESOLVER_FAILED",
+        message: (e as Error)?.message ?? "Verified execution-instrument resolver failed.",
+        resolutionStatus: "unresolved",
+      };
+    }
+  }
+
+  // Hard pre-trade gate for live orders: if the shared resolver did not
+  // produce a verified executable instrument, do not even reach the fresh
+  // tick / mutation path. Dry-run requests are allowed through to the
+  // dry-run short-circuit (handled below).
+  const isLiveOrder = dryRun !== true && liveExecutionConfirmed === true;
+  if (isLiveOrder && verifiedInstrument && (!verifiedInstrument.success || !verifiedInstrument.brokerSymbol || verifiedInstrument.operationEligible === false)) {
+    const code = verifiedInstrument.errorCode || verifiedInstrument.operationBlockedReason || "BROKER_SYMBOL_RESOLUTION_FAILED_PRETRADE";
+    const message = verifiedInstrument.message
+      || verifiedInstrument.operationBlockedReason
+      || "Live order blocked: the exact executable broker symbol could not be validated at submission time. No order was sent.";
+    if (uid) {
+      fireAndForget(supabase.from("execution_audit_events").insert({
+        user_id: uid,
+        trade_id: tradeId ?? null,
+        symbol,
+        side,
+        volume: Number(volume),
+        status: "blocked",
+        outcome: "blocked",
+        requested_price: null,
+        executed_price: null,
+        slippage: null,
+        latency_ms: 0,
+        spread: null,
+        bid: null,
+        ask: null,
+        broker_message: message,
+        retcode: null,
+        reason: "blocked_broker_symbol_resolution_pretrade",
+        rule_violated: "verified_execution_instrument_required",
+        ticket: null,
+        raw: {
+          classification: "blocked_broker_symbol_resolution_pretrade",
+          version: VERSION,
+          step: "pretrade_symbol_resolution",
+          liveOrderAttempted: false,
+          liveOrderSent: false,
+          brokerAccepted: false,
+          resolverVersion: VERIFIED_EXECUTION_INSTRUMENT_VERSION,
+          executionPolicyVersion: EXECUTION_POLICY_VERSION,
+          verifiedInstrument: verifiedInstrument ?? null,
+        },
+      }));
+    }
+    return withTimings({
+      success: false,
+      version: VERSION,
+      step: "pretrade_symbol_resolution",
+      classification: "blocked_broker_symbol_resolution_pretrade",
+      blocked: true,
+      liveOrderAttempted: false,
+      liveOrderSent: false,
+      brokerAccepted: false,
+      tradeId,
+      displaySymbol: verifiedInstrument?.displaySymbol ?? symbol,
+      brokerSymbol: verifiedInstrument?.brokerSymbol ?? null,
+      resolutionStatus: verifiedInstrument?.resolutionStatus ?? null,
+      routeAccountIdMasked: verifiedInstrument?.routeAccountIdMasked ?? null,
+      accountTradeModeRaw: verifiedInstrument?.accountTradeModeRaw ?? null,
+      accountTradeModeLabel: verifiedInstrument?.accountTradeModeLabel ?? null,
+      symbolTradeModeRaw: verifiedInstrument?.symbolTradeModeRaw ?? null,
+      symbolTradeModeLabel: verifiedInstrument?.symbolTradeModeLabel ?? null,
+      operationIntent: intendedOperation,
+      operationEligible: verifiedInstrument?.operationEligible ?? false,
+      operationBlockedReason: verifiedInstrument?.operationBlockedReason ?? null,
+      executionPolicyVersion: EXECUTION_POLICY_VERSION,
+      resolverVersion: VERIFIED_EXECUTION_INSTRUMENT_VERSION,
+      error: code,
+      message,
+      reasons: [message],
+    });
+  }
+
+  // ---------------------------------------------------------------------------
   // Pre-trade authoritative server-side fresh-tick validation.
   //
-  // ROUTE: verified Trading Layer account route (user_mt_accounts.trading_layer_account_id).
-  // SYMBOL: exact broker symbol (caller-resolved). Display ticks (WebSocket /
-  // /get-mt5-quotes) are NEVER trusted as price-of-record.
+  // ROUTE: verified Trading Layer account route (from shared resolver when
+  // available; otherwise best-effort lookup).
+  // SYMBOL: exact broker symbol resolved server-side (NEVER from display
+  // ticks / WebSocket / /get-mt5-quotes).
   // ---------------------------------------------------------------------------
   let requestedBid: number | null = null;
   let requestedAsk: number | null = null;
   let quoteTimestamp: string | null = null;
   let quoteSource: string = "trading_layer_latest_tick";
   let freshTick: FreshTickResult | null = null;
-  let routeAccountIdForTick: string | null = null;
-  const tickBrokerSymbol = String((payload as any)?.brokerSymbol || symbol || "").trim().toUpperCase();
-  if (uid) {
+  let routeAccountIdForTick: string | null = verifiedInstrument?.routeAccountId ?? null;
+  const tickBrokerSymbol =
+    verifiedInstrument?.brokerSymbol
+    || String((payload as any)?.brokerSymbol || symbol || "").trim().toUpperCase();
+  if (!routeAccountIdForTick && uid) {
     try {
       const { data: acct } = await supabase
         .from("user_mt_accounts")
@@ -200,6 +314,9 @@ Deno.serve(async (req) => {
     side === "buy" ? requestedAsk : side === "sell" ? requestedBid : null;
   const haveFreshQuote =
     freshTick.fresh && requestedBid != null && requestedAsk != null && requestedPrice != null;
+
+
+
 
 
   const startedAt = Date.now();
@@ -448,113 +565,18 @@ Deno.serve(async (req) => {
   }
 
   // ---------- Trading Layer execution eligibility (broker-symbol gate) ----------
-  // Real execution must use the exact broker-returned symbol (e.g. XAUUSD+),
-  // and Trading Layer must explicitly report that both the account and the
-  // symbol are tradable. We never silently fall back to the canonical symbol.
-  let brokerSymbol: string | null = null;
-  let symbolTradeMode: string | null = null;
-  let accountTradeMode: string | null = null;
-  let mappingCheckedAt: string | null = null;
-  let mappingSource: string | null = null;
-  if (executionIntent === "admin_live_test_live_order") {
-    try {
-      const { data: elig } = await supabase.functions.invoke(
-        "get-trading-execution-eligibility",
-        { body: { symbol, refresh: true } }, // PART 1 — always fetch fresh trade_mode + symbols before real mutation.
-      );
-      if (elig && typeof elig === "object") {
-        brokerSymbol = (elig as any).brokerSymbol ?? null;
-        symbolTradeMode = (elig as any).symbolTradeMode ?? null;
-        accountTradeMode = (elig as any).accountTradeMode ?? null;
-        mappingCheckedAt = (elig as any).checkedAt ?? null;
-        mappingSource = "trading_layer_symbols";
-        const eligibility = (elig as any).eligibility;
-        const blockedReason = (elig as any).blockedReason;
-        const accountEligible = (elig as any).accountTradeEligible === true;
-        const symbolEligible = (elig as any).symbolTradeEligible === true;
+  // Now sourced from the SAME shared resolver as get-terminal-execution-eligibility
+  // (resolveVerifiedExecutionInstrument). The legacy get-trading-execution-eligibility
+  // call has been removed because it interpreted numeric account.trade_mode as
+  // "awaiting enum confirmation" and produced false BROKER_SYMBOL_UNRESOLVED blocks.
+  let brokerSymbol: string | null = verifiedInstrument?.brokerSymbol ?? null;
+  let symbolTradeMode: string | null = verifiedInstrument?.symbolTradeModeLabel
+    ?? (verifiedInstrument?.symbolTradeModeRaw != null ? String(verifiedInstrument.symbolTradeModeRaw) : null);
+  let accountTradeMode: string | null = verifiedInstrument?.accountTradeModeLabel
+    ?? (verifiedInstrument?.accountTradeModeRaw != null ? String(verifiedInstrument.accountTradeModeRaw) : null);
+  let mappingCheckedAt: string | null = verifiedInstrument?.checkedAt ?? null;
+  let mappingSource: string | null = verifiedInstrument ? "verified_execution_instrument_v1" : null;
 
-        const block = (
-          classification: string,
-          message: string,
-        ) =>
-          withTimings({
-            success: false,
-            version: VERSION,
-            step: "execution_eligibility_gate",
-            classification,
-            liveOrderAttempted: false,
-            liveOrderSent: false,
-            brokerAccepted: false,
-            tradeId,
-            displaySymbol: symbol,
-            brokerSymbol,
-            symbolTradeMode,
-            accountTradeMode,
-            symbolMappingSource: mappingSource,
-            symbolMappingCheckedAt: mappingCheckedAt,
-            error: message,
-            message,
-          });
-
-        if (!accountEligible && accountTradeMode != null) {
-          return block(
-            "account_trade_mode_blocked",
-            "Trading Layer reports that trading is disabled for this account.",
-          );
-        }
-        if (!brokerSymbol) {
-          return block(
-            "broker_symbol_unresolved",
-            "Execution symbol could not be resolved from Trading Layer. No order was submitted.",
-          );
-        }
-        if (!symbolEligible && symbolTradeMode != null) {
-          return block(
-            "symbol_trade_mode_blocked",
-            "Trading Layer reports that this broker symbol is not currently tradable.",
-          );
-        }
-        if (eligibility !== "eligible") {
-          return block(
-            blockedReason === "broker_symbol_mapping_stale"
-              ? "broker_symbol_mapping_stale"
-              : "execution_eligibility_unknown",
-            blockedReason === "broker_symbol_mapping_stale"
-              ? "Broker symbol mapping must be refreshed before placing a live order."
-              : "Trading Layer execution permission could not be confirmed. Live order is disabled.",
-          );
-        }
-      } else {
-        return withTimings({
-          success: false,
-          version: VERSION,
-          step: "execution_eligibility_gate",
-          classification: "execution_eligibility_unknown",
-          liveOrderAttempted: false,
-          liveOrderSent: false,
-          brokerAccepted: false,
-          tradeId,
-          displaySymbol: symbol,
-          error:
-            "Trading Layer execution permission could not be confirmed. Live order is disabled.",
-        });
-      }
-    } catch (e) {
-      return withTimings({
-        success: false,
-        version: VERSION,
-        step: "execution_eligibility_gate",
-        classification: "execution_eligibility_unknown",
-        liveOrderAttempted: false,
-        liveOrderSent: false,
-        brokerAccepted: false,
-        tradeId,
-        displaySymbol: symbol,
-        error: (e as Error)?.message ||
-          "Trading Layer execution permission could not be confirmed. Live order is disabled.",
-      });
-    }
-  }
 
 
 
