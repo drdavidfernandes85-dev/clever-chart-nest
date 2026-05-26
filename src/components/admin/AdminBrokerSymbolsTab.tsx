@@ -351,19 +351,29 @@ export default function AdminBrokerSymbolsTab() {
             <tbody className="divide-y divide-border/30">
               {!verifyResp?.candidates?.length ? (
                 <tr><td colSpan={9} className="py-4 text-center text-muted-foreground">Click "Verify Account Route" to query Trading Layer (read-only).</td></tr>
-              ) : verifyResp.candidates.map((c) => (
-                <tr key={c.id}>
-                  <td className="py-2 px-2">{c.label === "trader_route" ? "Trader route" : "Stored route"}</td>
-                  <td className="py-2 px-2 font-mono">{c.idMasked}</td>
-                  <td className="py-2 px-2 font-mono">{c.httpStatus}</td>
-                  <td className="py-2 px-2 font-mono">{c.login ?? "—"}</td>
-                  <td className="py-2 px-2 font-mono">{c.server ?? "—"}</td>
-                  <td className="py-2 px-2">{c.tradeAllowed == null ? "—" : yesNoBadge(c.tradeAllowed)}</td>
-                  <td className="py-2 px-2">{tradeModeBadge(c.tradeModeRaw, c.tradeModeLabel)}</td>
-                  <td className="py-2 px-2">{yesNoBadge(c.matches)}</td>
-                  <td className="py-2 px-2">{yesNoBadge(c.matches)}</td>
-                </tr>
-              ))}
+              ) : verifyResp.candidates.map((c) => {
+                const useExec = c.useForExecution ?? (c.matches && c.tradeAllowed === true);
+                const statusLabel = c.routeStatus
+                  ? c.routeStatus.replace(/_/g, " ")
+                  : (c.matches ? (c.tradeAllowed ? "identity match execution allowed" : "identity match execution blocked") : "identity mismatch");
+                return (
+                  <tr key={c.id}>
+                    <td className="py-2 px-2">{c.label === "trader_route" ? "Trader route" : "Stored route"}</td>
+                    <td className="py-2 px-2 font-mono">{c.idMasked}</td>
+                    <td className="py-2 px-2 font-mono">{c.httpStatus}</td>
+                    <td className="py-2 px-2 font-mono">{c.login ?? "—"}</td>
+                    <td className="py-2 px-2 font-mono">{c.server ?? "—"}</td>
+                    <td className="py-2 px-2">{c.tradeAllowed == null ? "—" : yesNoBadge(c.tradeAllowed)}</td>
+                    <td className="py-2 px-2">{tradeModeBadge(c.tradeModeRaw, c.tradeModeLabel)}</td>
+                    <td className="py-2 px-2">{yesNoBadge(c.matches)}</td>
+                    <td className="py-2 px-2">
+                      {yesNoBadge(useExec)}
+                      <div className="text-[10px] text-muted-foreground mt-1">{statusLabel}</div>
+                      {c.reason && <div className="text-[10px] text-muted-foreground">{c.reason}</div>}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
