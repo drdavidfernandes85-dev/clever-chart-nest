@@ -572,17 +572,20 @@ const AdminFinalLifecycleValidationCard = () => {
           <Button
             size="sm"
             onClick={arm}
-            disabled={!allAcked || !allGatesPass || busy === "arm"}
+            disabled={!canAuthorise}
             className="w-full"
           >
             <Lock className="h-3 w-3 mr-1" />
-            {busy === "arm" ? "Authorising…" : "Authorise Final Lifecycle Test"}
+            {isAuthorising ? "Authorising…" : "Authorise Final Lifecycle Test"}
           </Button>
-          {(!allAcked || !allGatesPass) && (
-            <div className="mt-2 text-[10px] text-muted-foreground">
+          <div className="mt-2 text-[10px] font-mono text-muted-foreground">
+            canAuthorise={String(canAuthorise)} · blocker={blocker ?? "none"}
+          </div>
+          {!canAuthorise && (
+            <div className="mt-1 text-[10px] text-muted-foreground">
               Authorise enables only when: fresh passing dispatcher preview, mappingStatus=valid,
               brokerSymbol=EURUSD, route={EXPECTED_ROUTE}, DTO={JSON.stringify(EXPECTED_DTO)},
-              freshTick=pass, zero EURUSD exposure, and every acknowledgement ticked.
+              freshTick=pass, zero EURUSD exposure, no active lifecycle row, and every acknowledgement ticked.
             </div>
           )}
         </Card>
