@@ -722,32 +722,27 @@ export default function AdminBrokerSymbolsTab() {
         )}
       </Card>
 
-      {/* MT5 Suffix Discrepancy Acknowledgement */}
+      {/* EURUSD Broker Symbol Confirmed (replaces former suffix-discrepancy ack) */}
 
-      <Card className="p-4">
+      <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
         <div className="flex items-center gap-2 mb-3">
-          <ShieldAlert className="h-4 w-4 text-amber-400" />
-          <h3 className="text-sm font-semibold">EURUSD Discrepancy Acknowledgement (admin)</h3>
+          <ShieldAlert className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-emerald-200">EURUSD Broker Symbol Confirmed</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          Trading Layer API returned executable symbol <code className="text-primary">EURUSD</code> for the verified route, while the MT5 terminal appears to show suffixed instruments.
-          API broker symbol is resolved; external symbol-display discrepancy remains under review. The acknowledgement below is required before any controlled live test may proceed.
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+          <div><span className="text-muted-foreground">Trading Layer API brokerSymbol:</span> <code className="text-primary">EURUSD</code></div>
+          <div><span className="text-muted-foreground">Native MT5 Market Watch symbol:</span> <code className="text-primary">EURUSD</code></div>
+          <div><span className="text-muted-foreground">Match:</span> <span className="text-emerald-300 font-semibold">YES</span></div>
+          <div><span className="text-muted-foreground">Suffix discrepancy:</span> <span className="text-emerald-300 font-semibold">RESOLVED</span></div>
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Note: <code>EURUSD+</code> shown previously belongs to Trading Layer's separate test account and is not applicable to this connected MT5 account. Acknowledgement is no longer required for terminal eligibility, validate-full-pretrade, submit-best-execution-order or the readiness summary. The retcode-10017 upstream execution block remains active in Production Mode pending broker clarification.
+          {ack.acknowledged && ack.at && (
+            <span className="block text-[10px] text-muted-foreground mt-1">
+              (legacy ack on record at {fmtTime(ack.at)}{ack.by ? ` by ${ack.by.slice(0, 8)}…` : ""} — retained for audit only)
+            </span>
+          )}
         </p>
-        <label className="flex items-start gap-2 text-xs">
-          <Checkbox
-            checked={ack.acknowledged}
-            disabled={ackSaving}
-            onCheckedChange={(v) => saveAck(v === true)}
-          />
-          <span>
-            I acknowledge that Trading Layer returned <code className="text-primary">EURUSD</code> as the exact executable broker symbol for this verified route, despite the MT5 suffix display discrepancy.
-            {ack.acknowledged && ack.at && (
-              <span className="block text-[10px] text-muted-foreground mt-1">
-                acknowledged at {fmtTime(ack.at)}{ack.by ? ` by ${ack.by.slice(0, 8)}…` : ""}
-              </span>
-            )}
-          </span>
-        </label>
       </Card>
 
       {/* Targeted Lookup Results */}
