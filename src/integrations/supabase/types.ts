@@ -1571,6 +1571,9 @@ export type Database = {
           last_tl_error_code: string | null
           last_verified_at: string | null
           leverage: number | null
+          live_execution_block_code: string | null
+          live_execution_block_reason: string | null
+          live_execution_block_set_at: string | null
           login: string
           mapping_status: string | null
           margin: number | null
@@ -1583,6 +1586,9 @@ export type Database = {
           server_name: string
           status: string
           status_message: string | null
+          symbol_catalogue_status: string | null
+          symbol_catalogue_synced_at: string | null
+          symbol_catalogue_version: string | null
           trading_layer_account_id: string | null
           trading_layer_account_route_id: string | null
           trading_layer_external_trader_id: string | null
@@ -1613,6 +1619,9 @@ export type Database = {
           last_tl_error_code?: string | null
           last_verified_at?: string | null
           leverage?: number | null
+          live_execution_block_code?: string | null
+          live_execution_block_reason?: string | null
+          live_execution_block_set_at?: string | null
           login: string
           mapping_status?: string | null
           margin?: number | null
@@ -1625,6 +1634,9 @@ export type Database = {
           server_name: string
           status?: string
           status_message?: string | null
+          symbol_catalogue_status?: string | null
+          symbol_catalogue_synced_at?: string | null
+          symbol_catalogue_version?: string | null
           trading_layer_account_id?: string | null
           trading_layer_account_route_id?: string | null
           trading_layer_external_trader_id?: string | null
@@ -1655,6 +1667,9 @@ export type Database = {
           last_tl_error_code?: string | null
           last_verified_at?: string | null
           leverage?: number | null
+          live_execution_block_code?: string | null
+          live_execution_block_reason?: string | null
+          live_execution_block_set_at?: string | null
           login?: string
           mapping_status?: string | null
           margin?: number | null
@@ -1667,6 +1682,9 @@ export type Database = {
           server_name?: string
           status?: string
           status_message?: string | null
+          symbol_catalogue_status?: string | null
+          symbol_catalogue_synced_at?: string | null
+          symbol_catalogue_version?: string | null
           trading_layer_account_id?: string | null
           trading_layer_account_route_id?: string | null
           trading_layer_external_trader_id?: string | null
