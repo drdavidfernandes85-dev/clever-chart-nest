@@ -196,6 +196,7 @@ const AdminControlledRetestCard = () => {
   const authorise = async () => {
     if (!allAcked) return toast.error("All acknowledgements required.");
     if (!pretradePassed) return toast.error("Full pre-trade preview must pass first.");
+    if (!exposureClear) return toast.error("Exposure check must show no open/pending EURUSD and be fresh.");
     setAuthorising(true);
     try {
       const { data: u } = await supabase.auth.getUser();
