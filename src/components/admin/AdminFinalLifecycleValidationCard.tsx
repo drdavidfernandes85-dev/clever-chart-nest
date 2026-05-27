@@ -150,15 +150,43 @@ const AdminFinalLifecycleValidationCard = () => {
   }, []);
 
   const allAcked = useMemo(() => ACK_ITEMS.every((i) => acks[i.id]), [acks]);
-  const previewFresh = !!(preview?.success && preview?.wouldDispatchEntry === true
-    && previewAt && Date.now() - previewAt < 60_000);
-
+  const previewFresh = !!(preview && previewAt && Date.now() - previewAt < 60_000);
+  const wouldDispatchEntry = preview?.wouldDispatchEntry === true;
   const dtoExact = !!preview && JSON.stringify(preview.outboundBody) === JSON.stringify(EXPECTED_DTO);
   const routeExact = preview?.route === EXPECTED_ROUTE;
   const mappingValid = preview?.mappingStatus === "valid";
   const brokerExact = preview?.brokerSymbol === "EURUSD";
+  const sideExact = preview?.side === "sell";
+  const volumeExact = Number(preview?.volume) === 0.01;
+  const freshTickPass = preview?.freshTick === "pass";
+  const deviationAbsent = preview?.deviationAbsent === true;
+  const internalMetadataExcluded = preview?.internalMetadataExcluded === true;
   const exposureZero = (preview?.openEurusdPositions ?? 1) === 0 && (preview?.pendingEurusdOrders ?? 1) === 0;
-  const allGatesPass = previewFresh && dtoExact && routeExact && mappingValid && brokerExact && exposureZero;
+  const hasActiveLifecycleRow = !!activeRow;
+  const isAuthorising = busy === "arm";
+
+  // Per-gate blocker resolution — surfaces the first failing gate so the
+  // Authorise button is never inactive without a visible reason.
+  const blocker: string | null =
+    !preview ? "NO_PREVIEW"
+    : !previewFresh ? "PREVIEW_STALE_RE_RUN"
+    : !wouldDispatchEntry ? `PREVIEW_BLOCKED_${preview?.blockedCode || preview?.blockedStage || "UNKNOWN"}`
+    : !mappingValid ? "MAPPING_NOT_VALID"
+    : !routeExact ? "ROUTE_MISMATCH"
+    : !brokerExact ? "BROKER_SYMBOL_MISMATCH"
+    : !sideExact ? "SIDE_MISMATCH"
+    : !volumeExact ? "VOLUME_MISMATCH"
+    : !freshTickPass ? "FRESH_TICK_NOT_PASS"
+    : !exposureZero ? "EXPOSURE_NON_ZERO"
+    : !deviationAbsent ? "DEVIATION_PRESENT"
+    : !internalMetadataExcluded ? "INTERNAL_METADATA_PRESENT"
+    : !dtoExact ? "DTO_NOT_MINIMAL"
+    : hasActiveLifecycleRow ? "ACTIVE_LIFECYCLE_ROW_EXISTS"
+    : !allAcked ? "ACKS_INCOMPLETE"
+    : isAuthorising ? "AUTHORISING_IN_PROGRESS"
+    : null;
+
+  const canAuthorise = blocker === null;
 
   const runPreview = async () => {
     setBusy("preview");
