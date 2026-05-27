@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   Loader2, RefreshCw, Search, Database, ShieldCheck, ShieldAlert, KeyRound, Download, Eye,
 } from "lucide-react";
+import RouteCandidateComparisonCard from "./RouteCandidateComparisonCard";
 
 interface VerifiedMapping {
   id: string;
@@ -605,6 +606,9 @@ export default function AdminBrokerSymbolsTab() {
           </p>
         )}
       </Card>
+
+      {/* Route Candidate Comparison (read-only, includes TL-provided route) */}
+      <RouteCandidateComparisonCard />
 
       {/* Account Execution Permission */}
       <Card className="p-4">
