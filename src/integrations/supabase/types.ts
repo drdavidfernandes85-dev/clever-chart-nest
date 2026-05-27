@@ -683,6 +683,135 @@ export type Database = {
         }
         Relationships: []
       }
+      lifecycle_validation_authorisations: {
+        Row: {
+          acknowledgements: Json
+          authorisation_type: string
+          authorised_at: string
+          authorised_by: string
+          broker_symbol: string
+          classification: string | null
+          close_consumed_at: string | null
+          close_deal_id: string | null
+          close_dispatches_consumed: number
+          close_evidence: Json | null
+          close_order_id: string | null
+          close_retcode: number | null
+          confirmed_position_at: string | null
+          confirmed_position_evidence: Json | null
+          confirmed_position_ticket: string | null
+          controlled_close_confirmed: boolean
+          created_at: string
+          display_symbol: string
+          entry_consumed_at: string | null
+          entry_dispatches_consumed: number
+          entry_evidence: Json | null
+          entry_order_id: string | null
+          entry_order_type: string
+          entry_outbound_dto: Json
+          entry_request_id: string | null
+          entry_retcode: number | null
+          entry_side: string
+          entry_volume: number
+          expires_at: string
+          failure_reason: string | null
+          id: string
+          lifecycle_passed: boolean
+          maximum_close_dispatches: number
+          maximum_entry_dispatches: number
+          mt5_login: string
+          mt5_server: string
+          preview_snapshot: Json | null
+          route_account_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledgements?: Json
+          authorisation_type?: string
+          authorised_at?: string
+          authorised_by: string
+          broker_symbol: string
+          classification?: string | null
+          close_consumed_at?: string | null
+          close_deal_id?: string | null
+          close_dispatches_consumed?: number
+          close_evidence?: Json | null
+          close_order_id?: string | null
+          close_retcode?: number | null
+          confirmed_position_at?: string | null
+          confirmed_position_evidence?: Json | null
+          confirmed_position_ticket?: string | null
+          controlled_close_confirmed?: boolean
+          created_at?: string
+          display_symbol: string
+          entry_consumed_at?: string | null
+          entry_dispatches_consumed?: number
+          entry_evidence?: Json | null
+          entry_order_id?: string | null
+          entry_order_type?: string
+          entry_outbound_dto: Json
+          entry_request_id?: string | null
+          entry_retcode?: number | null
+          entry_side: string
+          entry_volume: number
+          expires_at: string
+          failure_reason?: string | null
+          id?: string
+          lifecycle_passed?: boolean
+          maximum_close_dispatches?: number
+          maximum_entry_dispatches?: number
+          mt5_login: string
+          mt5_server: string
+          preview_snapshot?: Json | null
+          route_account_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledgements?: Json
+          authorisation_type?: string
+          authorised_at?: string
+          authorised_by?: string
+          broker_symbol?: string
+          classification?: string | null
+          close_consumed_at?: string | null
+          close_deal_id?: string | null
+          close_dispatches_consumed?: number
+          close_evidence?: Json | null
+          close_order_id?: string | null
+          close_retcode?: number | null
+          confirmed_position_at?: string | null
+          confirmed_position_evidence?: Json | null
+          confirmed_position_ticket?: string | null
+          controlled_close_confirmed?: boolean
+          created_at?: string
+          display_symbol?: string
+          entry_consumed_at?: string | null
+          entry_dispatches_consumed?: number
+          entry_evidence?: Json | null
+          entry_order_id?: string | null
+          entry_order_type?: string
+          entry_outbound_dto?: Json
+          entry_request_id?: string | null
+          entry_retcode?: number | null
+          entry_side?: string
+          entry_volume?: number
+          expires_at?: string
+          failure_reason?: string | null
+          id?: string
+          lifecycle_passed?: boolean
+          maximum_close_dispatches?: number
+          maximum_entry_dispatches?: number
+          mt5_login?: string
+          mt5_server?: string
+          preview_snapshot?: Json | null
+          route_account_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mentor_applications: {
         Row: {
           bio: string
