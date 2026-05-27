@@ -469,7 +469,7 @@ const AdminControlledRetestCard = () => {
         <Button
           size="sm"
           onClick={authorise}
-          disabled={authorising || !allAcked || !pretradePassed || !previewOk || !exposureClear || authActive}
+          disabled={authorising || !allAcked || !pretradePassed || !previewOk || !exposureClear || !dispatcher?.wouldDispatch || authActive}
         >
           {authorising ? "Authorising…" : "Authorise (one-shot, 10 min)"}
         </Button>
