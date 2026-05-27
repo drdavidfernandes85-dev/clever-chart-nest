@@ -28,7 +28,20 @@ const ACK_ITEMS = [
   "Risk / kill-switch / idempotency remain active",
   "If position confirms, only Close on that exact position is permitted next",
   "If rejected, the platform immediately re-blocks without another retry",
+  "I confirm the read-only MT5 refresh shows no open or pending EURUSD exposure before this one-shot test.",
 ] as const;
+
+type Exposure = {
+  externalOrderId: string;
+  externalClosedByUser: boolean;
+  closureRecordedAt: string | null;
+  openEurusdPositions: number;
+  pendingEurusdOrders: number;
+  residual: "none" | "detected";
+  checkedAt: string;
+  source: string;
+  ready: boolean;
+};
 
 type Auth = {
   id: string;
@@ -59,6 +72,8 @@ const AdminControlledRetestCard = () => {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [remaining, setRemaining] = useState<number>(0);
+  const [exposure, setExposure] = useState<Exposure | null>(null);
+  const [exposureLoading, setExposureLoading] = useState(false);
 
   const allAcked = acks.every(Boolean);
   const pretradePassed = pretrade?.wouldSubmit === true;
@@ -95,10 +110,68 @@ const AdminControlledRetestCard = () => {
     return () => window.clearInterval(id);
   }, [auth]);
 
+  const runExposureCheck = async (): Promise<Exposure | null> => {
+    setExposureLoading(true);
+    try {
+      // Backend authoritative: TL positions via get-live-account (forceRefresh).
+      const { data: live } = await supabase.functions.invoke("get-live-account", {
+        body: { forceRefresh: true },
+      });
+      const positions: any[] = Array.isArray(live?.positions) ? live.positions : [];
+      const openEur = positions.filter(
+        (p) => String(p?.symbol ?? "").toUpperCase() === "EURUSD",
+      ).length;
+
+      // Pending orders for the current user (DB-tracked).
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u?.user?.id;
+      let pendingEur = 0;
+      if (uid) {
+        const { count } = await supabase
+          .from("mt_pending_orders")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", uid)
+          .eq("status", "pending")
+          .or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD");
+        pendingEur = count ?? 0;
+      }
+
+      // Closure record from site_settings.
+      const { data: settings } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "trading_layer_direct_external_test_1169085428")
+        .maybeSingle();
+      const v: any = settings?.value ?? {};
+      const externalClosedByUser = v?.externalPositionManuallyClosedByUser === true;
+      const closureRecordedAt = v?.externalPositionClosedConfirmedAt ?? null;
+
+      const residual: "none" | "detected" =
+        openEur === 0 && pendingEur === 0 ? "none" : "detected";
+      const exp: Exposure = {
+        externalOrderId: "1169085428",
+        externalClosedByUser,
+        closureRecordedAt,
+        openEurusdPositions: openEur,
+        pendingEurusdOrders: pendingEur,
+        residual,
+        checkedAt: new Date().toISOString(),
+        source: "get-live-account (TL, forceRefresh) + mt_pending_orders",
+        ready: externalClosedByUser && residual === "none",
+      };
+      setExposure(exp);
+      return exp;
+    } catch (e: any) {
+      toast.error(`Exposure check failed: ${e?.message ?? "unknown"}`);
+      return null;
+    } finally {
+      setExposureLoading(false);
+    }
+  };
+
   const runPreviews = async () => {
     setPreviewing(true);
     try {
-      // Full pretrade (mutation-suppressed) via existing validator.
       const { data: pre } = await supabase.functions.invoke("validate-full-pretrade", {
         body: {
           symbol: PERMITTED.symbol,
@@ -108,12 +181,11 @@ const AdminControlledRetestCard = () => {
         },
       });
       setPretrade(pre);
-      // Outbound DTO preview via submit-controlled-retest in previewOnly mode.
-      // Falls back if no authorisation exists yet — we still want a quick echo.
       const { data: prev } = await supabase.functions.invoke("submit-controlled-retest", {
         body: { previewOnly: true },
       });
       setPreview(prev);
+      await runExposureCheck();
     } catch (e: any) {
       toast.error(`Preview failed: ${e?.message ?? "unknown"}`);
     } finally {
@@ -124,6 +196,7 @@ const AdminControlledRetestCard = () => {
   const authorise = async () => {
     if (!allAcked) return toast.error("All acknowledgements required.");
     if (!pretradePassed) return toast.error("Full pre-trade preview must pass first.");
+    if (!exposureClear) return toast.error("Exposure check must show no open/pending EURUSD and be fresh.");
     setAuthorising(true);
     try {
       const { data: u } = await supabase.auth.getUser();
@@ -171,6 +244,10 @@ const AdminControlledRetestCard = () => {
   };
 
   const authActive = !!auth && !auth.consumed_at && remaining > 0;
+  const EXPOSURE_FRESH_MS = 2 * 60 * 1000;
+  const exposureFresh =
+    !!exposure && Date.now() - new Date(exposure.checkedAt).getTime() < EXPOSURE_FRESH_MS;
+  const exposureClear = !!exposure && exposure.ready && exposureFresh;
 
   return (
     <Card className="p-5 space-y-4 border-amber-500/40 bg-amber-500/5">
@@ -201,6 +278,30 @@ const AdminControlledRetestCard = () => {
         <Button size="sm" variant="outline" onClick={runPreviews} disabled={previewing}>
           {previewing ? "Running preview…" : "Run mutation-suppressed preview"}
         </Button>
+        <Button size="sm" variant="outline" onClick={runExposureCheck} disabled={exposureLoading}>
+          {exposureLoading ? "Checking exposure…" : "Refresh MT5 exposure check"}
+        </Button>
+      </div>
+
+      <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+        <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">
+          Exposure and order safety check
+        </div>
+        {!exposure ? (
+          <div className="text-muted-foreground">Not yet checked — run the preview or refresh exposure.</div>
+        ) : (
+          <>
+            <Row k="external TL order ID" v={exposure.externalOrderId} ok />
+            <Row k="external BUY manually closed by user" v={exposure.externalClosedByUser ? "yes" : "no"} ok={exposure.externalClosedByUser} />
+            <Row k="closure recorded at" v={exposure.closureRecordedAt ?? "—"} ok={!!exposure.closureRecordedAt} />
+            <Row k="open EURUSD positions" v={String(exposure.openEurusdPositions)} ok={exposure.openEurusdPositions === 0} />
+            <Row k="pending EURUSD orders" v={String(exposure.pendingEurusdOrders)} ok={exposure.pendingEurusdOrders === 0} />
+            <Row k="residual EURUSD exposure" v={exposure.residual} ok={exposure.residual === "none"} />
+            <Row k="exposure checked at" v={exposure.checkedAt} ok={exposureFresh} />
+            <Row k="exposure source" v={exposure.source} ok />
+            <Row k="ready for one-shot retest" v={exposureClear ? "yes" : "no"} ok={exposureClear} />
+          </>
+        )}
       </div>
 
       {pretrade && (
@@ -251,7 +352,7 @@ const AdminControlledRetestCard = () => {
         <Button
           size="sm"
           onClick={authorise}
-          disabled={authorising || !allAcked || !pretradePassed || !previewOk || authActive}
+          disabled={authorising || !allAcked || !pretradePassed || !previewOk || !exposureClear || authActive}
         >
           {authorising ? "Authorising…" : "Authorise (one-shot, 10 min)"}
         </Button>
