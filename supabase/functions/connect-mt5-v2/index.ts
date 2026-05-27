@@ -576,12 +576,13 @@ Deno.serve(async (req) => {
         })
         .eq("id", savedRow.id);
 
-      const fnUrl = `${SUPABASE_URL}/functions/v1/sync-broker-symbol-catalog`;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const fnUrl = `${supabaseUrl}/functions/v1/sync-broker-symbol-catalog`;
       fetch(fnUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${SERVICE_KEY}`,
+          Authorization: `Bearer ${serviceKey}`,
         },
         body: JSON.stringify({
           user_id: userId,
