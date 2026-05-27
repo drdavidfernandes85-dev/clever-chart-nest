@@ -263,11 +263,13 @@ const AdminProductionModeTab = () => {
             <h3 className="text-sm font-semibold text-red-300">Upstream execution blocker — broker TRADE_DISABLED after verified pre-trade</h3>
           </div>
           <p className="text-[11px] text-red-200/90 leading-relaxed mb-3">
-            Live testing paused. Two real EURUSD SELL 0.01 submissions reached Trading Layer and were rejected by the
-            broker with <code>TRADE_RETCODE_TRADE_DISABLED</code> (10017) after the verified pre-trade pipeline
-            (route 559…bcfe, brokerSymbol EURUSD, account trade_mode SHORTONLY, symbol trade_mode FULL,
-            fresh server tick) all passed. Application validation passes for EURUSD SELL using brokerSymbol EURUSD,
-            but live execution is disabled at the admin layer pending upstream broker / Trading Layer permission
+            Broker symbol confirmed: <code>EURUSD</code> matches the native MT5 account (login 87943580 /
+            InfinoxLimited-MT5Live Market Watch) and the Trading Layer catalogue for verified route
+            559a12e4-16d8-4db3-be48-40fbea54bcfe. Two real EURUSD SELL 0.01 submissions reached Trading Layer and
+            were rejected by the broker with <code>TRADE_RETCODE_TRADE_DISABLED</code> (10017) after the verified
+            pre-trade pipeline (brokerSymbol EURUSD, account trade_mode SHORTONLY, symbol trade_mode FULL, fresh
+            server tick) all passed. Suffix discrepancy is RESOLVED (Trading Layer's earlier EURUSD+ evidence was
+            from a separate test account). Live execution remains paused awaiting Trading Layer/broker permission
             clarification. Technical readiness is preserved separately from this live execution block.
           </p>
           {permState.reason && (

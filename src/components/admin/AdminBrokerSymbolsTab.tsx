@@ -444,9 +444,11 @@ export default function AdminBrokerSymbolsTab() {
   const eurBuyCombined = accountCanBuy && eurSymbolBuyEligible;
   const eurSellCombined = accountCanSell && eurSymbolSellEligible;
 
-  // Ready-for-controlled-test gate: route + combined + ack.
-  const eurBuyReady = routeVerified && eurBuyCombined && ack.acknowledged;
-  const eurSellReady = routeVerified && eurSellCombined && ack.acknowledged;
+  // Ack is no longer an execution gate. Native MT5 Market Watch for this
+  // connected account confirms `EURUSD` without suffix, matching the verified
+  // Trading Layer catalogue. Suffix discrepancy is resolved_not_applicable.
+  const eurBuyReady = routeVerified && eurBuyCombined;
+  const eurSellReady = routeVerified && eurSellCombined;
 
   const eurBlocker = !routeVerified
     ? "Wrong or unverified Trading Layer account route; executable symbol catalogue not verified."
@@ -457,8 +459,6 @@ export default function AdminBrokerSymbolsTab() {
       ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
     : (!accountCanBuy && !accountCanSell)
       ? `Account trade_mode = ${accountTradeModeRaw} (${accountTradeModeLabel}) blocks BUY and SELL at the account level`
-    : !ack.acknowledged
-      ? "API execution symbol resolved as EURUSD; acknowledgement required due to MT5 suffix-display discrepancy."
       : null;
 
   const xauBlocker = xauAmbiguous
@@ -722,32 +722,27 @@ export default function AdminBrokerSymbolsTab() {
         )}
       </Card>
 
-      {/* MT5 Suffix Discrepancy Acknowledgement */}
+      {/* EURUSD Broker Symbol Confirmed (replaces former suffix-discrepancy ack) */}
 
-      <Card className="p-4">
+      <Card className="p-4 border-emerald-500/30 bg-emerald-500/5">
         <div className="flex items-center gap-2 mb-3">
-          <ShieldAlert className="h-4 w-4 text-amber-400" />
-          <h3 className="text-sm font-semibold">EURUSD Discrepancy Acknowledgement (admin)</h3>
+          <ShieldAlert className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-emerald-200">EURUSD Broker Symbol Confirmed</h3>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          Trading Layer API returned executable symbol <code className="text-primary">EURUSD</code> for the verified route, while the MT5 terminal appears to show suffixed instruments.
-          API broker symbol is resolved; external symbol-display discrepancy remains under review. The acknowledgement below is required before any controlled live test may proceed.
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+          <div><span className="text-muted-foreground">Trading Layer API brokerSymbol:</span> <code className="text-primary">EURUSD</code></div>
+          <div><span className="text-muted-foreground">Native MT5 Market Watch symbol:</span> <code className="text-primary">EURUSD</code></div>
+          <div><span className="text-muted-foreground">Match:</span> <span className="text-emerald-300 font-semibold">YES</span></div>
+          <div><span className="text-muted-foreground">Suffix discrepancy:</span> <span className="text-emerald-300 font-semibold">RESOLVED</span></div>
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Note: <code>EURUSD+</code> shown previously belongs to Trading Layer's separate test account and is not applicable to this connected MT5 account. Acknowledgement is no longer required for terminal eligibility, validate-full-pretrade, submit-best-execution-order or the readiness summary. The retcode-10017 upstream execution block remains active in Production Mode pending broker clarification.
+          {ack.acknowledged && ack.at && (
+            <span className="block text-[10px] text-muted-foreground mt-1">
+              (legacy ack on record at {fmtTime(ack.at)}{ack.by ? ` by ${ack.by.slice(0, 8)}…` : ""} — retained for audit only)
+            </span>
+          )}
         </p>
-        <label className="flex items-start gap-2 text-xs">
-          <Checkbox
-            checked={ack.acknowledged}
-            disabled={ackSaving}
-            onCheckedChange={(v) => saveAck(v === true)}
-          />
-          <span>
-            I acknowledge that Trading Layer returned <code className="text-primary">EURUSD</code> as the exact executable broker symbol for this verified route, despite the MT5 suffix display discrepancy.
-            {ack.acknowledged && ack.at && (
-              <span className="block text-[10px] text-muted-foreground mt-1">
-                acknowledged at {fmtTime(ack.at)}{ack.by ? ` by ${ack.by.slice(0, 8)}…` : ""}
-              </span>
-            )}
-          </span>
-        </label>
       </Card>
 
       {/* Targeted Lookup Results */}
@@ -947,24 +942,33 @@ export default function AdminBrokerSymbolsTab() {
           <div><div className="text-muted-foreground">EURUSD SELL symbol eligible</div><div>{yesNoBadge(eurSymbolSellEligible)}</div></div>
           <div><div className="text-muted-foreground">EURUSD CLOSE symbol eligible</div><div>{yesNoBadge(eurSymbolCloseEligible)}</div></div>
 
-          <div><div className="text-muted-foreground">Discrepancy ack recorded</div><div>{yesNoBadge(ack.acknowledged)}</div></div>
+          <div><div className="text-muted-foreground">EURUSD suffix discrepancy</div><div className="text-emerald-300">RESOLVED (not applicable)</div></div>
           <div>
-            <div className="text-muted-foreground">EURUSD BUY ready for test</div>
+            <div className="text-muted-foreground">EURUSD BUY ready (technical)</div>
             <div>{yesNoBadge(eurBuyReady)}</div>
             {!eurBuyReady && eurResolved && (
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                {!accountCanBuy ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolBuyEligible ? "symbol does not permit BUY" : !ack.acknowledged ? "ack required" : ""}
+                {!accountCanBuy ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolBuyEligible ? "symbol does not permit BUY" : ""}
               </div>
             )}
           </div>
           <div>
-            <div className="text-muted-foreground">EURUSD SELL ready for test</div>
+            <div className="text-muted-foreground">EURUSD SELL ready (technical)</div>
             <div>{yesNoBadge(eurSellReady)}</div>
             {!eurSellReady && eurResolved && (
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                {!accountCanSell ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolSellEligible ? "symbol does not permit SELL" : !ack.acknowledged ? "ack required" : ""}
+                {!accountCanSell ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolSellEligible ? "symbol does not permit SELL" : ""}
               </div>
             )}
+          </div>
+
+          <div className="col-span-2 md:col-span-3 border-t border-border/40 pt-2 mt-1">
+            <div className="text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Live Execution</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+              <div><span className="text-muted-foreground">EURUSD live SELL test available:</span> <span className="text-red-300 font-semibold">NO</span></div>
+              <div><span className="text-muted-foreground">Blocker:</span> <span className="text-red-300">retcode 10017 / TRADE_RETCODE_TRADE_DISABLED</span></div>
+              <div className="col-span-1 md:col-span-2"><span className="text-muted-foreground">Retest allowed:</span> <span className="text-red-300 font-semibold">NO</span> — until Trading Layer/broker confirms remediation.</div>
+            </div>
           </div>
 
           <div><div className="text-muted-foreground">XAUUSD brokerSymbol</div><div className="font-mono">{xauAmbiguous ? "ambiguous" : (xauResolved?.brokerSymbol ?? (xauVariants.length === 0 ? "not inspected" : "—"))}</div></div>
@@ -973,7 +977,7 @@ export default function AdminBrokerSymbolsTab() {
 
           {eurBlocker && (
             <div className="col-span-2 md:col-span-3">
-              <div className="text-muted-foreground">EURUSD blocker</div>
+              <div className="text-muted-foreground">EURUSD technical blocker</div>
               <div className="text-amber-400">{eurBlocker}</div>
             </div>
           )}
@@ -986,7 +990,7 @@ export default function AdminBrokerSymbolsTab() {
         </div>
         {eurResolved && (
           <p className="mt-3 text-[11px] text-muted-foreground">
-            Diagnostic: Trading Layer API returned executable symbol <code className="text-primary">EURUSD</code>, while the MT5 terminal appears to show suffixed instruments. API broker symbol is resolved; external symbol-display discrepancy remains under review.
+            Broker symbol confirmed: <code className="text-primary">EURUSD</code> matches the native MT5 account and Trading Layer catalogue. Live execution remains paused because the broker rejected validated EURUSD SELL requests with TRADE_RETCODE_TRADE_DISABLED. Awaiting Trading Layer/broker permission clarification.
           </p>
         )}
       </Card>
