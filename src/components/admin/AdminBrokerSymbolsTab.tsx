@@ -606,6 +606,9 @@ export default function AdminBrokerSymbolsTab() {
         )}
       </Card>
 
+      {/* Route Candidate Comparison (read-only, includes TL-provided route) */}
+      <RouteCandidateComparisonCard />
+
       {/* Account Execution Permission */}
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-3">
