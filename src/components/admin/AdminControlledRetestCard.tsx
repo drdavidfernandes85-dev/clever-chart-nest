@@ -46,11 +46,16 @@ type Exposure = {
 type Auth = {
   id: string;
   authorised_at: string;
+  armed_at: string | null;
   expires_at: string;
+  status: string | null;
   consumed_at: string | null;
+  dispatch_attempted_at: string | null;
   outcome: string | null;
   outcome_retcode: number | null;
   consumed_order_id: string | null;
+  outcome_payload: any;
+  evidence_json: any;
 };
 
 const Pill = ({ tone, children }: { tone: "ok" | "warn" | "fail"; children: React.ReactNode }) => {
@@ -76,6 +81,13 @@ const AdminControlledRetestCard = () => {
   const [exposureLoading, setExposureLoading] = useState(false);
 
   const allAcked = acks.every(Boolean);
+  const authEvidence = auth?.evidence_json ?? {};
+  const authPayload = auth?.outcome_payload ?? {};
+  const ackEvidence = authEvidence?.acknowledgement ?? authEvidence;
+  const acknowledged = ackEvidence?.acknowledgementAccepted === true;
+  const blockedStage = authPayload?.blockedStage ?? authEvidence?.blockedStage ?? authPayload?.stage ?? null;
+  const blockedCode = authPayload?.blockedCode ?? authEvidence?.blockedCode ?? authPayload?.code ?? null;
+  const blockedMessage = authPayload?.blockedMessage ?? authPayload?.message ?? null;
   const pretradePassed = pretrade?.wouldSubmit === true;
   const previewOk =
     !!preview?.outbound &&
