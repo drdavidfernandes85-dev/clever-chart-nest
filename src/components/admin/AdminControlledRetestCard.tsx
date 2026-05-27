@@ -277,6 +277,30 @@ const AdminControlledRetestCard = () => {
         <Button size="sm" variant="outline" onClick={runPreviews} disabled={previewing}>
           {previewing ? "Running preview…" : "Run mutation-suppressed preview"}
         </Button>
+        <Button size="sm" variant="outline" onClick={runExposureCheck} disabled={exposureLoading}>
+          {exposureLoading ? "Checking exposure…" : "Refresh MT5 exposure check"}
+        </Button>
+      </div>
+
+      <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+        <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">
+          Exposure and order safety check
+        </div>
+        {!exposure ? (
+          <div className="text-muted-foreground">Not yet checked — run the preview or refresh exposure.</div>
+        ) : (
+          <>
+            <Row k="external TL order ID" v={exposure.externalOrderId} ok />
+            <Row k="external BUY manually closed by user" v={exposure.externalClosedByUser ? "yes" : "no"} ok={exposure.externalClosedByUser} />
+            <Row k="closure recorded at" v={exposure.closureRecordedAt ?? "—"} ok={!!exposure.closureRecordedAt} />
+            <Row k="open EURUSD positions" v={String(exposure.openEurusdPositions)} ok={exposure.openEurusdPositions === 0} />
+            <Row k="pending EURUSD orders" v={String(exposure.pendingEurusdOrders)} ok={exposure.pendingEurusdOrders === 0} />
+            <Row k="residual EURUSD exposure" v={exposure.residual} ok={exposure.residual === "none"} />
+            <Row k="exposure checked at" v={exposure.checkedAt} ok={exposureFresh} />
+            <Row k="exposure source" v={exposure.source} ok />
+            <Row k="ready for one-shot retest" v={exposureClear ? "yes" : "no"} ok={exposureClear} />
+          </>
+        )}
       </div>
 
       {pretrade && (
