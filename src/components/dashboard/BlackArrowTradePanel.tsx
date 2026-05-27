@@ -218,10 +218,9 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const isAuthorisedAdminTester = isAdmin; // backend enforces trader/login match
   const adminTestUiVisible = adminLiveTestActive && isAuthorisedAdminTester;
 
-  // Trading Layer execution eligibility (account.trade_mode + symbol.trade_mode).
-  // Source of truth for whether a live order may be submitted at all.
-  const [eligibility, setEligibility] = useState<ExecutionEligibility | null>(null);
-  const [eligibilityLoading, setEligibilityLoading] = useState(false);
+  // Legacy `fetchExecutionEligibility` (get-trading-execution-eligibility) removed.
+  // The authoritative per-account resolver is `useTerminalExecutionEligibility`
+  // below — single source of truth for both display and per-side enablement.
 
   // Admin live-test limits (drives pending-orders gate + cap).
   const [liveLimits, setLiveLimits] = useState<AdminLiveTestLimits | null>(null);
@@ -232,21 +231,6 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     return () => { mounted = false; };
   }, [adminTestUiVisible]);
 
-  // Fetch Trading Layer execution eligibility whenever the admin tester
-  // changes symbol; hydrate from localStorage cache instantly.
-  useEffect(() => {
-    if (!adminTestUiVisible) { setEligibility(null); return; }
-    const sym = (ctxSymbol || "").replace(/\//g, "").toUpperCase();
-    if (!sym) return;
-    setEligibility(readCachedEligibility(sym));
-    let cancelled = false;
-    setEligibilityLoading(true);
-    fetchExecutionEligibility(sym, { refresh: true })
-      .then((r) => { if (!cancelled) setEligibility(r); })
-      .finally(() => { if (!cancelled) setEligibilityLoading(false); });
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminTestUiVisible, ctxSymbol]);
 
   // Backend-authoritative terminal eligibility for the Order Ticket.
   // Single source of truth for brokerSymbol display + per-side enablement.
