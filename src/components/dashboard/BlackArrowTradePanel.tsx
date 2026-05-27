@@ -1026,7 +1026,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       else if (liveDisabled) toast.error("Live trading is disabled by your risk settings.");
       else if (!adminExecPermissionGateOk) {
         toast.error(
-          "Live execution blocked: Trading Layer rejected recent orders with TRADE_DISABLED. Awaiting account/API trading permission confirmation.",
+          "Live execution paused: APPLICATION_VS_DIRECT_TL_EXECUTION_MISMATCH. Trading Layer directly placed BUY EURUSD on route 559…bcfe while application SELL submissions were rejected with TRADE_DISABLED. Mutation contract under review.",
         );
       }
       else if (executionMode === "admin_live_test" && termEligibility) {
