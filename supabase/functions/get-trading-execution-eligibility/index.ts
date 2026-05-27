@@ -1,14 +1,26 @@
-// Resolve Trading Layer execution eligibility for a connected MT5 account.
+// ============================================================
+// DEPRECATED — DO NOT USE FOR EXECUTION.
+// ------------------------------------------------------------
+// This endpoint is superseded by `get-terminal-execution-eligibility`,
+// the authoritative per-account resolver used by the Order Ticket and the
+// admin diagnostics card. As of 2026-05-27, this function has ZERO runtime
+// callers in this project (client + server). It is retained only as a
+// read-only diagnostic fallback and is scheduled for deletion after a
+// final reference audit. It must NEVER be invoked by:
+//   - the BlackArrow Order Ticket
+//   - the Pending Order modal
+//   - the admin execution-eligibility card
+//   - any pre-trade validator
+//   - any mutation path (submit/cancel/close/modify)
+// All responses include `deprecated: true` and `replacement` to make
+// accidental reintroduction obvious in network logs.
+// ============================================================
 //
-// Read-only diagnostics:
+// Original purpose (kept for context only):
 //   GET /api/v1/traders/{traderId}                 → account.trade_mode + permission fields
 //   GET /api/v1/accounts/{accountId}/symbols       → paginated broker-symbol catalogue
 //   GET /api/v1/accounts/{accountId}/symbols?search=… → direct lookup fallback
-//
-// NEVER interprets numeric account.trade_mode as "blocked": the value is
-// surfaced raw and labelled "awaiting Trading Layer mapping confirmation".
-// Live mutation only becomes eligible once an explicit account execution
-// permission is confirmed AND a verified executable broker symbol resolves.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { resolveActiveMtMapping } from "../_shared/mtMapping.ts";
 import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
