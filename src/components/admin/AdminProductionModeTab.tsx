@@ -309,7 +309,7 @@ const AdminProductionModeTab = () => {
                   pretradeReadOnlyState: {
                     tradeAllowed: true,
                     accountTradeModeRaw: 2,
-                    accountTradeMode: "SYMBOL_TRADE_MODE_SHORTONLY",
+                    accountTradeMode: "ACCOUNT_TRADE_MODE_REAL",
                     symbolTradeModeRaw: 4,
                     symbolTradeMode: "SYMBOL_TRADE_MODE_FULL",
                     sellReady: true,
@@ -358,7 +358,7 @@ const AdminProductionModeTab = () => {
                   retestRequired: false,
                   noSecretsIncluded: true,
                   questionsForTradingLayer: [
-                    "Why does the read-only permission metadata for MT5 87943580 / EURUSD report account trade_mode=2 (SHORTONLY) and symbol trade_mode=4 (FULL), yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
+                    "Why does the read-only permission metadata for MT5 87943580 / EURUSD report account trade_mode=2 (ACCOUNT_TRADE_MODE_REAL, informational) and symbol trade_mode=4 (FULL), yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
                     "Is there an account-level or symbol-level execution flag (e.g. expert/API trading disabled, group restriction, session restriction) that is not surfaced through the symbols / account endpoints?",
                     "Is the account in an investor/read-only state, or is API trading disabled at the broker level for this login?",
                     "Is the verified execution route 559a12e4-16d8-4db3-be48-40fbea54bcfe the correct route for live order submission for MT5 login 87943580 on InfinoxLimited-MT5Live?",
@@ -429,7 +429,7 @@ const AdminProductionModeTab = () => {
                 pretradeReadOnlyState: {
                   tradeAllowed: true,
                   accountTradeModeRaw: 2,
-                  accountTradeMode: "SYMBOL_TRADE_MODE_SHORTONLY",
+                  accountTradeMode: "ACCOUNT_TRADE_MODE_REAL",
                   symbolTradeModeRaw: 4,
                   symbolTradeMode: "SYMBOL_TRADE_MODE_FULL",
                   sellReady: true,
@@ -478,7 +478,7 @@ const AdminProductionModeTab = () => {
                 retestRequired: false,
                 noSecretsIncluded: true,
                 questionsForTradingLayer: [
-                  "Why does read-only permission metadata report account trade_mode=2 (SHORTONLY) and symbol trade_mode=4 (FULL) for EURUSD, yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
+                  "Why does read-only permission metadata report account trade_mode=2 (ACCOUNT_TRADE_MODE_REAL, informational) and symbol trade_mode=4 (FULL) for EURUSD, yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
                   "Is there an account-level or symbol-level execution flag (expert/API trading disabled, group restriction, session restriction) not surfaced via symbols/account endpoints?",
                   "Is the account in investor/read-only state, or is API trading disabled at the broker level for MT5 login 87943580?",
                   "Is verified execution route 559a12e4-16d8-4db3-be48-40fbea54bcfe correct for live order submission for MT5 login 87943580 on InfinoxLimited-MT5Live?",
