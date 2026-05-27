@@ -140,15 +140,48 @@ export function sideToOperation(
   return s === "sell" ? "market_sell" : "market_buy";
 }
 
-// Account-level directional gating.
-// Trading Layer OpenAPI defines Mt5AccountInfo.trade_mode using
-// ENUM_SYMBOL_TRADE_MODE — the SAME enum as per-symbol trade_mode.
-// 0=DISABLED, 1=LONGONLY, 2=SHORTONLY, 3=CLOSEONLY, 4=FULL.
-// `trade_allowed` is a separate boolean account flag.
+// ============================================================
+// ACCOUNT-LEVEL trade_mode (ENUM_ACCOUNT_TRADE_MODE) — distinct
+// from per-symbol ENUM_SYMBOL_TRADE_MODE. MT5 defines:
+//   0 = ACCOUNT_TRADE_MODE_DEMO
+//   1 = ACCOUNT_TRADE_MODE_CONTEST
+//   2 = ACCOUNT_TRADE_MODE_REAL
+// This is INFORMATIONAL ONLY. It is NOT a directional restriction.
+// Authoritative live evidence: route 559a12e4… returned trade_mode=2
+// AND successfully placed a real BUY EURUSD 0.01 (order 1169085428,
+// retcode 10008 TRADE_RETCODE_PLACED). Therefore account.trade_mode=2
+// CANNOT mean SHORTONLY. Directional gating MUST come from the exact
+// brokerSymbol's symbol.trade_mode only.
+// ============================================================
+export const ACCOUNT_TRADE_MODE_DEMO = 0;
+export const ACCOUNT_TRADE_MODE_CONTEST = 1;
+export const ACCOUNT_TRADE_MODE_REAL = 2;
+export const ACCOUNT_TRADE_MODE_LABELS: Record<number, string> = {
+  0: "ACCOUNT_TRADE_MODE_DEMO",
+  1: "ACCOUNT_TRADE_MODE_CONTEST",
+  2: "ACCOUNT_TRADE_MODE_REAL",
+};
+export interface AccountTradeModeInterpretation {
+  raw: number | null;
+  label: string | null;
+  known: boolean;
+}
+export function interpretAccountTradeMode(raw: TradeModeRaw): AccountTradeModeInterpretation {
+  if (raw == null || raw === "") return { raw: null, label: null, known: false };
+  const n = typeof raw === "number" ? raw : Number(String(raw).trim());
+  if (!Number.isFinite(n)) return { raw: null, label: null, known: false };
+  const label = ACCOUNT_TRADE_MODE_LABELS[n] ?? null;
+  return { raw: n, label, known: label !== null };
+}
+
+// Account-level eligibility gates ONLY on `trade_allowed`. The MT5
+// account.trade_mode enum (DEMO/CONTEST/REAL) is informational and does
+// NOT restrict BUY vs SELL. Directional gating must be performed against
+// the exact per-symbol trade_mode via checkOperationEligibility().
 export function checkAccountOperationEligibility(
-  operation: ExecutionOperation,
+  _operation: ExecutionOperation,
   accountTradeAllowed: boolean | null | undefined,
-  accountTradeMode: TradeModeRaw,
+  _accountTradeMode: TradeModeRaw,
 ): DirectionalEligibility {
   if (accountTradeAllowed === false) {
     return { allowed: false, reason: "ACCOUNT_TRADE_NOT_ALLOWED" };
@@ -156,35 +189,7 @@ export function checkAccountOperationEligibility(
   if (accountTradeAllowed == null) {
     return { allowed: false, reason: "ACCOUNT_TRADE_PERMISSION_UNAVAILABLE" };
   }
-  const info = interpretTradeMode(accountTradeMode);
-  if (!info.known) {
-    // No explicit account mode → don't gate at account level, defer to symbol.
-    return { allowed: true, reason: null };
-  }
-  const tail = info.label?.replace("SYMBOL_TRADE_MODE_", "") ?? String(info.raw);
-  switch (operation) {
-    case "market_buy":
-    case "pending_buy_limit":
-    case "pending_buy_stop":
-      return canOpenBuy(accountTradeMode)
-        ? { allowed: true, reason: null }
-        : { allowed: false, reason: `BUY_NOT_ALLOWED_BY_ACCOUNT_TRADE_MODE_${tail}` };
-    case "market_sell":
-    case "pending_sell_limit":
-    case "pending_sell_stop":
-      return canOpenSell(accountTradeMode)
-        ? { allowed: true, reason: null }
-        : { allowed: false, reason: `SELL_NOT_ALLOWED_BY_ACCOUNT_TRADE_MODE_${tail}` };
-    case "close_position":
-    case "cancel_pending":
-      return canClosePosition(accountTradeMode)
-        ? { allowed: true, reason: null }
-        : { allowed: false, reason: "ACCOUNT_TRADE_DISABLED" };
-    case "modify_protection":
-      return canModifyProtection(accountTradeMode)
-        ? { allowed: true, reason: null }
-        : { allowed: false, reason: "ACCOUNT_TRADE_DISABLED" };
-  }
+  return { allowed: true, reason: null };
 }
 
 // Error codes
@@ -194,9 +199,8 @@ export const ERR_ACCOUNT_TRADE_PERMISSION_UNAVAILABLE =
 export const ERR_ACCOUNT_DIRECTION_BLOCKED = "ACCOUNT_DIRECTION_BLOCKED";
 export const ERR_SYMBOL_DIRECTION_BLOCKED = "SYMBOL_DIRECTION_BLOCKED";
 
-// Deployed execution-policy version marker. Bump when account-route,
-// exact-symbol or operation-intent rules change. Returned only in admin/dev
-// diagnostics and persisted in audit evidence so live tests can prove the
-// deployed rule set.
+// Deployed execution-policy version marker. Bumped after correcting the
+// account.trade_mode interpretation (account-level enum is DEMO/CONTEST/
+// REAL — informational only; directional gating is per-symbol only).
 export const EXECUTION_POLICY_VERSION =
-  "TL_EXACT_SYMBOL_OPERATION_INTENT_V1_2026_05_26";
+  "TL_ACCOUNT_MODE_INFORMATIONAL_SYMBOL_DIRECTIONAL_V2_2026_05_27";
