@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
   const previewOnly = body?.previewOnly === true;
   const authorisationId = body?.authorisationId ? String(body.authorisationId) : null;
 
-  // 1) Locate one unconsumed authorisation.
+  // 1) Locate one usable, still-armed authorisation.
   // Preview mode does NOT require an existing authorisation row — it just
   // echoes the literal DTO that *would* be sent. Fall back to permitted
   // defaults (EURUSD SELL 0.01 on the verified route) so the admin card
@@ -80,6 +80,8 @@ Deno.serve(async (req) => {
       .from("controlled_retest_authorisations")
       .select("*")
       .is("consumed_at", null)
+      .is("outcome", null)
+      .eq("status", "authorised")
       .gt("expires_at", new Date().toISOString())
       .order("authorised_at", { ascending: false })
       .limit(1);
@@ -137,14 +139,29 @@ Deno.serve(async (req) => {
 
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  if (mapping.status !== "active" || !mapping.traderId) {
-    return await markPretradeBlocked(supabase, authRow.id, "MAPPING_NOT_ACTIVE");
+  if (mapping.status !== "valid" || !mapping.traderId) {
+    return await markPretradeBlocked(supabase, authRow.id, {
+      stage: "mapping_validation",
+      code: mapping.status === "missing" ? "MAPPING_NOT_FOUND" : "MAPPING_NOT_VALID",
+      message: `Controlled retest stopped before broker dispatch: MT mapping status is ${mapping.status}.`,
+      mapping: {
+        status: mapping.status,
+        login: mapping.login,
+        server: mapping.server,
+        traderIdPresent: !!mapping.traderId,
+        routeAccountId: mapping.tradingLayerAccountId,
+      },
+    });
   }
   const gate = await assertLiveExecutionAllowed(supabase, user.id, {
     traderId: mapping.traderId, login: mapping.login,
   });
   if (!gate.allowed) {
-    return await markPretradeBlocked(supabase, authRow.id, gate.code || "EXECUTION_MODE_BLOCKED");
+    return await markPretradeBlocked(supabase, authRow.id, {
+      stage: "execution_mode_gate",
+      code: gate.code || "EXECUTION_MODE_BLOCKED",
+      message: "Controlled retest stopped before broker dispatch by execution-mode gate.",
+    });
   }
   const gateFresh = await refreshTradeModeFromTradingLayer(supabase, {
     traderId: mapping.traderId,
@@ -155,20 +172,33 @@ Deno.serve(async (req) => {
     operation: sideToOperation(side, "market"),
   });
   if (!gateFresh.ok) {
-    return await markPretradeBlocked(supabase, authRow.id, gateFresh.errorCode || "TRADE_MODE_GATE_BLOCKED");
+    return await markPretradeBlocked(supabase, authRow.id, {
+      stage: "trade_mode_gate",
+      code: gateFresh.errorCode || "TRADE_MODE_GATE_BLOCKED",
+      message: "Controlled retest stopped before broker dispatch by Trading Layer trade-mode refresh.",
+    });
   }
   const ft = await resolveFreshExecutionTick({
     routeAccountId, brokerSymbol, displaySymbol: symbol,
   });
   if (!ft.fresh) {
-    return await markPretradeBlocked(supabase, authRow.id, ft.code || "FRESH_TICK_UNAVAILABLE");
+    return await markPretradeBlocked(supabase, authRow.id, {
+      stage: "fresh_tick",
+      code: ft.code || "FRESH_TICK_UNAVAILABLE",
+      message: "Controlled retest stopped before broker dispatch because no fresh execution tick was available.",
+      freshTick: { fresh: false, ageMs: ft.ageMs, bid: ft.bid, ask: ft.ask, source: ft.source },
+    });
   }
   try {
     const settings = await loadRiskSettings(supabase, user.id);
     const usage = await loadDailyUsage(supabase, user.id);
     const breach = checkOpenRisk({ symbol, volume }, settings, usage);
     if (breach) {
-      return await markPretradeBlocked(supabase, authRow.id, String(breach.reason || "RISK_BLOCKED"));
+      return await markPretradeBlocked(supabase, authRow.id, {
+        stage: "risk_validation",
+        code: String(breach.reason || "RISK_BLOCKED"),
+        message: "Controlled retest stopped before broker dispatch by risk validation.",
+      });
     }
   } catch { /* best-effort */ }
 
@@ -209,9 +239,22 @@ Deno.serve(async (req) => {
   const consumedAt = new Date().toISOString();
   const { data: claimed, error: claimErr } = await supabase
     .from("controlled_retest_authorisations")
-    .update({ consumed_at: consumedAt, outbound_dto: outboundDto })
+    .update({
+      status: "dispatching",
+      dispatch_attempted_at: consumedAt,
+      consumed_at: consumedAt,
+      outbound_dto: outboundDto,
+      evidence_json: {
+        ...(authRow.evidence_json ?? {}),
+        mutationDispatched: false,
+        brokerMutationDispatched: false,
+        dispatchAttemptedAt: consumedAt,
+      },
+    })
     .eq("id", authRow.id)
+    .eq("status", "authorised")
     .is("consumed_at", null)
+    .is("outcome", null)
     .select("id")
     .maybeSingle();
   if (claimErr || !claimed) {
@@ -239,10 +282,18 @@ Deno.serve(async (req) => {
   await supabase
     .from("controlled_retest_authorisations")
     .update({
+      status: outcome,
       outcome,
       outcome_retcode: Number.isFinite(retcode) ? retcode : null,
       outcome_payload: tradeJson,
       consumed_order_id: orderId,
+      evidence_json: {
+        ...(authRow.evidence_json ?? {}),
+        mutationDispatched: true,
+        brokerMutationDispatched: true,
+        tradingLayerRequestId: tradeResp.headers.get("x-request-id") ?? tradeResp.headers.get("request-id") ?? null,
+        retcode: Number.isFinite(retcode) ? retcode : null,
+      },
     })
     .eq("id", authRow.id);
 
@@ -294,10 +345,34 @@ Deno.serve(async (req) => {
   });
 });
 
-async function markPretradeBlocked(supabase: any, id: string, code: string) {
+async function markPretradeBlocked(
+  supabase: any,
+  id: string,
+  details: { stage: string; code: string; message: string; [key: string]: unknown },
+) {
+  const blockedAt = new Date().toISOString();
+  const payload = {
+    ...details,
+    blockedStage: details.stage,
+    blockedCode: details.code,
+    blockedMessage: details.message,
+    mutationDispatched: false,
+    brokerMutationDispatched: false,
+    tradingLayerRequestId: null,
+    retcode: null,
+    authorisationConsumed: false,
+    blockedAt,
+  };
   await supabase
     .from("controlled_retest_authorisations")
-    .update({ outcome: "pretrade_blocked", outcome_retcode: null, outcome_payload: { code } })
+    .update({
+      status: "review_required_pretrade_block",
+      dispatch_attempted_at: blockedAt,
+      outcome: "pretrade_blocked",
+      outcome_retcode: null,
+      outcome_payload: payload,
+      evidence_json: payload,
+    })
     .eq("id", id);
-  return json({ success: false, step: "pretrade", outcome: "pretrade_blocked", code }, 200);
+  return json({ success: false, step: "pretrade", outcome: "pretrade_blocked", ...payload }, 200);
 }

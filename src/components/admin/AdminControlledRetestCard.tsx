@@ -46,11 +46,16 @@ type Exposure = {
 type Auth = {
   id: string;
   authorised_at: string;
+  armed_at: string | null;
   expires_at: string;
+  status: string | null;
   consumed_at: string | null;
+  dispatch_attempted_at: string | null;
   outcome: string | null;
   outcome_retcode: number | null;
   consumed_order_id: string | null;
+  outcome_payload: any;
+  evidence_json: any;
 };
 
 const Pill = ({ tone, children }: { tone: "ok" | "warn" | "fail"; children: React.ReactNode }) => {
@@ -76,6 +81,13 @@ const AdminControlledRetestCard = () => {
   const [exposureLoading, setExposureLoading] = useState(false);
 
   const allAcked = acks.every(Boolean);
+  const authEvidence = auth?.evidence_json ?? {};
+  const authPayload = auth?.outcome_payload ?? {};
+  const ackEvidence = authEvidence?.acknowledgement ?? authEvidence;
+  const acknowledged = ackEvidence?.acknowledgementAccepted === true;
+  const blockedStage = authPayload?.blockedStage ?? authEvidence?.blockedStage ?? authPayload?.stage ?? null;
+  const blockedCode = authPayload?.blockedCode ?? authEvidence?.blockedCode ?? authPayload?.code ?? null;
+  const blockedMessage = authPayload?.blockedMessage ?? authPayload?.message ?? null;
   const pretradePassed = pretrade?.wouldSubmit === true;
   const previewOk =
     !!preview?.outbound &&
@@ -203,18 +215,33 @@ const AdminControlledRetestCard = () => {
       const uid = u?.user?.id;
       if (!uid) throw new Error("Not authenticated");
       const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const acknowledgedAt = new Date().toISOString();
+      const evidence = {
+        acknowledgement: {
+          acknowledgementAccepted: true,
+          acknowledgedAt,
+          acknowledgedBy: uid,
+          acceptedConstraints: ACK_ITEMS,
+        },
+        exposureAtAuthorisation: exposure,
+        permitted: PERMITTED,
+      };
+      const authorisationRow = {
+        authorised_by: uid,
+        status: "authorised",
+        armed_at: acknowledgedAt,
+        permitted_symbol: PERMITTED.symbol,
+        permitted_broker_symbol: PERMITTED.brokerSymbol,
+        permitted_side: PERMITTED.side,
+        permitted_volume: PERMITTED.volume,
+        permitted_route_account_id: PERMITTED.routeAccountId,
+        permitted_orders: 1,
+        expires_at: expires,
+        evidence_json: evidence,
+      } as any;
       const { error } = await supabase
         .from("controlled_retest_authorisations")
-        .insert({
-          authorised_by: uid,
-          permitted_symbol: PERMITTED.symbol,
-          permitted_broker_symbol: PERMITTED.brokerSymbol,
-          permitted_side: PERMITTED.side,
-          permitted_volume: PERMITTED.volume,
-          permitted_route_account_id: PERMITTED.routeAccountId,
-          permitted_orders: 1,
-          expires_at: expires,
-        });
+        .insert(authorisationRow);
       if (error) throw error;
       toast.success("Controlled retest authorised — single-use, 10 min.");
       await refreshAuth();
@@ -234,7 +261,13 @@ const AdminControlledRetestCard = () => {
         body: { authorisationId: auth.id },
       });
       if (error) throw error;
-      toast.success(`Outcome: ${data?.outcome ?? "unknown"}`);
+      if (data?.outcome === "pretrade_blocked") {
+        toast.error(
+          `Pre-trade blocked: ${data?.blockedStage ?? "unknown"} / ${data?.blockedCode ?? data?.code ?? "unknown"}`,
+        );
+      } else {
+        toast.success(`Outcome: ${data?.outcome ?? "unknown"}`);
+      }
       await refreshAuth();
     } catch (e: any) {
       toast.error(`Submission failed: ${e?.message ?? "unknown"}`);
@@ -243,7 +276,7 @@ const AdminControlledRetestCard = () => {
     }
   };
 
-  const authActive = !!auth && !auth.consumed_at && remaining > 0;
+  const authActive = !!auth && auth.status === "authorised" && !auth.consumed_at && !auth.outcome && remaining > 0;
   const EXPOSURE_FRESH_MS = 2 * 60 * 1000;
   const exposureFresh =
     !!exposure && Date.now() - new Date(exposure.checkedAt).getTime() < EXPOSURE_FRESH_MS;
@@ -269,10 +302,32 @@ const AdminControlledRetestCard = () => {
           <Pill tone={auth.outcome === "placed" ? "ok" : "fail"}>
             consumed · {auth.outcome ?? "unknown"}
           </Pill>
+        ) : auth?.status && auth.status !== "authorised" ? (
+          <Pill tone="fail">{auth.status}</Pill>
+        ) : auth?.outcome ? (
+          <Pill tone="fail">{auth.outcome}</Pill>
         ) : (
           <Pill tone="fail">no authorisation</Pill>
         )}
       </div>
+
+      {auth && (
+        <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+          <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Authorisation state</div>
+          <Row k="authorisation id" v={auth.id} ok={authActive} />
+          <Row k="status" v={auth.status ?? "legacy"} ok={authActive} />
+          <Row k="armed at" v={auth.armed_at ?? auth.authorised_at} ok={!!auth.armed_at || !!auth.authorised_at} />
+          <Row k="expires at" v={auth.expires_at} ok={authActive} />
+          <Row k="consumed at" v={auth.consumed_at ?? "not consumed"} ok={!auth.consumed_at} />
+          <Row k="dispatch attempted at" v={auth.dispatch_attempted_at ?? "none"} ok={!auth.dispatch_attempted_at} />
+          <Row k="outcome" v={auth.outcome ?? "none"} ok={!auth.outcome} />
+          {blockedStage && <Row k="blocked stage" v={blockedStage} ok={false} />}
+          {blockedCode && <Row k="blocked code" v={blockedCode} ok={false} />}
+          {blockedMessage && <Row k="blocked message" v={blockedMessage} ok={false} />}
+          <Row k="broker mutation dispatched" v={String(authEvidence?.brokerMutationDispatched === true)} ok={authEvidence?.brokerMutationDispatched !== true} />
+          <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok={!authEvidence?.tradingLayerRequestId} />
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" onClick={runPreviews} disabled={previewing}>
@@ -333,8 +388,21 @@ const AdminControlledRetestCard = () => {
       )}
 
       <div className="space-y-2">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">Acknowledgements</div>
-        {ACK_ITEMS.map((label, i) => (
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+          {auth ? "Authorisation acknowledgement evidence" : "Acknowledgements"}
+        </div>
+        {auth && acknowledged ? (
+          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+            <Row k="Acknowledgements accepted" v="YES" ok />
+            <Row k="acknowledged at" v={ackEvidence.acknowledgedAt ?? "—"} ok={!!ackEvidence.acknowledgedAt} />
+            <Row k="accepted constraints" v={(ackEvidence.acceptedConstraints ?? ACK_ITEMS).join(" · ")} ok />
+          </div>
+        ) : auth ? (
+          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+            <Row k="Acknowledgements accepted" v="NO PERSISTED EVIDENCE" ok={false} />
+            <Row k="historical checkbox state" v="unavailable for this authorisation" ok={false} />
+          </div>
+        ) : ACK_ITEMS.map((label, i) => (
           <label key={i} className="flex items-start gap-2 text-xs">
             <Checkbox
               checked={acks[i]}
@@ -360,7 +428,7 @@ const AdminControlledRetestCard = () => {
           size="sm"
           variant="destructive"
           onClick={submitRetest}
-          disabled={!authActive || submitting}
+          disabled={!authActive || submitting || auth?.outcome === "pretrade_blocked"}
         >
           {submitting ? "Submitting…" : "Submit Controlled SELL 0.01"}
         </Button>
