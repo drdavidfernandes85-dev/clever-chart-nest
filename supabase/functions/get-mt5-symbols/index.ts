@@ -1,3 +1,19 @@
+// ============================================================
+// DISPLAY-ONLY ENDPOINT — NOT FOR EXECUTION.
+// ------------------------------------------------------------
+// Permitted uses ONLY:
+//   - Market Watch list / Bid-Ask board
+//   - Quotes / charts / terminal display
+//   - Balance / equity / positions display
+// MUST NEVER be imported or invoked by:
+//   - execution instrument resolution
+//   - order eligibility decisions
+//   - full pre-trade validation
+//   - server-side execution price-of-record
+//   - any live mutation path (submit/close/modify/cancel)
+// Authoritative execution resolver: get-terminal-execution-eligibility.
+// Authoritative submission path:    submit-best-execution-order.
+// ============================================================
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 

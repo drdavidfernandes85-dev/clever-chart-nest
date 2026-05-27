@@ -1,3 +1,19 @@
+// ============================================================
+// DISPLAY-ONLY ENDPOINT — NOT FOR EXECUTION.
+// ------------------------------------------------------------
+// Permitted uses ONLY:
+//   - Market Watch list / Bid-Ask board
+//   - Quotes / charts / terminal display
+//   - Balance / equity / positions display
+// MUST NEVER be imported or invoked by:
+//   - execution instrument resolution
+//   - order eligibility decisions
+//   - full pre-trade validation
+//   - server-side execution price-of-record
+//   - any live mutation path (submit/close/modify/cancel)
+// Authoritative execution resolver: get-terminal-execution-eligibility.
+// Authoritative submission path:    submit-best-execution-order.
+// ============================================================
 // get-mt5-quotes
 // Returns a small batch of live quotes (bid/ask/last/spread) for the
 // Bid / Ask Board. Always includes the caller's `selectedSymbol` plus a
