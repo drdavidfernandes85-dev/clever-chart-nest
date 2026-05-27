@@ -459,31 +459,31 @@ const AdminControlledRetestCard = () => {
 
       <div className="space-y-2">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
-          {auth ? "Authorisation acknowledgement evidence" : "Acknowledgements"}
+          {authActive ? "Authorisation acknowledgement evidence" : "Create New One-Shot Retest Authorisation — Acknowledgements (all required)"}
         </div>
-        {auth && acknowledged ? (
+        {authActive && acknowledged ? (
           <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
             <Row k="Acknowledgements accepted" v="YES" ok />
             <Row k="acknowledged at" v={ackEvidence.acknowledgedAt ?? "—"} ok={!!ackEvidence.acknowledgedAt} />
             <Row k="accepted constraints" v={(ackEvidence.acceptedConstraints ?? ACK_ITEMS).join(" · ")} ok />
           </div>
-        ) : auth ? (
+        ) : authActive ? (
           <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
             <Row k="Acknowledgements accepted" v="NO PERSISTED EVIDENCE" ok={false} />
-            <Row k="historical checkbox state" v="unavailable for this authorisation" ok={false} />
           </div>
-        ) : ACK_ITEMS.map((label, i) => (
-          <label key={i} className="flex items-start gap-2 text-xs">
-            <Checkbox
-              checked={acks[i]}
-              onCheckedChange={(v) =>
-                setAcks((prev) => prev.map((p, idx) => (idx === i ? v === true : p)))
-              }
-              disabled={authActive || !!auth?.consumed_at}
-            />
-            <span>{label}</span>
-          </label>
-        ))}
+        ) : (
+          ACK_ITEMS.map((label, i) => (
+            <label key={i} className="flex items-start gap-2 text-xs">
+              <Checkbox
+                checked={acks[i]}
+                onCheckedChange={(v) =>
+                  setAcks((prev) => prev.map((p, idx) => (idx === i ? v === true : p)))
+                }
+              />
+              <span>{label}</span>
+            </label>
+          ))
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
