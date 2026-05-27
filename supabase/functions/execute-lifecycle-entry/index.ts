@@ -61,10 +61,18 @@ Deno.serve(async (req) => {
     return json({ success: false, version: VERSION, error: "AUTHORISATION_EXPIRED" }, 409);
   }
 
-  // Rerun all checks independently
+  // Rerun all checks independently — use the SAME authoritative resolver
+  // contract ("valid" | "stale" | "missing") used by the successful
+  // controlled-retest entry path. Do NOT invent a separate vocabulary.
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  if (mapping.status !== "active" || !mapping.traderId) {
-    return json({ success: false, version: VERSION, error: "MAPPING_NOT_ACTIVE", blockedStage: "mapping_validation" }, 200);
+  if (mapping.status !== "valid" || !mapping.traderId) {
+    return json({
+      success: false,
+      version: VERSION,
+      error: mapping.status === "missing" ? "MAPPING_NOT_FOUND" : "MAPPING_NOT_VALID",
+      blockedStage: "mapping_validation",
+      mappingStatus: mapping.status,
+    }, 200);
   }
   if (mapping.traderId !== row.route_account_id) {
     return json({ success: false, version: VERSION, error: "ROUTE_ACCOUNT_MISMATCH" }, 409);
