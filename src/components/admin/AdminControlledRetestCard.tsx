@@ -302,10 +302,32 @@ const AdminControlledRetestCard = () => {
           <Pill tone={auth.outcome === "placed" ? "ok" : "fail"}>
             consumed · {auth.outcome ?? "unknown"}
           </Pill>
+        ) : auth?.status && auth.status !== "authorised" ? (
+          <Pill tone="fail">{auth.status}</Pill>
+        ) : auth?.outcome ? (
+          <Pill tone="fail">{auth.outcome}</Pill>
         ) : (
           <Pill tone="fail">no authorisation</Pill>
         )}
       </div>
+
+      {auth && (
+        <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+          <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Authorisation state</div>
+          <Row k="authorisation id" v={auth.id} ok={authActive} />
+          <Row k="status" v={auth.status ?? "legacy"} ok={authActive} />
+          <Row k="armed at" v={auth.armed_at ?? auth.authorised_at} ok={!!auth.armed_at || !!auth.authorised_at} />
+          <Row k="expires at" v={auth.expires_at} ok={authActive} />
+          <Row k="consumed at" v={auth.consumed_at ?? "not consumed"} ok={!auth.consumed_at} />
+          <Row k="dispatch attempted at" v={auth.dispatch_attempted_at ?? "none"} ok={!auth.dispatch_attempted_at} />
+          <Row k="outcome" v={auth.outcome ?? "none"} ok={!auth.outcome} />
+          {blockedStage && <Row k="blocked stage" v={blockedStage} ok={false} />}
+          {blockedCode && <Row k="blocked code" v={blockedCode} ok={false} />}
+          {blockedMessage && <Row k="blocked message" v={blockedMessage} ok={false} />}
+          <Row k="broker mutation dispatched" v={String(authEvidence?.brokerMutationDispatched === true)} ok={authEvidence?.brokerMutationDispatched !== true} />
+          <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok={!authEvidence?.tradingLayerRequestId} />
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" onClick={runPreviews} disabled={previewing}>
@@ -366,8 +388,21 @@ const AdminControlledRetestCard = () => {
       )}
 
       <div className="space-y-2">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">Acknowledgements</div>
-        {ACK_ITEMS.map((label, i) => (
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+          {auth ? "Authorisation acknowledgement evidence" : "Acknowledgements"}
+        </div>
+        {auth && acknowledged ? (
+          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+            <Row k="Acknowledgements accepted" v="YES" ok />
+            <Row k="acknowledged at" v={ackEvidence.acknowledgedAt ?? "—"} ok={!!ackEvidence.acknowledgedAt} />
+            <Row k="accepted constraints" v={(ackEvidence.acceptedConstraints ?? ACK_ITEMS).join(" · ")} ok />
+          </div>
+        ) : auth ? (
+          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
+            <Row k="Acknowledgements accepted" v="NO PERSISTED EVIDENCE" ok={false} />
+            <Row k="historical checkbox state" v="unavailable for this authorisation" ok={false} />
+          </div>
+        ) : ACK_ITEMS.map((label, i) => (
           <label key={i} className="flex items-start gap-2 text-xs">
             <Checkbox
               checked={acks[i]}
@@ -393,7 +428,7 @@ const AdminControlledRetestCard = () => {
           size="sm"
           variant="destructive"
           onClick={submitRetest}
-          disabled={!authActive || submitting}
+          disabled={!authActive || submitting || auth?.outcome === "pretrade_blocked"}
         >
           {submitting ? "Submitting…" : "Submit Controlled SELL 0.01"}
         </Button>
