@@ -76,17 +76,19 @@ export default function RouteCandidateComparisonCard() {
       </div>
 
       <p className="text-[11px] text-muted-foreground mb-3">
-        Compares trader route (A), previously selected route (B), and the
-        Trading Layer-provided symbols route (C: 10b…d4f3) for identity match,
-        trade permission, and EURUSD/XAUUSD/+ symbol catalogue. No mutations.
+        Diagnostic only. Per the multi-user broker-symbol architecture, broker
+        symbols are discovered per connected MT5 account. Trading Layer's
+        candidate C (<code>10b…d4f3</code>) belongs to a separate
+        Trading Layer-owned account and is excluded from execution decisions
+        for this user.
       </p>
 
       <div className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-[11px] text-amber-200 mb-3">
-        Current blocker: Trading Layer reported <code>EURUSD+</code> from
-        account route <code>10b…d4f3</code>, while previous live tests used{" "}
-        <code>EURUSD</code> from route <code>559…bcfe</code> and were rejected
-        (retcode 10017). Execution remains blocked until the correct route and
-        broker symbol are confirmed.
+        Trading Layer's <code>EURUSD+</code> screenshot was generated from a
+        separate Trading Layer account and is not applicable to this connected
+        MT5 account. The current upstream block (retcode 10017 /
+        TRADE_DISABLED) for MT5 login 87943580 remains active until the broker
+        confirms account permissions.
       </div>
 
       {resp && (
