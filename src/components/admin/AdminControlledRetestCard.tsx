@@ -72,6 +72,8 @@ const AdminControlledRetestCard = () => {
   const [auth, setAuth] = useState<Auth | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [remaining, setRemaining] = useState<number>(0);
+  const [exposure, setExposure] = useState<Exposure | null>(null);
+  const [exposureLoading, setExposureLoading] = useState(false);
 
   const allAcked = acks.every(Boolean);
   const pretradePassed = pretrade?.wouldSubmit === true;
