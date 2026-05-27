@@ -1998,7 +1998,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             )}
             {permissionBlocked && (
               <p className="rounded-sm border border-red-500/70 bg-red-600/25 px-1.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-red-100">
-                Broker symbol confirmed: EURUSD matches the native MT5 account and Trading Layer catalogue. Live execution remains paused because the broker rejected validated EURUSD SELL requests with TRADE_RETCODE_TRADE_DISABLED (10017). Awaiting Trading Layer/broker permission clarification.
+                APPLICATION_VS_DIRECT_TL_EXECUTION_MISMATCH — Trading Layer directly placed EURUSD BUY 0.01 (order 1169085428, 10008 PLACED, confirmed in MT5) on route 559…bcfe, while earlier application SELL submissions returned TRADE_DISABLED (10017). Buy/Sell paused while the mutation contract is reconciled.
               </p>
             )}
             {normalizedSym === "XAUUSD" && (
