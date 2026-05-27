@@ -110,10 +110,68 @@ const AdminControlledRetestCard = () => {
     return () => window.clearInterval(id);
   }, [auth]);
 
+  const runExposureCheck = async (): Promise<Exposure | null> => {
+    setExposureLoading(true);
+    try {
+      // Backend authoritative: TL positions via get-live-account (forceRefresh).
+      const { data: live } = await supabase.functions.invoke("get-live-account", {
+        body: { forceRefresh: true },
+      });
+      const positions: any[] = Array.isArray(live?.positions) ? live.positions : [];
+      const openEur = positions.filter(
+        (p) => String(p?.symbol ?? "").toUpperCase() === "EURUSD",
+      ).length;
+
+      // Pending orders for the current user (DB-tracked).
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u?.user?.id;
+      let pendingEur = 0;
+      if (uid) {
+        const { count } = await supabase
+          .from("mt_pending_orders")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", uid)
+          .eq("status", "pending")
+          .or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD");
+        pendingEur = count ?? 0;
+      }
+
+      // Closure record from site_settings.
+      const { data: settings } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "trading_layer_direct_external_test_1169085428")
+        .maybeSingle();
+      const v: any = settings?.value ?? {};
+      const externalClosedByUser = v?.externalPositionManuallyClosedByUser === true;
+      const closureRecordedAt = v?.externalPositionClosedConfirmedAt ?? null;
+
+      const residual: "none" | "detected" =
+        openEur === 0 && pendingEur === 0 ? "none" : "detected";
+      const exp: Exposure = {
+        externalOrderId: "1169085428",
+        externalClosedByUser,
+        closureRecordedAt,
+        openEurusdPositions: openEur,
+        pendingEurusdOrders: pendingEur,
+        residual,
+        checkedAt: new Date().toISOString(),
+        source: "get-live-account (TL, forceRefresh) + mt_pending_orders",
+        ready: externalClosedByUser && residual === "none",
+      };
+      setExposure(exp);
+      return exp;
+    } catch (e: any) {
+      toast.error(`Exposure check failed: ${e?.message ?? "unknown"}`);
+      return null;
+    } finally {
+      setExposureLoading(false);
+    }
+  };
+
   const runPreviews = async () => {
     setPreviewing(true);
     try {
-      // Full pretrade (mutation-suppressed) via existing validator.
       const { data: pre } = await supabase.functions.invoke("validate-full-pretrade", {
         body: {
           symbol: PERMITTED.symbol,
@@ -123,12 +181,11 @@ const AdminControlledRetestCard = () => {
         },
       });
       setPretrade(pre);
-      // Outbound DTO preview via submit-controlled-retest in previewOnly mode.
-      // Falls back if no authorisation exists yet — we still want a quick echo.
       const { data: prev } = await supabase.functions.invoke("submit-controlled-retest", {
         body: { previewOnly: true },
       });
       setPreview(prev);
+      await runExposureCheck();
     } catch (e: any) {
       toast.error(`Preview failed: ${e?.message ?? "unknown"}`);
     } finally {
