@@ -996,6 +996,10 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const tlEligibilityGateSell =
     executionMode !== "admin_live_test" || sellReadyByTL;
 
+  const finalBlocker = useFinalActivationBlocker();
+  const finalBlockerActive = finalBlocker.active && finalBlocker.generalBuySellDisabled;
+  const finalBlockerPendingDisabled = finalBlocker.active && finalBlocker.pendingOrdersDisabled;
+
   const canSubmitMarketBase =
     !!user &&
     connected === true &&
@@ -1011,12 +1015,14 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !liveDisabled &&
     liveModeGateOk &&
     sessionGateOk &&
-    adminExecPermissionGateOk;
+    adminExecPermissionGateOk &&
+    !finalBlockerActive;
 
   const canSubmitBuy = canSubmitMarketBase && tlEligibilityGateBuy;
   const canSubmitSell = canSubmitMarketBase && tlEligibilityGateSell;
   // Backwards-compatible alias used by older logging/branching below.
   const canSubmitMarket = canSubmitBuy || canSubmitSell;
+
 
 
   const submitMarket = async (sideArg: "buy" | "sell") => {
