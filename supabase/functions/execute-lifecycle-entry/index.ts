@@ -74,8 +74,14 @@ Deno.serve(async (req) => {
       mappingStatus: mapping.status,
     }, 200);
   }
-  if (mapping.traderId !== row.route_account_id) {
-    return json({ success: false, version: VERSION, error: "ROUTE_ACCOUNT_MISMATCH" }, 409);
+  if (mapping.tradingLayerAccountId !== row.route_account_id) {
+    return json({
+      success: false,
+      version: VERSION,
+      error: "ROUTE_ACCOUNT_MISMATCH",
+      expectedRouteAccountId: row.route_account_id,
+      actualRouteAccountId: mapping.tradingLayerAccountId,
+    }, 409);
   }
   const gate = await assertLiveExecutionAllowed(supabase, user.id, { traderId: mapping.traderId, login: mapping.login });
   if (!gate.allowed) return json({ success: false, version: VERSION, error: gate.code, blockedStage: "execution_mode_gate" }, 200);
