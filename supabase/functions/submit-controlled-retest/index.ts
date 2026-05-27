@@ -101,7 +101,41 @@ Deno.serve(async (req) => {
     authRow?.permitted_route_account_id ?? "559a12e4-16d8-4db3-be48-40fbea54bcfe",
   );
 
-  // 2) Pretrade chain (mapping → exec mode → trade-mode → fresh tick → risk).
+  // Preview short-circuit: echo the exact outbound DTO without running the
+  // pretrade chain or touching any authorisation row. The admin card calls
+  // validate-full-pretrade separately for the full pretrade preview.
+  if (previewOnly) {
+    const outboundDto = { side, symbol: brokerSymbol, volume };
+    const endpointPath = `/api/v1/accounts/${routeAccountId}/trades/send`;
+    const idempotencyKey = authRow?.id
+      ? `controlled-retest-${authRow.id}`
+      : `controlled-retest-preview`;
+    return json({
+      success: true,
+      step: "outbound_contract_preview",
+      mutationSuppressed: true,
+      liveOrderAttempted: false,
+      liveOrderSent: false,
+      authorisationId: authRow?.id ?? null,
+      outbound: {
+        endpointPath,
+        method: "POST",
+        accountIdInUrl: routeAccountId,
+        body: outboundDto,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer ***redacted***",
+          "Idempotency-Key": idempotencyKey,
+        },
+        idempotencyKeyPresent: true,
+        internalMetadataExcluded: true,
+        fieldsInBody: Object.keys(outboundDto),
+        deviationAbsent: true,
+      },
+    });
+  }
+
+
   const mapping = await resolveActiveMtMapping(supabase, user.id);
   if (mapping.status !== "active" || !mapping.traderId) {
     return await markPretradeBlocked(supabase, authRow.id, "MAPPING_NOT_ACTIVE");
