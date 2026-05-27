@@ -444,9 +444,11 @@ export default function AdminBrokerSymbolsTab() {
   const eurBuyCombined = accountCanBuy && eurSymbolBuyEligible;
   const eurSellCombined = accountCanSell && eurSymbolSellEligible;
 
-  // Ready-for-controlled-test gate: route + combined + ack.
-  const eurBuyReady = routeVerified && eurBuyCombined && ack.acknowledged;
-  const eurSellReady = routeVerified && eurSellCombined && ack.acknowledged;
+  // Ack is no longer an execution gate. Native MT5 Market Watch for this
+  // connected account confirms `EURUSD` without suffix, matching the verified
+  // Trading Layer catalogue. Suffix discrepancy is resolved_not_applicable.
+  const eurBuyReady = routeVerified && eurBuyCombined;
+  const eurSellReady = routeVerified && eurSellCombined;
 
   const eurBlocker = !routeVerified
     ? "Wrong or unverified Trading Layer account route; executable symbol catalogue not verified."
@@ -457,8 +459,6 @@ export default function AdminBrokerSymbolsTab() {
       ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
     : (!accountCanBuy && !accountCanSell)
       ? `Account trade_mode = ${accountTradeModeRaw} (${accountTradeModeLabel}) blocks BUY and SELL at the account level`
-    : !ack.acknowledged
-      ? "API execution symbol resolved as EURUSD; acknowledgement required due to MT5 suffix-display discrepancy."
       : null;
 
   const xauBlocker = xauAmbiguous
