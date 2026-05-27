@@ -37,6 +37,7 @@ import AdminLiveTestLimitsCard from "./AdminLiveTestLimitsCard";
 import AdminExecutionEligibilityCard from "./AdminExecutionEligibilityCard";
 import AdminControlledRetestCard from "./AdminControlledRetestCard";
 import AdminControlledRetestEntryPassCard from "./AdminControlledRetestEntryPassCard";
+import AdminFinalLifecycleValidationCard from "./AdminFinalLifecycleValidationCard";
 
 const maskTraderId = (id: string) =>
   id.length <= 12 ? "••••" : `${id.slice(0, 8)}…${id.slice(-4)}`;
@@ -516,6 +517,8 @@ const AdminProductionModeTab = () => {
       </Card>
 
       <AdminControlledRetestEntryPassCard />
+
+      <AdminFinalLifecycleValidationCard />
 
       <AdminControlledRetestCard />
 
