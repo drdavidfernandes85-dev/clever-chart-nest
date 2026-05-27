@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   Loader2, RefreshCw, Search, Database, ShieldCheck, ShieldAlert, KeyRound, Download, Eye,
 } from "lucide-react";
+import RouteCandidateComparisonCard from "./RouteCandidateComparisonCard";
 
 interface VerifiedMapping {
   id: string;
