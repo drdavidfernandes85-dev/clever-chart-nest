@@ -454,12 +454,15 @@ export type Database = {
       }
       controlled_retest_authorisations: {
         Row: {
+          armed_at: string | null
           authorised_at: string
           authorised_by: string
           close_confirmed_at: string | null
           consumed_at: string | null
           consumed_order_id: string | null
           created_at: string
+          dispatch_attempted_at: string | null
+          evidence_json: Json
           expires_at: string
           id: string
           outbound_dto: Json | null
@@ -473,15 +476,19 @@ export type Database = {
           permitted_symbol: string
           permitted_volume: number
           position_confirmed_at: string | null
+          status: string
           updated_at: string
         }
         Insert: {
+          armed_at?: string | null
           authorised_at?: string
           authorised_by: string
           close_confirmed_at?: string | null
           consumed_at?: string | null
           consumed_order_id?: string | null
           created_at?: string
+          dispatch_attempted_at?: string | null
+          evidence_json?: Json
           expires_at: string
           id?: string
           outbound_dto?: Json | null
@@ -495,15 +502,19 @@ export type Database = {
           permitted_symbol: string
           permitted_volume: number
           position_confirmed_at?: string | null
+          status?: string
           updated_at?: string
         }
         Update: {
+          armed_at?: string | null
           authorised_at?: string
           authorised_by?: string
           close_confirmed_at?: string | null
           consumed_at?: string | null
           consumed_order_id?: string | null
           created_at?: string
+          dispatch_attempted_at?: string | null
+          evidence_json?: Json
           expires_at?: string
           id?: string
           outbound_dto?: Json | null
@@ -517,6 +528,7 @@ export type Database = {
           permitted_symbol?: string
           permitted_volume?: number
           position_confirmed_at?: string | null
+          status?: string
           updated_at?: string
         }
         Relationships: []
