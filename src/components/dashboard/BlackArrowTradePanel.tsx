@@ -40,6 +40,7 @@ import {
   unlockExecution,
 } from "@/lib/tradingLayerControl";
 import { useExecutionLock } from "@/hooks/useExecutionLock";
+import { useFinalActivationBlocker } from "@/hooks/useFinalActivationBlocker";
 import { useDevMode } from "@/hooks/useDevMode";
 import { useRiskSettings } from "@/hooks/useRiskSettings";
 import RiskBadges from "@/components/dashboard/RiskBadges";
