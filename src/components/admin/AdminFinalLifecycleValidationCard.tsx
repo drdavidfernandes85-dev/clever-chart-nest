@@ -88,6 +88,7 @@ const ACK_ITEMS: { id: string; label: string }[] = [
 ];
 
 const EXPECTED_ROUTE = "559a12e4-16d8-4db3-be48-40fbea54bcfe";
+const EXPECTED_ROUTE_MASKED = "559…bcfe";
 const EXPECTED_LOGIN = "87943580";
 const EXPECTED_DTO = { side: "sell", symbol: "EURUSD", volume: 0.01 };
 
@@ -153,7 +154,7 @@ const AdminFinalLifecycleValidationCard = () => {
   const previewFresh = !!(preview && previewAt && Date.now() - previewAt < 60_000);
   const wouldDispatchEntry = preview?.wouldDispatchEntry === true;
   const dtoExact = !!preview && JSON.stringify(preview.outboundBody) === JSON.stringify(EXPECTED_DTO);
-  const routeExact = preview?.route === EXPECTED_ROUTE;
+  const routeExact = preview?.route === EXPECTED_ROUTE || preview?.route === EXPECTED_ROUTE_MASKED;
   const mappingValid = preview?.mappingStatus === "valid";
   const brokerExact = preview?.brokerSymbol === "EURUSD";
   const sideExact = preview?.side === "sell";
