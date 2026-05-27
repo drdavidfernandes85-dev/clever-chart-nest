@@ -208,7 +208,7 @@ const AdminFinalLifecycleValidationCard = () => {
     // lives in the partial unique index `lifecycle_validation_one_active_per_account_idx`.
     if (busy) return;
     if (activeRow) { toast.error("An active lifecycle authorisation already exists."); return; }
-    if (!allAcked || !allGatesPass) return;
+    if (!canAuthorise) { toast.error(`Cannot authorise: ${blocker}`); return; }
     if (!window.confirm("Create new single-use lifecycle authorisation? No order is dispatched by this action.")) return;
     setBusy("arm");
     try {
