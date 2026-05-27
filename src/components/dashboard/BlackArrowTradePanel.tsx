@@ -57,11 +57,6 @@ import {
   isExecutionPermissionBlocked,
 } from "@/lib/productionMode";
 import {
-  fetchExecutionEligibility,
-  readCachedEligibility,
-  type ExecutionEligibility,
-} from "@/lib/executionEligibility";
-import {
   useTerminalExecutionEligibility,
   type TerminalExecutionEligibility,
 } from "@/lib/terminalExecutionEligibility";
