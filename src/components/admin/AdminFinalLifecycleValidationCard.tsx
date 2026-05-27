@@ -458,6 +458,64 @@ const AdminFinalLifecycleValidationCard = () => {
         </div>
       )}
 
+      {/* Frozen pre-trade block — current failed lifecycle attempt */}
+      {row && row.status === "review_required_pretrade_block" && (
+        <div className="space-y-2">
+          <div className="p-2 rounded border border-red-500/50 bg-red-500/10 text-[11px] text-red-200">
+            <AlertTriangle className="h-3 w-3 inline mr-1" />
+            <strong>Failed Lifecycle Attempt — frozen, non-reusable.</strong> The dispatcher rejected this
+            authorisation before any Trading Layer mutation. No new live order was sent. A replacement
+            lifecycle authorisation will not be created in this pass.
+          </div>
+          <Row k="authorisation_id" v={<code className="text-[10px]">{row.id}</code>} />
+          <Row k="status" v={row.status} />
+          <Row k="failure_reason" v={row.failure_reason || "—"} />
+          <Row k="classification" v={row.classification || "—"} />
+          <Row k="blockedStage" v={row.entry_evidence?.blockedStage || "mapping_validation"} />
+          <Row k="blockedCode" v={<span className="text-red-300">{row.entry_evidence?.blockedCode || "MAPPING_NOT_ACTIVE"}</span>} />
+          <Row k="brokerMutationDispatched" v={<span className="text-emerald-300">{String(row.entry_evidence?.brokerMutationDispatched ?? false)}</span>} />
+          <Row k="tradingLayerRequestId" v={row.entry_evidence?.tradingLayerRequestId ?? "none"} />
+          <Row k="tradingLayerOrderId" v={row.entry_evidence?.tradingLayerOrderId ?? "none"} />
+          <Row k="positionTicket" v={row.entry_evidence?.positionTicket ?? "none"} />
+          <Row k="reusable" v={<span className="text-red-300">false</span>} />
+          <Row k="entry_dispatches_consumed" v={row.entry_dispatches_consumed} />
+          <Row k="root_cause" v={<span className="text-[10px] text-amber-300">{row.entry_evidence?.rootCause || "duplicate mapping vocabulary"}</span>} />
+
+          <div className="mt-2 p-2 rounded border border-amber-500/40 bg-amber-500/10 text-[11px] text-amber-200">
+            Read-only dispatcher diagnostic. Runs the no-mutation lifecycle entry preview. Authorise and
+            Execute remain unavailable in this pass.
+          </div>
+          <Button size="sm" variant="outline" onClick={runPreview} disabled={busy === "preview"}>
+            {busy === "preview" ? "Validating…" : "READ-ONLY: Validate Final Lifecycle Entry Dispatcher — No Mutation"}
+          </Button>
+          {preview && (
+            <div className="mt-2 p-2 rounded border border-border/40 bg-muted/20">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                Mutation-suppressed dispatcher preview
+              </div>
+              <Row k="validationOnly" v={String(preview.validationOnly)} />
+              <Row k="mutationSuppressed" v={String(preview.mutationSuppressed)} />
+              <Row k="wouldDispatchEntry" v={
+                <span className={preview.wouldDispatchEntry ? "text-emerald-300" : "text-red-300"}>
+                  {String(preview.wouldDispatchEntry)}
+                </span>
+              } />
+              <Row k="mappingStatus" v={preview.mappingStatus} />
+              <Row k="route" v={preview.route || "—"} />
+              <Row k="brokerSymbol" v={preview.brokerSymbol || "—"} />
+              <Row k="side / volume" v={`${preview.side} ${preview.volume}`} />
+              <Row k="freshTick" v={`${preview.freshTick} (${preview.freshTickAgeMs ?? "—"}ms)`} />
+              <Row k="openEurusdPositions" v={preview.openEurusdPositions ?? "—"} />
+              <Row k="pendingEurusdOrders" v={preview.pendingEurusdOrders ?? "—"} />
+              <Row k="outboundBody" v={<code>{JSON.stringify(preview.outboundBody)}</code>} />
+              {preview.blockedStage && (
+                <Row k="blockedStage" v={<span className="text-red-300">{preview.blockedStage}: {preview.blockedCode}</span>} />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Failure states */}
       {row && (row.status === "failed_entry_rejected" || row.status === "failed_close_rejected" || row.status === "expired") && (
         <div className="space-y-2">
@@ -473,6 +531,7 @@ const AdminFinalLifecycleValidationCard = () => {
           )}
         </div>
       )}
+
 
       <div className="mt-3 pt-2 border-t border-border/30 text-[10px] text-muted-foreground flex items-center gap-1">
         <ShieldCheck className="h-3 w-3" />
