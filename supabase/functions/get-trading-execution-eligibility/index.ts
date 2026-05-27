@@ -35,11 +35,30 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const DEPRECATION_META = {
+  deprecated: true,
+  replacement: "get-terminal-execution-eligibility",
+  note: "Per-account authoritative resolver. This endpoint has zero runtime callers and is retained read-only pending deletion.",
+};
+
 const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  new Response(
+    JSON.stringify(
+      body && typeof body === "object"
+        ? { ...DEPRECATION_META, ...(body as Record<string, unknown>) }
+        : body,
+    ),
+    {
+      status,
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "application/json",
+        "X-Deprecated": "true",
+        "X-Replacement": "get-terminal-execution-eligibility",
+      },
+    },
+  );
+
 
 const CONFIRMED_TRADABLE_STRINGS = new Set([
   "full", "long_only", "short_only", "close_only",
