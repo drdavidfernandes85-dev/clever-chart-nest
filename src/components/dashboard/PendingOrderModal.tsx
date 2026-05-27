@@ -63,22 +63,20 @@ const PendingOrderModal = ({
   const [tp, setTp] = useState("");
   const [ack, setAck] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [eligibility, setEligibility] = useState<ExecutionEligibility | null>(
-    () => readCachedEligibility(symbol),
-  );
-  const [eligLoading, setEligLoading] = useState(false);
+  const {
+    data: eligibility,
+    loading: eligLoading,
+    refresh: refreshEligibility,
+  } = useTerminalExecutionEligibility(open ? symbol : null);
 
   useEffect(() => {
     if (open) {
       setEntry("");
       setVol(defaultVolume.toFixed(2));
       setSl(""); setTp(""); setAck(false);
-      setEligLoading(true);
-      fetchExecutionEligibility(symbol, { refresh: true })
-        .then(setEligibility)
-        .finally(() => setEligLoading(false));
+      refreshEligibility();
     }
-  }, [open, defaultVolume, symbol]);
+  }, [open, defaultVolume, symbol, refreshEligibility]);
 
   const entryNum = Number(entry);
   const volNum = Number(vol);
@@ -90,23 +88,26 @@ const PendingOrderModal = ({
     !Number.isFinite(volNum) || volNum <= 0 ? "Volume must be > 0" :
     volNum > maxVolume ? `Volume exceeds admin test cap ${maxVolume}` : null;
 
+  const sideReady = side === "buy" ? eligibility?.buyReady : eligibility?.sellReady;
+  const sideBlocked =
+    side === "buy" ? eligibility?.buyBlockedReason : eligibility?.sellBlockedReason;
   const eligOk =
     !!eligibility &&
-    eligibility.eligibility === "eligible" &&
     !!eligibility.brokerSymbol &&
-    eligibility.accountTradeEligible === true &&
-    eligibility.symbolTradeEligible === true;
+    eligibility.routeVerified === true &&
+    sideReady === true;
   const eligBlockerCopy = !eligibility
     ? "Loading execution eligibility…"
     : !eligibility.brokerSymbol
       ? "Broker symbol unresolved — refresh execution eligibility before submitting."
-      : !eligibility.accountTradeEligible
-        ? `Account trade_mode not eligible (${eligibility.accountTradeMode ?? "unknown"}).`
-        : !eligibility.symbolTradeEligible
-          ? `Symbol ${eligibility.brokerSymbol} trade_mode not eligible (${eligibility.symbolTradeMode ?? "unknown"}).`
+      : !eligibility.routeVerified
+        ? "Account route not verified."
+        : !sideReady
+          ? (sideBlocked || `${side.toUpperCase()} not ready for ${eligibility.brokerSymbol}.`)
           : null;
 
   const canSubmit = !entryErr && !volErr && ack && !submitting && eligOk;
+
 
   const submit = async () => {
     if (!canSubmit) return;
