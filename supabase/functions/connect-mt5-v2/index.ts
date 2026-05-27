@@ -563,6 +563,45 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Per-connected-account broker symbol catalogue sync. Fire-and-forget so
+    // the connect flow stays fast; the catalogue resolves asynchronously and
+    // the Order Ticket gates BUY/SELL on its readiness via the
+    // account-specific resolver in get-terminal-execution-eligibility.
+    try {
+      await supabase
+        .from("user_mt_accounts")
+        .update({
+          symbol_catalogue_status: "syncing",
+          symbol_catalogue_synced_at: null,
+        })
+        .eq("id", savedRow.id);
+
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const fnUrl = `${supabaseUrl}/functions/v1/sync-broker-symbol-catalog`;
+      fetch(fnUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          local_mt_account_id: savedRow.id,
+          trading_layer_account_id: ownerAccountId
+            ? String(ownerAccountId)
+            : String(accountId),
+          trading_layer_trader_id: String(traderId),
+          mt5_login: String(account_number),
+          mt5_server: server,
+          sync_type: "post_connect_full_catalogue",
+        }),
+      }).catch((err) =>
+        console.warn("post-connect catalogue sync invocation failed:", err),
+      );
+    } catch (err) {
+      console.warn("post-connect catalogue sync setup failed:", err);
+    }
+
     return json(200, {
       success: true,
       step: "account_saved",
@@ -575,6 +614,7 @@ Deno.serve(async (req) => {
       credential_status: credentialStatus ?? "validated",
       account,
       savedRow,
+      symbol_catalogue_status: "syncing",
       tradingLayerStatus: testRes.status,
     });
   } catch (e) {

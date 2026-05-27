@@ -127,10 +127,15 @@ Deno.serve(async (req) => {
       eurusdPlusDetail,
       eurusdPlusTick,
       executionCandidate:
+        // Candidate C (10bca1b1…) belongs to Trading Layer's OWN account and
+        // is never an execution candidate for this user's MT5 login, even if
+        // its catalogue happens to contain EURUSD+. Hard-exclude by id.
+        id !== "10bca1b1-42af-43d2-8ead-3361d4ded4f3" &&
         acct.ok &&
         matchLogin &&
         matchServer &&
         d?.trade_allowed === true,
+      tradingLayerOwnedAccount: id === "10bca1b1-42af-43d2-8ead-3361d4ded4f3",
     });
   }
 
@@ -144,25 +149,20 @@ Deno.serve(async (req) => {
     xauusd_variants: r.symbols.xauusd_variants,
     plus_suffix_count: r.symbols.plus_suffix_count,
     execution_candidate: r.executionCandidate,
+    trading_layer_owned_account: r.tradingLayerOwnedAccount === true,
   }));
 
-  // Recommendation
-  const matchedExecCandidates = reports.filter(
-    (r) =>
-      r.executionCandidate &&
-      r.symbols.contains_EURUSD_plus,
-  );
+  // Recommendation. Per the multi-user broker-symbol architecture: NEVER
+  // recommend migrating to a Trading Layer-owned account just because it
+  // exposes EURUSD+. Symbols must be discovered per-connected-account.
+  const matchedExecCandidates = reports.filter((r) => r.executionCandidate);
   let recommendation = "KEEP_BLOCKED";
   let recommendationDetail =
-    "No candidate simultaneously matches MT5 login/server, returns trade_allowed=true, and exposes EURUSD+ in its symbols list.";
+    "Trading Layer's EURUSD+ screenshot was generated from a separate Trading Layer-owned account and is not applicable to this connected MT5 account. Upstream retcode 10017 block remains active; broker confirmation required.";
   if (matchedExecCandidates.length === 1) {
     const w = matchedExecCandidates[0];
-    recommendation = "SAFE_TO_PROPOSE_MIGRATION";
-    recommendationDetail = `Candidate ${w.label} (${w.id}) matches MT5 identity, returns trade_allowed=true, and exposes EURUSD+. Migration may be PROPOSED — no live order to be submitted as part of this pass.`;
-  } else if (matchedExecCandidates.length > 1) {
-    recommendation = "AMBIGUOUS_KEEP_BLOCKED";
-    recommendationDetail =
-      "Multiple candidates match identity + trade_allowed + EURUSD+; manual clarification required.";
+    recommendation = "KEEP_BLOCKED_PENDING_BROKER_CONFIRMATION";
+    recommendationDetail = `Candidate ${w.label} (${w.id}) is the verified execution route for this connected MT5 account. Live execution remains blocked upstream by retcode 10017 / TRADE_DISABLED until the broker clarifies the account permission state.`;
   }
 
   return json({

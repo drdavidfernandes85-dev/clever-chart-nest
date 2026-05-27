@@ -368,6 +368,26 @@ Deno.serve(async (req) => {
       } catch { /* best-effort */ }
     }
   }
+
+  // Stamp the connected MT5 account row with the catalogue status so the
+  // Order Ticket / per-account resolver can gate readiness without re-querying.
+  if (mapping.localRowId) {
+    try {
+      await supabaseService
+        .from("user_mt_accounts")
+        .update({
+          symbol_catalogue_status: crawl.complete
+            ? "complete"
+            : (crawl.errors && crawl.errors.length > 0 ? "failed" : "partial"),
+          symbol_catalogue_synced_at: now,
+          symbol_catalogue_version: `full_${new Date(now).toISOString().slice(0, 10)}_rows${stored}`,
+        })
+        .eq("id", mapping.localRowId);
+    } catch (e) {
+      console.warn("user_mt_accounts catalogue status update failed:", e);
+    }
+  }
+
   return json({
     ...result,
     catalogueScope,
