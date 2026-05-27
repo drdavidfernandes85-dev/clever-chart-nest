@@ -239,9 +239,22 @@ Deno.serve(async (req) => {
   const consumedAt = new Date().toISOString();
   const { data: claimed, error: claimErr } = await supabase
     .from("controlled_retest_authorisations")
-    .update({ consumed_at: consumedAt, outbound_dto: outboundDto })
+    .update({
+      status: "dispatching",
+      dispatch_attempted_at: consumedAt,
+      consumed_at: consumedAt,
+      outbound_dto: outboundDto,
+      evidence_json: {
+        ...(authRow.evidence_json ?? {}),
+        mutationDispatched: false,
+        brokerMutationDispatched: false,
+        dispatchAttemptedAt: consumedAt,
+      },
+    })
     .eq("id", authRow.id)
+    .eq("status", "authorised")
     .is("consumed_at", null)
+    .is("outcome", null)
     .select("id")
     .maybeSingle();
   if (claimErr || !claimed) {
@@ -269,10 +282,18 @@ Deno.serve(async (req) => {
   await supabase
     .from("controlled_retest_authorisations")
     .update({
+      status: outcome,
       outcome,
       outcome_retcode: Number.isFinite(retcode) ? retcode : null,
       outcome_payload: tradeJson,
       consumed_order_id: orderId,
+      evidence_json: {
+        ...(authRow.evidence_json ?? {}),
+        mutationDispatched: true,
+        brokerMutationDispatched: true,
+        tradingLayerRequestId: tradeResp.headers.get("x-request-id") ?? tradeResp.headers.get("request-id") ?? null,
+        retcode: Number.isFinite(retcode) ? retcode : null,
+      },
     })
     .eq("id", authRow.id);
 
