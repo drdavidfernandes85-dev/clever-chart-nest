@@ -345,10 +345,34 @@ Deno.serve(async (req) => {
   });
 });
 
-async function markPretradeBlocked(supabase: any, id: string, code: string) {
+async function markPretradeBlocked(
+  supabase: any,
+  id: string,
+  details: { stage: string; code: string; message: string; [key: string]: unknown },
+) {
+  const blockedAt = new Date().toISOString();
+  const payload = {
+    ...details,
+    blockedStage: details.stage,
+    blockedCode: details.code,
+    blockedMessage: details.message,
+    mutationDispatched: false,
+    brokerMutationDispatched: false,
+    tradingLayerRequestId: null,
+    retcode: null,
+    authorisationConsumed: false,
+    blockedAt,
+  };
   await supabase
     .from("controlled_retest_authorisations")
-    .update({ outcome: "pretrade_blocked", outcome_retcode: null, outcome_payload: { code } })
+    .update({
+      status: "review_required_pretrade_block",
+      dispatch_attempted_at: blockedAt,
+      outcome: "pretrade_blocked",
+      outcome_retcode: null,
+      outcome_payload: payload,
+      evidence_json: payload,
+    })
     .eq("id", id);
-  return json({ success: false, step: "pretrade", outcome: "pretrade_blocked", code }, 200);
+  return json({ success: false, step: "pretrade", outcome: "pretrade_blocked", ...payload }, 200);
 }
