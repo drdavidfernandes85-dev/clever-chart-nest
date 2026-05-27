@@ -14,6 +14,7 @@ import {
 } from "../_shared/tlClient.ts";
 import {
   interpretTradeMode,
+  interpretAccountTradeMode,
   TRADE_MODE_DISABLED,
 } from "../_shared/tradingLayerTradeMode.ts";
 
