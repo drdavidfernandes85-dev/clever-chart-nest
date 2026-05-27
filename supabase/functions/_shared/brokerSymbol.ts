@@ -44,6 +44,7 @@ import {
   ERR_SYMBOL_DIRECTION_BLOCKED,
   ExecutionOperation,
   interpretTradeMode as interpretTradeModeEnum,
+  interpretAccountTradeMode,
   TRADE_MODE_DISABLED,
 } from "./tradingLayerTradeMode.ts";
 
