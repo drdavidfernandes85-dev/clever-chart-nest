@@ -109,6 +109,21 @@ Deno.serve(async (req) => {
     }, 403);
   }
 
+  // Final activation blocker (pending orders disabled while controlled retest is in effect).
+  try {
+    const { data: blk } = await supabase.from("site_settings").select("value").eq("key","final_activation_blocker").maybeSingle();
+    const v: any = blk?.value;
+    if (v?.active === true) {
+      return json({
+        success: false, version: VERSION, step: "final_activation_blocker",
+        error: "FINAL_ACTIVATION_BLOCKER_ACTIVE",
+        blockReasonCode: v.block_reason_code ?? null,
+        displayCopy: v.display_copy ?? null,
+      }, 423);
+    }
+  } catch { /* best effort */ }
+
+
   // Admin live test limits: pending orders gate.
   try {
     const { data: limits } = await supabase.from("admin_live_test_limits").select("pending_orders_enabled,max_order_volume").limit(1).maybeSingle();

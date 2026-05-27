@@ -14,6 +14,7 @@ import {
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
 import { sideToOperation } from "../_shared/tradingLayerTradeMode.ts";
+import { getFinalActivationBlocker, blockerResponseBody } from "../_shared/finalActivationBlocker.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
@@ -294,6 +295,18 @@ serve(async (req) => {
         }, 403);
       }
     }
+
+    // Final activation blocker — all platform mutations are paused while the
+    // controlled-retest authorisation flow is in effect. Only the dedicated
+    // `submit-controlled-retest` edge function may dispatch a live order
+    // until the blocker is cleared.
+    {
+      const blocker = await getFinalActivationBlocker(supabase);
+      if (blocker.active) {
+        return json(blockerResponseBody(blocker), 423);
+      }
+    }
+
 
     // Account.trade_allowed + symbol directional eligibility (OpenAPI enum).
     // Uses the verified brokerSymbol from the caller; never appends suffixes.

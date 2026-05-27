@@ -452,6 +452,75 @@ export type Database = {
         }
         Relationships: []
       }
+      controlled_retest_authorisations: {
+        Row: {
+          authorised_at: string
+          authorised_by: string
+          close_confirmed_at: string | null
+          consumed_at: string | null
+          consumed_order_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          outbound_dto: Json | null
+          outcome: string | null
+          outcome_payload: Json | null
+          outcome_retcode: number | null
+          permitted_broker_symbol: string
+          permitted_orders: number
+          permitted_route_account_id: string
+          permitted_side: string
+          permitted_symbol: string
+          permitted_volume: number
+          position_confirmed_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          authorised_at?: string
+          authorised_by: string
+          close_confirmed_at?: string | null
+          consumed_at?: string | null
+          consumed_order_id?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          outbound_dto?: Json | null
+          outcome?: string | null
+          outcome_payload?: Json | null
+          outcome_retcode?: number | null
+          permitted_broker_symbol: string
+          permitted_orders?: number
+          permitted_route_account_id: string
+          permitted_side: string
+          permitted_symbol: string
+          permitted_volume: number
+          position_confirmed_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authorised_at?: string
+          authorised_by?: string
+          close_confirmed_at?: string | null
+          consumed_at?: string | null
+          consumed_order_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          outbound_dto?: Json | null
+          outcome?: string | null
+          outcome_payload?: Json | null
+          outcome_retcode?: number | null
+          permitted_broker_symbol?: string
+          permitted_orders?: number
+          permitted_route_account_id?: string
+          permitted_side?: string
+          permitted_symbol?: string
+          permitted_volume?: number
+          position_confirmed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       copy_subscriptions: {
         Row: {
           created_at: string
