@@ -583,39 +583,13 @@ export async function resolveEligibleBrokerSymbol(
     };
   }
 
-  // EURUSD-specific gate: require admin acknowledgement of the MT5 suffix
-  // display discrepancy (Trading Layer returns `EURUSD` as the executable
-  // broker symbol while the native MT5 terminal shows suffixed instruments).
-  const canonicalNorm = canonicalize(chosen.canonical_symbol || chosen.broker_symbol);
-  if (canonicalNorm === "EURUSD") {
-    let ackOk = false;
-    try {
-      const { data: ackRow } = await supabaseService
-        .from("site_settings")
-        .select("value")
-        .eq("key", "broker_symbol_acknowledgements")
-        .maybeSingle();
-      ackOk = !!(ackRow as any)?.value?.eurusd_mt5_suffix_discrepancy?.acknowledged;
-    } catch { /* ackOk stays false */ }
-    if (!ackOk) {
-      return {
-        ok: false,
-        errorCode: ERR_BROKER_SYMBOL_DISCREPANCY_ACK_REQUIRED,
-        message:
-          "API execution symbol resolved as EURUSD; admin acknowledgement required due to MT5 suffix-display discrepancy. Record the acknowledgement in Admin → Broker Symbols before retrying.",
-        displaySymbol: input.requestedDisplaySymbol ?? canonicalNorm,
-        brokerSymbol: chosen.broker_symbol,
-        canonicalSymbol: canonicalNorm,
-        accountTradeMode: null,
-        symbolTradeMode: chosen.trade_mode ?? null,
-        accountTradeEligible: true,
-        symbolTradeEligible: true,
-        symbolMappingSource: chosen.source ?? "trading_layer_symbols",
-        symbolMappingCheckedAt: chosen.last_synced_at ?? null,
-        catalogRowId: chosen.id ?? null,
-      };
-    }
-  }
+  // EURUSD suffix-discrepancy acknowledgement: RESOLVED for this connected
+  // account. Native MT5 Market Watch (login 87943580 / InfinoxLimited-MT5Live)
+  // confirms `EURUSD` without suffix, matching the Trading Layer catalogue for
+  // verified route 559a12e4-16d8-4db3-be48-40fbea54bcfe. Trading Layer's
+  // earlier `EURUSD+` evidence originated from a separate Trading Layer-owned
+  // test account and does not apply here. Ack is no longer an execution gate.
+  // The retcode-10017 upstream block is enforced elsewhere (production mode).
 
   return {
     ok: true,
