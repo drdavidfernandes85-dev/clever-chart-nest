@@ -70,26 +70,36 @@ Deno.serve(async (req) => {
   const authorisationId = body?.authorisationId ? String(body.authorisationId) : null;
 
   // 1) Locate one unconsumed authorisation.
-  let query = supabase
-    .from("controlled_retest_authorisations")
-    .select("*")
-    .is("consumed_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .order("authorised_at", { ascending: false })
-    .limit(1);
-  if (authorisationId) query = query.eq("id", authorisationId);
-  const { data: rows, error: rowErr } = await query;
-  if (rowErr) return json({ success: false, step: "load_authorisation", error: rowErr.message }, 500);
-  const authRow = rows?.[0];
-  if (!authRow) {
+  // Preview mode does NOT require an existing authorisation row — it just
+  // echoes the literal DTO that *would* be sent. Fall back to permitted
+  // defaults (EURUSD SELL 0.01 on the verified route) so the admin card
+  // can preview before authorising.
+  let authRow: any = null;
+  {
+    let query = supabase
+      .from("controlled_retest_authorisations")
+      .select("*")
+      .is("consumed_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .order("authorised_at", { ascending: false })
+      .limit(1);
+    if (authorisationId) query = query.eq("id", authorisationId);
+    const { data: rows, error: rowErr } = await query;
+    if (rowErr) return json({ success: false, step: "load_authorisation", error: rowErr.message }, 500);
+    authRow = rows?.[0] ?? null;
+  }
+
+  if (!authRow && !previewOnly) {
     return json({ success: false, step: "load_authorisation", error: "NO_VALID_AUTHORISATION" }, 404);
   }
 
-  const symbol = String(authRow.permitted_symbol);
-  const brokerSymbol = String(authRow.permitted_broker_symbol);
-  const side = String(authRow.permitted_side) as "buy" | "sell";
-  const volume = Number(authRow.permitted_volume);
-  const routeAccountId = String(authRow.permitted_route_account_id);
+  const symbol = String(authRow?.permitted_symbol ?? "EURUSD");
+  const brokerSymbol = String(authRow?.permitted_broker_symbol ?? "EURUSD");
+  const side = String(authRow?.permitted_side ?? "sell") as "buy" | "sell";
+  const volume = Number(authRow?.permitted_volume ?? 0.01);
+  const routeAccountId = String(
+    authRow?.permitted_route_account_id ?? "559a12e4-16d8-4db3-be48-40fbea54bcfe",
+  );
 
   // 2) Pretrade chain (mapping → exec mode → trade-mode → fresh tick → risk).
   const mapping = await resolveActiveMtMapping(supabase, user.id);
