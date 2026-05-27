@@ -67,13 +67,11 @@ Deno.serve(async (req) => {
   let body: any = {};
   try { body = await req.json(); } catch { /* ignore */ }
   const previewOnly = body?.previewOnly === true;
+  const validateOnly = body?.validateOnly === true;
   const authorisationId = body?.authorisationId ? String(body.authorisationId) : null;
 
   // 1) Locate one usable, still-armed authorisation.
-  // Preview mode does NOT require an existing authorisation row — it just
-  // echoes the literal DTO that *would* be sent. Fall back to permitted
-  // defaults (EURUSD SELL 0.01 on the verified route) so the admin card
-  // can preview before authorising.
+  // Preview/validate modes do NOT require an existing authorisation row.
   let authRow: any = null;
   {
     let query = supabase
@@ -91,7 +89,7 @@ Deno.serve(async (req) => {
     authRow = rows?.[0] ?? null;
   }
 
-  if (!authRow && !previewOnly) {
+  if (!authRow && !previewOnly && !validateOnly) {
     return json({ success: false, step: "load_authorisation", error: "NO_VALID_AUTHORISATION" }, 404);
   }
 
@@ -104,8 +102,7 @@ Deno.serve(async (req) => {
   );
 
   // Preview short-circuit: echo the exact outbound DTO without running the
-  // pretrade chain or touching any authorisation row. The admin card calls
-  // validate-full-pretrade separately for the full pretrade preview.
+  // pretrade chain or touching any authorisation row.
   if (previewOnly) {
     const outboundDto = { side, symbol: brokerSymbol, volume };
     const endpointPath = `/api/v1/accounts/${routeAccountId}/trades/send`;
@@ -134,6 +131,113 @@ Deno.serve(async (req) => {
         fieldsInBody: Object.keys(outboundDto),
         deviationAbsent: true,
       },
+    });
+  }
+
+  // ---- VALIDATE-ONLY (mutation-suppressed) full dispatcher path ----
+  // Runs every gate the live dispatcher runs, in order, but never creates,
+  // consumes, or modifies an authorisation row and never calls Trading Layer.
+  if (validateOnly) {
+    const outboundDto = { side, symbol: brokerSymbol, volume };
+    const endpointPath = `/api/v1/accounts/${routeAccountId}/trades/send`;
+    const blocked = (stage: string, code: string, extra: Record<string, unknown> = {}) =>
+      json({
+        success: true,
+        validationOnly: true,
+        controlledDispatcherPath: true,
+        mutationSuppressed: true,
+        wouldDispatch: false,
+        blockedStage: stage,
+        blockedCode: code,
+        route: routeAccountId,
+        brokerSymbol,
+        side,
+        volume,
+        outboundBody: outboundDto,
+        endpointPath,
+        deviationAbsent: true,
+        internalMetadataExcluded: true,
+        ...extra,
+      });
+
+    const mapping = await resolveActiveMtMapping(supabase, user.id);
+    if (mapping.status !== "valid" || !mapping.traderId) {
+      return blocked("mapping_validation",
+        mapping.status === "missing" ? "MAPPING_NOT_FOUND" : "MAPPING_NOT_VALID",
+        { mappingStatus: mapping.status });
+    }
+    const gate = await assertLiveExecutionAllowed(supabase, user.id, {
+      traderId: mapping.traderId, login: mapping.login,
+    });
+    if (!gate.allowed) return blocked("execution_mode_gate", gate.code || "EXECUTION_MODE_BLOCKED", { mappingStatus: "valid" });
+    const gateFresh = await refreshTradeModeFromTradingLayer(supabase, {
+      traderId: mapping.traderId,
+      accountId: mapping.tradingLayerAccountId,
+      brokerSymbol,
+      login: mapping.login,
+      server: mapping.server,
+      operation: sideToOperation(side, "market"),
+    });
+    if (!gateFresh.ok) return blocked("trade_mode_gate", gateFresh.errorCode || "TRADE_MODE_GATE_BLOCKED", { mappingStatus: "valid" });
+    const ft = await resolveFreshExecutionTick({ routeAccountId, brokerSymbol, displaySymbol: symbol });
+    if (!ft.fresh) return blocked("fresh_tick", ft.code || "FRESH_TICK_UNAVAILABLE", {
+      mappingStatus: "valid",
+      freshTick: { fresh: false, ageMs: ft.ageMs },
+    });
+    try {
+      const settings = await loadRiskSettings(supabase, user.id);
+      const usage = await loadDailyUsage(supabase, user.id);
+      const breach = checkOpenRisk({ symbol, volume }, settings, usage);
+      if (breach) return blocked("risk_validation", String(breach.reason || "RISK_BLOCKED"), { mappingStatus: "valid" });
+    } catch { /* best-effort */ }
+
+    // Forced-refresh exposure (read-only).
+    let openEurusdPositions = 0;
+    let pendingEurusdOrders = 0;
+    try {
+      const liveResp = await fetch(`${BASE_URL}/api/v1/accounts/${routeAccountId}/positions`, {
+        headers: { Authorization: `Bearer ${TRADING_LAYER_KEY}` },
+      });
+      const liveText = await liveResp.text();
+      let liveJson: any; try { liveJson = JSON.parse(liveText); } catch { liveJson = {}; }
+      const positions: any[] = Array.isArray(liveJson?.data) ? liveJson.data
+        : Array.isArray(liveJson?.positions) ? liveJson.positions
+        : Array.isArray(liveJson) ? liveJson : [];
+      openEurusdPositions = positions.filter(
+        (p) => String(p?.symbol ?? "").toUpperCase() === "EURUSD",
+      ).length;
+    } catch { /* best-effort */ }
+    try {
+      const { count } = await supabase
+        .from("mt_pending_orders")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD");
+      pendingEurusdOrders = count ?? 0;
+    } catch { /* best-effort */ }
+
+    return json({
+      success: true,
+      validationOnly: true,
+      controlledDispatcherPath: true,
+      mutationSuppressed: true,
+      wouldDispatch: true,
+      blockedStage: null,
+      blockedCode: null,
+      mappingStatus: "valid",
+      route: routeAccountId,
+      brokerSymbol,
+      side,
+      volume,
+      openEurusdPositions,
+      pendingEurusdOrders,
+      freshTick: "pass",
+      freshTickAgeMs: ft.ageMs,
+      outboundBody: outboundDto,
+      endpointPath,
+      deviationAbsent: true,
+      internalMetadataExcluded: true,
     });
   }
 
