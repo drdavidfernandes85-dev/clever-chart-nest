@@ -176,6 +176,9 @@ const AdminFinalLifecycleValidationCard = () => {
   };
 
   const arm = async () => {
+    // UI-level double-click / re-entry guard. Authoritative concurrency control
+    // lives in the partial unique index `lifecycle_validation_one_active_per_account_idx`.
+    if (busy) return;
     if (activeRow) { toast.error("An active lifecycle authorisation already exists."); return; }
     if (!allAcked || !allGatesPass) return;
     if (!window.confirm("Create new single-use lifecycle authorisation? No order is dispatched by this action.")) return;
@@ -185,14 +188,14 @@ const AdminFinalLifecycleValidationCard = () => {
       const uid = u?.user?.id;
       if (!uid) throw new Error("Not authenticated");
 
-      // Active-row uniqueness re-check immediately before insert
+      // UX-only pre-check (not authoritative; DB index is the real guard)
       const { data: existing } = await supabase
         .from("lifecycle_validation_authorisations" as any)
         .select("id,status")
         .eq("authorisation_type", "final_controlled_open_close_lifecycle_validation")
         .in("status", Array.from(ACTIVE_STATUSES));
       if (existing && existing.length > 0) {
-        toast.error("Another active lifecycle row was created — refusing to create a duplicate.");
+        toast.error("Another active lifecycle row already exists — refusing to create a duplicate.");
         await load();
         return;
       }
@@ -216,9 +219,29 @@ const AdminFinalLifecycleValidationCard = () => {
           acknowledgements: acks,
           preview_snapshot: preview,
         });
-      if (error) throw error;
+
+      if (error) {
+        // PostgreSQL unique_violation — the partial unique index refused a
+        // concurrent duplicate active authorisation.
+        const code = (error as any)?.code;
+        const isUniqueViolation =
+          code === "23505" ||
+          /duplicate key value/i.test(error.message ?? "") ||
+          /lifecycle_validation_one_active_per_account_idx/i.test(error.message ?? "");
+        if (isUniqueViolation) {
+          toast.error(
+            "ACTIVE_LIFECYCLE_AUTHORISATION_ALREADY_EXISTS: Another active lifecycle authorisation already exists for this MT5 account. Refresh before continuing.",
+          );
+          await load();
+          return;
+        }
+        throw error;
+      }
+
       toast.success("Lifecycle authorisation armed");
       setAcks({});
+      setPreview(null);
+      setPreviewAt(null);
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Arm failed");
