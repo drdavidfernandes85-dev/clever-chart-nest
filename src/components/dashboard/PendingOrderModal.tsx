@@ -15,10 +15,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { startAdminLiveTest, updateAdminLiveTest, type AdminTestType } from "@/lib/adminLiveTests";
 import { executionConfirmationCoordinator } from "@/services/executionConfirmationCoordinator";
 import {
-  fetchExecutionEligibility,
-  readCachedEligibility,
-  type ExecutionEligibility,
-} from "@/lib/executionEligibility";
+  useTerminalExecutionEligibility,
+  type TerminalExecutionEligibility,
+} from "@/lib/terminalExecutionEligibility";
 
 export type PendingType = "buy_limit" | "sell_limit" | "buy_stop" | "sell_stop";
 
