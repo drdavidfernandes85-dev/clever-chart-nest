@@ -515,7 +515,10 @@ const AdminProductionModeTab = () => {
         </p>
       </Card>
 
+      <AdminControlledRetestEntryPassCard />
+
       <AdminControlledRetestCard />
+
 
       <AdminExecutionEligibilityCard />
 
