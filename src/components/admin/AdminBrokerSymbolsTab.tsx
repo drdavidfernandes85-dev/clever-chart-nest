@@ -429,11 +429,13 @@ export default function AdminBrokerSymbolsTab() {
   const tradeAllowed = routeVerified ? lastResp?.accountTradeAllowed : undefined;
   const accountTradeModeRaw = lastResp?.accountTradeModeRaw ?? null;
   const accountTradeModeLabel = lastResp?.accountTradeModeLabel ?? null;
-  // Per Trading Layer OpenAPI: account.trade_mode uses ENUM_SYMBOL_TRADE_MODE
-  // (0=DISABLED, 1=LONGONLY, 2=SHORTONLY, 3=CLOSEONLY, 4=FULL) — directional.
-  const accountCanBuy = tradeAllowed === true && canBuy(accountTradeModeRaw);
-  const accountCanSell = tradeAllowed === true && canSell(accountTradeModeRaw);
-  const accountExecPermitted = tradeAllowed === true && accountTradeModeRaw != null && accountTradeModeRaw !== 0;
+  // MT5 ENUM_ACCOUNT_TRADE_MODE: 0=DEMO, 1=CONTEST, 2=REAL. Informational only.
+  // Directional gating is per-symbol — account.trade_mode does NOT restrict BUY vs SELL.
+  // Authoritative live evidence: route 559a12e4… with trade_mode=2 successfully
+  // placed BUY EURUSD 0.01 (order 1169085428, retcode 10008 PLACED).
+  const accountCanBuy = tradeAllowed === true;
+  const accountCanSell = tradeAllowed === true;
+  const accountExecPermitted = tradeAllowed === true;
 
   // Symbol-level eligibility (independent of ack — ack only gates "ready for live test").
   const eurSymbolBuyEligible = !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
@@ -457,8 +459,6 @@ export default function AdminBrokerSymbolsTab() {
     : !eurResolved ? "EURUSD exact broker symbol not yet inspected — run Lookup EURUSD."
     : !eurSymbolBuyEligible && !eurSymbolSellEligible
       ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
-    : (!accountCanBuy && !accountCanSell)
-      ? `Account trade_mode = ${accountTradeModeRaw} (${accountTradeModeLabel}) blocks BUY and SELL at the account level`
       : null;
 
   const xauBlocker = xauAmbiguous
