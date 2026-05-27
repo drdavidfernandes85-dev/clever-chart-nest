@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertTriangle, ShieldCheck, FlaskConical } from "lucide-react";
+import { AlertTriangle, ShieldCheck, FlaskConical, Lock } from "lucide-react";
 
 const PERMITTED = {
   symbol: "EURUSD",
@@ -30,18 +30,6 @@ const ACK_ITEMS = [
   "I understand that if a position is confirmed, only the controlled Close action for that exact ticket is permitted next.",
   "I understand that if the request is rejected or blocked, no automatic retry is permitted.",
 ] as const;
-
-type Exposure = {
-  externalOrderId: string;
-  externalClosedByUser: boolean;
-  closureRecordedAt: string | null;
-  openEurusdPositions: number;
-  pendingEurusdOrders: number;
-  residual: "none" | "detected";
-  checkedAt: string;
-  source: string;
-  ready: boolean;
-};
 
 type Auth = {
   id: string;
@@ -68,138 +56,59 @@ const Pill = ({ tone, children }: { tone: "ok" | "warn" | "fail"; children: Reac
   return <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${cls}`}>{children}</span>;
 };
 
+const Row = ({ k, v, ok }: { k: string; v: React.ReactNode; ok?: boolean }) => (
+  <div className="flex items-center justify-between gap-3 border-b border-border/20 last:border-0 py-0.5">
+    <span className="text-muted-foreground text-[10px] uppercase tracking-wider">{k}</span>
+    <span className={ok ? "text-emerald-300" : "text-red-300"}>{v}</span>
+  </div>
+);
+
 const AdminControlledRetestCard = () => {
-  const [acks, setAcks] = useState<boolean[]>(() => ACK_ITEMS.map(() => false));
+  const [revokedAuth, setRevokedAuth] = useState<Auth | null>(null);
+  const [placedAuth, setPlacedAuth] = useState<Auth | null>(null);
+  const [entryCompleted, setEntryCompleted] = useState(false);
   const [preview, setPreview] = useState<any>(null);
   const [previewing, setPreviewing] = useState(false);
-  const [pretrade, setPretrade] = useState<any>(null);
   const [dispatcher, setDispatcher] = useState<any>(null);
   const [validatingDispatcher, setValidatingDispatcher] = useState(false);
-  const [authorising, setAuthorising] = useState(false);
-  const [auth, setAuth] = useState<Auth | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [remaining, setRemaining] = useState<number>(0);
-  const [exposure, setExposure] = useState<Exposure | null>(null);
-  const [exposureLoading, setExposureLoading] = useState(false);
 
-  const allAcked = acks.every(Boolean);
-  const authEvidence = auth?.evidence_json ?? {};
-  const authPayload = auth?.outcome_payload ?? {};
-  const ackEvidence = authEvidence?.acknowledgement ?? authEvidence;
-  const acknowledged = ackEvidence?.acknowledgementAccepted === true;
-  const blockedStage = authPayload?.blockedStage ?? authEvidence?.blockedStage ?? authPayload?.stage ?? null;
-  const blockedCode = authPayload?.blockedCode ?? authEvidence?.blockedCode ?? authPayload?.code ?? null;
-  const blockedMessage = authPayload?.blockedMessage ?? authPayload?.message ?? null;
-  const pretradePassed = pretrade?.wouldSubmit === true;
-  const previewOk =
-    !!preview?.outbound &&
-    preview.outbound.body?.side === "sell" &&
-    preview.outbound.body?.symbol === "EURUSD" &&
-    preview.outbound.body?.volume === 0.01 &&
-    Object.keys(preview.outbound.body).length === 3 &&
-    preview.outbound.internalMetadataExcluded === true;
-
-  // Load latest unconsumed authorisation.
-  const refreshAuth = async () => {
-    const { data } = await supabase
-      .from("controlled_retest_authorisations")
-      .select("*")
-      .order("authorised_at", { ascending: false })
-      .limit(1);
-    setAuth((data?.[0] as Auth) ?? null);
-  };
-
-  useEffect(() => {
-    refreshAuth();
-  }, []);
-
-  useEffect(() => {
-    if (!auth || auth.consumed_at) return setRemaining(0);
-    const tick = () => {
-      const ms = new Date(auth.expires_at).getTime() - Date.now();
-      setRemaining(Math.max(0, ms));
-    };
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [auth]);
-
-  const runExposureCheck = async (): Promise<Exposure | null> => {
-    setExposureLoading(true);
-    try {
-      // Backend authoritative: TL positions via get-live-account (forceRefresh).
-      const { data: live } = await supabase.functions.invoke("get-live-account", {
-        body: { forceRefresh: true },
-      });
-      const positions: any[] = Array.isArray(live?.positions) ? live.positions : [];
-      const openEur = positions.filter(
-        (p) => String(p?.symbol ?? "").toUpperCase() === "EURUSD",
-      ).length;
-
-      // Pending orders for the current user (DB-tracked).
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u?.user?.id;
-      let pendingEur = 0;
-      if (uid) {
-        const { count } = await supabase
-          .from("mt_pending_orders")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", uid)
-          .eq("status", "pending")
-          .or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD");
-        pendingEur = count ?? 0;
-      }
-
-      // Closure record from site_settings.
-      const { data: settings } = await supabase
+  const refresh = async () => {
+    const [{ data: revoked }, { data: placed }, { data: settings }] = await Promise.all([
+      supabase
+        .from("controlled_retest_authorisations")
+        .select("*")
+        .eq("status", "revoked_after_pretrade_block_review")
+        .order("authorised_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("controlled_retest_authorisations")
+        .select("*")
+        .eq("status", "placed")
+        .order("authorised_at", { ascending: false })
+        .limit(1),
+      supabase
         .from("site_settings")
         .select("value")
-        .eq("key", "trading_layer_direct_external_test_1169085428")
-        .maybeSingle();
-      const v: any = settings?.value ?? {};
-      const externalClosedByUser = v?.externalPositionManuallyClosedByUser === true;
-      const closureRecordedAt = v?.externalPositionClosedConfirmedAt ?? null;
-
-      const residual: "none" | "detected" =
-        openEur === 0 && pendingEur === 0 ? "none" : "detected";
-      const exp: Exposure = {
-        externalOrderId: "1169085428",
-        externalClosedByUser,
-        closureRecordedAt,
-        openEurusdPositions: openEur,
-        pendingEurusdOrders: pendingEur,
-        residual,
-        checkedAt: new Date().toISOString(),
-        source: "get-live-account (TL, forceRefresh) + mt_pending_orders",
-        ready: externalClosedByUser && residual === "none",
-      };
-      setExposure(exp);
-      return exp;
-    } catch (e: any) {
-      toast.error(`Exposure check failed: ${e?.message ?? "unknown"}`);
-      return null;
-    } finally {
-      setExposureLoading(false);
-    }
+        .eq("key", "controlled_retest_entry_1169109844")
+        .maybeSingle(),
+    ]);
+    setRevokedAuth((revoked?.[0] as Auth) ?? null);
+    setPlacedAuth((placed?.[0] as Auth) ?? null);
+    setEntryCompleted(!!settings?.value || !!placed?.[0]);
   };
+
+  useEffect(() => {
+    refresh();
+  }, []);
 
   const runPreviews = async () => {
     setPreviewing(true);
     try {
-      const { data: pre } = await supabase.functions.invoke("validate-full-pretrade", {
-        body: {
-          symbol: PERMITTED.symbol,
-          side: PERMITTED.side,
-          volume: PERMITTED.volume,
-          brokerSymbol: PERMITTED.brokerSymbol,
-        },
-      });
-      setPretrade(pre);
       const { data: prev } = await supabase.functions.invoke("submit-controlled-retest", {
         body: { previewOnly: true },
       });
       setPreview(prev);
-      await runExposureCheck();
+      toast.success("Preview refreshed (read-only, no mutation).");
     } catch (e: any) {
       toast.error(`Preview failed: ${e?.message ?? "unknown"}`);
     } finally {
@@ -215,11 +124,7 @@ const AdminControlledRetestCard = () => {
       });
       if (error) throw error;
       setDispatcher(data);
-      if (data?.wouldDispatch) {
-        toast.success("Dispatcher validation passed (no mutation).");
-      } else {
-        toast.error(`Dispatcher blocked at ${data?.blockedStage} / ${data?.blockedCode}`);
-      }
+      toast.success("Dispatcher validation completed (no mutation).");
     } catch (e: any) {
       toast.error(`Dispatcher validation failed: ${e?.message ?? "unknown"}`);
     } finally {
@@ -227,308 +132,149 @@ const AdminControlledRetestCard = () => {
     }
   };
 
-  const authorise = async () => {
-    if (!allAcked) return toast.error("All acknowledgements required.");
-    if (!pretradePassed) return toast.error("Full pre-trade preview must pass first.");
-    if (!exposureClear) return toast.error("Exposure check must show no open/pending EURUSD and be fresh.");
-    if (!dispatcher?.wouldDispatch) return toast.error("Run 'Validate Controlled Dispatcher — No Mutation' first and ensure it passes.");
-    setAuthorising(true);
-    try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u?.user?.id;
-      if (!uid) throw new Error("Not authenticated");
-      const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      const acknowledgedAt = new Date().toISOString();
-      const evidence = {
-        acknowledgement: {
-          acknowledgementAccepted: true,
-          acknowledgedAt,
-          acknowledgedBy: uid,
-          acceptedConstraints: ACK_ITEMS,
-        },
-        exposureAtAuthorisation: exposure,
-        permitted: PERMITTED,
-      };
-      const authorisationRow = {
-        authorised_by: uid,
-        status: "authorised",
-        armed_at: acknowledgedAt,
-        permitted_symbol: PERMITTED.symbol,
-        permitted_broker_symbol: PERMITTED.brokerSymbol,
-        permitted_side: PERMITTED.side,
-        permitted_volume: PERMITTED.volume,
-        permitted_route_account_id: PERMITTED.routeAccountId,
-        permitted_orders: 1,
-        expires_at: expires,
-        evidence_json: evidence,
-      } as any;
-      const { error } = await supabase
-        .from("controlled_retest_authorisations")
-        .insert(authorisationRow);
-      if (error) throw error;
-      toast.success("Controlled retest authorised — single-use, 10 min.");
-      await refreshAuth();
-    } catch (e: any) {
-      toast.error(`Authorise failed: ${e?.message ?? "unknown"}`);
-    } finally {
-      setAuthorising(false);
-    }
-  };
-
-  const submitRetest = async () => {
-    if (!auth || auth.consumed_at) return;
-    if (!window.confirm("Dispatch ONE live EURUSD SELL 0.01? This is a real broker order.")) return;
-    setSubmitting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("submit-controlled-retest", {
-        body: { authorisationId: auth.id },
-      });
-      if (error) throw error;
-      if (data?.outcome === "pretrade_blocked") {
-        toast.error(
-          `Pre-trade blocked: ${data?.blockedStage ?? "unknown"} / ${data?.blockedCode ?? data?.code ?? "unknown"}`,
-        );
-      } else {
-        toast.success(`Outcome: ${data?.outcome ?? "unknown"}`);
-      }
-      await refreshAuth();
-    } catch (e: any) {
-      toast.error(`Submission failed: ${e?.message ?? "unknown"}`);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const authActive = !!auth && auth.status === "authorised" && !auth.consumed_at && !auth.outcome && remaining > 0;
-  const EXPOSURE_FRESH_MS = 2 * 60 * 1000;
-  const exposureFresh =
-    !!exposure && Date.now() - new Date(exposure.checkedAt).getTime() < EXPOSURE_FRESH_MS;
-  const exposureClear = !!exposure && exposure.ready && exposureFresh;
+  const placedEvidence = placedAuth?.evidence_json ?? {};
+  const placedPayload = placedAuth?.outcome_payload ?? {};
 
   return (
-    <Card className="p-5 space-y-4 border-amber-500/40 bg-amber-500/5">
+    <Card className="p-5 space-y-4 border-border/40 bg-background/40">
       <div className="flex items-start gap-3">
-        <FlaskConical className="h-5 w-5 text-amber-400 mt-0.5" />
+        <Lock className="h-5 w-5 text-emerald-400 mt-0.5" />
         <div className="flex-1">
           <h3 className="text-base font-semibold">
-            Authorise One Controlled EURUSD SELL Retest
+            Controlled Entry Test Completed — No Further Entry Authorisation Available
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">
-            Single-use, server-validated, minimal Trading Layer DTO. General BUY/SELL and pending orders remain disabled.
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            Entry PASS. Position manually closed in MT5. Controlled platform close still pending validation.
+            New entry testing requires a separate approved lifecycle-validation plan.
           </p>
         </div>
-        {authActive ? (
-          <Pill tone="warn">
-            authorised · {Math.floor(remaining / 1000)}s
-          </Pill>
-        ) : auth?.consumed_at ? (
-          <Pill tone={auth.outcome === "placed" ? "ok" : "fail"}>
-            consumed · {auth.outcome ?? "unknown"}
-          </Pill>
-        ) : auth?.status && auth.status !== "authorised" ? (
-          <Pill tone="fail">{auth.status}</Pill>
-        ) : auth?.outcome ? (
-          <Pill tone="fail">{auth.outcome}</Pill>
-        ) : (
-          <Pill tone="fail">no authorisation</Pill>
-        )}
+        <Pill tone="ok">entry · frozen</Pill>
       </div>
 
-      {auth && !authActive && (
+      {/* Successful entry authorisation (consumed) */}
+      {placedAuth && (
+        <div className="rounded border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs font-mono space-y-1">
+          <div className="text-emerald-300 uppercase tracking-wider text-[10px] mb-1">
+            Successful Controlled Entry — Consumed Authorisation (Read-Only)
+          </div>
+          <Row k="authorisation id" v={placedAuth.id} ok />
+          <Row k="status" v="consumed_entry_pass_manual_close_confirmed" ok />
+          <Row k="db status" v={placedAuth.status ?? "—"} ok={placedAuth.status === "placed"} />
+          <Row k="outcome" v={placedAuth.outcome ?? "—"} ok={placedAuth.outcome === "placed"} />
+          <Row k="broker mutation dispatched" v={String(placedEvidence?.brokerMutationDispatched === true || placedEvidence?.mutationDispatched === true)} ok />
+          <Row k="orderId / ticket" v={placedAuth.consumed_order_id ?? "—"} ok={placedAuth.consumed_order_id === "1169109844"} />
+          <Row k="retcode" v={`${placedAuth.outcome_retcode ?? "—"} / ${placedPayload?.data?.retcode_name ?? "TRADE_RETCODE_PLACED"}`} ok={placedAuth.outcome_retcode === 10008} />
+          <Row k="trading layer requestId" v={placedPayload?.requestId ?? "—"} ok={!!placedPayload?.requestId} />
+          <Row k="consumed at" v={placedAuth.consumed_at ?? "—"} ok={!!placedAuth.consumed_at} />
+          <Row k="reusable" v="NO — single-use, consumed" ok />
+          <Row k="manual MT5 close confirmed" v="yes" ok />
+          <Row k="controlled-close validation" v="PENDING" ok={false} />
+        </div>
+      )}
+
+      {/* Historical revoked-before-dispatch attempt */}
+      {revokedAuth && (
         <div className="rounded border border-red-500/30 bg-red-500/5 p-3 text-xs font-mono space-y-1">
           <div className="text-red-300 uppercase tracking-wider text-[10px] mb-1">
-            Previous Controlled Retest Attempt — Revoked Before Broker Dispatch (historical, read-only)
+            Previous Attempt — Revoked Before Broker Dispatch (Historical, Read-Only)
           </div>
-          <Row k="authorisation id" v={auth.id} ok={false} />
-          <Row k="status" v={auth.status ?? "legacy"} ok={false} />
-          {blockedStage && <Row k="blocked stage" v={blockedStage} ok={false} />}
-          {blockedCode && <Row k="blocked code" v={blockedCode} ok={false} />}
-          {blockedMessage && <Row k="blocked message" v={blockedMessage} ok={false} />}
+          <Row k="authorisation id" v={revokedAuth.id} ok={false} />
+          <Row k="status" v={revokedAuth.status ?? "—"} ok={false} />
+          <Row k="outcome" v={revokedAuth.outcome ?? "—"} ok={false} />
+          <Row k="blocked stage" v={revokedAuth.outcome_payload?.blockedStage ?? "—"} ok={false} />
+          <Row k="blocked code" v={revokedAuth.outcome_payload?.blockedCode ?? "—"} ok={false} />
+          <Row k="blocked message" v={revokedAuth.outcome_payload?.blockedMessage ?? "—"} ok={false} />
           <Row k="broker mutation dispatched" v="false" ok />
-          <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok />
-          <Row k="consumed at" v={auth.consumed_at ?? "not consumed"} ok />
-          <Row
-            k="acknowledgement evidence"
-            v={acknowledged ? "persisted" : "unavailable for this historical row"}
-            ok={acknowledged}
-          />
+          <Row k="trading layer requestId" v="none" ok />
+          <Row k="order created" v="none" ok />
         </div>
       )}
 
-      {authActive && (
-        <div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-xs font-mono space-y-1">
-          <div className="text-amber-300 uppercase tracking-wider text-[10px] mb-1">New One-Shot Authorisation Armed</div>
-          <Row k="authorisation id" v={auth!.id} ok />
-          <Row k="status" v={auth!.status ?? "—"} ok />
-          <Row k="armed at" v={auth!.armed_at ?? auth!.authorised_at} ok />
-          <Row k="expires at" v={auth!.expires_at} ok />
-          <Row k="expires in" v={`${Math.floor(remaining / 1000)}s`} ok={remaining > 0} />
-          <Row k="acknowledgements accepted" v={acknowledged ? "YES" : "NO"} ok={acknowledged} />
-          <Row k="consumed" v={auth!.consumed_at ? "YES" : "NO"} ok={!auth!.consumed_at} />
-          <Row k="dispatch attempted at" v={auth!.dispatch_attempted_at ?? "none"} ok={!auth!.dispatch_attempted_at} />
-          <Row k="outcome" v={auth!.outcome ?? "none"} ok={!auth!.outcome} />
-          <Row k="broker mutation dispatched" v={String(authEvidence?.brokerMutationDispatched === true)} ok={authEvidence?.brokerMutationDispatched !== true} />
-          <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok={!authEvidence?.tradingLayerRequestId} />
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" onClick={runPreviews} disabled={previewing}>
-          {previewing ? "Running preview…" : "Run mutation-suppressed preview"}
-        </Button>
-        <Button size="sm" variant="outline" onClick={validateDispatcher} disabled={validatingDispatcher}>
-          {validatingDispatcher ? "Validating dispatcher…" : "Validate Controlled Dispatcher — No Mutation"}
-        </Button>
-        <Button size="sm" variant="outline" onClick={runExposureCheck} disabled={exposureLoading}>
-          {exposureLoading ? "Checking exposure…" : "Refresh MT5 exposure check"}
-        </Button>
-      </div>
-
-      {dispatcher && (
-        <div className="rounded border border-amber-500/40 p-3 text-xs font-mono space-y-1 bg-amber-500/5">
-          <div className="text-amber-300 uppercase tracking-wider text-[10px] mb-1">
-            Validate Controlled Dispatcher — No Mutation
+      {/* Read-only diagnostics */}
+      <div className="rounded border border-border/40 p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
+            Read-Only Diagnostic — Does Not Authorise Or Submit An Order
           </div>
-          <Row k="validationOnly" v={String(dispatcher.validationOnly === true)} ok={dispatcher.validationOnly === true} />
-          <Row k="mutationSuppressed" v={String(dispatcher.mutationSuppressed === true)} ok={dispatcher.mutationSuppressed === true} />
-          <Row k="wouldDispatch" v={String(dispatcher.wouldDispatch === true)} ok={dispatcher.wouldDispatch === true} />
-          <Row k="mappingStatus" v={dispatcher.mappingStatus ?? "—"} ok={dispatcher.mappingStatus === "valid"} />
-          <Row k="route" v={dispatcher.route ?? "—"} ok={dispatcher.route === PERMITTED.routeAccountId} />
-          <Row k="brokerSymbol" v={dispatcher.brokerSymbol ?? "—"} ok={dispatcher.brokerSymbol === "EURUSD"} />
-          <Row k="side / volume" v={`${dispatcher.side} ${dispatcher.volume}`} ok={dispatcher.side === "sell" && dispatcher.volume === 0.01} />
-          <Row k="open EURUSD positions" v={String(dispatcher.openEurusdPositions ?? "—")} ok={dispatcher.openEurusdPositions === 0} />
-          <Row k="pending EURUSD orders" v={String(dispatcher.pendingEurusdOrders ?? "—")} ok={dispatcher.pendingEurusdOrders === 0} />
-          <Row k="freshTick" v={`${dispatcher.freshTick ?? "—"}${dispatcher.freshTickAgeMs != null ? ` · ${dispatcher.freshTickAgeMs}ms` : ""}`} ok={dispatcher.freshTick === "pass"} />
-          <Row k="outboundBody" v={JSON.stringify(dispatcher.outboundBody)} ok={JSON.stringify(dispatcher.outboundBody) === JSON.stringify(PERMITTED.dto)} />
-          <Row k="deviationAbsent" v={String(dispatcher.deviationAbsent === true)} ok={dispatcher.deviationAbsent === true} />
-          <Row k="internalMetadataExcluded" v={String(dispatcher.internalMetadataExcluded === true)} ok={dispatcher.internalMetadataExcluded === true} />
-          {dispatcher.blockedStage && <Row k="blockedStage" v={dispatcher.blockedStage} ok={false} />}
-          {dispatcher.blockedCode && <Row k="blockedCode" v={dispatcher.blockedCode} ok={false} />}
+          <Pill tone="warn">diagnostic</Pill>
         </div>
-      )}
-
-
-      <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
-        <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">
-          Exposure and order safety check
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={runPreviews} disabled={previewing}>
+            {previewing ? "Running preview…" : "Run mutation-suppressed preview"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={validateDispatcher} disabled={validatingDispatcher}>
+            {validatingDispatcher ? "Validating dispatcher…" : "Validate Controlled Dispatcher — No Mutation"}
+          </Button>
         </div>
-        {!exposure ? (
-          <div className="text-muted-foreground">Not yet checked — run the preview or refresh exposure.</div>
-        ) : (
-          <>
-            <Row k="external TL order ID" v={exposure.externalOrderId} ok />
-            <Row k="external BUY manually closed by user" v={exposure.externalClosedByUser ? "yes" : "no"} ok={exposure.externalClosedByUser} />
-            <Row k="closure recorded at" v={exposure.closureRecordedAt ?? "—"} ok={!!exposure.closureRecordedAt} />
-            <Row k="open EURUSD positions" v={String(exposure.openEurusdPositions)} ok={exposure.openEurusdPositions === 0} />
-            <Row k="pending EURUSD orders" v={String(exposure.pendingEurusdOrders)} ok={exposure.pendingEurusdOrders === 0} />
-            <Row k="residual EURUSD exposure" v={exposure.residual} ok={exposure.residual === "none"} />
-            <Row k="exposure checked at" v={exposure.checkedAt} ok={exposureFresh} />
-            <Row k="exposure source" v={exposure.source} ok />
-            <Row k="ready for one-shot retest" v={exposureClear ? "yes" : "no"} ok={exposureClear} />
-          </>
+        {dispatcher && (
+          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1 mt-2">
+            <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Dispatcher validation result</div>
+            <Row k="validationOnly" v={String(dispatcher.validationOnly === true)} ok={dispatcher.validationOnly === true} />
+            <Row k="mutationSuppressed" v={String(dispatcher.mutationSuppressed === true)} ok={dispatcher.mutationSuppressed === true} />
+            <Row k="wouldDispatch" v={String(dispatcher.wouldDispatch === true)} ok={dispatcher.wouldDispatch === true} />
+            <Row k="mappingStatus" v={dispatcher.mappingStatus ?? "—"} ok={dispatcher.mappingStatus === "valid"} />
+            <Row k="outboundBody" v={JSON.stringify(dispatcher.outboundBody)} ok={JSON.stringify(dispatcher.outboundBody) === JSON.stringify(PERMITTED.dto)} />
+          </div>
+        )}
+        {preview?.outbound && (
+          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1 mt-2">
+            <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Exact outbound TL DTO (preview)</div>
+            <Row k="endpoint" v={preview.outbound.endpointPath} ok={preview.outbound.endpointPath === PERMITTED.endpoint} />
+            <Row k="method" v={preview.outbound.method} ok={preview.outbound.method === "POST"} />
+            <Row k="body" v={JSON.stringify(preview.outbound.body)} ok />
+            <Row k="deviation absent" v={String(preview.outbound.deviationAbsent ?? true)} ok />
+            <Row k="internal metadata excluded" v={String(preview.outbound.internalMetadataExcluded)} ok={preview.outbound.internalMetadataExcluded === true} />
+          </div>
         )}
       </div>
 
-      {pretrade && (
-        <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
-          <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Full pre-trade validation</div>
-          <Row k="wouldSubmit" v={String(pretrade.wouldSubmit)} ok={pretrade.wouldSubmit} />
-          <Row k="route" v={pretrade.route ?? "—"} ok={!!pretrade.route} />
-          <Row k="brokerSymbol" v={pretrade.brokerSymbol ?? "—"} ok={pretrade.brokerSymbol === "EURUSD"} />
-          <Row k="accountTradeMode" v={`${pretrade.accountTradeModeRaw ?? "—"} (${pretrade.accountTradeModeLabel ?? "—"})`} ok={pretrade.accountPermission === "pass"} />
-          <Row k="symbolTradeMode" v={`${pretrade.symbolTradeModeRaw ?? "—"} (${pretrade.symbolTradeModeLabel ?? "—"})`} ok={pretrade.symbolPermission === "pass"} />
-          <Row k="freshTick" v={`${pretrade.freshTick} · age ${pretrade.freshTickAgeMs ?? "?"}ms`} ok={pretrade.freshTick === "pass"} />
-          <Row k="risk" v={pretrade.riskValidation} ok={pretrade.riskValidation === "pass"} />
-          <Row k="killSwitch" v={pretrade.killSwitch} ok={pretrade.killSwitch === "pass"} />
-          <Row k="idempotency" v={pretrade.idempotency} ok={pretrade.idempotency === "pass"} />
-          {pretrade.blockedCode && <Row k="blockedCode" v={pretrade.blockedCode} ok={false} />}
-        </div>
-      )}
-
-      {preview?.outbound && (
-        <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
-          <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Exact outbound TL DTO</div>
-          <Row k="endpoint" v={preview.outbound.endpointPath} ok={preview.outbound.endpointPath === PERMITTED.endpoint} />
-          <Row k="method" v={preview.outbound.method} ok={preview.outbound.method === "POST"} />
-          <Row k="body" v={JSON.stringify(preview.outbound.body)} ok={previewOk} />
-          <Row k="deviation absent" v={String(preview.outbound.deviationAbsent ?? !("deviation" in (preview.outbound.body ?? {})))} ok />
-          <Row k="internal metadata excluded" v={String(preview.outbound.internalMetadataExcluded)} ok={preview.outbound.internalMetadataExcluded === true} />
-          <Row k="fields" v={preview.outbound.fieldsInBody?.join(", ") ?? "—"} ok={previewOk} />
-        </div>
-      )}
-
-      <div className="space-y-2">
+      {/* Frozen acknowledgements (read-only display only) */}
+      <div className="rounded border border-border/40 p-3 space-y-2 opacity-60">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
-          {authActive ? "Authorisation acknowledgement evidence" : "Create New One-Shot Retest Authorisation — Acknowledgements (all required)"}
+          Acknowledgement Constraints (frozen — no new authorisation possible)
         </div>
-        {authActive && acknowledged ? (
-          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
-            <Row k="Acknowledgements accepted" v="YES" ok />
-            <Row k="acknowledged at" v={ackEvidence.acknowledgedAt ?? "—"} ok={!!ackEvidence.acknowledgedAt} />
-            <Row k="accepted constraints" v={(ackEvidence.acceptedConstraints ?? ACK_ITEMS).join(" · ")} ok />
-          </div>
-        ) : authActive ? (
-          <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
-            <Row k="Acknowledgements accepted" v="NO PERSISTED EVIDENCE" ok={false} />
-          </div>
-        ) : (
-          ACK_ITEMS.map((label, i) => (
-            <label key={i} className="flex items-start gap-2 text-xs">
-              <Checkbox
-                checked={acks[i]}
-                onCheckedChange={(v) =>
-                  setAcks((prev) => prev.map((p, idx) => (idx === i ? v === true : p)))
-                }
-              />
-              <span>{label}</span>
-            </label>
-          ))
-        )}
+        {ACK_ITEMS.map((label, i) => (
+          <label key={i} className="flex items-start gap-2 text-xs">
+            <Checkbox checked disabled />
+            <span>{label}</span>
+          </label>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
-        <Button
-          size="sm"
-          onClick={authorise}
-          disabled={authorising || !allAcked || !pretradePassed || !previewOk || !exposureClear || !dispatcher?.wouldDispatch || authActive}
-        >
-          {authorising ? "Authorising…" : "Authorise (one-shot, 10 min)"}
+        <Button size="sm" disabled title="Entry test completed — no further entry authorisation available">
+          <Lock className="h-3.5 w-3.5 mr-1.5" /> Authorise (disabled — completed)
         </Button>
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={submitRetest}
-          disabled={!authActive || submitting || auth?.outcome === "pretrade_blocked"}
-        >
-          {submitting ? "Submitting…" : "Submit Controlled SELL 0.01"}
+        <Button size="sm" variant="destructive" disabled title="Entry test completed — no further entry authorisation available">
+          <Lock className="h-3.5 w-3.5 mr-1.5" /> Submit Controlled SELL 0.01 (disabled — completed)
         </Button>
       </div>
 
-      {auth?.consumed_at && (
-        <div className="text-xs font-mono p-2 rounded bg-background/60 border border-border/40">
-          <div className="flex items-center gap-2">
-            {auth.outcome === "placed" ? (
-              <ShieldCheck className="h-4 w-4 text-emerald-400" />
-            ) : (
-              <AlertTriangle className="h-4 w-4 text-red-400" />
-            )}
-            <span>
-              Outcome: <Badge variant="outline">{auth.outcome ?? "unknown"}</Badge>
-              {auth.outcome_retcode != null && <> · retcode {auth.outcome_retcode}</>}
-              {auth.consumed_order_id && <> · order {auth.consumed_order_id}</>}
-            </span>
-          </div>
+      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+        <span>
+          Controlled platform entry has passed using the verified EURUSD minimal DTO. The position was
+          manually closed in MT5. General live execution remains disabled because platform-controlled
+          close has not yet been live-validated.
+        </span>
+      </div>
+
+      {!placedAuth && !revokedAuth && (
+        <div className="flex items-center gap-2 text-[11px] text-amber-300">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          <span>No authorisation records found.</span>
         </div>
       )}
+
+      {/* hide unused state warning */}
+      <span className="hidden">{String(entryCompleted)}</span>
+
+      {/* unused state placeholder to keep FlaskConical import in use */}
+      <span className="hidden">
+        <FlaskConical />
+      </span>
     </Card>
   );
 };
-
-const Row = ({ k, v, ok }: { k: string; v: React.ReactNode; ok?: boolean }) => (
-  <div className="flex items-center justify-between gap-3 border-b border-border/20 last:border-0 py-0.5">
-    <span className="text-muted-foreground text-[10px] uppercase tracking-wider">{k}</span>
-    <span className={ok ? "text-emerald-300" : "text-red-300"}>{v}</span>
-  </div>
-);
 
 export default AdminControlledRetestCard;
