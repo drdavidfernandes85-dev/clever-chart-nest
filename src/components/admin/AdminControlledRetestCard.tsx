@@ -334,19 +334,39 @@ const AdminControlledRetestCard = () => {
         )}
       </div>
 
-      {auth && (
-        <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
-          <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Authorisation state</div>
-          <Row k="authorisation id" v={auth.id} ok={authActive} />
-          <Row k="status" v={auth.status ?? "legacy"} ok={authActive} />
-          <Row k="armed at" v={auth.armed_at ?? auth.authorised_at} ok={!!auth.armed_at || !!auth.authorised_at} />
-          <Row k="expires at" v={auth.expires_at} ok={authActive} />
-          <Row k="consumed at" v={auth.consumed_at ?? "not consumed"} ok={!auth.consumed_at} />
-          <Row k="dispatch attempted at" v={auth.dispatch_attempted_at ?? "none"} ok={!auth.dispatch_attempted_at} />
-          <Row k="outcome" v={auth.outcome ?? "none"} ok={!auth.outcome} />
+      {auth && !authActive && (
+        <div className="rounded border border-red-500/30 bg-red-500/5 p-3 text-xs font-mono space-y-1">
+          <div className="text-red-300 uppercase tracking-wider text-[10px] mb-1">
+            Previous Controlled Retest Attempt — Revoked Before Broker Dispatch (historical, read-only)
+          </div>
+          <Row k="authorisation id" v={auth.id} ok={false} />
+          <Row k="status" v={auth.status ?? "legacy"} ok={false} />
           {blockedStage && <Row k="blocked stage" v={blockedStage} ok={false} />}
           {blockedCode && <Row k="blocked code" v={blockedCode} ok={false} />}
           {blockedMessage && <Row k="blocked message" v={blockedMessage} ok={false} />}
+          <Row k="broker mutation dispatched" v="false" ok />
+          <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok />
+          <Row k="consumed at" v={auth.consumed_at ?? "not consumed"} ok />
+          <Row
+            k="acknowledgement evidence"
+            v={acknowledged ? "persisted" : "unavailable for this historical row"}
+            ok={acknowledged}
+          />
+        </div>
+      )}
+
+      {authActive && (
+        <div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-xs font-mono space-y-1">
+          <div className="text-amber-300 uppercase tracking-wider text-[10px] mb-1">New One-Shot Authorisation Armed</div>
+          <Row k="authorisation id" v={auth!.id} ok />
+          <Row k="status" v={auth!.status ?? "—"} ok />
+          <Row k="armed at" v={auth!.armed_at ?? auth!.authorised_at} ok />
+          <Row k="expires at" v={auth!.expires_at} ok />
+          <Row k="expires in" v={`${Math.floor(remaining / 1000)}s`} ok={remaining > 0} />
+          <Row k="acknowledgements accepted" v={acknowledged ? "YES" : "NO"} ok={acknowledged} />
+          <Row k="consumed" v={auth!.consumed_at ? "YES" : "NO"} ok={!auth!.consumed_at} />
+          <Row k="dispatch attempted at" v={auth!.dispatch_attempted_at ?? "none"} ok={!auth!.dispatch_attempted_at} />
+          <Row k="outcome" v={auth!.outcome ?? "none"} ok={!auth!.outcome} />
           <Row k="broker mutation dispatched" v={String(authEvidence?.brokerMutationDispatched === true)} ok={authEvidence?.brokerMutationDispatched !== true} />
           <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok={!authEvidence?.tradingLayerRequestId} />
         </div>
