@@ -231,7 +231,7 @@ Deno.serve(async (req) => {
     // If unknown, list traders and pick the one matching this MT5 login or the user's email.
     if (!traderId) {
       const tradersRes = await fetchWithTimeout(
-        `${TRADING_LAYER_BASE}/api/v1/traders?limit=200`,
+        `${TRADING_LAYER_BASE}/api/v1/traders?limit=100`,
         { method: "GET", headers: tlHeaders },
         15000,
       );
