@@ -18,17 +18,17 @@ const PERMITTED = {
 };
 
 const ACK_ITEMS = [
-  "Volume fixed at 0.01",
-  "Symbol fixed at EURUSD",
-  "brokerSymbol fixed at EURUSD",
-  "Side fixed at SELL",
-  `Endpoint fixed at ${PERMITTED.endpoint}`,
-  'Outbound DTO exactly {"side":"sell","symbol":"EURUSD","volume":0.01}',
-  "Server fresh-tick validation required",
-  "Risk / kill-switch / idempotency remain active",
-  "If position confirms, only Close on that exact position is permitted next",
-  "If rejected, the platform immediately re-blocks without another retry",
-  "I confirm the read-only MT5 refresh shows no open or pending EURUSD exposure before this one-shot test.",
+  "I confirm the selected MT5 account is 87943580 on InfinoxLimited-MT5Live.",
+  "I confirm there are currently zero open EURUSD positions and zero pending EURUSD orders.",
+  "I confirm the order is fixed at EURUSD SELL 0.01 only.",
+  "I confirm the exact brokerSymbol is EURUSD.",
+  "I confirm the execution route is 559a12e4-16d8-4db3-be48-40fbea54bcfe.",
+  'I confirm the outbound Trading Layer body is exactly {"side":"sell","symbol":"EURUSD","volume":0.01}.',
+  "I confirm deviation is absent and internal audit metadata is excluded from the Trading Layer body.",
+  "I confirm server-side fresh-tick, risk, kill-switch and idempotency checks remain mandatory.",
+  "I understand this permits one real MT5 order attempt only and expires after 10 minutes.",
+  "I understand that if a position is confirmed, only the controlled Close action for that exact ticket is permitted next.",
+  "I understand that if the request is rejected or blocked, no automatic retry is permitted.",
 ] as const;
 
 type Exposure = {
@@ -334,19 +334,39 @@ const AdminControlledRetestCard = () => {
         )}
       </div>
 
-      {auth && (
-        <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
-          <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">Authorisation state</div>
-          <Row k="authorisation id" v={auth.id} ok={authActive} />
-          <Row k="status" v={auth.status ?? "legacy"} ok={authActive} />
-          <Row k="armed at" v={auth.armed_at ?? auth.authorised_at} ok={!!auth.armed_at || !!auth.authorised_at} />
-          <Row k="expires at" v={auth.expires_at} ok={authActive} />
-          <Row k="consumed at" v={auth.consumed_at ?? "not consumed"} ok={!auth.consumed_at} />
-          <Row k="dispatch attempted at" v={auth.dispatch_attempted_at ?? "none"} ok={!auth.dispatch_attempted_at} />
-          <Row k="outcome" v={auth.outcome ?? "none"} ok={!auth.outcome} />
+      {auth && !authActive && (
+        <div className="rounded border border-red-500/30 bg-red-500/5 p-3 text-xs font-mono space-y-1">
+          <div className="text-red-300 uppercase tracking-wider text-[10px] mb-1">
+            Previous Controlled Retest Attempt — Revoked Before Broker Dispatch (historical, read-only)
+          </div>
+          <Row k="authorisation id" v={auth.id} ok={false} />
+          <Row k="status" v={auth.status ?? "legacy"} ok={false} />
           {blockedStage && <Row k="blocked stage" v={blockedStage} ok={false} />}
           {blockedCode && <Row k="blocked code" v={blockedCode} ok={false} />}
           {blockedMessage && <Row k="blocked message" v={blockedMessage} ok={false} />}
+          <Row k="broker mutation dispatched" v="false" ok />
+          <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok />
+          <Row k="consumed at" v={auth.consumed_at ?? "not consumed"} ok />
+          <Row
+            k="acknowledgement evidence"
+            v={acknowledged ? "persisted" : "unavailable for this historical row"}
+            ok={acknowledged}
+          />
+        </div>
+      )}
+
+      {authActive && (
+        <div className="rounded border border-amber-500/40 bg-amber-500/10 p-3 text-xs font-mono space-y-1">
+          <div className="text-amber-300 uppercase tracking-wider text-[10px] mb-1">New One-Shot Authorisation Armed</div>
+          <Row k="authorisation id" v={auth!.id} ok />
+          <Row k="status" v={auth!.status ?? "—"} ok />
+          <Row k="armed at" v={auth!.armed_at ?? auth!.authorised_at} ok />
+          <Row k="expires at" v={auth!.expires_at} ok />
+          <Row k="expires in" v={`${Math.floor(remaining / 1000)}s`} ok={remaining > 0} />
+          <Row k="acknowledgements accepted" v={acknowledged ? "YES" : "NO"} ok={acknowledged} />
+          <Row k="consumed" v={auth!.consumed_at ? "YES" : "NO"} ok={!auth!.consumed_at} />
+          <Row k="dispatch attempted at" v={auth!.dispatch_attempted_at ?? "none"} ok={!auth!.dispatch_attempted_at} />
+          <Row k="outcome" v={auth!.outcome ?? "none"} ok={!auth!.outcome} />
           <Row k="broker mutation dispatched" v={String(authEvidence?.brokerMutationDispatched === true)} ok={authEvidence?.brokerMutationDispatched !== true} />
           <Row k="Trading Layer requestId" v={authEvidence?.tradingLayerRequestId ?? "none"} ok={!authEvidence?.tradingLayerRequestId} />
         </div>
@@ -439,31 +459,31 @@ const AdminControlledRetestCard = () => {
 
       <div className="space-y-2">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-mono">
-          {auth ? "Authorisation acknowledgement evidence" : "Acknowledgements"}
+          {authActive ? "Authorisation acknowledgement evidence" : "Create New One-Shot Retest Authorisation — Acknowledgements (all required)"}
         </div>
-        {auth && acknowledged ? (
+        {authActive && acknowledged ? (
           <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
             <Row k="Acknowledgements accepted" v="YES" ok />
             <Row k="acknowledged at" v={ackEvidence.acknowledgedAt ?? "—"} ok={!!ackEvidence.acknowledgedAt} />
             <Row k="accepted constraints" v={(ackEvidence.acceptedConstraints ?? ACK_ITEMS).join(" · ")} ok />
           </div>
-        ) : auth ? (
+        ) : authActive ? (
           <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
             <Row k="Acknowledgements accepted" v="NO PERSISTED EVIDENCE" ok={false} />
-            <Row k="historical checkbox state" v="unavailable for this authorisation" ok={false} />
           </div>
-        ) : ACK_ITEMS.map((label, i) => (
-          <label key={i} className="flex items-start gap-2 text-xs">
-            <Checkbox
-              checked={acks[i]}
-              onCheckedChange={(v) =>
-                setAcks((prev) => prev.map((p, idx) => (idx === i ? v === true : p)))
-              }
-              disabled={authActive || !!auth?.consumed_at}
-            />
-            <span>{label}</span>
-          </label>
-        ))}
+        ) : (
+          ACK_ITEMS.map((label, i) => (
+            <label key={i} className="flex items-start gap-2 text-xs">
+              <Checkbox
+                checked={acks[i]}
+                onCheckedChange={(v) =>
+                  setAcks((prev) => prev.map((p, idx) => (idx === i ? v === true : p)))
+                }
+              />
+              <span>{label}</span>
+            </label>
+          ))
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
