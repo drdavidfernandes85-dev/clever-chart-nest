@@ -1,15 +1,10 @@
 // Admin → Production: Final Platform Lifecycle Validation — Entry + Controlled Close.
 //
-// This is a brand-new, single-use lifecycle flow that is fully separate from
-// the historical controlled-retest authorisation. It owns its own table
-// (`lifecycle_validation_authorisations`) and its own edge functions
-// (`validate-lifecycle-entry`, `execute-lifecycle-entry`,
-// `execute-lifecycle-close`).
-//
-// During this implementation pass NO live order is dispatched: the card lands
-// in `not_authorised` state, requires every acknowledgement, requires a fresh
-// mutation-suppressed preview, and exposes the Authorise/Execute buttons but
-// the operator must click them explicitly.
+// Separates HISTORICAL terminal authorisations (frozen evidence) from any
+// currently ACTIVE single-use authorisation. A new authorisation form is
+// rendered only when no active row exists. Historical terminal rows
+// (review_required_pretrade_block, failed_*, expired, close_confirmed) are
+// displayed for evidence but do not block creation of a replacement.
 
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -17,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, ShieldCheck, FlaskConical, RefreshCw, Lock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ShieldCheck, FlaskConical, RefreshCw, Lock, Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type LifecycleRow = {
@@ -58,6 +53,24 @@ type LifecycleRow = {
   updated_at: string;
 };
 
+const ACTIVE_STATUSES = new Set([
+  "armed",
+  "entry_dispatch_consumed",
+  "awaiting_position_confirmation",
+  "position_confirmed_close_only",
+  "close_dispatch_consumed",
+  "awaiting_close_confirmation",
+]);
+
+const TERMINAL_STATUSES = new Set([
+  "review_required_pretrade_block",
+  "failed_entry_rejected",
+  "failed_close_rejected",
+  "expired",
+  "close_confirmed",
+  "lifecycle_passed",
+]);
+
 const ACK_ITEMS: { id: string; label: string }[] = [
   { id: "final_lifecycle_test_only", label: "I confirm this is a final platform lifecycle validation test only." },
   { id: "account_confirmed", label: "I confirm the selected MT5 account is 87943580 on InfinoxLimited-MT5Live." },
@@ -76,11 +89,13 @@ const ACK_ITEMS: { id: string; label: string }[] = [
 
 const EXPECTED_ROUTE = "559a12e4-16d8-4db3-be48-40fbea54bcfe";
 const EXPECTED_LOGIN = "87943580";
+const EXPECTED_DTO = { side: "sell", symbol: "EURUSD", volume: 0.01 };
 
 const StatusBadge = ({ status }: { status: string }) => {
   const tone =
     status === "lifecycle_passed" || status === "close_confirmed" ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-    : status === "failed_entry_rejected" || status === "failed_close_rejected" || status === "expired" || status === "review_required" ? "bg-red-500/20 text-red-300 border-red-500/40"
+    : status === "failed_entry_rejected" || status === "failed_close_rejected" || status === "expired" || status === "review_required_pretrade_block" ? "bg-red-500/20 text-red-300 border-red-500/40"
+    : status === "not_authorised" ? "bg-muted text-muted-foreground border-border/40"
     : "bg-amber-500/20 text-amber-300 border-amber-500/40";
   return <Badge variant="outline" className={`font-mono text-[10px] ${tone}`}>{status}</Badge>;
 };
@@ -93,7 +108,8 @@ const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
 );
 
 const AdminFinalLifecycleValidationCard = () => {
-  const [row, setRow] = useState<LifecycleRow | null>(null);
+  const [activeRow, setActiveRow] = useState<LifecycleRow | null>(null);
+  const [historicalRows, setHistoricalRows] = useState<LifecycleRow[]>([]);
   const [acks, setAcks] = useState<Record<string, boolean>>({});
   const [preview, setPreview] = useState<any>(null);
   const [previewAt, setPreviewAt] = useState<number | null>(null);
@@ -105,10 +121,12 @@ const AdminFinalLifecycleValidationCard = () => {
       .from("lifecycle_validation_authorisations" as any)
       .select("*")
       .eq("authorisation_type", "final_controlled_open_close_lifecycle_validation")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    setRow((data as any) ?? null);
+      .order("created_at", { ascending: false });
+    const rows = (data as any[] | null) ?? [];
+    const active = rows.find((r) => ACTIVE_STATUSES.has(r.status)) ?? null;
+    const historical = rows.filter((r) => TERMINAL_STATUSES.has(r.status));
+    setActiveRow(active);
+    setHistoricalRows(historical);
   };
 
   const refreshExposure = async () => {
@@ -132,8 +150,15 @@ const AdminFinalLifecycleValidationCard = () => {
   }, []);
 
   const allAcked = useMemo(() => ACK_ITEMS.every((i) => acks[i.id]), [acks]);
-  const previewFresh = preview?.success && preview?.wouldDispatchEntry === true
-    && previewAt && Date.now() - previewAt < 60_000;
+  const previewFresh = !!(preview?.success && preview?.wouldDispatchEntry === true
+    && previewAt && Date.now() - previewAt < 60_000);
+
+  const dtoExact = !!preview && JSON.stringify(preview.outboundBody) === JSON.stringify(EXPECTED_DTO);
+  const routeExact = preview?.route === EXPECTED_ROUTE;
+  const mappingValid = preview?.mappingStatus === "valid";
+  const brokerExact = preview?.brokerSymbol === "EURUSD";
+  const exposureZero = (preview?.openEurusdPositions ?? 1) === 0 && (preview?.pendingEurusdOrders ?? 1) === 0;
+  const allGatesPass = previewFresh && dtoExact && routeExact && mappingValid && brokerExact && exposureZero;
 
   const runPreview = async () => {
     setBusy("preview");
@@ -151,13 +176,27 @@ const AdminFinalLifecycleValidationCard = () => {
   };
 
   const arm = async () => {
-    if (!allAcked || !previewFresh) return;
+    if (activeRow) { toast.error("An active lifecycle authorisation already exists."); return; }
+    if (!allAcked || !allGatesPass) return;
     if (!window.confirm("Create new single-use lifecycle authorisation? No order is dispatched by this action.")) return;
     setBusy("arm");
     try {
       const { data: u } = await supabase.auth.getUser();
       const uid = u?.user?.id;
       if (!uid) throw new Error("Not authenticated");
+
+      // Active-row uniqueness re-check immediately before insert
+      const { data: existing } = await supabase
+        .from("lifecycle_validation_authorisations" as any)
+        .select("id,status")
+        .eq("authorisation_type", "final_controlled_open_close_lifecycle_validation")
+        .in("status", Array.from(ACTIVE_STATUSES));
+      if (existing && existing.length > 0) {
+        toast.error("Another active lifecycle row was created — refusing to create a duplicate.");
+        await load();
+        return;
+      }
+
       const { error } = await supabase
         .from("lifecycle_validation_authorisations" as any)
         .insert({
@@ -173,12 +212,13 @@ const AdminFinalLifecycleValidationCard = () => {
           entry_side: "sell",
           entry_volume: 0.01,
           entry_order_type: "market",
-          entry_outbound_dto: { side: "sell", symbol: "EURUSD", volume: 0.01 },
+          entry_outbound_dto: EXPECTED_DTO,
           acknowledgements: acks,
           preview_snapshot: preview,
         });
       if (error) throw error;
       toast.success("Lifecycle authorisation armed");
+      setAcks({});
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Arm failed");
@@ -186,12 +226,12 @@ const AdminFinalLifecycleValidationCard = () => {
   };
 
   const executeEntry = async () => {
-    if (!row || row.status !== "armed") return;
+    if (!activeRow || activeRow.status !== "armed") return;
     if (!window.confirm("Dispatch ONE controlled EURUSD SELL 0.01 entry to Trading Layer? This is a real live order.")) return;
     setBusy("entry");
     try {
       const { data, error } = await supabase.functions.invoke("execute-lifecycle-entry", {
-        body: { authorisationId: row.id },
+        body: { authorisationId: activeRow.id },
       });
       if (error) throw error;
       if (data?.success) toast.success(`Entry dispatched — order ${data.orderId}`);
@@ -203,7 +243,7 @@ const AdminFinalLifecycleValidationCard = () => {
   };
 
   const confirmPosition = async () => {
-    if (!row || row.status !== "awaiting_position_confirmation") return;
+    if (!activeRow || activeRow.status !== "awaiting_position_confirmation") return;
     setBusy("confirm-position");
     try {
       const { data: u } = await supabase.auth.getUser();
@@ -212,7 +252,7 @@ const AdminFinalLifecycleValidationCard = () => {
         .from("mt_positions").select("ticket, symbol, broker_symbol, side, volume, open_price, opened_at")
         .eq("user_id", uid!).or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD").eq("side", "sell");
       const match = (positions || []).find(
-        (p: any) => Number(p.volume) === Number(row.entry_volume),
+        (p: any) => Number(p.volume) === Number(activeRow.entry_volume),
       );
       if (!match) {
         toast.warning("No matching EURUSD SELL 0.01 position found yet — try again after EA sync");
@@ -226,7 +266,7 @@ const AdminFinalLifecycleValidationCard = () => {
           confirmed_position_at: new Date().toISOString(),
           confirmed_position_evidence: match,
         })
-        .eq("id", row.id)
+        .eq("id", activeRow.id)
         .eq("status", "awaiting_position_confirmation");
       if (error) throw error;
       toast.success(`Position confirmed — ticket ${match.ticket}`);
@@ -237,12 +277,12 @@ const AdminFinalLifecycleValidationCard = () => {
   };
 
   const executeClose = async () => {
-    if (!row || row.status !== "position_confirmed_close_only" || !row.confirmed_position_ticket) return;
-    if (!window.confirm(`Dispatch controlled close for ticket ${row.confirmed_position_ticket}? This is a real MT5 close.`)) return;
+    if (!activeRow || activeRow.status !== "position_confirmed_close_only" || !activeRow.confirmed_position_ticket) return;
+    if (!window.confirm(`Dispatch controlled close for ticket ${activeRow.confirmed_position_ticket}? This is a real MT5 close.`)) return;
     setBusy("close");
     try {
       const { data, error } = await supabase.functions.invoke("execute-lifecycle-close", {
-        body: { authorisationId: row.id, ticket: row.confirmed_position_ticket },
+        body: { authorisationId: activeRow.id, ticket: activeRow.confirmed_position_ticket },
       });
       if (error) throw error;
       if (data?.success) toast.success("Close dispatched");
@@ -254,14 +294,14 @@ const AdminFinalLifecycleValidationCard = () => {
   };
 
   const confirmCloseResolved = async () => {
-    if (!row || row.status !== "awaiting_close_confirmation") return;
+    if (!activeRow || activeRow.status !== "awaiting_close_confirmation") return;
     setBusy("confirm-close");
     try {
       const { data: u } = await supabase.auth.getUser();
       const uid = u?.user?.id;
       const { count } = await supabase
         .from("mt_positions").select("id", { count: "exact", head: true })
-        .eq("user_id", uid!).eq("ticket", row.confirmed_position_ticket!);
+        .eq("user_id", uid!).eq("ticket", activeRow.confirmed_position_ticket!);
       if ((count ?? 0) > 0) {
         toast.warning("Position is still open in mt_positions — cannot mark close confirmed yet");
         return;
@@ -274,7 +314,7 @@ const AdminFinalLifecycleValidationCard = () => {
           lifecycle_passed: true,
           classification: "controlled_lifecycle_entry_and_close_confirmed",
         })
-        .eq("id", row.id)
+        .eq("id", activeRow.id)
         .eq("status", "awaiting_close_confirmation");
       if (error) throw error;
       toast.success("Full lifecycle PASS recorded");
@@ -284,50 +324,140 @@ const AdminFinalLifecycleValidationCard = () => {
     } finally { setBusy(null); }
   };
 
-  const status = row?.status ?? "not_authorised";
-  const lifecyclePassed = !!row?.lifecycle_passed;
-
   return (
     <Card className="p-4 border-primary/40 bg-primary/5">
       <div className="flex items-center gap-2 mb-2">
         <FlaskConical className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold">Final Platform Lifecycle Validation — Entry + Controlled Close</h3>
-        <StatusBadge status={lifecyclePassed ? "lifecycle_passed" : status} />
+        <StatusBadge status={activeRow ? activeRow.status : "not_authorised"} />
       </div>
       <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
-        The previous EURUSD entry test passed, but the position was closed manually in MT5. This final
-        isolated lifecycle test is required only to validate platform-controlled closing of an exact
-        confirmed position. General client live execution and pending orders remain disabled.
+        Isolated single-use platform lifecycle test (entry + platform-controlled close). General client
+        live execution and pending orders remain disabled. Historical attempts below are frozen evidence
+        and never reused.
       </p>
 
-      {/* Final pass card */}
-      {lifecyclePassed && row && (
-        <Card className="p-3 mb-3 border-emerald-500/40 bg-emerald-500/10">
+      {/* HISTORICAL terminal rows — evidence only, never reused */}
+      {historicalRows.length > 0 && (
+        <Card className="p-3 mb-3 border-border/40 bg-muted/10">
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-            <h4 className="text-xs font-semibold text-emerald-300">Final Platform Lifecycle Validation — PASS</h4>
+            <Archive className="h-4 w-4 text-muted-foreground" />
+            <h4 className="text-xs font-semibold">Previous Final Lifecycle Attempts — Historical Evidence (Non-Reusable)</h4>
           </div>
-          <Row k="entry_order_id" v={row.entry_order_id || "—"} />
-          <Row k="entry_retcode" v={row.entry_retcode ?? "—"} />
-          <Row k="confirmed_position_ticket" v={row.confirmed_position_ticket || "—"} />
-          <Row k="close_order_id" v={row.close_order_id || "—"} />
-          <Row k="close_deal_id" v={row.close_deal_id || "—"} />
-          <Row k="close_retcode" v={row.close_retcode ?? "—"} />
-          <Row k="classification" v={row.classification || "—"} />
-          <Row k="residual_exposure" v="none" />
-          <Row k="entry" v={<span className="text-emerald-300">PASS</span>} />
-          <Row k="platform_controlled_close" v={<span className="text-emerald-300">PASS</span>} />
-          <Row k="full_lifecycle" v={<span className="text-emerald-300">PASS</span>} />
-          <div className="mt-2 p-2 rounded border border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-300">
-            Lifecycle Validation Passed — Eligible for Final Activation Review. Final activation remains a
-            separate explicit admin action.
+          <div className="space-y-3">
+            {historicalRows.map((h) => {
+              const isBlock = h.status === "review_required_pretrade_block";
+              const isPass = h.status === "close_confirmed" || h.lifecycle_passed;
+              return (
+                <div key={h.id} className={`p-2 rounded border text-[11px] ${
+                  isPass ? "border-emerald-500/40 bg-emerald-500/5"
+                  : isBlock ? "border-red-500/50 bg-red-500/5"
+                  : "border-border/40 bg-muted/10"
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {isPass ? <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                     : <AlertTriangle className="h-3 w-3 text-red-400" />}
+                    <strong>
+                      {isBlock ? "Previous Final Lifecycle Attempt — Blocked Before Broker Dispatch"
+                       : isPass ? "Previous Final Lifecycle Attempt — Full Lifecycle PASS"
+                       : `Previous Final Lifecycle Attempt — ${h.status}`}
+                    </strong>
+                    <StatusBadge status={h.status} />
+                  </div>
+                  <Row k="authorisation_id" v={<code className="text-[10px]">{h.id}</code>} />
+                  <Row k="status" v={h.status} />
+                  {isBlock && (
+                    <>
+                      <Row k="blocked_code" v={<span className="text-red-300">{h.entry_evidence?.blockedCode || h.failure_reason || "MAPPING_NOT_ACTIVE"}</span>} />
+                      <Row k="brokerMutationDispatched" v={<span className="text-emerald-300">false</span>} />
+                      <Row k="order_created" v="none" />
+                      <Row k="entry_dispatches_consumed" v={h.entry_dispatches_consumed} />
+                      <Row k="reusable" v={<span className="text-red-300">no</span>} />
+                      <Row k="defect_status" v={<span className="text-emerald-300">resolved in current dispatcher version</span>} />
+                    </>
+                  )}
+                  {isPass && (
+                    <>
+                      <Row k="entry_order_id" v={h.entry_order_id || "—"} />
+                      <Row k="confirmed_position_ticket" v={h.confirmed_position_ticket || "—"} />
+                      <Row k="close_order_id" v={h.close_order_id || "—"} />
+                      <Row k="classification" v={h.classification || "—"} />
+                    </>
+                  )}
+                  <Row k="classification" v={h.classification || "—"} />
+                  <Row k="created_at" v={new Date(h.created_at).toLocaleString()} />
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}
 
-      {/* Acknowledgements + preview before arming */}
-      {!row && (
-        <>
+      {/* ACTIVE row UI states */}
+      {activeRow && activeRow.status === "armed" && (
+        <div className="space-y-2">
+          <div className="p-2 rounded border border-amber-500/40 bg-amber-500/10 text-[11px] text-amber-200">
+            Authorisation armed. One entry dispatch permitted. Expires {new Date(activeRow.expires_at).toLocaleTimeString()}.
+          </div>
+          <Row k="authorisation_id" v={activeRow.id} />
+          <Row k="entry_dto" v={<code>{JSON.stringify(activeRow.entry_outbound_dto)}</code>} />
+          <Button size="sm" onClick={executeEntry} disabled={busy === "entry"}>
+            {busy === "entry" ? "Dispatching…" : "Execute Final Lifecycle Entry — EURUSD SELL 0.01"}
+          </Button>
+        </div>
+      )}
+
+      {activeRow && activeRow.status === "awaiting_position_confirmation" && (
+        <div className="space-y-2">
+          <Row k="entry_order_id" v={activeRow.entry_order_id || "—"} />
+          <Row k="entry_retcode" v={activeRow.entry_retcode ?? "—"} />
+          <div className="p-2 rounded border border-border/40 text-[11px]">
+            Entry dispatched. Reconcile EA / Trading Layer until the EURUSD SELL 0.01 position appears.
+          </div>
+          <Button size="sm" variant="outline" onClick={confirmPosition} disabled={busy === "confirm-position"}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Confirm Exact Position Ticket
+          </Button>
+        </div>
+      )}
+
+      {activeRow && activeRow.status === "position_confirmed_close_only" && (
+        <div className="space-y-2">
+          <Row k="confirmed_position_ticket" v={activeRow.confirmed_position_ticket || "—"} />
+          <Row k="symbol" v="EURUSD" />
+          <Row k="side" v="SELL" />
+          <Row k="volume" v="0.01" />
+          <div className="p-2 rounded border border-red-500/40 bg-red-500/5 text-[11px] text-red-200">
+            <AlertTriangle className="h-3 w-3 inline mr-1" />
+            This is a real MT5 close action for the confirmed test position only.
+          </div>
+          <Button size="sm" onClick={executeClose} disabled={busy === "close"}>
+            {busy === "close" ? "Closing…" : `Close Confirmed Test Position — Ticket ${activeRow.confirmed_position_ticket}`}
+          </Button>
+        </div>
+      )}
+
+      {activeRow && activeRow.status === "awaiting_close_confirmation" && (
+        <div className="space-y-2">
+          <Row k="close_order_id" v={activeRow.close_order_id || "—"} />
+          <Row k="close_retcode" v={activeRow.close_retcode ?? "—"} />
+          <div className="p-2 rounded border border-red-500/40 bg-red-500/5 text-[11px] text-red-200">
+            <AlertTriangle className="h-3 w-3 inline mr-1" />
+            If platform close confirmation is uncertain, close ticket {activeRow.confirmed_position_ticket} manually in native MT5 immediately.
+          </div>
+          <Button size="sm" variant="outline" onClick={confirmCloseResolved} disabled={busy === "confirm-close"}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Confirm Close Reconciliation
+          </Button>
+        </div>
+      )}
+
+      {/* NEW authorisation form — only visible when NO active row exists */}
+      {!activeRow && (
+        <Card className="p-3 mt-3 border-border/40">
+          <div className="flex items-center gap-2 mb-2">
+            <Lock className="h-4 w-4 text-primary" />
+            <h4 className="text-xs font-semibold">Create New Final Lifecycle Authorisation</h4>
+          </div>
+
           <div className="mb-3 p-2 rounded border border-border/40">
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
               Current EURUSD exposure
@@ -339,8 +469,43 @@ const AdminFinalLifecycleValidationCard = () => {
             </Button>
           </div>
 
+          <div className="flex flex-wrap gap-2 mb-3">
+            <Button size="sm" variant="outline" onClick={runPreview} disabled={busy === "preview"}>
+              {busy === "preview" ? "Validating…" : "Validate Final Lifecycle Entry Dispatcher — No Mutation"}
+            </Button>
+          </div>
+
+          {preview && (
+            <div className="mb-3 p-2 rounded border border-border/40 bg-muted/20">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                Mutation-suppressed dispatcher preview
+              </div>
+              <Row k="validationOnly" v={String(preview.validationOnly)} />
+              <Row k="mutationSuppressed" v={String(preview.mutationSuppressed)} />
+              <Row k="wouldDispatchEntry" v={
+                <span className={preview.wouldDispatchEntry ? "text-emerald-300" : "text-red-300"}>
+                  {String(preview.wouldDispatchEntry)}
+                </span>
+              } />
+              <Row k="mappingStatus" v={<span className={mappingValid ? "text-emerald-300" : "text-red-300"}>{preview.mappingStatus}</span>} />
+              <Row k="route" v={<span className={routeExact ? "text-emerald-300" : "text-red-300"}>{preview.route || "—"}</span>} />
+              <Row k="brokerSymbol" v={<span className={brokerExact ? "text-emerald-300" : "text-red-300"}>{preview.brokerSymbol || "—"}</span>} />
+              <Row k="side / volume" v={`${preview.side} ${preview.volume}`} />
+              <Row k="freshTick" v={`${preview.freshTick} (${preview.freshTickAgeMs ?? "—"}ms)`} />
+              <Row k="openEurusdPositions" v={preview.openEurusdPositions ?? "—"} />
+              <Row k="pendingEurusdOrders" v={preview.pendingEurusdOrders ?? "—"} />
+              <Row k="outboundBody" v={<code className={dtoExact ? "text-emerald-300" : "text-red-300"}>{JSON.stringify(preview.outboundBody)}</code>} />
+              <Row k="deviationAbsent" v={String(preview.deviationAbsent)} />
+              <Row k="internalMetadataExcluded" v={String(preview.internalMetadataExcluded)} />
+              {preview.blockedStage && (
+                <Row k="blockedStage" v={<span className="text-red-300">{preview.blockedStage}: {preview.blockedCode}</span>} />
+              )}
+              <Row k="preview_fresh" v={previewFresh ? <span className="text-emerald-300">yes</span> : <span className="text-red-300">no (re-run)</span>} />
+            </div>
+          )}
+
           <div className="space-y-1.5 mb-3">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Acknowledgements</div>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Acknowledgements (all required)</div>
             {ACK_ITEMS.map((it) => (
               <label key={it.id} className="flex items-start gap-2 text-[11px] leading-snug">
                 <Checkbox
@@ -353,189 +518,28 @@ const AdminFinalLifecycleValidationCard = () => {
             ))}
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-2">
-            <Button size="sm" variant="outline" onClick={runPreview} disabled={busy === "preview"}>
-              {busy === "preview" ? "Validating…" : "Validate Final Lifecycle Entry — No Mutation"}
-            </Button>
-            <Button
-              size="sm"
-              onClick={arm}
-              disabled={!allAcked || !previewFresh || busy === "arm"}
-            >
-              <Lock className="h-3 w-3 mr-1" /> Authorise Single-Use Lifecycle
-            </Button>
-          </div>
-
-          {preview && (
-            <div className="mt-2 p-2 rounded border border-border/40 bg-muted/20">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Mutation-suppressed preview
-              </div>
-              <Row k="validationOnly" v={String(preview.validationOnly)} />
-              <Row k="mutationSuppressed" v={String(preview.mutationSuppressed)} />
-              <Row k="wouldDispatchEntry" v={
-                <span className={preview.wouldDispatchEntry ? "text-emerald-300" : "text-red-300"}>
-                  {String(preview.wouldDispatchEntry)}
-                </span>
-              } />
-              <Row k="mappingStatus" v={preview.mappingStatus} />
-              <Row k="route" v={preview.route || "—"} />
-              <Row k="brokerSymbol" v={preview.brokerSymbol || "—"} />
-              <Row k="side / volume" v={`${preview.side} ${preview.volume}`} />
-              <Row k="accountTradeAllowed" v={preview.accountTradeAllowed} />
-              <Row k="accountTradeMode" v={preview.accountTradeMode || "—"} />
-              <Row k="symbolTradeMode" v={preview.symbolTradeMode || "—"} />
-              <Row k="risk" v={preview.risk} />
-              <Row k="killSwitch" v={preview.killSwitch} />
-              <Row k="idempotency" v={preview.idempotency} />
-              <Row k="freshTick" v={`${preview.freshTick} (${preview.freshTickAgeMs ?? "—"}ms)`} />
-              <Row k="openEurusdPositions" v={preview.openEurusdPositions ?? "—"} />
-              <Row k="pendingEurusdOrders" v={preview.pendingEurusdOrders ?? "—"} />
-              <Row k="outboundBody" v={<code>{JSON.stringify(preview.outboundBody)}</code>} />
-              <Row k="deviationAbsent" v={String(preview.deviationAbsent)} />
-              <Row k="internalMetadataExcluded" v={String(preview.internalMetadataExcluded)} />
-              {preview.blockedStage && (
-                <Row k="blockedStage" v={<span className="text-red-300">{preview.blockedStage}: {preview.blockedCode}</span>} />
-              )}
+          <Button
+            size="sm"
+            onClick={arm}
+            disabled={!allAcked || !allGatesPass || busy === "arm"}
+            className="w-full"
+          >
+            <Lock className="h-3 w-3 mr-1" />
+            {busy === "arm" ? "Authorising…" : "Authorise Final Lifecycle Test"}
+          </Button>
+          {(!allAcked || !allGatesPass) && (
+            <div className="mt-2 text-[10px] text-muted-foreground">
+              Authorise enables only when: fresh passing dispatcher preview, mappingStatus=valid,
+              brokerSymbol=EURUSD, route={EXPECTED_ROUTE}, DTO={JSON.stringify(EXPECTED_DTO)},
+              freshTick=pass, zero EURUSD exposure, and every acknowledgement ticked.
             </div>
           )}
-        </>
+        </Card>
       )}
-
-      {/* Armed → execute entry */}
-      {row && row.status === "armed" && (
-        <div className="space-y-2">
-          <div className="p-2 rounded border border-amber-500/40 bg-amber-500/10 text-[11px] text-amber-200">
-            Authorisation armed. One entry dispatch permitted. Expires {new Date(row.expires_at).toLocaleTimeString()}.
-          </div>
-          <Row k="authorisation_id" v={row.id} />
-          <Row k="entry_dto" v={<code>{JSON.stringify(row.entry_outbound_dto)}</code>} />
-          <Button size="sm" onClick={executeEntry} disabled={busy === "entry"}>
-            {busy === "entry" ? "Dispatching…" : "Execute Final Lifecycle Entry — EURUSD SELL 0.01"}
-          </Button>
-        </div>
-      )}
-
-      {/* Awaiting position confirmation */}
-      {row && row.status === "awaiting_position_confirmation" && (
-        <div className="space-y-2">
-          <Row k="entry_order_id" v={row.entry_order_id || "—"} />
-          <Row k="entry_retcode" v={row.entry_retcode ?? "—"} />
-          <div className="p-2 rounded border border-border/40 text-[11px]">
-            Entry dispatched. Reconcile EA / Trading Layer until the EURUSD SELL 0.01 position appears.
-          </div>
-          <Button size="sm" variant="outline" onClick={confirmPosition} disabled={busy === "confirm-position"}>
-            <RefreshCw className="h-3 w-3 mr-1" /> Confirm Exact Position Ticket
-          </Button>
-        </div>
-      )}
-
-      {/* Close-only state */}
-      {row && row.status === "position_confirmed_close_only" && (
-        <div className="space-y-2">
-          <Row k="confirmed_position_ticket" v={row.confirmed_position_ticket || "—"} />
-          <Row k="symbol" v="EURUSD" />
-          <Row k="side" v="SELL" />
-          <Row k="volume" v="0.01" />
-          <div className="p-2 rounded border border-red-500/40 bg-red-500/5 text-[11px] text-red-200">
-            <AlertTriangle className="h-3 w-3 inline mr-1" />
-            This is a real MT5 close action for the confirmed test position only.
-          </div>
-          <Button size="sm" onClick={executeClose} disabled={busy === "close"}>
-            {busy === "close" ? "Closing…" : `Close Confirmed Test Position — Ticket ${row.confirmed_position_ticket}`}
-          </Button>
-        </div>
-      )}
-
-      {/* Awaiting close confirmation */}
-      {row && row.status === "awaiting_close_confirmation" && (
-        <div className="space-y-2">
-          <Row k="close_order_id" v={row.close_order_id || "—"} />
-          <Row k="close_retcode" v={row.close_retcode ?? "—"} />
-          <Button size="sm" variant="outline" onClick={confirmCloseResolved} disabled={busy === "confirm-close"}>
-            <RefreshCw className="h-3 w-3 mr-1" /> Confirm Close Reconciliation
-          </Button>
-        </div>
-      )}
-
-      {/* Frozen pre-trade block — current failed lifecycle attempt */}
-      {row && row.status === "review_required_pretrade_block" && (
-        <div className="space-y-2">
-          <div className="p-2 rounded border border-red-500/50 bg-red-500/10 text-[11px] text-red-200">
-            <AlertTriangle className="h-3 w-3 inline mr-1" />
-            <strong>Failed Lifecycle Attempt — frozen, non-reusable.</strong> The dispatcher rejected this
-            authorisation before any Trading Layer mutation. No new live order was sent. A replacement
-            lifecycle authorisation will not be created in this pass.
-          </div>
-          <Row k="authorisation_id" v={<code className="text-[10px]">{row.id}</code>} />
-          <Row k="status" v={row.status} />
-          <Row k="failure_reason" v={row.failure_reason || "—"} />
-          <Row k="classification" v={row.classification || "—"} />
-          <Row k="blockedStage" v={row.entry_evidence?.blockedStage || "mapping_validation"} />
-          <Row k="blockedCode" v={<span className="text-red-300">{row.entry_evidence?.blockedCode || "MAPPING_NOT_ACTIVE"}</span>} />
-          <Row k="brokerMutationDispatched" v={<span className="text-emerald-300">{String(row.entry_evidence?.brokerMutationDispatched ?? false)}</span>} />
-          <Row k="tradingLayerRequestId" v={row.entry_evidence?.tradingLayerRequestId ?? "none"} />
-          <Row k="tradingLayerOrderId" v={row.entry_evidence?.tradingLayerOrderId ?? "none"} />
-          <Row k="positionTicket" v={row.entry_evidence?.positionTicket ?? "none"} />
-          <Row k="reusable" v={<span className="text-red-300">false</span>} />
-          <Row k="entry_dispatches_consumed" v={row.entry_dispatches_consumed} />
-          <Row k="root_cause" v={<span className="text-[10px] text-amber-300">{row.entry_evidence?.rootCause || "duplicate mapping vocabulary"}</span>} />
-
-          <div className="mt-2 p-2 rounded border border-amber-500/40 bg-amber-500/10 text-[11px] text-amber-200">
-            Read-only dispatcher diagnostic. Runs the no-mutation lifecycle entry preview. Authorise and
-            Execute remain unavailable in this pass.
-          </div>
-          <Button size="sm" variant="outline" onClick={runPreview} disabled={busy === "preview"}>
-            {busy === "preview" ? "Validating…" : "READ-ONLY: Validate Final Lifecycle Entry Dispatcher — No Mutation"}
-          </Button>
-          {preview && (
-            <div className="mt-2 p-2 rounded border border-border/40 bg-muted/20">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-                Mutation-suppressed dispatcher preview
-              </div>
-              <Row k="validationOnly" v={String(preview.validationOnly)} />
-              <Row k="mutationSuppressed" v={String(preview.mutationSuppressed)} />
-              <Row k="wouldDispatchEntry" v={
-                <span className={preview.wouldDispatchEntry ? "text-emerald-300" : "text-red-300"}>
-                  {String(preview.wouldDispatchEntry)}
-                </span>
-              } />
-              <Row k="mappingStatus" v={preview.mappingStatus} />
-              <Row k="route" v={preview.route || "—"} />
-              <Row k="brokerSymbol" v={preview.brokerSymbol || "—"} />
-              <Row k="side / volume" v={`${preview.side} ${preview.volume}`} />
-              <Row k="freshTick" v={`${preview.freshTick} (${preview.freshTickAgeMs ?? "—"}ms)`} />
-              <Row k="openEurusdPositions" v={preview.openEurusdPositions ?? "—"} />
-              <Row k="pendingEurusdOrders" v={preview.pendingEurusdOrders ?? "—"} />
-              <Row k="outboundBody" v={<code>{JSON.stringify(preview.outboundBody)}</code>} />
-              {preview.blockedStage && (
-                <Row k="blockedStage" v={<span className="text-red-300">{preview.blockedStage}: {preview.blockedCode}</span>} />
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Failure states */}
-      {row && (row.status === "failed_entry_rejected" || row.status === "failed_close_rejected" || row.status === "expired") && (
-        <div className="space-y-2">
-          <div className="p-2 rounded border border-red-500/40 bg-red-500/10 text-[11px] text-red-200">
-            <AlertTriangle className="h-3 w-3 inline mr-1" />
-            {row.failure_reason || "Lifecycle failed"}. No automatic retry — start a new lifecycle authorisation if appropriate.
-          </div>
-          {row.status === "failed_close_rejected" && (
-            <div className="p-2 rounded border border-red-500/40 bg-red-500/5 text-[11px] text-red-200">
-              Platform close is not confirmed. Close ticket {row.confirmed_position_ticket} manually in
-              native MT5 immediately if it remains open.
-            </div>
-          )}
-        </div>
-      )}
-
 
       <div className="mt-3 pt-2 border-t border-border/30 text-[10px] text-muted-foreground flex items-center gap-1">
         <ShieldCheck className="h-3 w-3" />
-        general_client_live_execution = disabled · pending_orders_enabled = false · max_entry_dispatch = 1 · max_close_dispatch = 1
+        general_client_live_execution = disabled · pending_orders_enabled = false · max_entry_dispatch = 1 · max_close_dispatch = 1 · active_row_uniqueness = enforced
       </div>
     </Card>
   );
