@@ -429,11 +429,13 @@ export default function AdminBrokerSymbolsTab() {
   const tradeAllowed = routeVerified ? lastResp?.accountTradeAllowed : undefined;
   const accountTradeModeRaw = lastResp?.accountTradeModeRaw ?? null;
   const accountTradeModeLabel = lastResp?.accountTradeModeLabel ?? null;
-  // Per Trading Layer OpenAPI: account.trade_mode uses ENUM_SYMBOL_TRADE_MODE
-  // (0=DISABLED, 1=LONGONLY, 2=SHORTONLY, 3=CLOSEONLY, 4=FULL) — directional.
-  const accountCanBuy = tradeAllowed === true && canBuy(accountTradeModeRaw);
-  const accountCanSell = tradeAllowed === true && canSell(accountTradeModeRaw);
-  const accountExecPermitted = tradeAllowed === true && accountTradeModeRaw != null && accountTradeModeRaw !== 0;
+  // MT5 ENUM_ACCOUNT_TRADE_MODE: 0=DEMO, 1=CONTEST, 2=REAL. Informational only.
+  // Directional gating is per-symbol — account.trade_mode does NOT restrict BUY vs SELL.
+  // Authoritative live evidence: route 559a12e4… with trade_mode=2 successfully
+  // placed BUY EURUSD 0.01 (order 1169085428, retcode 10008 PLACED).
+  const accountCanBuy = tradeAllowed === true;
+  const accountCanSell = tradeAllowed === true;
+  const accountExecPermitted = tradeAllowed === true;
 
   // Symbol-level eligibility (independent of ack — ack only gates "ready for live test").
   const eurSymbolBuyEligible = !!eurResolved && canBuy(eurResolved.symbolTradeModeRaw);
@@ -457,8 +459,6 @@ export default function AdminBrokerSymbolsTab() {
     : !eurResolved ? "EURUSD exact broker symbol not yet inspected — run Lookup EURUSD."
     : !eurSymbolBuyEligible && !eurSymbolSellEligible
       ? `EURUSD symbol.trade_mode = ${eurResolved.symbolTradeModeRaw} (${eurResolved.symbolTradeModeLabel ?? "?"}) blocks both sides`
-    : (!accountCanBuy && !accountCanSell)
-      ? `Account trade_mode = ${accountTradeModeRaw} (${accountTradeModeLabel}) blocks BUY and SELL at the account level`
       : null;
 
   const xauBlocker = xauAmbiguous
@@ -483,7 +483,7 @@ export default function AdminBrokerSymbolsTab() {
         trade_allowed: tradeAllowed ?? null,
         trade_mode_raw: accountTradeModeRaw,
         trade_mode_label: accountTradeModeLabel,
-        trade_mode_meaning: "enum_symbol_trade_mode_directional",
+        trade_mode_meaning: "enum_account_trade_mode_informational_demo_contest_real",
         account_can_buy: accountCanBuy,
         account_can_sell: accountCanSell,
       },
@@ -621,16 +621,16 @@ export default function AdminBrokerSymbolsTab() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-            <div className="md:col-span-2"><div className="text-muted-foreground">Account trade_mode (ENUM_SYMBOL_TRADE_MODE)</div><div className="flex items-center gap-2">{tradeModeBadge(accountTradeModeRaw, accountTradeModeLabel)}</div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Account trade_mode (ENUM_ACCOUNT_TRADE_MODE — informational)</div><div className="flex items-center gap-2">{tradeModeBadge(accountTradeModeRaw, accountTradeModeLabel)}</div></div>
             <div><div className="text-muted-foreground">Account exec permitted</div><div>{yesNoBadge(accountExecPermitted)}</div></div>
             <div><div className="text-muted-foreground">BUY at account level</div><div>{yesNoBadge(accountCanBuy)}</div></div>
             <div><div className="text-muted-foreground">SELL at account level</div><div>{yesNoBadge(accountCanSell)}</div></div>
-            <div className="md:col-span-2"><div className="text-muted-foreground">Account directional rule</div><div className="text-muted-foreground">Trading Layer OpenAPI: Mt5AccountInfo.trade_mode uses ENUM_SYMBOL_TRADE_MODE — directional, not informational.</div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Account directional rule</div><div className="text-muted-foreground">MT5 ENUM_ACCOUNT_TRADE_MODE (DEMO/CONTEST/REAL) is informational only. Directional BUY/SELL gating is enforced per-symbol via symbol.trade_mode.</div></div>
             <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
             <div><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
             {accountTradeModeRaw === 2 && tradeAllowed === true && (
-              <div className="col-span-2 md:col-span-4 text-[11px] text-amber-400">
-                Trading is allowed on this MT5 route, but new BUY/open-long actions are restricted by the account trade mode (SHORTONLY).
+              <div className="col-span-2 md:col-span-4 text-[11px] text-emerald-400">
+                Account is a REAL MT5 account (ACCOUNT_TRADE_MODE_REAL) with trade_allowed=true. No account-level directional restriction.
               </div>
             )}
           </div>

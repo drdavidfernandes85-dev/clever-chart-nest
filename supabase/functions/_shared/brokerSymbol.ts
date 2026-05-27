@@ -44,6 +44,7 @@ import {
   ERR_SYMBOL_DIRECTION_BLOCKED,
   ExecutionOperation,
   interpretTradeMode as interpretTradeModeEnum,
+  interpretAccountTradeMode,
   TRADE_MODE_DISABLED,
 } from "./tradingLayerTradeMode.ts";
 
@@ -138,7 +139,9 @@ export async function refreshTradeModeFromTradingLayer(
       accountTradeModeCheckedAt: now,
     };
   }
-  const accountInfo = interpretTradeModeEnum(accountTradeModeRaw);
+  // account.trade_mode is the MT5 ENUM_ACCOUNT_TRADE_MODE
+  // (0=DEMO, 1=CONTEST, 2=REAL) — informational only, NOT directional.
+  const accountInfo = interpretAccountTradeMode(accountTradeModeRaw);
 
   if (accountTradeAllowed === null) {
     return {
@@ -161,27 +164,8 @@ export async function refreshTradeModeFromTradingLayer(
     };
   }
 
-  // Account-level directional gating using ENUM_SYMBOL_TRADE_MODE (per OpenAPI).
-  // account.trade_mode is NOT informational — values 0/1/2/3/4 directly restrict
-  // which operations the account permits at the MT5 layer.
-  if (args.operation) {
-    const accDir = checkAccountOperationEligibility(args.operation, accountTradeAllowed, accountTradeModeRaw);
-    if (!accDir.allowed) {
-      return {
-        ...empty,
-        errorCode: ERR_ACCOUNT_DIRECTION_BLOCKED,
-        message: `Account trade_mode=${accountTradeModeRaw} (${accountInfo.label}) does not permit ${args.operation}: ${accDir.reason}`,
-        accountTradeAllowed, accountTradeModeRaw,
-        accountTradeMode: accountTradeModeRaw != null ? String(accountTradeModeRaw) : null,
-        accountTradeModeLabel: accountInfo.label,
-        accountTradeEligible: false,
-        operation: args.operation,
-        directionAllowed: false,
-        directionReason: accDir.reason,
-        accountTradeModeCheckedAt: now,
-      };
-    }
-  }
+  // No account-level directional gating: MT5 ENUM_ACCOUNT_TRADE_MODE is
+  // informational. Directional eligibility is enforced per-symbol below.
 
   // 2) Symbol detail — exact endpoint, no list pagination guessing
   let symbolTradeModeRaw: number | null = null;

@@ -260,17 +260,22 @@ const AdminProductionModeTab = () => {
         <Card className="p-4 border-red-500/50 bg-red-500/5">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="h-4 w-4 text-red-400" />
-            <h3 className="text-sm font-semibold text-red-300">Upstream execution blocker — broker TRADE_DISABLED after verified pre-trade</h3>
+            <h3 className="text-sm font-semibold text-red-300">
+              Execution contract discrepancy — APPLICATION_VS_DIRECT_TL_EXECUTION_MISMATCH
+            </h3>
           </div>
           <p className="text-[11px] text-red-200/90 leading-relaxed mb-3">
-            Broker symbol confirmed: <code>EURUSD</code> matches the native MT5 account (login 87943580 /
-            InfinoxLimited-MT5Live Market Watch) and the Trading Layer catalogue for verified route
-            559a12e4-16d8-4db3-be48-40fbea54bcfe. Two real EURUSD SELL 0.01 submissions reached Trading Layer and
-            were rejected by the broker with <code>TRADE_RETCODE_TRADE_DISABLED</code> (10017) after the verified
-            pre-trade pipeline (brokerSymbol EURUSD, account trade_mode SHORTONLY, symbol trade_mode FULL, fresh
-            server tick) all passed. Suffix discrepancy is RESOLVED (Trading Layer's earlier EURUSD+ evidence was
-            from a separate test account). Live execution remains paused awaiting Trading Layer/broker permission
-            clarification. Technical readiness is preserved separately from this live execution block.
+            Live execution paused: Trading Layer directly placed <code>EURUSD BUY 0.01</code> successfully through
+            route 559a12e4-16d8-4db3-be48-40fbea54bcfe (order <code>1169085428</code>, retcode 10008
+            TRADE_RETCODE_PLACED, confirmed in MT5 login 87943580 / InfinoxLimited-MT5Live), while earlier
+            application-submitted EURUSD SELL orders returned <code>TRADE_RETCODE_TRADE_DISABLED</code> (10017).
+            Account/symbol eligibility interpretation and the application's outbound mutation contract are
+            under review. Buy/Sell remain disabled in the platform until the application-vs-direct delta is
+            resolved.
+          </p>
+          <p className="text-[11px] text-amber-300 mb-3">
+            account.trade_mode=2 was previously misread as SYMBOL_TRADE_MODE_SHORTONLY. It is in fact
+            ACCOUNT_TRADE_MODE_REAL — informational only. Directional gating is now per-symbol only.
           </p>
           {permState.reason && (
             <p className="text-[10px] text-red-200/70 font-mono mb-3">reason: {permState.reason}</p>
@@ -304,7 +309,7 @@ const AdminProductionModeTab = () => {
                   pretradeReadOnlyState: {
                     tradeAllowed: true,
                     accountTradeModeRaw: 2,
-                    accountTradeMode: "SYMBOL_TRADE_MODE_SHORTONLY",
+                    accountTradeMode: "ACCOUNT_TRADE_MODE_REAL",
                     symbolTradeModeRaw: 4,
                     symbolTradeMode: "SYMBOL_TRADE_MODE_FULL",
                     sellReady: true,
@@ -353,7 +358,7 @@ const AdminProductionModeTab = () => {
                   retestRequired: false,
                   noSecretsIncluded: true,
                   questionsForTradingLayer: [
-                    "Why does the read-only permission metadata for MT5 87943580 / EURUSD report account trade_mode=2 (SHORTONLY) and symbol trade_mode=4 (FULL), yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
+                    "Why does the read-only permission metadata for MT5 87943580 / EURUSD report account trade_mode=2 (ACCOUNT_TRADE_MODE_REAL, informational) and symbol trade_mode=4 (FULL), yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
                     "Is there an account-level or symbol-level execution flag (e.g. expert/API trading disabled, group restriction, session restriction) that is not surfaced through the symbols / account endpoints?",
                     "Is the account in an investor/read-only state, or is API trading disabled at the broker level for this login?",
                     "Is the verified execution route 559a12e4-16d8-4db3-be48-40fbea54bcfe the correct route for live order submission for MT5 login 87943580 on InfinoxLimited-MT5Live?",
@@ -424,7 +429,7 @@ const AdminProductionModeTab = () => {
                 pretradeReadOnlyState: {
                   tradeAllowed: true,
                   accountTradeModeRaw: 2,
-                  accountTradeMode: "SYMBOL_TRADE_MODE_SHORTONLY",
+                  accountTradeMode: "ACCOUNT_TRADE_MODE_REAL",
                   symbolTradeModeRaw: 4,
                   symbolTradeMode: "SYMBOL_TRADE_MODE_FULL",
                   sellReady: true,
@@ -473,7 +478,7 @@ const AdminProductionModeTab = () => {
                 retestRequired: false,
                 noSecretsIncluded: true,
                 questionsForTradingLayer: [
-                  "Why does read-only permission metadata report account trade_mode=2 (SHORTONLY) and symbol trade_mode=4 (FULL) for EURUSD, yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
+                  "Why does read-only permission metadata report account trade_mode=2 (ACCOUNT_TRADE_MODE_REAL, informational) and symbol trade_mode=4 (FULL) for EURUSD, yet the live SELL mutation returns 10017 TRADE_RETCODE_TRADE_DISABLED?",
                   "Is there an account-level or symbol-level execution flag (expert/API trading disabled, group restriction, session restriction) not surfaced via symbols/account endpoints?",
                   "Is the account in investor/read-only state, or is API trading disabled at the broker level for MT5 login 87943580?",
                   "Is verified execution route 559a12e4-16d8-4db3-be48-40fbea54bcfe correct for live order submission for MT5 login 87943580 on InfinoxLimited-MT5Live?",
