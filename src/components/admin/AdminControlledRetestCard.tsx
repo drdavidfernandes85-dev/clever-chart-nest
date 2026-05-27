@@ -73,6 +73,8 @@ const AdminControlledRetestCard = () => {
   const [preview, setPreview] = useState<any>(null);
   const [previewing, setPreviewing] = useState(false);
   const [pretrade, setPretrade] = useState<any>(null);
+  const [dispatcher, setDispatcher] = useState<any>(null);
+  const [validatingDispatcher, setValidatingDispatcher] = useState(false);
   const [authorising, setAuthorising] = useState(false);
   const [auth, setAuth] = useState<Auth | null>(null);
   const [submitting, setSubmitting] = useState(false);
