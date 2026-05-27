@@ -355,10 +355,37 @@ const AdminControlledRetestCard = () => {
         <Button size="sm" variant="outline" onClick={runPreviews} disabled={previewing}>
           {previewing ? "Running preview…" : "Run mutation-suppressed preview"}
         </Button>
+        <Button size="sm" variant="outline" onClick={validateDispatcher} disabled={validatingDispatcher}>
+          {validatingDispatcher ? "Validating dispatcher…" : "Validate Controlled Dispatcher — No Mutation"}
+        </Button>
         <Button size="sm" variant="outline" onClick={runExposureCheck} disabled={exposureLoading}>
           {exposureLoading ? "Checking exposure…" : "Refresh MT5 exposure check"}
         </Button>
       </div>
+
+      {dispatcher && (
+        <div className="rounded border border-amber-500/40 p-3 text-xs font-mono space-y-1 bg-amber-500/5">
+          <div className="text-amber-300 uppercase tracking-wider text-[10px] mb-1">
+            Validate Controlled Dispatcher — No Mutation
+          </div>
+          <Row k="validationOnly" v={String(dispatcher.validationOnly === true)} ok={dispatcher.validationOnly === true} />
+          <Row k="mutationSuppressed" v={String(dispatcher.mutationSuppressed === true)} ok={dispatcher.mutationSuppressed === true} />
+          <Row k="wouldDispatch" v={String(dispatcher.wouldDispatch === true)} ok={dispatcher.wouldDispatch === true} />
+          <Row k="mappingStatus" v={dispatcher.mappingStatus ?? "—"} ok={dispatcher.mappingStatus === "valid"} />
+          <Row k="route" v={dispatcher.route ?? "—"} ok={dispatcher.route === PERMITTED.routeAccountId} />
+          <Row k="brokerSymbol" v={dispatcher.brokerSymbol ?? "—"} ok={dispatcher.brokerSymbol === "EURUSD"} />
+          <Row k="side / volume" v={`${dispatcher.side} ${dispatcher.volume}`} ok={dispatcher.side === "sell" && dispatcher.volume === 0.01} />
+          <Row k="open EURUSD positions" v={String(dispatcher.openEurusdPositions ?? "—")} ok={dispatcher.openEurusdPositions === 0} />
+          <Row k="pending EURUSD orders" v={String(dispatcher.pendingEurusdOrders ?? "—")} ok={dispatcher.pendingEurusdOrders === 0} />
+          <Row k="freshTick" v={`${dispatcher.freshTick ?? "—"}${dispatcher.freshTickAgeMs != null ? ` · ${dispatcher.freshTickAgeMs}ms` : ""}`} ok={dispatcher.freshTick === "pass"} />
+          <Row k="outboundBody" v={JSON.stringify(dispatcher.outboundBody)} ok={JSON.stringify(dispatcher.outboundBody) === JSON.stringify(PERMITTED.dto)} />
+          <Row k="deviationAbsent" v={String(dispatcher.deviationAbsent === true)} ok={dispatcher.deviationAbsent === true} />
+          <Row k="internalMetadataExcluded" v={String(dispatcher.internalMetadataExcluded === true)} ok={dispatcher.internalMetadataExcluded === true} />
+          {dispatcher.blockedStage && <Row k="blockedStage" v={dispatcher.blockedStage} ok={false} />}
+          {dispatcher.blockedCode && <Row k="blockedCode" v={dispatcher.blockedCode} ok={false} />}
+        </div>
+      )}
+
 
       <div className="rounded border border-border/40 p-3 text-xs font-mono space-y-1">
         <div className="text-muted-foreground uppercase tracking-wider text-[10px] mb-1">
