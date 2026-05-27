@@ -942,24 +942,33 @@ export default function AdminBrokerSymbolsTab() {
           <div><div className="text-muted-foreground">EURUSD SELL symbol eligible</div><div>{yesNoBadge(eurSymbolSellEligible)}</div></div>
           <div><div className="text-muted-foreground">EURUSD CLOSE symbol eligible</div><div>{yesNoBadge(eurSymbolCloseEligible)}</div></div>
 
-          <div><div className="text-muted-foreground">Discrepancy ack recorded</div><div>{yesNoBadge(ack.acknowledged)}</div></div>
+          <div><div className="text-muted-foreground">EURUSD suffix discrepancy</div><div className="text-emerald-300">RESOLVED (not applicable)</div></div>
           <div>
-            <div className="text-muted-foreground">EURUSD BUY ready for test</div>
+            <div className="text-muted-foreground">EURUSD BUY ready (technical)</div>
             <div>{yesNoBadge(eurBuyReady)}</div>
             {!eurBuyReady && eurResolved && (
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                {!accountCanBuy ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolBuyEligible ? "symbol does not permit BUY" : !ack.acknowledged ? "ack required" : ""}
+                {!accountCanBuy ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolBuyEligible ? "symbol does not permit BUY" : ""}
               </div>
             )}
           </div>
           <div>
-            <div className="text-muted-foreground">EURUSD SELL ready for test</div>
+            <div className="text-muted-foreground">EURUSD SELL ready (technical)</div>
             <div>{yesNoBadge(eurSellReady)}</div>
             {!eurSellReady && eurResolved && (
               <div className="text-[10px] text-muted-foreground mt-0.5">
-                {!accountCanSell ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolSellEligible ? "symbol does not permit SELL" : !ack.acknowledged ? "ack required" : ""}
+                {!accountCanSell ? `blocked by account trade_mode ${accountTradeModeLabel ?? accountTradeModeRaw}` : !eurSymbolSellEligible ? "symbol does not permit SELL" : ""}
               </div>
             )}
+          </div>
+
+          <div className="col-span-2 md:col-span-3 border-t border-border/40 pt-2 mt-1">
+            <div className="text-muted-foreground text-[11px] uppercase tracking-wider mb-1">Live Execution</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+              <div><span className="text-muted-foreground">EURUSD live SELL test available:</span> <span className="text-red-300 font-semibold">NO</span></div>
+              <div><span className="text-muted-foreground">Blocker:</span> <span className="text-red-300">retcode 10017 / TRADE_RETCODE_TRADE_DISABLED</span></div>
+              <div className="col-span-1 md:col-span-2"><span className="text-muted-foreground">Retest allowed:</span> <span className="text-red-300 font-semibold">NO</span> — until Trading Layer/broker confirms remediation.</div>
+            </div>
           </div>
 
           <div><div className="text-muted-foreground">XAUUSD brokerSymbol</div><div className="font-mono">{xauAmbiguous ? "ambiguous" : (xauResolved?.brokerSymbol ?? (xauVariants.length === 0 ? "not inspected" : "—"))}</div></div>
@@ -968,7 +977,7 @@ export default function AdminBrokerSymbolsTab() {
 
           {eurBlocker && (
             <div className="col-span-2 md:col-span-3">
-              <div className="text-muted-foreground">EURUSD blocker</div>
+              <div className="text-muted-foreground">EURUSD technical blocker</div>
               <div className="text-amber-400">{eurBlocker}</div>
             </div>
           )}
@@ -981,7 +990,7 @@ export default function AdminBrokerSymbolsTab() {
         </div>
         {eurResolved && (
           <p className="mt-3 text-[11px] text-muted-foreground">
-            Diagnostic: Trading Layer API returned executable symbol <code className="text-primary">EURUSD</code>, while the MT5 terminal appears to show suffixed instruments. API broker symbol is resolved; external symbol-display discrepancy remains under review.
+            Broker symbol confirmed: <code className="text-primary">EURUSD</code> matches the native MT5 account and Trading Layer catalogue. Live execution remains paused because the broker rejected validated EURUSD SELL requests with TRADE_RETCODE_TRADE_DISABLED. Awaiting Trading Layer/broker permission clarification.
           </p>
         )}
       </Card>
