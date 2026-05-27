@@ -28,7 +28,20 @@ const ACK_ITEMS = [
   "Risk / kill-switch / idempotency remain active",
   "If position confirms, only Close on that exact position is permitted next",
   "If rejected, the platform immediately re-blocks without another retry",
+  "I confirm the read-only MT5 refresh shows no open or pending EURUSD exposure before this one-shot test.",
 ] as const;
+
+type Exposure = {
+  externalOrderId: string;
+  externalClosedByUser: boolean;
+  closureRecordedAt: string | null;
+  openEurusdPositions: number;
+  pendingEurusdOrders: number;
+  residual: "none" | "detected";
+  checkedAt: string;
+  source: string;
+  ready: boolean;
+};
 
 type Auth = {
   id: string;
