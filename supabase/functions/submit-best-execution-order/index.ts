@@ -564,6 +564,22 @@ Deno.serve(async (req) => {
     }, 403);
   }
 
+  // Final activation blocker — only submit-controlled-retest may dispatch.
+  try {
+    const { data: blk } = await supabase.from("site_settings").select("value").eq("key","final_activation_blocker").maybeSingle();
+    const v: any = blk?.value;
+    if (v?.active === true) {
+      return withTimings({
+        success: false, version: VERSION, step: "final_activation_blocker", tradeId,
+        error: "FINAL_ACTIVATION_BLOCKER_ACTIVE",
+        blockReasonCode: v.block_reason_code ?? null,
+        displayCopy: v.display_copy ?? null,
+        liveOrderSent: false,
+      }, 423);
+    }
+  } catch { /* best effort */ }
+
+
   // ---------- Trading Layer execution eligibility (broker-symbol gate) ----------
   // Now sourced from the SAME shared resolver as get-terminal-execution-eligibility
   // (resolveVerifiedExecutionInstrument). The legacy get-trading-execution-eligibility
