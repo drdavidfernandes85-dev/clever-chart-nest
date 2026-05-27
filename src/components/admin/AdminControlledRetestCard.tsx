@@ -215,10 +215,23 @@ const AdminControlledRetestCard = () => {
       const uid = u?.user?.id;
       if (!uid) throw new Error("Not authenticated");
       const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      const acknowledgedAt = new Date().toISOString();
+      const evidence = {
+        acknowledgement: {
+          acknowledgementAccepted: true,
+          acknowledgedAt,
+          acknowledgedBy: uid,
+          acceptedConstraints: ACK_ITEMS,
+        },
+        exposureAtAuthorisation: exposure,
+        permitted: PERMITTED,
+      };
       const { error } = await supabase
         .from("controlled_retest_authorisations")
         .insert({
           authorised_by: uid,
+          status: "authorised",
+          armed_at: acknowledgedAt,
           permitted_symbol: PERMITTED.symbol,
           permitted_broker_symbol: PERMITTED.brokerSymbol,
           permitted_side: PERMITTED.side,
@@ -226,6 +239,7 @@ const AdminControlledRetestCard = () => {
           permitted_route_account_id: PERMITTED.routeAccountId,
           permitted_orders: 1,
           expires_at: expires,
+          evidence_json: evidence,
         });
       if (error) throw error;
       toast.success("Controlled retest authorised — single-use, 10 min.");
@@ -246,7 +260,13 @@ const AdminControlledRetestCard = () => {
         body: { authorisationId: auth.id },
       });
       if (error) throw error;
-      toast.success(`Outcome: ${data?.outcome ?? "unknown"}`);
+      if (data?.outcome === "pretrade_blocked") {
+        toast.error(
+          `Pre-trade blocked: ${data?.blockedStage ?? "unknown"} / ${data?.blockedCode ?? data?.code ?? "unknown"}`,
+        );
+      } else {
+        toast.success(`Outcome: ${data?.outcome ?? "unknown"}`);
+      }
       await refreshAuth();
     } catch (e: any) {
       toast.error(`Submission failed: ${e?.message ?? "unknown"}`);
