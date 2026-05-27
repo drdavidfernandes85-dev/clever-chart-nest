@@ -621,16 +621,16 @@ export default function AdminBrokerSymbolsTab() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <div><div className="text-muted-foreground">trade_allowed</div><div>{tradeAllowed == null ? <Badge variant="outline">unavailable</Badge> : yesNoBadge(tradeAllowed)}</div></div>
-            <div className="md:col-span-2"><div className="text-muted-foreground">Account trade_mode (ENUM_SYMBOL_TRADE_MODE)</div><div className="flex items-center gap-2">{tradeModeBadge(accountTradeModeRaw, accountTradeModeLabel)}</div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Account trade_mode (ENUM_ACCOUNT_TRADE_MODE — informational)</div><div className="flex items-center gap-2">{tradeModeBadge(accountTradeModeRaw, accountTradeModeLabel)}</div></div>
             <div><div className="text-muted-foreground">Account exec permitted</div><div>{yesNoBadge(accountExecPermitted)}</div></div>
             <div><div className="text-muted-foreground">BUY at account level</div><div>{yesNoBadge(accountCanBuy)}</div></div>
             <div><div className="text-muted-foreground">SELL at account level</div><div>{yesNoBadge(accountCanSell)}</div></div>
-            <div className="md:col-span-2"><div className="text-muted-foreground">Account directional rule</div><div className="text-muted-foreground">Trading Layer OpenAPI: Mt5AccountInfo.trade_mode uses ENUM_SYMBOL_TRADE_MODE — directional, not informational.</div></div>
+            <div className="md:col-span-2"><div className="text-muted-foreground">Account directional rule</div><div className="text-muted-foreground">MT5 ENUM_ACCOUNT_TRADE_MODE (DEMO/CONTEST/REAL) is informational only. Directional BUY/SELL gating is enforced per-symbol via symbol.trade_mode.</div></div>
             <div><div className="text-muted-foreground">Last Checked</div><div>{fmtTime(lastResp?.accountPermissionCheckedAt)}</div></div>
             <div><div className="text-muted-foreground">Route accountId</div><div className="font-mono">{mask(lastResp?.accountRouteIdUsed)}</div></div>
             {accountTradeModeRaw === 2 && tradeAllowed === true && (
-              <div className="col-span-2 md:col-span-4 text-[11px] text-amber-400">
-                Trading is allowed on this MT5 route, but new BUY/open-long actions are restricted by the account trade mode (SHORTONLY).
+              <div className="col-span-2 md:col-span-4 text-[11px] text-emerald-400">
+                Account is a REAL MT5 account (ACCOUNT_TRADE_MODE_REAL) with trade_allowed=true. No account-level directional restriction.
               </div>
             )}
           </div>
