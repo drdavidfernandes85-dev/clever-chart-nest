@@ -18,17 +18,17 @@ const PERMITTED = {
 };
 
 const ACK_ITEMS = [
-  "Volume fixed at 0.01",
-  "Symbol fixed at EURUSD",
-  "brokerSymbol fixed at EURUSD",
-  "Side fixed at SELL",
-  `Endpoint fixed at ${PERMITTED.endpoint}`,
-  'Outbound DTO exactly {"side":"sell","symbol":"EURUSD","volume":0.01}',
-  "Server fresh-tick validation required",
-  "Risk / kill-switch / idempotency remain active",
-  "If position confirms, only Close on that exact position is permitted next",
-  "If rejected, the platform immediately re-blocks without another retry",
-  "I confirm the read-only MT5 refresh shows no open or pending EURUSD exposure before this one-shot test.",
+  "I confirm the selected MT5 account is 87943580 on InfinoxLimited-MT5Live.",
+  "I confirm there are currently zero open EURUSD positions and zero pending EURUSD orders.",
+  "I confirm the order is fixed at EURUSD SELL 0.01 only.",
+  "I confirm the exact brokerSymbol is EURUSD.",
+  "I confirm the execution route is 559a12e4-16d8-4db3-be48-40fbea54bcfe.",
+  'I confirm the outbound Trading Layer body is exactly {"side":"sell","symbol":"EURUSD","volume":0.01}.',
+  "I confirm deviation is absent and internal audit metadata is excluded from the Trading Layer body.",
+  "I confirm server-side fresh-tick, risk, kill-switch and idempotency checks remain mandatory.",
+  "I understand this permits one real MT5 order attempt only and expires after 10 minutes.",
+  "I understand that if a position is confirmed, only the controlled Close action for that exact ticket is permitted next.",
+  "I understand that if the request is rejected or blocked, no automatic retry is permitted.",
 ] as const;
 
 type Exposure = {
