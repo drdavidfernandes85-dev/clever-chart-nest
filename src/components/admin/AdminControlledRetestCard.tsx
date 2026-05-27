@@ -226,21 +226,22 @@ const AdminControlledRetestCard = () => {
         exposureAtAuthorisation: exposure,
         permitted: PERMITTED,
       };
+      const authorisationRow = {
+        authorised_by: uid,
+        status: "authorised",
+        armed_at: acknowledgedAt,
+        permitted_symbol: PERMITTED.symbol,
+        permitted_broker_symbol: PERMITTED.brokerSymbol,
+        permitted_side: PERMITTED.side,
+        permitted_volume: PERMITTED.volume,
+        permitted_route_account_id: PERMITTED.routeAccountId,
+        permitted_orders: 1,
+        expires_at: expires,
+        evidence_json: evidence,
+      } as any;
       const { error } = await supabase
         .from("controlled_retest_authorisations")
-        .insert({
-          authorised_by: uid,
-          status: "authorised",
-          armed_at: acknowledgedAt,
-          permitted_symbol: PERMITTED.symbol,
-          permitted_broker_symbol: PERMITTED.brokerSymbol,
-          permitted_side: PERMITTED.side,
-          permitted_volume: PERMITTED.volume,
-          permitted_route_account_id: PERMITTED.routeAccountId,
-          permitted_orders: 1,
-          expires_at: expires,
-          evidence_json: evidence,
-        });
+        .insert(authorisationRow);
       if (error) throw error;
       toast.success("Controlled retest authorised — single-use, 10 min.");
       await refreshAuth();
@@ -275,7 +276,7 @@ const AdminControlledRetestCard = () => {
     }
   };
 
-  const authActive = !!auth && !auth.consumed_at && remaining > 0;
+  const authActive = !!auth && auth.status === "authorised" && !auth.consumed_at && !auth.outcome && remaining > 0;
   const EXPOSURE_FRESH_MS = 2 * 60 * 1000;
   const exposureFresh =
     !!exposure && Date.now() - new Date(exposure.checkedAt).getTime() < EXPOSURE_FRESH_MS;
