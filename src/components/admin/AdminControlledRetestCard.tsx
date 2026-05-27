@@ -243,6 +243,10 @@ const AdminControlledRetestCard = () => {
   };
 
   const authActive = !!auth && !auth.consumed_at && remaining > 0;
+  const EXPOSURE_FRESH_MS = 2 * 60 * 1000;
+  const exposureFresh =
+    !!exposure && Date.now() - new Date(exposure.checkedAt).getTime() < EXPOSURE_FRESH_MS;
+  const exposureClear = !!exposure && exposure.ready && exposureFresh;
 
   return (
     <Card className="p-5 space-y-4 border-amber-500/40 bg-amber-500/5">
