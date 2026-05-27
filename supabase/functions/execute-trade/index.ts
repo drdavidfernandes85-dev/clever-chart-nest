@@ -312,36 +312,77 @@ serve(async (req) => {
 
     const idempotencyKey = `trade-${tradeId}-${user.id}`;
 
-    const orderPayload: Record<string, unknown> = {
+    // -------------------------------------------------------------------------
+    // STRICT TRADING LAYER OUTBOUND DTO
+    //
+    // The Trading Layer /trades/send contract for a minimal market order is:
+    //   { side, symbol, volume }
+    // Optional documented fields (stopLoss / takeProfit) are appended ONLY when
+    // the caller passed finite numbers. NO internal-only audit metadata
+    // (displaySymbol, brokerSymbol, executionIntent, clientOrderId, policyVersion,
+    // mappingStatus, evidence blocks, deviation, filling, comment, etc.) is
+    // ever forwarded to the Trading Layer body. Those are persisted only in
+    // internal audit rows.
+    //
+    // This matches the verified successful direct TL request:
+    //   POST /api/v1/accounts/{accountId}/trades/send
+    //   body: {"side":"buy","symbol":"EURUSD","volume":0.01}
+    // -------------------------------------------------------------------------
+    const tradingLayerOrderPayload: Record<string, unknown> = {
       side,
       symbol,
       volume,
-      deviation: 20,
     };
 
-    /*
-      Important:
-      Only include Stop Loss / Take Profit when the user actually entered valid numbers.
-      If the frontend sends null, empty, undefined, or invalid values, we do NOT send SL/TP to Trading Layer.
-      This prevents broker rejection errors like "Invalid stops in the request".
-    */
     if (typeof stopLoss === "number" && Number.isFinite(stopLoss)) {
-      orderPayload.stopLoss = stopLoss;
+      tradingLayerOrderPayload.stopLoss = stopLoss;
     }
-
     if (typeof takeProfit === "number" && Number.isFinite(takeProfit)) {
-      orderPayload.takeProfit = takeProfit;
+      tradingLayerOrderPayload.takeProfit = takeProfit;
     }
 
-    const tradeResponse = await fetch(`${BASE_URL}/api/v1/accounts/${accountId}/trades/send`, {
+    const outboundEndpointPath = `/api/v1/accounts/${accountId}/trades/send`;
+
+    // Mutation-suppressed preview: returns the literal outbound payload that
+    // would be sent to Trading Layer, without dispatching the request. All
+    // upstream validations (auth, mapping, execution-mode gate, fresh trade
+    // mode) have already run by this point. Admin diagnostics use this to
+    // prove the outbound DTO is minimal/documented before any live test.
+    if (body.previewOnly === true || body.dryRunOutboundContract === true) {
+      return json({
+        success: true,
+        step: "outbound_contract_preview",
+        mutationSuppressed: true,
+        liveOrderAttempted: false,
+        liveOrderSent: false,
+        outbound: {
+          endpointPath: outboundEndpointPath,
+          method: "POST",
+          accountIdInUrl: accountId,
+          body: tradingLayerOrderPayload,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer ***redacted***",
+            "Idempotency-Key": idempotencyKey,
+          },
+          idempotencyKeyPresent: true,
+          internalMetadataExcluded: true,
+          fieldsInBody: Object.keys(tradingLayerOrderPayload),
+        },
+        tradeId,
+      });
+    }
+
+    const tradeResponse = await fetch(`${BASE_URL}${outboundEndpointPath}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${TRADING_LAYER_KEY}`,
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,
       },
-      body: JSON.stringify(orderPayload),
+      body: JSON.stringify(tradingLayerOrderPayload),
     });
+
 
     const tradeText = await tradeResponse.text();
 
