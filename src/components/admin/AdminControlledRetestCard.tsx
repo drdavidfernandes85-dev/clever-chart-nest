@@ -207,6 +207,26 @@ const AdminControlledRetestCard = () => {
     }
   };
 
+  const validateDispatcher = async () => {
+    setValidatingDispatcher(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("submit-controlled-retest", {
+        body: { validateOnly: true },
+      });
+      if (error) throw error;
+      setDispatcher(data);
+      if (data?.wouldDispatch) {
+        toast.success("Dispatcher validation passed (no mutation).");
+      } else {
+        toast.error(`Dispatcher blocked at ${data?.blockedStage} / ${data?.blockedCode}`);
+      }
+    } catch (e: any) {
+      toast.error(`Dispatcher validation failed: ${e?.message ?? "unknown"}`);
+    } finally {
+      setValidatingDispatcher(false);
+    }
+  };
+
   const authorise = async () => {
     if (!allAcked) return toast.error("All acknowledgements required.");
     if (!pretradePassed) return toast.error("Full pre-trade preview must pass first.");
