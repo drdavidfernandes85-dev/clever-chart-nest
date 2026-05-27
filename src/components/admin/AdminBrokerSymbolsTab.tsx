@@ -483,7 +483,7 @@ export default function AdminBrokerSymbolsTab() {
         trade_allowed: tradeAllowed ?? null,
         trade_mode_raw: accountTradeModeRaw,
         trade_mode_label: accountTradeModeLabel,
-        trade_mode_meaning: "enum_symbol_trade_mode_directional",
+        trade_mode_meaning: "enum_account_trade_mode_informational_demo_contest_real",
         account_can_buy: accountCanBuy,
         account_can_sell: accountCanSell,
       },
