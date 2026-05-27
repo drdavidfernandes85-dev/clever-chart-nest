@@ -171,11 +171,12 @@ Deno.serve(async (req) => {
     }, transient ? 503 : 502);
   }
 
-  // Trading Layer OpenAPI: Mt5AccountInfo.trade_mode uses ENUM_SYMBOL_TRADE_MODE
-  // (the SAME enum as per-symbol trade_mode). It is directional, not just an
-  // account-type tag. `trade_allowed` is a separate boolean.
+  // Trading Layer Mt5AccountInfo.trade_mode is MT5 ENUM_ACCOUNT_TRADE_MODE:
+  //   0=DEMO, 1=CONTEST, 2=REAL. Informational only — NOT directional.
+  // `trade_allowed` is the boolean account-level mutation gate.
+  // Directional gating (BUY/SELL/close) is enforced per-symbol only.
   const accTm = account.data.trade_mode;
-  const accInterp = interpretTradeMode(accTm);
+  const accInterp = interpretAccountTradeMode(accTm);
   const result: Record<string, unknown> = {
     success: true,
     accountRouteIdUsed: accountId,
@@ -183,10 +184,10 @@ Deno.serve(async (req) => {
     accountTradeAllowed: account.data.trade_allowed,
     accountTradeModeRaw: accTm,
     accountTradeModeLabel: accInterp.label,
-    accountTradeModeMeaning: "enum_symbol_trade_mode_directional",
-    accountCanOpenBuy: accInterp.raw != null && (accInterp.raw === 1 || accInterp.raw === 4),
-    accountCanOpenSell: accInterp.raw != null && (accInterp.raw === 2 || accInterp.raw === 4),
-    accountCanClose: accInterp.raw != null && accInterp.raw !== 0,
+    accountTradeModeMeaning: "enum_account_trade_mode_informational",
+    accountCanOpenBuy: account.data.trade_allowed === true,
+    accountCanOpenSell: account.data.trade_allowed === true,
+    accountCanClose: account.data.trade_allowed === true,
     mt5Login: account.data.login,
     mt5Server: account.data.server,
     accountPermissionCheckedAt: now,
