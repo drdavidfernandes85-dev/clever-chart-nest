@@ -69,6 +69,7 @@ const TERMINAL_STATUSES = new Set([
   "execution_evidence_missing_under_investigation",
   "failed_close_rejected",
   "failed_close_under_investigation",
+  "failed_close_confirmation_under_investigation",
   "expired",
   "close_confirmed",
   "lifecycle_passed",
@@ -98,7 +99,7 @@ const EXPECTED_DTO = { side: "sell", symbol: "EURUSD", volume: 0.01 };
 const StatusBadge = ({ status }: { status: string }) => {
   const tone =
     status === "lifecycle_passed" || status === "close_confirmed" ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-    : status === "failed_entry_rejected" || status === "failed_entry_rejected_under_investigation" || status === "execution_evidence_missing_under_investigation" || status === "failed_close_rejected" || status === "failed_close_under_investigation" || status === "expired" || status === "review_required_pretrade_block" ? "bg-red-500/20 text-red-300 border-red-500/40"
+    : status === "failed_entry_rejected" || status === "failed_entry_rejected_under_investigation" || status === "execution_evidence_missing_under_investigation" || status === "failed_close_rejected" || status === "failed_close_under_investigation" || status === "failed_close_confirmation_under_investigation" || status === "expired" || status === "review_required_pretrade_block" ? "bg-red-500/20 text-red-300 border-red-500/40"
     : status === "not_authorised" ? "bg-muted text-muted-foreground border-border/40"
     : "bg-amber-500/20 text-amber-300 border-amber-500/40";
   return <Badge variant="outline" className={`font-mono text-[10px] ${tone}`}>{status}</Badge>;
@@ -187,8 +188,13 @@ const AdminFinalLifecycleValidationCard = () => {
     remediation?.remediationTestsPassed === true &&
     remediation?.eligibleForSeparateLifecycleRetest === true &&
     remediation?.incidentBlocksNewIsolatedLifecycleRetest === false;
+  const currentIncidentRow = historicalRows.find((r) =>
+    r.status === "failed_close_confirmation_under_investigation" &&
+    (r.entry_order_id === "1169166422" || r.confirmed_position_ticket === "1169166422")
+  ) ?? null;
+  const currentIncidentOpen = !!currentIncidentRow;
   const unresolvedForensicRows = historicalRows.filter((r) => {
-    const isForensic = r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation";
+    const isForensic = r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation" || r.status === "failed_close_confirmation_under_investigation";
     if (!isForensic) return false;
     if (remediationUnblocksRetest && resolvedIncidentIds.includes(r.id)) return false;
     return true;
@@ -199,7 +205,8 @@ const AdminFinalLifecycleValidationCard = () => {
   // Per-gate blocker resolution — surfaces the first failing gate so the
   // Authorise button is never inactive without a visible reason.
   const blocker: string | null =
-    forensicInvestigationOpen ? "FORENSIC_INVESTIGATION_OPEN"
+    currentIncidentOpen ? "CURRENT_CONTROLLED_CLOSE_INCIDENT_OPEN"
+    : forensicInvestigationOpen ? "FORENSIC_INVESTIGATION_OPEN"
     : !preview ? "NO_PREVIEW"
     : !previewFresh ? "PREVIEW_STALE_RE_RUN"
     : !wouldDispatchEntry ? `PREVIEW_BLOCKED_${preview?.blockedCode || preview?.blockedStage || "UNKNOWN"}`
@@ -357,8 +364,12 @@ const AdminFinalLifecycleValidationCard = () => {
         body: { authorisationId: activeRow.id, ticket: activeRow.confirmed_position_ticket },
       });
       if (error) throw error;
-      if (data?.success) toast.success("Close dispatched");
-      else toast.error(data?.warning || data?.error || "Close failed");
+      const closeResult = data?.closeResult;
+      if (data?.success && closeResult?.brokerCloseMutationDispatched === true && closeResult?.requestId) {
+        toast.success(`Close sent to broker — request ${String(closeResult.requestId).slice(0, 8)}…`);
+      } else {
+        toast.error(data?.warning || closeResult?.retcodeDescription || closeResult?.error || data?.error || "Close failed or unconfirmed");
+      }
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Close dispatch failed");
@@ -375,7 +386,13 @@ const AdminFinalLifecycleValidationCard = () => {
         .from("mt_positions").select("id", { count: "exact", head: true })
         .eq("user_id", uid!).eq("ticket", activeRow.confirmed_position_ticket!);
       if ((count ?? 0) > 0) {
-        toast.warning("Position is still open in mt_positions — cannot mark close confirmed yet");
+        toast.warning("Position is still open in the local mirror — close remains unconfirmed");
+        return;
+      }
+      const closeEvidence = activeRow.close_evidence ?? {};
+      const closeResult = closeEvidence.response ?? {};
+      if (closeResult?.brokerCloseMutationDispatched !== true || !closeResult?.requestId) {
+        toast.error("Close cannot be confirmed without stored broker close dispatch evidence.");
         return;
       }
       const { error } = await supabase
@@ -408,6 +425,26 @@ const AdminFinalLifecycleValidationCard = () => {
         live execution and pending orders remain disabled. Historical attempts below are frozen evidence
         and never reused.
       </p>
+
+      {currentIncidentRow && (
+        <Card className="p-3 mb-3 border-red-500/60 bg-red-500/10">
+          <div className="flex items-center gap-2 mb-2 text-red-200">
+            <AlertTriangle className="h-4 w-4" />
+            <h4 className="text-xs font-semibold">Final Lifecycle Validation — Entry PASS / Platform Close FAILED OR UNCONFIRMED</h4>
+          </div>
+          <Row k="entry_ticket" v="1169166422" />
+          <Row k="entry" v={<span className="text-emerald-300">PASS</span>} />
+          <Row k="close_button_clicked" v="YES" />
+          <Row k="close_dispatch_evidence" v="Trading Layer rejected: TRADE_RETCODE_TRADE_DISABLED" />
+          <Row k="native_mt5_position_remained_open_after_click" v={<span className="text-red-300">YES</span>} />
+          <Row k="manual_emergency_close" v={currentIncidentRow.close_evidence?.incidentFreeze ? "confirmed / user handled in native MT5" : "pending confirmation"} />
+          <Row k="controlled_close" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
+          <Row k="full_lifecycle" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
+          <Row k="general_client_execution" v="DISABLED" />
+          <Row k="pending_orders" v="DISABLED" />
+          <Row k="further_lifecycle_testing" v="BLOCKED PENDING ROOT-CAUSE ANALYSIS" />
+        </Card>
+      )}
 
       {/* HISTORICAL terminal rows — evidence only, never reused */}
       {historicalRows.length > 0 && (
@@ -562,8 +599,8 @@ const AdminFinalLifecycleValidationCard = () => {
         </div>
       )}
 
-      {/* NEW authorisation form — only visible when NO active row exists */}
-      {!activeRow && (
+      {/* NEW authorisation form — only visible when NO active row exists and no current incident freeze is open */}
+      {!activeRow && !currentIncidentOpen && (
         <Card className="p-3 mt-3 border-border/40">
           <div className="flex items-center gap-2 mb-2">
             <Lock className="h-4 w-4 text-primary" />
