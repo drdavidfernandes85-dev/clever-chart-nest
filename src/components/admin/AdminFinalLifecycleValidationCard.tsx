@@ -181,7 +181,20 @@ const AdminFinalLifecycleValidationCard = () => {
   const exposureZero = (preview?.openEurusdPositions ?? 1) === 0 && (preview?.pendingEurusdOrders ?? 1) === 0;
   const hasActiveLifecycleRow = !!activeRow;
   const isAuthorising = busy === "arm";
-  const forensicInvestigationOpen = historicalRows.some((r) => r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation");
+  const resolvedIncidentIds: string[] = Array.isArray(remediation?.resolved_incident_ids) ? remediation.resolved_incident_ids : [];
+  const remediationUnblocksRetest =
+    remediation?.remediationDeployed === true &&
+    remediation?.remediationTestsPassed === true &&
+    remediation?.eligibleForSeparateLifecycleRetest === true &&
+    remediation?.incidentBlocksNewIsolatedLifecycleRetest === false;
+  const unresolvedForensicRows = historicalRows.filter((r) => {
+    const isForensic = r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation";
+    if (!isForensic) return false;
+    if (remediationUnblocksRetest && resolvedIncidentIds.includes(r.id)) return false;
+    return true;
+  });
+  const forensicInvestigationOpen = unresolvedForensicRows.length > 0;
+  const remediationBannerApplies = remediationUnblocksRetest && historicalRows.some((r) => resolvedIncidentIds.includes(r.id));
 
   // Per-gate blocker resolution — surfaces the first failing gate so the
   // Authorise button is never inactive without a visible reason.
