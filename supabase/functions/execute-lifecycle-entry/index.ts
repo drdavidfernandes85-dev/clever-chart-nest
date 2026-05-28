@@ -24,6 +24,37 @@ const cors = {
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 
+const pick = (obj: any, paths: string[]) => {
+  for (const path of paths) {
+    const value = path.split(".").reduce((acc, key) => acc && typeof acc === "object" ? acc[key] : undefined, obj);
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return null;
+};
+
+const mask = (value: string) => value.length <= 8 ? value : `${value.slice(0, 8)}…${value.slice(-6)}`;
+
+async function markPretradeBlocked(supabase: any, authorisationId: string, details: Record<string, unknown>) {
+  const blockedAt = new Date().toISOString();
+  const evidence = {
+    outcome: "pretrade_blocked",
+    brokerMutationDispatched: false,
+    mutationDispatched: false,
+    blockedAt,
+    ...details,
+  };
+  await supabase.from("lifecycle_validation_authorisations").update({
+    status: "review_required_pretrade_block",
+    classification: "lifecycle_entry_pretrade_blocked_non_reusable",
+    failure_reason: String(details.blockedCode ?? details.error ?? "PRETRADE_BLOCKED"),
+    entry_evidence: evidence,
+    maximum_entry_dispatches: 0,
+    maximum_close_dispatches: 0,
+    updated_at: blockedAt,
+  }).eq("id", authorisationId);
+  return json({ success: false, version: VERSION, outcome: "pretrade_blocked", ...evidence }, 200);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ success: false, error: "Method not allowed" }, 405);
@@ -66,13 +97,11 @@ Deno.serve(async (req) => {
   // controlled-retest entry path. Do NOT invent a separate vocabulary.
   const mapping = await resolveActiveMtMapping(supabase, user.id);
   if (mapping.status !== "valid" || !mapping.traderId) {
-    return json({
-      success: false,
-      version: VERSION,
-      error: mapping.status === "missing" ? "MAPPING_NOT_FOUND" : "MAPPING_NOT_VALID",
+    return await markPretradeBlocked(supabase, authorisationId, {
       blockedStage: "mapping_validation",
+      blockedCode: mapping.status === "missing" ? "MAPPING_NOT_FOUND" : "MAPPING_NOT_VALID",
       mappingStatus: mapping.status,
-    }, 200);
+    });
   }
   if (mapping.tradingLayerAccountId !== row.route_account_id) {
     return json({
@@ -84,27 +113,27 @@ Deno.serve(async (req) => {
     }, 409);
   }
   const gate = await assertLiveExecutionAllowed(supabase, user.id, { traderId: mapping.traderId, login: mapping.login });
-  if (!gate.allowed) return json({ success: false, version: VERSION, error: gate.code, blockedStage: "execution_mode_gate" }, 200);
+  if (!gate.allowed) return await markPretradeBlocked(supabase, authorisationId, { blockedStage: "execution_mode_gate", blockedCode: gate.code || "EXECUTION_MODE_BLOCKED" });
 
   const op = sideToOperation(row.entry_side, "market");
   const v = await resolveVerifiedExecutionInstrument(supabase, {
     userId: user.id, displaySymbol: row.display_symbol, operation: op, expectedBrokerSymbol: row.broker_symbol,
   });
   if (!v.success || !v.brokerSymbol || v.tradeAllowed !== true || !v.operationEligible) {
-    return json({ success: false, version: VERSION, error: v.errorCode || "PRETRADE_BLOCKED", blockedStage: "pretrade_resolution" }, 200);
+    return await markPretradeBlocked(supabase, authorisationId, { blockedStage: "pretrade_resolution", blockedCode: v.errorCode || "PRETRADE_BLOCKED" });
   }
 
   try {
     const settings = await loadRiskSettings(supabase, user.id);
     const usage = await loadDailyUsage(supabase, user.id);
     const breach = checkOpenRisk({ symbol: row.display_symbol, volume: Number(row.entry_volume) }, settings, usage);
-    if (breach) return json({ success: false, version: VERSION, error: "RISK_BLOCKED", blockedStage: "risk_validation" }, 200);
+    if (breach) return await markPretradeBlocked(supabase, authorisationId, { blockedStage: "risk_validation", blockedCode: String(breach.reason || "RISK_BLOCKED") });
   } catch { /* best effort */ }
 
   const ft = await resolveFreshExecutionTick({
     routeAccountId: v.routeAccountId, brokerSymbol: v.brokerSymbol, displaySymbol: row.display_symbol,
   });
-  if (!ft.fresh) return json({ success: false, version: VERSION, error: "FRESH_TICK_UNAVAILABLE", blockedStage: "fresh_tick" }, 200);
+  if (!ft.fresh) return await markPretradeBlocked(supabase, authorisationId, { blockedStage: "fresh_tick", blockedCode: ft.code || "FRESH_TICK_UNAVAILABLE", freshTickAgeMs: ft.ageMs });
 
   // Atomically consume the entry dispatch BEFORE mutation
   const { data: consumed, error: consumeErr } = await supabase
@@ -144,29 +173,60 @@ Deno.serve(async (req) => {
   } catch (e) { networkError = e instanceof Error ? e.message : String(e); }
   const latencyMs = Date.now() - startedAt;
 
-  const retcode = res?.retcode != null ? Number(res.retcode) : null;
+  const result = res?.data ?? res?.result ?? res;
+  const retcodeRaw = pick(result, ["retcode", "result.retcode", "trade.retcode", "order.retcode"]);
+  const retcode = retcodeRaw != null ? Number(retcodeRaw) : null;
+  const retcodeName = pick(result, ["retcode_name", "retcodeName", "result.retcode_name", "trade.retcode_name", "order.retcode_name"]);
+  const retcodeDescription = pick(result, ["retcode_description", "retcodeDescription", "comment", "message", "result.retcode_description", "trade.retcode_description", "order.retcode_description"]);
+  const classification = String(pick(result, ["classification", "result.classification", "trade.classification", "order.classification"]) ?? "").toLowerCase() || null;
   const accepted = !networkError && httpStatus >= 200 && httpStatus < 300
-    && (retcode === 10008 || retcode === 10009 || res?.success === true);
+    && (retcode === 10008 || retcode === 10009 || res?.success === true || classification === "placed" || classification === "done");
 
-  const orderId = res?.orderId ?? res?.order ?? res?.order_id ?? null;
+  const orderId = pick(result, ["orderId", "order_id", "order", "result.order", "trade.order", "order.ticket"]);
+  const dealId = pick(result, ["dealId", "deal_id", "deal", "result.deal", "trade.deal", "deal.ticket"]);
+  const positionTicket = pick(result, ["positionTicket", "position_ticket", "position.id", "position.ticket", "result.positionTicket"]);
   const requestId = res?.requestId ?? res?.request_id ?? null;
+  const evidenceMissing = !networkError && httpStatus >= 200 && httpStatus < 300 && !accepted && retcode == null && !classification;
+  const finalStatus = accepted
+    ? "awaiting_position_confirmation"
+    : evidenceMissing
+      ? "execution_evidence_missing_under_investigation"
+      : "failed_entry_rejected";
 
   await supabase.from("lifecycle_validation_authorisations").update({
-    status: accepted ? "awaiting_position_confirmation" : "failed_entry_rejected",
+    status: finalStatus,
     entry_order_id: orderId ? String(orderId) : null,
     entry_request_id: requestId ? String(requestId) : null,
     entry_retcode: retcode,
+    classification: accepted ? "lifecycle_entry_accepted_awaiting_reconciliation" : evidenceMissing ? "execution_evidence_missing_under_investigation" : (classification || "lifecycle_entry_rejected"),
     entry_evidence: {
       httpStatus, latencyMs, request: dto, response: res, networkError,
+      brokerMutationDispatched: true,
+      mutationDispatched: true,
+      endpointPath: `/api/v1/accounts/${row.route_account_id}/trades/send`,
+      method: "POST",
+      routeAccountId: row.route_account_id,
+      idempotencyKeyPresent: true,
+      idempotencyKeyMasked: mask(idempotencyKey),
+      retcode,
+      retcodeName,
+      retcodeDescription,
+      classification,
+      orderId: orderId ? String(orderId) : null,
+      dealId: dealId ? String(dealId) : null,
+      positionTicket: positionTicket ? String(positionTicket) : null,
+      requestId: requestId ? String(requestId) : null,
       dispatchedAt: new Date().toISOString(),
     },
-    failure_reason: accepted ? null : (networkError || res?.brokerMessage || res?.message || "ENTRY_REJECTED"),
+    failure_reason: accepted ? null : evidenceMissing ? "EXECUTION_EVIDENCE_MISSING_UNDER_INVESTIGATION" : (networkError || String(retcodeDescription || retcodeName || res?.brokerMessage || res?.message || "ENTRY_REJECTED")),
   }).eq("id", authorisationId);
 
   return json({
     success: accepted, version: VERSION, authorisationId,
-    orderId, requestId, retcode, latencyMs,
+    orderId, dealId, positionTicket, requestId, retcode, retcodeName, retcodeDescription, classification, latencyMs,
+    brokerMutationDispatched: true,
     outboundBody: dto,
-    status: accepted ? "awaiting_position_confirmation" : "failed_entry_rejected",
+    status: finalStatus,
+    error: accepted ? null : evidenceMissing ? "EXECUTION_EVIDENCE_MISSING_UNDER_INVESTIGATION" : (String(retcodeDescription || retcodeName || networkError || "ENTRY_REJECTED")),
   });
 });
