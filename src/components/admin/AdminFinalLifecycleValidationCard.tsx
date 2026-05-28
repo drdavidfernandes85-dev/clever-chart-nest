@@ -430,19 +430,41 @@ const AdminFinalLifecycleValidationCard = () => {
         <Card className="p-3 mb-3 border-red-500/60 bg-red-500/10">
           <div className="flex items-center gap-2 mb-2 text-red-200">
             <AlertTriangle className="h-4 w-4" />
-            <h4 className="text-xs font-semibold">Final Lifecycle Validation — Entry PASS / Platform Close FAILED OR UNCONFIRMED</h4>
+            <h4 className="text-xs font-semibold">
+              Final Lifecycle Validation — Entry PASS / Platform Close REJECTED Due to Wrong Execution Route / Position Manually Closed in MT5
+            </h4>
           </div>
-          <Row k="entry_ticket" v="1169166422" />
+          <Row k="authorisation_id" v={<code className="text-[10px]">{currentIncidentRow.id}</code>} />
           <Row k="entry" v={<span className="text-emerald-300">PASS</span>} />
-          <Row k="close_button_clicked" v="YES" />
-          <Row k="close_dispatch_evidence" v="Trading Layer rejected: TRADE_RETCODE_TRADE_DISABLED" />
-          <Row k="native_mt5_position_remained_open_after_click" v={<span className="text-red-300">YES</span>} />
-          <Row k="manual_emergency_close" v={currentIncidentRow.close_evidence?.incidentFreeze ? "confirmed / user handled in native MT5" : "pending confirmation"} />
-          <Row k="controlled_close" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
-          <Row k="full_lifecycle" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
-          <Row k="general_client_execution" v="DISABLED" />
+          <Row k="entry_ticket_or_order" v="1169166422" />
+          <Row k="entry_broker_mutation_dispatched" v={<span className="text-emerald-300">true</span>} />
+          <Row k="close_button_clicked" v="yes" />
+          <Row k="close_live_ticket_confirmed_before_dispatch" v="yes" />
+          <Row k="close_broker_mutation_dispatched" v="true" />
+          <Row k="incorrect_close_route_used" v={<span className="text-red-300 font-mono">29008868-d583-4ab5-a6c1-57586fe92007</span>} />
+          <Row k="correct_verified_execution_route" v={<span className="text-emerald-300 font-mono">559a12e4-16d8-4db3-be48-40fbea54bcfe</span>} />
+          <Row k="close_requestId" v={<code className="text-[10px]">5a07cdb9-f8d3-4109-ad16-62f4f812f367</code>} />
+          <Row k="close_retcode" v={<span className="text-red-300">10017 / TRADE_RETCODE_TRADE_DISABLED</span>} />
+          <Row k="close_description" v="Trade is disabled" />
+          <Row k="manual_safety_closure" v="confirmed" />
+          <Row k="current_open_eurusd_positions" v={exposure?.open ?? 0} />
+          <Row k="current_pending_eurusd_orders" v={exposure?.pending ?? 0} />
+          <Row k="residual_eurusd_exposure" v="none" />
+          <Row k="controlled_close_validation" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
+          <Row k="full_lifecycle_validation" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
+          <Row k="general_client_live_execution" v="DISABLED" />
           <Row k="pending_orders" v="DISABLED" />
-          <Row k="further_lifecycle_testing" v="BLOCKED PENDING ROOT-CAUSE ANALYSIS" />
+          <Row k="further_lifecycle_testing" v="BLOCKED — corrected close dispatch preview and regression tests must be reviewed first" />
+          <div className="mt-2 p-2 rounded border border-red-500/40 bg-red-500/5 text-[11px] text-red-100 leading-relaxed">
+            The platform entry succeeded. The platform-controlled close was sent to Trading Layer
+            through the wrong route identifier (29008868-d583-4ab5-a6c1-57586fe92007 — the traderId,
+            not an execution route) and was rejected with retcode 10017 (TRADE_RETCODE_TRADE_DISABLED,
+            "Trade is disabled"). The position was closed manually in MT5 for safety. The close route
+            has since been corrected to use the verified execution account route
+            (559a12e4-16d8-4db3-be48-40fbea54bcfe), but controlled-close validation remains failed
+            until a later separately authorised test passes. No Authorise, Execute Entry or Close
+            button is available on this historical incident row.
+          </div>
         </Card>
       )}
 
