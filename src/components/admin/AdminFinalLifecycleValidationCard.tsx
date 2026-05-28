@@ -119,6 +119,7 @@ const AdminFinalLifecycleValidationCard = () => {
   const [previewAt, setPreviewAt] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [exposure, setExposure] = useState<{ open: number; pending: number } | null>(null);
+  const [remediation, setRemediation] = useState<any | null>(null);
 
   const load = async () => {
     const { data } = await supabase
@@ -131,6 +132,17 @@ const AdminFinalLifecycleValidationCard = () => {
     const historical = rows.filter((r) => TERMINAL_STATUSES.has(r.status));
     setActiveRow(active);
     setHistoricalRows(historical);
+  };
+
+  const loadRemediation = async () => {
+    try {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "lifecycle_forensic_remediation")
+        .maybeSingle();
+      setRemediation((data?.value as any) ?? null);
+    } catch { /* ignore */ }
   };
 
   const refreshExposure = async () => {
@@ -151,6 +163,7 @@ const AdminFinalLifecycleValidationCard = () => {
   useEffect(() => {
     void load();
     void refreshExposure();
+    void loadRemediation();
   }, []);
 
   const allAcked = useMemo(() => ACK_ITEMS.every((i) => acks[i.id]), [acks]);
