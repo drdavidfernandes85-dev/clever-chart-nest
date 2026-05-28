@@ -481,16 +481,42 @@ const AdminFinalLifecycleValidationCard = () => {
 
       {activeRow && activeRow.status === "awaiting_position_confirmation" && (
         <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+            Current Live Lifecycle Position — Trading Layer Authoritative Confirmation
+          </div>
           <Row k="entry_order_id" v={activeRow.entry_order_id || "—"} />
           <Row k="entry_retcode" v={activeRow.entry_retcode ?? "—"} />
+          <Row k="expected_symbol" v="EURUSD" />
+          <Row k="expected_side" v="SELL" />
+          <Row k="expected_volume" v={String(activeRow.entry_volume)} />
+          <Row k="route" v="559a12e4…bcfe" />
+          <Row k="authority_source" v="trading_layer_live_forced" />
+          <Row k="local_mirror" v="informational_only" />
           <div className="p-2 rounded border border-border/40 text-[11px]">
-            Entry dispatched. Reconcile EA / Trading Layer until the EURUSD SELL 0.01 position appears.
+            Entry placed. Fetching the exact live position ticket directly from Trading Layer. The local positions
+            mirror is informational only and does not control close eligibility.
           </div>
+          {confirmDiag?.reason === "ambiguous_multiple_live_matches" && Array.isArray(confirmDiag?.candidates) && (
+            <div className="p-2 rounded border border-amber-500/60 bg-amber-500/10 text-[11px] text-amber-100 space-y-1">
+              <div className="font-semibold">Multiple matching live positions — select exact ticket manually:</div>
+              {confirmDiag.candidates.map((c: any) => (
+                <div key={c.ticket} className="font-mono">
+                  #{c.ticket} · {c.symbol} {c.side} {c.volume} · open {c.openPrice ?? "—"} · {c.openedAt ?? "—"}
+                </div>
+              ))}
+            </div>
+          )}
+          {confirmDiag?.reason === "no_live_match" && (
+            <div className="p-2 rounded border border-amber-500/60 bg-amber-500/10 text-[11px] text-amber-100">
+              {confirmDiag.message}
+            </div>
+          )}
           <Button size="sm" variant="outline" onClick={confirmPosition} disabled={busy === "confirm-position"}>
-            <RefreshCw className="h-3 w-3 mr-1" /> Confirm Exact Position Ticket
+            <RefreshCw className="h-3 w-3 mr-1" /> Confirm Exact Position Ticket (Trading Layer Live)
           </Button>
         </div>
       )}
+
 
       {activeRow && activeRow.status === "position_confirmed_close_only" && (
         <div className="space-y-2">
