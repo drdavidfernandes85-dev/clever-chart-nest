@@ -325,7 +325,7 @@ const AdminFinalLifecycleValidationCard = () => {
     } finally { setBusy(null); }
   };
 
-  const [confirmDiag, setConfirmDiag] = (globalThis as any).__noop ? [null, () => {}] : useStateInline();
+  const [confirmDiag, setConfirmDiag] = useState<any>(null);
   const confirmPosition = async () => {
     if (!activeRow || activeRow.status !== "awaiting_position_confirmation") return;
     setBusy("confirm-position");
