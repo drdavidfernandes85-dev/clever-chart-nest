@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
     brokerSymbol: row.broker_symbol,
     openSide: row.entry_side,
     volume: Number(row.entry_volume),
+    routeAccountId: row.route_account_id,
     liveCloseConfirmed: true,
     clientClickAt: new Date().toISOString(),
   };
