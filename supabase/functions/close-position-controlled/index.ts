@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
   let raw: any = null;
   let networkError: string | null = null;
   try {
-    const r = await fetch(`${BASE_URL}/api/v1/accounts/${accountId}/trades/send`, {
+    const r = await fetch(`${BASE_URL}/api/v1/accounts/${routeAccountId}/trades/send`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${TRADING_LAYER_KEY}`,
