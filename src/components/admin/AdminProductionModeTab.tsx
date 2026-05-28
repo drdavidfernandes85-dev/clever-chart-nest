@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminLiveTestLimitsCard from "./AdminLiveTestLimitsCard";
 import AdminExecutionEligibilityCard from "./AdminExecutionEligibilityCard";
 import AdminFinalLifecyclePassCard from "./AdminFinalLifecyclePassCard";
+import AdminFinalActivationReadinessReviewCard from "./AdminFinalActivationReadinessReviewCard";
 import AdminLivePositionMirrorDiagnostic from "./AdminLivePositionMirrorDiagnostic";
 import AdminEurusdFlatnessDiagnostic from "./AdminEurusdFlatnessDiagnostic";
 
@@ -515,7 +516,8 @@ const AdminProductionModeTab = () => {
           fresh-tick gates and the reconciliation coordinator remain the authoritative enforcement layer in all modes.
         </p>
       </Card>
-
+      <AdminFinalLifecyclePassCard />
+      <AdminFinalActivationReadinessReviewCard />
       <AdminFinalLifecyclePassCard />
       <AdminEurusdFlatnessDiagnostic />
       <AdminLivePositionMirrorDiagnostic />
