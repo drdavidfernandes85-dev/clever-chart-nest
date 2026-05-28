@@ -516,7 +516,8 @@ const AdminProductionModeTab = () => {
           fresh-tick gates and the reconciliation coordinator remain the authoritative enforcement layer in all modes.
         </p>
       </Card>
-
+      <AdminFinalLifecyclePassCard />
+      <AdminFinalActivationReadinessReviewCard />
       <AdminFinalLifecyclePassCard />
       <AdminEurusdFlatnessDiagnostic />
       <AdminLivePositionMirrorDiagnostic />
