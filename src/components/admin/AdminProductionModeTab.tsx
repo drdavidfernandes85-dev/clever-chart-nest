@@ -522,6 +522,7 @@ const AdminProductionModeTab = () => {
 
       <AdminFinalLifecycleValidationCard />
       <AdminLivePositionMirrorDiagnostic />
+      <AdminEurusdFlatnessDiagnostic />
 
       <AdminControlledRetestCard />
 
