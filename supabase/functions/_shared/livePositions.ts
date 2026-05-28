@@ -77,7 +77,7 @@ function normalisePosition(p: any): LiveTlPosition | null {
 export async function fetchTradingLayerLivePositions(
   accountId: string,
 ): Promise<LiveLookupResult> {
-  const url = `${BASE_URL}/api/v1/accounts/${encodeURIComponent(accountId)}/positions?limit=200`;
+  const url = `${BASE_URL}/api/v1/accounts/${encodeURIComponent(accountId)}/positions`;
   const fetchedAt = new Date().toISOString();
   let r: Response | null = null;
   let text = "";
