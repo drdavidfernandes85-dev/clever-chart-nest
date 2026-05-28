@@ -68,6 +68,7 @@ const TERMINAL_STATUSES = new Set([
   "failed_entry_rejected_under_investigation",
   "execution_evidence_missing_under_investigation",
   "failed_close_rejected",
+  "failed_close_under_investigation",
   "expired",
   "close_confirmed",
   "lifecycle_passed",
@@ -97,7 +98,7 @@ const EXPECTED_DTO = { side: "sell", symbol: "EURUSD", volume: 0.01 };
 const StatusBadge = ({ status }: { status: string }) => {
   const tone =
     status === "lifecycle_passed" || status === "close_confirmed" ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-    : status === "failed_entry_rejected" || status === "failed_entry_rejected_under_investigation" || status === "execution_evidence_missing_under_investigation" || status === "failed_close_rejected" || status === "expired" || status === "review_required_pretrade_block" ? "bg-red-500/20 text-red-300 border-red-500/40"
+    : status === "failed_entry_rejected" || status === "failed_entry_rejected_under_investigation" || status === "execution_evidence_missing_under_investigation" || status === "failed_close_rejected" || status === "failed_close_under_investigation" || status === "expired" || status === "review_required_pretrade_block" ? "bg-red-500/20 text-red-300 border-red-500/40"
     : status === "not_authorised" ? "bg-muted text-muted-foreground border-border/40"
     : "bg-amber-500/20 text-amber-300 border-amber-500/40";
   return <Badge variant="outline" className={`font-mono text-[10px] ${tone}`}>{status}</Badge>;
@@ -167,7 +168,7 @@ const AdminFinalLifecycleValidationCard = () => {
   const exposureZero = (preview?.openEurusdPositions ?? 1) === 0 && (preview?.pendingEurusdOrders ?? 1) === 0;
   const hasActiveLifecycleRow = !!activeRow;
   const isAuthorising = busy === "arm";
-  const forensicInvestigationOpen = historicalRows.some((r) => r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation");
+  const forensicInvestigationOpen = historicalRows.some((r) => r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation");
 
   // Per-gate blocker resolution — surfaces the first failing gate so the
   // Authorise button is never inactive without a visible reason.
