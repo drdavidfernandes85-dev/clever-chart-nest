@@ -362,6 +362,12 @@ Deno.serve(async (req) => {
         brokerSymbol,
         symbolMappingSource: eligible.symbolMappingSource,
         symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
+        liveAuthority: {
+          code: "LIVE_POSITION_CONFIRMED_FOR_CLOSE",
+          source: live.source,
+          fetchedAt: live.fetchedAt,
+          mirrorAction,
+        },
       },
     });
   } catch { /* swallow audit errors */ }
