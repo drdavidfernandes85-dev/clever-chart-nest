@@ -520,6 +520,7 @@ const AdminProductionModeTab = () => {
       <AdminControlledRetestEntryPassCard />
 
       <AdminFinalLifecycleValidationCard />
+      <AdminLivePositionMirrorDiagnostic />
 
       <AdminControlledRetestCard />
 
