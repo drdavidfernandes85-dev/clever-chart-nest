@@ -188,8 +188,13 @@ const AdminFinalLifecycleValidationCard = () => {
     remediation?.remediationTestsPassed === true &&
     remediation?.eligibleForSeparateLifecycleRetest === true &&
     remediation?.incidentBlocksNewIsolatedLifecycleRetest === false;
+  const currentIncidentRow = historicalRows.find((r) =>
+    r.status === "failed_close_confirmation_under_investigation" &&
+    (r.entry_order_id === "1169166422" || r.confirmed_position_ticket === "1169166422")
+  ) ?? null;
+  const currentIncidentOpen = !!currentIncidentRow;
   const unresolvedForensicRows = historicalRows.filter((r) => {
-    const isForensic = r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation";
+    const isForensic = r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation" || r.status === "failed_close_confirmation_under_investigation";
     if (!isForensic) return false;
     if (remediationUnblocksRetest && resolvedIncidentIds.includes(r.id)) return false;
     return true;
@@ -200,7 +205,8 @@ const AdminFinalLifecycleValidationCard = () => {
   // Per-gate blocker resolution — surfaces the first failing gate so the
   // Authorise button is never inactive without a visible reason.
   const blocker: string | null =
-    forensicInvestigationOpen ? "FORENSIC_INVESTIGATION_OPEN"
+    currentIncidentOpen ? "CURRENT_CONTROLLED_CLOSE_INCIDENT_OPEN"
+    : forensicInvestigationOpen ? "FORENSIC_INVESTIGATION_OPEN"
     : !preview ? "NO_PREVIEW"
     : !previewFresh ? "PREVIEW_STALE_RE_RUN"
     : !wouldDispatchEntry ? `PREVIEW_BLOCKED_${preview?.blockedCode || preview?.blockedStage || "UNKNOWN"}`
