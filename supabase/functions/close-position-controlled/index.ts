@@ -131,6 +131,63 @@ Deno.serve(async (req) => {
     }, 409);
   }
   const accountId = mapping.traderId;
+  // CRITICAL ROUTE INVARIANT — close mutations MUST use the verified Trading
+  // Layer execution route accountId (same value used by the proven entry
+  // path), not the traderId. The traderId is for positions/account lookups
+  // only; using it for /trades/send yields TRADE_RETCODE_TRADE_DISABLED.
+  const routeAccountId = mapping.tradingLayerAccountId;
+  if (!routeAccountId) {
+    return json({
+      success: false, version: VERSION,
+      error: "CLOSE_EXECUTION_ROUTE_UNRESOLVED",
+      message: "Verified Trading Layer execution route accountId is missing on the MT5 mapping.",
+      brokerCloseMutationDispatched: false,
+    }, 409);
+  }
+  const callerRouteAccountId = typeof payload?.routeAccountId === "string" ? payload.routeAccountId : null;
+  if (callerRouteAccountId && callerRouteAccountId !== routeAccountId) {
+    return json({
+      success: false, version: VERSION,
+      error: "CLOSE_EXECUTION_ROUTE_MISMATCH",
+      expectedRouteAccountId: routeAccountId,
+      attemptedRouteAccountId: callerRouteAccountId,
+      brokerCloseMutationDispatched: false,
+    }, 409);
+  }
+  // Hard guard: never let traderId be used as the URL accountId.
+  if (routeAccountId === mapping.traderId && mapping.tradingLayerAccountId !== mapping.traderId) {
+    return json({
+      success: false, version: VERSION,
+      error: "CLOSE_EXECUTION_ROUTE_MISMATCH",
+      detail: "trader_id_used_as_route",
+      brokerCloseMutationDispatched: false,
+    }, 409);
+  }
+
+  // Preview / no-mutation diagnostic — returns the exact endpoint and DTO
+  // the corrected close path would dispatch, without sending any request.
+  if (payload?.previewOnly === true || payload?.validateOnly === true) {
+    return json({
+      success: true,
+      version: VERSION,
+      validationOnly: true,
+      mutationSuppressed: true,
+      closeAuthoritySource: "trading_layer_live_forced",
+      verifiedRouteAccountId: routeAccountId,
+      wrongPriorRouteAccountId: mapping.traderId,
+      routeMismatchFixed: true,
+      expectedEndpoint: `/api/v1/accounts/${routeAccountId}/trades/send`,
+      brokerSymbol: suppliedBrokerSymbol ?? symbol,
+      closeSide,
+      volume,
+      positionTicket: ticket,
+      outboundCloseDTO: {
+        side: closeSide, symbol: suppliedBrokerSymbol ?? symbol, volume,
+        position: Number(ticket), deviation: 20,
+      },
+      brokerCloseMutationDispatched: false,
+    });
+  }
 
   // ---------- Execution-mode allowlist (admin live testing gate) ----------
   {
