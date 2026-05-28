@@ -201,7 +201,69 @@ Deno.serve(async (req) => {
   }
 
 
+  // ---------- AUTHORITATIVE LIVE TICKET VERIFICATION ----------
+  // Forced fresh read of live Trading Layer positions for this exact account
+  // route. This is the sole source of truth for whether the requested ticket
+  // is actually open right now. Local mt_positions is mirror-only: if it is
+  // stale we self-heal it from the live result, but we never block on it.
+  const expectedOpenSide = closeSide === "buy" ? "sell" : "buy";
+  const live = await fetchTradingLayerLivePositions(accountId);
+  const authority = evaluateCloseAuthority(live, {
+    requestedTicket: String(ticket),
+    expectedTicket: payload?.expectedTicket != null ? String(payload.expectedTicket) : null,
+    expectedBrokerSymbol: brokerSymbol,
+    expectedSide: expectedOpenSide as "buy" | "sell",
+    expectedVolume: Number(payload?.openVolume ?? volume),
+  });
+  let mirrorAction: "inserted" | "updated" | "skipped" | "failed" | "not_attempted" = "not_attempted";
+  if (authority.code === "LIVE_POSITION_CONFIRMED_FOR_CLOSE" && authority.livePosition) {
+    // Self-heal the mirror; never required for the close to proceed.
+    const repair = await upsertMirrorFromLive(supabase, {
+      userId: user.id,
+      accountUuid: mapping.localRowId ?? mapping.tradingLayerAccountId ?? accountId,
+      live: authority.livePosition,
+      brokerSymbol,
+    });
+    mirrorAction = repair.action;
+  }
+  if (authority.code !== "LIVE_POSITION_CONFIRMED_FOR_CLOSE") {
+    const blockBody = {
+      success: false,
+      version: VERSION,
+      step: "live_ticket_verification",
+      status: "blocked",
+      classification: "controlled_close_live_ticket_verification_failed",
+      authorityCode: authority.code,
+      authorityDetail: authority.detail ?? null,
+      liveLookup: {
+        ok: live.ok, httpStatus: live.httpStatus, fetchedAt: live.fetchedAt,
+        source: live.source, positionsCount: live.positions.length, error: live.error ?? null,
+      },
+      requestedTicket: String(ticket),
+      expectedBrokerSymbol: brokerSymbol,
+      expectedSide: expectedOpenSide,
+      expectedVolume: Number(payload?.openVolume ?? volume),
+      brokerMutationDispatched: false,
+      mirrorAction,
+    };
+    try {
+      await supabase.from("execution_audit_events").insert({
+        user_id: user.id,
+        trade_id: `close-${ticket}`,
+        symbol, side: closeSide, volume,
+        status: "blocked", outcome: "blocked",
+        broker_message: authority.code,
+        reason: authority.detail ?? authority.code,
+        rule_violated: authority.code,
+        ticket: String(ticket),
+        raw: { classification: "controlled_close_live_ticket_verification_failed", response_payload: blockBody },
+      });
+    } catch { /* swallow */ }
+    return json(blockBody, 200);
+  }
+
   const idempotencyKey = closeId;
+
   const closePayload = {
     side: closeSide,
     symbol: brokerSymbol,
