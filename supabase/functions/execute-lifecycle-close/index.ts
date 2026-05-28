@@ -93,15 +93,16 @@ Deno.serve(async (req) => {
     try { resBody = JSON.parse(t); } catch { resBody = { rawText: t }; }
   } catch (e) { networkError = e instanceof Error ? e.message : String(e); }
 
-  const accepted = !networkError && resBody?.success === true;
+  const brokerCloseMutationDispatched = resBody?.brokerCloseMutationDispatched === true;
+  const accepted = !networkError && resBody?.success === true && brokerCloseMutationDispatched && !!resBody?.requestId;
 
   await supabase.from("lifecycle_validation_authorisations").update({
     status: accepted ? "awaiting_close_confirmation" : "failed_close_rejected",
     close_order_id: resBody?.orderId ? String(resBody.orderId) : null,
     close_deal_id: resBody?.dealId ? String(resBody.dealId) : null,
     close_retcode: resBody?.retcode ?? null,
-    close_evidence: { httpStatus, request: closePayload, response: resBody, networkError, dispatchedAt: new Date().toISOString() },
-    failure_reason: accepted ? null : (networkError || resBody?.error || "CLOSE_REJECTED"),
+    close_evidence: { httpStatus, request: closePayload, response: resBody, networkError, brokerCloseMutationDispatched, dispatchedAt: new Date().toISOString() },
+    failure_reason: accepted ? null : (networkError || resBody?.retcodeDescription || resBody?.error || "CLOSE_REJECTED_OR_UNCONFIRMED"),
   }).eq("id", authorisationId);
 
   return json({
