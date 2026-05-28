@@ -114,7 +114,7 @@ export async function fetchTradingLayerLivePositions(
   const raw = Array.isArray(parsed?.data) ? parsed.data
             : Array.isArray(parsed?.positions) ? parsed.positions
             : Array.isArray(parsed) ? parsed : [];
-  const positions = raw.map(normalisePosition).filter((p): p is LiveTlPosition => !!p);
+  const positions = (raw as any[]).map(normalisePosition).filter((p): p is LiveTlPosition => !!p);
   return { ok: true, httpStatus: r.status, positions, fetchedAt, source: "trading_layer_positions_forced" };
 }
 
