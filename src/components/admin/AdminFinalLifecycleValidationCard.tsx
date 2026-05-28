@@ -205,8 +205,7 @@ const AdminFinalLifecycleValidationCard = () => {
   // Per-gate blocker resolution — surfaces the first failing gate so the
   // Authorise button is never inactive without a visible reason.
   const blocker: string | null =
-    currentIncidentOpen ? "CURRENT_CONTROLLED_CLOSE_INCIDENT_OPEN"
-    : forensicInvestigationOpen ? "FORENSIC_INVESTIGATION_OPEN"
+    forensicInvestigationOpen ? "FORENSIC_INVESTIGATION_OPEN"
     : !preview ? "NO_PREVIEW"
     : !previewFresh ? "PREVIEW_STALE_RE_RUN"
     : !wouldDispatchEntry ? `PREVIEW_BLOCKED_${preview?.blockedCode || preview?.blockedStage || "UNKNOWN"}`
