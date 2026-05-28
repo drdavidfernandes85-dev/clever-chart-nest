@@ -522,6 +522,7 @@ const AdminProductionModeTab = () => {
       <AdminControlledRetestEntryPassCard />
 
       <AdminFinalLifecycleValidationCard />
+      <AdminControlledCloseDispatchPreviewCard />
       <AdminLivePositionMirrorDiagnostic />
       <AdminEurusdFlatnessDiagnostic />
 
