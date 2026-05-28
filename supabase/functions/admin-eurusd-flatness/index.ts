@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
   let orders: any[] = [];
   let ordersErr: string | null = null;
   try {
-    const r = await fetch(`${TL_BASE}/api/v1/accounts/${encodeURIComponent(accountId)}/orders?limit=100`, {
+    const r = await fetch(`${TL_BASE}/api/v1/accounts/${encodeURIComponent(accountId)}/orders`, {
       headers: { Authorization: `Bearer ${TL_KEY}`, "Content-Type": "application/json" },
     });
     ordersHttp = r.status;
