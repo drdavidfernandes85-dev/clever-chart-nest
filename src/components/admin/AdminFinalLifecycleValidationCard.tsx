@@ -119,6 +119,7 @@ const AdminFinalLifecycleValidationCard = () => {
   const [previewAt, setPreviewAt] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [exposure, setExposure] = useState<{ open: number; pending: number } | null>(null);
+  const [remediation, setRemediation] = useState<any | null>(null);
 
   const load = async () => {
     const { data } = await supabase
@@ -131,6 +132,17 @@ const AdminFinalLifecycleValidationCard = () => {
     const historical = rows.filter((r) => TERMINAL_STATUSES.has(r.status));
     setActiveRow(active);
     setHistoricalRows(historical);
+  };
+
+  const loadRemediation = async () => {
+    try {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "lifecycle_forensic_remediation")
+        .maybeSingle();
+      setRemediation((data?.value as any) ?? null);
+    } catch { /* ignore */ }
   };
 
   const refreshExposure = async () => {
@@ -151,6 +163,7 @@ const AdminFinalLifecycleValidationCard = () => {
   useEffect(() => {
     void load();
     void refreshExposure();
+    void loadRemediation();
   }, []);
 
   const allAcked = useMemo(() => ACK_ITEMS.every((i) => acks[i.id]), [acks]);
@@ -168,7 +181,20 @@ const AdminFinalLifecycleValidationCard = () => {
   const exposureZero = (preview?.openEurusdPositions ?? 1) === 0 && (preview?.pendingEurusdOrders ?? 1) === 0;
   const hasActiveLifecycleRow = !!activeRow;
   const isAuthorising = busy === "arm";
-  const forensicInvestigationOpen = historicalRows.some((r) => r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation");
+  const resolvedIncidentIds: string[] = Array.isArray(remediation?.resolved_incident_ids) ? remediation.resolved_incident_ids : [];
+  const remediationUnblocksRetest =
+    remediation?.remediationDeployed === true &&
+    remediation?.remediationTestsPassed === true &&
+    remediation?.eligibleForSeparateLifecycleRetest === true &&
+    remediation?.incidentBlocksNewIsolatedLifecycleRetest === false;
+  const unresolvedForensicRows = historicalRows.filter((r) => {
+    const isForensic = r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation";
+    if (!isForensic) return false;
+    if (remediationUnblocksRetest && resolvedIncidentIds.includes(r.id)) return false;
+    return true;
+  });
+  const forensicInvestigationOpen = unresolvedForensicRows.length > 0;
+  const remediationBannerApplies = remediationUnblocksRetest && historicalRows.some((r) => resolvedIncidentIds.includes(r.id));
 
   // Per-gate blocker resolution — surfaces the first failing gate so the
   // Authorise button is never inactive without a visible reason.
@@ -588,6 +614,17 @@ const AdminFinalLifecycleValidationCard = () => {
               </label>
             ))}
           </div>
+
+          {remediationBannerApplies && (
+            <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px] text-amber-200 flex items-start gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                Previous controlled-close validation failed due to a now-remediated local mirror defect
+                ({remediation?.remediationVersion}). General live activation remains blocked. This
+                authorisation permits only one isolated lifecycle retest.
+              </span>
+            </div>
+          )}
 
           <Button
             size="sm"
