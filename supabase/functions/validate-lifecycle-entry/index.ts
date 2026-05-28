@@ -13,6 +13,7 @@ import { EXECUTION_POLICY_VERSION, sideToOperation } from "../_shared/tradingLay
 import { loadRiskSettings, loadDailyUsage, checkOpenRisk } from "../_shared/risk.ts";
 import { assertLiveExecutionAllowed } from "../_shared/executionMode.ts";
 import { resolveActiveMtMapping } from "../_shared/mtMapping.ts";
+import { fetchTradingLayerLivePositions } from "../_shared/livePositions.ts";
 
 const VERSION = "LIFECYCLE_ENTRY_VALIDATION_NO_MUTATION_V1_2026_05_27";
 
@@ -23,6 +24,29 @@ const corsHeaders = {
 };
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const TL_BASE = "https://api.trading-layer.com";
+
+async function fetchLivePendingEurusdOrders(accountId: string): Promise<{ ok: boolean; count: number; httpStatus: number; error: string | null }> {
+  const key = Deno.env.get("TRADING_LAYER_API_KEY");
+  if (!key) return { ok: false, count: 0, httpStatus: 0, error: "TRADING_LAYER_API_KEY missing" };
+  try {
+    const r = await fetch(`${TL_BASE}/api/v1/accounts/${encodeURIComponent(accountId)}/orders`, {
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    });
+    const text = await r.text();
+    let parsed: any = null;
+    try { parsed = JSON.parse(text); } catch { parsed = null; }
+    if (!r.ok) return { ok: false, count: 0, httpStatus: r.status, error: `tl_orders_${r.status}` };
+    const raw = Array.isArray(parsed?.data) ? parsed.data
+      : Array.isArray(parsed?.orders) ? parsed.orders
+      : Array.isArray(parsed) ? parsed : [];
+    const count = raw.filter((o: any) => String(o?.symbol ?? o?.brokerSymbol ?? "").toUpperCase() === "EURUSD").length;
+    return { ok: true, count, httpStatus: r.status, error: null };
+  } catch (e) {
+    return { ok: false, count: 0, httpStatus: 0, error: e instanceof Error ? e.message : String(e) };
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -142,20 +166,23 @@ Deno.serve(async (req) => {
   if (!ft.fresh) { report.freshTick = "fail"; return fail("fresh_tick", ft.code || "FRESH_TICK_UNAVAILABLE"); }
   report.freshTick = "pass";
 
-  // Exposure read (admin user's own positions/pending)
-  try {
-    const [{ count: posCount }, { count: pendCount }] = await Promise.all([
-      supabaseService.from("mt_positions").select("id", { count: "exact", head: true })
-        .eq("user_id", uid).or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD"),
-      supabaseService.from("mt_pending_orders").select("id", { count: "exact", head: true })
-        .eq("user_id", uid).eq("status", "pending").or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD"),
-    ]);
-    report.openEurusdPositions = posCount ?? 0;
-    report.pendingEurusdOrders = pendCount ?? 0;
-    if ((posCount ?? 0) > 0 || (pendCount ?? 0) > 0) {
-      return fail("exposure_check", "EXISTING_EURUSD_EXPOSURE");
-    }
-  } catch { /* best effort */ }
+  // Exposure read: forced live Trading Layer state only. `mt_positions` is a
+  // mirror/cache and must not keep this read-only preview blocked after a
+  // confirmed close. This does not submit, close, cancel, modify, or authorise.
+  const liveAccountId = mapping.traderId || v.routeAccountId;
+  const [livePositions, liveOrders] = await Promise.all([
+    fetchTradingLayerLivePositions(liveAccountId),
+    fetchLivePendingEurusdOrders(liveAccountId),
+  ]);
+  if (!livePositions.ok) return fail("exposure_check", "LIVE_POSITION_LOOKUP_FAILED");
+  if (!liveOrders.ok) return fail("exposure_check", "LIVE_PENDING_ORDER_LOOKUP_FAILED");
+  const openEurusdPositions = livePositions.positions.filter((p) => p.symbol.toUpperCase() === "EURUSD").length;
+  report.exposureSource = "trading_layer_live_forced";
+  report.openEurusdPositions = openEurusdPositions;
+  report.pendingEurusdOrders = liveOrders.count;
+  if (openEurusdPositions > 0 || liveOrders.count > 0) {
+    return fail("exposure_check", "EXISTING_EURUSD_EXPOSURE");
+  }
 
   report.wouldDispatchEntry = true;
   return json(report);
