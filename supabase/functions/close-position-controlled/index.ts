@@ -296,15 +296,17 @@ Deno.serve(async (req) => {
   }
   const latencyMs = Date.now() - startedAt;
 
-  // 5. Classify outcome
-  const retcode = res?.retcode != null ? Number(res.retcode) : null;
+  // 5. Classify outcome. Trading Layer may wrap trade results under `data`.
+  // HTTP 200 only means the API answered; it is NOT broker acceptance.
+  const tlResult = res?.data && typeof res.data === "object" ? res.data : res;
+  const retcode = tlResult?.retcode != null ? Number(tlResult.retcode) : null;
   const brokerMessage =
-    res?.brokerMessage ?? res?.message ?? res?.error ?? res?.retcodeDescription ?? null;
+    res?.brokerMessage ?? tlResult?.brokerMessage ?? res?.message ?? res?.error ?? tlResult?.retcode_description ?? tlResult?.retcodeDescription ?? null;
   const httpOk = httpStatus >= 200 && httpStatus < 300;
   const explicitSuccess = res?.success === true || retcode === 10009 || retcode === 10008;
   const explicitRejection =
     res?.success === false ||
-    String(res?.status || "").toLowerCase() === "rejected" ||
+    String(res?.status || tlResult?.status || tlResult?.classification || "").toLowerCase() === "rejected" ||
     (retcode != null && retcode >= 10010 && retcode !== 10008);
 
   const isPartial =
@@ -317,7 +319,7 @@ Deno.serve(async (req) => {
   } else if (explicitRejection) {
     status = "close_rejected";
     outcome = "rejected";
-  } else if (explicitSuccess || httpOk) {
+  } else if (explicitSuccess) {
     status = isPartial ? "partial_closed" : "closed";
     outcome = "success";
   } else {
@@ -373,13 +375,13 @@ Deno.serve(async (req) => {
   } catch { /* swallow audit errors */ }
 
   // Surface raw TL IDs so the client can ID-first reconcile this close.
-  const orderId = res?.orderId ?? res?.order ?? res?.order_id ?? null;
-  const dealId = res?.dealId ?? res?.deal ?? res?.deal_id ?? null;
+  const orderId = res?.orderId ?? res?.order ?? res?.order_id ?? tlResult?.order ?? null;
+  const dealId = res?.dealId ?? res?.deal ?? res?.deal_id ?? tlResult?.deal ?? null;
   const requestId = res?.requestId ?? res?.request_id ?? null;
   const positionTicket = res?.positionTicket ?? res?.position ?? Number(ticket) ?? null;
   const brokerSymbolOut = res?.brokerSymbol ?? res?.symbol ?? brokerSymbol;
-  const retcodeName = res?.retcodeName ?? null;
-  const retcodeDescription = res?.retcodeDescription ?? null;
+  const retcodeName = res?.retcodeName ?? tlResult?.retcode_name ?? null;
+  const retcodeDescription = res?.retcodeDescription ?? tlResult?.retcode_description ?? null;
 
   return json({
     success: outcome === "success",
@@ -407,6 +409,9 @@ Deno.serve(async (req) => {
     latencyMs,
     tradingLayerStatus: httpStatus,
     metaapi_account_id: accountId,
+    brokerCloseMutationDispatched: true,
+    endpointPath: `/api/v1/accounts/${accountId}/trades/send`,
+    outboundDto: closePayload,
     ...(devMode ? { executionPolicyVersion: EXECUTION_POLICY_VERSION } : {}),
     error: outcome === "success" ? null : (networkError || brokerMessage || "Close failed"),
   });
