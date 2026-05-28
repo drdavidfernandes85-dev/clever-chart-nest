@@ -37,15 +37,15 @@ Deno.serve(async (req) => {
   if (!isAdmin) return json({ success: false, version: VERSION, error: "Forbidden" }, 403);
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  if (!mapping?.traderId) {
+  const accountId = (mapping as any)?.tradingLayerAccountId || mapping?.traderId;
+  if (!accountId) {
     return json({ success: false, version: VERSION, error: "No verified TL mapping for admin tester" }, 404);
   }
-  const traderId = mapping.traderId;
 
   const checkedAt = new Date().toISOString();
 
   // Positions (forced live)
-  const live = await fetchTradingLayerLivePositions(traderId);
+  const live = await fetchTradingLayerLivePositions(accountId);
   if (!live.ok) {
     return json({
       success: false, version: VERSION,
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
   let orders: any[] = [];
   let ordersErr: string | null = null;
   try {
-    const r = await fetch(`${TL_BASE}/api/v1/accounts/${encodeURIComponent(traderId)}/orders?limit=100`, {
+    const r = await fetch(`${TL_BASE}/api/v1/accounts/${encodeURIComponent(accountId)}/orders?limit=100`, {
       headers: { Authorization: `Bearer ${TL_KEY}`, "Content-Type": "application/json" },
     });
     ordersHttp = r.status;
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     version: VERSION,
     checkedAt,
     source: "trading_layer_live_forced",
-    route: { brokerSymbol: EURUSD, traderId, login: mapping.login ?? null },
+    route: { brokerSymbol: EURUSD, traderId: mapping.traderId, accountId, login: mapping.login ?? null },
     positions: {
       totalCount: live.positions.length,
       eurusdCount: eurusdPositions.length,
