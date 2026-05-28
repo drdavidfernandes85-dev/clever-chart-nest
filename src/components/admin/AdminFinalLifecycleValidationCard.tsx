@@ -68,6 +68,7 @@ const TERMINAL_STATUSES = new Set([
   "failed_entry_rejected_under_investigation",
   "execution_evidence_missing_under_investigation",
   "failed_close_rejected",
+  "failed_close_under_investigation",
   "expired",
   "close_confirmed",
   "lifecycle_passed",
