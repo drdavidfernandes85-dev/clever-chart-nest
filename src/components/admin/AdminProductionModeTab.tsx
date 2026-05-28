@@ -38,6 +38,7 @@ import AdminExecutionEligibilityCard from "./AdminExecutionEligibilityCard";
 import AdminControlledRetestCard from "./AdminControlledRetestCard";
 import AdminControlledRetestEntryPassCard from "./AdminControlledRetestEntryPassCard";
 import AdminFinalLifecycleValidationCard from "./AdminFinalLifecycleValidationCard";
+import AdminLivePositionMirrorDiagnostic from "./AdminLivePositionMirrorDiagnostic";
 
 const maskTraderId = (id: string) =>
   id.length <= 12 ? "••••" : `${id.slice(0, 8)}…${id.slice(-4)}`;
@@ -519,6 +520,7 @@ const AdminProductionModeTab = () => {
       <AdminControlledRetestEntryPassCard />
 
       <AdminFinalLifecycleValidationCard />
+      <AdminLivePositionMirrorDiagnostic />
 
       <AdminControlledRetestCard />
 

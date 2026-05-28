@@ -5,10 +5,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   loadRiskSettings,
-  checkCloseRisk,
   buildRiskBlock,
   auditRiskBlock,
-  fetchLivePositions,
 } from "../_shared/risk.ts";
 import {
   resolveActiveMtMapping,
@@ -26,8 +24,13 @@ import {
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
 import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
+import {
+  fetchTradingLayerLivePositions,
+  evaluateCloseAuthority,
+  upsertMirrorFromLive,
+} from "../_shared/livePositions.ts";
 
-const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
+const VERSION = "CLOSE_POSITION_LIVE_TL_AUTHORITATIVE_V3_2026_05_28";
 const BASE_URL = "https://api.trading-layer.com";
 const MAX_TEST_VOLUME = 0.01;
 
@@ -147,28 +150,31 @@ Deno.serve(async (req) => {
   }
 
 
-  // ---------- Backend risk enforcement ----------
+  // ---------- Backend risk-limit enforcement (LIMITS ONLY — ticket existence
+  // is authoritatively verified later via forced live Trading Layer lookup).
+  // The old mt_positions-mirror "ticket_not_live" rule has been removed: a stale
+  // local mirror MUST NOT block a risk-reducing close on a live-confirmed ticket.
+  let settings: any = null;
   try {
-    const settings = await loadRiskSettings(supabase, user.id);
-    const livePositions = await fetchLivePositions(supabase);
-    const breach = checkCloseRisk(
-      { ticket, symbol, side: closeSide, volume },
-      settings,
-      livePositions,
-    );
-    if (breach) {
+    settings = await loadRiskSettings(supabase, user.id);
+    if (settings?.kill_switch_enabled) {
       const blockBody = buildRiskBlock(VERSION, {
-        reason: breach.reason,
-        rule: breach.rule,
-        settings,
+        reason: "Trading disabled by kill switch.", rule: "kill_switch", settings,
       }, { ticket, symbol, side: closeSide, volume, closeId });
       await auditRiskBlock(supabase, user.id, {
         tradeId: `close-${ticket}`, symbol, side: closeSide, volume,
-        reason: breach.reason, rule: breach.rule, response: blockBody, ticket,
+        reason: "kill_switch", rule: "kill_switch", response: blockBody, ticket,
       });
       return json(blockBody, 200);
     }
+    if (settings && !settings.live_trading_enabled) {
+      const blockBody = buildRiskBlock(VERSION, {
+        reason: "Live trading is disabled.", rule: "live_trading_disabled", settings,
+      }, { ticket, symbol, side: closeSide, volume, closeId });
+      return json(blockBody, 200);
+    }
   } catch { /* fall through */ }
+
 
 
   // Broker-symbol gate — close must use exact MT5 broker symbol from the position.
@@ -195,7 +201,69 @@ Deno.serve(async (req) => {
   }
 
 
+  // ---------- AUTHORITATIVE LIVE TICKET VERIFICATION ----------
+  // Forced fresh read of live Trading Layer positions for this exact account
+  // route. This is the sole source of truth for whether the requested ticket
+  // is actually open right now. Local mt_positions is mirror-only: if it is
+  // stale we self-heal it from the live result, but we never block on it.
+  const expectedOpenSide = closeSide === "buy" ? "sell" : "buy";
+  const live = await fetchTradingLayerLivePositions(accountId);
+  const authority = evaluateCloseAuthority(live, {
+    requestedTicket: String(ticket),
+    expectedTicket: payload?.expectedTicket != null ? String(payload.expectedTicket) : null,
+    expectedBrokerSymbol: brokerSymbol,
+    expectedSide: expectedOpenSide as "buy" | "sell",
+    expectedVolume: Number(payload?.openVolume ?? volume),
+  });
+  let mirrorAction: "inserted" | "updated" | "skipped" | "failed" | "not_attempted" = "not_attempted";
+  if (authority.code === "LIVE_POSITION_CONFIRMED_FOR_CLOSE" && authority.livePosition) {
+    // Self-heal the mirror; never required for the close to proceed.
+    const repair = await upsertMirrorFromLive(supabase, {
+      userId: user.id,
+      accountUuid: mapping.localRowId ?? mapping.tradingLayerAccountId ?? accountId,
+      live: authority.livePosition,
+      brokerSymbol,
+    });
+    mirrorAction = repair.action;
+  }
+  if (authority.code !== "LIVE_POSITION_CONFIRMED_FOR_CLOSE") {
+    const blockBody = {
+      success: false,
+      version: VERSION,
+      step: "live_ticket_verification",
+      status: "blocked",
+      classification: "controlled_close_live_ticket_verification_failed",
+      authorityCode: authority.code,
+      authorityDetail: authority.detail ?? null,
+      liveLookup: {
+        ok: live.ok, httpStatus: live.httpStatus, fetchedAt: live.fetchedAt,
+        source: live.source, positionsCount: live.positions.length, error: live.error ?? null,
+      },
+      requestedTicket: String(ticket),
+      expectedBrokerSymbol: brokerSymbol,
+      expectedSide: expectedOpenSide,
+      expectedVolume: Number(payload?.openVolume ?? volume),
+      brokerMutationDispatched: false,
+      mirrorAction,
+    };
+    try {
+      await supabase.from("execution_audit_events").insert({
+        user_id: user.id,
+        trade_id: `close-${ticket}`,
+        symbol, side: closeSide, volume,
+        status: "blocked", outcome: "blocked",
+        broker_message: authority.code,
+        reason: authority.detail ?? authority.code,
+        rule_violated: authority.code,
+        ticket: String(ticket),
+        raw: { classification: "controlled_close_live_ticket_verification_failed", response_payload: blockBody },
+      });
+    } catch { /* swallow */ }
+    return json(blockBody, 200);
+  }
+
   const idempotencyKey = closeId;
+
   const closePayload = {
     side: closeSide,
     symbol: brokerSymbol,
@@ -294,6 +362,12 @@ Deno.serve(async (req) => {
         brokerSymbol,
         symbolMappingSource: eligible.symbolMappingSource,
         symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
+        liveAuthority: {
+          code: "LIVE_POSITION_CONFIRMED_FOR_CLOSE",
+          source: live.source,
+          fetchedAt: live.fetchedAt,
+          mirrorAction,
+        },
       },
     });
   } catch { /* swallow audit errors */ }
