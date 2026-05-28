@@ -325,35 +325,24 @@ const AdminFinalLifecycleValidationCard = () => {
     } finally { setBusy(null); }
   };
 
+  const [confirmDiag, setConfirmDiag] = (globalThis as any).__noop ? [null, () => {}] : useStateInline();
   const confirmPosition = async () => {
     if (!activeRow || activeRow.status !== "awaiting_position_confirmation") return;
     setBusy("confirm-position");
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u?.user?.id;
-      const { data: positions } = await supabase
-        .from("mt_positions").select("ticket, symbol, broker_symbol, side, volume, open_price, opened_at")
-        .eq("user_id", uid!).or("symbol.eq.EURUSD,broker_symbol.eq.EURUSD").eq("side", "sell");
-      const match = (positions || []).find(
-        (p: any) => Number(p.volume) === Number(activeRow.entry_volume),
-      );
-      if (!match) {
-        toast.warning("No matching EURUSD SELL 0.01 position found yet — try again after EA sync");
-        return;
-      }
-      const { error } = await supabase
-        .from("lifecycle_validation_authorisations" as any)
-        .update({
-          status: "position_confirmed_close_only",
-          confirmed_position_ticket: String(match.ticket),
-          confirmed_position_at: new Date().toISOString(),
-          confirmed_position_evidence: match,
-        })
-        .eq("id", activeRow.id)
-        .eq("status", "awaiting_position_confirmation");
+      const { data, error } = await supabase.functions.invoke("lifecycle-confirm-position", {
+        body: { authorisationId: activeRow.id },
+      });
       if (error) throw error;
-      toast.success(`Position confirmed — ticket ${match.ticket}`);
-      await load();
+      setConfirmDiag(data ?? null);
+      if (data?.confirmed) {
+        toast.success(`Live position confirmed — ticket ${data.confirmedTicket}`);
+        await load();
+      } else if (data?.reason === "ambiguous_multiple_live_matches") {
+        toast.warning("Multiple live EURUSD matches — select the exact ticket manually");
+      } else {
+        toast.warning("Position not yet visible on Trading Layer. Verify in native MT5.");
+      }
     } catch (e: any) {
       toast.error(e?.message || "Confirmation failed");
     } finally { setBusy(null); }
