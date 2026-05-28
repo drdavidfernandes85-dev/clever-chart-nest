@@ -35,10 +35,7 @@ import { listAdminLiveTests, verifyFromAudit, type AdminLiveTestRow, type AdminT
 import { supabase } from "@/integrations/supabase/client";
 import AdminLiveTestLimitsCard from "./AdminLiveTestLimitsCard";
 import AdminExecutionEligibilityCard from "./AdminExecutionEligibilityCard";
-import AdminControlledRetestCard from "./AdminControlledRetestCard";
-import AdminControlledRetestEntryPassCard from "./AdminControlledRetestEntryPassCard";
-import AdminFinalLifecycleValidationCard from "./AdminFinalLifecycleValidationCard";
-import AdminControlledCloseDispatchPreviewCard from "./AdminControlledCloseDispatchPreviewCard";
+import AdminFinalLifecyclePassCard from "./AdminFinalLifecyclePassCard";
 import AdminLivePositionMirrorDiagnostic from "./AdminLivePositionMirrorDiagnostic";
 import AdminEurusdFlatnessDiagnostic from "./AdminEurusdFlatnessDiagnostic";
 
@@ -519,14 +516,9 @@ const AdminProductionModeTab = () => {
         </p>
       </Card>
 
-      <AdminControlledRetestEntryPassCard />
-
-      <AdminFinalLifecycleValidationCard />
-      <AdminControlledCloseDispatchPreviewCard />
-      <AdminLivePositionMirrorDiagnostic />
+      <AdminFinalLifecyclePassCard />
       <AdminEurusdFlatnessDiagnostic />
-
-      <AdminControlledRetestCard />
+      <AdminLivePositionMirrorDiagnostic />
 
 
       <AdminExecutionEligibilityCard />
