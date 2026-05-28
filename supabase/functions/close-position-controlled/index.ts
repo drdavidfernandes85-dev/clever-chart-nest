@@ -150,28 +150,31 @@ Deno.serve(async (req) => {
   }
 
 
-  // ---------- Backend risk enforcement ----------
+  // ---------- Backend risk-limit enforcement (LIMITS ONLY — ticket existence
+  // is authoritatively verified later via forced live Trading Layer lookup).
+  // The old mt_positions-mirror "ticket_not_live" rule has been removed: a stale
+  // local mirror MUST NOT block a risk-reducing close on a live-confirmed ticket.
+  let settings: any = null;
   try {
-    const settings = await loadRiskSettings(supabase, user.id);
-    const livePositions = await fetchLivePositions(supabase);
-    const breach = checkCloseRisk(
-      { ticket, symbol, side: closeSide, volume },
-      settings,
-      livePositions,
-    );
-    if (breach) {
+    settings = await loadRiskSettings(supabase, user.id);
+    if (settings?.kill_switch_enabled) {
       const blockBody = buildRiskBlock(VERSION, {
-        reason: breach.reason,
-        rule: breach.rule,
-        settings,
+        reason: "Trading disabled by kill switch.", rule: "kill_switch", settings,
       }, { ticket, symbol, side: closeSide, volume, closeId });
       await auditRiskBlock(supabase, user.id, {
         tradeId: `close-${ticket}`, symbol, side: closeSide, volume,
-        reason: breach.reason, rule: breach.rule, response: blockBody, ticket,
+        reason: "kill_switch", rule: "kill_switch", response: blockBody, ticket,
       });
       return json(blockBody, 200);
     }
+    if (settings && !settings.live_trading_enabled) {
+      const blockBody = buildRiskBlock(VERSION, {
+        reason: "Live trading is disabled.", rule: "live_trading_disabled", settings,
+      }, { ticket, symbol, side: closeSide, volume, closeId });
+      return json(blockBody, 200);
+    }
   } catch { /* fall through */ }
+
 
 
   // Broker-symbol gate — close must use exact MT5 broker symbol from the position.
