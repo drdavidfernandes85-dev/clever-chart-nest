@@ -38,6 +38,7 @@ import AdminExecutionEligibilityCard from "./AdminExecutionEligibilityCard";
 import AdminControlledRetestCard from "./AdminControlledRetestCard";
 import AdminControlledRetestEntryPassCard from "./AdminControlledRetestEntryPassCard";
 import AdminFinalLifecycleValidationCard from "./AdminFinalLifecycleValidationCard";
+import AdminControlledCloseDispatchPreviewCard from "./AdminControlledCloseDispatchPreviewCard";
 import AdminLivePositionMirrorDiagnostic from "./AdminLivePositionMirrorDiagnostic";
 import AdminEurusdFlatnessDiagnostic from "./AdminEurusdFlatnessDiagnostic";
 
