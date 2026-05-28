@@ -39,6 +39,7 @@ import AdminControlledRetestCard from "./AdminControlledRetestCard";
 import AdminControlledRetestEntryPassCard from "./AdminControlledRetestEntryPassCard";
 import AdminFinalLifecycleValidationCard from "./AdminFinalLifecycleValidationCard";
 import AdminLivePositionMirrorDiagnostic from "./AdminLivePositionMirrorDiagnostic";
+import AdminEurusdFlatnessDiagnostic from "./AdminEurusdFlatnessDiagnostic";
 
 const maskTraderId = (id: string) =>
   id.length <= 12 ? "••••" : `${id.slice(0, 8)}…${id.slice(-4)}`;
