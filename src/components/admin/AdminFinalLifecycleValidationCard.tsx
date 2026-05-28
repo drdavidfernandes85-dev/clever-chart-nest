@@ -622,6 +622,8 @@ const AdminFinalLifecycleValidationCard = () => {
 
       {/* NEW authorisation form — only visible when NO active row exists and no current incident freeze is open */}
       {!activeRow && (
+        <Card className="p-3 border-primary/30">
+
           <div className="flex items-center gap-2 mb-2">
             <Lock className="h-4 w-4 text-primary" />
             <h4 className="text-xs font-semibold">Create New Final Lifecycle Authorisation</h4>
