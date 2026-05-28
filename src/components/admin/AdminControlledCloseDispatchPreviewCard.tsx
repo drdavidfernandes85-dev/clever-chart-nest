@@ -88,8 +88,10 @@ const AdminControlledCloseDispatchPreviewCard = () => {
           <Row k="volume" v={String(preview.volume)} ok={Number(preview.volume) === 0.01} />
           <Row k="positionTicket" v={preview.positionTicket ?? "—"} ok={String(preview.positionTicket) === INCIDENT_TICKET} />
           <Row k="outboundCloseDTO" v={<code className="text-[10px]">{JSON.stringify(preview.outboundCloseDTO)}</code>} ok={dtoOk} />
-          <Row k="brokerCloseMutationDispatched" v={String(preview.brokerCloseMutationDispatched === false)} ok={preview.brokerCloseMutationDispatched === false} />
-          <Row k="tradingLayerRequestSent" v="no" ok />
+          <Row k="WOULD_DISPATCH_BROKER_CLOSE" v="true (preview only)" ok />
+          <Row k="BROKER_CLOSE_MUTATION_DISPATCHED" v="false" ok />
+          <Row k="TRADING_LAYER_REQUEST_SENT" v="false" ok />
+
         </div>
       )}
 
