@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   if (!isAdmin) return json({ success: false, version: VERSION, error: "Forbidden" }, 403);
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  const accountId = (mapping as any)?.tradingLayerAccountId || mapping?.traderId;
+  const accountId = mapping?.traderId || (mapping as any)?.tradingLayerAccountId;
   if (!accountId) {
     return json({ success: false, version: VERSION, error: "No verified TL mapping for admin tester" }, 404);
   }
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
   let orders: any[] = [];
   let ordersErr: string | null = null;
   try {
-    const r = await fetch(`${TL_BASE}/api/v1/accounts/${encodeURIComponent(accountId)}/orders?limit=100`, {
+    const r = await fetch(`${TL_BASE}/api/v1/accounts/${encodeURIComponent(accountId)}/orders`, {
       headers: { Authorization: `Bearer ${TL_KEY}`, "Content-Type": "application/json" },
     });
     ordersHttp = r.status;
