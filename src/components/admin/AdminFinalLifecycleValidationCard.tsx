@@ -615,6 +615,17 @@ const AdminFinalLifecycleValidationCard = () => {
             ))}
           </div>
 
+          {remediationBannerApplies && (
+            <div className="mb-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px] text-amber-200 flex items-start gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              <span>
+                Previous controlled-close validation failed due to a now-remediated local mirror defect
+                ({remediation?.remediationVersion}). General live activation remains blocked. This
+                authorisation permits only one isolated lifecycle retest.
+              </span>
+            </div>
+          )}
+
           <Button
             size="sm"
             onClick={arm}
