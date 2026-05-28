@@ -168,7 +168,7 @@ const AdminFinalLifecycleValidationCard = () => {
   const exposureZero = (preview?.openEurusdPositions ?? 1) === 0 && (preview?.pendingEurusdOrders ?? 1) === 0;
   const hasActiveLifecycleRow = !!activeRow;
   const isAuthorising = busy === "arm";
-  const forensicInvestigationOpen = historicalRows.some((r) => r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation");
+  const forensicInvestigationOpen = historicalRows.some((r) => r.status === "failed_entry_rejected_under_investigation" || r.status === "execution_evidence_missing_under_investigation" || r.status === "failed_close_under_investigation");
 
   // Per-gate blocker resolution — surfaces the first failing gate so the
   // Authorise button is never inactive without a visible reason.
