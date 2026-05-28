@@ -478,15 +478,29 @@ const AdminFinalLifecycleValidationCard = () => {
 
       {activeRow && activeRow.status === "position_confirmed_close_only" && (
         <div className="space-y-2">
-          <Row k="confirmed_position_ticket" v={activeRow.confirmed_position_ticket || "—"} />
+          <div className="p-2 rounded border border-red-500/60 bg-red-500/10 text-[11px] text-red-100">
+            <div className="flex items-center gap-1 mb-1 font-semibold">
+              <AlertTriangle className="h-3 w-3" />
+              Final Lifecycle Entry Confirmed — Controlled Close Required Now
+            </div>
+            A real EURUSD SELL 0.01 position is currently open because the lifecycle entry was successfully placed
+            but misreported by the UI. Close only this confirmed ticket through the controlled platform close
+            action below, or close manually in MT5 immediately if the controlled close action is unavailable or fails.
+          </div>
+          <Row k="LIVE POSITION OPEN" v={<span className="text-red-300">YES</span>} />
+          <Row k="ticket" v={activeRow.confirmed_position_ticket || "—"} />
+          <Row k="entry_order" v={activeRow.entry_order_id || "—"} />
           <Row k="symbol" v="EURUSD" />
           <Row k="side" v="SELL" />
           <Row k="volume" v="0.01" />
-          <div className="p-2 rounded border border-red-500/40 bg-red-500/5 text-[11px] text-red-200">
-            <AlertTriangle className="h-3 w-3 inline mr-1" />
-            This is a real MT5 close action for the confirmed test position only.
-          </div>
-          <Button size="sm" onClick={executeClose} disabled={busy === "close"}>
+          <Row k="route" v="559a12e4…bcfe" />
+          <Row k="entry_requestId" v={activeRow.entry_evidence?.requestId ? `${String(activeRow.entry_evidence.requestId).slice(0,8)}…${String(activeRow.entry_evidence.requestId).slice(-6)}` : "—"} />
+          <Row k="entry_retcode" v={`${activeRow.entry_retcode ?? "—"} / ${activeRow.entry_evidence?.retcodeName ?? "—"}`} />
+          <Row k="entry_status" v={<span className="text-emerald-300">PASS</span>} />
+          <Row k="residual_exposure" v={<span className="text-red-300">DETECTED</span>} />
+          <Row k="further_entry_orders" v={<span className="text-emerald-300">DISABLED</span>} />
+          <Row k="close_dispatch_remaining" v={Math.max(0, (activeRow.maximum_close_dispatches ?? 1) - (activeRow.close_dispatches_consumed ?? 0))} />
+          <Button size="sm" onClick={executeClose} disabled={busy === "close"} className="w-full">
             {busy === "close" ? "Closing…" : `Close Confirmed Test Position — Ticket ${activeRow.confirmed_position_ticket}`}
           </Button>
         </div>
