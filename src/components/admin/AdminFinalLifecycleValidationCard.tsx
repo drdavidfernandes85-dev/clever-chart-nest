@@ -426,6 +426,26 @@ const AdminFinalLifecycleValidationCard = () => {
         and never reused.
       </p>
 
+      {currentIncidentRow && (
+        <Card className="p-3 mb-3 border-red-500/60 bg-red-500/10">
+          <div className="flex items-center gap-2 mb-2 text-red-200">
+            <AlertTriangle className="h-4 w-4" />
+            <h4 className="text-xs font-semibold">Final Lifecycle Validation — Entry PASS / Platform Close FAILED OR UNCONFIRMED</h4>
+          </div>
+          <Row k="entry_ticket" v="1169166422" />
+          <Row k="entry" v={<span className="text-emerald-300">PASS</span>} />
+          <Row k="close_button_clicked" v="YES" />
+          <Row k="close_dispatch_evidence" v="Trading Layer rejected: TRADE_RETCODE_TRADE_DISABLED" />
+          <Row k="native_mt5_position_remained_open_after_click" v={<span className="text-red-300">YES</span>} />
+          <Row k="manual_emergency_close" v={currentIncidentRow.close_evidence?.incidentFreeze ? "confirmed / user handled in native MT5" : "pending confirmation"} />
+          <Row k="controlled_close" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
+          <Row k="full_lifecycle" v={<span className="text-red-300">FAILED / NOT VALIDATED</span>} />
+          <Row k="general_client_execution" v="DISABLED" />
+          <Row k="pending_orders" v="DISABLED" />
+          <Row k="further_lifecycle_testing" v="BLOCKED PENDING ROOT-CAUSE ANALYSIS" />
+        </Card>
+      )}
+
       {/* HISTORICAL terminal rows — evidence only, never reused */}
       {historicalRows.length > 0 && (
         <Card className="p-3 mb-3 border-border/40 bg-muted/10">
