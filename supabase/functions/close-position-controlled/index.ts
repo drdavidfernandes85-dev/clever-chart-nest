@@ -5,10 +5,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   loadRiskSettings,
-  checkCloseRisk,
   buildRiskBlock,
   auditRiskBlock,
-  fetchLivePositions,
 } from "../_shared/risk.ts";
 import {
   resolveActiveMtMapping,
@@ -26,8 +24,13 @@ import {
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
 import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
+import {
+  fetchTradingLayerLivePositions,
+  evaluateCloseAuthority,
+  upsertMirrorFromLive,
+} from "../_shared/livePositions.ts";
 
-const VERSION = "CLOSE_POSITION_RISK_ENFORCED_V2_2026_05_19";
+const VERSION = "CLOSE_POSITION_LIVE_TL_AUTHORITATIVE_V3_2026_05_28";
 const BASE_URL = "https://api.trading-layer.com";
 const MAX_TEST_VOLUME = 0.01;
 
