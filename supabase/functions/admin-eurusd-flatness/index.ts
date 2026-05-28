@@ -37,10 +37,10 @@ Deno.serve(async (req) => {
   if (!isAdmin) return json({ success: false, version: VERSION, error: "Forbidden" }, 403);
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  if (!mapping?.traderId) {
+  const accountId = (mapping as any)?.tradingLayerAccountId || mapping?.traderId;
+  if (!accountId) {
     return json({ success: false, version: VERSION, error: "No verified TL mapping for admin tester" }, 404);
   }
-  const traderId = mapping.traderId;
 
   const checkedAt = new Date().toISOString();
 
