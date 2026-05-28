@@ -358,8 +358,12 @@ const AdminFinalLifecycleValidationCard = () => {
         body: { authorisationId: activeRow.id, ticket: activeRow.confirmed_position_ticket },
       });
       if (error) throw error;
-      if (data?.success) toast.success("Close dispatched");
-      else toast.error(data?.warning || data?.error || "Close failed");
+      const closeResult = data?.closeResult;
+      if (data?.success && closeResult?.brokerCloseMutationDispatched === true && closeResult?.requestId) {
+        toast.success(`Close sent to broker — request ${String(closeResult.requestId).slice(0, 8)}…`);
+      } else {
+        toast.error(data?.warning || closeResult?.retcodeDescription || closeResult?.error || data?.error || "Close failed or unconfirmed");
+      }
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Close dispatch failed");
@@ -376,7 +380,13 @@ const AdminFinalLifecycleValidationCard = () => {
         .from("mt_positions").select("id", { count: "exact", head: true })
         .eq("user_id", uid!).eq("ticket", activeRow.confirmed_position_ticket!);
       if ((count ?? 0) > 0) {
-        toast.warning("Position is still open in mt_positions — cannot mark close confirmed yet");
+        toast.warning("Position is still open in the local mirror — close remains unconfirmed");
+        return;
+      }
+      const closeEvidence = activeRow.close_evidence ?? {};
+      const closeResult = closeEvidence.response ?? {};
+      if (closeResult?.brokerCloseMutationDispatched !== true || !closeResult?.requestId) {
+        toast.error("Close cannot be confirmed without stored broker close dispatch evidence.");
         return;
       }
       const { error } = await supabase
