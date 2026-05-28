@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminLiveTestLimitsCard from "./AdminLiveTestLimitsCard";
 import AdminExecutionEligibilityCard from "./AdminExecutionEligibilityCard";
 import AdminFinalLifecyclePassCard from "./AdminFinalLifecyclePassCard";
+import AdminFinalActivationReadinessReviewCard from "./AdminFinalActivationReadinessReviewCard";
 import AdminLivePositionMirrorDiagnostic from "./AdminLivePositionMirrorDiagnostic";
 import AdminEurusdFlatnessDiagnostic from "./AdminEurusdFlatnessDiagnostic";
 
