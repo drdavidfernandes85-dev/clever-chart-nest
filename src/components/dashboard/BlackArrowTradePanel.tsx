@@ -164,6 +164,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [strategy, setStrategy] = useState<Strategy>("Standard");
   const [orderType, setOrderType] = useState<OrderTypeLabel>("Market");
   const [vol, setVol] = useState<string>("0.01");
+
+  // Limited Canary scope enforcement: while the canary is active, the
+  // BlackArrow Order Ticket is forced to EURUSD SELL 0.01 market only.
+  // This is a UI-level guard — _shared/canaryPolicy.ts remains the
+  // authoritative server-side enforcement.
+  useEffect(() => {
+    if (!canary.active) return;
+    if (ctxSymbol !== canary.lockedSymbol) setCtxSymbol(canary.lockedSymbol!);
+    if (side !== "sell") setSide("sell");
+    if (vol !== "0.01") setVol("0.01");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canary.active, canary.lockedSymbol, ctxSymbol, side, vol]);
   const [price, setPrice] = useState<string>("");
   const [sl, setSl] = useState<string>("");
   const [tp, setTp] = useState<string>("");
