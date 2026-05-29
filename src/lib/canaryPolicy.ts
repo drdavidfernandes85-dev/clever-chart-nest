@@ -6,11 +6,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const CANARY_POLICY_KEY = "limited_canary_policy";
+export const CANARY_POLICY_VERSION = "LIMITED_CANARY_V1_2026_05_29";
 
 export type CanaryCapabilityState =
   | "eligible_for_manual_activation"
   | "active_limited_canary"
   | "disabled_by_admin"
+  | "disabled_by_admin_pending_audited_reactivation"
   | "disabled_by_kill_switch"
   | "blocked_by_readiness_failure"
   | "suspended_after_execution_incident";
@@ -36,6 +38,17 @@ export interface CanaryPolicy {
   xauusd: string;
   activation_requires_manual_admin_action: boolean;
   automatic_activation: boolean;
+  activated_at?: string | null;
+  activated_by_user_id?: string | null;
+  activated_by_display?: string | null;
+  activation_audit_event_id?: string | null;
+  activation_audit_evidence_status?: string | null;
+  operational_use_lock?: {
+    locked: boolean;
+    code: string;
+    engaged_at?: string;
+    reason?: string;
+  } | null;
 }
 
 const DEFAULT_POLICY: CanaryPolicy = {
@@ -75,14 +88,121 @@ export async function loadCanaryPolicy(): Promise<CanaryPolicy> {
   return { ...DEFAULT_POLICY };
 }
 
-export async function setCanaryCapabilityState(
+export interface CanaryActivationContext {
+  acknowledgements: Record<string, boolean>;
+  policyTestResult?: Record<string, unknown> | null;
+  routeAuditStatus?: string;
+  brokerSymbolAuditStatus?: string;
+  liveExposureSnapshot?: Record<string, unknown> | null;
+}
+
+/**
+ * Atomically activates or disables the Limited Canary:
+ *   1) writes a `canary_activation_audit` row first;
+ *   2) only if that succeeds, updates `site_settings.limited_canary_policy`
+ *      with activated_at / activated_by_user_id / audit_event_id and clears
+ *      the operational-use lock on activation.
+ *
+ * If the audit write fails, the state change is aborted — a live capability
+ * may not become active without its corresponding audit evidence.
+ */
+export async function applyCanaryStateChange(
+  action: "activate_limited_canary" | "disable_limited_canary",
   next: CanaryCapabilityState,
+  ctx: CanaryActivationContext,
 ): Promise<CanaryPolicy> {
+  const { data: userResp } = await supabase.auth.getUser();
+  const user = userResp?.user;
+  if (!user) throw new Error("Not authenticated");
+
   const current = await loadCanaryPolicy();
-  const updated = { ...current, capability_state: next, updated_at: new Date().toISOString() };
-  const { error } = await supabase
+  const scopeSnapshot = {
+    allowed_mt5_login: current.allowed_mt5_login,
+    allowed_mt5_server: current.allowed_mt5_server,
+    allowed_route_account_id: current.allowed_route_account_id,
+    allowed_display_symbol: current.allowed_display_symbol,
+    allowed_broker_symbol: current.allowed_broker_symbol,
+    allowed_entry_operation: current.allowed_entry_operation,
+    allowed_entry_volume: current.allowed_entry_volume,
+    allowed_close_operation: current.allowed_close_operation,
+    pending_orders: current.pending_orders,
+    cancel_pending_orders: current.cancel_pending_orders,
+    modify_sl_tp: current.modify_sl_tp,
+    partial_close: current.partial_close,
+    buy_open_long: current.buy_open_long,
+    other_symbols: current.other_symbols,
+    xauusd: current.xauusd,
+    release_scope: current.release_scope,
+  };
+
+  const display = user.email ?? user.id;
+
+  // Step 1: write audit FIRST. If this fails, abort.
+  const { data: auditRow, error: auditErr } = await (supabase
+    .from("canary_activation_audit") as any)
+    .insert({
+      action,
+      previous_state: current.capability_state,
+      new_state: next,
+      changed_by_user_id: user.id,
+      changed_by_display: display,
+      policy_version: CANARY_POLICY_VERSION,
+      scope_snapshot: scopeSnapshot,
+      acknowledgements: ctx.acknowledgements,
+      policy_test_result: ctx.policyTestResult ?? null,
+      route_audit_status: ctx.routeAuditStatus ?? "pass",
+      broker_symbol_audit_status: ctx.brokerSymbolAuditStatus ?? "pass",
+      live_exposure_snapshot: ctx.liveExposureSnapshot ?? null,
+    })
+    .select("id, changed_at")
+    .single();
+
+  if (auditErr || !auditRow) {
+    throw new Error(
+      `Audit write failed — state change aborted (${auditErr?.message ?? "unknown"}).`,
+    );
+  }
+
+  // Step 2: persist new policy with activation evidence.
+  const updated: CanaryPolicy & Record<string, unknown> = {
+    ...current,
+    capability_state: next,
+    updated_at: new Date().toISOString(),
+    activation_audit_event_id: auditRow.id,
+    last_audit_event_id: auditRow.id,
+    last_state_change_at: auditRow.changed_at,
+    last_state_change_by_user_id: user.id,
+    last_state_change_by_display: display,
+  };
+
+  if (action === "activate_limited_canary" && next === "active_limited_canary") {
+    updated.activated_at = auditRow.changed_at;
+    updated.activated_by_user_id = user.id;
+    updated.activated_by_display = display;
+    updated.activation_audit_evidence_status = "complete_atomic_write";
+    updated.operational_use_lock = { locked: false, code: "CANARY_ACTIVATION_AUDIT_EVIDENCE_OK" };
+  } else {
+    // Disable / lockdown: clear activated_* so a future activation must
+    // re-establish atomic evidence.
+    updated.activated_at = null;
+    updated.activated_by_user_id = null;
+    updated.activated_by_display = null;
+    updated.activation_audit_evidence_status =
+      next === "disabled_by_admin_pending_audited_reactivation"
+        ? "incomplete_pending_audited_reactivation"
+        : "cleared_on_disable";
+    updated.operational_use_lock = {
+      locked: true,
+      code: "CANARY_ACTIVATION_AUDIT_EVIDENCE_INCOMPLETE",
+      engaged_at: new Date().toISOString(),
+      reason: "Canary is not active; audit evidence cleared on disable.",
+    };
+  }
+
+  const { error: upsertErr } = await supabase
     .from("site_settings")
     .upsert({ key: CANARY_POLICY_KEY, value: updated as any }, { onConflict: "key" });
-  if (error) throw error;
-  return updated;
+
+  if (upsertErr) throw upsertErr;
+  return updated as CanaryPolicy;
 }

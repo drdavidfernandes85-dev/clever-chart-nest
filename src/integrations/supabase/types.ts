@@ -428,6 +428,63 @@ export type Database = {
         }
         Relationships: []
       }
+      canary_activation_audit: {
+        Row: {
+          acknowledgements: Json
+          action: string
+          broker_symbol_audit_status: string | null
+          changed_at: string
+          changed_by_display: string | null
+          changed_by_user_id: string | null
+          created_at: string
+          id: string
+          live_exposure_snapshot: Json | null
+          new_state: string
+          notes: string | null
+          policy_test_result: Json | null
+          policy_version: string
+          previous_state: string | null
+          route_audit_status: string | null
+          scope_snapshot: Json
+        }
+        Insert: {
+          acknowledgements?: Json
+          action: string
+          broker_symbol_audit_status?: string | null
+          changed_at?: string
+          changed_by_display?: string | null
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          live_exposure_snapshot?: Json | null
+          new_state: string
+          notes?: string | null
+          policy_test_result?: Json | null
+          policy_version: string
+          previous_state?: string | null
+          route_audit_status?: string | null
+          scope_snapshot: Json
+        }
+        Update: {
+          acknowledgements?: Json
+          action?: string
+          broker_symbol_audit_status?: string | null
+          changed_at?: string
+          changed_by_display?: string | null
+          changed_by_user_id?: string | null
+          created_at?: string
+          id?: string
+          live_exposure_snapshot?: Json | null
+          new_state?: string
+          notes?: string | null
+          policy_test_result?: Json | null
+          policy_version?: string
+          previous_state?: string | null
+          route_audit_status?: string | null
+          scope_snapshot?: Json
+        }
+        Relationships: []
+      }
       channels: {
         Row: {
           category: string

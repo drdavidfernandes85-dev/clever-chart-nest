@@ -95,13 +95,10 @@ async function isAdminUser(supabase: any, userId: string): Promise<boolean> {
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
-    return !!data;
-  } catch { return false; }
-}
-
 export type CanaryGuardCode =
   | "CANARY_SCOPE_OK"
   | "CANARY_NOT_ACTIVE"
+  | "CANARY_ACTIVATION_AUDIT_EVIDENCE_INCOMPLETE"
   | "CANARY_SUSPENDED_AFTER_EXECUTION_INCIDENT"
   | "CANARY_SCOPE_USER_NOT_ALLOWED"
   | "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED"
@@ -110,6 +107,10 @@ export type CanaryGuardCode =
   | "CANARY_SCOPE_VOLUME_NOT_ALLOWED"
   | "CANARY_SCOPE_PENDING_ORDER_DISABLED"
   | "CANARY_SCOPE_MODIFY_PROTECTION_DISABLED"
+  | "CANARY_SCOPE_PARTIAL_CLOSE_DISABLED"
+  | "CANARY_SCOPE_POSITION_NOT_PLATFORM_OWNED"
+  | "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED";
+
   | "CANARY_SCOPE_PARTIAL_CLOSE_DISABLED"
   | "CANARY_SCOPE_POSITION_NOT_PLATFORM_OWNED"
   | "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED";
@@ -136,7 +137,6 @@ export interface CanaryEntryInput {
 export async function assertCanaryEntryAllowed(
   supabase: any,
   input: CanaryEntryInput,
-): Promise<CanaryGuardResult> {
   const policy = await loadCanaryPolicy(supabase);
   // FAIL-CLOSED. The canary policy itself is the authoritative gate. No live
   // canary entry mutation may proceed unless the policy is explicitly active.
@@ -149,6 +149,32 @@ export async function assertCanaryEntryAllowed(
       reason:
         "Limited canary execution is not active. Manual activation is required before any canary entry order may be submitted.",
     };
+  }
+  // Operational-use lock: even when active, block new entries if the
+  // activation audit evidence is incomplete or the lock is engaged.
+  const lock = (policy as any).operational_use_lock as
+    | { locked?: boolean; code?: string; reason?: string }
+    | undefined;
+  const evidenceStatus = String(
+    (policy as any).activation_audit_evidence_status ?? "",
+  );
+  if (
+    (lock && lock.locked === true) ||
+    evidenceStatus.startsWith("incomplete") ||
+    !(policy as any).activated_at ||
+    !(policy as any).activated_by_user_id
+  ) {
+    return {
+      allowed: false,
+      code: "CANARY_ACTIVATION_AUDIT_EVIDENCE_INCOMPLETE",
+      policy,
+      policyVersion: CANARY_POLICY_VERSION,
+      reason:
+        lock?.reason ??
+        "Canary activation audit evidence is incomplete (missing activated_at / activated_by_user_id). Re-activate with atomic audit write before submitting any new canary entry.",
+    };
+  }
+
   }
   const admin = await isAdminUser(supabase, input.userId);
   if (!admin) {
