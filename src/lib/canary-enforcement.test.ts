@@ -288,3 +288,138 @@ describe("canary execution-ticket control-surface lockdown", () => {
     expect(base.allowed_close_operation).toBe("close_exact_platform_confirmed_position_only");
   });
 });
+
+// ─── Canary SELL enablement model (general-release gates bypass) ─────────
+// Mirrors the gating model implemented in BlackArrowTradePanel where the
+// authorised admin-canary SELL bypasses ordinary-user gates such as
+// final_activation_blocker.general_buy_sell_disabled and
+// admin_exec_permission_blocked, while BUY / non-EURUSD / non-0.01 / pending
+// remain blocked and backend canary policy is still authoritative.
+
+interface CanarySellInputs {
+  canaryActive: boolean;
+  isAdmin: boolean;
+  symbol: string;
+  side: "buy" | "sell";
+  volume: number;
+  orderType: "Market" | "Limit" | "Stop";
+  // Core readiness gates (always required).
+  connected: boolean;
+  hasValidBidAsk: boolean;
+  killSwitchActive: boolean;
+  liveDisabled: boolean;
+  execLocked: boolean;
+  // Per-side TL eligibility.
+  tlSellReady: boolean;
+  tlBuyReady: boolean;
+  // Ordinary-user / general-release gates.
+  finalBlockerActive: boolean;
+  adminExecPermissionBlocked: boolean;
+  liveModeGateOk: boolean;
+  sessionGateOk: boolean;
+}
+
+function deriveCanSubmit(i: CanarySellInputs) {
+  const core =
+    i.connected &&
+    i.hasValidBidAsk &&
+    !i.killSwitchActive &&
+    !i.liveDisabled &&
+    !i.execLocked &&
+    i.volume > 0;
+  const scopeMatches =
+    i.canaryActive &&
+    i.symbol.toUpperCase() === "EURUSD" &&
+    Math.abs(i.volume - 0.01) < 1e-9 &&
+    i.orderType === "Market";
+  const canarySellException = i.canaryActive && i.isAdmin && scopeMatches;
+  const generalGatesOk =
+    i.liveModeGateOk && i.sessionGateOk && !i.adminExecPermissionBlocked && !i.finalBlockerActive;
+  const canSubmitSell =
+    core &&
+    i.tlSellReady &&
+    (canarySellException ? true : generalGatesOk);
+  const canSubmitBuy =
+    core && i.tlBuyReady && generalGatesOk && !i.canaryActive;
+  return { canSubmitSell, canSubmitBuy, canarySellException, generalGatesOk };
+}
+
+const okInputs: CanarySellInputs = {
+  canaryActive: true,
+  isAdmin: true,
+  symbol: "EURUSD",
+  side: "sell",
+  volume: 0.01,
+  orderType: "Market",
+  connected: true,
+  hasValidBidAsk: true,
+  killSwitchActive: false,
+  liveDisabled: false,
+  execLocked: false,
+  tlSellReady: true,
+  tlBuyReady: true,
+  finalBlockerActive: true, // general release blocker active
+  adminExecPermissionBlocked: true, // general gate engaged
+  liveModeGateOk: true,
+  sessionGateOk: true,
+};
+
+describe("canary SELL enablement model", () => {
+  it("enables SELL when canary active, scope matches, and readiness passes — even with general blockers ON", () => {
+    const r = deriveCanSubmit(okInputs);
+    expect(r.canarySellException).toBe(true);
+    expect(r.canSubmitSell).toBe(true);
+    // BUY stays blocked while canary active.
+    expect(r.canSubmitBuy).toBe(false);
+  });
+  it("general_client_execution / final_activation_blocker do NOT block authorised admin-canary SELL", () => {
+    const r = deriveCanSubmit({ ...okInputs, finalBlockerActive: true, adminExecPermissionBlocked: true });
+    expect(r.canSubmitSell).toBe(true);
+  });
+  it("ordinary user (non-admin) remains blocked while general release blocker active", () => {
+    const r = deriveCanSubmit({ ...okInputs, isAdmin: false });
+    expect(r.canSubmitSell).toBe(false);
+  });
+  it("BUY remains disabled while SELL is enabled", () => {
+    const r = deriveCanSubmit(okInputs);
+    expect(r.canSubmitBuy).toBe(false);
+  });
+  it("volume other than 0.01 disables canary SELL exception", () => {
+    const r = deriveCanSubmit({ ...okInputs, volume: 0.02 });
+    expect(r.canarySellException).toBe(false);
+    expect(r.canSubmitSell).toBe(false);
+  });
+  it("XAUUSD remains blocked while EURUSD SELL is enabled", () => {
+    const r = deriveCanSubmit({ ...okInputs, symbol: "XAUUSD" });
+    expect(r.canarySellException).toBe(false);
+    expect(r.canSubmitSell).toBe(false);
+  });
+  it("Limit/Stop order types remain blocked (market only)", () => {
+    expect(deriveCanSubmit({ ...okInputs, orderType: "Limit" }).canSubmitSell).toBe(false);
+    expect(deriveCanSubmit({ ...okInputs, orderType: "Stop" }).canSubmitSell).toBe(false);
+  });
+  it("operational-use lock disables SELL (canary considered inactive)", () => {
+    const r = deriveCanSubmit({ ...okInputs, canaryActive: false });
+    expect(r.canSubmitSell).toBe(false);
+  });
+  it("kill switch / execution lock / liveDisabled disable SELL regardless of canary", () => {
+    expect(deriveCanSubmit({ ...okInputs, killSwitchActive: true }).canSubmitSell).toBe(false);
+    expect(deriveCanSubmit({ ...okInputs, execLocked: true }).canSubmitSell).toBe(false);
+    expect(deriveCanSubmit({ ...okInputs, liveDisabled: true }).canSubmitSell).toBe(false);
+  });
+  it("TL sellReady=false disables SELL even with canary exception", () => {
+    const r = deriveCanSubmit({ ...okInputs, tlSellReady: false });
+    expect(r.canSubmitSell).toBe(false);
+  });
+  it("no bid/ask disables SELL", () => {
+    const r = deriveCanSubmit({ ...okInputs, hasValidBidAsk: false });
+    expect(r.canSubmitSell).toBe(false);
+  });
+  it("disconnected account disables SELL", () => {
+    const r = deriveCanSubmit({ ...okInputs, connected: false });
+    expect(r.canSubmitSell).toBe(false);
+  });
+  it("mutation-suppressed permitted payload remains exactly {sell, EURUSD, 0.01}", () => {
+    expect(buildAllowedEntryPayload(base)).toEqual({ side: "sell", symbol: "EURUSD", volume: 0.01 });
+  });
+});
