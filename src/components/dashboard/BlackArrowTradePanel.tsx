@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import CanaryActiveBanner from "@/components/admin/CanaryActiveBanner";
+import { useCanaryEnforcement } from "@/hooks/useCanaryEnforcement";
 
 import {
   ChevronDown,
