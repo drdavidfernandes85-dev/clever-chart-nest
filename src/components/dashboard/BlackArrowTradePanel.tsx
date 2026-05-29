@@ -1889,26 +1889,40 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             disabled={priceInputDisabled}
             mono
           />
-          <DenseInput label="Lots" value={vol} onChange={setVol} mono />
+          <DenseInput
+            label="Lots"
+            value={canary.active ? "0.01" : vol}
+            onChange={(v) => { if (!canary.active) setVol(v); }}
+            disabled={canary.active}
+            mono
+          />
         </div>
 
         {/* Quick volume chips */}
         <div className="grid grid-cols-9 gap-0.5">
-          {QUICK_VOLS.map((q) => (
-            <button
-              key={q}
-              type="button"
-              onClick={() => setVol(q.toFixed(2))}
-              className={cn(
-                "h-[18px] rounded-sm text-[9.5px] font-mono tabular-nums transition-colors",
-                vol === q.toFixed(2)
-                  ? "border border-[#FFCD05] bg-[#FFCD05]/15 text-[#FFCD05]"
-                  : "border border-neutral-800/60 bg-[#0a0a0a] text-neutral-400 hover:text-neutral-100 hover:border-neutral-700",
-              )}
-            >
-              {q.toFixed(2)}
-            </button>
-          ))}
+          {QUICK_VOLS.map((q) => {
+            const volDisabled = canary.active && q !== 0.01;
+            const volSelected = canary.active ? q === 0.01 : vol === q.toFixed(2);
+            return (
+              <button
+                key={q}
+                type="button"
+                onClick={() => { if (!volDisabled) setVol(q.toFixed(2)); }}
+                disabled={volDisabled}
+                title={volDisabled ? "Disabled — limited canary permits 0.01 only" : ""}
+                className={cn(
+                  "h-[18px] rounded-sm text-[9.5px] font-mono tabular-nums transition-colors",
+                  volSelected
+                    ? "border border-[#FFCD05] bg-[#FFCD05]/15 text-[#FFCD05]"
+                    : volDisabled
+                      ? "border border-neutral-900/60 bg-[#050505] text-neutral-700 cursor-not-allowed line-through"
+                      : "border border-neutral-800/60 bg-[#0a0a0a] text-neutral-400 hover:text-neutral-100 hover:border-neutral-700",
+                )}
+              >
+                {q.toFixed(2)}
+              </button>
+            );
+          })}
         </div>
 
         {/* Flat execution row — quote + MKT buttons in a single unified strip */}
