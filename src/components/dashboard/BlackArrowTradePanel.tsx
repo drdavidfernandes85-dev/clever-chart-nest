@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/i18n/LanguageContext";
 import CanaryActiveBanner from "@/components/admin/CanaryActiveBanner";
+import { useCanaryEnforcement } from "@/hooks/useCanaryEnforcement";
 
 import {
   ChevronDown,
@@ -136,6 +137,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   const { user } = useAuth();
   const { symbol: ctxSymbol, side, setSide, setSymbol: setCtxSymbol } = useQuickTrade();
+  const canary = useCanaryEnforcement();
   const {
     tick,
     tickUpdatedAt,
@@ -162,6 +164,18 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const [strategy, setStrategy] = useState<Strategy>("Standard");
   const [orderType, setOrderType] = useState<OrderTypeLabel>("Market");
   const [vol, setVol] = useState<string>("0.01");
+
+  // Limited Canary scope enforcement: while the canary is active, the
+  // BlackArrow Order Ticket is forced to EURUSD SELL 0.01 market only.
+  // This is a UI-level guard — _shared/canaryPolicy.ts remains the
+  // authoritative server-side enforcement.
+  useEffect(() => {
+    if (!canary.active) return;
+    if (ctxSymbol !== canary.lockedSymbol) setCtxSymbol(canary.lockedSymbol!);
+    if (side !== "sell") setSide("sell");
+    if (vol !== "0.01") setVol("0.01");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canary.active, canary.lockedSymbol, ctxSymbol, side, vol]);
   const [price, setPrice] = useState<string>("");
   const [sl, setSl] = useState<string>("");
   const [tp, setTp] = useState<string>("");
@@ -1020,7 +1034,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     adminExecPermissionGateOk &&
     !finalBlockerActive;
 
-  const canSubmitBuy = canSubmitMarketBase && tlEligibilityGateBuy;
+  const canSubmitBuy = canSubmitMarketBase && tlEligibilityGateBuy && !canary.buyDisabled;
   const canSubmitSell = canSubmitMarketBase && tlEligibilityGateSell;
   // Backwards-compatible alias used by older logging/branching below.
   const canSubmitMarket = canSubmitBuy || canSubmitSell;
@@ -1840,10 +1854,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                       key={s.symbol}
                       type="button"
                       onClick={() => {
+                        const target = (s.displayName || s.symbol || "").toUpperCase();
+                        if (canary.active && target !== canary.lockedSymbol) return;
                         setCtxSymbol(s.displayName || s.symbol);
                         setSymbolOpen(false);
                         setSymbolSearch("");
                       }}
+                      disabled={canary.active && (s.displayName || s.symbol || "").toUpperCase() !== canary.lockedSymbol}
                       className={cn(
                         "w-full flex items-center justify-between px-2 py-1 text-[11px] hover:bg-neutral-900",
                         s.symbol === normalizedSym && "bg-[#FFCD05]/10 text-[#FFCD05]",
@@ -1927,9 +1944,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             {/* BUY */}
             <button
               type="button"
-              onClick={() => setSide("buy")}
+              onClick={() => { if (!canary.buyDisabled) setSide("buy"); }}
+              disabled={canary.buyDisabled}
+              title={canary.buyDisabled ? "BUY disabled — Limited Canary active (EURUSD SELL 0.01 only)" : ""}
               className={cn(
                 "flex flex-col items-stretch px-2 py-1 text-right transition-colors",
+                canary.buyDisabled ? "opacity-40 cursor-not-allowed" :
                 side === "buy" ? "bg-emerald-500/[0.06]" : "hover:bg-emerald-500/[0.04]",
               )}
             >

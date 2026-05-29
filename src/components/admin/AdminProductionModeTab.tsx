@@ -40,6 +40,7 @@ import AdminFinalActivationReadinessReviewCard from "./AdminFinalActivationReadi
 import AdminLivePositionMirrorDiagnostic from "./AdminLivePositionMirrorDiagnostic";
 import AdminEurusdFlatnessDiagnostic from "./AdminEurusdFlatnessDiagnostic";
 import AdminLimitedCanaryActivationCard from "./AdminLimitedCanaryActivationCard";
+import CanaryTicketBindingVerificationCard from "./CanaryTicketBindingVerificationCard";
 
 
 const maskTraderId = (id: string) =>
@@ -521,6 +522,7 @@ const AdminProductionModeTab = () => {
       <AdminFinalLifecyclePassCard />
       <AdminFinalActivationReadinessReviewCard />
       <AdminLimitedCanaryActivationCard />
+      <CanaryTicketBindingVerificationCard />
 
       <AdminEurusdFlatnessDiagnostic />
       <AdminLivePositionMirrorDiagnostic />

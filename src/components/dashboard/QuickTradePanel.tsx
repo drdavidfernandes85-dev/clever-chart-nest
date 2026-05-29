@@ -28,6 +28,7 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
+import { useCanaryEnforcement } from "@/hooks/useCanaryEnforcement";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBrokerSymbols, FALLBACK_SYMBOLS } from "@/contexts/BrokerSymbolsContext";
@@ -305,6 +306,21 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     refreshBrokerSymbols(undefined, { force: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Limited Canary scope enforcement: while the canary is active, the
+  // execution ticket MUST be forced to EURUSD SELL 0.01. Backend
+  // _shared/canaryPolicy.ts is authoritative — this is a UI guard so the
+  // user can never visually select or persist an out-of-scope symbol
+  // while the canary is active.
+  const canary = useCanaryEnforcement();
+  useEffect(() => {
+    if (!canary.active) return;
+    if (ctxSymbol !== canary.lockedSymbol) setCtxSymbol(canary.lockedSymbol!);
+    if (ctxSide !== "sell") setCtxSide("sell");
+    if (lots !== "0.01") setLots("0.01");
+    if (type !== "market") setType("market");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canary.active, canary.lockedSymbol, ctxSymbol, ctxSide, lots, type]);
 
   // Searchable dropdown state.
   const [symbolSearch, setSymbolSearch] = useState("");
@@ -913,11 +929,15 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                         <button
                           type="button"
                           onClick={() => {
+                            if (canary.active && it.brokerSymbol !== canary.lockedSymbol) {
+                              return; // Limited canary: only EURUSD permitted
+                            }
                             setCtxSymbol(it.displayName);
                             onSymbolChange?.(it.displayName);
                             setOpenSymbols(false);
                             setSymbolSearch("");
                           }}
+                          disabled={canary.active && it.brokerSymbol !== canary.lockedSymbol}
                           className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
                             isActive ? "text-primary bg-primary/5" : "text-foreground"
                           }`}
@@ -940,15 +960,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
           {/* Side toggle */}
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => setCtxSide("buy")}
+              onClick={() => { if (!canary.buyDisabled) setCtxSide("buy"); }}
+              disabled={canary.buyDisabled}
+              title={canary.buyDisabled ? "BUY disabled by active Limited Canary (EURUSD SELL 0.01 only)" : ""}
               className={`h-12 rounded-xl font-heading text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ring-1 ${
-                isBuy
+                canary.buyDisabled
+                  ? "bg-muted/20 text-muted-foreground/40 ring-border/30 cursor-not-allowed"
+                  : isBuy
                   ? "bg-emerald-500/20 text-emerald-400 ring-emerald-500/50 shadow-[0_0_25px_-5px_hsl(160_84%_50%/0.5)]"
                   : "bg-muted/30 text-muted-foreground ring-border/40 hover:text-foreground"
               }`}
             >
               <TrendingUp className="h-4 w-4" />
-              Buy
+              Buy{canary.buyDisabled ? " (locked)" : ""}
             </button>
             <button
               onClick={() => setCtxSide("sell")}
