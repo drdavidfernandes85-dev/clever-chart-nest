@@ -138,7 +138,6 @@ export async function applyCanaryStateChange(
   const display = user.email ?? user.id;
 
   // Step 1: write audit FIRST. If this fails, abort.
-  const { data: auditRow, error: auditErr } = await supabase
   const { data: auditRow, error: auditErr } = await (supabase
     .from("canary_activation_audit") as any)
     .insert({
