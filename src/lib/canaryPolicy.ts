@@ -88,11 +88,6 @@ export async function loadCanaryPolicy(): Promise<CanaryPolicy> {
   return { ...DEFAULT_POLICY };
 }
 
-export interface CanaryActivationContext {
-  acknowledgements: Record<string, boolean>;
-  policyTestResult?: Record<string, unknown> | null;
-  routeAuditStatus?: string;
-  brokerSymbolAuditStatus?: string;
 /**
  * Atomic activate via the server-side Postgres function
  * `public.activate_limited_canary_audited`. The frontend NEVER writes the
