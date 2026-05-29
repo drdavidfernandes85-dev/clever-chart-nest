@@ -77,11 +77,47 @@ const Row = ({ label, value, accent }: { label: string; value: React.ReactNode; 
   </div>
 );
 
+// Map a blocked reason/ruleViolated code to a precise classification title.
+// Distinguishes ACCOUNT/SYMBOL permission, canary policy, fresh-tick, kill-
+// switch and true risk failures so the user is never shown a misleading
+// "RISK BLOCKED" header for a non-risk failure.
+function classifyBlockedTitle(reason?: string | null, rule?: string | null): string {
+  const code = String(rule || reason || "").toUpperCase();
+  if (!code) return "EXECUTION BLOCKED — PRE-TRADE";
+  if (code.includes("ACCOUNT_TRADE_PERMISSION_UNAVAILABLE") ||
+      code.includes("ACCOUNT_TRADE_NOT_ALLOWED") ||
+      code.includes("ACCOUNT_DIRECTION_BLOCKED")) {
+    return "EXECUTION BLOCKED — ACCOUNT PERMISSION UNAVAILABLE";
+  }
+  if (code.includes("SYMBOL_DIRECTION_BLOCKED") ||
+      code.includes("OPERATION_NOT_ELIGIBLE") ||
+      code.includes("SYMBOL_TRADE_NOT_ALLOWED")) {
+    return "EXECUTION BLOCKED — SYMBOL PERMISSION UNAVAILABLE";
+  }
+  if (code.includes("CANARY")) return "EXECUTION BLOCKED — CANARY POLICY";
+  if (code.includes("FRESH_TICK") || code.includes("STALE_TICK")) {
+    return "EXECUTION BLOCKED — FRESH SERVER TICK REQUIRED";
+  }
+  if (code.includes("KILL_SWITCH")) return "EXECUTION BLOCKED — KILL SWITCH ACTIVE";
+  if (code.includes("EXECUTION_MODE")) return "EXECUTION BLOCKED — EXECUTION MODE";
+  if (code.includes("BROKER_SYMBOL_RESOLUTION") ||
+      code.includes("ROUTE")) return "EXECUTION BLOCKED — ROUTE / SYMBOL RESOLUTION";
+  if (code.includes("RISK") || code.includes("DAILY_LOSS") ||
+      code.includes("VOLUME") || code.includes("MAX_OPEN")) {
+    return "RISK BLOCKED — PRE-TRADE";
+  }
+  return "EXECUTION BLOCKED — PRE-TRADE";
+}
+
 const TitleBar = ({
   outcome,
+  reason,
+  ruleViolated,
   onClose,
 }: {
   outcome: ExecutionOutcome;
+  reason?: string | null;
+  ruleViolated?: string | null;
   onClose: () => void;
 }) => {
   const config = {
@@ -93,7 +129,7 @@ const TitleBar = ({
       bar: "bg-emerald-500/70",
     },
     blocked: {
-      title: "Risk Blocked — Pre-Trade Controls",
+      title: classifyBlockedTitle(reason, ruleViolated),
       Icon: ShieldAlert,
       ring: "border-amber-500/50",
       chip: "bg-amber-500/15 text-amber-300 border-amber-500/40",
@@ -128,6 +164,7 @@ const TitleBar = ({
       bar: "bg-neutral-500/70",
     },
   }[outcome];
+
   const { title, Icon, chip, bar } = config;
   return (
     <div className="relative">
