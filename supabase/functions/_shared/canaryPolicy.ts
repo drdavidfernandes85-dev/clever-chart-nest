@@ -95,6 +95,10 @@ async function isAdminUser(supabase: any, userId: string): Promise<boolean> {
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
+    return !!data;
+  } catch { return false; }
+}
+
 export type CanaryGuardCode =
   | "CANARY_SCOPE_OK"
   | "CANARY_NOT_ACTIVE"
@@ -111,9 +115,6 @@ export type CanaryGuardCode =
   | "CANARY_SCOPE_POSITION_NOT_PLATFORM_OWNED"
   | "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED";
 
-  | "CANARY_SCOPE_PARTIAL_CLOSE_DISABLED"
-  | "CANARY_SCOPE_POSITION_NOT_PLATFORM_OWNED"
-  | "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED";
 
 export interface CanaryGuardResult {
   allowed: boolean;
