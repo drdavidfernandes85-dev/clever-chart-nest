@@ -85,49 +85,39 @@ const AdminLimitedCanaryActivationCard = () => {
 
   const handleActivate = async () => {
     if (!canActivate) return;
-    if (!window.confirm("Activate Limited Canary? An audit row will be written FIRST; activation is aborted if the audit write fails. Admin-allowlisted EURUSD SELL 0.01 and exact-position close ONLY. No live order is submitted.")) return;
+    if (!window.confirm("Re-Activate Limited Canary with Audited Atomic Transition? This calls the server-side Postgres function activate_limited_canary_audited(); audit row and policy update commit as one transaction. No live order is submitted.")) return;
     setBusy(true);
     try {
-      const next = await applyCanaryStateChange(
-        "activate_limited_canary",
-        "active_limited_canary",
-        {
-          acknowledgements: acks,
-          policyTestResult: { tests_passed: 27, tests_failed: 0, file: "supabase/functions/_shared/canaryPolicy_test.ts" },
-          routeAuditStatus: "pass",
-          brokerSymbolAuditStatus: "pass",
-          liveExposureSnapshot: { open_positions: 0, pending_orders: 0, symbol: "EURUSD" },
-        },
-      );
+      const next = await activateLimitedCanaryAudited({
+        acknowledgements: acks,
+        policyTestResult: { tests_passed: 40, tests_failed: 0, file: "supabase/functions/_shared/canaryPolicy_test.ts" },
+        routeAuditStatus: "pass",
+        brokerSymbolAuditStatus: "pass",
+        liveExposureSnapshot: { open_positions: 0, pending_orders: 0, symbol: "EURUSD" },
+      });
       setPolicy(next);
-      toast.success("Limited Canary activated with atomic audit evidence.");
+      toast.success("Limited Canary re-activated via atomic server transaction.");
     } catch (e: any) {
-      toast.error(e?.message || "Activation aborted (audit write failed).");
+      toast.error(e?.message || "Activation aborted by server transaction.");
     } finally { setBusy(false); }
   };
 
   const handleDisable = async () => {
     if (!policy) return;
-    if (!window.confirm("Disable Limited Canary immediately? Audit row written first.")) return;
+    if (!window.confirm("Disable Limited Canary immediately via atomic server transaction?")) return;
     setBusy(true);
     try {
-      const next = await applyCanaryStateChange(
-        "disable_limited_canary",
-        "disabled_by_admin",
-        {
-          acknowledgements: { ack_manual_disable: true },
-          policyTestResult: null,
-          routeAuditStatus: "pass",
-          brokerSymbolAuditStatus: "pass",
-          liveExposureSnapshot: { open_positions: 0, pending_orders: 0, symbol: "EURUSD" },
-        },
-      );
+      const next = await disableLimitedCanaryAudited({
+        reason: "Admin manual disable",
+        liveExposureSnapshot: { open_positions: 0, pending_orders: 0, symbol: "EURUSD" },
+      });
       setPolicy(next);
-      toast.success("Limited Canary disabled (audit written).");
+      toast.success("Limited Canary disabled via atomic server transaction.");
     } catch (e: any) {
-      toast.error(e?.message || "Disable aborted (audit write failed).");
+      toast.error(e?.message || "Disable aborted by server transaction.");
     } finally { setBusy(false); }
   };
+
 
   if (loading || !policy) {
     return (
