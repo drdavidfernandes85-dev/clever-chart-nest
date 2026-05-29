@@ -194,3 +194,97 @@ describe("canary ticket-binding scenarios", () => {
     expect(r.code).toBe("CANARY_UI_SCOPE_MISMATCH_UNDER_REVIEW");
   });
 });
+
+// ---------- Active-ticket control-surface lockdown (BUY + non-0.01 volumes) ----------
+
+interface PanelControls {
+  buyButtonDisabled: boolean;
+  sellButtonEnabled: boolean;
+  volumeInputDisabled: boolean;
+  volumeChips: { value: number; disabled: boolean; selected: boolean }[];
+  orderTypeOptions: string[];
+}
+
+function deriveControlSurface(policy: CanaryPolicy | null, chipValues: number[]): PanelControls {
+  const e = deriveEnforcement(policy);
+  const lockedVol = e.lockedVolume ?? 0.01;
+  return {
+    buyButtonDisabled: e.buyDisabled,
+    sellButtonEnabled: true,
+    volumeInputDisabled: e.active,
+    volumeChips: chipValues.map((v) => ({
+      value: v,
+      disabled: e.active && v !== lockedVol,
+      selected: e.active ? v === lockedVol : false,
+    })),
+    orderTypeOptions: e.active ? ["market"] : ["market", "limit", "stop"],
+  };
+}
+
+function buildAllowedEntryPayload(policy: CanaryPolicy | null) {
+  const e = deriveEnforcement(policy);
+  if (!e.active) return null;
+  return { side: e.lockedSide, symbol: e.lockedSymbol, volume: e.lockedVolume };
+}
+
+const QUICK_LOTS = [0.01, 0.02, 0.05, 0.1];
+const QUICK_VOLS = [0.01, 0.02, 0.03, 0.05, 0.1, 0.25, 0.5, 1, 2];
+
+describe("canary execution-ticket control-surface lockdown", () => {
+  it("BlackArrowTradePanel: BUY button technically disabled under active canary", () => {
+    const c = deriveControlSurface(base, QUICK_VOLS);
+    expect(c.buyButtonDisabled).toBe(true);
+  });
+  it("QuickTradePanel: BUY button technically disabled under active canary", () => {
+    const c = deriveControlSurface(base, QUICK_LOTS);
+    expect(c.buyButtonDisabled).toBe(true);
+  });
+  it("BlackArrow: only 0.01 lot chip enabled; 0.02/0.10/1.00 disabled", () => {
+    const c = deriveControlSurface(base, QUICK_VOLS);
+    expect(c.volumeChips.find((x) => x.value === 0.01)?.disabled).toBe(false);
+    expect(c.volumeChips.find((x) => x.value === 0.01)?.selected).toBe(true);
+    for (const v of [0.02, 0.05, 0.1, 0.25, 0.5, 1, 2]) {
+      expect(c.volumeChips.find((x) => x.value === v)?.disabled).toBe(true);
+    }
+  });
+  it("QuickTrade: only 0.01 lot chip enabled; 0.02/0.05/0.10 disabled", () => {
+    const c = deriveControlSurface(base, QUICK_LOTS);
+    for (const v of [0.02, 0.05, 0.1]) {
+      expect(c.volumeChips.find((x) => x.value === v)?.disabled).toBe(true);
+    }
+    expect(c.volumeChips.find((x) => x.value === 0.01)?.selected).toBe(true);
+  });
+  it("free-form volume input is technically disabled in both panels under active canary", () => {
+    expect(deriveControlSurface(base, QUICK_VOLS).volumeInputDisabled).toBe(true);
+    expect(deriveControlSurface(base, QUICK_LOTS).volumeInputDisabled).toBe(true);
+  });
+  it("order type options reduced to MARKET only under active canary", () => {
+    expect(deriveControlSurface(base, QUICK_VOLS).orderTypeOptions).toEqual(["market"]);
+  });
+  it("permitted payload is exactly {sell, EURUSD, 0.01}", () => {
+    expect(buildAllowedEntryPayload(base)).toEqual({ side: "sell", symbol: "EURUSD", volume: 0.01 });
+  });
+  it("disabled canary surfaces no canary-permitted entry payload", () => {
+    const disabled = { ...base, capability_state: "disabled_by_admin" } as any;
+    expect(buildAllowedEntryPayload(disabled)).toBeNull();
+  });
+  it("backend rejects BUY EURUSD 0.01 with CANARY_SCOPE_OPERATION_NOT_ALLOWED", () => {
+    expect(wouldBackendAcceptEntry({ symbol: "EURUSD", side: "buy", volume: 0.01 }, base).code)
+      .toBe("CANARY_SCOPE_OPERATION_NOT_ALLOWED");
+  });
+  it("backend rejects SELL EURUSD 0.02 with CANARY_SCOPE_VOLUME_NOT_ALLOWED", () => {
+    expect(wouldBackendAcceptEntry({ symbol: "EURUSD", side: "sell", volume: 0.02 }, base).code)
+      .toBe("CANARY_SCOPE_VOLUME_NOT_ALLOWED");
+  });
+  it("backend rejects GBPUSD with CANARY_SCOPE_SYMBOL_NOT_ALLOWED", () => {
+    expect(wouldBackendAcceptEntry({ symbol: "GBPUSD", side: "sell", volume: 0.01 }, base).code)
+      .toBe("CANARY_SCOPE_SYMBOL_NOT_ALLOWED");
+  });
+  it("backend rejects XAUUSD with CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED", () => {
+    expect(wouldBackendAcceptEntry({ symbol: "XAUUSD", side: "sell", volume: 0.01 }, base).code)
+      .toBe("CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED");
+  });
+  it("close action remains exact platform-owned ticket only (policy contract)", () => {
+    expect(base.allowed_close_operation).toBe("close_exact_platform_confirmed_position_only");
+  });
+});

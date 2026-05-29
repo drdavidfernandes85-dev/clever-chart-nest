@@ -1024,38 +1024,61 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             </Label>
             <div className="flex items-stretch gap-2">
               <button
-                onClick={() => adjustLots(-0.01)}
+                onClick={() => { if (!canary.active) adjustLots(-0.01); }}
                 aria-label="Decrease lots"
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
+                disabled={canary.active}
+                title={canary.active ? "Disabled — limited canary permits 0.01 only" : ""}
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border/50 disabled:hover:text-muted-foreground"
               >
                 <Minus className="h-4 w-4" />
               </button>
               <Input
                 inputMode="decimal"
                 value={lots}
-                onChange={(e) =>
-                  setLots(e.target.value.replace(/[^0-9.]/g, "").slice(0, 8))
-                }
-                className="h-12 flex-1 bg-background/60 border-border/50 font-mono text-base font-bold tabular-nums text-center focus-visible:ring-primary/40"
+                readOnly={canary.active}
+                disabled={canary.active}
+                aria-label="Lots"
+                title={canary.active ? "Locked — limited canary permits 0.01 only" : ""}
+                onChange={(e) => {
+                  if (canary.active) return;
+                  setLots(e.target.value.replace(/[^0-9.]/g, "").slice(0, 8));
+                }}
+                onKeyDown={(e) => { if (canary.active) e.preventDefault(); }}
+                onPaste={(e) => { if (canary.active) e.preventDefault(); }}
+                className="h-12 flex-1 bg-background/60 border-border/50 font-mono text-base font-bold tabular-nums text-center focus-visible:ring-primary/40 disabled:opacity-100"
               />
               <button
-                onClick={() => adjustLots(0.01)}
+                onClick={() => { if (!canary.active) adjustLots(0.01); }}
                 aria-label="Increase lots"
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all"
+                disabled={canary.active}
+                title={canary.active ? "Disabled — limited canary permits 0.01 only" : ""}
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/50 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border/50 disabled:hover:text-muted-foreground"
               >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
             <div className="mt-1.5 flex gap-1">
-              {QUICK_LOTS.map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setLots(v.toFixed(2))}
-                  className="flex-1 h-7 rounded-md bg-muted/30 hover:bg-primary/10 hover:text-primary text-[10px] font-mono tabular-nums text-muted-foreground transition-colors"
-                >
-                  {v.toFixed(2)}
-                </button>
-              ))}
+              {QUICK_LOTS.map((v) => {
+                const lotDisabled = canary.active && v !== 0.01;
+                const lotSelected = canary.active && v === 0.01;
+                return (
+                  <button
+                    key={v}
+                    onClick={() => { if (!lotDisabled) setLots(v.toFixed(2)); }}
+                    disabled={lotDisabled}
+                    title={lotDisabled ? "Disabled — limited canary permits 0.01 only" : ""}
+                    className={`flex-1 h-7 rounded-md text-[10px] font-mono tabular-nums transition-colors ${
+                      lotDisabled
+                        ? "bg-muted/10 text-muted-foreground/40 cursor-not-allowed line-through"
+                        : lotSelected
+                          ? "bg-primary/15 text-primary border border-primary/40"
+                          : "bg-muted/30 hover:bg-primary/10 hover:text-primary text-muted-foreground"
+                    }`}
+                  >
+                    {v.toFixed(2)}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
