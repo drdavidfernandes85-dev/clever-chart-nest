@@ -307,7 +307,8 @@ const AdminLimitedCanaryActivationCard = () => {
               title={!allAcked ? "Tick all acknowledgements first" : ""}
             >
               <Rocket className="h-3 w-3 mr-1" />
-              Activate Limited Canary (atomic audit)
+              Re-Activate Limited Canary with Audited Atomic Transition
+
             </Button>
           )}
           <Button
