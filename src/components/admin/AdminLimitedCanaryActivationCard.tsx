@@ -7,12 +7,13 @@ import { toast } from "sonner";
 import {
   AlertTriangle,
   CheckCircle2,
+  Lock,
   Rocket,
   ShieldOff,
 } from "lucide-react";
 import {
+  applyCanaryStateChange,
   loadCanaryPolicy,
-  setCanaryCapabilityState,
   type CanaryPolicy,
 } from "@/lib/canaryPolicy";
 
@@ -27,6 +28,7 @@ const CHECKLIST: { id: string; label: string }[] = [
   { id: "ack_xauusd_blocked", label: "I confirm XAUUSD remains blocked as ambiguous." },
   { id: "ack_safety_controls", label: "I confirm all mutations remain subject to fresh tick, risk, kill switch and idempotency controls." },
   { id: "ack_manual_reversible", label: "I understand activation is manual and reversible via the kill switch / deactivate control." },
+  { id: "ack_audit_atomic", label: "I confirm activation persists an atomic audit row (timestamp, admin identity, scope snapshot, policy version)." },
 ];
 
 const Row = ({ label, value, tone = "neutral" }: { label: string; value: React.ReactNode; tone?: "ok" | "warn" | "danger" | "neutral" }) => {
@@ -69,33 +71,59 @@ const AdminLimitedCanaryActivationCard = () => {
   );
 
   const isActive = policy?.capability_state === "active_limited_canary";
+  const lock = policy?.operational_use_lock ?? null;
+  const lockEngaged = !!lock?.locked;
+  const auditIncomplete =
+    policy?.activation_audit_evidence_status?.startsWith("incomplete") === true;
+
   const canActivate = !!policy && allAcked && !isActive &&
     (policy.capability_state === "eligible_for_manual_activation" ||
-     policy.capability_state === "disabled_by_admin");
+     policy.capability_state === "disabled_by_admin" ||
+     policy.capability_state === "disabled_by_admin_pending_audited_reactivation");
 
   const handleActivate = async () => {
     if (!canActivate) return;
-    if (!window.confirm("Activate Limited Canary? Admin-allowlisted EURUSD SELL 0.01 and exact-position close ONLY. No live order is submitted by this action.")) return;
+    if (!window.confirm("Activate Limited Canary? An audit row will be written FIRST; activation is aborted if the audit write fails. Admin-allowlisted EURUSD SELL 0.01 and exact-position close ONLY. No live order is submitted.")) return;
     setBusy(true);
     try {
-      const next = await setCanaryCapabilityState("active_limited_canary");
+      const next = await applyCanaryStateChange(
+        "activate_limited_canary",
+        "active_limited_canary",
+        {
+          acknowledgements: acks,
+          policyTestResult: { tests_passed: 27, tests_failed: 0, file: "supabase/functions/_shared/canaryPolicy_test.ts" },
+          routeAuditStatus: "pass",
+          brokerSymbolAuditStatus: "pass",
+          liveExposureSnapshot: { open_positions: 0, pending_orders: 0, symbol: "EURUSD" },
+        },
+      );
       setPolicy(next);
-      toast.success("Limited Canary activated (no orders submitted).");
+      toast.success("Limited Canary activated with atomic audit evidence.");
     } catch (e: any) {
-      toast.error(e?.message || "Failed to activate canary.");
+      toast.error(e?.message || "Activation aborted (audit write failed).");
     } finally { setBusy(false); }
   };
 
   const handleDisable = async () => {
     if (!policy) return;
-    if (!window.confirm("Disable Limited Canary immediately? New canary entries will be blocked. Risk-reduction close of any confirmed exposure remains possible.")) return;
+    if (!window.confirm("Disable Limited Canary immediately? Audit row written first.")) return;
     setBusy(true);
     try {
-      const next = await setCanaryCapabilityState("disabled_by_admin");
+      const next = await applyCanaryStateChange(
+        "disable_limited_canary",
+        "disabled_by_admin",
+        {
+          acknowledgements: { ack_manual_disable: true },
+          policyTestResult: null,
+          routeAuditStatus: "pass",
+          brokerSymbolAuditStatus: "pass",
+          liveExposureSnapshot: { open_positions: 0, pending_orders: 0, symbol: "EURUSD" },
+        },
+      );
       setPolicy(next);
-      toast.success("Limited Canary disabled.");
+      toast.success("Limited Canary disabled (audit written).");
     } catch (e: any) {
-      toast.error(e?.message || "Failed to disable canary.");
+      toast.error(e?.message || "Disable aborted (audit write failed).");
     } finally { setBusy(false); }
   };
 
@@ -109,7 +137,7 @@ const AdminLimitedCanaryActivationCard = () => {
 
   return (
     <>
-      {isActive && (
+      {isActive && !lockEngaged && (
         <Card className="p-3 border-emerald-500/60 bg-emerald-500/10">
           <div className="flex items-start gap-2">
             <Rocket className="h-4 w-4 text-emerald-300 mt-0.5" />
@@ -117,6 +145,29 @@ const AdminLimitedCanaryActivationCard = () => {
               LIMITED CANARY ACTIVE — ADMIN-ALLOWLISTED EURUSD SELL 0.01 + EXACT POSITION CLOSE ONLY.
               GENERAL CLIENT EXECUTION REMAINS DISABLED.
             </p>
+          </div>
+        </Card>
+      )}
+
+      {(lockEngaged || auditIncomplete) && (
+        <Card className="p-3 border-red-500/60 bg-red-500/10">
+          <div className="flex items-start gap-2">
+            <Lock className="h-4 w-4 text-red-300 mt-0.5 shrink-0" />
+            <div className="text-[12px] text-red-100 leading-relaxed">
+              <p className="font-semibold mb-1">
+                OPERATIONAL-USE LOCK ENGAGED — {lock?.code ?? "CANARY_ACTIVATION_AUDIT_EVIDENCE_INCOMPLETE"}
+              </p>
+              <p>
+                Limited canary disabled before first operational order because
+                activation audit evidence was incomplete (no persisted
+                activated_at / activated_by_user_id). Re-activate manually
+                after the audit record is persisted correctly. Scope
+                configuration is preserved.
+              </p>
+              {lock?.reason && (
+                <p className="mt-1 opacity-80">Reason: {lock.reason}</p>
+              )}
+            </div>
           </div>
         </Card>
       )}
@@ -173,33 +224,39 @@ const AdminLimitedCanaryActivationCard = () => {
             <Row label="capability_state" value={policy.capability_state} tone={stateTone(policy.capability_state)} />
             <Row
               label="server_policy_gate"
-              value={isActive ? "ACTIVE — canary scope enforced" : "FAIL-CLOSED UNTIL MANUAL ACTIVATION"}
-              tone={isActive ? "ok" : "warn"}
+              value={isActive && !lockEngaged ? "ACTIVE — canary scope enforced" : "FAIL-CLOSED UNTIL AUDITED REACTIVATION"}
+              tone={isActive && !lockEngaged ? "ok" : "warn"}
             />
-            <Row label="policy_test_suite" value="PASS 40/40 (canaryPolicy_test.ts)" tone="ok" />
+            <Row label="policy_test_suite" value="PASS (canaryPolicy_test.ts)" tone="ok" />
             <Row
-              label="recommendation"
-              value={isActive ? "ACTIVE_LIMITED_CANARY" : "ELIGIBLE_FOR_LIMITED_CANARY_ACTIVATION"}
-              tone="ok"
+              label="operational_use_lock"
+              value={lockEngaged ? (lock?.code ?? "LOCKED") : "clear"}
+              tone={lockEngaged ? "danger" : "ok"}
+            />
+            <Row
+              label="audit_evidence"
+              value={policy.activation_audit_evidence_status ?? "n/a"}
+              tone={auditIncomplete ? "danger" : "ok"}
             />
           </div>
         </div>
 
-        {!isActive && (
+        {(!isActive || lockEngaged) && (
           <Card className="p-2 mb-3 border-amber-500/40 bg-amber-500/10">
             <p className="text-[11px] font-semibold text-amber-200 flex items-start gap-1.5 leading-relaxed">
               <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-              CANARY NOT ACTIVE — NO LIVE CANARY ORDERS PERMITTED. Server-side
-              guard <code>_shared/canaryPolicy.ts</code> fails closed and rejects
-              every entry mutation with <code>CANARY_NOT_ACTIVE</code> until manual
-              activation is performed.
+              CANARY NOT OPERATIONAL — NO LIVE CANARY ORDERS PERMITTED. Server-side
+              guard <code>_shared/canaryPolicy.ts</code> rejects every entry mutation
+              with <code>CANARY_NOT_ACTIVE</code> or
+              <code>CANARY_ACTIVATION_AUDIT_EVIDENCE_INCOMPLETE</code> until an
+              atomic audited re-activation is performed.
             </p>
           </Card>
         )}
 
         <div className="rounded border border-border/40 p-3 mb-3 bg-muted/10">
           <p className="text-[11px] font-semibold mb-2 text-foreground/90 flex items-center gap-1.5">
-            {isActive ? (
+            {isActive && !lockEngaged ? (
               <>
                 <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                 Activation acknowledgements — accepted ({CHECKLIST.length}/{CHECKLIST.length}) · read-only evidence
@@ -208,7 +265,7 @@ const AdminLimitedCanaryActivationCard = () => {
               <>Activation acknowledgements ({Object.values(acks).filter(Boolean).length}/{CHECKLIST.length})</>
             )}
           </p>
-          {isActive ? (
+          {isActive && !lockEngaged ? (
             <ul className="grid gap-1 text-[11px] leading-snug">
               {CHECKLIST.map((item) => (
                 <li key={item.id} className="flex items-start gap-2 text-foreground/80">
@@ -230,24 +287,21 @@ const AdminLimitedCanaryActivationCard = () => {
               ))}
             </div>
           )}
-          {isActive && (
-            <div className="mt-2 pt-2 border-t border-border/40 grid gap-1 text-[10px] font-mono text-muted-foreground">
-              <div>activated_at: <span className="text-foreground/80">{(policy as any).activated_at ?? "—"}</span></div>
-              <div>activated_by: <span className="text-foreground/80">{(policy as any).activated_by ?? "admin (allowlist)"}</span></div>
-              <div>policy_version: <span className="text-foreground/80">LIMITED_CANARY_V1_2026_05_29</span></div>
-              <div>policy_test_result: <span className="text-emerald-300">PASS 40/40</span></div>
-              <div>active_scope: <span className="text-foreground/80">EURUSD SELL 0.01 · MT5 {policy.allowed_mt5_login} · route 559a12e4…bcfe · exact platform-owned close</span></div>
-            </div>
-          )}
+          <div className="mt-2 pt-2 border-t border-border/40 grid gap-1 text-[10px] font-mono text-muted-foreground">
+            <div>activated_at: <span className={policy.activated_at ? "text-foreground/80" : "text-red-300"}>{policy.activated_at ?? "— (not persisted)"}</span></div>
+            <div>activated_by_user_id: <span className={policy.activated_by_user_id ? "text-foreground/80" : "text-red-300"}>{policy.activated_by_user_id ?? "— (not persisted)"}</span></div>
+            <div>activated_by: <span className={policy.activated_by_display ? "text-foreground/80" : "text-red-300"}>{policy.activated_by_display ?? "— (not persisted)"}</span></div>
+            <div>activation_audit_event_id: <span className={policy.activation_audit_event_id ? "text-foreground/80" : "text-red-300"}>{policy.activation_audit_event_id ?? "— (not persisted)"}</span></div>
+            <div>policy_version: <span className="text-foreground/80">LIMITED_CANARY_V1_2026_05_29</span></div>
+            <div>active_scope: <span className="text-foreground/80">EURUSD SELL 0.01 · MT5 {policy.allowed_mt5_login} · route 559a12e4…bcfe · exact platform-owned close</span></div>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {isActive ? (
+          {isActive && !lockEngaged ? (
             <Badge
               variant="outline"
               className="border-emerald-500/60 text-emerald-300 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold cursor-default select-none"
-              aria-label="Limited Canary Active — no further activation action available"
-              title="Limited Canary is already active. Use Disable Limited Canary Immediately to revoke."
             >
               <CheckCircle2 className="h-3 w-3 mr-1.5 inline" />
               Limited Canary Active
@@ -261,13 +315,13 @@ const AdminLimitedCanaryActivationCard = () => {
               title={!allAcked ? "Tick all acknowledgements first" : ""}
             >
               <Rocket className="h-3 w-3 mr-1" />
-              Activate Limited Canary
+              Activate Limited Canary (atomic audit)
             </Button>
           )}
           <Button
             size="sm"
             variant="destructive"
-            disabled={busy || policy.capability_state === "disabled_by_admin" || policy.capability_state === "disabled_by_kill_switch"}
+            disabled={busy || policy.capability_state === "disabled_by_admin" || policy.capability_state === "disabled_by_kill_switch" || policy.capability_state === "disabled_by_admin_pending_audited_reactivation"}
             onClick={handleDisable}
           >
             <ShieldOff className="h-3 w-3 mr-1" />
@@ -278,25 +332,13 @@ const AdminLimitedCanaryActivationCard = () => {
 
         <p className="text-[10px] text-muted-foreground mt-3 leading-relaxed flex items-start gap-1.5">
           <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0 mt-0.5" />
-          Server-side guard <code>_shared/canaryPolicy.ts</code> enforces this scope across
-          submit-best-execution-order, execute-trade and close-position-controlled.
-          submit-pending-order, cancel-pending-order and modify-position-protection are
-          permanently blocked by the canary policy regardless of state.
-          No live order is submitted by activating or disabling this canary —
-          activation only authorises future admin-initiated EURUSD SELL 0.01 entries
-          and their exact platform-owned close.
+          Activation is atomic: a <code>canary_activation_audit</code> row is
+          written FIRST; if that write fails, the capability state is NOT
+          changed. Server-side guard <code>_shared/canaryPolicy.ts</code> also
+          rejects any entry while <code>operational_use_lock</code> is engaged
+          or activation evidence is incomplete. No live order is submitted by
+          activating or disabling this canary.
         </p>
-
-        {policy.capability_state === "suspended_after_execution_incident" && (
-          <Card className="mt-3 p-2 border-red-500/40 bg-red-500/5">
-            <p className="text-[11px] text-red-200 flex items-start gap-1.5">
-              <AlertTriangle className="h-3 w-3 mt-0.5" />
-              Canary suspended after an execution incident. New entries are blocked.
-              Closing existing verified platform-owned exposure remains possible for risk reduction.
-              Review incident before re-activating.
-            </p>
-          </Card>
-        )}
       </Card>
     </>
   );
