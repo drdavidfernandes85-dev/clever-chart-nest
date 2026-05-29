@@ -307,6 +307,21 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Limited Canary scope enforcement: while the canary is active, the
+  // execution ticket MUST be forced to EURUSD SELL 0.01. Backend
+  // _shared/canaryPolicy.ts is authoritative — this is a UI guard so the
+  // user can never visually select or persist an out-of-scope symbol
+  // while the canary is active.
+  const canary = useCanaryEnforcement();
+  useEffect(() => {
+    if (!canary.active) return;
+    if (ctxSymbol !== canary.lockedSymbol) setCtxSymbol(canary.lockedSymbol!);
+    if (ctxSide !== "sell") setCtxSide("sell");
+    if (lots !== "0.01") setLots("0.01");
+    if (type !== "market") setType("market");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canary.active, canary.lockedSymbol, ctxSymbol, ctxSide, lots, type]);
+
   // Searchable dropdown state.
   const [symbolSearch, setSymbolSearch] = useState("");
   const [assetClassFilter, setAssetClassFilter] = useState<string>("All");
