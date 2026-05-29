@@ -18,6 +18,11 @@ import {
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
 import {
+  assertCanaryCloseAllowed,
+  canaryGuardResponseBody,
+} from "../_shared/canaryPolicy.ts";
+
+import {
   resolveEligibleBrokerSymbol,
   brokerSymbolGateResponse,
   refreshTradeModeFromTradingLayer,
@@ -205,6 +210,22 @@ Deno.serve(async (req) => {
       }, 403);
     }
   }
+
+  // ---------- Limited Canary policy guard (close) ----------
+  {
+    const canaryClose = await assertCanaryCloseAllowed(supabase, {
+      userId: user.id,
+      login: mapping.login,
+      routeAccountId: mapping.traderId,
+      brokerSymbol: suppliedBrokerSymbol ?? symbol,
+      ticket,
+      requestedVolume: volume,
+    });
+    if (!canaryClose.allowed) {
+      return json(canaryGuardResponseBody(canaryClose, VERSION), 403);
+    }
+  }
+
 
 
   // ---------- Backend risk-limit enforcement (LIMITS ONLY — ticket existence

@@ -10,6 +10,11 @@ import {
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
 import {
+  assertCanaryEntryAllowed,
+  canaryGuardResponseBody,
+} from "../_shared/canaryPolicy.ts";
+
+import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
@@ -295,6 +300,24 @@ serve(async (req) => {
         }, 403);
       }
     }
+
+    // ---------- Limited Canary policy guard (entry) ----------
+    {
+      const canaryCheck = await assertCanaryEntryAllowed(supabase, {
+        userId: user.id,
+        login: mapping.login,
+        routeAccountId: mapping.traderId,
+        displaySymbol: displaySymbolMeta || symbol,
+        brokerSymbol: brokerSymbolMeta || symbol,
+        side,
+        volume,
+        operation: `market_${side}`,
+      });
+      if (!canaryCheck.allowed) {
+        return json(canaryGuardResponseBody(canaryCheck, "EXECUTE_TRADE"), 403);
+      }
+    }
+
 
     // Final activation blocker — all platform mutations are paused while the
     // controlled-retest authorisation flow is in effect. Only the dedicated
