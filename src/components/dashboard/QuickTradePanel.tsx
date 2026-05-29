@@ -743,6 +743,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   return (
     <>
+      <CanaryActiveBanner />
       <motion.div
         ref={rootRef}
         initial={{ opacity: 0, y: 8 }}
