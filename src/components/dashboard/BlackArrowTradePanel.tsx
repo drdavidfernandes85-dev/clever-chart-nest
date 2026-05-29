@@ -1725,6 +1725,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
       "rounded-sm border border-neutral-800/70 bg-[#0b0b0b] overflow-hidden text-neutral-100 text-[11px]",
       className,
     )}>
+      <CanaryActiveBanner />
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-2 py-1 border-b border-neutral-800 bg-[#0a0a0a]">
         <div className="flex items-center gap-1.5 min-w-0">
