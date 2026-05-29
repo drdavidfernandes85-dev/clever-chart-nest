@@ -137,6 +137,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
 
   const { user } = useAuth();
   const { symbol: ctxSymbol, side, setSide, setSymbol: setCtxSymbol } = useQuickTrade();
+  const canary = useCanaryEnforcement();
   const {
     tick,
     tickUpdatedAt,
