@@ -1854,10 +1854,13 @@ const BlackArrowTradePanel = ({ className }: Props) => {
                       key={s.symbol}
                       type="button"
                       onClick={() => {
+                        const target = (s.displayName || s.symbol || "").toUpperCase();
+                        if (canary.active && target !== canary.lockedSymbol) return;
                         setCtxSymbol(s.displayName || s.symbol);
                         setSymbolOpen(false);
                         setSymbolSearch("");
                       }}
+                      disabled={canary.active && (s.displayName || s.symbol || "").toUpperCase() !== canary.lockedSymbol}
                       className={cn(
                         "w-full flex items-center justify-between px-2 py-1 text-[11px] hover:bg-neutral-900",
                         s.symbol === normalizedSym && "bg-[#FFCD05]/10 text-[#FFCD05]",
