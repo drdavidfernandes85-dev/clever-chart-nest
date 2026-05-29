@@ -32,6 +32,11 @@ import {
   assertLiveExecutionAllowed,
   LIVE_EXEC_DISABLED_CODE,
 } from "../_shared/executionMode.ts";
+import {
+  assertCanaryEntryAllowed,
+  canaryGuardResponseBody,
+} from "../_shared/canaryPolicy.ts";
+
 import { EXECUTION_POLICY_VERSION, sideToOperation } from "../_shared/tradingLayerTradeMode.ts";
 import {
   resolveFreshExecutionTick,
@@ -563,6 +568,26 @@ Deno.serve(async (req) => {
       executionMode: gate.mode,
     }, 403);
   }
+
+  // ---------- Limited Canary policy guard (entry) ----------
+  // No-op when canary is not active; enforces strict EURUSD market SELL 0.01
+  // single-admin scope when capability_state === active_limited_canary.
+  {
+    const canaryCheck = await assertCanaryEntryAllowed(supabaseService, {
+      userId: uid || "",
+      login: mapping.login,
+      routeAccountId: mapping.traderId,
+      displaySymbol: String(symbol),
+      brokerSymbol: String(symbol),
+      side: String(side),
+      volume: Number(volume),
+      operation: intendedOperation,
+    });
+    if (!canaryCheck.allowed) {
+      return withTimings(canaryGuardResponseBody(canaryCheck, VERSION), 403);
+    }
+  }
+
 
   // Final activation blocker — only submit-controlled-retest may dispatch.
   try {

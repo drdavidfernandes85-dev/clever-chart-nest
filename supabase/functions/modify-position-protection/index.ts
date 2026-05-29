@@ -18,6 +18,11 @@ import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
+import {
+  assertCanaryCapabilityDisabled,
+  canaryGuardResponseBody,
+} from "../_shared/canaryPolicy.ts";
+
 
 const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
 const BASE_URL = "https://api.trading-layer.com";
@@ -56,6 +61,11 @@ Deno.serve(async (req) => {
   if (authError || !user) {
     return json({ success: false, version: VERSION, error: "Unauthorized" }, 401);
   }
+
+  // Limited Canary policy: SL/TP modification is permanently disabled in this phase.
+  const canaryGuardModify = await assertCanaryCapabilityDisabled(supabase, "modify_protection");
+  return json(canaryGuardResponseBody(canaryGuardModify, VERSION), 403);
+
 
   let payload: any;
   try { payload = await req.json(); } catch {

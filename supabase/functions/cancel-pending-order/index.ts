@@ -18,6 +18,11 @@ import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
+import {
+  assertCanaryCapabilityDisabled,
+  canaryGuardResponseBody,
+} from "../_shared/canaryPolicy.ts";
+
 
 const VERSION = "CANCEL_PENDING_ORDER_V1_2026_05_22";
 const BASE_URL = "https://api.trading-layer.com";
@@ -46,6 +51,11 @@ Deno.serve(async (req) => {
   const token = authHeader.replace("Bearer ", "");
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return json({ success: false, version: VERSION, error: "Unauthorized" }, 401);
+
+  // Limited Canary policy: cancel pending order is permanently disabled in this phase.
+  const canaryGuard = await assertCanaryCapabilityDisabled(supabase, "cancel_pending");
+  return json(canaryGuardResponseBody(canaryGuard, VERSION), 403);
+
 
   let payload: any;
   try { payload = await req.json(); } catch { return json({ success: false, version: VERSION, error: "Invalid JSON body" }, 400); }
