@@ -956,15 +956,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
           {/* Side toggle */}
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => setCtxSide("buy")}
+              onClick={() => { if (!canary.buyDisabled) setCtxSide("buy"); }}
+              disabled={canary.buyDisabled}
+              title={canary.buyDisabled ? "BUY disabled by active Limited Canary (EURUSD SELL 0.01 only)" : ""}
               className={`h-12 rounded-xl font-heading text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ring-1 ${
-                isBuy
+                canary.buyDisabled
+                  ? "bg-muted/20 text-muted-foreground/40 ring-border/30 cursor-not-allowed"
+                  : isBuy
                   ? "bg-emerald-500/20 text-emerald-400 ring-emerald-500/50 shadow-[0_0_25px_-5px_hsl(160_84%_50%/0.5)]"
                   : "bg-muted/30 text-muted-foreground ring-border/40 hover:text-foreground"
               }`}
             >
               <TrendingUp className="h-4 w-4" />
-              Buy
+              Buy{canary.buyDisabled ? " (locked)" : ""}
             </button>
             <button
               onClick={() => setCtxSide("sell")}
