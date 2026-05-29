@@ -171,10 +171,31 @@ const AdminLimitedCanaryActivationCard = () => {
             <Row label="route_audit" value="pass" tone="ok" />
             <Row label="broker_symbol_audit" value="pass" tone="ok" />
             <Row label="capability_state" value={policy.capability_state} tone={stateTone(policy.capability_state)} />
-            <Row label="policy_test_suite" value="PASS 27/27 (canaryPolicy_test.ts)" tone="ok" />
-            <Row label="recommendation" value="ELIGIBLE_FOR_LIMITED_CANARY_ACTIVATION" tone="ok" />
+            <Row
+              label="server_policy_gate"
+              value={isActive ? "ACTIVE — canary scope enforced" : "FAIL-CLOSED UNTIL MANUAL ACTIVATION"}
+              tone={isActive ? "ok" : "warn"}
+            />
+            <Row label="policy_test_suite" value="PASS 40/40 (canaryPolicy_test.ts)" tone="ok" />
+            <Row
+              label="recommendation"
+              value={isActive ? "ACTIVE_LIMITED_CANARY" : "ELIGIBLE_FOR_LIMITED_CANARY_ACTIVATION"}
+              tone="ok"
+            />
           </div>
         </div>
+
+        {!isActive && (
+          <Card className="p-2 mb-3 border-amber-500/40 bg-amber-500/10">
+            <p className="text-[11px] font-semibold text-amber-200 flex items-start gap-1.5 leading-relaxed">
+              <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+              CANARY NOT ACTIVE — NO LIVE CANARY ORDERS PERMITTED. Server-side
+              guard <code>_shared/canaryPolicy.ts</code> fails closed and rejects
+              every entry mutation with <code>CANARY_NOT_ACTIVE</code> until manual
+              activation is performed.
+            </p>
+          </Card>
+        )}
 
         <div className="rounded border border-border/40 p-3 mb-3 bg-muted/10">
           <p className="text-[11px] font-semibold mb-2 text-foreground/90">

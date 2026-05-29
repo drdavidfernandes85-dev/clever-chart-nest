@@ -138,12 +138,17 @@ export async function assertCanaryEntryAllowed(
   input: CanaryEntryInput,
 ): Promise<CanaryGuardResult> {
   const policy = await loadCanaryPolicy(supabase);
-  // Outside the active canary state, this guard is a no-op for entry — the
-  // existing executionMode + admin allowlist controls keep authorising the
-  // already-validated admin live test workflows. The canary becomes the
-  // single source of truth as soon as it is activated.
+  // FAIL-CLOSED. The canary policy itself is the authoritative gate. No live
+  // canary entry mutation may proceed unless the policy is explicitly active.
   if (policy.capability_state !== "active_limited_canary") {
-    return { allowed: true, code: "CANARY_SCOPE_OK", policy, policyVersion: CANARY_POLICY_VERSION };
+    return {
+      allowed: false,
+      code: "CANARY_NOT_ACTIVE",
+      policy,
+      policyVersion: CANARY_POLICY_VERSION,
+      reason:
+        "Limited canary execution is not active. Manual activation is required before any canary entry order may be submitted.",
+    };
   }
   const admin = await isAdminUser(supabase, input.userId);
   if (!admin) {
@@ -191,17 +196,58 @@ export interface CanaryCloseInput {
   positionVolume?: number | null; // exact remaining volume of confirmed position
 }
 
+// Optional outstanding-owned-position carve-out persisted on the policy
+// record. Only matched tickets are eligible for emergency exposure-reduction
+// close while the canary is suspended or admin-disabled. Never permits any
+// new entry; never weakens ticket/route ownership checks.
+export interface OutstandingOwnedPosition {
+  ticket: string;
+  broker_symbol: string;
+  route_account_id: string;
+  mt5_login: string;
+  volume: number;
+}
+
 export async function assertCanaryCloseAllowed(
   supabase: any,
   input: CanaryCloseInput,
 ): Promise<CanaryGuardResult> {
   const policy = await loadCanaryPolicy(supabase);
-  // Outside the active canary state, this guard is a no-op for close — risk
-  // reduction on the existing admin-confirmed position remains possible.
-  if (policy.capability_state !== "active_limited_canary" &&
-      policy.capability_state !== "suspended_after_execution_incident") {
-    return { allowed: true, code: "CANARY_SCOPE_OK", policy, policyVersion: CANARY_POLICY_VERSION };
+
+  // Determine which paths through the close guard apply.
+  // A — active canary: full close scope check.
+  // B — suspended/disabled with explicit outstanding owned position match:
+  //     emergency_exposure_reduction_close_only.
+  // C — otherwise: FAIL-CLOSED.
+  const active = policy.capability_state === "active_limited_canary";
+  const outstanding = (policy as any).outstanding_owned_position as
+    | OutstandingOwnedPosition
+    | undefined;
+  const emergencyEligible =
+    !active &&
+    (policy.capability_state === "suspended_after_execution_incident" ||
+      policy.capability_state === "disabled_by_admin" ||
+      policy.capability_state === "disabled_by_kill_switch") &&
+    !!outstanding &&
+    !!input.ticket &&
+    String(outstanding.ticket) === String(input.ticket) &&
+    String(outstanding.broker_symbol).toUpperCase() ===
+      String(input.brokerSymbol ?? "").toUpperCase() &&
+    (!input.routeAccountId ||
+      String(outstanding.route_account_id) === String(input.routeAccountId)) &&
+    (!input.login || String(outstanding.mt5_login) === String(input.login));
+
+  if (!active && !emergencyEligible) {
+    return {
+      allowed: false,
+      code: "CANARY_NOT_ACTIVE",
+      policy,
+      policyVersion: CANARY_POLICY_VERSION,
+      reason:
+        "Limited canary close is not active and no eligible outstanding platform-owned canary position is recorded.",
+    };
   }
+
   const admin = await isAdminUser(supabase, input.userId);
   if (!admin) {
     return { allowed: false, code: "CANARY_SCOPE_USER_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION,
@@ -226,7 +272,15 @@ export async function assertCanaryCloseAllowed(
     return { allowed: false, code: "CANARY_SCOPE_PARTIAL_CLOSE_DISABLED", policy, policyVersion: CANARY_POLICY_VERSION,
       reason: "Partial close disabled by limited canary." };
   }
-  return { allowed: true, code: "CANARY_SCOPE_OK", policy, policyVersion: CANARY_POLICY_VERSION };
+  return {
+    allowed: true,
+    code: "CANARY_SCOPE_OK",
+    policy,
+    policyVersion: CANARY_POLICY_VERSION,
+    reason: emergencyEligible
+      ? "emergency_exposure_reduction_close_only"
+      : undefined,
+  };
 }
 
 /**
