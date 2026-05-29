@@ -41,6 +41,7 @@ import {
   matchQuote,
 } from "@/lib/quick-trade-validation";
 import { RefreshCw } from "lucide-react";
+import CanaryActiveBanner from "@/components/admin/CanaryActiveBanner";
 
 // Broker-safe defaults — used until get-mt5-symbol-data returns the
 // connected broker's live symbol list.
@@ -743,6 +744,7 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
   return (
     <>
+      <CanaryActiveBanner />
       <motion.div
         ref={rootRef}
         initial={{ opacity: 0, y: 8 }}
