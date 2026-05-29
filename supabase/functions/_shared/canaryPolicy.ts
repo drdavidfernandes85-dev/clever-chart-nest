@@ -137,7 +137,6 @@ export interface CanaryEntryInput {
 export async function assertCanaryEntryAllowed(
   supabase: any,
   input: CanaryEntryInput,
-): Promise<CanaryGuardResult> {
   const policy = await loadCanaryPolicy(supabase);
   // FAIL-CLOSED. The canary policy itself is the authoritative gate. No live
   // canary entry mutation may proceed unless the policy is explicitly active.
@@ -150,6 +149,32 @@ export async function assertCanaryEntryAllowed(
       reason:
         "Limited canary execution is not active. Manual activation is required before any canary entry order may be submitted.",
     };
+  }
+  // Operational-use lock: even when active, block new entries if the
+  // activation audit evidence is incomplete or the lock is engaged.
+  const lock = (policy as any).operational_use_lock as
+    | { locked?: boolean; code?: string; reason?: string }
+    | undefined;
+  const evidenceStatus = String(
+    (policy as any).activation_audit_evidence_status ?? "",
+  );
+  if (
+    (lock && lock.locked === true) ||
+    evidenceStatus.startsWith("incomplete") ||
+    !(policy as any).activated_at ||
+    !(policy as any).activated_by_user_id
+  ) {
+    return {
+      allowed: false,
+      code: "CANARY_ACTIVATION_AUDIT_EVIDENCE_INCOMPLETE",
+      policy,
+      policyVersion: CANARY_POLICY_VERSION,
+      reason:
+        lock?.reason ??
+        "Canary activation audit evidence is incomplete (missing activated_at / activated_by_user_id). Re-activate with atomic audit write before submitting any new canary entry.",
+    };
+  }
+
   }
   const admin = await isAdminUser(supabase, input.userId);
   if (!admin) {
