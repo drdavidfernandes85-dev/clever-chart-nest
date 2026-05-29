@@ -138,7 +138,9 @@ export interface CanaryEntryInput {
 export async function assertCanaryEntryAllowed(
   supabase: any,
   input: CanaryEntryInput,
+): Promise<CanaryGuardResult> {
   const policy = await loadCanaryPolicy(supabase);
+
   // FAIL-CLOSED. The canary policy itself is the authoritative gate. No live
   // canary entry mutation may proceed unless the policy is explicitly active.
   if (policy.capability_state !== "active_limited_canary") {
