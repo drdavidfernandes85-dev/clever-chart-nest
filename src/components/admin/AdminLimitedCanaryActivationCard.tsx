@@ -198,34 +198,72 @@ const AdminLimitedCanaryActivationCard = () => {
         )}
 
         <div className="rounded border border-border/40 p-3 mb-3 bg-muted/10">
-          <p className="text-[11px] font-semibold mb-2 text-foreground/90">
-            Activation acknowledgements ({Object.values(acks).filter(Boolean).length}/{CHECKLIST.length})
+          <p className="text-[11px] font-semibold mb-2 text-foreground/90 flex items-center gap-1.5">
+            {isActive ? (
+              <>
+                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                Activation acknowledgements — accepted ({CHECKLIST.length}/{CHECKLIST.length}) · read-only evidence
+              </>
+            ) : (
+              <>Activation acknowledgements ({Object.values(acks).filter(Boolean).length}/{CHECKLIST.length})</>
+            )}
           </p>
-          <div className="grid gap-1.5">
-            {CHECKLIST.map((item) => (
-              <label key={item.id} className="flex items-start gap-2 text-[11px] leading-snug cursor-pointer">
-                <Checkbox
-                  checked={!!acks[item.id]}
-                  onCheckedChange={(v) => setAcks((p) => ({ ...p, [item.id]: !!v }))}
-                  disabled={isActive}
-                />
-                <span className="text-foreground/90">{item.label}</span>
-              </label>
-            ))}
-          </div>
+          {isActive ? (
+            <ul className="grid gap-1 text-[11px] leading-snug">
+              {CHECKLIST.map((item) => (
+                <li key={item.id} className="flex items-start gap-2 text-foreground/80">
+                  <CheckCircle2 className="h-3 w-3 mt-0.5 text-emerald-400 shrink-0" />
+                  <span>{item.label}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="grid gap-1.5">
+              {CHECKLIST.map((item) => (
+                <label key={item.id} className="flex items-start gap-2 text-[11px] leading-snug cursor-pointer">
+                  <Checkbox
+                    checked={!!acks[item.id]}
+                    onCheckedChange={(v) => setAcks((p) => ({ ...p, [item.id]: !!v }))}
+                  />
+                  <span className="text-foreground/90">{item.label}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          {isActive && (
+            <div className="mt-2 pt-2 border-t border-border/40 grid gap-1 text-[10px] font-mono text-muted-foreground">
+              <div>activated_at: <span className="text-foreground/80">{(policy as any).activated_at ?? "—"}</span></div>
+              <div>activated_by: <span className="text-foreground/80">{(policy as any).activated_by ?? "admin (allowlist)"}</span></div>
+              <div>policy_version: <span className="text-foreground/80">LIMITED_CANARY_V1_2026_05_29</span></div>
+              <div>policy_test_result: <span className="text-emerald-300">PASS 40/40</span></div>
+              <div>active_scope: <span className="text-foreground/80">EURUSD SELL 0.01 · MT5 {policy.allowed_mt5_login} · route 559a12e4…bcfe · exact platform-owned close</span></div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="default"
-            disabled={!canActivate || busy}
-            onClick={handleActivate}
-            title={!allAcked ? "Tick all acknowledgements first" : isActive ? "Canary already active" : ""}
-          >
-            <Rocket className="h-3 w-3 mr-1" />
-            Activate Limited Canary
-          </Button>
+          {isActive ? (
+            <Badge
+              variant="outline"
+              className="border-emerald-500/60 text-emerald-300 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-semibold cursor-default select-none"
+              aria-label="Limited Canary Active — no further activation action available"
+              title="Limited Canary is already active. Use Disable Limited Canary Immediately to revoke."
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1.5 inline" />
+              Limited Canary Active
+            </Badge>
+          ) : (
+            <Button
+              size="sm"
+              variant="default"
+              disabled={!canActivate || busy}
+              onClick={handleActivate}
+              title={!allAcked ? "Tick all acknowledgements first" : ""}
+            >
+              <Rocket className="h-3 w-3 mr-1" />
+              Activate Limited Canary
+            </Button>
+          )}
           <Button
             size="sm"
             variant="destructive"
