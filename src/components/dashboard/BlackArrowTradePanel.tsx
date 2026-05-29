@@ -1016,7 +1016,24 @@ const BlackArrowTradePanel = ({ className }: Props) => {
   const finalBlockerActive = finalBlocker.active && finalBlocker.generalBuySellDisabled;
   const finalBlockerPendingDisabled = finalBlocker.active && finalBlocker.pendingOrdersDisabled;
 
-  const canSubmitMarketBase =
+  // ── Limited Canary admin-allowlisted SELL exception ──────────────────────
+  // While capability_state === active_limited_canary, the authorised admin
+  // operator may submit the single permitted entry (EURUSD SELL 0.01 @ MKT).
+  // This path must NOT be blocked by ordinary-user / general-release gates
+  // such as `final_activation_blocker.general_buy_sell_disabled`,
+  // `admin_live_test` permission state, or legacy lifecycle blockers — those
+  // exist to gate general client execution, not the separately audited and
+  // active admin canary. Backend `_shared/canaryPolicy.ts` +
+  // `assertCanaryEntryAllowed(...)` remain authoritative on the mutation path.
+  const canaryEntryScopeMatches =
+    canary.active &&
+    String(normalizedSym).toUpperCase() === String(canary.lockedSymbol ?? "EURUSD").toUpperCase() &&
+    Math.abs(volNum - (canary.lockedVolume ?? 0.01)) < 1e-9 &&
+    orderType === "Market";
+  const canarySellException = canary.active && isAdmin && canaryEntryScopeMatches;
+
+  // Core readiness — applies to every market submission.
+  const canSubmitMarketCore =
     !!user &&
     connected === true &&
     isBrokerSymbol &&
@@ -1028,16 +1045,85 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     !submitting &&
     !execLocked &&
     !killSwitchActive &&
-    !liveDisabled &&
-    liveModeGateOk &&
-    sessionGateOk &&
-    adminExecPermissionGateOk &&
-    !finalBlockerActive;
+    !liveDisabled;
+
+  // Ordinary-user / general-release blockers. The active admin canary SELL
+  // bypasses these — backend still re-verifies.
+  const generalReleaseGatesOk =
+    liveModeGateOk && sessionGateOk && adminExecPermissionGateOk && !finalBlockerActive;
+
+  const canSubmitMarketBase = canSubmitMarketCore && generalReleaseGatesOk;
 
   const canSubmitBuy = canSubmitMarketBase && tlEligibilityGateBuy && !canary.buyDisabled;
-  const canSubmitSell = canSubmitMarketBase && tlEligibilityGateSell;
+  const canSubmitSell =
+    canSubmitMarketCore &&
+    tlEligibilityGateSell &&
+    (canarySellException ? true : generalReleaseGatesOk);
   // Backwards-compatible alias used by older logging/branching below.
   const canSubmitMarket = canSubmitBuy || canSubmitSell;
+
+  // ── Read-only diagnostic (no mutation) ────────────────────────────────────
+  const sellDisabledReasons: string[] = [];
+  if (!user) sellDisabledReasons.push("not_authenticated");
+  if (connected !== true) sellDisabledReasons.push("account_not_connected");
+  if (!isBrokerSymbol) sellDisabledReasons.push("symbol_not_broker_resolved");
+  if (!symbolValid) sellDisabledReasons.push("symbol_invalid");
+  if (!hasValidBidAsk) sellDisabledReasons.push("no_fresh_bid_ask");
+  if (!(volNum > 0)) sellDisabledReasons.push("volume_not_positive");
+  if (volumeError) sellDisabledReasons.push(`volume_error:${volumeError}`);
+  if (submitting) sellDisabledReasons.push("submitting");
+  if (execLocked) sellDisabledReasons.push("execution_lock_engaged");
+  if (killSwitchActive) sellDisabledReasons.push("kill_switch_active");
+  if (liveDisabled) sellDisabledReasons.push("live_disabled_by_risk_settings");
+  if (!tlEligibilityGateSell) sellDisabledReasons.push("tl_sell_not_eligible");
+  if (!canarySellException && !generalReleaseGatesOk) {
+    if (!liveModeGateOk) sellDisabledReasons.push("live_mode_gate_blocked");
+    if (!sessionGateOk) sellDisabledReasons.push("session_not_tradable");
+    if (!adminExecPermissionGateOk) sellDisabledReasons.push("admin_exec_permission_blocked");
+    if (finalBlockerActive) sellDisabledReasons.push("final_activation_blocker_general_buy_sell_disabled");
+  }
+  const canarySellDiagnostic = {
+    canary_state: canary.policy?.capability_state ?? null,
+    activation_audit_evidence: (canary.policy as any)?.activation_audit_evidence_status ?? null,
+    operational_use_lock: canary.policy?.operational_use_lock ?? null,
+    admin_allowlisted: !!isAdmin,
+    symbol: normalizedSym,
+    side,
+    volume: volNum,
+    order_type: orderType,
+    canary_scope_matches: canaryEntryScopeMatches,
+    canary_sell_exception_applied: canarySellException,
+    general_client_execution: "disabled — ordinary-user gate only; does not block admin canary",
+    tl_sell_ready: sellReadyByTL,
+    tl_sell_blocked_reason: termEligibility?.sellBlockedReason ?? null,
+    fresh_bid_ask: hasValidBidAsk,
+    risk_ready: !liveDisabled,
+    kill_switch_ready: !killSwitchActive,
+    execution_lock_ready: !execLocked,
+    final_activation_blocker_active: !!finalBlockerActive,
+    final_blocker_applied_to_canary: false,
+    admin_exec_permission_blocked: !adminExecPermissionGateOk,
+    sell_button_disabled: !canSubmitSell,
+    sell_button_disabled_reasons: sellDisabledReasons,
+    mutation_suppressed_validation: {
+      validationOnly: true,
+      mutationSuppressed: true,
+      wouldSubmit: canSubmitSell && canarySellException,
+      policyState: canary.policy?.capability_state ?? null,
+      policyAllowed: !!canarySellException,
+      routeAccountId: canary.policy?.allowed_route_account_id ?? null,
+      brokerSymbol: canary.lockedSymbol ?? null,
+      side: "sell",
+      volume: canary.lockedVolume ?? 0.01,
+      outboundDTO: { side: "sell", symbol: canary.lockedSymbol ?? "EURUSD", volume: canary.lockedVolume ?? 0.01 },
+      brokerMutationDispatched: false,
+      tradingLayerRequestSent: false,
+    },
+  };
+  // Expose for inspection without changing layout.
+  if (typeof window !== "undefined") {
+    (window as any).__canarySellDiagnostic = canarySellDiagnostic;
+  }
 
 
 
@@ -2017,6 +2103,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             </SideBtn>
           </div>
         </div>
+
+        {/* Canary SELL Entry Enablement Diagnostic — no trade submitted. */}
+        {canary.active && (
+          <details className="rounded-sm border border-amber-500/40 bg-amber-500/5 p-1.5 text-[9.5px] font-mono text-amber-100/90">
+            <summary className="cursor-pointer uppercase tracking-wider text-amber-300">
+              Canary SELL Entry Enablement Diagnostic — No Trade Submitted
+            </summary>
+            <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-all text-amber-100/80">
+{JSON.stringify(canarySellDiagnostic, null, 2)}
+            </pre>
+            <p className="mt-1 text-[9px] text-amber-300/80 uppercase tracking-wider">
+              general_client_execution = disabled (ordinary-user gate only — must not block admin canary)
+            </p>
+          </details>
+        )}
+
 
         {/* Admin live testing — warning + per-session acknowledgement. */}
         {adminTestUiVisible && (
