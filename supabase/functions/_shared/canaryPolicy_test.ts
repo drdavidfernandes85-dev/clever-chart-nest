@@ -58,11 +58,20 @@ function fakeSupabase(opts: FakeOpts = {}) {
         eq(col: string, val: unknown) { builder._filters[col] = val; return builder; },
         async maybeSingle() {
           if (table === "site_settings") {
+            const baseActive = state === "active_limited_canary" ? {
+              activated_at: "2026-05-29T00:00:00.000Z",
+              activated_by_user_id: "00000000-0000-0000-0000-0000000000aa",
+              activated_by_display: "admin@test",
+              activation_audit_event_id: "00000000-0000-0000-0000-0000000000ee",
+              activation_audit_evidence_status: "complete_verified",
+              operational_use_lock: { locked: false, code: null },
+            } : {};
             return {
-              data: { value: { capability_state: state, ...(opts.policyOverrides ?? {}) } },
+              data: { value: { capability_state: state, ...baseActive, ...(opts.policyOverrides ?? {}) } },
               error: null,
             };
           }
+
           if (table === "user_roles") {
             const uid = builder._filters["user_id"] as string;
             const role = builder._filters["role"] as string;

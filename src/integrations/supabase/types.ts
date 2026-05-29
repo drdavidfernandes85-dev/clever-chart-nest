@@ -2370,6 +2370,16 @@ export type Database = {
       }
     }
     Functions: {
+      activate_limited_canary_audited: {
+        Args: {
+          p_acknowledgements: Json
+          p_broker_symbol_audit_status?: string
+          p_live_exposure_snapshot: Json
+          p_policy_test_result: Json
+          p_route_audit_status?: string
+        }
+        Returns: Json
+      }
       award_xp: {
         Args: {
           _amount: number
@@ -2397,6 +2407,10 @@ export type Database = {
       }
       complete_education_module: {
         Args: { _module_slug: string }
+        Returns: Json
+      }
+      disable_limited_canary_audited: {
+        Args: { p_live_exposure_snapshot: Json; p_reason: string }
         Returns: Json
       }
       has_role: {

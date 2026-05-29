@@ -95,6 +95,10 @@ async function isAdminUser(supabase: any, userId: string): Promise<boolean> {
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
+    return !!data;
+  } catch { return false; }
+}
+
 export type CanaryGuardCode =
   | "CANARY_SCOPE_OK"
   | "CANARY_NOT_ACTIVE"
@@ -111,9 +115,6 @@ export type CanaryGuardCode =
   | "CANARY_SCOPE_POSITION_NOT_PLATFORM_OWNED"
   | "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED";
 
-  | "CANARY_SCOPE_PARTIAL_CLOSE_DISABLED"
-  | "CANARY_SCOPE_POSITION_NOT_PLATFORM_OWNED"
-  | "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED";
 
 export interface CanaryGuardResult {
   allowed: boolean;
@@ -137,7 +138,9 @@ export interface CanaryEntryInput {
 export async function assertCanaryEntryAllowed(
   supabase: any,
   input: CanaryEntryInput,
+): Promise<CanaryGuardResult> {
   const policy = await loadCanaryPolicy(supabase);
+
   // FAIL-CLOSED. The canary policy itself is the authoritative gate. No live
   // canary entry mutation may proceed unless the policy is explicitly active.
   if (policy.capability_state !== "active_limited_canary") {
@@ -175,8 +178,8 @@ export async function assertCanaryEntryAllowed(
     };
   }
 
-  }
   const admin = await isAdminUser(supabase, input.userId);
+
   if (!admin) {
     return { allowed: false, code: "CANARY_SCOPE_USER_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION,
       reason: "Limited canary restricts execution to admin allowlist." };
