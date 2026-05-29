@@ -12,10 +12,12 @@ import {
   ShieldOff,
 } from "lucide-react";
 import {
-  applyCanaryStateChange,
+  activateLimitedCanaryAudited,
+  disableLimitedCanaryAudited,
   loadCanaryPolicy,
   type CanaryPolicy,
 } from "@/lib/canaryPolicy";
+
 
 const CHECKLIST: { id: string; label: string }[] = [
   { id: "ack_admin_only", label: "I confirm this release is limited to admin-allowlisted execution only." },
