@@ -2104,6 +2104,22 @@ const BlackArrowTradePanel = ({ className }: Props) => {
           </div>
         </div>
 
+        {/* Canary SELL Entry Enablement Diagnostic — no trade submitted. */}
+        {canary.active && (
+          <details className="rounded-sm border border-amber-500/40 bg-amber-500/5 p-1.5 text-[9.5px] font-mono text-amber-100/90">
+            <summary className="cursor-pointer uppercase tracking-wider text-amber-300">
+              Canary SELL Entry Enablement Diagnostic — No Trade Submitted
+            </summary>
+            <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-all text-amber-100/80">
+{JSON.stringify(canarySellDiagnostic, null, 2)}
+            </pre>
+            <p className="mt-1 text-[9px] text-amber-300/80 uppercase tracking-wider">
+              general_client_execution = disabled (ordinary-user gate only — must not block admin canary)
+            </p>
+          </details>
+        )}
+
+
         {/* Admin live testing — warning + per-session acknowledgement. */}
         {adminTestUiVisible && (
           <div className="rounded-sm border-2 border-red-600/70 bg-red-950/30 p-1.5 space-y-1">
