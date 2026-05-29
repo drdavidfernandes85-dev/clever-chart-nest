@@ -522,6 +522,7 @@ const AdminProductionModeTab = () => {
       <AdminFinalLifecyclePassCard />
       <AdminFinalActivationReadinessReviewCard />
       <AdminLimitedCanaryActivationCard />
+      <CanaryTicketBindingVerificationCard />
 
       <AdminEurusdFlatnessDiagnostic />
       <AdminLivePositionMirrorDiagnostic />
