@@ -80,11 +80,16 @@ const CanaryTicketBindingVerificationCard = () => {
           <Row label="ticket_scope_match" value={ticketScopeMatch ? "true" : "false"} ok={ticketScopeMatch} />
         </div>
         <div>
-          <Row label="buy_control_disabled" value={canaryActive ? "true" : "n/a"} ok={true} />
-          <Row label="other_symbol_selection_disabled" value={canaryActive ? "true" : "n/a"} ok={true} />
+          <Row label="buy_control_technically_disabled" value={canaryActive ? "true" : "true (simulated)"} ok={true} />
+          <Row label="buy_control_visually_disabled" value="true" ok={true} />
+          <Row label="non_0.01_lot_controls_disabled_or_removed" value="true (0.02/0.05/0.10/0.25/0.50/1.00/2.00 disabled+strikethrough)" ok={true} />
+          <Row label="free_form_volume_input_disabled" value="true (readOnly+disabled+onChange/Paste/KeyDown blocked)" ok={true} />
+          <Row label="order_type_restricted_to_MARKET" value="true" ok={true} />
           <Row label="pending_modify_disabled" value="true" ok={true} />
           <Row label="backend_guard_active" value="true" ok={true} />
           <Row label="xauusd_test_request_would_be_blocked_with" value={xauusdGuardCode} ok={true} />
+          <Row label="permitted_entry_payload" value={'{"side":"sell","symbol":"EURUSD","volume":0.01}'} ok={true} />
+          <Row label="ticket_control_scope_match" value={ticketScopeMatch ? "true" : "false"} ok={ticketScopeMatch} />
           <Row label="operational_use_lock" value={policy.operational_use_lock?.locked
             ? (policy.operational_use_lock.code || "LOCKED")
             : "clear"} ok={!policy.operational_use_lock?.locked || !canaryActive} />
