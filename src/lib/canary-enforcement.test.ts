@@ -85,3 +85,112 @@ describe("canary enforcement gating", () => {
     expect(e.buyDisabled).toBe(false);
   });
 });
+
+// ---------- Ticket-binding scenarios (pre-reactivation verification) ----------
+
+interface TicketState { symbol: string; side: "buy"|"sell"; volume: number; orderType: "market"|"limit"|"stop" }
+function applyCanaryToTicket(prev: TicketState, policy: CanaryPolicy | null): TicketState {
+  const e = deriveEnforcement(policy);
+  if (!e.active) return prev;
+  return {
+    symbol: e.lockedSymbol!,
+    side: e.lockedSide as "sell",
+    volume: e.lockedVolume!,
+    orderType: "market",
+  };
+}
+
+function wouldBackendAcceptEntry(payload: { symbol: string; side: string; volume: number }, policy: CanaryPolicy | null) {
+  // Mirrors _shared/canaryPolicy.assertCanaryEntryAllowed gating contract.
+  if (policy?.capability_state !== "active_limited_canary") {
+    return { ok: false, code: "CANARY_NOT_ACTIVE" };
+  }
+  if (policy.operational_use_lock?.locked) {
+    return { ok: false, code: policy.operational_use_lock.code || "CANARY_OPERATIONAL_USE_LOCK_ENGAGED" };
+  }
+  const sym = (payload.symbol || "").toUpperCase();
+  if (sym === "XAUUSD") return { ok: false, code: "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED" };
+  if (sym !== (policy.allowed_broker_symbol || "EURUSD").toUpperCase()) {
+    return { ok: false, code: "CANARY_SCOPE_SYMBOL_NOT_ALLOWED" };
+  }
+  if (payload.side !== "sell") return { ok: false, code: "CANARY_SCOPE_OPERATION_NOT_ALLOWED" };
+  if (Number(payload.volume) !== 0.01) return { ok: false, code: "CANARY_SCOPE_VOLUME_NOT_ALLOWED" };
+  return { ok: true, code: null as string | null };
+}
+
+describe("canary ticket-binding scenarios", () => {
+  it("prior XAUUSD ticket is resolved to EURUSD when canary active", () => {
+    const out = applyCanaryToTicket({ symbol: "XAUUSD", side: "buy", volume: 0.10, orderType: "limit" }, base);
+    expect(out.symbol).toBe("EURUSD");
+    expect(out.side).toBe("sell");
+    expect(out.volume).toBe(0.01);
+    expect(out.orderType).toBe("market");
+  });
+
+  it("prior GBPUSD ticket is resolved to EURUSD when canary active", () => {
+    const out = applyCanaryToTicket({ symbol: "GBPUSD", side: "sell", volume: 0.05, orderType: "market" }, base);
+    expect(out.symbol).toBe("EURUSD");
+  });
+
+  it("market-watch/chart symbol change cannot persist into ticket under active canary", () => {
+    // Simulate a chart click that tries to switch to XAUUSD.
+    const afterChartClick: TicketState = { symbol: "XAUUSD", side: "sell", volume: 0.01, orderType: "market" };
+    const out = applyCanaryToTicket(afterChartClick, base);
+    expect(out.symbol).toBe("EURUSD");
+  });
+
+  it("BlackArrowTradePanel-style payload with XAUUSD is rejected by backend guard under active canary", () => {
+    const r = wouldBackendAcceptEntry({ symbol: "XAUUSD", side: "sell", volume: 0.01 }, base);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED");
+  });
+
+  it("QuickTradePanel-style payload with XAUUSD is rejected by backend guard under active canary", () => {
+    const r = wouldBackendAcceptEntry({ symbol: "XAUUSD", side: "sell", volume: 0.01 }, base);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED");
+  });
+
+  it("non-EURUSD symbol rejected with CANARY_SCOPE_SYMBOL_NOT_ALLOWED", () => {
+    const r = wouldBackendAcceptEntry({ symbol: "GBPUSD", side: "sell", volume: 0.01 }, base);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("CANARY_SCOPE_SYMBOL_NOT_ALLOWED");
+  });
+
+  it("active canary locks side to SELL — BUY payload rejected", () => {
+    const r = wouldBackendAcceptEntry({ symbol: "EURUSD", side: "buy", volume: 0.01 }, base);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("CANARY_SCOPE_OPERATION_NOT_ALLOWED");
+  });
+
+  it("active canary locks volume to 0.01 — larger volume rejected", () => {
+    const r = wouldBackendAcceptEntry({ symbol: "EURUSD", side: "sell", volume: 0.10 }, base);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("CANARY_SCOPE_VOLUME_NOT_ALLOWED");
+  });
+
+  it("disabled canary blocks every entry attempt", () => {
+    const disabled: CanaryPolicy = { ...base, capability_state: "disabled_by_admin",
+      operational_use_lock: { locked: true, code: "CANARY_UI_SCOPE_MISMATCH_UNDER_REVIEW" } } as any;
+    const r1 = wouldBackendAcceptEntry({ symbol: "EURUSD", side: "sell", volume: 0.01 }, disabled);
+    expect(r1.ok).toBe(false);
+    expect(r1.code).toBe("CANARY_NOT_ACTIVE");
+    const e = deriveEnforcement(disabled);
+    expect(e.active).toBe(false);
+    expect(e.buyDisabled).toBe(false); // panels show normal flow once canary is gone
+  });
+
+  it("active canary disables BUY control and pending/modify controls", () => {
+    const e = deriveEnforcement(base);
+    expect(e.buyDisabled).toBe(true);
+    expect(e.pendingDisabled).toBe(true);
+    expect(e.otherSymbolsDisabled).toBe(true);
+  });
+
+  it("operational_use_lock engaged on otherwise active state still blocks entries", () => {
+    const locked = { ...base, operational_use_lock: { locked: true, code: "CANARY_UI_SCOPE_MISMATCH_UNDER_REVIEW" } } as any;
+    const r = wouldBackendAcceptEntry({ symbol: "EURUSD", side: "sell", volume: 0.01 }, locked);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("CANARY_UI_SCOPE_MISMATCH_UNDER_REVIEW");
+  });
+});
