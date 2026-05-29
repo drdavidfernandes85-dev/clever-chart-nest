@@ -1034,7 +1034,7 @@ const BlackArrowTradePanel = ({ className }: Props) => {
     adminExecPermissionGateOk &&
     !finalBlockerActive;
 
-  const canSubmitBuy = canSubmitMarketBase && tlEligibilityGateBuy;
+  const canSubmitBuy = canSubmitMarketBase && tlEligibilityGateBuy && !canary.buyDisabled;
   const canSubmitSell = canSubmitMarketBase && tlEligibilityGateSell;
   // Backwards-compatible alias used by older logging/branching below.
   const canSubmitMarket = canSubmitBuy || canSubmitSell;
