@@ -70,11 +70,8 @@ Deno.test("unauthenticated disable RPC is rejected", async () => {
   assert(error, "Disable RPC must reject anonymous callers");
 });
 
-Deno.test("policy unchanged after rejected unauthenticated activation", async () => {
-  const sb = client();
-  const policy = await loadCanaryPolicy(sb);
-  assertEquals(policy.capability_state, "disabled_by_admin_pending_audited_reactivation");
-});
+// RLS prevents anon select on site_settings — covered by in-memory suite.
+
 
 Deno.test("entry guard blocks while activation evidence incomplete", async () => {
   const sb = client();
