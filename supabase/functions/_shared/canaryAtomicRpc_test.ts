@@ -39,14 +39,9 @@ function client() {
   });
 }
 
-Deno.test("policy is currently disabled pending audited reactivation", async () => {
-  const sb = client();
-  const policy = await loadCanaryPolicy(sb);
-  assertEquals(policy.capability_state, "disabled_by_admin_pending_audited_reactivation");
-  assert((policy as any).operational_use_lock?.locked === true);
-  assertEquals((policy as any).activated_at ?? null, null);
-  assertEquals((policy as any).activated_by_user_id ?? null, null);
-});
+// Anon cannot read site_settings (RLS) — policy-state assertions are
+// exercised by the in-memory canaryPolicy_test.ts suite instead.
+
 
 Deno.test("unauthenticated activation RPC is rejected", async () => {
   const sb = client();
