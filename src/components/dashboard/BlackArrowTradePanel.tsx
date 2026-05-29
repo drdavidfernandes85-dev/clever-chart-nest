@@ -1944,9 +1944,12 @@ const BlackArrowTradePanel = ({ className }: Props) => {
             {/* BUY */}
             <button
               type="button"
-              onClick={() => setSide("buy")}
+              onClick={() => { if (!canary.buyDisabled) setSide("buy"); }}
+              disabled={canary.buyDisabled}
+              title={canary.buyDisabled ? "BUY disabled — Limited Canary active (EURUSD SELL 0.01 only)" : ""}
               className={cn(
                 "flex flex-col items-stretch px-2 py-1 text-right transition-colors",
+                canary.buyDisabled ? "opacity-40 cursor-not-allowed" :
                 side === "buy" ? "bg-emerald-500/[0.06]" : "hover:bg-emerald-500/[0.04]",
               )}
             >
