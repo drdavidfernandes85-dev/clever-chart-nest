@@ -175,8 +175,8 @@ export async function assertCanaryEntryAllowed(
       reason:
         lock?.reason ??
         "Canary activation audit evidence is incomplete (missing activated_at / activated_by_user_id). Re-activate with atomic audit write before submitting any new canary entry.",
-    };
-  }
+
+  const admin = await isAdminUser(supabase, input.userId);
 
   }
   const admin = await isAdminUser(supabase, input.userId);
