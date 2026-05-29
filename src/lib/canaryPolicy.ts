@@ -139,7 +139,8 @@ export async function applyCanaryStateChange(
 
   // Step 1: write audit FIRST. If this fails, abort.
   const { data: auditRow, error: auditErr } = await supabase
-    .from("canary_activation_audit")
+  const { data: auditRow, error: auditErr } = await (supabase
+    .from("canary_activation_audit") as any)
     .insert({
       action,
       previous_state: current.capability_state,
