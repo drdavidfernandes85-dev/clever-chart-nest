@@ -240,7 +240,7 @@ export const ExecutionResultModal = ({
           effective.outcome === "dry_run" && "border-neutral-500/30",
         )}
       >
-        <TitleBar outcome={effective.outcome} onClose={onClose} />
+        <TitleBar outcome={effective.outcome} reason={effective.reason} ruleViolated={effective.ruleViolated} onClose={onClose} />
 
         <div className="px-3 py-2">
           {effective.outcome === "success" && (
