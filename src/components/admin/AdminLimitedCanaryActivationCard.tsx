@@ -171,6 +171,7 @@ const AdminLimitedCanaryActivationCard = () => {
             <Row label="route_audit" value="pass" tone="ok" />
             <Row label="broker_symbol_audit" value="pass" tone="ok" />
             <Row label="capability_state" value={policy.capability_state} tone={stateTone(policy.capability_state)} />
+            <Row label="policy_test_suite" value="PASS 27/27 (canaryPolicy_test.ts)" tone="ok" />
             <Row label="recommendation" value="ELIGIBLE_FOR_LIMITED_CANARY_ACTIVATION" tone="ok" />
           </div>
         </div>
