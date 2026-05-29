@@ -44,14 +44,26 @@ Deno.serve(async (req) => {
 
   const checkedAt = new Date().toISOString();
 
-  // Positions (forced live)
-  const live = await fetchTradingLayerLivePositions(accountId);
+  // Positions (forced live) — retry once on transient upstream rate limit
+  let live = await fetchTradingLayerLivePositions(accountId);
+  if (!live.ok && live.httpStatus === 429) {
+    await new Promise((r) => setTimeout(r, 1200));
+    live = await fetchTradingLayerLivePositions(accountId);
+  }
   if (!live.ok) {
+    // Soft-fail on upstream rate limit so the admin UI shows "temporarily
+    // unavailable" instead of a blank-screen 502. No mutation, no state change.
+    const isRateLimited = live.httpStatus === 429;
     return json({
-      success: false, version: VERSION,
-      error: "tl_positions_lookup_failed",
-      detail: live.error, httpStatus: live.httpStatus, checkedAt,
-    }, 502);
+      success: false,
+      version: VERSION,
+      error: isRateLimited ? "tl_positions_rate_limited" : "tl_positions_lookup_failed",
+      detail: live.error,
+      httpStatus: live.httpStatus,
+      rateLimited: isRateLimited,
+      retryAfterMs: isRateLimited ? 5000 : undefined,
+      checkedAt,
+    }, isRateLimited ? 200 : 502);
   }
 
   // Pending orders (forced live)
