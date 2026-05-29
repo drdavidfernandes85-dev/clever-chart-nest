@@ -929,11 +929,15 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                         <button
                           type="button"
                           onClick={() => {
+                            if (canary.active && it.brokerSymbol !== canary.lockedSymbol) {
+                              return; // Limited canary: only EURUSD permitted
+                            }
                             setCtxSymbol(it.displayName);
                             onSymbolChange?.(it.displayName);
                             setOpenSymbols(false);
                             setSymbolSearch("");
                           }}
+                          disabled={canary.active && it.brokerSymbol !== canary.lockedSymbol}
                           className={`w-full flex items-center justify-between px-3.5 py-2.5 text-left text-xs font-heading font-semibold transition-colors hover:bg-primary/10 hover:text-primary ${
                             isActive ? "text-primary bg-primary/5" : "text-foreground"
                           }`}
