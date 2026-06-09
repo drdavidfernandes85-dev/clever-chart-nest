@@ -11,13 +11,16 @@
 // `user_id` from the EA is informational only — the authenticated user is derived from the token.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { logSecurityEvent, ipFrom, verifyTimestamp, reserveNonce } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-mt-timestamp, x-mt-nonce",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const TIMESTAMP_SKEW_SECONDS = 300; // ±5 min
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -33,29 +36,27 @@ async function sha256Hex(input: string): Promise<string> {
     .join("");
 }
 
+// Accept the EA webhook token ONLY via headers. Previously we also accepted
+// it as `?token=` / `?secret=` / `?access_token=` query params, which leaks
+// the credential into proxy/access logs and browser histories. Header-only
+// matches industry practice for bearer credentials.
 function tokenFromRequest(req: Request): string | null {
   const directHeader =
     req.headers.get("x-webhook-token") ?? req.headers.get("x-api-key");
   if (directHeader?.trim()) return directHeader.trim();
 
-  const url = new URL(req.url);
-  const queryToken =
-    url.searchParams.get("token") ??
-    url.searchParams.get("secret") ??
-    url.searchParams.get("access_token");
-  if (queryToken?.trim()) return queryToken.trim();
-
   const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
   if (auth?.toLowerCase().startsWith("bearer ")) {
     return auth.slice(7).trim();
   }
-
   return null;
 }
 
-function tokenFromBody(body: any): string | null {
+function tokenFromBody(body: unknown): string | null {
+  // deno-lint-ignore no-explicit-any
+  const b = body as any;
   const value =
-    body?.token ?? body?.secret_token ?? body?.SecretToken ?? body?.api_key;
+    b?.token ?? b?.secret_token ?? b?.SecretToken ?? b?.api_key;
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
