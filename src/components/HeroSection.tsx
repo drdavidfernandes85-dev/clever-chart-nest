@@ -1,22 +1,50 @@
-import { useState, useEffect } from "react";
-import { Users, AlertTriangle, Clock, ShieldCheck } from "lucide-react";
-import ForexTickerBar from "@/components/dashboard/ForexTickerBar";
-import OnlineNowPill from "@/components/social/OnlineNowPill";
-import { useLanguage } from "@/i18n/LanguageContext";
-import { OpenTerminalCTA, WatchWebinarsCTA } from "@/components/home/CTAButtons";
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, CalendarClock, Radio } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import heroComet from "@/assets/hero-comet.jpg";
 
-// Next webinar — next weekday at 14:00 UTC
-const NEXT_WEBINAR_TARGET = (() => {
+// ─────────────────────────────────────────────────────────────
+// EDITABLE COPY / NUMBERS — adjust freely without touching JSX
+// ─────────────────────────────────────────────────────────────
+const HERO_CONTENT = {
+  badge: "Webinar en vivo hoy a las 20:00",
+  headlineLine1: "Opera en vivo con traders reales.",
+  headlineLine2: "Sin gurús. Sin promesas.",
+  subhead:
+    "Aprende a operar con quien opera todos los días: webinars diarios, comunidad real y las herramientas que usan los profesionales — sin mensualidad.",
+  primaryCtaLabel: "Activa tu cuenta gratis",
+  primaryCtaHref: "/register",
+  ghostCtaLabel: "Ver cómo funciona",
+  ghostCtaHref: "#como-funciona",
+  stats: {
+    traders: "1.200+ traders activos",
+    price: "$0 mensualidad",
+    cadence: "Webinar diario",
+  },
+  countdown: {
+    label: "Próximo webinar en vivo",
+    timeLabel: "Hoy a las 20:00 (LATAM)",
+    reserveLabel: "Reservar lugar",
+    reserveHref: "/webinars",
+    // Webinar hour in LATAM (UTC-3 reference). Adjust if needed.
+    hourLocal24: 20,
+    timezoneOffsetFromUTC: -3,
+  },
+};
+
+// Compute the next webinar Date at HOUR:00 in the LATAM offset.
+function getNextWebinarDate(hourLocal: number, offsetFromUTC: number) {
   const now = new Date();
+  // target UTC hour = local hour - offset (offset is negative for LATAM)
+  const targetUTCHour = hourLocal - offsetFromUTC;
   const target = new Date(now);
-  target.setUTCHours(14, 0, 0, 0);
-  if (target <= now) target.setUTCDate(target.getUTCDate() + 1);
-  while (target.getUTCDay() === 0 || target.getUTCDay() === 6) {
+  target.setUTCHours(targetUTCHour, 0, 0, 0);
+  if (target.getTime() <= now.getTime()) {
     target.setUTCDate(target.getUTCDate() + 1);
   }
   return target;
-})();
+}
 
 function useCountdown(target: Date) {
   const [diff, setDiff] = useState(() => Math.max(0, target.getTime() - Date.now()));
@@ -32,16 +60,22 @@ function useCountdown(target: Date) {
 }
 
 const HeroSection = () => {
-  
-  const { h, m, s, isLive } = useCountdown(NEXT_WEBINAR_TARGET);
-  const { t } = useLanguage();
+  const target = useMemo(
+    () =>
+      getNextWebinarDate(
+        HERO_CONTENT.countdown.hourLocal24,
+        HERO_CONTENT.countdown.timezoneOffsetFromUTC,
+      ),
+    [],
+  );
+  const { h, m, s, isLive } = useCountdown(target);
 
   return (
     <section
       id="home"
       className="relative isolate mx-auto w-full max-w-[1400px] overflow-hidden pt-16 bg-background"
     >
-      {/* ── HERO COMET BACKGROUND IMAGE ──────────────── */}
+      {/* Background image + radial wash */}
       <div className="pointer-events-none absolute inset-0 z-0">
         <div
           className="absolute inset-0"
@@ -50,14 +84,13 @@ const HeroSection = () => {
               "radial-gradient(ellipse 95% 75% at 70% 50%, hsl(28 85% 9% / 0.7) 0%, hsl(0 0% 2%) 70%)",
           }}
         />
-
         <img
           src={heroComet}
           alt=""
           aria-hidden
           decoding="async"
           fetchPriority="high"
-          className="absolute inset-y-0 right-0 h-full w-[82%] object-contain object-right select-none animate-breathe"
+          className="absolute inset-y-0 right-0 h-full w-[82%] object-contain object-right select-none opacity-80 lg:opacity-100"
           style={{
             filter: "saturate(1.15) contrast(1.08)",
             WebkitMaskImage:
@@ -67,7 +100,6 @@ const HeroSection = () => {
           }}
           draggable={false}
         />
-
         <div
           className="absolute inset-0"
           style={{
@@ -75,138 +107,113 @@ const HeroSection = () => {
               "linear-gradient(90deg, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.85) 24%, rgba(0,0,0,0.40) 50%, rgba(0,0,0,0) 74%)",
           }}
         />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse 115% 90% at 62% 50%, transparent 42%, rgba(0,0,0,0.60) 80%, rgba(0,0,0,0.98) 100%)",
-          }}
-        />
       </div>
 
-      {/* Floating embers + bright sparks */}
-      <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
-        {Array.from({ length: 26 }).map((_, i) => (
-          <span
-            key={i}
-            className="absolute block rounded-full bg-primary/80 animate-ember"
-            style={{
-              left: `${(i * 37) % 95}%`,
-              top: `${30 + ((i * 19) % 60)}%`,
-              width: `${2 + (i % 4)}px`,
-              height: `${2 + (i % 4)}px`,
-              animationDelay: `${(i * 0.4) % 7}s`,
-              animationDuration: `${5 + (i % 5)}s`,
-              filter: "blur(0.5px)",
-              boxShadow:
-                "0 0 8px hsl(var(--primary) / 0.95), 0 0 18px hsl(28 100% 55% / 0.7)",
-            }}
-          />
-        ))}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <span
-            key={`sp-${i}`}
-            className="absolute block rounded-full animate-spark-rise"
-            style={{
-              left: `${55 + ((i * 5) % 20)}%`,
-              top: `${45 + ((i * 7) % 20)}%`,
-              width: "3px",
-              height: "3px",
-              background: "hsl(48 100% 70%)",
-              boxShadow:
-                "0 0 10px hsl(45 100% 60% / 1), 0 0 22px hsl(28 100% 55% / 0.9)",
-              animationDelay: `${(i * 0.5) % 4}s`,
-              ["--sx" as any]: `${-30 + i * 12}px`,
-              ["--sy" as any]: `${-160 - (i % 3) * 30}px`,
-            }}
-          />
-        ))}
-      </div>
-
-
-      {/* ── HERO CONTENT ───────────────────────────────────────── */}
-      <div className="container relative z-10 py-16 lg:py-24">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:grid-cols-[1.1fr_1fr] xl:gap-20">
+      {/* Hero content */}
+      <div className="container relative z-10 py-12 sm:py-16 lg:py-24">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
           {/* LEFT — copy */}
-          <div className="relative flex flex-col items-start gap-6 text-left lg:pl-4 xl:pl-2 2xl:pl-0">
-            {/* Headline — H1 */}
-            <h1 className="font-heading text-5xl font-bold leading-[1.04] tracking-tight text-white md:text-6xl lg:text-7xl">
-              <span className="bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.6)]">
-                {t("hero.headline.brand")} {t("hero.title2")}
-              </span>{" "}
-              <span className="drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">{t("hero.title3")}</span>
+          <div className="flex flex-col items-start gap-6 text-left">
+            {/* Live pill */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-3 py-1.5 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.2)]">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FFCD05] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FFCD05]" />
+              </span>
+              <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white">
+                {HERO_CONTENT.badge}
+              </span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="font-heading font-bold leading-[1.05] tracking-tight text-white text-4xl sm:text-5xl md:text-6xl lg:text-[64px]">
+              <span className="block drop-shadow-[0_4px_30px_rgba(0,0,0,0.9)]">
+                {HERO_CONTENT.headlineLine1}
+              </span>
+              <span className="mt-1 block bg-gradient-to-r from-[#FFCD05] via-[#FFE066] to-[#f5a623] bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(45_100%_50%/0.5)]">
+                {HERO_CONTENT.headlineLine2}
+              </span>
             </h1>
 
-            {/* Sub-headline */}
-            <p className="max-w-xl text-base md:text-lg leading-relaxed font-sans text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
-              {t("hero.subheadline")}
+            {/* Subhead */}
+            <p className="max-w-xl text-base md:text-lg leading-relaxed font-sans text-white/80 drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
+              {HERO_CONTENT.subhead}
             </p>
 
-
-
-
-            {/* Live online counter — prominent */}
-            <OnlineNowPill />
-
-            {/* Eligibility note — prominent, framed */}
-            <div className="flex w-full max-w-xl items-start gap-2 rounded-xl border border-primary/40 bg-primary/[0.06] px-4 py-3 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.18)]">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <p className="text-xs leading-relaxed text-white/80">
-                {t("hero.eligibilityShort")}
-              </p>
+            {/* CTAs */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 pt-1">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 md:h-14 gap-2 rounded-full px-6 sm:px-8 text-sm md:text-base font-bold bg-[#FFCD05] text-black hover:bg-[#FFE066] shadow-[0_0_0_1px_hsl(45_100%_50%/0.5),0_0_30px_hsl(45_100%_50%/0.45)] hover:shadow-[0_0_0_1px_hsl(45_100%_50%/0.9),0_0_45px_hsl(45_100%_50%/0.8)] transition-shadow"
+              >
+                <Link to={HERO_CONTENT.primaryCtaHref}>
+                  {HERO_CONTENT.primaryCtaLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <a
+                href={HERO_CONTENT.ghostCtaHref}
+                className="text-sm md:text-base font-semibold text-white/85 underline-offset-4 hover:text-[#FFCD05] hover:underline transition-colors"
+              >
+                {HERO_CONTENT.ghostCtaLabel} →
+              </a>
             </div>
 
-
-            {/* CTAs — primary: Trading Terminal · secondary: Free Webinars */}
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <OpenTerminalCTA section="hero" />
-              <WatchWebinarsCTA section="hero" />
-            </div>
-
-            {/* Trust strip — Active traders, Next session countdown */}
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              <div className="flex items-center gap-2 rounded-full border border-white/15 bg-black/50 px-4 py-2 backdrop-blur-md">
-                <Users className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-white">1,200+</span>
-                <span className="text-xs text-white/60">{t("hero.traders")}</span>
-              </div>
-
-              <div className="flex items-center gap-2 rounded-full border border-primary/50 bg-primary/10 px-4 py-2 backdrop-blur-md shadow-[0_0_25px_hsl(45_100%_50%/0.25)]">
-                <Clock className="h-4 w-4 text-primary" />
-                {isLive ? (
-                  <span className="text-sm font-bold text-primary animate-pulse">{t("hero.live")}</span>
-                ) : (
-                  <>
-                    <span className="text-xs text-white/70 mr-1">{t("hero.next")}</span>
-                    <div className="flex items-center gap-1 font-mono text-sm font-bold text-white">
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(h).padStart(2, "0")}h</span>
-                      <span className="text-white/50">:</span>
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(m).padStart(2, "0")}m</span>
-                      <span className="text-white/50">:</span>
-                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-xs">{String(s).padStart(2, "0")}s</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Risk disclaimer */}
-            <div className="mt-2 flex w-full max-w-xl items-start gap-2 rounded-lg border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/60" />
-              <p className="text-xs leading-relaxed text-white/65">
-                {t("hero.riskDisclaimer")}
-              </p>
-            </div>
-
+            {/* Stats row */}
+            <ul className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-2 text-xs sm:text-sm text-white/70">
+              <li className="font-semibold text-white">{HERO_CONTENT.stats.traders}</li>
+              <li aria-hidden className="text-white/30">·</li>
+              <li>{HERO_CONTENT.stats.price}</li>
+              <li aria-hidden className="text-white/30">·</li>
+              <li>{HERO_CONTENT.stats.cadence}</li>
+            </ul>
           </div>
 
-          {/* RIGHT — empty spacer; the comet+logo is the section background image */}
-          <div className="relative hidden lg:block min-h-[600px]" aria-hidden />
+          {/* RIGHT — spacer (comet visible behind) */}
+          <div className="relative hidden lg:block min-h-[520px]" aria-hidden />
+        </div>
+      </div>
+
+      {/* Full-width countdown bar */}
+      <div className="relative z-10 border-y border-[#FFCD05]/25 bg-gradient-to-r from-[#FFCD05]/10 via-[#FFCD05]/[0.04] to-[#FFCD05]/10 backdrop-blur-md">
+        <div className="container flex flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFCD05]/15 text-[#FFCD05]">
+              <Radio className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
+              <span className="font-bold text-white">{HERO_CONTENT.countdown.label}</span>
+              <span className="text-white/50" aria-hidden>·</span>
+              <span className="text-white/80">{HERO_CONTENT.countdown.timeLabel}</span>
+              <span className="text-white/50" aria-hidden>·</span>
+              {isLive ? (
+                <span className="font-bold uppercase tracking-wider text-[#FFCD05] animate-pulse">
+                  EN VIVO AHORA
+                </span>
+              ) : (
+                <span className="font-mono font-bold text-[#FFCD05]">
+                  en {h}h {String(m).padStart(2, "0")}min
+                  <span className="ml-1 text-white/40 text-xs">{String(s).padStart(2, "0")}s</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          <Button
+            asChild
+            className="h-10 shrink-0 gap-2 rounded-full bg-[#FFCD05] px-5 text-sm font-bold text-black hover:bg-[#FFE066]"
+          >
+            <Link to={HERO_CONTENT.countdown.reserveHref}>
+              <CalendarClock className="h-4 w-4" />
+              {HERO_CONTENT.countdown.reserveLabel}
+            </Link>
+          </Button>
         </div>
       </div>
 
       {/* Bottom fade into next section */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-background" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background" />
     </section>
   );
 };
