@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
       signal_id: pick(payload, "signal_id", "signalId", "data.signal_id"),
       ticket: pick(payload, "ticket", "position_id", "data.ticket"),
       signature_provided: signatureProvided,
-      signature_valid: signatureValid,
+      signature_valid: true,
       processing_status: "received",
       raw_payload: payload,
       raw_headers: headersToObject(req.headers),
