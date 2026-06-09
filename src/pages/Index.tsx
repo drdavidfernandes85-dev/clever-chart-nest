@@ -146,6 +146,7 @@ const Index = () => {
       <Navbar />
       <main>
       <HeroSection />
+      <CapitalSection />
       {/* Narrativa educativa sin duplicar capacidades: 1) Respaldo Infinox → 2) Pilares (Terminal/Comunidad/Webinars/Educación) → 3) Equipo → 4) Mentoría 1:1 → 5) Prueba social → 6) Dudas → 7) Descubre más → 8) Claridad legal → 9) Contacto / Newsletter */}
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
       <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
