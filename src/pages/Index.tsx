@@ -13,6 +13,7 @@ import {
 import Navbar from "@/components/Navbar";
 import SEO from "@/components/SEO";
 import HeroSection from "@/components/HeroSection";
+import WebinarUrgencyStrip from "@/components/WebinarUrgencyStrip";
 import ScrollReveal from "@/components/ScrollReveal";
 import DeferredSection from "@/components/DeferredSection";
 import Scrollspy from "@/components/home/Scrollspy";
@@ -150,6 +151,7 @@ const Index = () => {
       <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>
       <LazyHomeSection minHeight={520} delay={100}><MentoringSection /></LazyHomeSection>
       <LazyHomeSection minHeight={320} delay={100}><TrustpilotSection /></LazyHomeSection>
+      <WebinarUrgencyStrip />
       <LazyHomeSection minHeight={620} delay={100}><FAQSection /></LazyHomeSection>
 
         {/* Keyword-focused internal links — strengthens topical relevance & crawlability */}
