@@ -13,6 +13,7 @@ import {
 import Navbar from "@/components/Navbar";
 import SEO from "@/components/SEO";
 import HeroSection from "@/components/HeroSection";
+import CapitalSection from "@/components/CapitalSection";
 import WebinarUrgencyStrip from "@/components/WebinarUrgencyStrip";
 import ScrollReveal from "@/components/ScrollReveal";
 import DeferredSection from "@/components/DeferredSection";
