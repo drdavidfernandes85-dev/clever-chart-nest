@@ -83,6 +83,25 @@ Deno.serve(async (req) => {
     return json(405, { error: "Method not allowed" });
   }
 
+  // Optional but recommended replay protection: when the EA sends
+  // `x-mt-timestamp` (and ideally `x-mt-nonce`), we enforce a skew window
+  // and reject reused nonces. Tokens-only requests still work for backward
+  // compatibility, but new EA builds should send these headers.
+  const tsHeader = req.headers.get("x-mt-timestamp");
+  if (tsHeader) {
+    const tsCheck = verifyTimestamp(tsHeader, TIMESTAMP_SKEW_SECONDS);
+    if (!tsCheck.ok) {
+      await logSecurityEvent({
+        event_type: "mt_webhook_bad_timestamp",
+        severity: "warn",
+        source: "mt-webhook",
+        ip: ipFrom(req),
+        details: { reason: tsCheck.reason, ts: tsHeader },
+      });
+      return json(401, { error: `timestamp ${tsCheck.reason}` });
+    }
+  }
+
   let body: any;
   try {
     body = await req.json();
@@ -92,9 +111,22 @@ Deno.serve(async (req) => {
 
   const rawToken = tokenFromBody(body) ?? tokenFromRequest(req);
   if (!rawToken) {
+    await logSecurityEvent({
+      event_type: "mt_webhook_missing_token",
+      severity: "warn",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+    });
     return json(401, { error: "Missing webhook token" });
   }
   if (rawToken.length < 16) {
+    await logSecurityEvent({
+      event_type: "mt_webhook_bad_token",
+      severity: "warn",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+      details: { reason: "too_short" },
+    });
     return json(401, { error: "Invalid token" });
   }
 
@@ -111,11 +143,45 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (tokenErr || !tokenRow) {
-    console.warn("mt-webhook: token not found", tokenErr?.message);
+    await logSecurityEvent({
+      event_type: "mt_webhook_bad_token",
+      severity: "error",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+      details: { reason: "not_found", db_error: tokenErr?.message },
+    });
     return json(401, { error: "Invalid token" });
   }
   if (tokenRow.revoked_at) {
+    await logSecurityEvent({
+      event_type: "mt_webhook_revoked_token",
+      severity: "error",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+      subject_user_id: tokenRow.user_id,
+    });
     return json(401, { error: "Token revoked" });
+  }
+
+  // Nonce dedup (only enforced when EA sends x-mt-nonce + x-mt-timestamp)
+  const nonceHeader = req.headers.get("x-mt-nonce");
+  if (nonceHeader && tsHeader) {
+    const fresh = await reserveNonce(
+      `mt_webhook:${tokenRow.user_id}`,
+      nonceHeader,
+      TIMESTAMP_SKEW_SECONDS * 2,
+    );
+    if (!fresh) {
+      await logSecurityEvent({
+        event_type: "mt_webhook_replay",
+        severity: "error",
+        source: "mt-webhook",
+        ip: ipFrom(req),
+        subject_user_id: tokenRow.user_id,
+        details: { nonce: nonceHeader },
+      });
+      return json(409, { error: "replay detected" });
+    }
   }
 
   const userId: string = tokenRow.user_id;
