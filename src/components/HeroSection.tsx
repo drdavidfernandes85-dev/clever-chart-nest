@@ -1,63 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CalendarClock, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroComet from "@/assets/hero-comet.jpg";
-
-// ─────────────────────────────────────────────────────────────
-// EDITABLE COPY / NUMBERS — adjust freely without touching JSX
-// ─────────────────────────────────────────────────────────────
-const HERO_CONTENT = {
-  badge: "Webinar en vivo hoy a las 20:00",
-  headlineLine1: "Opera en vivo con traders reales.",
-  headlineLine2: "Sin gurús. Sin promesas.",
-  subhead:
-    "Aprende a operar con quien opera todos los días: webinars diarios, comunidad real y las herramientas que usan los profesionales — sin mensualidad.",
-  primaryCtaLabel: "Activa tu cuenta gratis",
-  primaryCtaHref: "/register",
-  ghostCtaLabel: "Ver cómo funciona",
-  ghostCtaHref: "#como-funciona",
-  stats: {
-    traders: "1.200+ traders activos",
-    price: "$0 mensualidad",
-    cadence: "Webinar diario",
-  },
-  countdown: {
-    label: "Próximo webinar en vivo",
-    timeLabel: "Hoy a las 20:00 (LATAM)",
-    reserveLabel: "Reservar lugar",
-    reserveHref: "/webinars",
-    // Webinar hour in LATAM (UTC-3 reference). Adjust if needed.
-    hourLocal24: 20,
-    timezoneOffsetFromUTC: -3,
-  },
-};
-
-// Compute the next webinar Date at HOUR:00 in the LATAM offset.
-function getNextWebinarDate(hourLocal: number, offsetFromUTC: number) {
-  const now = new Date();
-  // target UTC hour = local hour - offset (offset is negative for LATAM)
-  const targetUTCHour = hourLocal - offsetFromUTC;
-  const target = new Date(now);
-  target.setUTCHours(targetUTCHour, 0, 0, 0);
-  if (target.getTime() <= now.getTime()) {
-    target.setUTCDate(target.getUTCDate() + 1);
-  }
-  return target;
-}
-
-function useCountdown(target: Date) {
-  const [diff, setDiff] = useState(() => Math.max(0, target.getTime() - Date.now()));
-  useEffect(() => {
-    const id = setInterval(() => setDiff(Math.max(0, target.getTime() - Date.now())), 1000);
-    return () => clearInterval(id);
-  }, [target]);
-  const totalSec = Math.floor(diff / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  return { h, m, s, isLive: diff === 0 };
-}
+import { getNextWebinarDate, useCountdown } from "@/hooks/useWebinarCountdown";
 
 const HeroSection = () => {
   const target = useMemo(
