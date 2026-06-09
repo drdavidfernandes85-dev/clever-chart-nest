@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star, Trophy, ArrowRight, Users, Calendar, BadgeCheck, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 // ─────────────────────────────────────────────────────────────
 // EDITABLE STATS / COPY — adjust freely without touching JSX
@@ -146,7 +147,17 @@ const SocialProofSection = () => {
               asChild
               className="mt-6 h-10 gap-2 rounded-full bg-[#FFCD05] px-6 text-sm font-bold text-black hover:bg-[#FFE066]"
             >
-              <Link to={CONTENT.motogp.ctaHref}>
+              <Link
+                to={CONTENT.motogp.ctaHref}
+                onClick={() =>
+                  track("cta_click", {
+                    section: "social_proof",
+                    cta_name: "motogp_qualify",
+                    label: CONTENT.motogp.ctaLabel,
+                    href: CONTENT.motogp.ctaHref,
+                  })
+                }
+              >
                 {CONTENT.motogp.ctaLabel}
                 <ArrowRight className="h-4 w-4" />
               </Link>
