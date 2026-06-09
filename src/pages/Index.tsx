@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import SEO from "@/components/SEO";
 import HeroSection from "@/components/HeroSection";
 import CapitalSection from "@/components/CapitalSection";
+import SocialProofSection from "@/components/SocialProofSection";
 import WebinarUrgencyStrip from "@/components/WebinarUrgencyStrip";
 import ScrollReveal from "@/components/ScrollReveal";
 import DeferredSection from "@/components/DeferredSection";
@@ -147,6 +148,7 @@ const Index = () => {
       <main>
       <HeroSection />
       <CapitalSection />
+      <SocialProofSection />
       {/* Narrativa educativa sin duplicar capacidades: 1) Respaldo Infinox → 2) Pilares (Terminal/Comunidad/Webinars/Educación) → 3) Equipo → 4) Mentoría 1:1 → 5) Prueba social → 6) Dudas → 7) Descubre más → 8) Claridad legal → 9) Contacto / Newsletter */}
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
       <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
