@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CalendarClock, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroComet from "@/assets/hero-comet.jpg";
+import { getNextWebinarDate, useCountdown } from "@/hooks/useWebinarCountdown";
 
 // ─────────────────────────────────────────────────────────────
 // EDITABLE COPY / NUMBERS — adjust freely without touching JSX
@@ -32,32 +33,6 @@ const HERO_CONTENT = {
     timezoneOffsetFromUTC: -3,
   },
 };
-
-// Compute the next webinar Date at HOUR:00 in the LATAM offset.
-function getNextWebinarDate(hourLocal: number, offsetFromUTC: number) {
-  const now = new Date();
-  // target UTC hour = local hour - offset (offset is negative for LATAM)
-  const targetUTCHour = hourLocal - offsetFromUTC;
-  const target = new Date(now);
-  target.setUTCHours(targetUTCHour, 0, 0, 0);
-  if (target.getTime() <= now.getTime()) {
-    target.setUTCDate(target.getUTCDate() + 1);
-  }
-  return target;
-}
-
-function useCountdown(target: Date) {
-  const [diff, setDiff] = useState(() => Math.max(0, target.getTime() - Date.now()));
-  useEffect(() => {
-    const id = setInterval(() => setDiff(Math.max(0, target.getTime() - Date.now())), 1000);
-    return () => clearInterval(id);
-  }, [target]);
-  const totalSec = Math.floor(diff / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  return { h, m, s, isLive: diff === 0 };
-}
 
 const HeroSection = () => {
   const target = useMemo(
