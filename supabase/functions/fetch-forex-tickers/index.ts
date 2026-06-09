@@ -1,3 +1,6 @@
+// AUTH REQUIRED: callers must present a valid Supabase JWT.
+import { requireUser } from "../_shared/auth.ts";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -117,6 +120,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
 
   try {
     let tickers: any[]

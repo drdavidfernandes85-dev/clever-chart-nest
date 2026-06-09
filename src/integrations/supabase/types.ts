@@ -1374,6 +1374,45 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          created_at: string
+          details: Json
+          event_type: string
+          id: string
+          ip: string | null
+          severity: string
+          source: string
+          subject_email: string | null
+          subject_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: string
+          ip?: string | null
+          severity?: string
+          source: string
+          subject_email?: string | null
+          subject_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: string
+          ip?: string | null
+          severity?: string
+          source?: string
+          subject_email?: string | null
+          subject_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       site_settings: {
         Row: {
           id: string
@@ -2111,6 +2150,27 @@ export type Database = {
           title?: string
           updated_at?: string
           youtube_id?: string
+        }
+        Relationships: []
+      }
+      webhook_nonces: {
+        Row: {
+          created_at: string
+          expires_at: string
+          nonce: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          nonce: string
+          source: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          nonce?: string
+          source?: string
         }
         Relationships: []
       }

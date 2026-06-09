@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,14 @@ const json = (status: number, body: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+const BodySchema = z.object({
+  user_id: z.string().uuid(),
+  email: z.string().trim().toLowerCase().email().max(255),
+  preferred_language: z
+    .union([z.literal("en"), z.literal("es"), z.literal("pt-BR"), z.literal("pt")])
+    .optional(),
+});
+
 const normalizeLanguage = (value: unknown) => {
   if (value === "en" || value === "es" || value === "pt-BR") return value;
   if (value === "pt") return "pt-BR";
@@ -22,21 +31,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
-  let body: any;
+  let raw: unknown;
   try {
-    body = await req.json();
+    raw = await req.json();
   } catch {
     return json(400, { error: "Invalid JSON" });
   }
-
-  const userId = typeof body?.user_id === "string" ? body.user_id.trim() : "";
-  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
-  const preferredLanguage = normalizeLanguage(body?.preferred_language);
-
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
-    return json(400, { error: "Invalid user_id" });
+  const parsed = BodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return json(400, { error: parsed.error.flatten().fieldErrors });
   }
-  if (!email || !email.includes("@")) return json(400, { error: "Invalid email" });
+  const { user_id: userId, email } = parsed.data;
+  const preferredLanguage = normalizeLanguage(parsed.data.preferred_language);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

@@ -11,13 +11,16 @@
 // `user_id` from the EA is informational only — the authenticated user is derived from the token.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { logSecurityEvent, ipFrom, verifyTimestamp, reserveNonce } from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-mt-timestamp, x-mt-nonce",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const TIMESTAMP_SKEW_SECONDS = 300; // ±5 min
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -33,29 +36,27 @@ async function sha256Hex(input: string): Promise<string> {
     .join("");
 }
 
+// Accept the EA webhook token ONLY via headers. Previously we also accepted
+// it as `?token=` / `?secret=` / `?access_token=` query params, which leaks
+// the credential into proxy/access logs and browser histories. Header-only
+// matches industry practice for bearer credentials.
 function tokenFromRequest(req: Request): string | null {
   const directHeader =
     req.headers.get("x-webhook-token") ?? req.headers.get("x-api-key");
   if (directHeader?.trim()) return directHeader.trim();
 
-  const url = new URL(req.url);
-  const queryToken =
-    url.searchParams.get("token") ??
-    url.searchParams.get("secret") ??
-    url.searchParams.get("access_token");
-  if (queryToken?.trim()) return queryToken.trim();
-
   const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
   if (auth?.toLowerCase().startsWith("bearer ")) {
     return auth.slice(7).trim();
   }
-
   return null;
 }
 
-function tokenFromBody(body: any): string | null {
+function tokenFromBody(body: unknown): string | null {
+  // deno-lint-ignore no-explicit-any
+  const b = body as any;
   const value =
-    body?.token ?? body?.secret_token ?? body?.SecretToken ?? body?.api_key;
+    b?.token ?? b?.secret_token ?? b?.SecretToken ?? b?.api_key;
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
@@ -82,6 +83,25 @@ Deno.serve(async (req) => {
     return json(405, { error: "Method not allowed" });
   }
 
+  // Optional but recommended replay protection: when the EA sends
+  // `x-mt-timestamp` (and ideally `x-mt-nonce`), we enforce a skew window
+  // and reject reused nonces. Tokens-only requests still work for backward
+  // compatibility, but new EA builds should send these headers.
+  const tsHeader = req.headers.get("x-mt-timestamp");
+  if (tsHeader) {
+    const tsCheck = verifyTimestamp(tsHeader, TIMESTAMP_SKEW_SECONDS);
+    if (!tsCheck.ok) {
+      await logSecurityEvent({
+        event_type: "mt_webhook_bad_timestamp",
+        severity: "warn",
+        source: "mt-webhook",
+        ip: ipFrom(req),
+        details: { reason: tsCheck.reason, ts: tsHeader },
+      });
+      return json(401, { error: `timestamp ${tsCheck.reason}` });
+    }
+  }
+
   let body: any;
   try {
     body = await req.json();
@@ -91,9 +111,22 @@ Deno.serve(async (req) => {
 
   const rawToken = tokenFromBody(body) ?? tokenFromRequest(req);
   if (!rawToken) {
+    await logSecurityEvent({
+      event_type: "mt_webhook_missing_token",
+      severity: "warn",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+    });
     return json(401, { error: "Missing webhook token" });
   }
   if (rawToken.length < 16) {
+    await logSecurityEvent({
+      event_type: "mt_webhook_bad_token",
+      severity: "warn",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+      details: { reason: "too_short" },
+    });
     return json(401, { error: "Invalid token" });
   }
 
@@ -110,11 +143,45 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (tokenErr || !tokenRow) {
-    console.warn("mt-webhook: token not found", tokenErr?.message);
+    await logSecurityEvent({
+      event_type: "mt_webhook_bad_token",
+      severity: "error",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+      details: { reason: "not_found", db_error: tokenErr?.message },
+    });
     return json(401, { error: "Invalid token" });
   }
   if (tokenRow.revoked_at) {
+    await logSecurityEvent({
+      event_type: "mt_webhook_revoked_token",
+      severity: "error",
+      source: "mt-webhook",
+      ip: ipFrom(req),
+      subject_user_id: tokenRow.user_id,
+    });
     return json(401, { error: "Token revoked" });
+  }
+
+  // Nonce dedup (only enforced when EA sends x-mt-nonce + x-mt-timestamp)
+  const nonceHeader = req.headers.get("x-mt-nonce");
+  if (nonceHeader && tsHeader) {
+    const fresh = await reserveNonce(
+      `mt_webhook:${tokenRow.user_id}`,
+      nonceHeader,
+      TIMESTAMP_SKEW_SECONDS * 2,
+    );
+    if (!fresh) {
+      await logSecurityEvent({
+        event_type: "mt_webhook_replay",
+        severity: "error",
+        source: "mt-webhook",
+        ip: ipFrom(req),
+        subject_user_id: tokenRow.user_id,
+        details: { nonce: nonceHeader },
+      });
+      return json(409, { error: "replay detected" });
+    }
   }
 
   const userId: string = tokenRow.user_id;

@@ -19,6 +19,7 @@
 // If no secret is configured we accept and flag signature_provided=false.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { logSecurityEvent, ipFrom, verifyTimestamp, reserveNonce } from "../_shared/security.ts";
 
 const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -27,11 +28,12 @@ const corsHeaders: Record<string, string> = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const VERSION = "trading-layer-webhook@1.0.0";
+const VERSION = "trading-layer-webhook@1.1.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WEBHOOK_SECRET = Deno.env.get("TRADING_LAYER_WEBHOOK_SECRET") || "";
+const TIMESTAMP_SKEW_SECONDS = 300; // ±5 min
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, {
   auth: { persistSession: false },
@@ -166,26 +168,86 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, version: VERSION, error: "POST only" }, 405);
 
+  // 🚨 HARD-FAIL when secret is unset. Previously this silently accepted
+  // unsigned webhooks, allowing anyone to POST forged trading events.
+  if (!WEBHOOK_SECRET) {
+    await logSecurityEvent({
+      event_type: "tl_webhook_missing_secret",
+      severity: "critical",
+      source: "trading-layer-webhook",
+      ip: ipFrom(req),
+      user_agent: req.headers.get("user-agent"),
+      details: { reason: "TRADING_LAYER_WEBHOOK_SECRET not configured" },
+    });
+    return json(
+      { ok: false, version: VERSION, error: "webhook secret not configured" },
+      503,
+    );
+  }
+
   const rawBody = await req.text();
   const signatureHeader = req.headers.get("x-tl-signature");
+  const tsHeader = req.headers.get("x-tl-timestamp");
   const signatureProvided = Boolean(signatureHeader);
 
-  let signatureValid: boolean | null = null;
-  if (WEBHOOK_SECRET) {
-    signatureValid = await verifyHmac(rawBody, signatureHeader);
-    if (!signatureValid) {
-      // Still log the rejected attempt for visibility.
-      await supabase.from("trading_layer_webhook_events").insert({
-        event_type: req.headers.get("x-tl-event") || "unknown",
+  // Timestamp skew check (replay defense, coarse window).
+  const tsCheck = verifyTimestamp(tsHeader, TIMESTAMP_SKEW_SECONDS);
+  if (!tsCheck.ok) {
+    await logSecurityEvent({
+      event_type: "tl_webhook_bad_timestamp",
+      severity: "warn",
+      source: "trading-layer-webhook",
+      ip: ipFrom(req),
+      details: { reason: tsCheck.reason, ts: tsHeader },
+    });
+    return json({ ok: false, version: VERSION, error: `timestamp ${tsCheck.reason}` }, 401);
+  }
+
+  // HMAC over `<timestamp>.<body>` (binds signature to timestamp so an
+  // attacker can't replay an old body with a new timestamp).
+  const signedPayload = `${tsHeader}.${rawBody}`;
+  const signatureValid = await verifyHmac(signedPayload, signatureHeader);
+  if (!signatureValid) {
+    await supabase.from("trading_layer_webhook_events").insert({
+      event_type: req.headers.get("x-tl-event") || "unknown",
+      event_id: req.headers.get("x-tl-event-id"),
+      signature_provided: signatureProvided,
+      signature_valid: false,
+      processing_status: "rejected_invalid_signature",
+      processing_error: "HMAC signature mismatch",
+      raw_payload: safeJsonParse(rawBody),
+      raw_headers: headersToObject(req.headers),
+    });
+    await logSecurityEvent({
+      event_type: "tl_webhook_bad_signature",
+      severity: "error",
+      source: "trading-layer-webhook",
+      ip: ipFrom(req),
+      details: {
         event_id: req.headers.get("x-tl-event-id"),
-        signature_provided: signatureProvided,
-        signature_valid: false,
-        processing_status: "rejected_invalid_signature",
-        processing_error: "HMAC signature mismatch",
-        raw_payload: safeJsonParse(rawBody),
-        raw_headers: headersToObject(req.headers),
+        event_type: req.headers.get("x-tl-event"),
+      },
+    });
+    return json({ ok: false, version: VERSION, error: "invalid signature" }, 401);
+  }
+
+  // Replay defense: reject reused event_id within the timestamp window.
+  const eventIdHeader = req.headers.get("x-tl-event-id");
+  if (eventIdHeader) {
+    const fresh = await reserveNonce(
+      "trading_layer",
+      eventIdHeader,
+      TIMESTAMP_SKEW_SECONDS * 2,
+    );
+    if (!fresh) {
+      await logSecurityEvent({
+        event_type: "tl_webhook_replay",
+        severity: "error",
+        source: "trading-layer-webhook",
+        ip: ipFrom(req),
+        details: { event_id: eventIdHeader },
       });
-      return json({ ok: false, version: VERSION, error: "invalid signature" }, 401);
+      return json({ ok: false, version: VERSION, error: "replay detected" }, 409);
     }
   }
 
@@ -207,7 +269,7 @@ Deno.serve(async (req) => {
       signal_id: pick(payload, "signal_id", "signalId", "data.signal_id"),
       ticket: pick(payload, "ticket", "position_id", "data.ticket"),
       signature_provided: signatureProvided,
-      signature_valid: signatureValid,
+      signature_valid: true,
       processing_status: "received",
       raw_payload: payload,
       raw_headers: headersToObject(req.headers),
