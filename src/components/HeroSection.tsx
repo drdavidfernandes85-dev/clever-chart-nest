@@ -5,6 +5,35 @@ import { Button } from "@/components/ui/button";
 import heroComet from "@/assets/hero-comet.jpg";
 import { getNextWebinarDate, useCountdown } from "@/hooks/useWebinarCountdown";
 
+// ─────────────────────────────────────────────────────────────
+// EDITABLE COPY / NUMBERS — adjust freely without touching JSX
+// ─────────────────────────────────────────────────────────────
+const HERO_CONTENT = {
+  badge: "Webinar en vivo hoy a las 20:00",
+  headlineLine1: "Opera en vivo con traders reales.",
+  headlineLine2: "Sin gurús. Sin promesas.",
+  subhead:
+    "Aprende a operar con quien opera todos los días: webinars diarios, comunidad real y las herramientas que usan los profesionales — sin mensualidad.",
+  primaryCtaLabel: "Activa tu cuenta gratis",
+  primaryCtaHref: "/register",
+  ghostCtaLabel: "Ver cómo funciona",
+  ghostCtaHref: "#como-funciona",
+  stats: {
+    traders: "1.200+ traders activos",
+    price: "$0 mensualidad",
+    cadence: "Webinar diario",
+  },
+  countdown: {
+    label: "Próximo webinar en vivo",
+    timeLabel: "Hoy a las 20:00 (LATAM)",
+    reserveLabel: "Reservar lugar",
+    reserveHref: "/webinars",
+    // Webinar hour in LATAM (UTC-3 reference). Adjust if needed.
+    hourLocal24: 20,
+    timezoneOffsetFromUTC: -3,
+  },
+};
+
 const HeroSection = () => {
   const target = useMemo(
     () =>
