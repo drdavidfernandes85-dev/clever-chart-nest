@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star, Trophy, ArrowRight, Users, Calendar, BadgeCheck, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { track } from "@/lib/analytics";
 
 // ─────────────────────────────────────────────────────────────
 // EDITABLE STATS / COPY — adjust freely without touching JSX
