@@ -187,6 +187,36 @@ const HeroSection = () => {
         </div>
       </div>
 
+      {/* Slim partner / trust bar — muted, single row, scrollable on mobile */}
+      <div className="relative z-10 border-b border-white/5 bg-black/30">
+        <div className="container flex items-center gap-4 overflow-x-auto px-4 py-2.5 scrollbar-hide">
+          <span className="shrink-0 text-[11px] font-medium uppercase tracking-wider text-white/30">
+            Partners
+          </span>
+          <span className="shrink-0 text-white/10" aria-hidden>|</span>
+          {/* EDITABLE PARTNER LIST — add/remove labels freely */}
+          {[
+            { label: "INFINOX", href: "https://www.infinox.com" },
+            // { label: "MetaQuotes", href: "#" },
+            // { label: "TradingView", href: "#" },
+          ].map((p) => (
+            <a
+              key={p.label}
+              href={p.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-white/25 transition-colors hover:text-[#FFCD05]/70"
+            >
+              {p.label}
+            </a>
+          ))}
+          <span className="shrink-0 text-white/10" aria-hidden>|</span>
+          <span className="shrink-0 text-[11px] text-white/25">
+            Datos de mercado en tiempo real vía INFINOX · Powered by Trading Layer
+          </span>
+        </div>
+      </div>
+
       {/* Bottom fade into next section */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background" />
     </section>
