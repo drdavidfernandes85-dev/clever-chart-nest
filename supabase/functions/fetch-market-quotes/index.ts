@@ -1,13 +1,11 @@
 // Mixed-asset quote proxy. Returns live spot prices + 24h/intraday change
 // for a curated list of crypto, forex, indices and major US stocks.
 //
-// No API key required:
-//  - Crypto  → CoinGecko /simple/price
-//  - Forex   → Frankfurter /latest + previous business day
-//  - Indices & Stocks → Yahoo Finance v7/finance/quote (server-side fetch
-//    avoids the browser CORS restriction).
-//
-// Public endpoint — no auth required. (See supabase/config.toml.)
+// AUTH REQUIRED: callers must present a valid Supabase JWT. Previously this
+// endpoint was open and could be abused to amplify cost against upstream
+// paid quotas (CoinGecko / Frankfurter / Stooq).
+
+import { requireUser } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -215,6 +213,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  const auth = await requireUser(req);
+  if (auth instanceof Response) return auth;
   try {
     const [crypto, forex, indices, stocks] = await Promise.all([
       fetchCrypto(),
