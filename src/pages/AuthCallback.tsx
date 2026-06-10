@@ -3,19 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LtrLogo from "@/components/branding/LtrLogo";
 import SEO from "@/components/SEO";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-/**
- * Handles email confirmation, magic-link, and password-recovery redirects.
- * Supabase parses the URL hash/query and emits an auth event; we listen and
- * route based on the event type.
- *  - PASSWORD_RECOVERY → /reset-password (set new password form)
- *  - SIGNED_IN / others with session → /dashboard
- *  - no session after a short wait → /login with error
- */
 const AuthCallback = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"working" | "error">("working");
-  const [message, setMessage] = useState("Confirmando tu sesión...");
+  const [message, setMessage] = useState(t("auth.callback.working"));
 
   useEffect(() => {
     let settled = false;
