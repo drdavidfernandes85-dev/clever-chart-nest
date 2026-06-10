@@ -126,9 +126,12 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/signup" element={<Signup />} />
+                    {/* Legacy English routes redirected to the new Spanish auth flow */}
+                    <Route path="/register" element={<Navigate to="/signup" replace />} />
+                    <Route path="/forgot-password" element={<Navigate to="/reset-password" replace />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
                     {/* Open to all logged-in users (no eligibility required) */}
                     <Route path="/dashboard" element={<DashboardShell scope="dashboard"><Dashboard /></DashboardShell>} />
                     <Route path="/trading-room" element={<DashboardShell scope="trading-room"><TradingDashboard /></DashboardShell>} />
