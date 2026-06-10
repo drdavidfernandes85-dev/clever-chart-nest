@@ -1,7 +1,24 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import * as Icons from "lucide-react";
+import {
+  Activity,
+  Award,
+  Calendar,
+  Crown,
+  Flame,
+  Globe,
+  Medal,
+  MessageSquare,
+  Rocket,
+  Sparkles,
+  Star,
+  Target,
+  TrendingUp,
+  Trophy,
+  Video,
+  type LucideIcon,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -15,6 +32,28 @@ interface Badge {
   earned: boolean;
   earned_at?: string;
 }
+
+// Explicit icon registry (lowercase keys) instead of `import * as Icons` —
+// the namespace import pulled the entire lucide library (~600KB) into the
+// Profile chunk, and DB rows seeded with lowercase names never matched the
+// PascalCase exports anyway.
+const BADGE_ICONS: Record<string, LucideIcon> = {
+  activity: Activity,
+  award: Award,
+  calendar: Calendar,
+  crown: Crown,
+  flame: Flame,
+  globe: Globe,
+  medal: Medal,
+  messagesquare: MessageSquare,
+  rocket: Rocket,
+  sparkles: Sparkles,
+  star: Star,
+  target: Target,
+  trendingup: TrendingUp,
+  trophy: Trophy,
+  video: Video,
+};
 
 const tierColor: Record<string, string> = {
   bronze: "from-orange-500/20 to-orange-700/10 text-orange-400 border-orange-500/30",
@@ -61,7 +100,7 @@ const BadgeShelf = () => {
       <TooltipProvider>
         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
           {badges.map((b) => {
-            const Icon = (Icons as any)[b.icon] ?? Icons.Award;
+            const Icon = BADGE_ICONS[b.icon?.toLowerCase().replace(/[^a-z]/g, "") ?? ""] ?? Award;
             const tone = tierColor[b.tier] ?? tierColor.bronze;
             return (
               <Tooltip key={b.id}>

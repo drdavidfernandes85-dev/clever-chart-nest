@@ -36,10 +36,10 @@ export interface CanaryPolicy {
   allowed_entry_operation: "market_sell";
   allowed_entry_volume: number;
   allowed_close_operation: "close_exact_platform_confirmed_position_only";
-  pending_orders: "disabled";
-  cancel_pending_orders: "disabled";
-  modify_sl_tp: "disabled";
-  partial_close: "disabled";
+  pending_orders: "disabled" | "enabled";
+  cancel_pending_orders: "disabled" | "enabled";
+  modify_sl_tp: "disabled" | "enabled";
+  partial_close: "disabled" | "enabled";
   arbitrary_manual_close: "disabled";
   buy_open_long: "disabled_pending_separate_validation";
   other_symbols: "disabled_pending_separate_validation";
@@ -321,6 +321,23 @@ export async function assertCanaryCapabilityDisabled(
   capability: "pending_order" | "cancel_pending" | "modify_protection" | "partial_close",
 ): Promise<CanaryGuardResult> {
   const policy = await loadCanaryPolicy(supabase);
+
+  // Policy-driven capability switch. FAIL-CLOSED: the capability is allowed
+  // only when the persisted policy explicitly sets it to "enabled" — the
+  // DEFAULT_POLICY keeps every capability disabled, so a missing or partial
+  // site_settings row never opens a capability by accident.
+  const enabled =
+    capability === "pending_order"
+      ? policy.pending_orders === "enabled"
+      : capability === "cancel_pending"
+        ? policy.cancel_pending_orders === "enabled"
+        : capability === "modify_protection"
+          ? policy.modify_sl_tp === "enabled"
+          : policy.partial_close === "enabled";
+  if (enabled) {
+    return { allowed: true, code: "CANARY_SCOPE_OK", policy, policyVersion: CANARY_POLICY_VERSION };
+  }
+
   const code: CanaryGuardCode = capability === "modify_protection"
     ? "CANARY_SCOPE_MODIFY_PROTECTION_DISABLED"
     : capability === "partial_close"

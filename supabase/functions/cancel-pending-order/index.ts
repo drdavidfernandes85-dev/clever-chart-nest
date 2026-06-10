@@ -52,9 +52,11 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return json({ success: false, version: VERSION, error: "Unauthorized" }, 401);
 
-  // Limited Canary policy: cancel pending order is permanently disabled in this phase.
+  // Limited Canary policy: cancel pending order requires the policy capability switch.
   const canaryGuard = await assertCanaryCapabilityDisabled(supabase, "cancel_pending");
-  return json(canaryGuardResponseBody(canaryGuard, VERSION), 403);
+  if (!canaryGuard.allowed) {
+    return json(canaryGuardResponseBody(canaryGuard, VERSION), 403);
+  }
 
 
   let payload: any;
