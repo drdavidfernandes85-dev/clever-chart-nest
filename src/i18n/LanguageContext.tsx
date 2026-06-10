@@ -51,10 +51,23 @@ const auditMissingKeys = (from: Locale | null, to: Locale) => {
   }
 };
 
+const detectBrowserLocale = (): Locale => {
+  if (typeof navigator === "undefined") return "es";
+  const langs = [navigator.language, ...(navigator.languages ?? [])].filter(Boolean);
+  for (const raw of langs) {
+    const l = raw.toLowerCase();
+    if (l.startsWith("pt")) return "pt";
+    if (l.startsWith("es")) return "es";
+    if (l.startsWith("en")) return "en";
+  }
+  return "es";
+};
+
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [locale, setLocaleState] = useState<Locale>(() => {
     const saved = localStorage.getItem("locale") as Locale | null;
-    return saved && translations[saved] ? saved : "es";
+    if (saved && translations[saved]) return saved;
+    return detectBrowserLocale();
   });
   const previousLocaleRef = useRef<Locale | null>(null);
   // Track which user we've already hydrated from to avoid clobbering
