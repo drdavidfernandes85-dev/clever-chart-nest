@@ -24,7 +24,7 @@ import {
 } from "../_shared/canaryPolicy.ts";
 
 
-const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V2_2026_05_19";
+const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V3_2026_06_10";
 const BASE_URL = "https://api.trading-layer.com";
 
 const corsHeaders = {

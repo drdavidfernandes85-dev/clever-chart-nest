@@ -24,7 +24,7 @@ import {
 } from "../_shared/canaryPolicy.ts";
 
 
-const VERSION = "CANCEL_PENDING_ORDER_V1_2026_05_22";
+const VERSION = "CANCEL_PENDING_ORDER_V2_2026_06_10";
 const BASE_URL = "https://api.trading-layer.com";
 
 const corsHeaders = {
