@@ -62,9 +62,11 @@ Deno.serve(async (req) => {
     return json({ success: false, version: VERSION, error: "Unauthorized" }, 401);
   }
 
-  // Limited Canary policy: SL/TP modification is permanently disabled in this phase.
+  // Limited Canary policy: SL/TP modification requires the policy capability switch.
   const canaryGuardModify = await assertCanaryCapabilityDisabled(supabase, "modify_protection");
-  return json(canaryGuardResponseBody(canaryGuardModify, VERSION), 403);
+  if (!canaryGuardModify.allowed) {
+    return json(canaryGuardResponseBody(canaryGuardModify, VERSION), 403);
+  }
 
 
   let payload: any;

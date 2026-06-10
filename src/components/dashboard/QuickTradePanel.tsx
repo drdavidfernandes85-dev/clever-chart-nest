@@ -19,12 +19,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
@@ -510,9 +504,15 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
 
 
   // Validate SL/TP relative to the current market price.
+  // For pending orders SL/TP must be valid relative to the entry price the
+  // order will trigger at, not the current market price.
+  const pendingEntryForStops =
+    type === "limit" && entry && Number.isFinite(parseFloat(entry)) && parseFloat(entry) > 0
+      ? parseFloat(entry)
+      : null;
   const stopsError = validateStops({
     side,
-    currentPrice,
+    currentPrice: pendingEntryForStops ?? currentPrice,
     sl: slNum,
     tp: tpNum,
     noStops,
@@ -540,6 +540,23 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
   const liveSpread =
     liveBid != null && liveAsk != null ? Math.max(0, liveAsk - liveBid) : null;
   const refPrice = isBuy ? liveAsk : liveBid;
+
+  // Pending-order classification — a "limit" ticket whose entry sits on the
+  // far side of the market is a stop order in MT5 terms. Null when the entry
+  // price equals the current market price (use a market order instead).
+  const entryPriceNum = entry ? parseFloat(entry) : NaN;
+  const pendingType =
+    type === "limit" && Number.isFinite(entryPriceNum) && entryPriceNum > 0 && liveBid != null && liveAsk != null
+      ? isBuy
+        ? entryPriceNum < liveAsk ? "buy_limit" : entryPriceNum > liveAsk ? "buy_stop" : null
+        : entryPriceNum > liveBid ? "sell_limit" : entryPriceNum < liveBid ? "sell_stop" : null
+      : null;
+  const pendingTypeLabel =
+    pendingType === "buy_limit" ? "Buy Limit"
+    : pendingType === "sell_limit" ? "Sell Limit"
+    : pendingType === "buy_stop" ? "Buy Stop"
+    : pendingType === "sell_stop" ? "Sell Stop"
+    : null;
 
   // Approximate margin (broker leverage not exposed → assume 1:100).
   const ASSUMED_LEVERAGE = 100;
@@ -612,8 +629,18 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
       return;
     }
     if (type === "limit") {
-      toast.error("Limit orders coming soon");
-      return;
+      if (!Number.isFinite(entryPriceNum) || entryPriceNum <= 0) {
+        toast.error("Entry price required", { description: "Set the price at which the pending order should trigger." });
+        return;
+      }
+      if (liveBid == null || liveAsk == null) {
+        toast.error("No live quote", { description: "A fresh bid/ask is required to classify the pending order." });
+        return;
+      }
+      if (!pendingType) {
+        toast.error("Entry equals current price", { description: "Use a market order instead, or move the entry price." });
+        return;
+      }
     }
     if (stopsError) {
       toast.error(stopsError);
@@ -644,18 +671,36 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
     }
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
-        body: {
-          tradeId: tradeIdSrc || `qt-${Date.now()}`,
-          symbol: brokerSymbol,
-          side,
-          orderType: "market",
-          volume: Number(lotsNum.toFixed(2)),
-          stopLoss: effectiveSl,
-          takeProfit: effectiveTp,
-          signalId: tradeIdSrc || null,
+      const isPendingOrder = type === "limit" && pendingType != null;
+      const { data, error } = await supabase.functions.invoke(
+        isPendingOrder ? "submit-pending-order" : "submit-best-execution-order",
+        {
+          body: isPendingOrder
+            ? {
+                tradeId: tradeIdSrc || `qt-${Date.now()}`,
+                symbol: brokerSymbol,
+                displaySymbol: symbolDisplay,
+                brokerSymbol,
+                pendingType,
+                volume: Number(lotsNum.toFixed(2)),
+                entryPrice: entryPriceNum,
+                currentBid: liveBid,
+                currentAsk: liveAsk,
+                stopLoss: effectiveSl,
+                takeProfit: effectiveTp,
+              }
+            : {
+                tradeId: tradeIdSrc || `qt-${Date.now()}`,
+                symbol: brokerSymbol,
+                side,
+                orderType: "market",
+                volume: Number(lotsNum.toFixed(2)),
+                stopLoss: effectiveSl,
+                takeProfit: effectiveTp,
+                signalId: tradeIdSrc || null,
+              },
         },
-      });
+      );
 
       // Non-2xx responses populate `error` but the JSON body is on error.context.
       // Read it so we can surface the broker's real retcode_description.
@@ -684,14 +729,19 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
         const label =
           classification === "filled" ? "Trade filled"
           : classification === "placed" ? "Trade placed"
+          : classification === "pending_order_placed" ? `${pendingTypeLabel ?? "Pending order"} placed`
           : classification === "done" ? "Trade filled"
           : `Trade ${classification}`;
         setResultState({
-          type: classification === "placed" ? "placed" : "filled",
+          type: classification === "placed" || classification === "pending_order_placed" ? "placed" : "filled",
           message: label,
         });
         toast.success(label, {
-          description: res.ticket ? `Ticket #${res.ticket}` : undefined,
+          description: res.ticket
+            ? `Ticket #${res.ticket}`
+            : res.orderId
+              ? `Order #${res.orderId}`
+              : undefined,
         });
         setConfirming(false);
         setTradeIdSrc(null);
@@ -999,23 +1049,44 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
             >
               Market
             </button>
-            <TooltipProvider delayDuration={150}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>
-                    <button
-                      disabled
-                      aria-disabled="true"
-                      className="h-9 w-full rounded-lg font-mono text-[10px] uppercase tracking-widest ring-1 bg-muted/10 text-muted-foreground/60 ring-border/20 cursor-not-allowed"
-                    >
-                      Limit
-                    </button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Limit orders coming soon.</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <button
+              onClick={() => setType("limit")}
+              className={`h-9 rounded-lg font-mono text-[10px] uppercase tracking-widest transition-all ring-1 ${
+                type === "limit"
+                  ? "bg-primary/15 text-primary ring-primary/40"
+                  : "bg-muted/20 text-muted-foreground ring-border/30 hover:text-foreground"
+              }`}
+            >
+              Limit
+            </button>
           </div>
+
+          {/* Entry price — pending orders only */}
+          {type === "limit" && (
+            <div>
+              <Label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1.5 block">
+                Entry Price
+              </Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="any"
+                value={entry}
+                onChange={(e) => setEntry(e.target.value)}
+                placeholder={refPrice != null ? String(refPrice) : "0.00000"}
+                className="h-9 font-mono text-sm"
+              />
+              <p className="mt-1 text-[10px] font-mono text-muted-foreground">
+                {pendingTypeLabel
+                  ? <>Will be sent as <span className="text-primary font-semibold">{pendingTypeLabel}</span></>
+                  : entry
+                    ? "Entry equals current price — use a market order"
+                    : refPrice != null
+                      ? `Current ${isBuy ? "ask" : "bid"}: ${refPrice}`
+                      : "Waiting for live quote…"}
+              </p>
+            </div>
+          )}
 
           {/* Lots stepper */}
           <div>
@@ -1509,6 +1580,18 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                       value={isBuy ? "BUY" : "SELL"}
                       valueClass={isBuy ? "text-emerald-400" : "text-red-400"}
                     />
+                    <ConfirmRow
+                      label="Order Type"
+                      value={type === "limit" ? (pendingTypeLabel ?? "Pending") : "Market"}
+                      valueClass={type === "limit" ? "text-primary" : undefined}
+                    />
+                    {type === "limit" && (
+                      <ConfirmRow
+                        label="Entry Price"
+                        value={Number.isFinite(entryPriceNum) ? String(entryPriceNum) : "—"}
+                        valueClass="text-primary"
+                      />
+                    )}
                     <ConfirmRow label="Volume" value={`${lotsNum.toFixed(2)} lots`} />
                     {noStops ? (
                       <ConfirmRow
@@ -1537,14 +1620,24 @@ const QuickTradePanel = ({ symbols: symbolsProp, onSymbolChange }: Props) => {
                       </summary>
                       <pre className="mt-2 text-[10px] font-mono text-foreground/80 whitespace-pre-wrap break-all">
 {JSON.stringify(
-  {
-    tradeId: previewTradeId,
-    symbol: brokerSymbol,
-    side,
-    volume: Number(lotsNum.toFixed(2)),
-    stopLoss: effectiveSl,
-    takeProfit: effectiveTp,
-  },
+  type === "limit"
+    ? {
+        tradeId: previewTradeId,
+        symbol: brokerSymbol,
+        pendingType,
+        volume: Number(lotsNum.toFixed(2)),
+        entryPrice: entryPriceNum,
+        stopLoss: effectiveSl,
+        takeProfit: effectiveTp,
+      }
+    : {
+        tradeId: previewTradeId,
+        symbol: brokerSymbol,
+        side,
+        volume: Number(lotsNum.toFixed(2)),
+        stopLoss: effectiveSl,
+        takeProfit: effectiveTp,
+      },
   null,
   2,
 )}
