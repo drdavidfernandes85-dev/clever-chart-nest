@@ -25,6 +25,17 @@ const CanaryActiveBanner = () => {
 
   if (!policy || policy.capability_state !== "active_limited_canary") return null;
 
+  // Capability rows reflect the live policy switches rather than static text,
+  // so enabling a capability in site_settings.limited_canary_policy is shown
+  // here instead of perpetually reading "DISABLED".
+  const capState = (v: string) =>
+    String(v).toLowerCase() === "enabled"
+      ? { v: "ENABLED", tone: "ok" as const }
+      : { v: "DISABLED", tone: "warn" as const };
+  const pending = capState(policy.pending_orders);
+  const modify = capState(policy.modify_sl_tp);
+  const partial = capState(policy.partial_close);
+
   const Row = ({
     k, v, tone = "neutral" as "ok" | "warn" | "danger" | "neutral",
   }) => (
@@ -64,9 +75,9 @@ const CanaryActiveBanner = () => {
         </div>
         <div>
           <Row k="BUY_ENTRY" v="DISABLED · CANARY_SCOPE_OPERATION_NOT_ALLOWED" tone="danger" />
-          <Row k="PENDING_ORDERS" v="DISABLED" tone="warn" />
-          <Row k="MODIFY_SL_TP" v="DISABLED" tone="warn" />
-          <Row k="PARTIAL_CLOSE" v="DISABLED" tone="warn" />
+          <Row k="PENDING_ORDERS" v={pending.v} tone={pending.tone} />
+          <Row k="MODIFY_SL_TP" v={modify.v} tone={modify.tone} />
+          <Row k="PARTIAL_CLOSE" v={partial.v} tone={partial.tone} />
           <Row k="OTHER_SYMBOLS" v="DISABLED" tone="warn" />
           <Row k="XAUUSD" v="DISABLED · AMBIGUOUS" tone="danger" />
           <Row k="GENERAL_CLIENT_EXECUTION" v="DISABLED" tone="warn" />
