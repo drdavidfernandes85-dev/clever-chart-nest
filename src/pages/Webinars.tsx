@@ -328,8 +328,8 @@ const Webinars = () => {
               </div>
               {liveNow ? (
                 <a
-                  href={liveNow.stream_url ?? "#"}
-                  target="_blank"
+                  href={liveNow.stream_url ?? `/webinars/${liveNow.id}`}
+                  target={liveNow.stream_url ? "_blank" : undefined}
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl bg-destructive px-4 py-2.5 text-sm font-bold uppercase tracking-wider text-destructive-foreground shadow-[0_15px_35px_-12px_hsl(var(--destructive)/0.6)] hover:scale-[1.02] transition-transform"
                 >

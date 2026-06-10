@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import SEO from "@/components/SEO";
-import LightweightCandlestickChart from "@/components/dashboard/LightweightCandlestickChart";
+import TradingViewAdvancedIframe from "@/components/dashboard/TradingViewAdvancedIframe";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -370,21 +370,14 @@ const CommandDeck = () => {
 
           {/* CENTER column — Live Chart */}
           <div className="col-span-12 lg:col-span-6">
-            <Panel
-              title="Live Charts"
-              icon={Layers}
-              action={
-                <>
-                  <button className="text-muted-foreground hover:text-primary">
-                    <Search className="h-3.5 w-3.5" />
-                  </button>
-                  <button className="text-muted-foreground hover:text-primary">
-                    <Share2 className="h-3.5 w-3.5" />
-                  </button>
-                </>
-              }
-            >
-              <LightweightCandlestickChart symbol="EUR/USD" height={420} className="rounded-none border-0 shadow-none bg-transparent" />
+            <Panel title="Live Charts" icon={Layers}>
+              <TradingViewAdvancedIframe
+                symbol="FX:EURUSD"
+                interval="15"
+                height={520}
+                hideSideToolbar
+                className="rounded-none"
+              />
             </Panel>
           </div>
 
