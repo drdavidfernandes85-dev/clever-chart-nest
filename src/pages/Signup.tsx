@@ -1,50 +1,40 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ChevronRight, Mail, MailCheck } from "lucide-react";
 import LtrLogo from "@/components/branding/LtrLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import TurnstileWidget from "@/components/auth/TurnstileWidget";
-import { track } from "@/lib/analytics";
+
+// Generic, non-enumerating confirmation copy. Used for both signup and
+// magic-link flows so we never reveal whether the email is registered.
+const GENERIC_SENT_MSG =
+  "Si la cuenta existe, te enviamos un correo. Revisa tu bandeja de entrada (y la carpeta de spam).";
 
 const REDIRECT_URL = `${window.location.origin}/auth/callback`;
 
-const Login = () => {
+const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [magicLoading, setMagicLoading] = useState(false);
-  const [magicSent, setMagicSent] = useState(false);
-  const [needsConfirmation, setNeedsConfirmation] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, ready, isRefreshing } = useAuth();
-  const isRedirectingRef = useRef(false);
-
-  const requestedPath = (location.state as { from?: string } | null)?.from;
-  const fromPath = requestedPath && requestedPath !== "/login" ? requestedPath : "/dashboard";
+  const [sent, setSent] = useState(false);
 
   const captchaRequired = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY);
   const captchaReady = !captchaRequired || Boolean(captchaToken);
 
-  useEffect(() => {
-    if (ready && !isRefreshing && user) {
-      if (isRedirectingRef.current) return;
-      isRedirectingRef.current = true;
-      navigate(fromPath, { replace: true });
-    }
-  }, [ready, isRefreshing, user, fromPath, navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error("Ingresa tu correo y contraseña");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("La contraseña debe tener al menos 8 caracteres");
       return;
     }
     if (!captchaReady) {
@@ -52,25 +42,35 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    setNeedsConfirmation(false);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { captchaToken: captchaToken ?? undefined },
+      options: {
+        emailRedirectTo: REDIRECT_URL,
+        captchaToken: captchaToken ?? undefined,
+      },
     });
+
+    // Hard-prevent any auto-login: if Supabase returned a session (e.g.
+    // email confirmation disabled), sign it out immediately so the user
+    // must confirm before they can use the account.
+    if (data?.session) {
+      await supabase.auth.signOut();
+    }
+
+    setLoading(false);
+
+    // Generic response regardless of whether the email already exists.
     if (error) {
-      setLoading(false);
-      // Detect "email not confirmed" without leaking whether account exists
-      // for other failure paths.
-      if (/confirm|verified|verification/i.test(error.message)) {
-        setNeedsConfirmation(true);
+      // Only surface "real" errors (network, rate-limit). Conflict / "user
+      // exists" style errors are swallowed into the generic confirmation.
+      const benign = /already|exists|registered/i.test(error.message);
+      if (!benign) {
+        toast.error(error.message);
         return;
       }
-      toast.error("Credenciales inválidas o cuenta no confirmada");
-      return;
     }
-    track("login", { method: "password" });
-    toast.success("¡Bienvenido!");
+    setSent(true);
   };
 
   const handleMagicLink = async () => {
@@ -87,73 +87,62 @@ const Login = () => {
       email: email.trim(),
       options: {
         emailRedirectTo: REDIRECT_URL,
-        shouldCreateUser: false,
+        shouldCreateUser: true,
         captchaToken: captchaToken ?? undefined,
       },
     });
     setMagicLoading(false);
-    if (error && !/already|exists|registered|not\s*found/i.test(error.message)) {
+    if (error && !/already|exists|registered/i.test(error.message)) {
       toast.error(error.message);
       return;
     }
-    setMagicSent(true);
-  };
-
-  const handleResendConfirmation = async () => {
-    if (!email.trim()) return;
-    setResendLoading(true);
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: email.trim(),
-      options: {
-        emailRedirectTo: REDIRECT_URL,
-        captchaToken: captchaToken ?? undefined,
-      },
-    });
-    setResendLoading(false);
-    if (error && !/rate|already/i.test(error.message)) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Si la cuenta existe, reenviamos el correo de confirmación.");
+    setSent(true);
   };
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-5 py-10">
       <SEO
-        title="Iniciar sesión | IX LTR"
-        description="Accede a la sala de trading en vivo de IX LTR."
-        canonical="https://elitelivetradingroom.com/login"
+        title="Crea tu cuenta | IX LTR"
+        description="Activa tu cuenta gratis en IX Live Trading Room."
       />
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-grid-pattern opacity-15" />
         <div className="absolute left-1/3 top-1/3 h-[500px] w-[500px] rounded-full bg-primary/[0.04] blur-[120px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-sm space-y-6">
+      <div className="relative z-10 w-full max-w-sm space-y-7">
         <div className="text-center">
           <Link to="/" className="inline-flex flex-col items-center gap-2">
             <LtrLogo variant="platform" className="h-14 w-auto" />
           </Link>
           <div className="mx-auto mt-4 h-0.5 w-8 bg-[#FFCD05]" />
           <h1 className="mt-4 font-heading text-2xl font-semibold text-[#FFCD05] uppercase tracking-[0.08em]">
-            Iniciar sesión
+            Crea tu cuenta
           </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Únete a la sala — sin mensualidad, acceso inmediato.
+          </p>
         </div>
 
-        {magicSent ? (
-          <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center">
-            <MailCheck className="mx-auto h-8 w-8 text-primary" />
-            <p className="text-sm text-foreground">
-              Si la cuenta existe, te enviamos un enlace de acceso. Revisa tu bandeja.
-            </p>
-            <Button variant="outline" onClick={() => setMagicSent(false)} className="h-10 w-full rounded-full">
-              Volver
+        {sent ? (
+          <div className="space-y-4 rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center">
+            <MailCheck className="mx-auto h-10 w-10 text-primary" />
+            <h2 className="font-heading text-lg font-semibold text-foreground">
+              Revisa tu correo para confirmar tu cuenta
+            </h2>
+            <p className="text-sm text-muted-foreground">{GENERIC_SENT_MSG}</p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSent(false)}
+              className="h-10 w-full rounded-full"
+            >
+              Usar otro correo
             </Button>
           </div>
         ) : (
           <>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSignup} className="space-y-4">
               <Input
                 type="email"
                 inputMode="email"
@@ -165,10 +154,10 @@ const Login = () => {
               />
               <Input
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Contraseña"
+                placeholder="Contraseña (mín. 8 caracteres)"
                 className="h-12 rounded-full border-border bg-secondary px-5 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
               />
 
@@ -182,28 +171,10 @@ const Login = () => {
                 disabled={loading || !captchaReady}
                 className="h-12 w-full gap-2 rounded-full bg-[#FFCD05] font-bold text-black hover:bg-[#FFE066] shadow-[0_0_25px_hsl(45_100%_50%/0.35)]"
               >
-                {loading ? "Entrando..." : "Iniciar sesión"}
+                {loading ? "Creando..." : "Activa tu cuenta gratis"}
                 {!loading && <ChevronRight className="h-4 w-4" />}
               </Button>
             </form>
-
-            {needsConfirmation && (
-              <div className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-center">
-                <p className="text-sm text-amber-200">
-                  Confirma tu correo para iniciar sesión.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={resendLoading}
-                  onClick={handleResendConfirmation}
-                  className="h-9 w-full rounded-full"
-                >
-                  {resendLoading ? "Reenviando..." : "Reenviar correo de confirmación"}
-                </Button>
-              </div>
-            )}
 
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" />
@@ -220,17 +191,12 @@ const Login = () => {
               {magicLoading ? "Enviando..." : "Enviar enlace de acceso"}
             </Button>
 
-            <div className="flex flex-col items-center gap-2 text-sm">
-              <Link to="/reset-password" className="text-primary hover:underline">
-                ¿Olvidaste tu contraseña?
+            <p className="text-center text-xs text-muted-foreground">
+              ¿Ya tienes cuenta?{" "}
+              <Link to="/login" className="text-primary hover:underline">
+                Inicia sesión
               </Link>
-              <p className="text-muted-foreground">
-                ¿Aún no tienes cuenta?{" "}
-                <Link to="/signup" className="text-primary hover:underline">
-                  Crea una gratis
-                </Link>
-              </p>
-            </div>
+            </p>
           </>
         )}
       </div>
@@ -238,4 +204,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Signup;

@@ -39,7 +39,7 @@ const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Education = lazy(() => import("./pages/Education"));
 const EducationModule = lazy(() => import("./pages/EducationModule"));
-const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+
 const HeroQA = lazy(() => import("./pages/HeroQA"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const CopyTrading = lazy(() => import("./pages/CopyTrading"));
@@ -49,8 +49,10 @@ const News = lazy(() => import("./pages/News"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Profile = lazy(() => import("./pages/Profile"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
-const Register = lazy(() => import("./pages/Register"));
+
+const Signup = lazy(() => import("./pages/Signup"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
 const TradingDashboard = lazy(() => import("./pages/TradingDashboard"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary"));
@@ -124,9 +126,12 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/signup" element={<Signup />} />
+                    {/* Legacy English routes redirected to the new Spanish auth flow */}
+                    <Route path="/register" element={<Navigate to="/signup" replace />} />
+                    <Route path="/forgot-password" element={<Navigate to="/reset-password" replace />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
                     {/* Open to all logged-in users (no eligibility required) */}
                     <Route path="/dashboard" element={<DashboardShell scope="dashboard"><Dashboard /></DashboardShell>} />
                     <Route path="/trading-room" element={<DashboardShell scope="trading-room"><TradingDashboard /></DashboardShell>} />
