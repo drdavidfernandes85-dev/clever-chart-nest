@@ -39,7 +39,7 @@ const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Education = lazy(() => import("./pages/Education"));
 const EducationModule = lazy(() => import("./pages/EducationModule"));
-const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+
 const HeroQA = lazy(() => import("./pages/HeroQA"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const CopyTrading = lazy(() => import("./pages/CopyTrading"));
