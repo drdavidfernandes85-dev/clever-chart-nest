@@ -10,18 +10,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import SEO from "@/components/SEO";
 import TurnstileWidget from "@/components/auth/TurnstileWidget";
 import { track } from "@/lib/analytics";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const REDIRECT_URL = `${window.location.origin}/auth/callback`;
+const RESEND_COOLDOWN_SECS = 60;
 
 const Login = () => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   const [loading, setLoading] = useState(false);
   const [magicLoading, setMagicLoading] = useState(false);
   const [magicSent, setMagicSent] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, ready, isRefreshing } = useAuth();
@@ -33,6 +38,11 @@ const Login = () => {
   const captchaRequired = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY);
   const captchaReady = !captchaRequired || Boolean(captchaToken);
 
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    setCaptchaResetKey((k) => k + 1);
+  };
+
   useEffect(() => {
     if (ready && !isRefreshing && user) {
       if (isRedirectingRef.current) return;
@@ -41,14 +51,23 @@ const Login = () => {
     }
   }, [ready, isRefreshing, user, fromPath, navigate]);
 
+  // Resend cooldown tick.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const id = window.setInterval(() => {
+      setResendCooldown((s) => (s <= 1 ? 0 : s - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [resendCooldown]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      toast.error("Ingresa tu correo y contraseña");
+      toast.error(t("auth.error.missing"));
       return;
     }
     if (!captchaReady) {
-      toast.error("Completa el CAPTCHA para continuar");
+      toast.error(t("auth.error.captcha"));
       return;
     }
     setLoading(true);
@@ -58,28 +77,27 @@ const Login = () => {
       password,
       options: { captchaToken: captchaToken ?? undefined },
     });
+    setLoading(false);
+    resetCaptcha();
     if (error) {
-      setLoading(false);
-      // Detect "email not confirmed" without leaking whether account exists
-      // for other failure paths.
       if (/confirm|verified|verification/i.test(error.message)) {
         setNeedsConfirmation(true);
         return;
       }
-      toast.error("Credenciales inválidas o cuenta no confirmada");
+      toast.error(t("auth.error.loginGeneric"));
       return;
     }
     track("login", { method: "password" });
-    toast.success("¡Bienvenido!");
+    toast.success(t("auth.welcome"));
   };
 
   const handleMagicLink = async () => {
     if (!email.trim()) {
-      toast.error("Ingresa tu correo primero");
+      toast.error(t("auth.error.missingEmailFirst"));
       return;
     }
     if (!captchaReady) {
-      toast.error("Completa el CAPTCHA para continuar");
+      toast.error(t("auth.error.captcha"));
       return;
     }
     setMagicLoading(true);
@@ -92,6 +110,7 @@ const Login = () => {
       },
     });
     setMagicLoading(false);
+    resetCaptcha();
     if (error && !/already|exists|registered|not\s*found/i.test(error.message)) {
       toast.error(error.message);
       return;
@@ -100,7 +119,7 @@ const Login = () => {
   };
 
   const handleResendConfirmation = async () => {
-    if (!email.trim()) return;
+    if (!email.trim() || resendCooldown > 0 || resendLoading) return;
     setResendLoading(true);
     const { error } = await supabase.auth.resend({
       type: "signup",
@@ -111,18 +130,28 @@ const Login = () => {
       },
     });
     setResendLoading(false);
+    resetCaptcha();
+    // Always start cooldown so the UI matches the backend's 60s rate-limit,
+    // even if the request errored (rate-limit / already confirmed / etc.).
+    setResendCooldown(RESEND_COOLDOWN_SECS);
     if (error && !/rate|already/i.test(error.message)) {
       toast.error(error.message);
       return;
     }
-    toast.success("Si la cuenta existe, reenviamos el correo de confirmación.");
+    toast.success(t("auth.login.resendDone"));
   };
+
+  const resendLabel = resendLoading
+    ? t("auth.login.resendLoading")
+    : resendCooldown > 0
+    ? t("auth.login.resendCooldown").replace("{s}", String(resendCooldown))
+    : t("auth.login.resend");
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-5 py-10">
       <SEO
-        title="Iniciar sesión | IX LTR"
-        description="Accede a la sala de trading en vivo de IX LTR."
+        title={`${t("auth.title.login")} | IX LTR`}
+        description={t("auth.subtitle.signup")}
         canonical="https://elitelivetradingroom.com/login"
       />
       <div className="pointer-events-none absolute inset-0">
@@ -137,18 +166,20 @@ const Login = () => {
           </Link>
           <div className="mx-auto mt-4 h-0.5 w-8 bg-[#FFCD05]" />
           <h1 className="mt-4 font-heading text-2xl font-semibold text-[#FFCD05] uppercase tracking-[0.08em]">
-            Iniciar sesión
+            {t("auth.title.login")}
           </h1>
         </div>
 
         {magicSent ? (
           <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center">
             <MailCheck className="mx-auto h-8 w-8 text-primary" />
-            <p className="text-sm text-foreground">
-              Si la cuenta existe, te enviamos un enlace de acceso. Revisa tu bandeja.
-            </p>
-            <Button variant="outline" onClick={() => setMagicSent(false)} className="h-10 w-full rounded-full">
-              Volver
+            <p className="text-sm text-foreground">{t("auth.login.magicSent")}</p>
+            <Button
+              variant="outline"
+              onClick={() => setMagicSent(false)}
+              className="h-10 w-full rounded-full"
+            >
+              {t("auth.login.back")}
             </Button>
           </div>
         ) : (
@@ -160,7 +191,7 @@ const Login = () => {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Correo electrónico"
+                placeholder={t("auth.field.email")}
                 className="h-12 rounded-full border-border bg-secondary px-5 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
               />
               <Input
@@ -168,13 +199,14 @@ const Login = () => {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Contraseña"
+                placeholder={t("auth.field.password")}
                 className="h-12 rounded-full border-border bg-secondary px-5 text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary/50"
               />
 
               <TurnstileWidget
                 onVerify={setCaptchaToken}
                 onExpire={() => setCaptchaToken(null)}
+                resetKey={captchaResetKey}
               />
 
               <Button
@@ -182,31 +214,31 @@ const Login = () => {
                 disabled={loading || !captchaReady}
                 className="h-12 w-full gap-2 rounded-full bg-[#FFCD05] font-bold text-black hover:bg-[#FFE066] shadow-[0_0_25px_hsl(45_100%_50%/0.35)]"
               >
-                {loading ? "Entrando..." : "Iniciar sesión"}
+                {loading ? t("auth.cta.loginLoading") : t("auth.cta.login")}
                 {!loading && <ChevronRight className="h-4 w-4" />}
               </Button>
             </form>
 
             {needsConfirmation && (
               <div className="space-y-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 text-center">
-                <p className="text-sm text-amber-200">
-                  Confirma tu correo para iniciar sesión.
-                </p>
+                <p className="text-sm text-amber-200">{t("auth.login.unconfirmed")}</p>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={resendLoading}
+                  disabled={resendLoading || resendCooldown > 0}
                   onClick={handleResendConfirmation}
                   className="h-9 w-full rounded-full"
                 >
-                  {resendLoading ? "Reenviando..." : "Reenviar correo de confirmación"}
+                  {resendLabel}
                 </Button>
               </div>
             )}
 
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" />
+              <span className="h-px flex-1 bg-border" />
+              {t("auth.divider.or")}
+              <span className="h-px flex-1 bg-border" />
             </div>
 
             <Button
@@ -217,17 +249,17 @@ const Login = () => {
               className="h-12 w-full gap-2 rounded-full border-primary/40 text-foreground hover:bg-primary/10"
             >
               <Mail className="h-4 w-4" />
-              {magicLoading ? "Enviando..." : "Enviar enlace de acceso"}
+              {magicLoading ? t("auth.cta.magicLoading") : t("auth.cta.magic")}
             </Button>
 
             <div className="flex flex-col items-center gap-2 text-sm">
               <Link to="/reset-password" className="text-primary hover:underline">
-                ¿Olvidaste tu contraseña?
+                {t("auth.link.forgot")}
               </Link>
               <p className="text-muted-foreground">
-                ¿Aún no tienes cuenta?{" "}
+                {t("auth.link.noAccount")}{" "}
                 <Link to="/signup" className="text-primary hover:underline">
-                  Crea una gratis
+                  {t("auth.link.signupInline")}
                 </Link>
               </p>
             </div>

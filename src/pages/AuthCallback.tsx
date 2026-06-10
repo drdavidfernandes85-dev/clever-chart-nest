@@ -3,19 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import LtrLogo from "@/components/branding/LtrLogo";
 import SEO from "@/components/SEO";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-/**
- * Handles email confirmation, magic-link, and password-recovery redirects.
- * Supabase parses the URL hash/query and emits an auth event; we listen and
- * route based on the event type.
- *  - PASSWORD_RECOVERY → /reset-password (set new password form)
- *  - SIGNED_IN / others with session → /dashboard
- *  - no session after a short wait → /login with error
- */
 const AuthCallback = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [status, setStatus] = useState<"working" | "error">("working");
-  const [message, setMessage] = useState("Confirmando tu sesión...");
+  const [message, setMessage] = useState(t("auth.callback.working"));
 
   useEffect(() => {
     let settled = false;
@@ -53,7 +47,7 @@ const AuthCallback = () => {
       if (settled) return;
       settled = true;
       setStatus("error");
-      setMessage("No pudimos validar el enlace. Puede haber caducado.");
+      setMessage(t("auth.callback.error"));
       window.setTimeout(() => navigate("/login", { replace: true }), 2500);
     }, 6000);
 
@@ -61,16 +55,16 @@ const AuthCallback = () => {
       subscription.unsubscribe();
       window.clearTimeout(timeout);
     };
-  }, [navigate]);
+  }, [navigate, t]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-6">
-      <SEO title="Confirmando | IX LTR" description="Validando tu sesión." />
+      <SEO title={`${t("auth.callback.titleWorking")} | IX LTR`} description={t("auth.callback.working")} />
       <div className="relative z-10 w-full max-w-sm space-y-6 text-center">
         <LtrLogo variant="platform" className="mx-auto h-12 w-auto" />
         <div className="mx-auto h-0.5 w-8 bg-[#FFCD05]" />
         <h1 className="font-heading text-xl font-semibold text-[#FFCD05] uppercase tracking-[0.08em]">
-          {status === "working" ? "Un momento" : "Enlace inválido"}
+          {status === "working" ? t("auth.callback.titleWorking") : t("auth.callback.titleError")}
         </h1>
         <p className="text-sm text-muted-foreground">{message}</p>
         {status === "working" && (
