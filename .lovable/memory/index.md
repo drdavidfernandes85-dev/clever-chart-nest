@@ -9,6 +9,6 @@ Space Grotesk headings, Inter body. Supabase Cloud backend. SSO integration with
 
 ## Memories
 - [Branding](mem://design/branding) — Crypto cyberpunk, cyan/purple/yellow, Elite Live Trading Room
-- [Auth flow](mem://features/auth) — Email+password registration with display_name, SSO edge function for Infinox portal
+- [Auth flow](mem://features/auth) — Spanish auth pages /signup /login /reset-password /auth/callback, Turnstile captcha, magic-link, no auto-login on signup
 - [Chat system](mem://features/chat) — Real-time Supabase channels + messages, persistent history, 9 seeded channels
 - [MT connection](mem://features/mt-connection) — Two methods to sync MT4/MT5 — MetaApi (cloud) and EA Webhook (free, real-time). Relabeled in UI as "Wallet / Exchange API".
