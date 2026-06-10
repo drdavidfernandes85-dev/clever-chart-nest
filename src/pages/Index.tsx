@@ -152,50 +152,10 @@ const Index = () => {
       {/* Narrativa educativa sin duplicar capacidades: 1) Respaldo Infinox → 2) Pilares (Terminal/Comunidad/Webinars/Educación) → 3) Equipo → 4) Mentoría 1:1 → 5) Prueba social → 6) Dudas → 7) Descubre más → 8) Claridad legal → 9) Contacto / Newsletter */}
       <LazyHomeSection minHeight={260}><SponsorsSection /></LazyHomeSection>
       <LazyHomeSection minHeight={1400} delay={80}><PlatformPillars /></LazyHomeSection>
-      <LazyHomeSection minHeight={520} delay={100}><TeamSection /></LazyHomeSection>
-      <LazyHomeSection minHeight={520} delay={100}><MentoringSection /></LazyHomeSection>
       <LazyHomeSection minHeight={320} delay={100}><TrustpilotSection /></LazyHomeSection>
       <WebinarUrgencyStrip />
-      <LazyHomeSection minHeight={620} delay={100}><FAQSection /></LazyHomeSection>
-
-        {/* Keyword-focused internal links — strengthens topical relevance & crawlability */}
-        <section
-          aria-labelledby="home-internal-links-title"
-          className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8"
-        >
-          <div className="rounded-3xl border border-primary/20 bg-card/40 p-6 backdrop-blur-2xl shadow-[0_30px_120px_-50px_hsl(48_100%_51%/0.45)] md:p-8">
-            <h2
-              id="home-internal-links-title"
-              className="font-heading text-xl md:text-2xl font-bold text-foreground"
-            >
-              {t("seo.home.internal.title" as any)}
-            </h2>
-            <nav aria-label="Home internal links" className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {internalLinks.map(({ to, icon: Icon, label }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  onClick={() =>
-                    track("internal_link_click", {
-                      section: "home_internal_links",
-                      destination: to,
-                      label,
-                    })
-                  }
-                  className="group flex items-center gap-3 rounded-xl border border-primary/20 bg-background/40 px-4 py-3 text-sm font-medium text-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="leading-snug">{label}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </section>
 
       <LazyHomeSection minHeight={420}><ComplianceBlock /></LazyHomeSection>
-      <LazyHomeSection minHeight={560}><ContactSection /></LazyHomeSection>
       <LazyHomeSection minHeight={360}><NewsletterSection /></LazyHomeSection>
       </main>
       <DeferredSection minHeight={420}>
