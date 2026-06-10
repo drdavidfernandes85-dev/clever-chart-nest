@@ -33,7 +33,7 @@ const AnnouncementBanner = () => {
           {text}
         </p>
         {!override && (
-          <a href="#" className="ml-1 text-sm font-medium text-primary-foreground underline underline-offset-4 hover:opacity-80">
+          <a href="/webinar" className="ml-1 text-sm font-medium text-primary-foreground underline underline-offset-4 hover:opacity-80">
             {t("announcement.link")}
           </a>
         )}

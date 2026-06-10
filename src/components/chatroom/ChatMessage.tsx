@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Reply, Pencil, Trash2, Check, X } from "lucide-react";
+import { Reply, Pencil, Trash2, Check, X, MessageSquare } from "lucide-react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ export interface ChatMessageProps {
   isGrouped?: boolean;
   currentUserId?: string;
   replyTo?: { displayName: string; content: string } | null;
+  replies?: { count: number; lastAt: string; lastId: string } | null;
   onReply?: (messageId: string, displayName: string, content: string) => void;
   onMessageUpdate?: () => void;
 }
@@ -105,7 +106,7 @@ const RoleBadge = ({ role }: { role?: string }) => {
 
 const ChatMessage = ({
   id, displayName, userId, content, createdAt, role,
-  isGrouped, currentUserId, replyTo, onReply, onMessageUpdate
+  isGrouped, currentUserId, replyTo, replies, onReply, onMessageUpdate
 }: ChatMessageProps) => {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(content);
@@ -147,7 +148,7 @@ const ChatMessage = ({
   }
 
   return (
-    <div className={`group relative flex gap-3 rounded-xl px-2 transition-colors hover:bg-secondary/30 ${isGrouped ? "py-0.5" : "py-2"}`}>
+    <div id={`msg-${id}`} className={`group relative flex gap-3 rounded-xl px-2 transition-colors hover:bg-secondary/30 ${isGrouped ? "py-0.5" : "py-2"}`}>
       {isGrouped ? (
         <div className="flex w-9 shrink-0 items-center justify-center">
           <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
@@ -181,6 +182,18 @@ const ChatMessage = ({
 
         <div className="text-sm text-secondary-foreground leading-relaxed">{renderContent(content)}</div>
         <MessageReactions messageId={id} />
+        {replies && replies.count > 0 && (
+          <button
+            onClick={() => {
+              document.getElementById(`msg-${replies.lastId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
+            className="mt-1 inline-flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            <MessageSquare className="h-3 w-3" />
+            {replies.count} {replies.count === 1 ? "reply" : "replies"}
+            <span className="text-muted-foreground font-normal">{formatTime(replies.lastAt)}</span>
+          </button>
+        )}
       </div>
 
       {/* Hover action buttons */}

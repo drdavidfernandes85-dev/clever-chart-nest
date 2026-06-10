@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Hash, Search, Users, Pin, AtSign, ChevronDown, Menu, X, Maximize2, Minimize2, ShieldCheck } from "lucide-react";
+import { Hash, Search, Users, ChevronDown, Menu, X, Maximize2, Minimize2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import OnlineTraders from "@/components/chatroom/OnlineTraders";
 import { Link } from "react-router-dom";
 import LtrLogo from "@/components/branding/LtrLogo";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -83,6 +85,16 @@ const useDateLabel = () => {
 
 const FOCUS_KEY = "infinox.chatroom.focus";
 const COPILOT_COLLAPSED_KEY = "infinox.chatroom.copilotCollapsed";
+const LAST_READ_KEY = "infinox.chatroom.lastRead";
+
+const readLastRead = (): Record<string, string> => {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(LAST_READ_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+};
 
 const Chatroom = () => {
   const { user, profile, signOut } = useAuth();
@@ -97,6 +109,10 @@ const Chatroom = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: string; displayName: string; content: string } | null>(null);
   const [allProfiles, setAllProfiles] = useState<{ user_id: string; display_name: string }[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const lastReadRef = useRef<Record<string, string>>(readLastRead());
   const [focusMode, setFocusMode] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(FOCUS_KEY) === "1";
@@ -114,6 +130,14 @@ const Chatroom = () => {
     if (typeof window !== "undefined") localStorage.setItem(COPILOT_COLLAPSED_KEY, copilotCollapsed ? "1" : "0");
   }, [copilotCollapsed]);
 
+  const markChannelRead = useCallback((channelId: string) => {
+    lastReadRef.current = { ...lastReadRef.current, [channelId]: new Date().toISOString() };
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LAST_READ_KEY, JSON.stringify(lastReadRef.current));
+    }
+    setUnreadCounts((prev) => (prev[channelId] ? { ...prev, [channelId]: 0 } : prev));
+  }, []);
+
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from("channels").select("*").order("created_at");
@@ -124,6 +148,30 @@ const Chatroom = () => {
           data.find((c) => c.name === "trades_room") ||
           data[0];
         if (first) { setActiveChannelId(first.id); setActiveChannelName(first.name); }
+
+        // Seed unread badges: count messages newer than each channel's last-read
+        // marker. Channels never visited start as read so first-time users don't
+        // see every room lit up.
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          data.map(async (ch) => {
+            const since = lastReadRef.current[ch.id];
+            if (!since) {
+              lastReadRef.current[ch.id] = new Date().toISOString();
+              return;
+            }
+            const { count } = await supabase
+              .from("messages")
+              .select("id", { count: "exact", head: true })
+              .eq("channel_id", ch.id)
+              .gt("created_at", since);
+            if (count) counts[ch.id] = count;
+          })
+        );
+        if (typeof window !== "undefined") {
+          localStorage.setItem(LAST_READ_KEY, JSON.stringify(lastReadRef.current));
+        }
+        if (Object.keys(counts).length) setUnreadCounts((prev) => ({ ...prev, ...counts }));
       }
     };
     load();
@@ -153,6 +201,31 @@ const Chatroom = () => {
       .limit(100);
     if (data) setMessages(data as unknown as Message[]);
   }, [activeChannelId]);
+
+  // Keep a ref of the active channel so the global unread listener doesn't
+  // need to resubscribe on every channel switch.
+  const activeChannelIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeChannelIdRef.current = activeChannelId;
+    if (activeChannelId) markChannelRead(activeChannelId);
+  }, [activeChannelId, markChannelRead]);
+
+  // Global listener: accumulate unread badges for every non-active channel.
+  useEffect(() => {
+    const channel = supabase
+      .channel("messages:unread-counter")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const channelId = (payload.new as { channel_id?: string }).channel_id;
+        if (!channelId) return;
+        if (channelId === activeChannelIdRef.current) {
+          markChannelRead(channelId);
+          return;
+        }
+        setUnreadCounts((prev) => ({ ...prev, [channelId]: (prev[channelId] ?? 0) + 1 }));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [markChannelRead]);
 
   useEffect(() => {
     loadMessages();
@@ -247,7 +320,27 @@ const Chatroom = () => {
     let lastUserId = "";
     let lastTime = 0;
 
+    // Thread summaries: how many replies each parent has and where the latest one is.
+    const replySummaries: Record<string, { count: number; lastAt: string; lastId: string }> = {};
     messages.forEach((msg) => {
+      if (!msg.reply_to_id) return;
+      const entry = replySummaries[msg.reply_to_id] ?? { count: 0, lastAt: msg.created_at, lastId: msg.id };
+      entry.count += 1;
+      entry.lastAt = msg.created_at;
+      entry.lastId = msg.id;
+      replySummaries[msg.reply_to_id] = entry;
+    });
+
+    const query = searchQuery.trim().toLowerCase();
+    const visible = query
+      ? messages.filter(
+          (m) =>
+            m.content.toLowerCase().includes(query) ||
+            (m.profiles?.display_name ?? "").toLowerCase().includes(query)
+        )
+      : messages;
+
+    visible.forEach((msg) => {
       const dateLabel = getDateLabel(msg.created_at);
       if (dateLabel !== lastDate) {
         result.push({ type: "date", label: dateLabel, key: `date-${msg.created_at}` });
@@ -269,7 +362,7 @@ const Chatroom = () => {
         }
       }
 
-      result.push({ type: "msg", msg, isGrouped, replyTo: replyData, key: msg.id });
+      result.push({ type: "msg", msg, isGrouped, replyTo: replyData, replies: replySummaries[msg.id] ?? null, key: msg.id });
       lastUserId = msg.user_id;
       lastTime = msgTime;
     });
@@ -278,10 +371,10 @@ const Chatroom = () => {
 
   const sidebarContent = (
     <>
-      <div className="flex items-center gap-1 border-b border-border/50 px-3 py-2">
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Search className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><Users className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground"><AtSign className="h-4 w-4" /></Button>
+      <div className="flex h-10 items-center gap-1 border-b border-border/50 px-3 py-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground/70">
+          Channels
+        </span>
         <button className="ml-auto md:hidden text-muted-foreground" onClick={() => setSidebarOpen(false)}>
           <X className="h-5 w-5" />
         </button>
@@ -296,6 +389,7 @@ const Chatroom = () => {
               {chs.map((ch) => {
                 const isActive = activeChannelId === ch.id;
                 const flag = CHANNEL_FLAGS[ch.name];
+                const unread = !isActive ? unreadCounts[ch.id] ?? 0 : 0;
                 return (
                   <button
                     key={ch.id}
@@ -303,19 +397,28 @@ const Chatroom = () => {
                     className={`group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-all ${
                       isActive
                         ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_hsl(48_100%_51%/0.35),0_4px_18px_-6px_hsl(48_100%_51%/0.5)]"
-                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                        : unread > 0
+                          ? "text-foreground font-semibold hover:bg-secondary/50"
+                          : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                     }`}
                   >
                     <Hash className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground/60"}`} />
                     <span className="truncate font-medium">{formatChannelName(ch.name)}</span>
-                    {flag && (
-                      <span
-                        aria-hidden="true"
-                        className={`ml-auto text-xs leading-none ${isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}
-                      >
-                        {flag}
-                      </span>
-                    )}
+                    <span className="ml-auto flex items-center gap-1.5">
+                      {flag && (
+                        <span
+                          aria-hidden="true"
+                          className={`text-xs leading-none ${isActive ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}
+                        >
+                          {flag}
+                        </span>
+                      )}
+                      {unread > 0 && (
+                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground">
+                          {unread > 99 ? "99+" : unread}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 );
               })}
@@ -396,9 +499,41 @@ const Chatroom = () => {
             <h2 className="font-heading text-base font-semibold text-foreground tracking-tight">{formatChannelName(activeChannelName)}</h2>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Pin className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Users className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><Search className="h-4 w-4" /></Button>
+            {searchOpen && (
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); } }}
+                placeholder="Search messages…"
+                className="h-8 w-36 rounded-lg border border-border/50 bg-secondary/50 px-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 sm:w-52"
+                autoFocus
+              />
+            )}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Online traders">
+                  <Users className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 p-0">
+                <OnlineTraders />
+              </PopoverContent>
+            </Popover>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-8 w-8 p-0 ${searchOpen ? "text-primary" : ""}`}
+              onClick={() => {
+                setSearchOpen((v) => {
+                  if (v) setSearchQuery("");
+                  return !v;
+                });
+              }}
+              title="Search messages"
+              aria-pressed={searchOpen}
+            >
+              <Search className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -433,6 +568,11 @@ const Chatroom = () => {
                 {t("chat.empty")}{activeChannelName.replace(/_/g, " ")} {t("chat.emptySuffix")}
               </p>
             )}
+            {messages.length > 0 && searchQuery.trim() && messageItems.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-12">
+                No messages match "{searchQuery.trim()}"
+              </p>
+            )}
             {messageItems.map((item: any) => {
               if (item.type === "date") {
                 return (
@@ -443,7 +583,7 @@ const Chatroom = () => {
                   </div>
                 );
               }
-              const { msg, isGrouped, replyTo: rt } = item;
+              const { msg, isGrouped, replyTo: rt, replies } = item;
               return (
                 <ChatMessage
                   key={msg.id}
@@ -456,6 +596,7 @@ const Chatroom = () => {
                   isGrouped={isGrouped}
                   currentUserId={user?.id}
                   replyTo={rt}
+                  replies={replies}
                   onReply={handleReply}
                   onMessageUpdate={loadMessages}
                 />
