@@ -102,7 +102,7 @@ const OpenPositionsPanel = () => {
         <div className="px-3 py-8 text-center text-[11px] font-mono uppercase tracking-widest text-neutral-500">
           Connect your MT5 account to see positions.
         </div>
-      ) : positions.length === 0 ? (
+      ) : positions.length === 0 && !showCached ? (
         <div className="px-3 py-6 space-y-2 text-center">
           {stale ? (
             <>
@@ -127,6 +127,11 @@ const OpenPositionsPanel = () => {
         </div>
       ) : (
         <div className="max-h-[320px] overflow-y-auto overflow-x-auto">
+          {showCached && (
+            <div className="border-b border-amber-500/30 bg-amber-500/5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-amber-400 text-center">
+              Sin señal del bróker · mostrando última lectura {cachedAt ? `· ${cachedAt}` : ""}
+            </div>
+          )}
           <table className="w-full min-w-[760px] text-[11px] font-mono">
             <thead className="sticky top-0 z-10 bg-[#0a0a0a]">
               <tr className="text-left text-[9px] uppercase tracking-[0.18em] text-neutral-500">
@@ -141,8 +146,9 @@ const OpenPositionsPanel = () => {
                 <th className="sticky right-0 bg-[#0a0a0a] px-3 py-2.5 font-normal text-right">&nbsp;</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-900/70">
-              {positions.map((p, i) => {
+            <tbody className={`divide-y divide-neutral-900/70 ${showCached ? "opacity-50" : ""}`}>
+              {(showCached ? lastNonEmptyPositions : positions).map((p, i) => {
+
                 const isBuy = p.side === "buy";
                 const pnl = Number(p.profit) || 0;
                 const vol = Number(p.volume) || 0;
