@@ -167,14 +167,14 @@ Deno.serve(async (req) => {
   } catch { /* fall through */ }
 
   // Broker-symbol + symbol trade_mode gate — fail closed if unresolved/stale/blocked.
-  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+  const eligible = await resolveBrokerSymbolWithSelfHeal(supabase, {
     userId: user.id,
     traderId: accountId,
     accountId: mapping.tradingLayerAccountId,
     requestedDisplaySymbol: symbol,
     suppliedBrokerSymbol: payload?.brokerSymbol ?? null,
     operationType: "pending_order",
-  });
+  }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
     return json(brokerSymbolGateResponse(VERSION, eligible, { tradeId, pendingType, volume, entryPrice }), 200);
   }
