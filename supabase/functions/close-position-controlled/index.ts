@@ -110,12 +110,9 @@ Deno.serve(async (req) => {
       error: "liveCloseConfirmed=true is required for live closes",
     }, 400);
   }
-  if (volume > MAX_TEST_VOLUME) {
-    return json({
-      success: false, version: VERSION,
-      error: `Close blocked: volume ${volume} exceeds test cap ${MAX_TEST_VOLUME}`,
-    }, 400);
-  }
+  // Volume cap moved to post-authority block — needs the authoritative live
+  // volume from evaluateCloseAuthority and the broker symbol spec (volumeStep,
+  // volumeMin). See "VOLUME CAP" section below.
 
   // 3. Load connected MT5 account via shared mapping resolver so we always
   //    pick the freshest, validated trading-layer mapping instead of a stale
