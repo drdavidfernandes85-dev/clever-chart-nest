@@ -180,25 +180,50 @@ serve(async (req) => {
     const acc = traderData?.data?.account ?? {};
     const mt5 = traderData?.data?.mt5 ?? {};
     const positionsRaw = Array.isArray(posRes.data?.data) ? posRes.data.data : [];
-    const positions = positionsRaw.map((p: any) => ({
-      ticket: p?.ticket ?? p?.id ?? null,
-      symbol: p?.symbol ?? "",
-      side: (p?.side ?? p?.action ?? p?.type ?? "").toString().toLowerCase().includes("sell") ? "sell" : "buy",
-      volume: Number(p?.volume ?? p?.lots ?? 0),
-      entry_price: Number(p?.open_price ?? p?.openPrice ?? p?.entry_price ?? p?.price ?? 0),
-      current_price: Number(p?.current_price ?? p?.currentPrice ?? p?.price ?? 0),
-      stop_loss: p?.stop_loss ?? p?.sl ?? null,
-      take_profit: p?.take_profit ?? p?.tp ?? null,
-      profit: Number(p?.profit ?? p?.pnl ?? 0),
-    }));
-    const floatingPnl = positions.reduce((s: number, p: any) => s + (Number(p.profit) || 0), 0);
+    const positions = positionsRaw.map((p: any) => {
+      const baseProfit = Number(p?.profit ?? p?.pnl ?? 0);
+      const swap = Number(p?.swap ?? 0);
+      const commission = Number(p?.commission ?? 0);
+      return {
+        ticket: p?.ticket ?? p?.id ?? null,
+        symbol: p?.symbol ?? "",
+        side: (p?.side ?? p?.action ?? p?.type ?? "").toString().toLowerCase().includes("sell") ? "sell" : "buy",
+        volume: Number(p?.volume ?? p?.lots ?? 0),
+        entry_price: Number(p?.open_price ?? p?.openPrice ?? p?.entry_price ?? p?.price_open ?? 0),
+        current_price: Number(p?.current_price ?? p?.currentPrice ?? p?.price_current ?? 0),
+        stop_loss: p?.stop_loss ?? p?.sl ?? null,
+        take_profit: p?.take_profit ?? p?.tp ?? null,
+        profit: baseProfit,
+        swap,
+        commission,
+        // Net floating P&L for this position INCLUDING swap+commission, so the
+        // sum reconciles with broker-side (equity - balance - credit).
+        net_profit: baseProfit + swap + commission,
+      };
+    });
 
-    const balance = Number(acc.balance ?? mt5.balance ?? 0);
-    const equity = Number(acc.equity ?? mt5.equity ?? 0);
-    const margin = Number(acc.margin ?? mt5.margin ?? 0);
-    const marginFree = Number(
-      acc.free_margin ?? acc.freeMargin ?? mt5.free_margin ?? mt5.freeMargin ?? 0,
+    const num = (v: any): number | null => {
+      if (v === null || v === undefined || v === "") return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const balance = num(acc.balance ?? mt5.balance);
+    const equity = num(acc.equity ?? mt5.equity);
+    // Trading Layer's /traders/{id} does NOT return margin or free_margin.
+    // Surface as null so the UI shows "—" rather than a misleading 0.
+    const margin = num(acc.margin ?? mt5.margin);
+    const marginFree = num(
+      acc.free_margin ?? acc.freeMargin ?? mt5.free_margin ?? mt5.freeMargin,
     );
+    // AUTHORITATIVE floating P&L: broker's own value from the same trader
+    // snapshot as `equity`. Includes swap/commission. Guarantees
+    // equity == balance + profit + credit (modulo broker rounding).
+    // Sum-of-positions[].profit is intentionally NOT used here because the
+    // positions endpoint is a separate read at a later tick, and individual
+    // `position.profit` excludes swap (returned in a separate field).
+    const profit = num(acc.profit ?? mt5.profit);
+    const credit = num(acc.credit ?? mt5.credit) ?? 0;
     const currency = acc.currency ?? mt5.currency ?? "USD";
     const leverage = acc.leverage ?? mt5.leverage ?? null;
 
@@ -213,7 +238,8 @@ serve(async (req) => {
       equity,
       margin,
       marginFree,
-      profit: floatingPnl,
+      profit,
+      credit,
       openPositionsCount: positions.length,
       lastSynced: account.last_synced_at,
     };
