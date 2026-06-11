@@ -105,6 +105,10 @@ const JournalDashboardPanel = () => {
   const [specCache, setSpecCache] = useState<Map<string, LiveSpec | null>>(new Map());
   const [accountCurrency, setAccountCurrency] = useState<string>("USD");
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [resumeCursor, setResumeCursor] = useState<string | null>(null);
+  const [dealsTotal, setDealsTotal] = useState<number | null>(null);
+
 
 
   const load = useCallback(async () => {
@@ -123,11 +127,12 @@ const JournalDashboardPanel = () => {
         .eq("user_id", user.id),
       supabase
         .from("journal_sync_state")
-        .select("last_synced_at, last_status, deals_total")
+        .select("last_synced_at, last_status, deals_total, last_deal_time")
         .eq("user_id", user.id)
         .order("last_synced_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+
       supabase
         .from("journal_deals")
         .select("position_id, order_id")
@@ -146,8 +151,27 @@ const JournalDashboardPanel = () => {
     }
     setPositionOrders(map);
     setLastSync(stateRes.data?.last_synced_at ?? null);
+    setSyncStatus(stateRes.data?.last_status ?? null);
+    setDealsTotal(stateRes.data?.deals_total ?? null);
+    // Resume cursor: if last sync stopped partial/error mid-window, resume from
+    // 1ms before the OLDEST deal in DB (so we continue paging backward into the
+    // unsynced past). last_deal_time on sync_state is the NEWEST seen so it's
+    // not the right cursor; derive minimum from journal_deals directly.
+    const { data: oldest } = await supabase
+      .from("journal_deals")
+      .select("deal_time")
+      .eq("user_id", user.id)
+      .order("deal_time", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const status = stateRes.data?.last_status;
+    const resumable = status === "partial" || (status === "error" && !!oldest?.deal_time);
+    setResumeCursor(resumable && oldest?.deal_time
+      ? new Date(new Date(oldest.deal_time).getTime() - 1).toISOString()
+      : null);
     setLoading(false);
   }, [user]);
+
 
   useEffect(() => { load(); }, [load]);
 
@@ -212,32 +236,40 @@ const JournalDashboardPanel = () => {
   }, [positions, specCache]);
 
 
-  const sync = async () => {
+  const sync = async (opts?: { resumeFrom?: string }) => {
     setSyncing(true);
     cancelRef.current = false;
     setSyncProgress({ chunk: 0, deals: 0 });
-    const MAX_CHUNKS = 30;
+    const MAX_CHUNKS = 60;
     const t0 = performance.now();
     let totalDeals = 0;
-    let dateTo: string | undefined;
+    let dateTo: string | undefined = opts?.resumeFrom;
     let lastErr: string | null = null;
+    let chunksRun = 0;
     try {
       for (let i = 0; i < MAX_CHUNKS; i++) {
         if (cancelRef.current) break;
         const { data, error } = await supabase.functions.invoke("journal-sync", {
           body: { full: true, ...(dateTo ? { dateTo } : {}) },
         });
+        chunksRun = i + 1;
         if (error) { lastErr = error.message; break; }
-        if (data?.error) { lastErr = data.error; break; }
         totalDeals += Number(data?.dealsFetched ?? 0);
-        setSyncProgress({ chunk: i + 1, deals: totalDeals });
-        if (!data?.hasMore || !data?.nextDateTo) break;
+        setSyncProgress({ chunk: chunksRun, deals: totalDeals });
+        // Honor the resume cursor even when the chunk reported an error — the
+        // edge function now writes nextDateTo on transient 5xx so we advance
+        // past the bad page instead of getting stuck on it.
+        if (data?.error && !data?.nextDateTo) { lastErr = data.error; break; }
+        if (!data?.hasMore || !data?.nextDateTo) {
+          if (data?.error) lastErr = data.error;
+          break;
+        }
         dateTo = data.nextDateTo;
       }
       const wallSec = ((performance.now() - t0) / 1000).toFixed(1);
-      if (lastErr) toast.error(`Sincronización: ${lastErr}`);
-      else if (cancelRef.current) toast.info(`Cancelada · ${totalDeals} deals · ${wallSec}s`);
-      else toast.success(`Sincronización completa · ${totalDeals} deals · ${wallSec}s`);
+      if (lastErr) toast.error(`Sincronización: ${lastErr} · ${totalDeals} deals · ${chunksRun} chunks · ${wallSec}s`);
+      else if (cancelRef.current) toast.info(`Cancelada · ${totalDeals} deals · ${chunksRun} chunks · ${wallSec}s`);
+      else toast.success(`Sincronización completa · ${totalDeals} deals · ${chunksRun} chunks · ${wallSec}s`);
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Error de sincronización");
@@ -248,6 +280,7 @@ const JournalDashboardPanel = () => {
     }
   };
   const cancelSync = () => { cancelRef.current = true; };
+
 
 
   const closed = useMemo(() => positions.filter((p) => p.is_closed), [positions]);
@@ -274,37 +307,37 @@ const JournalDashboardPanel = () => {
   const reconstructed = augmented.filter((p) => p._recon?.kind === "ok");
   const unrecoverable = augmented.filter((p) => p._needsRecon && p._recon?.kind !== "ok");
 
-  // Trusted set for KPIs: clean rows + rows reconstructed exactly.
-  // Unrecoverable rows (ccy mismatch / tripwire) stay excluded — same posture as before.
-  const trusted = useMemo(
-    () => augmented.filter((p) => !p._needsRecon || p._recon?.kind === "ok"),
-    [augmented],
-  );
-
+  // KPI INCLUSION RULE
+  // P&L trust is independent of price trust. net_pnl is broker-stamped on the
+  // out-deal in account currency and is exact even when vwap_close was lossy.
+  // KPIs aggregate ALL closed positions; only the price/pips column dashes (or
+  // shows a derived value) for rows whose vwap_close was stamped with vwap_open.
+  // "Unrecoverable" is a render classification, never a P&L exclusion.
   const stats = useMemo(() => {
-    if (trusted.length === 0) {
+    if (closed.length === 0) {
       return { totalPnl: 0, winRate: 0, profitFactor: 0, count: 0, best: 0, worst: 0, avgWin: 0, avgLoss: 0, volume: 0 };
     }
-    const wins = trusted.filter((p) => (p.net_pnl ?? 0) > 0);
-    const losses = trusted.filter((p) => (p.net_pnl ?? 0) < 0);
-    const totalPnl = trusted.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
+    const wins = closed.filter((p) => (p.net_pnl ?? 0) > 0);
+    const losses = closed.filter((p) => (p.net_pnl ?? 0) < 0);
+    const totalPnl = closed.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
     const grossWin = wins.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
     const grossLoss = Math.abs(losses.reduce((s, p) => s + (p.net_pnl ?? 0), 0));
     const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0;
-    const best = trusted.reduce((m, p) => Math.max(m, p.net_pnl ?? 0), -Infinity);
-    const worst = trusted.reduce((m, p) => Math.min(m, p.net_pnl ?? 0), Infinity);
+    const best = closed.reduce((m, p) => Math.max(m, p.net_pnl ?? 0), -Infinity);
+    const worst = closed.reduce((m, p) => Math.min(m, p.net_pnl ?? 0), Infinity);
     return {
       totalPnl,
-      winRate: (wins.length / trusted.length) * 100,
+      winRate: (wins.length / closed.length) * 100,
       profitFactor: pf,
-      count: trusted.length,
+      count: closed.length,
       best,
       worst,
       avgWin: wins.length ? grossWin / wins.length : 0,
       avgLoss: losses.length ? grossLoss / losses.length : 0,
-      volume: trusted.reduce((s, p) => s + (p.volume_in ?? 0), 0),
+      volume: closed.reduce((s, p) => s + (p.volume_in ?? 0), 0),
     };
-  }, [trusted]);
+  }, [closed]);
+
 
   const signBreach = stats.avgWin < 0 || stats.avgLoss < 0;
   const suppressKpis = signBreach;
@@ -350,24 +383,40 @@ const JournalDashboardPanel = () => {
               </Button>
             </>
           )}
-          <Button size="sm" onClick={sync} disabled={syncing} className="rounded-full gap-2">
+          {resumeCursor && !syncing && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => sync()}
+              className="rounded-full gap-2 border-amber-500/40 text-amber-200 hover:bg-amber-500/10"
+              title={`Sincronización previa quedó parcial. Reanudar paginará desde ahora hacia atrás y deduplicará lo ya guardado.`}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Continuar sincronización
+              {dealsTotal != null && <span className="text-[10px] opacity-70">({dealsTotal} deals)</span>}
+            </Button>
+          )}
+          <Button size="sm" onClick={() => sync()} disabled={syncing} className="rounded-full gap-2">
             {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Sincronizar
           </Button>
+
+
         </div>
       </div>
 
       {reconstructed.length > 0 && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-          {reconstructed.length} {reconstructed.length === 1 ? "posición con precio reconstruido" : "posiciones con precios reconstruidos"} desde P&amp;L — el bróker no entregó el precio de cierre real.
+          {reconstructed.length} {reconstructed.length === 1 ? "posición con precio reconstruido" : "posiciones con precios reconstruidos"} desde P&amp;L — el bróker no entregó el precio de cierre real. P&amp;L verificado.
         </div>
       )}
 
       {unrecoverable.length > 0 && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-          {unrecoverable.length} {unrecoverable.length === 1 ? "posición" : "posiciones"} sin precio recuperable (moneda no coincide o dato insuficiente) — excluidas de métricas.
+        <div className="rounded-xl border border-border/40 bg-secondary/20 px-3 py-2 text-xs text-muted-foreground">
+          {unrecoverable.length} {unrecoverable.length === 1 ? "posición sin precio reconstruible" : "posiciones sin precio reconstruible"} (divisa de beneficio ≠ {accountCurrency}) — P&amp;L incluido y verificado, sólo se omite el precio de cierre.
         </div>
       )}
+
 
       {suppressKpis ? (
         <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
