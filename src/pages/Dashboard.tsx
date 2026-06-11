@@ -868,7 +868,8 @@ const BottomTabs = () => {
 
 
 
-        <TabsContent value="journal" className="m-0 p-3">
+        <TabsContent value="journal" className="m-0 p-3 space-y-4">
+          <JournalDashboardPanel />
           <TradeJournal />
         </TabsContent>
       </Tabs>
