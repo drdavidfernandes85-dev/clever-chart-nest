@@ -45,13 +45,14 @@ const CommunityHubRail = () => {
   const onlineCount = useOnlineCount();
   const [activeIdeas, setActiveIdeas] = useState<number>(0);
   const [ideasShared24h, setIdeasShared24h] = useState<number>(0);
+  const [contributors, setContributors] = useState<Contributor[]>([]);
   const { hot } = useHotMentions(8);
   const hotRows = hot.length ? hot : HOT_FALLBACK;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ count: ideas }, { count: recent }] = await Promise.all([
+      const [{ count: ideas }, { count: recent }, { data: tops }] = await Promise.all([
         supabase
           .from("trading_signals")
           .select("id", { count: "exact", head: true })
@@ -60,16 +61,40 @@ const CommunityHubRail = () => {
           .from("trading_signals")
           .select("id", { count: "exact", head: true })
           .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase
+          .from("user_xp")
+          .select("user_id, total_xp, level")
+          .order("total_xp", { ascending: false })
+          .limit(3),
       ]);
       if (cancelled) return;
       setActiveIdeas(ideas ?? 0);
       setIdeasShared24h(recent ?? 0);
+      const ids = (tops ?? []).map((t: any) => t.user_id);
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, display_name")
+          .in("user_id", ids);
+        const nameMap = new Map((profs ?? []).map((p: any) => [p.user_id, p.display_name]));
+        if (!cancelled) {
+          setContributors(
+            (tops ?? []).map((t: any) => ({
+              user_id: t.user_id,
+              name: nameMap.get(t.user_id) || "Trader",
+              xp: t.total_xp ?? 0,
+              role: `Level ${t.level ?? 1}`,
+            })),
+          );
+        }
+      }
     })();
 
     return () => {
       cancelled = true;
     };
   }, []);
+
 
 
   return (
