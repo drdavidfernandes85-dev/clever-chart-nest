@@ -137,38 +137,27 @@ interface ExecutionLog {
   error_message: string | null;
 }
 
-const DEMO_TRADE_IDEAS: TradeIdea[] = [
-  {
-    id: "s1",
-    symbol: "EURUSD",
-    direction: "buy",
-    entryFrom: 1.0845,
-    entryTo: 1.0855,
-    stopLoss: 1.082,
-    takeProfit: 1.092,
-    suggestedRisk: "1%",
-  },
-  {
-    id: "s2",
-    symbol: "XAUUSD",
-    direction: "sell",
-    entryFrom: 2348,
-    entryTo: 2352,
-    stopLoss: 2362,
-    takeProfit: 2320,
-    suggestedRisk: "0.5%",
-  },
-  {
-    id: "s3",
-    symbol: "GBPJPY",
-    direction: "buy",
-    entryFrom: 198.4,
-    entryTo: 198.6,
-    stopLoss: 197.8,
-    takeProfit: 200.2,
-    suggestedRisk: "1%",
-  },
-];
+// DEMO_TRADE_IDEAS removed 2026-06-11: hardcoded entry/SL/TP values were
+// wired to submit-best-execution-order, creating a one-click execution path
+// with stale prices on a member-reachable surface. Trade Ideas now render an
+// empty state until a real admin-managed feed lands. Do not re-introduce
+// static idea arrays under any name.
+const TradeIdeasEmptyState = () => (
+  <section className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-md p-5">
+    <div className="flex items-center gap-2 mb-3">
+      <Zap className="h-4 w-4 text-primary" />
+      <h2 className="font-heading text-base font-semibold text-foreground uppercase tracking-tight">
+        Trade Ideas
+      </h2>
+    </div>
+    <div className="rounded-xl border border-dashed border-border/50 bg-background/30 px-4 py-8 text-center">
+      <p className="text-sm font-semibold text-foreground">No moderator ideas published yet</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Mentor-published trade ideas will appear here. Follow the Trading Room for live setups.
+      </p>
+    </div>
+  </section>
+);
 
 // ---------- Helpers ----------
 const fmtMoney = (v: number, currency = "USD") =>
