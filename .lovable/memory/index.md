@@ -1,14 +1,13 @@
 # Project Memory
 
 ## Core
-Crypto trading & community hub. Cyan #00f0ff primary, purple #a855f7 secondary, yellow #FFCD05 only on CTAs and LIVE badges.
-Background #020202 deep void with cyan/purple blockchain grid + network nodes (CyberpunkBackground.tsx).
-Default crypto pairs: BTC, ETH, SOL, SUI, TON, PEPE, WIF, HYPE — all USDT. Centralized in src/lib/crypto-pairs.ts.
-Price feed: CoinGecko /simple/price (free, no key). MT4/5 backend tables kept; UI labels say "Wallet / Exchange".
-Space Grotesk headings, Inter body. Supabase Cloud backend. SSO integration with Infinox client portal.
+Elite Live Trading Room for Infinox LATAM community. Yellow branding hsl(45,100%,50%). Dark theme bg hsl(220,20%,10%).
+Space Grotesk headings, Inter body. Supabase Cloud backend.
+Supabase Auth is the ONLY identity provider — no SSO, no token-in-URL login, no alternative login paths.
 
 ## Memories
-- [Branding](mem://design/branding) — Crypto cyberpunk, cyan/purple/yellow, Elite Live Trading Room
-- [Auth flow](mem://features/auth) — Spanish auth pages /signup /login /reset-password /auth/callback, Turnstile captcha, magic-link, no auto-login on signup
+- [Branding](mem://design/branding) — Yellow/gold accent color, Infinox-inspired, Elite Live Trading Room name
+- [Auth flow](mem://features/auth) — Email+password registration with display_name (Supabase Auth only; sso-login function removed 2026-06-11)
 - [Chat system](mem://features/chat) — Real-time Supabase channels + messages, persistent history, 9 seeded channels
-- [MT connection](mem://features/mt-connection) — Two methods to sync MT4/MT5 — MetaApi (cloud) and EA Webhook (free, real-time). Relabeled in UI as "Wallet / Exchange API".
+- [MT connection](mem://features/mt-connection) — Two-tab UI on /connect-mt: MetaApi (cloud) + EA Webhook (free, real-time via mt-webhook edge function)
+- [Execution mode](mem://features/execution-mode) — admin_live_test gates backend live orders to admin tester (trader 29008868…, login 87943580); modes persisted in site_settings
