@@ -18,6 +18,7 @@ import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
+import { resolveBrokerSymbolWithSelfHeal } from "../_shared/brokerSymbolSelfHeal.ts";
 import {
   assertCanaryCapabilityDisabled,
   canaryGuardResponseBody,
