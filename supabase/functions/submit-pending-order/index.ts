@@ -1,6 +1,9 @@
 // Submit Pending Order — Buy/Sell Limit/Stop (admin live test only).
-// Sends a real MT5 pending order to Trading Layer with side-of-market validation,
-// risk + execution-mode gates, and writes an execution_audit_events row.
+// Sends a real MT5 pending order to Trading Layer with SERVER-SIDE
+// side-of-market validation (fresh tick from Trading Layer — never trusts
+// the client's quote), risk + execution-mode gates, and writes an
+// execution_audit_events row with stop_loss_price / take_profit_price /
+// mt_login populated on every broker-call path (fills AND rejections).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   loadRiskSettings,
@@ -26,9 +29,13 @@ import {
   assertCanaryCapabilityDisabled,
   canaryGuardResponseBody,
 } from "../_shared/canaryPolicy.ts";
+import {
+  resolveFreshExecutionTick,
+  FRESH_TICK_POLICY_VERSION,
+} from "../_shared/freshTick.ts";
 
 
-const VERSION = "SUBMIT_PENDING_ORDER_V3_2026_06_11";
+const VERSION = "SUBMIT_PENDING_ORDER_V4_2026_06_11";
 const BASE_URL = "https://api.trading-layer.com";
 const MAX_TEST_VOLUME = 0.01;
 
@@ -77,27 +84,18 @@ Deno.serve(async (req) => {
   const pendingType = String(payload?.pendingType || "").toLowerCase() as PendingType;
   const volume = Number(payload?.volume);
   const entryPrice = Number(payload?.entryPrice);
-  const currentBid = Number(payload?.currentBid);
-  const currentAsk = Number(payload?.currentAsk);
   const stopLoss = payload?.stopLoss == null || payload.stopLoss === "" ? null : Number(payload.stopLoss);
   const takeProfit = payload?.takeProfit == null || payload.takeProfit === "" ? null : Number(payload.takeProfit);
+  const expirationType = typeof payload?.expirationType === "string" ? payload.expirationType : "GTC"; // GTC | TODAY | SPECIFIED
+  const expirationTime = payload?.expirationTime ?? null;
   const tradeId = typeof payload?.tradeId === "string" && payload.tradeId ? payload.tradeId : `pending-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  const side: "buy" | "sell" = pendingType.startsWith("buy") ? "buy" : "sell";
 
   if (!symbol || !PENDING_TYPES.includes(pendingType) || !Number.isFinite(volume) || volume <= 0 || !Number.isFinite(entryPrice)) {
     return json({ success: false, version: VERSION, error: "symbol, pendingType (buy_limit|sell_limit|buy_stop|sell_stop), volume and entryPrice are required" }, 400);
   }
   if (volume > MAX_TEST_VOLUME) {
     return json({ success: false, version: VERSION, error: `Pending blocked: volume ${volume} exceeds test cap ${MAX_TEST_VOLUME}` }, 400);
-  }
-
-  // Side-of-market validation against fresh tick (if provided).
-  if (Number.isFinite(currentBid) && Number.isFinite(currentAsk) && currentBid > 0 && currentAsk > 0) {
-    const reasons: string[] = [];
-    if (pendingType === "buy_limit" && !(entryPrice < currentAsk)) reasons.push("Buy Limit entry must be below current ask.");
-    if (pendingType === "sell_limit" && !(entryPrice > currentBid)) reasons.push("Sell Limit entry must be above current bid.");
-    if (pendingType === "buy_stop" && !(entryPrice > currentAsk)) reasons.push("Buy Stop entry must be above current ask.");
-    if (pendingType === "sell_stop" && !(entryPrice < currentBid)) reasons.push("Sell Stop entry must be below current bid.");
-    if (reasons.length) return json({ success: false, version: VERSION, error: reasons[0], reasons }, 400);
   }
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
@@ -160,7 +158,7 @@ Deno.serve(async (req) => {
     if (breach) {
       const blockBody = buildRiskBlock(VERSION, { reason: breach.reason, rule: breach.rule, settings }, { tradeId, symbol, pendingType, volume });
       await auditRiskBlock(supabase, user.id, {
-        tradeId, symbol, side: pendingType.startsWith("buy") ? "buy" : "sell", volume,
+        tradeId, symbol, side, volume,
         reason: breach.reason, rule: breach.rule, response: blockBody,
       });
       return json(blockBody, 200);
@@ -180,6 +178,68 @@ Deno.serve(async (req) => {
     return json(brokerSymbolGateResponse(VERSION, eligible, { tradeId, pendingType, volume, entryPrice }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
+
+  // SERVER-SIDE fresh tick + side-of-market validation.
+  // Client-supplied bid/ask is never trusted. If a fresh tick is unavailable,
+  // we surface FRESH_TICK_UNAVAILABLE / FRESH_TICK_STALE / etc. and do NOT
+  // fall back to the client's number.
+  const freshTick = await resolveFreshExecutionTick({
+    routeAccountId: mapping.tradingLayerAccountId ?? null,
+    brokerSymbol,
+    displaySymbol: symbol,
+  });
+  if (!freshTick.fresh) {
+    return json({
+      success: false,
+      version: VERSION,
+      step: "pretrade_fresh_tick_validation",
+      classification: "blocked_missing_fresh_server_tick",
+      error: freshTick.code,
+      message: freshTick.message,
+      tradeId,
+      pendingType,
+      displaySymbol: symbol,
+      brokerSymbol,
+      quoteTimestamp: freshTick.timestamp,
+      quoteAgeMs: freshTick.ageMs,
+      quoteThresholdMs: freshTick.thresholdMs,
+      freshTickPolicyVersion: FRESH_TICK_POLICY_VERSION,
+    }, 200);
+  }
+
+  const serverBid = freshTick.bid as number;
+  const serverAsk = freshTick.ask as number;
+  {
+    const reasons: string[] = [];
+    if (pendingType === "buy_limit" && !(entryPrice < serverAsk)) reasons.push("Buy Limit entry must be below current ask.");
+    if (pendingType === "sell_limit" && !(entryPrice > serverBid)) reasons.push("Sell Limit entry must be above current bid.");
+    if (pendingType === "buy_stop" && !(entryPrice > serverAsk)) reasons.push("Buy Stop entry must be above current ask.");
+    if (pendingType === "sell_stop" && !(entryPrice < serverBid)) reasons.push("Sell Stop entry must be below current bid.");
+    if (reasons.length) {
+      return json({
+        success: false, version: VERSION,
+        step: "side_of_market_validation",
+        error: reasons[0], reasons,
+        bid: serverBid, ask: serverAsk,
+        quoteTimestamp: freshTick.timestamp,
+      }, 400);
+    }
+  }
+  // Optional SL/TP sanity: must lie on the correct side of entry.
+  {
+    const slReasons: string[] = [];
+    if (stopLoss != null) {
+      if (side === "buy" && !(stopLoss < entryPrice)) slReasons.push("Stop Loss must be below entry for a Buy order.");
+      if (side === "sell" && !(stopLoss > entryPrice)) slReasons.push("Stop Loss must be above entry for a Sell order.");
+    }
+    if (takeProfit != null) {
+      if (side === "buy" && !(takeProfit > entryPrice)) slReasons.push("Take Profit must be above entry for a Buy order.");
+      if (side === "sell" && !(takeProfit < entryPrice)) slReasons.push("Take Profit must be below entry for a Sell order.");
+    }
+    if (slReasons.length) {
+      return json({ success: false, version: VERSION, step: "sl_tp_side_validation", error: slReasons[0], reasons: slReasons }, 400);
+    }
+  }
 
   // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate, directional).
   const pendingOperation: any = pendingType === "buy_limit" ? "pending_buy_limit"
@@ -211,6 +271,10 @@ Deno.serve(async (req) => {
   };
   if (stopLoss != null) tlPayload.stopLoss = stopLoss;
   if (takeProfit != null) tlPayload.takeProfit = takeProfit;
+  if (expirationType && expirationType !== "GTC") {
+    tlPayload.expirationType = expirationType;
+    if (expirationTime) tlPayload.expirationTime = expirationTime;
+  }
 
   const startedAt = Date.now();
   let httpStatus = 0;
@@ -249,12 +313,18 @@ Deno.serve(async (req) => {
       user_id: user.id,
       trade_id: tradeId,
       symbol,
-      side: pendingType.startsWith("buy") ? "buy" : "sell",
+      side,
       volume,
       status,
       outcome,
       requested_price: entryPrice,
       executed_price: null,
+      stop_loss_price: stopLoss,
+      take_profit_price: takeProfit,
+      mt_login: mapping.login ? Number(mapping.login) : null,
+      bid: serverBid,
+      ask: serverAsk,
+      spread: Math.max(0, serverAsk - serverBid),
       latency_ms: latencyMs,
       broker_message: brokerMessage,
       retcode,
@@ -264,15 +334,24 @@ Deno.serve(async (req) => {
         classification: "pending_order",
         version: VERSION,
         pendingType,
+        expirationType,
+        expirationTime,
         tradingLayerStatus: httpStatus,
         request: tlPayload,
         response: res,
         networkError,
         displaySymbol: symbol,
         brokerSymbol,
+        mt5Login: mapping.login,
+        mt5Server: mapping.server,
         symbolMappingSource: eligible.symbolMappingSource,
         symbolMappingCheckedAt: eligible.symbolMappingCheckedAt,
         symbolTradeMode: eligible.symbolTradeMode,
+        quote_bid: serverBid,
+        quote_ask: serverAsk,
+        quote_timestamp: freshTick.timestamp,
+        quote_source: freshTick.source,
+        fresh_tick_policy_version: FRESH_TICK_POLICY_VERSION,
       },
     });
   } catch { /* ignore audit failures */ }
@@ -295,6 +374,9 @@ Deno.serve(async (req) => {
     entryPrice,
     stopLoss,
     takeProfit,
+    bid: serverBid,
+    ask: serverAsk,
+    quoteTimestamp: freshTick.timestamp,
     retcode,
     brokerMessage,
     latencyMs,
