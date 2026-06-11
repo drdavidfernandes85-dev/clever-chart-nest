@@ -122,9 +122,10 @@ serve(async (req) => {
       upstreamStatus = r.status;
       const text = await r.text();
       try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
-      if (!r.ok) { lastError = `TL_HTTP_${r.status}`; break; }
-    } catch (e) {
-      lastError = e instanceof Error ? e.message : String(e);
+      if (!r.ok) {
+        lastError = `TL_HTTP_${r.status}: ${text.slice(0, 400)}`;
+        break;
+      }
       break;
     }
 
