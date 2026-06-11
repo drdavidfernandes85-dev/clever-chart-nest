@@ -160,18 +160,18 @@ const Admin = () => {
 
           {/* PRODUCTION MODE */}
           <TabsContent value="prodmode" className="mt-4">
-            <AdminProductionModeTab />
+            <LazyTab><AdminProductionModeTab /></LazyTab>
           </TabsContent>
 
           {/* BROKER SYMBOLS */}
           <TabsContent value="brokersymbols" className="mt-4">
-            <AdminBrokerSymbolsTab />
+            <LazyTab><AdminBrokerSymbolsTab /></LazyTab>
           </TabsContent>
 
 
           {/* WEBINARS */}
           <TabsContent value="webinars" className="mt-4">
-            <AdminWebinarsTab />
+            <LazyTab><AdminWebinarsTab /></LazyTab>
           </TabsContent>
 
           {/* CHANNELS */}
@@ -269,7 +269,7 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="mentors" className="mt-4">
-            <AdminMentorApplicationsTab />
+            <LazyTab><AdminMentorApplicationsTab /></LazyTab>
           </TabsContent>
 
           {/* ANNOUNCEMENT */}
@@ -286,17 +286,17 @@ const Admin = () => {
 
           {/* ANALYTICS */}
           <TabsContent value="analytics" className="mt-4">
-            <AdminAnalyticsTab />
+            <LazyTab><AdminAnalyticsTab /></LazyTab>
           </TabsContent>
 
           {/* TRANSLATION QA */}
           <TabsContent value="i18nqa" className="mt-4">
-            <AdminTranslationQATab />
+            <LazyTab><AdminTranslationQATab /></LazyTab>
           </TabsContent>
 
           {/* LAUNCH QA */}
           <TabsContent value="launchqa" className="mt-4">
-            <AdminLaunchReadinessTab />
+            <LazyTab><AdminLaunchReadinessTab /></LazyTab>
           </TabsContent>
         </Tabs>
       </div>
