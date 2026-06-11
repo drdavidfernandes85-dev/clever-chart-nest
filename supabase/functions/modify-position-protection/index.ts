@@ -210,7 +210,10 @@ Deno.serve(async (req) => {
 
 
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
-
+  // Trading Layer requires symbol + position id + side + volume + sl/tp on
+  // every /trades/send (even modify). Omitting side/volume causes TL to
+  // return HTTP 400 invalid_request with fieldErrors.side/volume = "Required".
+  const modifyPayload: Record<string, unknown> = {
     symbol: brokerSymbol,
     position: Number(ticket),
     side,
@@ -218,6 +221,7 @@ Deno.serve(async (req) => {
   };
   if (stopLoss !== null) modifyPayload.stopLoss = stopLoss;
   if (takeProfit !== null) modifyPayload.takeProfit = takeProfit;
+
 
   const startedAt = Date.now();
   let httpStatus = 0;
