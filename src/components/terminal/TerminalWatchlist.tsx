@@ -399,7 +399,6 @@ export default function TerminalWatchlist({ onSelectSymbol }: Props) {
                           >
                             <Zap className="h-3 w-3" />
                           </button>
-                        </div>
                       </div>
                     );
                   })}
