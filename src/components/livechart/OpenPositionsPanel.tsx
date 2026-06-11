@@ -18,7 +18,7 @@ const fmtPrice = (sym: string, v: number | null | undefined) => {
 
 const OpenPositionsPanel = () => {
   useHeavyComponent("OpenPositionsPanel");
-  const { liveAccount, positions, connected, loading, refreshing, refresh } =
+  const { liveAccount, positions, connected, loading, refreshing, refresh, error } =
     useLiveAccount();
   const [cooldownMs, setCooldownMs] = useState(getCooldownRemainingMs());
 
@@ -26,11 +26,18 @@ const OpenPositionsPanel = () => {
     const id = window.setInterval(() => setCooldownMs(getCooldownRemainingMs()), 1000);
     return () => window.clearInterval(id);
   }, []);
-  const cooling = cooldownMs > 0;
-  const cooldownSec = Math.ceil(cooldownMs / 1000);
 
   const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
   const currency = liveAccount?.currency ?? "USD";
+  const accountProfit = Number(liveAccount?.profit ?? 0);
+
+  // Stale / divergent read: the broker reports non-zero floating P&L but the
+  // positions endpoint returned empty. This is the documented "frozen P&L"
+  // vendor-side failure mode — render last-known state honestly instead of
+  // implying everything closed, and disable destructive actions.
+  const stale = connected && positions.length === 0 && Math.abs(accountProfit) > 0.5;
+  const cooling = cooldownMs > 0 || stale;
+  const cooldownSec = Math.ceil(cooldownMs / 1000);
 
 
 
@@ -86,8 +93,27 @@ const OpenPositionsPanel = () => {
           Connect your MT5 account to see positions.
         </div>
       ) : positions.length === 0 ? (
-        <div className="px-3 py-8 text-center text-[11px] font-mono uppercase tracking-widest text-neutral-500">
-          No open positions
+        <div className="px-3 py-6 space-y-2 text-center">
+          {stale ? (
+            <>
+              <div className="text-[10.5px] font-mono uppercase tracking-widest text-amber-400">
+                Sin señal del bróker · datos desactualizados
+              </div>
+              <div className="text-[11px] text-neutral-300 leading-snug max-w-[42ch] mx-auto">
+                P&amp;L flotante de la cuenta: <span className="font-mono font-bold text-amber-300">{accountProfit >= 0 ? "+" : ""}{accountProfit.toFixed(2)} {currency}</span> — pero el bróker no devolvió las posiciones abiertas en esta lectura.
+              </div>
+              <div className="text-[11px] text-neutral-300 leading-snug max-w-[42ch] mx-auto">
+                Tus posiciones siguen abiertas en el bróker — si necesitas gestionarlas con urgencia, usa MT5.
+              </div>
+              <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-500">
+                Última sincronización: {liveAccount?.lastSynced ? new Date(liveAccount.lastSynced).toLocaleTimeString("es-419") : "—"}
+              </div>
+            </>
+          ) : (
+            <div className="text-[11px] font-mono uppercase tracking-widest text-neutral-500">
+              No open positions
+            </div>
+          )}
         </div>
       ) : (
         <div className="max-h-[320px] overflow-y-auto overflow-x-auto">

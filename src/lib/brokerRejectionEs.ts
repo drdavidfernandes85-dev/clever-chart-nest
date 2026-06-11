@@ -7,10 +7,34 @@ export interface BrokerErrorInput {
   retcode?: number | null;
   retcodeName?: string | null;
   retcodeDescription?: string | null;
-  brokerMessage?: string | null;
-  error?: string | null;
+  brokerMessage?: string | null | Record<string, unknown>;
+  // Edge functions sometimes return `error` as an object ({code, message, …}).
+  // Accepted here and coerced — we never let an object reach the toast.
+  error?: string | null | Record<string, unknown>;
+  brokerErrorCode?: string | null;
   status?: string | null;
   reason?: string | null;
+}
+
+/** Coerce arbitrary edge-function error shapes (string | {code,message,…} | …)
+ *  to a printable string, preferring the code when present. */
+function coerceErrText(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === "string") return v;
+  if (typeof v === "object") {
+    const o = v as any;
+    if (o.code && o.message) return `${o.code}: ${typeof o.message === "string" ? o.message : JSON.stringify(o.message)}`;
+    if (o.code) return String(o.code);
+    if (o.message) return typeof o.message === "string" ? o.message : JSON.stringify(o.message);
+    try { return JSON.stringify(v); } catch { return String(v); }
+  }
+  return String(v);
+}
+function coerceErrCode(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === "string") return v;
+  if (typeof v === "object" && (v as any).code) return String((v as any).code);
+  return null;
 }
 
 // MT5 TRADE_RETCODE_* canonical map (MetaQuotes docs).
@@ -95,13 +119,19 @@ export function translateBrokerRejection(input: BrokerErrorInput): string {
   if (retcode != null && MT5_MAP[retcode]) {
     return `${MT5_MAP[retcode]} (código ${retcode}${input.retcodeName ? ` · ${input.retcodeName}` : ""})`;
   }
-  const code = input.error || input.status;
+  // App-code lookup, taking the explicit code field first, then any code embedded in error.
+  const code = input.brokerErrorCode || coerceErrCode(input.error) || (typeof input.status === "string" ? input.status : null);
   if (code && APP_MAP[code]) return APP_MAP[code];
 
-  const tail = input.retcodeDescription || input.brokerMessage || input.reason || input.error;
+  const tail =
+    input.retcodeDescription ||
+    coerceErrText(input.brokerMessage) ||
+    input.reason ||
+    coerceErrText(input.error);
   if (retcode != null) {
     return `Operación rechazada por el bróker (código ${retcode}${input.retcodeName ? ` · ${input.retcodeName}` : ""})${tail ? `: ${tail}` : "."}`;
   }
+  if (code) return `Operación rechazada (${code})${tail && tail !== code ? `: ${tail}` : ""}`;
   if (tail) return `Operación rechazada: ${tail}`;
   return "Operación rechazada: el bróker no devolvió un código identificable. Revisa el registro de auditoría.";
 }
