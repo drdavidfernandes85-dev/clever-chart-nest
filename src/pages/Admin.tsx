@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Shield, Hash, MessageSquare, UserX, Megaphone, Plus, Trash2, Radio, GraduationCap, BarChart3, Languages, Activity, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
 import infinoxLogo from "@/assets/infinox-logo-white.png";
-import AdminWebinarsTab from "@/components/admin/AdminWebinarsTab";
-import AdminMentorApplicationsTab from "@/components/admin/AdminMentorApplicationsTab";
-import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
-import AdminTranslationQATab from "@/components/admin/AdminTranslationQATab";
-import AdminLaunchReadinessTab from "@/components/admin/AdminLaunchReadinessTab";
-import AdminProductionModeTab from "@/components/admin/AdminProductionModeTab";
-import AdminBrokerSymbolsTab from "@/components/admin/AdminBrokerSymbolsTab";
+
+// Heavy admin tabs split into separate chunks; only loaded when the tab is opened.
+const AdminWebinarsTab = lazy(() => import("@/components/admin/AdminWebinarsTab"));
+const AdminMentorApplicationsTab = lazy(() => import("@/components/admin/AdminMentorApplicationsTab"));
+const AdminAnalyticsTab = lazy(() => import("@/components/admin/AdminAnalyticsTab"));
+const AdminTranslationQATab = lazy(() => import("@/components/admin/AdminTranslationQATab"));
+const AdminLaunchReadinessTab = lazy(() => import("@/components/admin/AdminLaunchReadinessTab"));
+const AdminProductionModeTab = lazy(() => import("@/components/admin/AdminProductionModeTab"));
+const AdminBrokerSymbolsTab = lazy(() => import("@/components/admin/AdminBrokerSymbolsTab"));
+
+const TabFallback = () => (
+  <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
+);
+const LazyTab = ({ children }: { children: ReactNode }) => (
+  <Suspense fallback={<TabFallback />}>{children}</Suspense>
+);
 
 interface Channel { id: string; name: string; category: string; }
 interface Profile { user_id: string; display_name: string; }
@@ -151,18 +160,18 @@ const Admin = () => {
 
           {/* PRODUCTION MODE */}
           <TabsContent value="prodmode" className="mt-4">
-            <AdminProductionModeTab />
+            <LazyTab><AdminProductionModeTab /></LazyTab>
           </TabsContent>
 
           {/* BROKER SYMBOLS */}
           <TabsContent value="brokersymbols" className="mt-4">
-            <AdminBrokerSymbolsTab />
+            <LazyTab><AdminBrokerSymbolsTab /></LazyTab>
           </TabsContent>
 
 
           {/* WEBINARS */}
           <TabsContent value="webinars" className="mt-4">
-            <AdminWebinarsTab />
+            <LazyTab><AdminWebinarsTab /></LazyTab>
           </TabsContent>
 
           {/* CHANNELS */}
@@ -260,7 +269,7 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="mentors" className="mt-4">
-            <AdminMentorApplicationsTab />
+            <LazyTab><AdminMentorApplicationsTab /></LazyTab>
           </TabsContent>
 
           {/* ANNOUNCEMENT */}
@@ -277,17 +286,17 @@ const Admin = () => {
 
           {/* ANALYTICS */}
           <TabsContent value="analytics" className="mt-4">
-            <AdminAnalyticsTab />
+            <LazyTab><AdminAnalyticsTab /></LazyTab>
           </TabsContent>
 
           {/* TRANSLATION QA */}
           <TabsContent value="i18nqa" className="mt-4">
-            <AdminTranslationQATab />
+            <LazyTab><AdminTranslationQATab /></LazyTab>
           </TabsContent>
 
           {/* LAUNCH QA */}
           <TabsContent value="launchqa" className="mt-4">
-            <AdminLaunchReadinessTab />
+            <LazyTab><AdminLaunchReadinessTab /></LazyTab>
           </TabsContent>
         </Tabs>
       </div>
