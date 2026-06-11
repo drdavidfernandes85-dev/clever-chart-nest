@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
 
     let { data: account, error: accErr } = await supabase
       .from("user_mt_accounts")
-      .select("id, login, server_name, status, last_synced_at, metaapi_account_id, created_at")
+      .select("id, login, server_name, status, last_synced_at, trading_layer_trader_id, created_at")
       .eq("user_id", userId)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const traderId = account.metaapi_account_id;
+    const traderId = account.trading_layer_trader_id;
     if (!traderId) {
       return json(200, {
         success: false,

@@ -108,7 +108,7 @@ serve(async (req) => {
 
     const { data: linkedAccount, error: accountError } = await supabase
       .from("user_mt_accounts")
-      .select("metaapi_account_id, login, server_name, status")
+      .select("trading_layer_trader_id, login, server_name, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -119,7 +119,7 @@ serve(async (req) => {
       return json({ success: false, step: "database_lookup", error: accountError.message }, 500);
     }
 
-    let accountId = linkedAccount?.metaapi_account_id || null;
+    let accountId = linkedAccount?.trading_layer_trader_id || null;
     let accountSource = "database";
 
     // Auto-heal removed: tenant `ownerAccount.accountId` is NOT a valid

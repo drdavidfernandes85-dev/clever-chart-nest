@@ -143,7 +143,7 @@ serve(async (req) => {
     // Resolve connected MT5 account (self-heal via tenant if needed)
     let { data: account } = await supabase
       .from("user_mt_accounts")
-      .select("id, login, metaapi_account_id, status")
+      .select("id, login, trading_layer_trader_id, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -153,7 +153,7 @@ serve(async (req) => {
     // Auto-heal removed: tenant `ownerAccount.accountId` is NOT a valid
     // Trading Layer trader ID. `connect-mt5-v2` is the only writer.
 
-    if (!account?.metaapi_account_id) {
+    if (!account?.trading_layer_trader_id) {
       return json({
         success: false,
         accountConnected: false,
@@ -161,7 +161,7 @@ serve(async (req) => {
         error: "No connected MT5 account found.",
       }, 200);
     }
-    const accountId = account.metaapi_account_id;
+    const accountId = account.trading_layer_trader_id;
 
     // Catalog: always fetch (paginated). We need this to map favorites + UI list.
     const accountPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols`;

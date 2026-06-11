@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
   // Latest connected MT account
   const { data: account, error: accErr } = await supabase
     .from("user_mt_accounts")
-    .select("id, login, server_name, status, metaapi_account_id, created_at")
+    .select("id, login, server_name, status, trading_layer_trader_id, created_at")
     .eq("user_id", userId)
     .eq("status", "connected")
     .order("created_at", { ascending: false })
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
   if (accErr) return json(500, { success: false, error: accErr.message });
   if (!account) return json(200, { success: false, error: "No connected trading account found." });
-  const traderId = account.metaapi_account_id;
+  const traderId = account.trading_layer_trader_id;
   if (!traderId) return json(200, { success: false, error: "Connected account is missing a Trading Layer trader id." });
 
   const requestPayload = {

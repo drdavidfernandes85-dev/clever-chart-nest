@@ -145,7 +145,7 @@ serve(async (req) => {
 
     let { data: account } = await supabase
       .from("user_mt_accounts")
-      .select("id, login, metaapi_account_id, status")
+      .select("id, login, trading_layer_trader_id, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -156,7 +156,7 @@ serve(async (req) => {
     // which is NOT a valid Trading Layer trader ID. Only `connect-mt5-v2` writes
     // the correct mapping.
 
-    if (!account?.metaapi_account_id) {
+    if (!account?.trading_layer_trader_id) {
       return json({
         success: false,
         accountConnected: false,
@@ -165,7 +165,7 @@ serve(async (req) => {
         quotes: [],
       }, 200);
     }
-    const accountId = account.metaapi_account_id;
+    const accountId = account.trading_layer_trader_id;
     const accountPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols`;
 
     // Build target list: requested + selected + defaults (deduped, capped).

@@ -186,7 +186,7 @@ async function handleTerminalData(req: Request) {
     // Resolve linked account (self-heal from tenant if needed)
     let { data: account } = await supabase
       .from("user_mt_accounts")
-      .select("id, login, server_name, status, last_synced_at, metaapi_account_id, created_at")
+      .select("id, login, server_name, status, last_synced_at, trading_layer_trader_id, created_at")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
@@ -197,7 +197,7 @@ async function handleTerminalData(req: Request) {
     // allowed to write Trading Layer IDs into `user_mt_accounts`.
 
 
-    if (!account?.metaapi_account_id) {
+    if (!account?.trading_layer_trader_id) {
       return json({
         success: false,
         accountConnected: false,
@@ -206,7 +206,7 @@ async function handleTerminalData(req: Request) {
       }, 200);
     }
 
-    const accountId = account.metaapi_account_id;
+    const accountId = account.trading_layer_trader_id;
 
     // Parallel: trader summary, positions, exact symbol info, pending orders
     const symbolPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols/${encodeURIComponent(selectedSymbol)}`;
