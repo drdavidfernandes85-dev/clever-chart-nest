@@ -1,6 +1,10 @@
 // Modify Position Protection — update SL / TP on an open MT5 position.
+// HISTORICAL AUDIT GAP: pre-2026-06-11 gate rejections are unrecorded. From
+// 2026-06-11 onward, every pre-TL gate block writes a *_blocked_* row to
+// execution_audit_events via the shared auditGateBlock() helper.
 // Does NOT call execute-trade or place-order. Sends only SL/TP changes to
 // Trading Layer and logs the result to execution_audit_events.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { loadRiskSettings, buildRiskBlock, auditRiskBlock } from "../_shared/risk.ts";
 import {
