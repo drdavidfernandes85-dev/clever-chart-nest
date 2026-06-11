@@ -1,17 +1,18 @@
 /**
- * Docked Order Ticket — Phase 3 (a): Market orders only.
+ * Docked Order Ticket — Phase 3 (b).
  *
+ * - Order types: Mercado / Límite / Stop
  * - Side toggle (Sell red / Buy green) with live Bid/Ask
- * - Volume input validated against TL spec (volumeMin/Max/Step)
- * - Pip value display per lot
+ * - Volume in Lotes OR USD/punto (interconverted via spec)
+ * - For pending orders: entry price + duration (GTC / Hoy), side-aware client
+ *   validation (server re-validates with a fresh tick — see submit-pending-order)
+ * - 4-mode SL/TP block — Precio | Pips | Proyectado | % balance (interconvertible)
+ * - Live Riesgo + R:R below the submit button
  * - "Impacto en margen: no disponible" tooltip — TL has no pre-trade margin endpoint
- * - Submit button shows full action; routes through submit-best-execution-order
- * - Spanish broker-rejection mapping (translateBrokerRejection)
- * - Confirmation dialog when one-click is OFF (docked ticket already acts as its
- *   own confirmation per spec, but we still confirm market orders unless the
- *   user has explicitly enabled 1-click)
- *
- * Limit/Stop tabs + 4-mode SL/TP will land in sub-phase (b).
+ * - Confirmation dialog with everything spelled out (market + pending)
+ * - tradeId prefixes: tp-mkt-* / tp-lim-* / tp-stp-*
+ * - Routes market → submit-best-execution-order; pending → submit-pending-order
+ * - Spanish broker-rejection mapping
  */
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, AlertTriangle, Info } from "lucide-react";
@@ -19,7 +20,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
-import { useSymbolSpec } from "@/hooks/useSymbolSpec";
+import { useSymbolSpec, type SymbolSpec } from "@/hooks/useSymbolSpec";
+import { useTerminalProAccountSnapshot } from "@/hooks/useTerminalProAccountSnapshot";
 import { translateBrokerRejection } from "@/lib/brokerRejectionEs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -34,21 +36,93 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
-interface Props {
-  oneClick: boolean;
-}
+interface Props { oneClick: boolean }
 
 type Side = "buy" | "sell";
+type OrderKind = "market" | "limit" | "stop";
+type Duration = "GTC" | "TODAY";
+type SLMode = "price" | "pips" | "amount" | "pct";
+type VolMode = "lots" | "usd_per_point";
 
 function fmt(n: number | null | undefined, d = 5): string {
   if (n == null || !Number.isFinite(n)) return "—";
   return Number(n).toFixed(d);
 }
-
+function fmtMoney(n: number | null | undefined, cur: string | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return `${n >= 0 ? "" : "-"}${Math.abs(n).toFixed(2)}${cur ? " " + cur : ""}`;
+}
 function roundToStep(v: number, step: number): number {
   const k = Math.round(v / step);
   return Number((k * step).toFixed(8));
 }
+function pipSizeFor(spec: SymbolSpec | null, fallbackDigits: number): number {
+  const d = spec?.digits ?? fallbackDigits;
+  if (d >= 5) return 0.0001;
+  if (d >= 3) return 0.01;
+  return spec?.point ?? 1;
+}
+function pipValuePerLotFor(spec: SymbolSpec | null, fallbackDigits: number): number | null {
+  if (!spec || spec.tickValue == null || spec.tickSize == null || spec.tickSize === 0) return null;
+  return (spec.tickValue / spec.tickSize) * pipSizeFor(spec, fallbackDigits);
+}
+
+interface SLState { mode: SLMode; input: string }
+
+/** Resolve an SL/TP block to a price + the broker-distance in pips. */
+function resolveProtection(opts: {
+  state: SLState;
+  side: Side;
+  isStopLoss: boolean;
+  entry: number | null;
+  volume: number;
+  pipSize: number;
+  pipValuePerLot: number | null;
+  balance: number | null;
+}): { price: number | null; pips: number | null; amount: number | null; pct: number | null } {
+  const { state, side, isStopLoss, entry, volume, pipSize, pipValuePerLot, balance } = opts;
+  const raw = state.input.trim();
+  if (!raw) return { price: null, pips: null, amount: null, pct: null };
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return { price: null, pips: null, amount: null, pct: null };
+
+  // direction: SL is on opposite side of trade direction; TP is on same side
+  // BUY SL below entry; BUY TP above entry; SELL flipped.
+  const sign = isStopLoss ? (side === "buy" ? -1 : +1) : (side === "buy" ? +1 : -1);
+
+  let pips: number | null = null;
+  let price: number | null = null;
+
+  if (state.mode === "price") {
+    if (entry == null) return { price: null, pips: null, amount: null, pct: null };
+    price = n;
+    pips = (price - entry) / pipSize * (sign > 0 ? 1 : -1);
+  } else if (state.mode === "pips") {
+    pips = n;
+    if (entry != null) price = entry + sign * n * pipSize;
+  } else if (state.mode === "amount") {
+    if (pipValuePerLot && volume > 0) {
+      pips = n / (pipValuePerLot * volume);
+      if (entry != null) price = entry + sign * pips * pipSize;
+    }
+  } else if (state.mode === "pct") {
+    if (balance && pipValuePerLot && volume > 0) {
+      const amount = balance * (n / 100);
+      pips = amount / (pipValuePerLot * volume);
+      if (entry != null) price = entry + sign * pips * pipSize;
+    }
+  }
+  const amount = pips != null && pipValuePerLot != null ? pips * pipValuePerLot * volume : null;
+  const pct = amount != null && balance ? (amount / balance) * 100 : null;
+  return { price, pips, amount, pct };
+}
+
+const SL_MODE_LABEL: Record<SLMode, string> = {
+  price: "Precio",
+  pips: "Pips",
+  amount: "Proyectado",
+  pct: "% balance",
+};
 
 export default function OrderTicket({ oneClick }: Props) {
   const { selectedBrokerSymbol } = useBrokerSymbols();
@@ -56,92 +130,182 @@ export default function OrderTicket({ oneClick }: Props) {
   const ticks = useMultiSymbolTicks([symbol]);
   const tick = ticks[symbol];
   const { spec, loading: specLoading, error: specError, missing } = useSymbolSpec(symbol);
+  const account = useTerminalProAccountSnapshot();
+  const balance = account.snapshot?.balance ?? null;
 
+  const [orderKind, setOrderKind] = useState<OrderKind>("market");
   const [side, setSide] = useState<Side>("buy");
+  const [volMode, setVolMode] = useState<VolMode>("lots");
   const [volumeStr, setVolumeStr] = useState<string>("0.01");
+  const [entryStr, setEntryStr] = useState<string>("");
+  const [duration, setDuration] = useState<Duration>("GTC");
+  const [sl, setSl] = useState<SLState>({ mode: "pips", input: "" });
+  const [tp, setTp] = useState<SLState>({ mode: "pips", input: "" });
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  // When user picks a new symbol, reset volume to the broker minimum.
-  useEffect(() => {
-    if (spec?.volumeMin != null) setVolumeStr(String(spec.volumeMin));
-  }, [spec?.symbol, spec?.volumeMin]);
-
-  const volume = Number(volumeStr);
   const bid = tick?.bid ?? null;
   const ask = tick?.ask ?? null;
   const digits = spec?.digits ?? tick?.digits ?? 5;
-  const price = side === "buy" ? ask : bid;
+  const pipSize = pipSizeFor(spec, digits);
+  const pipValuePerLot = pipValuePerLotFor(spec, digits);
+  const marketPrice = side === "buy" ? ask : bid;
 
-  // Volume validation against TL spec.
+  // Reset volume + entry when symbol changes
+  useEffect(() => {
+    if (spec?.volumeMin != null) setVolumeStr(String(spec.volumeMin));
+    setEntryStr("");
+    setSl({ mode: "pips", input: "" });
+    setTp({ mode: "pips", input: "" });
+  }, [spec?.symbol, spec?.volumeMin]);
+
+  // Volume (lots) — interpret volMode
+  const volumeLots = useMemo<number>(() => {
+    const raw = Number(volumeStr);
+    if (!Number.isFinite(raw) || raw <= 0) return 0;
+    if (volMode === "lots") return raw;
+    // USD/punto → lots
+    if (!pipValuePerLot || pipValuePerLot <= 0) return 0;
+    // 1 "punto" in MT5 = 1 tick. Use tickValue per 1 lot.
+    if (!spec?.tickValue) return 0;
+    return raw / spec.tickValue;
+  }, [volumeStr, volMode, pipValuePerLot, spec?.tickValue]);
+
   const volumeIssue = useMemo<string | null>(() => {
-    if (!Number.isFinite(volume) || volume <= 0) return "Ingresa un volumen válido.";
-    if (spec?.volumeMin != null && volume < spec.volumeMin)
-      return `Volumen mínimo: ${spec.volumeMin}`;
-    if (spec?.volumeMax != null && volume > spec.volumeMax)
-      return `Volumen máximo: ${spec.volumeMax}`;
-    if (spec?.volumeStep != null && spec.volumeStep > 0) {
-      const stepsOff = Math.abs(volume / spec.volumeStep - Math.round(volume / spec.volumeStep));
+    if (!Number.isFinite(volumeLots) || volumeLots <= 0) return "Ingresa un volumen válido.";
+    if (spec?.volumeMin != null && volumeLots + 1e-9 < spec.volumeMin) return `Volumen mínimo: ${spec.volumeMin}`;
+    if (spec?.volumeMax != null && volumeLots > spec.volumeMax + 1e-9) return `Volumen máximo: ${spec.volumeMax}`;
+    if (volMode === "lots" && spec?.volumeStep != null && spec.volumeStep > 0) {
+      const stepsOff = Math.abs(volumeLots / spec.volumeStep - Math.round(volumeLots / spec.volumeStep));
       if (stepsOff > 1e-6) return `Paso de volumen: ${spec.volumeStep}`;
     }
     return null;
-  }, [volume, spec]);
+  }, [volumeLots, volMode, spec]);
 
-  // Per-lot pip value (broker tickValue is per 1.0 lot at tickSize).
-  // We DO NOT compute margin client-side — TL exposes no margin endpoint.
-  const pipValuePerLot = useMemo<number | null>(() => {
-    if (spec?.tickValue == null || spec?.tickSize == null || spec.tickSize === 0) return null;
-    const d = spec.digits ?? 5;
-    const pipSize = d >= 5 ? 0.0001 : d >= 3 ? 0.01 : 1;
-    return (spec.tickValue / spec.tickSize) * pipSize;
-  }, [spec]);
+  const entryPrice = useMemo<number | null>(() => {
+    if (orderKind === "market") return marketPrice;
+    const n = Number(entryStr);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [orderKind, entryStr, marketPrice]);
+
+  // Side-of-market validation (client side, server re-validates with fresh tick)
+  const entryIssue = useMemo<string | null>(() => {
+    if (orderKind === "market") return null;
+    if (entryPrice == null) return "Ingresa el precio de entrada.";
+    if (bid == null || ask == null) return null;
+    if (orderKind === "limit") {
+      if (side === "buy" && !(entryPrice < ask)) return "El Buy Limit debe estar por debajo del ask.";
+      if (side === "sell" && !(entryPrice > bid)) return "El Sell Limit debe estar por encima del bid.";
+    } else if (orderKind === "stop") {
+      if (side === "buy" && !(entryPrice > ask)) return "El Buy Stop debe estar por encima del ask.";
+      if (side === "sell" && !(entryPrice < bid)) return "El Sell Stop debe estar por debajo del bid.";
+    }
+    return null;
+  }, [orderKind, entryPrice, side, bid, ask]);
+
+  const slResolved = useMemo(
+    () => resolveProtection({ state: sl, side, isStopLoss: true, entry: entryPrice, volume: volumeLots, pipSize, pipValuePerLot, balance }),
+    [sl, side, entryPrice, volumeLots, pipSize, pipValuePerLot, balance],
+  );
+  const tpResolved = useMemo(
+    () => resolveProtection({ state: tp, side, isStopLoss: false, entry: entryPrice, volume: volumeLots, pipSize, pipValuePerLot, balance }),
+    [tp, side, entryPrice, volumeLots, pipSize, pipValuePerLot, balance],
+  );
+
+  const slPriceIssue = useMemo<string | null>(() => {
+    if (sl.input.trim() === "") return null;
+    if (slResolved.price == null) return "No se puede calcular el SL (faltan datos del bróker).";
+    if (entryPrice == null) return null;
+    if (side === "buy" && !(slResolved.price < entryPrice)) return "El SL debe estar por debajo de la entrada (Buy).";
+    if (side === "sell" && !(slResolved.price > entryPrice)) return "El SL debe estar por encima de la entrada (Sell).";
+    return null;
+  }, [sl.input, slResolved.price, side, entryPrice]);
+
+  const tpPriceIssue = useMemo<string | null>(() => {
+    if (tp.input.trim() === "") return null;
+    if (tpResolved.price == null) return "No se puede calcular el TP (faltan datos del bróker).";
+    if (entryPrice == null) return null;
+    if (side === "buy" && !(tpResolved.price > entryPrice)) return "El TP debe estar por encima de la entrada (Buy).";
+    if (side === "sell" && !(tpResolved.price < entryPrice)) return "El TP debe estar por debajo de la entrada (Sell).";
+    return null;
+  }, [tp.input, tpResolved.price, side, entryPrice]);
+
+  const riskAmount = slResolved.amount != null ? Math.abs(slResolved.amount) : null;
+  const riskPct = slResolved.pct != null ? Math.abs(slResolved.pct) : null;
+  const rr = useMemo<number | null>(() => {
+    if (slResolved.pips == null || tpResolved.pips == null) return null;
+    const sP = Math.abs(slResolved.pips);
+    const tP = Math.abs(tpResolved.pips);
+    if (sP <= 0) return null;
+    return tP / sP;
+  }, [slResolved.pips, tpResolved.pips]);
 
   const orderValue = useMemo<number | null>(() => {
-    if (price == null || spec?.contractSize == null) return null;
-    return price * spec.contractSize * volume;
-  }, [price, spec?.contractSize, volume]);
+    if (entryPrice == null || spec?.contractSize == null) return null;
+    return entryPrice * spec.contractSize * volumeLots;
+  }, [entryPrice, spec?.contractSize, volumeLots]);
 
-  const stepBy = (delta: number) => {
+  const stepLots = (delta: number) => {
     const step = spec?.volumeStep ?? 0.01;
     const min = spec?.volumeMin ?? step;
     const max = spec?.volumeMax ?? Number.POSITIVE_INFINITY;
-    const next = Math.min(max, Math.max(min, roundToStep((Number(volumeStr) || 0) + delta, step)));
-    setVolumeStr(String(next));
+    const cur = volMode === "lots" ? Number(volumeStr) || 0 : volumeLots;
+    const next = Math.min(max, Math.max(min, roundToStep(cur + delta, step)));
+    if (volMode === "lots") setVolumeStr(String(next));
+    else if (spec?.tickValue) setVolumeStr((next * spec.tickValue).toFixed(2));
   };
 
   const canSubmit =
     !submitting &&
     spec != null &&
     !volumeIssue &&
-    price != null &&
-    price > 0;
+    !entryIssue &&
+    !slPriceIssue &&
+    !tpPriceIssue &&
+    entryPrice != null &&
+    entryPrice > 0;
+
+  const tradeIdPrefix = orderKind === "market" ? "tp-mkt" : orderKind === "limit" ? "tp-lim" : "tp-stp";
 
   const doSubmit = async () => {
     if (!spec || !canSubmit) return;
     setSubmitting(true);
     try {
-      const tradeId = `tp-mkt-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
-      const { data, error } = await supabase.functions.invoke(
-        "submit-best-execution-order",
-        {
+      const tradeId = `${tradeIdPrefix}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+      const slPrice = sl.input.trim() ? slResolved.price : null;
+      const tpPrice = tp.input.trim() ? tpResolved.price : null;
+      const slRounded = slPrice != null ? Number(slPrice.toFixed(digits)) : null;
+      const tpRounded = tpPrice != null ? Number(tpPrice.toFixed(digits)) : null;
+      const volumeRounded = Number(volumeLots.toFixed(8));
+
+      let res: any;
+      if (orderKind === "market") {
+        const { data, error } = await supabase.functions.invoke("submit-best-execution-order", {
+          body: { tradeId, symbol, side, orderType: "market", volume: volumeRounded, stopLoss: slRounded, takeProfit: tpRounded },
+        });
+        if (error) throw error;
+        res = data;
+      } else {
+        const pendingType =
+          orderKind === "limit"
+            ? side === "buy" ? "buy_limit" : "sell_limit"
+            : side === "buy" ? "buy_stop" : "sell_stop";
+        const { data, error } = await supabase.functions.invoke("submit-pending-order", {
           body: {
-            tradeId,
-            symbol,
-            side,
-            orderType: "market",
-            volume,
+            tradeId, symbol, pendingType,
+            volume: volumeRounded,
+            entryPrice: Number((entryPrice as number).toFixed(digits)),
+            stopLoss: slRounded, takeProfit: tpRounded,
+            expirationType: duration === "GTC" ? "GTC" : "TODAY",
           },
-        },
-      );
-      if (error) throw error;
-      const res = data as any;
+        });
+        if (error) throw error;
+        res = data;
+      }
+
       if (res?.success === true) {
         const ticket = res?.ticket || res?.orderId || res?.order_id || null;
-        toast.success(
-          ticket
-            ? `Orden ejecutada — ticket ${ticket}`
-            : "Orden ejecutada correctamente",
-        );
+        toast.success(ticket ? `${orderKind === "market" ? "Orden ejecutada" : "Orden pendiente colocada"} — ticket ${ticket}` : "Orden enviada correctamente");
         window.dispatchEvent(new Event("mt:refresh-positions"));
       } else {
         toast.error(
@@ -158,10 +322,7 @@ export default function OrderTicket({ oneClick }: Props) {
         );
       }
     } catch (e: any) {
-      toast.error(
-        translateBrokerRejection({ error: e?.message || "Network error" }),
-        { duration: 8000 },
-      );
+      toast.error(translateBrokerRejection({ error: e?.message || "Network error" }), { duration: 8000 });
     } finally {
       setSubmitting(false);
       setConfirmOpen(false);
@@ -174,29 +335,37 @@ export default function OrderTicket({ oneClick }: Props) {
     else setConfirmOpen(true);
   };
 
-  const actionLabel = `${side === "buy" ? "Comprar" : "Vender"} ${volume.toFixed(2)} ${symbol} a ${fmt(price, digits)}`;
+  const actionLabel = useMemo(() => {
+    const verb = side === "buy" ? "Comprar" : "Vender";
+    if (orderKind === "market") return `${verb} ${volumeLots.toFixed(2)} ${symbol} @ mercado (${fmt(marketPrice, digits)})`;
+    const kindLabel = orderKind === "limit" ? "Límite" : "Stop";
+    return `${verb} ${kindLabel} ${volumeLots.toFixed(2)} ${symbol} @ ${fmt(entryPrice, digits)}`;
+  }, [side, orderKind, volumeLots, symbol, marketPrice, entryPrice, digits]);
 
   return (
     <div className="flex h-full flex-col bg-[#111214]">
-      {/* Header */}
       <div className="border-b border-neutral-800 px-3 py-2 flex items-center justify-between shrink-0">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-200">
-          Nueva orden
-        </span>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-200">Nueva orden</span>
         <span className="font-mono text-[11px] font-semibold text-[#FFCD05]">{symbol}</span>
       </div>
 
-      {/* Order type tabs — Market only in 3a; Limit/Stop disabled */}
+      {/* Order type tabs */}
       <div className="grid grid-cols-3 border-b border-neutral-800 shrink-0 text-[10px] uppercase tracking-wider">
-        <button className="py-1.5 bg-[#1a1a1d] text-[#FFCD05] font-bold border-b-2 border-[#FFCD05]">
-          Mercado
-        </button>
-        <button disabled className="py-1.5 text-neutral-600 cursor-not-allowed" title="Disponible en la fase 3b">
-          Límite
-        </button>
-        <button disabled className="py-1.5 text-neutral-600 cursor-not-allowed" title="Disponible en la fase 3b">
-          Stop
-        </button>
+        {(["market", "limit", "stop"] as OrderKind[]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setOrderKind(k)}
+            className={cn(
+              "py-1.5 transition",
+              orderKind === k
+                ? "bg-[#1a1a1d] text-[#FFCD05] font-bold border-b-2 border-[#FFCD05]"
+                : "text-neutral-500 hover:text-neutral-200",
+            )}
+          >
+            {k === "market" ? "Mercado" : k === "limit" ? "Límite" : "Stop"}
+          </button>
+        ))}
       </div>
 
       {/* Side toggle with live prices */}
@@ -204,28 +373,18 @@ export default function OrderTicket({ oneClick }: Props) {
         <button
           type="button"
           onClick={() => setSide("sell")}
-          className={cn(
-            "px-2 py-2 text-left transition",
-            side === "sell" ? "bg-red-500/20 ring-1 ring-red-500/60" : "bg-[#16171a] hover:bg-neutral-900",
-          )}
+          className={cn("px-2 py-2 text-left transition", side === "sell" ? "bg-red-500/20 ring-1 ring-red-500/60" : "bg-[#16171a] hover:bg-neutral-900")}
         >
           <div className="text-[9px] uppercase tracking-wider text-red-400 font-bold">Vender · Bid</div>
-          <div className="font-mono text-base font-semibold text-red-400 tabular-nums">
-            {fmt(bid, digits)}
-          </div>
+          <div className="font-mono text-base font-semibold text-red-400 tabular-nums">{fmt(bid, digits)}</div>
         </button>
         <button
           type="button"
           onClick={() => setSide("buy")}
-          className={cn(
-            "px-2 py-2 text-right transition",
-            side === "buy" ? "bg-emerald-500/20 ring-1 ring-emerald-500/60" : "bg-[#16171a] hover:bg-neutral-900",
-          )}
+          className={cn("px-2 py-2 text-right transition", side === "buy" ? "bg-emerald-500/20 ring-1 ring-emerald-500/60" : "bg-[#16171a] hover:bg-neutral-900")}
         >
           <div className="text-[9px] uppercase tracking-wider text-emerald-400 font-bold">Comprar · Ask</div>
-          <div className="font-mono text-base font-semibold text-emerald-400 tabular-nums">
-            {fmt(ask, digits)}
-          </div>
+          <div className="font-mono text-base font-semibold text-emerald-400 tabular-nums">{fmt(ask, digits)}</div>
         </button>
       </div>
 
@@ -236,91 +395,134 @@ export default function OrderTicket({ oneClick }: Props) {
             <Loader2 className="h-3 w-3 animate-spin" /> Cargando especificación…
           </div>
         ) : specError ? (
-          <div className="rounded border border-red-500/30 bg-red-500/5 p-2 text-[11px] text-red-300">
-            {specError}
-          </div>
+          <div className="rounded border border-red-500/30 bg-red-500/5 p-2 text-[11px] text-red-300">{specError}</div>
         ) : (
           <>
-            {/* Missing-spec banner */}
             {missing.length > 0 && (
               <div className="rounded border border-amber-500/30 bg-amber-500/5 p-2 text-[10px] text-amber-300 flex gap-1.5">
                 <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
-                <div>
-                  El bróker no devolvió: <span className="font-mono">{missing.join(", ")}</span>.
-                  Algunos cálculos pueden no estar disponibles.
-                </div>
+                <div>El bróker no devolvió: <span className="font-mono">{missing.join(", ")}</span>. Algunos cálculos pueden no estar disponibles.</div>
+              </div>
+            )}
+
+            {/* Entry price (pending only) */}
+            {orderKind !== "market" && (
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase tracking-wider text-neutral-500">Precio de entrada</label>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={entryStr}
+                  onChange={(e) => setEntryStr(e.target.value)}
+                  step={pipSize}
+                  placeholder={fmt(marketPrice, digits)}
+                  className="w-full bg-[#16171a] text-center text-sm font-mono font-semibold text-neutral-100 outline-none focus:bg-neutral-900 tabular-nums rounded px-2 py-1.5 border border-neutral-800"
+                />
+                {entryIssue && <div className="text-[10px] text-red-400">{entryIssue}</div>}
               </div>
             )}
 
             {/* Volume */}
             <div className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider text-neutral-500">
-                Volumen (lotes)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] uppercase tracking-wider text-neutral-500">
+                  {volMode === "lots" ? "Volumen (lotes)" : "Volumen (USD/punto)"}
+                </label>
+                <div className="flex bg-neutral-900 rounded overflow-hidden text-[9px]">
+                  {(["lots", "usd_per_point"] as VolMode[]).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        if (m === volMode) return;
+                        // convert displayed value
+                        if (m === "usd_per_point" && spec?.tickValue) {
+                          setVolumeStr((volumeLots * spec.tickValue).toFixed(2));
+                        } else if (m === "lots") {
+                          setVolumeStr(volumeLots.toFixed(2));
+                        }
+                        setVolMode(m);
+                      }}
+                      className={cn("px-1.5 py-0.5 uppercase tracking-wider", volMode === m ? "bg-[#FFCD05] text-black font-bold" : "text-neutral-500 hover:text-neutral-200")}
+                    >
+                      {m === "lots" ? "Lotes" : "USD/pt"}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-stretch gap-px bg-neutral-800 rounded overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => stepBy(-(spec?.volumeStep ?? 0.01))}
-                  className="px-2 bg-[#16171a] hover:bg-neutral-900 text-neutral-300 text-sm"
-                >
-                  −
-                </button>
+                <button type="button" onClick={() => stepLots(-(spec?.volumeStep ?? 0.01))} className="px-2 bg-[#16171a] hover:bg-neutral-900 text-neutral-300 text-sm">−</button>
                 <input
                   type="number"
                   inputMode="decimal"
                   value={volumeStr}
                   onChange={(e) => setVolumeStr(e.target.value)}
-                  step={spec?.volumeStep ?? 0.01}
-                  min={spec?.volumeMin ?? 0.01}
-                  max={spec?.volumeMax ?? undefined}
                   className="flex-1 bg-[#16171a] text-center text-sm font-mono font-semibold text-neutral-100 outline-none focus:bg-neutral-900 tabular-nums"
                 />
-                <button
-                  type="button"
-                  onClick={() => stepBy(spec?.volumeStep ?? 0.01)}
-                  className="px-2 bg-[#16171a] hover:bg-neutral-900 text-neutral-300 text-sm"
-                >
-                  +
-                </button>
+                <button type="button" onClick={() => stepLots(spec?.volumeStep ?? 0.01)} className="px-2 bg-[#16171a] hover:bg-neutral-900 text-neutral-300 text-sm">+</button>
               </div>
               {volumeIssue ? (
                 <div className="text-[10px] text-red-400">{volumeIssue}</div>
               ) : spec && (
                 <div className="text-[9px] text-neutral-600 font-mono">
+                  {volMode === "usd_per_point" && <>= {volumeLots.toFixed(4)} lotes · </>}
                   Mín {spec.volumeMin ?? "—"} · Máx {spec.volumeMax ?? "—"} · Paso {spec.volumeStep ?? "—"}
                 </div>
               )}
             </div>
 
+            {/* Duration (pending only) */}
+            {orderKind !== "market" && (
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase tracking-wider text-neutral-500">Vigencia</label>
+                <div className="grid grid-cols-2 gap-px bg-neutral-800 rounded overflow-hidden">
+                  {(["GTC", "TODAY"] as Duration[]).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => setDuration(d)}
+                      className={cn("py-1 text-[10px] uppercase tracking-wider", duration === d ? "bg-[#FFCD05] text-black font-bold" : "bg-[#16171a] text-neutral-400 hover:text-neutral-200")}
+                    >
+                      {d === "GTC" ? "Hasta cancelar" : "Hoy"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SL & TP blocks */}
+            <ProtectionBlock
+              label="Stop Loss"
+              accent="red"
+              state={sl}
+              setState={setSl}
+              resolved={slResolved}
+              digits={digits}
+              currency={spec?.currencyProfit ?? null}
+              issue={slPriceIssue}
+            />
+            <ProtectionBlock
+              label="Take Profit"
+              accent="emerald"
+              state={tp}
+              setState={setTp}
+              resolved={tpResolved}
+              digits={digits}
+              currency={spec?.currencyProfit ?? null}
+              issue={tpPriceIssue}
+            />
+
             {/* Live calculated fields */}
             <div className="space-y-1.5 rounded border border-neutral-800 bg-[#0e0e10] p-2">
-              <Row label="Precio actual" value={fmt(price, digits)} mono />
-              <Row
-                label="Valor de la orden"
-                value={
-                  orderValue != null && spec?.currencyProfit
-                    ? `${orderValue.toFixed(2)} ${spec.currencyProfit}`
-                    : "—"
-                }
-                mono
-              />
-              <Row
-                label="Valor del pip / lote"
-                value={
-                  pipValuePerLot != null && spec?.currencyProfit
-                    ? `${pipValuePerLot.toFixed(4)} ${spec.currencyProfit}`
-                    : "—"
-                }
-                mono
-              />
+              <Row label="Precio de referencia" value={fmt(orderKind === "market" ? marketPrice : entryPrice, digits)} mono />
+              <Row label="Valor de la orden" value={orderValue != null && spec?.currencyProfit ? `${orderValue.toFixed(2)} ${spec.currencyProfit}` : "—"} mono />
+              <Row label="Valor del pip / lote" value={pipValuePerLot != null && spec?.currencyProfit ? `${pipValuePerLot.toFixed(4)} ${spec.currencyProfit}` : "—"} mono />
               <Row
                 label="Impacto en margen"
                 value={
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-1 text-neutral-500">
-                        no disponible <Info className="h-3 w-3" />
-                      </span>
+                      <span className="inline-flex items-center gap-1 text-neutral-500">no disponible <Info className="h-3 w-3" /></span>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[240px] text-xs">
                       Pendiente de habilitar en el broker. El feed de ejecución (Trading Layer) no expone el requerimiento de margen pre-trade.
@@ -348,13 +550,25 @@ export default function OrderTicket({ oneClick }: Props) {
           )}
         >
           {submitting ? (
-            <span className="inline-flex items-center gap-2 justify-center">
-              <Loader2 className="h-3 w-3 animate-spin" /> Enviando…
-            </span>
+            <span className="inline-flex items-center gap-2 justify-center"><Loader2 className="h-3 w-3 animate-spin" /> Enviando…</span>
           ) : (
             actionLabel
           )}
         </button>
+        {/* Live risk / R:R */}
+        <div className="mt-1 grid grid-cols-2 gap-2 text-[10px] font-mono">
+          <div className="rounded bg-[#0e0e10] border border-neutral-800 px-2 py-1">
+            <div className="text-[9px] uppercase tracking-wider text-neutral-500">Riesgo</div>
+            <div className="text-red-300 tabular-nums">
+              {riskAmount != null ? fmtMoney(riskAmount, spec?.currencyProfit) : "—"}
+              {riskPct != null && <span className="text-neutral-500"> · {riskPct.toFixed(2)}%</span>}
+            </div>
+          </div>
+          <div className="rounded bg-[#0e0e10] border border-neutral-800 px-2 py-1">
+            <div className="text-[9px] uppercase tracking-wider text-neutral-500">R : R</div>
+            <div className="text-emerald-300 tabular-nums">{rr != null ? `1 : ${rr.toFixed(2)}` : "—"}</div>
+          </div>
+        </div>
         <div className="mt-1 text-center text-[9px] uppercase tracking-[0.18em] text-neutral-600">
           {oneClick ? "1-click activo · sin confirmación" : "Confirmación habilitada"}
         </div>
@@ -364,12 +578,32 @@ export default function OrderTicket({ oneClick }: Props) {
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar orden de mercado</AlertDialogTitle>
+            <AlertDialogTitle>
+              Confirmar {orderKind === "market" ? "orden de mercado" : orderKind === "limit" ? "orden límite" : "orden stop"}
+            </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <div className="font-mono text-base font-bold text-foreground">{actionLabel}</div>
+                <div className="grid grid-cols-2 gap-1 text-xs font-mono">
+                  <div className="text-muted-foreground">Stop Loss</div>
+                  <div className="text-right">{slResolved.price != null ? fmt(slResolved.price, digits) : "—"}</div>
+                  <div className="text-muted-foreground">Take Profit</div>
+                  <div className="text-right">{tpResolved.price != null ? fmt(tpResolved.price, digits) : "—"}</div>
+                  <div className="text-muted-foreground">Riesgo</div>
+                  <div className="text-right text-red-400">{riskAmount != null ? fmtMoney(riskAmount, spec?.currencyProfit) : "—"}{riskPct != null && ` · ${riskPct.toFixed(2)}%`}</div>
+                  <div className="text-muted-foreground">R : R</div>
+                  <div className="text-right text-emerald-400">{rr != null ? `1 : ${rr.toFixed(2)}` : "—"}</div>
+                  {orderKind !== "market" && (
+                    <>
+                      <div className="text-muted-foreground">Vigencia</div>
+                      <div className="text-right">{duration === "GTC" ? "Hasta cancelar" : "Hoy"}</div>
+                    </>
+                  )}
+                </div>
                 <div className="text-xs text-muted-foreground">
-                  Se enviará al bróker a precio de mercado. El precio final puede variar por slippage.
+                  {orderKind === "market"
+                    ? "Se enviará al bróker a precio de mercado. El precio final puede variar por slippage."
+                    : "Se enviará como orden pendiente. El bróker rechazará la orden si el precio queda del lado equivocado al momento de procesarla."}
                 </div>
               </div>
             </AlertDialogDescription>
@@ -379,9 +613,7 @@ export default function OrderTicket({ oneClick }: Props) {
             <AlertDialogAction
               onClick={doSubmit}
               disabled={submitting}
-              className={cn(
-                side === "buy" ? "bg-emerald-500 hover:bg-emerald-400 text-black" : "bg-red-500 hover:bg-red-400 text-black",
-              )}
+              className={cn(side === "buy" ? "bg-emerald-500 hover:bg-emerald-400 text-black" : "bg-red-500 hover:bg-red-400 text-black")}
             >
               {submitting ? "Enviando…" : "Confirmar"}
             </AlertDialogAction>
@@ -392,15 +624,65 @@ export default function OrderTicket({ oneClick }: Props) {
   );
 }
 
-function Row({
-  label,
-  value,
-  mono,
+function ProtectionBlock({
+  label, accent, state, setState, resolved, digits, currency, issue,
 }: {
   label: string;
-  value: React.ReactNode;
-  mono?: boolean;
+  accent: "red" | "emerald";
+  state: SLState;
+  setState: (s: SLState) => void;
+  resolved: { price: number | null; pips: number | null; amount: number | null; pct: number | null };
+  digits: number;
+  currency: string | null;
+  issue: string | null;
 }) {
+  const accentText = accent === "red" ? "text-red-400" : "text-emerald-400";
+  return (
+    <div className="space-y-1 rounded border border-neutral-800 bg-[#0e0e10] p-2">
+      <div className="flex items-center justify-between">
+        <label className={cn("text-[10px] uppercase tracking-wider font-bold", accentText)}>{label}</label>
+        <div className="flex bg-neutral-900 rounded overflow-hidden text-[9px]">
+          {(Object.keys(SL_MODE_LABEL) as SLMode[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setState({ ...state, mode: m })}
+              className={cn("px-1.5 py-0.5 uppercase tracking-wider", state.mode === m ? "bg-[#FFCD05] text-black font-bold" : "text-neutral-500 hover:text-neutral-200")}
+            >
+              {SL_MODE_LABEL[m]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <input
+        type="number"
+        inputMode="decimal"
+        value={state.input}
+        onChange={(e) => setState({ ...state, input: e.target.value })}
+        placeholder={state.mode === "price" ? "0.00000" : state.mode === "pips" ? "pips" : state.mode === "amount" ? "monto" : "% balance"}
+        className="w-full bg-[#16171a] text-center text-sm font-mono font-semibold text-neutral-100 outline-none focus:bg-neutral-900 tabular-nums rounded px-2 py-1 border border-neutral-800"
+      />
+      <div className="grid grid-cols-4 gap-1 text-[9px] font-mono text-neutral-500">
+        <Cell label="Precio" value={resolved.price != null ? fmt(resolved.price, digits) : "—"} active={state.mode === "price"} />
+        <Cell label="Pips" value={resolved.pips != null ? Math.abs(resolved.pips).toFixed(1) : "—"} active={state.mode === "pips"} />
+        <Cell label="Monto" value={resolved.amount != null ? fmtMoney(Math.abs(resolved.amount), currency) : "—"} active={state.mode === "amount"} />
+        <Cell label="%" value={resolved.pct != null ? `${Math.abs(resolved.pct).toFixed(2)}%` : "—"} active={state.mode === "pct"} />
+      </div>
+      {issue && <div className="text-[10px] text-red-400">{issue}</div>}
+    </div>
+  );
+}
+
+function Cell({ label, value, active }: { label: string; value: string; active: boolean }) {
+  return (
+    <div className={cn("rounded px-1 py-0.5 text-center", active ? "bg-[#1a1a1d] text-neutral-200" : "")}>
+      <div className="text-[8px] uppercase tracking-wider text-neutral-600">{label}</div>
+      <div className="tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function Row({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
     <div className="flex items-center justify-between gap-2 text-[11px]">
       <span className="text-neutral-500">{label}</span>
