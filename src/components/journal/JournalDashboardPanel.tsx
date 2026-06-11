@@ -424,10 +424,11 @@ const JournalDashboardPanel = () => {
               const derivedOk = recon?.kind === "ok";
               const showDash = aug?._needsRecon && !derivedOk;
               const closeDisplay = derivedOk
-                ? recon!.close.toFixed(SYMBOL_META[(p.symbol ?? "").toUpperCase()]?.digits ?? 5)
+                ? recon.close.toFixed(recon.digits)
                 : showDash
                   ? "—"
                   : p.vwap_close?.toFixed(5) ?? "—";
+
               return (
                 <div key={`${p.mt_login}-${p.position_id}`} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2.5 text-sm items-center hover:bg-secondary/20">
                   <div className="min-w-0">
