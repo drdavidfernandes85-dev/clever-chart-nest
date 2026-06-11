@@ -240,6 +240,10 @@ serve(async (req) => {
 
 
     if (!symbol) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "execute_trade", gate: "bad_request",
+        reason: "Symbol is required.", side, volume, version: "execute-trade@v2",
+      });
       return json(
         {
           success: false,
@@ -251,6 +255,10 @@ serve(async (req) => {
     }
 
     if (!side) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "execute_trade", gate: "bad_request",
+        reason: "Trade direction must be buy or sell.", symbol, volume, version: "execute-trade@v2",
+      });
       return json(
         {
           success: false,
@@ -262,6 +270,10 @@ serve(async (req) => {
     }
 
     if (!Number.isFinite(volume) || volume <= 0) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "execute_trade", gate: "bad_request",
+        reason: "Volume must be greater than 0.", symbol, side, version: "execute-trade@v2",
+      });
       return json(
         {
           success: false,
@@ -274,6 +286,10 @@ serve(async (req) => {
 
     const mapping = await resolveActiveMtMapping(supabase, user.id);
     if (mapping.status === "missing") {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "execute_trade", gate: "no_mapping",
+        reason: "No connected MT5 account found.", symbol, side, volume, version: "execute-trade@v2",
+      });
       return json(
         {
           success: false,
@@ -284,6 +300,12 @@ serve(async (req) => {
       );
     }
     if (mapping.status === "stale" || !mapping.traderId) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "execute_trade", gate: "stale_mapping",
+        reason: STALE_MAPPING_ERROR_CODE, symbol, side, volume,
+        version: "execute-trade@v2",
+        extra: { mappingStatus: mapping.status, localRowId: mapping.localRowId },
+      });
       return json(
         {
           success: false,
@@ -306,6 +328,12 @@ serve(async (req) => {
         login: mapping.login,
       });
       if (!gate.allowed) {
+        await auditGateBlock(supabase, {
+          userId: user.id, action: "execute_trade", gate: "exec_mode",
+          reason: gate.reason ?? (gate.code || LIVE_EXEC_DISABLED_CODE),
+          symbol, side, volume, version: "execute-trade@v2",
+          extra: { executionMode: gate.mode, code: gate.code },
+        });
         return json({
           success: false,
           step: "execution_mode_gate",
@@ -329,6 +357,12 @@ serve(async (req) => {
         operation: `market_${side}`,
       });
       if (!canaryCheck.allowed) {
+        await auditGateBlock(supabase, {
+          userId: user.id, action: "execute_trade", gate: "canary",
+          reason: (canaryCheck as any).reason ?? "canary_policy_block",
+          symbol, side, volume, version: "execute-trade@v2",
+          extra: { canary: canaryCheck },
+        });
         return json(canaryGuardResponseBody(canaryCheck, "EXECUTE_TRADE"), 403);
       }
     }
@@ -341,6 +375,12 @@ serve(async (req) => {
     {
       const blocker = await getFinalActivationBlocker(supabase);
       if (blocker.active) {
+        await auditGateBlock(supabase, {
+          userId: user.id, action: "execute_trade", gate: "final_activation_blocker",
+          reason: (blocker as any).code ?? "FINAL_ACTIVATION_BLOCKED",
+          symbol, side, volume, version: "execute-trade@v2",
+          extra: { blocker },
+        });
         return json(blockerResponseBody(blocker), 423);
       }
     }
@@ -358,6 +398,12 @@ serve(async (req) => {
       operation: sideToOperation(side, "market"),
     });
     if (!gateFresh.ok) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "execute_trade", gate: "fresh_trade_mode",
+        reason: (gateFresh as any).reason ?? (gateFresh as any).code ?? "fresh_trade_mode_block",
+        symbol, side, volume, version: "execute-trade@v2",
+        extra: { gateFresh },
+      });
       return json(freshTradeModeGateResponse("execute-trade@v2", gateFresh, { tradeId, symbol, side, volume }), 200);
     }
 
