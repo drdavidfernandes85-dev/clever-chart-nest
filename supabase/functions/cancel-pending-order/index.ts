@@ -102,14 +102,14 @@ Deno.serve(async (req) => {
   } catch { /* ignore */ }
 
   // Broker-symbol gate — use stored brokerSymbol if provided, else look up via canonical symbol.
-  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+  const eligible = await resolveBrokerSymbolWithSelfHeal(supabase, {
     userId: user.id,
     traderId: accountId,
     accountId: mapping.tradingLayerAccountId,
     requestedDisplaySymbol: symbol,
     suppliedBrokerSymbol,
     operationType: "cancel_pending",
-  });
+  }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
     return json(brokerSymbolGateResponse(VERSION, eligible, { orderId }), 200);
   }
