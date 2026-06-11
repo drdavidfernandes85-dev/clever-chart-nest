@@ -40,6 +40,7 @@ import {
   resolveFreshExecutionTick,
   FRESH_TICK_POLICY_VERSION,
 } from "../_shared/freshTick.ts";
+import { auditGateBlock } from "../_shared/auditGateBlock.ts";
 
 
 const VERSION = "SUBMIT_PENDING_ORDER_V4_2026_06_11";
