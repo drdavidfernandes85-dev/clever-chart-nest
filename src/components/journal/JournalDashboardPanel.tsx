@@ -151,6 +151,67 @@ const JournalDashboardPanel = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  // Resolve account currency (drives reconstruction eligibility).
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("user_mt_accounts")
+        .select("currency")
+        .eq("user_id", user.id)
+        .not("currency", "is", null)
+        .limit(1)
+        .maybeSingle();
+      if (data?.currency) setAccountCurrency(String(data.currency).toUpperCase());
+    })();
+  }, [user]);
+
+  // Fetch live broker spec for each distinct symbol that needs reconstruction.
+  // Cached for the session; never re-fetched, never replaced by a hardcoded map.
+  useEffect(() => {
+    const symbols = Array.from(new Set(
+      positions
+        .filter((p) =>
+          p.is_closed && p.symbol &&
+          p.vwap_open != null && p.vwap_close != null &&
+          Math.abs((p.vwap_open ?? 0) - (p.vwap_close ?? 0)) < 1e-9 &&
+          Math.abs(p.net_pnl ?? 0) > 0.0001,
+        )
+        .map((p) => p.symbol!.toUpperCase()),
+    ));
+    const missing = symbols.filter((s) => !specCache.has(s));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(missing.map(async (sym) => {
+        try {
+          const { data, error } = await supabase.functions.invoke(
+            "get-mt5-terminal-data", { body: { selectedSymbol: sym } },
+          );
+          if (error || !data?.success) return [sym, null] as const;
+          const s = data.specs;
+          if (!s || s.contractSize == null || !s.currencyProfit) return [sym, null] as const;
+          const digits = s.digits ?? 5;
+          const spec: LiveSpec = {
+            contractSize: Number(s.contractSize),
+            profitCcy: String(s.currencyProfit).toUpperCase(),
+            digits,
+            point: s.point ?? Math.pow(10, -digits),
+          };
+          return [sym, spec] as const;
+        } catch { return [sym, null] as const; }
+      }));
+      if (cancelled) return;
+      setSpecCache((prev) => {
+        const next = new Map(prev);
+        for (const [sym, spec] of results) next.set(sym, spec);
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [positions, specCache]);
+
+
   const sync = async () => {
     setSyncing(true);
     cancelRef.current = false;
