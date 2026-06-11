@@ -168,8 +168,19 @@ function PositionsTab({ snap, refresh, balance }: { snap: SnapshotState; refresh
 
   const totalNet = rows.reduce((s, r) => s + (Number(r.net_profit) || 0), 0);
   const totalGross = rows.reduce((s, r) => s + (Number(r.profit) || 0), 0);
+  // Staleness threshold for the snapshot's last successful broker fetch.
+  // Chosen at 60s = 12 missed 5s polls — long enough to tolerate one upstream
+  // blip, short enough that a real outage degrades fast.
+  const STALE_SNAPSHOT_MS = 60_000;
+  const snapshotAgeMs = snap.asOf > 0 ? Date.now() - snap.asOf : Infinity;
+  const isStaleSnapshot = snap.connected && snapshotAgeMs > STALE_SNAPSHOT_MS;
+  // Null account fields = broker degraded, NOT zero. Must not silently render
+  // as "no divergence" / "no positions". |null| > 0.5 is never true.
+  const accountFieldsNull = snap.connected && (snap.accountProfit == null || snap.balance == null);
+  const degraded = accountFieldsNull || isStaleSnapshot;
   const reconcilesWithBar =
-    snap.accountProfit == null ? true
+    degraded ? true // suppress reconciliation alarm while degraded — unknown ≠ reconciled
+      : snap.accountProfit == null ? true
       : Math.abs(totalGross - snap.accountProfit) <= Math.max(0.05, Math.abs(snap.accountProfit) * 0.005);
 
   // In-flight row state — drives "Cerrando…" / "Modificando…" without mutating values.
@@ -197,6 +208,31 @@ function PositionsTab({ snap, refresh, balance }: { snap: SnapshotState; refresh
   const losers = livePositions.filter((p) => p.net_profit < 0).length;
 
   if (rows.length === 0) {
+    // Degraded > divergent > affirmatively-empty.
+    // Null is "we don't know", NOT zero. Render a safety message instead of
+    // the neutral empty state, regardless of what totalGross/profit compare to.
+    if (degraded) {
+      const reason = accountFieldsNull
+        ? "Campos de cuenta nulos en la última lectura"
+        : `Última actualización hace ${Math.round(snapshotAgeMs / 1000)}s`;
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+          <span className="inline-flex items-center gap-1.5 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-300">
+            Datos del bróker no disponibles
+          </span>
+          <div className="max-w-md text-sm text-neutral-200">
+            No se puede confirmar el estado de tus posiciones. Si necesitas
+            gestionarlas con urgencia, usa MT5.
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-neutral-500">
+            {reason}
+          </div>
+          <button onClick={refresh} className="mt-1 rounded border border-neutral-700 px-2 py-1 text-[11px] text-neutral-300 hover:bg-neutral-900">
+            Reintentar ahora
+          </button>
+        </div>
+      );
+    }
     const profit = snap.accountProfit;
     const tol = profit == null ? 0 : Math.max(0.05, Math.abs(profit) * 0.005);
     const divergent = profit != null && Math.abs(profit) > tol;
@@ -220,6 +256,7 @@ function PositionsTab({ snap, refresh, balance }: { snap: SnapshotState; refresh
         </div>
       );
     }
+    // Only valid when broker affirmatively reports an empty book WITH non-null account data.
     return <div className="px-3 py-10 text-center text-xs text-muted-foreground">Sin posiciones abiertas</div>;
   }
 
