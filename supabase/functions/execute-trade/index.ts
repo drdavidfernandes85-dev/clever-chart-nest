@@ -13,6 +13,16 @@ import {
   assertCanaryEntryAllowed,
   canaryGuardResponseBody,
 } from "../_shared/canaryPolicy.ts";
+import { auditGateBlock } from "../_shared/auditGateBlock.ts";
+
+// AUDIT-ON-BLOCK COVERAGE (execute-trade):
+//   Post-auth gate rejections (intent_validation, validation, account_lookup,
+//   mapping_validation, execution_mode_gate, canary, final_activation_blocker,
+//   fresh_trade_mode) write execution_audit_events with outcome="blocked".
+//   Pre-auth rejections (missing TRADING_LAYER_API_KEY env, missing/invalid
+//   Authorization header) CANNOT audit — execution_audit_events.user_id is
+//   NOT NULL and no user is resolved at those sites. Documented in the
+//   audit completion certificate.
 
 import {
   refreshTradeModeFromTradingLayer,
