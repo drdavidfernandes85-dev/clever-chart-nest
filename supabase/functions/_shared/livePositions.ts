@@ -41,11 +41,10 @@ function tlKey(): string {
   return k;
 }
 
+import { decodePositionSide } from "./mt5Decode.ts";
+
 function normaliseSide(s: any): "buy" | "sell" | null {
-  const v = String(s ?? "").toLowerCase();
-  if (v === "buy" || v === "0" || v === "long") return "buy";
-  if (v === "sell" || v === "1" || v === "short") return "sell";
-  return null;
+  return decodePositionSide(s);
 }
 
 function normalisePosition(p: any): LiveTlPosition | null {
