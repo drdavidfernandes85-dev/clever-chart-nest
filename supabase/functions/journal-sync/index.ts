@@ -237,7 +237,7 @@ serve(async (req) => {
     last_synced_at: completedAt,
     last_deal_time: maxDealTime,
     last_deal_ticket: maxDealTicket,
-    last_status: lastError ? "error" : hasMore ? "partial" : "ok",
+    last_status: resolvedStatus,
     last_error: lastError,
     deals_total: dealsTotal ?? 0,
   }, { onConflict: "user_id,mt_account_id" });
