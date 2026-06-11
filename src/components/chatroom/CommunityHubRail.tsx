@@ -70,17 +70,11 @@ const CommunityHubRail = () => {
       setIdeasShared24h(recent ?? 0);
     })();
 
-    const tick = setInterval(() => {
-      setOnlineCount((n) =>
-        Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))),
-      );
-    }, 5000);
-
     return () => {
       cancelled = true;
-      clearInterval(tick);
     };
   }, []);
+
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-2 pb-3 sm:gap-2.5 sm:px-2.5 sm:py-2.5 lg:gap-3 lg:p-3">
