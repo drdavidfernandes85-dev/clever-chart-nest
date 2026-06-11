@@ -130,7 +130,7 @@ const App = () => (
                     <Route path="/signup" element={<Signup />} />
                     {/* Legacy English routes redirected to the new Spanish auth flow */}
                     <Route path="/register" element={<Navigate to="/signup" replace />} />
-                    <Route path="/forgot-password" element={<Navigate to="/reset-password" replace />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     {/* Open to all logged-in users (no eligibility required) */}
