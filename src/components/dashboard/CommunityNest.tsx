@@ -58,7 +58,7 @@ const CommunityNest = () => {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [signals, setSignals] = useState<SharedSignal[]>([]);
   const [messages, setMessages] = useState<ChatPreview[]>([]);
-  const [onlineCount, setOnlineCount] = useState(184);
+  const onlineCount = useOnlineCount() ?? 0;
   const { openTrade } = useQuickTrade();
 
   useEffect(() => {
