@@ -266,8 +266,10 @@ const JournalDashboardPanel = () => {
       p.vwap_open != null && p.vwap_close != null &&
       Math.abs((p.vwap_open ?? 0) - (p.vwap_close ?? 0)) < PRICE_EPS &&
       Math.abs(p.net_pnl ?? 0) > 0.0001;
-    return { ...p, _needsRecon: needs, _recon: needs ? reconstruct(p) : undefined };
-  }), [closed]);
+    const spec = needs && p.symbol ? specCache.get(p.symbol.toUpperCase()) ?? null : null;
+    return { ...p, _needsRecon: needs, _recon: needs ? reconstructClose(p, spec, accountCurrency) : undefined };
+  }), [closed, specCache, accountCurrency]);
+
 
   const reconstructed = augmented.filter((p) => p._recon?.kind === "ok");
   const unrecoverable = augmented.filter((p) => p._needsRecon && p._recon?.kind !== "ok");
