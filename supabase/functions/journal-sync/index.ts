@@ -4,20 +4,19 @@
 // public.journal_sync_state. Service-role writes; user SELECT for read.
 //
 // Sync contract:
-//   - Window: body.dateFrom..dateTo (ISO). Defaults: last 60d.
-//   - Pagination: GET /api/v1/accounts/{traderId}/history/deals?dateFrom&dateTo&limit&offset
-//                  TL returns { data:[...], meta:{ limit, offset, count, hasMore } }
-//                  We page in 200-row chunks until hasMore=false OR safety cap (50 pages).
-//   - Rate limit: 250ms sleep between TL page calls; per-request budget cap 25s.
-//   - Backfill: client can pass { full:true } to widen window to 1 year.
-//   - Upsert key: (user_id, mt_login, ticket). Conflict → DO UPDATE on raw+decoded.
-//   - Idempotent: re-running over same window only touches changed rows.
-//   - Cursor: journal_sync_state.last_deal_time advances to max(deal_time) seen.
+//   - Window: body.dateFrom..dateTo (ISO). Defaults: last 60d (365d if full:true).
+//   - Pagination: GET .../history/deals?dateFrom&dateTo&limit&offset (200 / page).
+//                 Continue while meta.hasMore && rows.length >= PAGE,
+//                 hard cap 50 pages OR 25s wall-budget — whichever first.
+//   - Rate limit: 250ms sleep between TL page calls.
+//   - Upsert key: (user_id, mt_login, ticket). Conflict → UPDATE raw+decoded.
+//   - Idempotent: re-runs only mutate rows whose decoded fields changed.
+//   - Cursor: journal_sync_state.last_deal_time advances to max(deal_time).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveActiveMtMapping } from "../_shared/mtMapping.ts";
-import { decodeDealSide, decodeDealEntry, isTradeDeal } from "../_shared/mt5Decode.ts";
+import { decodeDealSide, isTradeDeal } from "../_shared/mt5Decode.ts";
 
 const TL_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const TL_BASE = "https://api.trading-layer.com";
@@ -35,7 +34,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const toIso = (v: unknown): string | null => {
   if (v == null) return null;
   if (typeof v === "number") {
-    // TL sometimes returns epoch seconds; detect by magnitude.
     const ms = v < 1e12 ? v * 1000 : v;
     const d = new Date(ms);
     return Number.isFinite(d.getTime()) ? d.toISOString() : null;
@@ -46,6 +44,11 @@ const toIso = (v: unknown): string | null => {
 const num = (v: unknown) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+};
+const numOrNull = (v: unknown): number | null => {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 };
 
 serve(async (req) => {
@@ -65,12 +68,15 @@ serve(async (req) => {
   if (authErr || !user) return json({ success: false, error: "Unauthorized" }, 401);
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  if (mapping.status !== "ok" || !mapping.traderId) {
+  if (mapping.status !== "valid" || !mapping.traderId || !mapping.localRowId || !mapping.login) {
     return json({ success: false, error: "No connected MT5 account" }, 200);
   }
   const traderId = mapping.traderId;
   const mtAccountId = mapping.localRowId;
-  const mtLogin = String(mapping.login ?? "");
+  const mtLoginNum = Number(mapping.login);
+  if (!Number.isFinite(mtLoginNum)) {
+    return json({ success: false, error: "Invalid mt_login" }, 200);
+  }
 
   let body: any = {};
   try { body = await req.json(); } catch { /* empty */ }
@@ -87,15 +93,11 @@ serve(async (req) => {
   const BUDGET_MS = 25_000;
   const started = Date.now();
 
-  // Mark sync state row as running.
   await supabase.from("journal_sync_state").upsert({
     user_id: user.id,
     mt_account_id: mtAccountId,
-    mt_login: Number(mtLogin) || null,
-    last_run_status: "running",
-    last_run_started_at: new Date().toISOString(),
-    last_run_window_from: dateFrom,
-    last_run_window_to: dateTo,
+    mt_login: mtLoginNum,
+    last_status: "running",
   }, { onConflict: "user_id,mt_account_id" });
 
   let offset = 0;
@@ -103,6 +105,7 @@ serve(async (req) => {
   let totalFetched = 0;
   let upserted = 0;
   let maxDealTime: string | null = null;
+  let maxDealTicket: number | null = null;
   let lastError: string | null = null;
   let upstreamStatus = 0;
 
@@ -129,43 +132,47 @@ serve(async (req) => {
     if (rows.length === 0) break;
     totalFetched += rows.length;
 
-    // Map → DB shape
     const dbRows = rows.map((d) => {
       const typeRaw = d.type ?? d.deal_type ?? d.dealType;
       const entryRaw = d.entry ?? d.deal_entry ?? d.dealEntry;
+      const reasonRaw = d.reason ?? d.deal_reason;
       const dealTime = toIso(d.time ?? d.deal_time ?? d.dealTime ?? d.timestamp);
-      if (dealTime && (!maxDealTime || dealTime > maxDealTime)) maxDealTime = dealTime;
+      const ticket = numOrNull(d.ticket ?? d.id ?? d.deal_id);
+      if (dealTime && (!maxDealTime || dealTime > maxDealTime)) {
+        maxDealTime = dealTime;
+        maxDealTicket = ticket;
+      }
       return {
         user_id: user.id,
         mt_account_id: mtAccountId,
-        mt_login: Number(mtLogin) || null,
-        ticket: Number(d.ticket ?? d.id ?? d.deal_id ?? 0),
-        order_id: d.order_id ?? d.orderId ?? d.order ? Number(d.order_id ?? d.orderId ?? d.order) : null,
-        position_id: d.position_id ?? d.positionId ?? d.position ? Number(d.position_id ?? d.positionId ?? d.position) : null,
+        mt_login: mtLoginNum,
+        ticket: ticket ?? 0,
+        order_id: numOrNull(d.order_id ?? d.orderId ?? d.order),
+        position_id: numOrNull(d.position_id ?? d.positionId ?? d.position),
         symbol: d.symbol ? String(d.symbol).toUpperCase() : null,
-        type_raw: typeRaw != null ? Number(typeRaw) : null,
+        type_raw: typeRaw != null ? Number(typeRaw) : 0,
         entry_raw: entryRaw != null ? Number(entryRaw) : null,
+        reason_raw: reasonRaw != null ? Number(reasonRaw) : null,
         is_trade: isTradeDeal(typeRaw),
         side: decodeDealSide(typeRaw),
-        entry: decodeDealEntry(entryRaw),
         volume: num(d.volume ?? d.lots),
         price: num(d.price),
         profit: num(d.profit),
         swap: num(d.swap),
         commission: num(d.commission),
         fee: num(d.fee),
-        deal_time: dealTime,
+        deal_time: dealTime ?? new Date(0).toISOString(),
         comment: d.comment ?? null,
         raw: d,
       };
-    }).filter((r) => r.ticket && Number.isFinite(r.ticket));
+    }).filter((r) => r.ticket > 0);
 
     if (dbRows.length > 0) {
-      const { error: upErr, count } = await supabase
+      const { error: upErr } = await supabase
         .from("journal_deals")
-        .upsert(dbRows, { onConflict: "user_id,mt_login,ticket", count: "exact" });
+        .upsert(dbRows, { onConflict: "user_id,mt_login,ticket" });
       if (upErr) { lastError = upErr.message; break; }
-      upserted += count ?? dbRows.length;
+      upserted += dbRows.length;
     }
 
     const meta = parsed?.meta ?? {};
@@ -177,17 +184,23 @@ serve(async (req) => {
   }
 
   const completedAt = new Date().toISOString();
+  // Get current total for this account.
+  const { count: dealsTotal } = await supabase
+    .from("journal_deals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("mt_login", mtLoginNum);
+
   await supabase.from("journal_sync_state").upsert({
     user_id: user.id,
     mt_account_id: mtAccountId,
-    mt_login: Number(mtLogin) || null,
-    last_run_status: lastError ? "error" : "ok",
-    last_run_completed_at: completedAt,
-    last_run_error: lastError,
-    last_run_deals_fetched: totalFetched,
-    last_run_deals_upserted: upserted,
+    mt_login: mtLoginNum,
+    last_synced_at: completedAt,
     last_deal_time: maxDealTime,
-    last_sync_at: completedAt,
+    last_deal_ticket: maxDealTicket,
+    last_status: lastError ? "error" : "ok",
+    last_error: lastError,
+    deals_total: dealsTotal ?? 0,
   }, { onConflict: "user_id,mt_account_id" });
 
   return json({
@@ -198,6 +211,7 @@ serve(async (req) => {
     pagesFetched: pages,
     dealsFetched: totalFetched,
     dealsUpserted: upserted,
+    dealsTotal: dealsTotal ?? 0,
     maxDealTime,
     elapsedMs: Date.now() - started,
   });
