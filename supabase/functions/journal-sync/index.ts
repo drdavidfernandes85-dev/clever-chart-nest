@@ -4,15 +4,12 @@
 //
 // CONTRACT
 //   - Window: body.dateFrom..dateTo (ISO). Defaults: last 60d (365d if full:true).
-//   - Pagination: internal POST to /get-mt5-history with kind='deals' (page 50).
-//     Stops on meta.hasMore=false OR empty page OR page cap OR wall-budget.
-//   - Rate limit: 250ms between pages.
-//   - Upsert key: (user_id, mt_login, ticket). Idempotent.
-//
-// NOTE: We deliberately route TL via get-mt5-history instead of hitting TL
-// directly. Direct TL calls from this function returned TL_HTTP_400 with no
-// body for reasons we couldn't isolate (probably an upstream auth/header path
-// difference); get-mt5-history is the single-known-good TL access path.
+//   - Pagination: internal POST to /get-mt5-history with kind='deals'.
+//   - TL DEVIATION #6: server ignores `limit` (verified up to 500) and returns
+//     max ~10 rows/page. We do NOT gate hasMore on rows.length >= PAGE.
+//   - Wall budget 25s per invocation; on exhaustion returns hasMore=true and
+//     nextDateTo (oldest deal seen − 1ms) so the CLIENT can auto-invoke the
+//     next chunk. Upserts are idempotent on (user_id, mt_login, ticket).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -82,7 +79,7 @@ serve(async (req) => {
   const dateTo = body?.dateTo ? new Date(body.dateTo).toISOString() : new Date(now).toISOString();
 
   const PAGE = 50;
-  const MAX_PAGES = 50;
+  const MAX_PAGES = 80;
   const BUDGET_MS = 25_000;
   const started = Date.now();
 
@@ -99,11 +96,13 @@ serve(async (req) => {
   let upserted = 0;
   let maxDealTime: string | null = null;
   let maxDealTicket: number | null = null;
+  let minDealTime: string | null = null;
   let lastError: string | null = null;
   let upstreamStatus = 0;
+  let budgetExhausted = false;
 
   while (pages < MAX_PAGES) {
-    if (Date.now() - started > BUDGET_MS) { lastError = "BUDGET_EXCEEDED"; break; }
+    if (Date.now() - started > BUDGET_MS) { budgetExhausted = true; break; }
 
     let parsed: any = null;
     try {
@@ -140,12 +139,14 @@ serve(async (req) => {
       const reasonRaw = d.reason ?? d.deal_reason;
       const dealTime = toIso(d.time ?? d.deal_time ?? d.dealTime ?? d.timestamp ?? d.time_msc);
       const ticket = numOrNull(d.ticket ?? d.id ?? d.deal_id);
-      // TL deal payload uses `order` for the parent order ticket (not order_id).
       const orderId = numOrNull(d.order ?? d.order_id ?? d.orderId);
       const positionId = numOrNull(d.position_id ?? d.positionId ?? d.position);
       if (dealTime && (!maxDealTime || dealTime > maxDealTime)) {
         maxDealTime = dealTime;
         maxDealTicket = ticket;
+      }
+      if (dealTime && (!minDealTime || dealTime < minDealTime)) {
+        minDealTime = dealTime;
       }
       return {
         user_id: user.id,
@@ -182,11 +183,12 @@ serve(async (req) => {
     }
 
     const meta = parsed?.meta ?? {};
-    const hasMore = Boolean(meta.hasMore) && rows.length >= PAGE;
+    // TL deviation #6: limit ignored, ~10/page. Continue unless meta says no.
+    const hasMoreUpstream = meta.hasMore === false ? false : true;
     offset += rows.length;
     pages += 1;
-    if (!hasMore) break;
-    await sleep(250);
+    if (!hasMoreUpstream) break;
+    await sleep(150);
   }
 
   const completedAt = new Date().toISOString();
@@ -196,6 +198,12 @@ serve(async (req) => {
     .eq("user_id", user.id)
     .eq("mt_login", mtLoginNum);
 
+  // Tell the client to auto-continue when we got cut by the wall budget.
+  const hasMore = budgetExhausted && totalFetched > 0;
+  const nextDateTo = hasMore && minDealTime
+    ? new Date(new Date(minDealTime).getTime() - 1).toISOString()
+    : null;
+
   await supabase.from("journal_sync_state").upsert({
     user_id: user.id,
     mt_account_id: mtAccountId,
@@ -203,7 +211,7 @@ serve(async (req) => {
     last_synced_at: completedAt,
     last_deal_time: maxDealTime,
     last_deal_ticket: maxDealTicket,
-    last_status: lastError ? "error" : "ok",
+    last_status: lastError ? "error" : hasMore ? "partial" : "ok",
     last_error: lastError,
     deals_total: dealsTotal ?? 0,
   }, { onConflict: "user_id,mt_account_id" });
@@ -218,6 +226,9 @@ serve(async (req) => {
     dealsUpserted: upserted,
     dealsTotal: dealsTotal ?? 0,
     maxDealTime,
+    minDealTime,
+    hasMore,
+    nextDateTo,
     elapsedMs: Date.now() - started,
   });
 });
