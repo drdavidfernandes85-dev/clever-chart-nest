@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { useWebinars } from "@/hooks/useWebinars";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LOCALE_FLAGS, LOCALE_LABELS, type Locale, type TranslationKey } from "@/i18n/translations";
 
