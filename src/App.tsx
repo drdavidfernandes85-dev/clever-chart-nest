@@ -135,7 +135,11 @@ const App = () => (
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     {/* Open to all logged-in users (no eligibility required) */}
-                    <Route path="/dashboard" element={<DashboardShell scope="dashboard"><Dashboard /></DashboardShell>} />
+                    {/* /dashboard: legacy live-test surface. Decommission-before-launch
+                        — exposes raw canary policy state, English UI, and a
+                        TradingView/OANDA chart whose prices disagree with MT5.
+                        Admin-only until removed. Canonical surface: /terminal-pro. */}
+                    <Route path="/dashboard" element={<AdminRoute><DashboardShell scope="dashboard"><Dashboard /></DashboardShell></AdminRoute>} />
                     <Route path="/trading-room" element={<DashboardShell scope="trading-room"><TradingDashboard /></DashboardShell>} />
                     <Route path="/command" element={<DashboardShell scope="command"><CommandDeck /></DashboardShell>} />
                     <Route path="/profile" element={<DashboardShell scope="profile"><Profile /></DashboardShell>} />
