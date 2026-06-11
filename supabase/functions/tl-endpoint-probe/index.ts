@@ -1,6 +1,10 @@
-// Probe the discovered /rates endpoint live to confirm it returns data.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
+async function timedFetch(url: string, init: RequestInit, ms = 8000) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+  try { return await fetch(url, { ...init, signal: ac.signal }); } finally { clearTimeout(t); }
+}
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   const auth = req.headers.get("Authorization") || "";
@@ -12,14 +16,30 @@ Deno.serve(async (req) => {
   const KEY = Deno.env.get("TRADING_LAYER_API_KEY")!;
   const ACC = "29008868-d583-4ab5-a6c1-57586fe92007";
   const BASE = "https://api.trading-layer.com";
-  const dateFrom = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-  const tfs = ["M1", "1", "M5", "M15", "H1", "D1", 1, 5];
-  const out: any[] = [];
-  for (const tf of tfs) {
-    const url = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=${tf}&dateFrom=${encodeURIComponent(dateFrom)}&count=3`;
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${KEY}` } });
-    const txt = await r.text();
-    out.push({ tf, status: r.status, body: txt.slice(0, 500) });
+  const dateFrom = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const attempts = [
+    `rates?symbol=EURUSD&timeframe=M1&dateFrom=${encodeURIComponent(dateFrom)}&count=8`,
+    `rates?symbol=EURUSD&timeframe=M5&startPos=0&count=4`,
+  ];
+  const ratesResults: any[] = [];
+  for (const q of attempts) {
+    try {
+      const r = await timedFetch(`${BASE}/api/v1/accounts/${ACC}/${q}`, { headers: { Authorization: `Bearer ${KEY}` } }, 60000);
+      const txt = await r.text();
+      ratesResults.push({ q, status: r.status, body: txt.slice(0, 1500) });
+    } catch (e) {
+      ratesResults.push({ q, status: "EXC", body: String(e).slice(0, 300) });
+    }
   }
-  return new Response(JSON.stringify(out, null, 2), { headers: { ...cors, "Content-Type": "application/json" } });
+  let tick: any;
+  try {
+    const rTick = await timedFetch(`${BASE}/api/v1/accounts/${ACC}/symbols/EURUSD/tick`, { headers: { Authorization: `Bearer ${KEY}` } }, 5000);
+    tick = { status: rTick.status, body: (await rTick.text()).slice(0, 400) };
+  } catch (e) { tick = { status: "EXC", body: String(e) }; }
+  return new Response(JSON.stringify({
+    serverNow: new Date().toISOString(),
+    serverNowMs: Date.now(),
+    rates: ratesResults,
+    tick,
+  }, null, 2), { headers: { ...cors, "Content-Type": "application/json" } });
 });
