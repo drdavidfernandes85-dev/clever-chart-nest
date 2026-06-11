@@ -100,15 +100,14 @@ serve(async (req) => {
     }
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return json({ success: false, step: "auth", error: "Missing Authorization header." }, 401);
+      return json({
+        success: false,
+        accountConnected: false,
+        step: "auth",
+        error: "Missing Authorization header.",
+        quotes: [],
+      }, 200);
     }
-
-    const body = await req.json().catch(() => ({}));
-    const debug = body?.debug === true;
-    const selectedSymbol = body?.selectedSymbol ? normalize(String(body.selectedSymbol)) : "";
-    const requested: string[] = Array.isArray(body?.symbols)
-      ? body.symbols.map((s: any) => normalize(String(s))).filter(Boolean)
-      : [];
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -117,8 +116,23 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return json({ success: false, step: "auth", error: "Unauthorized." }, 401);
+      // Degrade gracefully — display-only endpoint should never blank the UI
+      // just because the session token is stale/anon. Frontend will retry.
+      return json({
+        success: false,
+        accountConnected: false,
+        step: "auth",
+        error: "Unauthorized.",
+        quotes: [],
+      }, 200);
     }
+
+    const body = await req.json().catch(() => ({}));
+    const debug = body?.debug === true;
+    const selectedSymbol = body?.selectedSymbol ? normalize(String(body.selectedSymbol)) : "";
+    const requested: string[] = Array.isArray(body?.symbols)
+      ? body.symbols.map((s: any) => normalize(String(s))).filter(Boolean)
+      : [];
 
     let { data: account } = await supabase
       .from("user_mt_accounts")
