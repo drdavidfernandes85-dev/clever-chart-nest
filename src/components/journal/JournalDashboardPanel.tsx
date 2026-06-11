@@ -274,37 +274,37 @@ const JournalDashboardPanel = () => {
   const reconstructed = augmented.filter((p) => p._recon?.kind === "ok");
   const unrecoverable = augmented.filter((p) => p._needsRecon && p._recon?.kind !== "ok");
 
-  // Trusted set for KPIs: clean rows + rows reconstructed exactly.
-  // Unrecoverable rows (ccy mismatch / tripwire) stay excluded — same posture as before.
-  const trusted = useMemo(
-    () => augmented.filter((p) => !p._needsRecon || p._recon?.kind === "ok"),
-    [augmented],
-  );
-
+  // KPI INCLUSION RULE
+  // P&L trust is independent of price trust. net_pnl is broker-stamped on the
+  // out-deal in account currency and is exact even when vwap_close was lossy.
+  // KPIs aggregate ALL closed positions; only the price/pips column dashes (or
+  // shows a derived value) for rows whose vwap_close was stamped with vwap_open.
+  // "Unrecoverable" is a render classification, never a P&L exclusion.
   const stats = useMemo(() => {
-    if (trusted.length === 0) {
+    if (closed.length === 0) {
       return { totalPnl: 0, winRate: 0, profitFactor: 0, count: 0, best: 0, worst: 0, avgWin: 0, avgLoss: 0, volume: 0 };
     }
-    const wins = trusted.filter((p) => (p.net_pnl ?? 0) > 0);
-    const losses = trusted.filter((p) => (p.net_pnl ?? 0) < 0);
-    const totalPnl = trusted.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
+    const wins = closed.filter((p) => (p.net_pnl ?? 0) > 0);
+    const losses = closed.filter((p) => (p.net_pnl ?? 0) < 0);
+    const totalPnl = closed.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
     const grossWin = wins.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
     const grossLoss = Math.abs(losses.reduce((s, p) => s + (p.net_pnl ?? 0), 0));
     const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0;
-    const best = trusted.reduce((m, p) => Math.max(m, p.net_pnl ?? 0), -Infinity);
-    const worst = trusted.reduce((m, p) => Math.min(m, p.net_pnl ?? 0), Infinity);
+    const best = closed.reduce((m, p) => Math.max(m, p.net_pnl ?? 0), -Infinity);
+    const worst = closed.reduce((m, p) => Math.min(m, p.net_pnl ?? 0), Infinity);
     return {
       totalPnl,
-      winRate: (wins.length / trusted.length) * 100,
+      winRate: (wins.length / closed.length) * 100,
       profitFactor: pf,
-      count: trusted.length,
+      count: closed.length,
       best,
       worst,
       avgWin: wins.length ? grossWin / wins.length : 0,
       avgLoss: losses.length ? grossLoss / losses.length : 0,
-      volume: trusted.reduce((s, p) => s + (p.volume_in ?? 0), 0),
+      volume: closed.reduce((s, p) => s + (p.volume_in ?? 0), 0),
     };
-  }, [trusted]);
+  }, [closed]);
+
 
   const signBreach = stats.avgWin < 0 || stats.avgLoss < 0;
   const suppressKpis = signBreach;
