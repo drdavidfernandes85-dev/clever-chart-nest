@@ -72,6 +72,10 @@ function mapSymbolInfo(item: any) {
     point: item.point ?? null,
     contractSize: item.trade_contract_size ?? null,
     tickValue: item.trade_tick_value ?? null,
+    // Side-correct per-tick values. Profit-side drives TP projection,
+    // loss-side drives SL projection. Often equal on majors; can differ on CFDs.
+    tickValueProfit: item.trade_tick_value_profit ?? null,
+    tickValueLoss: item.trade_tick_value_loss ?? null,
     tickSize: item.trade_tick_size ?? null,
     volumeMin: item.volume_min ?? null,
     volumeMax: item.volume_max ?? null,
@@ -79,6 +83,9 @@ function mapSymbolInfo(item: any) {
     currencyBase: item.currency_base ?? null,
     currencyProfit: item.currency_profit ?? null,
     currencyMargin: item.currency_margin ?? null,
+    // Surfaced for diagnostics only — explicitly NOT a green-light to synthesise
+    // margin client-side. Per-group rates + hedged-exposure rules are still absent.
+    tradeCalcMode: item.trade_calc_mode ?? null,
   };
 }
 
@@ -167,12 +174,13 @@ serve(async (req) => {
 
     const accountId = account.metaapi_account_id;
 
-    // Parallel: trader summary, positions, exact symbol info
+    // Parallel: trader summary, positions, exact symbol info, pending orders
     const symbolPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols/${encodeURIComponent(selectedSymbol)}`;
-    const [traderRes, posRes, symRes] = await Promise.all([
+    const [traderRes, posRes, symRes, ordRes] = await Promise.all([
       tlGet(`/api/v1/traders/${encodeURIComponent(accountId)}`),
       tlGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/positions`),
       tlGet(symbolPath),
+      tlGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/orders?limit=200`),
     ]);
 
     // ---- Account + positions ----
@@ -199,8 +207,60 @@ serve(async (req) => {
         // Net floating P&L for this position INCLUDING swap+commission, so the
         // sum reconciles with broker-side (equity - balance - credit).
         net_profit: baseProfit + swap + commission,
+        time_open: p?.time ?? p?.time_open ?? p?.open_time ?? null,
+        time_open_msc: p?.time_msc ?? p?.time_open_msc ?? null,
       };
     });
+
+    // ---- Pending orders ----
+    // MT5 order type ints: 0=BUY, 1=SELL, 2=BUY_LIMIT, 3=SELL_LIMIT,
+    // 4=BUY_STOP, 5=SELL_STOP, 6=BUY_STOP_LIMIT, 7=SELL_STOP_LIMIT
+    // type_time ints: 0=GTC, 1=DAY, 2=SPECIFIED (GTD), 3=SPECIFIED_DAY
+    const ordersRaw = Array.isArray(ordRes.data?.data) ? ordRes.data.data : [];
+    const orderTypeMap: Record<number, { kind: string; side: "buy" | "sell" }> = {
+      0: { kind: "market", side: "buy" },
+      1: { kind: "market", side: "sell" },
+      2: { kind: "limit",  side: "buy" },
+      3: { kind: "limit",  side: "sell" },
+      4: { kind: "stop",   side: "buy" },
+      5: { kind: "stop",   side: "sell" },
+      6: { kind: "stop_limit", side: "buy" },
+      7: { kind: "stop_limit", side: "sell" },
+    };
+    const durationMap: Record<number, string> = { 0: "GTC", 1: "DAY", 2: "GTD", 3: "SPECIFIED_DAY" };
+    const pendingOrders = ordersRaw
+      .filter((o: any) => {
+        // state 1=PLACED is the live pending state; others (filled/cancelled/expired) are history.
+        const st = Number(o?.state ?? 0);
+        return st === 1 || st === 2 || st === 3 || st === 6; // PLACED/PARTIAL/STARTED/REQUEST_ADD
+      })
+      .map((o: any) => {
+        const typeInt = Number(o?.type ?? -1);
+        const map = orderTypeMap[typeInt] || { kind: "unknown", side: "buy" as const };
+        const ttime = Number(o?.type_time ?? 0);
+        return {
+          ticket: o?.ticket ?? null,
+          symbol: o?.symbol ?? "",
+          orderType: map.kind,
+          side: map.side,
+          volume: Number(o?.volume_current ?? o?.volume_initial ?? 0),
+          volume_initial: Number(o?.volume_initial ?? 0),
+          price_open: Number(o?.price_open ?? 0),
+          price_stoplimit: Number(o?.price_stoplimit ?? 0) || null,
+          price_current: Number(o?.price_current ?? 0),
+          stop_loss: o?.sl ?? null,
+          take_profit: o?.tp ?? null,
+          duration: durationMap[ttime] ?? "GTC",
+          time_setup: o?.time_setup ?? null,
+          time_setup_msc: o?.time_setup_msc ?? null,
+          time_expiration: o?.time_expiration ?? null,
+          position_id: o?.position_id ?? null,
+          comment: o?.comment ?? "",
+          state: Number(o?.state ?? 0),
+          rawType: typeInt,
+          rawTypeTime: ttime,
+        };
+      });
 
     const num = (v: any): number | null => {
       if (v === null || v === undefined || v === "") return null;
