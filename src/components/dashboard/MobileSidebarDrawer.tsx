@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { useWebinars } from "@/hooks/useWebinars";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LOCALE_FLAGS, LOCALE_LABELS, type Locale, type TranslationKey } from "@/i18n/translations";
 
@@ -44,6 +45,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
+  const onlineCount = useOnlineCount();
   const { t, locale, setLocale } = useLanguage();
   const localeOrder: Locale[] = ["en", "es", "pt"];
   const startingSoon =
@@ -160,7 +162,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
                 <Users className="h-3 w-3 text-muted-foreground" />
                 <div className="flex items-baseline gap-1 min-w-0">
                   <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground">
-                    12,487
+                    {onlineCount == null ? "…" : onlineCount.toLocaleString()}
                   </span>
                   <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
                     {t("sidebar.online")}

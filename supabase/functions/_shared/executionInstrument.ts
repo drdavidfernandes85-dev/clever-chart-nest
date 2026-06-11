@@ -149,13 +149,43 @@ export async function resolveVerifiedExecutionInstrument(
   base.routeAccountIdMasked = mask(accountId);
   base.routeVerified = !!accountId;
 
-  const resolved = await resolveEligibleBrokerSymbol(supabaseService, {
+  const resolveOnce = () => resolveEligibleBrokerSymbol(supabaseService, {
     userId: input.userId,
     traderId: mapping.traderId!,
     accountId,
     requestedDisplaySymbol: canonical,
     operationType: "market_order",
   });
+
+  let resolved = await resolveOnce();
+
+  // Server-side stale-cache self-heal: if the catalogue is stale or empty for
+  // this account, trigger a targeted sync for the requested symbol and retry
+  // resolution ONCE before rejecting. Rejection is the last resort, not the
+  // first response to a stale cache.
+  if (!resolved.ok && resolved.errorCode === ERR_BROKER_SYMBOL_MAPPING_STALE) {
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (supabaseUrl && serviceKey) {
+        await fetch(`${supabaseUrl}/functions/v1/sync-broker-symbol-catalog`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${serviceKey}`,
+            "apikey": serviceKey,
+            "x-internal-stale-refresh": "1",
+          },
+          body: JSON.stringify({
+            symbols: [canonical],
+            mode: "targeted_symbol_refresh",
+            targetUserId: input.userId,
+          }),
+        }).catch(() => null);
+      }
+    } catch { /* best-effort; fall through to retry */ }
+    resolved = await resolveOnce();
+  }
 
   if (!resolved.ok && resolved.errorCode === ERR_BROKER_SYMBOL_AMBIGUOUS) {
     return {

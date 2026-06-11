@@ -427,7 +427,7 @@ export function PartialCloseDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !submitting && onOpenChange(v)}>
-      <DialogContent className="max-w-sm bg-[#0c0c0c] border-neutral-800">
+      <DialogContent className="sm:max-w-md bg-[#0c0c0c] border-neutral-800">
         <DialogHeader>
           <DialogTitle className="text-sm">
             Cierre parcial — {position.symbol} #{position.ticket}
