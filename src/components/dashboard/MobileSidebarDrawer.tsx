@@ -45,6 +45,7 @@ const MobileSidebarDrawer = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { liveNow, upcoming } = useWebinars();
+  const onlineCount = useOnlineCount();
   const { t, locale, setLocale } = useLanguage();
   const localeOrder: Locale[] = ["en", "es", "pt"];
   const startingSoon =
