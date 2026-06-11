@@ -12,6 +12,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  resolveActiveMtMapping,
+  STALE_MAPPING_ERROR_CODE,
+  STALE_MAPPING_USER_MESSAGE,
+} from "../_shared/mtMapping.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
@@ -46,20 +51,21 @@ serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return json({ success: false, error: "Unauthorized" }, 401);
 
-  // Ownership lookup — never trust a client-supplied accountId.
-  const { data: account, error: acctErr } = await supabase
-    .from("user_mt_accounts")
-    .select("metaapi_account_id")
-    .eq("user_id", user.id)
-    .eq("status", "connected")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (acctErr) return json({ success: false, error: acctErr.message }, 500);
-  if (!account?.metaapi_account_id) {
+  // Ownership via shared resolver — single auth path for read + execution
+  // functions. Prefers rows with validated trading_layer_trader_id; rejects
+  // stale ownerAccountId-only rows that would otherwise leak phantom history.
+  const mapping = await resolveActiveMtMapping(supabase, user.id);
+  if (mapping.status === "missing") {
     return json({ success: false, accountConnected: false, error: "No connected MT5 account found." }, 200);
   }
-  const accountId = account.metaapi_account_id;
+  if (mapping.status === "stale" || !mapping.traderId) {
+    return json({
+      success: false, accountConnected: false,
+      error: STALE_MAPPING_ERROR_CODE, message: STALE_MAPPING_USER_MESSAGE,
+      mappingStatus: mapping.status, localRowId: mapping.localRowId,
+    }, 409);
+  }
+  const accountId = mapping.traderId;
 
   let body: any = {};
   try { body = await req.json(); } catch { /* empty */ }
