@@ -260,13 +260,13 @@ async function handleTerminalData(req: Request) {
       })
       .map((o: any) => {
         const typeInt = Number(o?.type ?? -1);
-        const map = orderTypeMap[typeInt] || { kind: "unknown", side: "buy" as const };
+        const decoded = decodeOrderType(typeInt) ?? { kind: "unknown" as const, side: "buy" as const };
         const ttime = Number(o?.type_time ?? 0);
         return {
           ticket: o?.ticket ?? null,
           symbol: o?.symbol ?? "",
-          orderType: map.kind,
-          side: map.side,
+          orderType: decoded.kind,
+          side: decoded.side,
           volume: Number(o?.volume_current ?? o?.volume_initial ?? 0),
           volume_initial: Number(o?.volume_initial ?? 0),
           price_open: Number(o?.price_open ?? 0),
@@ -274,7 +274,7 @@ async function handleTerminalData(req: Request) {
           price_current: Number(o?.price_current ?? 0),
           stop_loss: o?.sl ?? null,
           take_profit: o?.tp ?? null,
-          duration: durationMap[ttime] ?? "GTC",
+          duration: decodeOrderTypeTime(ttime),
           time_setup: o?.time_setup ?? null,
           time_setup_msc: o?.time_setup_msc ?? null,
           time_expiration: o?.time_expiration ?? null,
