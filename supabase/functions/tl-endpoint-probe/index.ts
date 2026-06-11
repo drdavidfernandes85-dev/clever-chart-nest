@@ -12,13 +12,14 @@ Deno.serve(async (req) => {
   const KEY = Deno.env.get("TRADING_LAYER_API_KEY")!;
   const ACC = "29008868-d583-4ab5-a6c1-57586fe92007";
   const BASE = "https://api.trading-layer.com";
-  const tfs = ["M1", "1", 1, "M5", "5", "H1", "60"];
+  const dateFrom = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+  const tfs = ["M1", "1", "M5", "M15", "H1", "D1", 1, 5];
   const out: any[] = [];
   for (const tf of tfs) {
-    const url = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=${tf}&count=5`;
+    const url = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=${tf}&dateFrom=${encodeURIComponent(dateFrom)}&count=3`;
     const r = await fetch(url, { headers: { Authorization: `Bearer ${KEY}` } });
     const txt = await r.text();
-    out.push({ tf, status: r.status, body: txt.slice(0, 600) });
+    out.push({ tf, status: r.status, body: txt.slice(0, 500) });
   }
   return new Response(JSON.stringify(out, null, 2), { headers: { ...cors, "Content-Type": "application/json" } });
 });
