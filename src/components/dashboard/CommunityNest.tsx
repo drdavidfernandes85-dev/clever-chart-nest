@@ -101,14 +101,10 @@ const CommunityNest = () => {
       }
     })();
 
-    const tick = setInterval(() => {
-      setOnlineCount((n) => Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))));
-    }, 5000);
-
     return () => {
       cancelled = true;
-      clearInterval(tick);
     };
+
   }, []);
 
   const traderList =
