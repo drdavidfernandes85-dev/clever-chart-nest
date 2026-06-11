@@ -359,15 +359,16 @@ const JournalDashboardPanel = () => {
 
       {reconstructed.length > 0 && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-          {reconstructed.length} {reconstructed.length === 1 ? "posición con precio reconstruido" : "posiciones con precios reconstruidos"} desde P&amp;L — el bróker no entregó el precio de cierre real.
+          {reconstructed.length} {reconstructed.length === 1 ? "posición con precio reconstruido" : "posiciones con precios reconstruidos"} desde P&amp;L — el bróker no entregó el precio de cierre real. P&amp;L verificado.
         </div>
       )}
 
       {unrecoverable.length > 0 && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-          {unrecoverable.length} {unrecoverable.length === 1 ? "posición" : "posiciones"} sin precio recuperable (moneda no coincide o dato insuficiente) — excluidas de métricas.
+        <div className="rounded-xl border border-border/40 bg-secondary/20 px-3 py-2 text-xs text-muted-foreground">
+          {unrecoverable.length} {unrecoverable.length === 1 ? "posición sin precio reconstruible" : "posiciones sin precio reconstruible"} (divisa de beneficio ≠ {accountCurrency}) — P&amp;L incluido y verificado, sólo se omite el precio de cierre.
         </div>
       )}
+
 
       {suppressKpis ? (
         <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
