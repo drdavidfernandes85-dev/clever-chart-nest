@@ -127,11 +127,12 @@ const JournalDashboardPanel = () => {
         .eq("user_id", user.id),
       supabase
         .from("journal_sync_state")
-        .select("last_synced_at, last_status, deals_total")
+        .select("last_synced_at, last_status, deals_total, last_deal_time")
         .eq("user_id", user.id)
         .order("last_synced_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+
       supabase
         .from("journal_deals")
         .select("position_id, order_id")
