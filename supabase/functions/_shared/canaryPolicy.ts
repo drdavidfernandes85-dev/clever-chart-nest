@@ -185,6 +185,34 @@ export async function assertCanaryEntryAllowed(
       reason: "Limited canary restricts execution to admin allowlist." };
   }
   const sym = String(input.displaySymbol ?? "").toUpperCase();
+  const side = String(input.side ?? "").toLowerCase();
+  const op = String(input.operation ?? `market_${side}`).toLowerCase();
+
+  // Full live trading mode: when admin has explicitly enabled buys and all
+  // symbols, the scope guard permits both directions and any broker-eligible
+  // symbol at any volume (volume cap is enforced by admin_live_test_limits
+  // upstream, kill switch + live_trading_enabled remain authoritative).
+  const fullMode =
+    (policy as any).buy_open_long === "enabled" &&
+    (policy as any).other_symbols === "enabled";
+
+  if (fullMode) {
+    if (side !== "buy" && side !== "sell") {
+      return { allowed: false, code: "CANARY_SCOPE_OPERATION_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION,
+        reason: "Side must be buy or sell." };
+    }
+    if (input.login && String(input.login) !== policy.allowed_mt5_login) {
+      return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION,
+        reason: `Only MT5 login ${policy.allowed_mt5_login} permitted.` };
+    }
+    if (input.routeAccountId && String(input.routeAccountId) !== policy.allowed_route_account_id) {
+      return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION,
+        reason: "Route accountId does not match verified canary route." };
+    }
+    return { allowed: true, code: "CANARY_SCOPE_OK", policy, policyVersion: CANARY_POLICY_VERSION };
+  }
+
+  // Narrow legacy canary scope (EURUSD market SELL 0.01 only).
   if (sym === "XAUUSD") {
     return { allowed: false, code: "CANARY_SCOPE_XAUUSD_AMBIGUOUS_DISABLED", policy, policyVersion: CANARY_POLICY_VERSION,
       reason: "XAUUSD is ambiguous (multiple executable variants); disabled." };
@@ -202,8 +230,6 @@ export async function assertCanaryEntryAllowed(
     return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION,
       reason: "Route accountId does not match verified canary route." };
   }
-  const side = String(input.side ?? "").toLowerCase();
-  const op = String(input.operation ?? `market_${side}`).toLowerCase();
   if (side !== "sell" || op !== "market_sell") {
     return { allowed: false, code: "CANARY_SCOPE_OPERATION_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION,
       reason: "Only market SELL entry permitted by limited canary." };
@@ -213,6 +239,7 @@ export async function assertCanaryEntryAllowed(
       reason: `Only volume ${policy.allowed_entry_volume} permitted by limited canary.` };
   }
   return { allowed: true, code: "CANARY_SCOPE_OK", policy, policyVersion: CANARY_POLICY_VERSION };
+
 }
 
 export interface CanaryCloseInput {
