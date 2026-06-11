@@ -171,8 +171,11 @@ function TopAccountBar({
   oneClick: boolean;
   setOneClick: (v: boolean) => void;
 }) {
-  const { liveAccount, loading } = useLiveAccount();
-  const accountCcy = liveAccount?.currency || "USD";
+  // ATOMIC snapshot: all six values come from a single get-mt5-terminal-data
+  // response so Equidad == Balance + P&L (modulo broker swap/commission) and
+  // Margen reflects the same instant. See useTerminalProAccountSnapshot.
+  const { snapshot, loading, connected } = useTerminalProAccountSnapshot();
+  const accountCcy = snapshot?.currency || "USD";
   const [displayCcy, setDisplayCcy] = useState<Ccy>(() => {
     try { return localStorage.getItem(DISPLAY_CCY_KEY) || accountCcy; }
     catch { return accountCcy; }
@@ -191,39 +194,40 @@ function TopAccountBar({
     return fmtMoney(n, accountCcy);
   };
 
-  const profit = liveAccount?.profit ?? 0;
+  const profit = snapshot?.profit ?? 0;
   const profitClass = profit > 0 ? "text-[#17C784]" : profit < 0 ? "text-[#F04E4E]" : "";
 
   const marginLevel = useMemo(() => {
-    const eq = liveAccount?.equity;
-    const m = liveAccount?.margin;
+    const eq = snapshot?.equity;
+    const m = snapshot?.margin;
     if (eq == null || m == null || m === 0) return null;
     return (eq / m) * 100;
-  }, [liveAccount?.equity, liveAccount?.margin]);
+  }, [snapshot?.equity, snapshot?.margin]);
 
   return (
     <div className="flex items-center gap-1 border-b border-border bg-[#0A0A0B] px-2 py-1.5 overflow-x-auto">
-      {loading && !liveAccount ? (
+      {loading && !snapshot ? (
         <div className="flex items-center gap-2 px-3 py-1 text-xs text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> Cargando cuenta…
         </div>
-      ) : !liveAccount ? (
+      ) : !snapshot || !connected ? (
         <div className="px-3 py-1 text-xs text-muted-foreground">
           Sin cuenta MT conectada. Ve a <span className="text-primary">Conectar MT</span>.
         </div>
       ) : (
         <>
-          <Stat label="Balance" value={fmt(liveAccount.balance)} />
-          <Stat label="Equidad" value={fmt(liveAccount.equity)} />
+          <Stat label="Balance" value={fmt(snapshot.balance)} />
+          <Stat label="Equidad" value={fmt(snapshot.equity)} />
           <Stat label="P&L abierto" value={fmt(profit)} valueClass={profitClass} />
-          <Stat label="Margen usado" value={fmt(liveAccount.margin)} />
-          <Stat label="Margen libre" value={fmt(liveAccount.marginFree)} />
+          <Stat label="Margen usado" value={fmt(snapshot.margin)} />
+          <Stat label="Margen libre" value={fmt(snapshot.marginFree)} />
           <Stat
             label="Nivel de margen"
             value={marginLevel != null ? `${marginLevel.toFixed(2)}%` : "—"}
           />
         </>
       )}
+
 
       <div className="ml-auto flex items-center gap-3 pr-1">
         {/* Display-currency dropdown */}
