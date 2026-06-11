@@ -734,7 +734,7 @@ export default function PositionsOrdersHistoryPanel() {
               Conecta tu cuenta MT5 para ver órdenes.
             </div>
           ) : (
-            <OrdersTab snap={snap} />
+            <OrdersTab snap={snap} refresh={snap.refresh} />
           )}
         </TabsContent>
         <TabsContent value="historial" className="mt-0 flex-1 min-h-0">
