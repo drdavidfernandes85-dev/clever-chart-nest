@@ -241,29 +241,6 @@ serve(async (req) => {
         };
       }
     }
-      if (baseQuote || spec) {
-        selectedQuote = {
-          symbol: selectedSymbol,
-          bid: baseQuote?.bid ?? null,
-          ask: baseQuote?.ask ?? null,
-          last: baseQuote?.last ?? null,
-          spread: baseQuote?.spread ?? null,
-          digits: spec?.digits ?? baseQuote?.digits ?? null,
-          point: spec?.point ?? null,
-          description: spec?.description ?? null,
-          contractSize: spec?.trade_contract_size ?? null,
-          tickValue: spec?.trade_tick_value ?? null,
-          tickSize: spec?.trade_tick_size ?? null,
-          volumeMin: spec?.volume_min ?? null,
-          volumeMax: spec?.volume_max ?? null,
-          volumeStep: spec?.volume_step ?? null,
-          currencyBase: spec?.currency_base ?? null,
-          currencyProfit: spec?.currency_profit ?? null,
-          currencyMargin: spec?.currency_margin ?? null,
-          valid: !!baseQuote || !!spec,
-        };
-      }
-    }
 
     return json({
       success: true,
