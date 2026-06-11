@@ -14,13 +14,15 @@ interface ChatMessageInputProps {
   channelName: string;
   channelId: string | null;
   userId: string | undefined;
+  selfDisplayName?: string | null;
   replyTo?: { id: string; displayName: string; content: string } | null;
   onCancelReply?: () => void;
   onSent?: () => void;
   members?: Member[];
 }
 
-const ChatMessageInput = ({ channelName, channelId, userId, replyTo, onCancelReply, onSent, members = [] }: ChatMessageInputProps) => {
+const ChatMessageInput = ({ channelName, channelId, userId, selfDisplayName, replyTo, onCancelReply, onSent, members = [] }: ChatMessageInputProps) => {
+
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
