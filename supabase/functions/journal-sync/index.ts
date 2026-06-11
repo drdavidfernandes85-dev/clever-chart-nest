@@ -17,7 +17,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveActiveMtMapping } from "../_shared/mtMapping.ts";
-import { decodeDealSide, isTradeDeal } from "../_shared/mt5Decode.ts";
+import { decodeDealSide, isTradeDeal, decodeDealEntry } from "../_shared/mt5Decode.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -157,6 +157,7 @@ serve(async (req) => {
         symbol: d.symbol ? String(d.symbol).toUpperCase() : null,
         type_raw: typeRaw != null ? Number(typeRaw) : 0,
         entry_raw: entryRaw != null ? Number(entryRaw) : null,
+        entry: decodeDealEntry(entryRaw),
         reason_raw: reasonRaw != null ? Number(reasonRaw) : null,
         is_trade: isTradeDeal(typeRaw),
         side: decodeDealSide(typeRaw),
