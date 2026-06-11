@@ -28,17 +28,13 @@ Deno.serve(async (req) => {
   }
 
   const provisioning = `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts/${ACC}`;
-  const clientBase = `https://mt-client-api-v1.${REGION}.agiliumtrade.ai/users/current/accounts/${ACC}`;
-  const mdBase = `https://mt-market-data-client-api-v1.${REGION}.agiliumtrade.ai/users/current/accounts/${ACC}`;
+  const list = `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts`;
 
   const results = {
     token_meta: { length: TOKEN.length, prefix: TOKEN.slice(0, 8) + "…" },
     wall_clock_utc: new Date().toISOString(),
-    provisioning_state: await call(provisioning),
-    account_information: await call(`${clientBase}/accountInformation`),
-    current_price_xauusd: await call(`${clientBase}/symbols/XAUUSD/current-price?keepSubscription=false`),
-    candles_xauusd_m1_last10: await call(`${mdBase}/historical-market-data/symbols/XAUUSD/timeframes/1m/candles?limit=10`),
-    positions: await call(`${clientBase}/positions`),
+    target_account_lookup: await call(provisioning),
+    accounts_under_token: await call(list),
   };
 
   return new Response(JSON.stringify(results, null, 2), {
