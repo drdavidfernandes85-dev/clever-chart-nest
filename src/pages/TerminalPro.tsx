@@ -41,6 +41,7 @@ import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
 import { useMarketStatus } from "@/hooks/useLiveMarketData";
 import { supabase } from "@/integrations/supabase/client";
 import TerminalWatchlist from "@/components/terminal/TerminalWatchlist";
+import OrderTicket from "@/components/terminal/OrderTicket";
 
 /* ─────────── Display currency ─────────── */
 
@@ -358,7 +359,7 @@ function Shell() {
           <ResizableHandle withHandle />
 
           <ResizablePanel defaultSize={26} minSize={18} collapsible>
-            <Panel title="Nueva orden" hint="Fase 3: ticket de orden con SL/TP en 4 modos." />
+            <OrderTicket oneClick={oneClick} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
