@@ -220,6 +220,11 @@ serve(async (req) => {
     // prevents a silent downgrade and never produces a misleading
     // dry-run/false-success row.
     if (executionIntent === "admin_live_test_live_order" && !acknowledgedLiveTest) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "execute_trade", gate: "intent_validation",
+        reason: "ADMIN_LIVE_TEST_INTENT_MISSING", symbol, side, volume,
+        version: "execute-trade@v2",
+      });
       return json(
         {
           success: false,
