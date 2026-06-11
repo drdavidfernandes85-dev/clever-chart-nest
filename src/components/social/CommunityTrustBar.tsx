@@ -75,7 +75,7 @@ const CommunityTrustBar = ({ compact = false, className = "" }: Props) => {
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </span>
             <span className="font-mono text-[10px] font-bold tabular-nums text-emerald-400 sm:text-[11px]">
-              {onlineNow}
+              {onlineNow == null ? "…" : onlineNow}
             </span>
             <span className="font-mono text-[9px] uppercase tracking-wider text-emerald-400/80 sm:text-[10px]">
               online now
