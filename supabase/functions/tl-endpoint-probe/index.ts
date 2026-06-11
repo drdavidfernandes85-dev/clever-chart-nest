@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   const ratesResults: any[] = [];
   for (const q of attempts) {
     try {
-      const r = await timedFetch(`${BASE}/api/v1/accounts/${ACC}/${q}`, { headers: { Authorization: `Bearer ${KEY}` } }, 8000);
+      const r = await timedFetch(`${BASE}/api/v1/accounts/${ACC}/${q}`, { headers: { Authorization: `Bearer ${KEY}` } }, 60000);
       const txt = await r.text();
       ratesResults.push({ q, status: r.status, body: txt.slice(0, 1500) });
     } catch (e) {
