@@ -236,32 +236,40 @@ const JournalDashboardPanel = () => {
   }, [positions, specCache]);
 
 
-  const sync = async () => {
+  const sync = async (opts?: { resumeFrom?: string }) => {
     setSyncing(true);
     cancelRef.current = false;
     setSyncProgress({ chunk: 0, deals: 0 });
-    const MAX_CHUNKS = 30;
+    const MAX_CHUNKS = 60;
     const t0 = performance.now();
     let totalDeals = 0;
-    let dateTo: string | undefined;
+    let dateTo: string | undefined = opts?.resumeFrom;
     let lastErr: string | null = null;
+    let chunksRun = 0;
     try {
       for (let i = 0; i < MAX_CHUNKS; i++) {
         if (cancelRef.current) break;
         const { data, error } = await supabase.functions.invoke("journal-sync", {
           body: { full: true, ...(dateTo ? { dateTo } : {}) },
         });
+        chunksRun = i + 1;
         if (error) { lastErr = error.message; break; }
-        if (data?.error) { lastErr = data.error; break; }
         totalDeals += Number(data?.dealsFetched ?? 0);
-        setSyncProgress({ chunk: i + 1, deals: totalDeals });
-        if (!data?.hasMore || !data?.nextDateTo) break;
+        setSyncProgress({ chunk: chunksRun, deals: totalDeals });
+        // Honor the resume cursor even when the chunk reported an error — the
+        // edge function now writes nextDateTo on transient 5xx so we advance
+        // past the bad page instead of getting stuck on it.
+        if (data?.error && !data?.nextDateTo) { lastErr = data.error; break; }
+        if (!data?.hasMore || !data?.nextDateTo) {
+          if (data?.error) lastErr = data.error;
+          break;
+        }
         dateTo = data.nextDateTo;
       }
       const wallSec = ((performance.now() - t0) / 1000).toFixed(1);
-      if (lastErr) toast.error(`Sincronización: ${lastErr}`);
-      else if (cancelRef.current) toast.info(`Cancelada · ${totalDeals} deals · ${wallSec}s`);
-      else toast.success(`Sincronización completa · ${totalDeals} deals · ${wallSec}s`);
+      if (lastErr) toast.error(`Sincronización: ${lastErr} · ${totalDeals} deals · ${chunksRun} chunks · ${wallSec}s`);
+      else if (cancelRef.current) toast.info(`Cancelada · ${totalDeals} deals · ${chunksRun} chunks · ${wallSec}s`);
+      else toast.success(`Sincronización completa · ${totalDeals} deals · ${chunksRun} chunks · ${wallSec}s`);
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Error de sincronización");
@@ -272,6 +280,7 @@ const JournalDashboardPanel = () => {
     }
   };
   const cancelSync = () => { cancelRef.current = true; };
+
 
 
   const closed = useMemo(() => positions.filter((p) => p.is_closed), [positions]);
