@@ -52,6 +52,7 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 
 const Signup = lazy(() => import("./pages/Signup"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
 const TradingDashboard = lazy(() => import("./pages/TradingDashboard"));
@@ -129,7 +130,7 @@ const App = () => (
                     <Route path="/signup" element={<Signup />} />
                     {/* Legacy English routes redirected to the new Spanish auth flow */}
                     <Route path="/register" element={<Navigate to="/signup" replace />} />
-                    <Route path="/forgot-password" element={<Navigate to="/reset-password" replace />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/auth/callback" element={<AuthCallback />} />
                     {/* Open to all logged-in users (no eligibility required) */}
@@ -168,7 +169,7 @@ const App = () => (
 
                     <Route path="/admin" element={<AdminRoute><DashboardLayout><ErrorBoundary scope="admin"><Admin /></ErrorBoundary></DashboardLayout></AdminRoute>} />
                     <Route path="/u/:userId" element={<DashboardShell scope="public-profile"><PublicProfile /></DashboardShell>} />
-                    <Route path="/__qa/hero" element={<HeroQA />} />
+                    <Route path="/__qa/hero" element={<AdminRoute><HeroQA /></AdminRoute>} />
                     <Route path="/terms" element={<ErrorBoundary scope="terms"><Terms /></ErrorBoundary>} />
                     <Route path="/risk-disclosure" element={<ErrorBoundary scope="risk-disclosure"><RiskDisclosure /></ErrorBoundary>} />
                     <Route path="/compliance-review" element={<DashboardShell scope="compliance-review"><ComplianceReview /></DashboardShell>} />
