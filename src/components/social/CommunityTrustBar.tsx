@@ -84,7 +84,7 @@ const CommunityTrustBar = ({ compact = false, className = "" }: Props) => {
           <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1">
             <Users className="h-3 w-3 text-primary" />
             <span className="font-mono text-[10px] font-bold tabular-nums text-primary sm:text-[11px]">
-              {memberCount.toLocaleString()}+
+              {memberCount == null ? "…" : memberCount.toLocaleString()}
             </span>
             <span className="font-mono text-[9px] uppercase tracking-wider text-primary/80 sm:text-[10px]">
               traders & mentors
