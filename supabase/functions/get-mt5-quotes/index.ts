@@ -127,6 +127,13 @@ serve(async (req) => {
       }, 200);
     }
 
+    const body = await req.json().catch(() => ({}));
+    const debug = body?.debug === true;
+    const selectedSymbol = body?.selectedSymbol ? normalize(String(body.selectedSymbol)) : "";
+    const requested: string[] = Array.isArray(body?.symbols)
+      ? body.symbols.map((s: any) => normalize(String(s))).filter(Boolean)
+      : [];
+
     let { data: account } = await supabase
       .from("user_mt_accounts")
       .select("id, login, metaapi_account_id, status")
