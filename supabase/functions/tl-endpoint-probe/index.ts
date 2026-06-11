@@ -13,7 +13,8 @@ Deno.serve(async (req) => {
   const ACC = "29008868-d583-4ab5-a6c1-57586fe92007";
   const BASE = "https://api.trading-layer.com";
 
-  const ratesUrl = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=M1&count=5`;
+  const dateFrom = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const ratesUrl = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=M1&dateFrom=${encodeURIComponent(dateFrom)}&count=8`;
   const rRates = await fetch(ratesUrl, { headers: { Authorization: `Bearer ${KEY}` } });
   const ratesBody = await rRates.text();
 
