@@ -621,6 +621,8 @@ const Chatroom = () => {
           channelName={formatChannelName(activeChannelName)}
           channelId={activeChannelId}
           userId={user?.id}
+          selfDisplayName={profile?.display_name ?? null}
+
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           onSent={() => setReplyTo(null)}
