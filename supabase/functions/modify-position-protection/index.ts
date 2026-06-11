@@ -18,6 +18,7 @@ import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
+import { resolveBrokerSymbolWithSelfHeal } from "../_shared/brokerSymbolSelfHeal.ts";
 import {
   assertCanaryCapabilityDisabled,
   canaryGuardResponseBody,
@@ -183,14 +184,14 @@ Deno.serve(async (req) => {
 
 
   // Broker-symbol gate — SL/TP modification must use the exact MT5 position broker symbol.
-  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+  const eligible = await resolveBrokerSymbolWithSelfHeal(supabase, {
     userId: user.id,
     traderId: accountId,
     accountId: mapping.tradingLayerAccountId,
     requestedDisplaySymbol: symbol,
     suppliedBrokerSymbol,
     operationType: "modify_protection",
-  });
+  }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
     return json(brokerSymbolGateResponse(VERSION, eligible, { ticket }), 200);
   }
