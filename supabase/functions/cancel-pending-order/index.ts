@@ -53,9 +53,31 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser(token);
   if (authError || !user) return json({ success: false, version: VERSION, error: "Unauthorized" }, 401);
 
-  // Limited Canary policy: cancel pending order requires the policy capability switch.
+  // Audit every cancel attempt — including gate blocks — so the compliance
+  // trail is never silent. Previously, pre-TL gate returns wrote nothing.
+  const auditBlock = async (opts: {
+    orderId: string | null; symbol: string | null;
+    status: string; outcome: string; reason: string; extra?: Record<string, unknown>;
+  }) => {
+    try {
+      await supabase.from("execution_audit_events").insert({
+        user_id: user.id,
+        trade_id: `cancel-${opts.orderId ?? "unknown"}`,
+        symbol: opts.symbol,
+        side: "buy",
+        volume: 0,
+        status: opts.status,
+        outcome: opts.outcome,
+        reason: opts.reason,
+        ticket: opts.orderId,
+        raw: { classification: "cancel_pending", version: VERSION, gateBlock: true, ...(opts.extra ?? {}) },
+      });
+    } catch { /* never let audit failure mask the gate response */ }
+  };
+
   const canaryGuard = await assertCanaryCapabilityDisabled(supabase, "cancel_pending");
   if (!canaryGuard.allowed) {
+    await auditBlock({ orderId: null, symbol: null, status: "cancel_blocked_canary", outcome: "blocked", reason: canaryGuard.reason || "canary_disabled" });
     return json(canaryGuardResponseBody(canaryGuard, VERSION), 403);
   }
 
@@ -66,19 +88,26 @@ Deno.serve(async (req) => {
   const orderId = payload?.orderId != null ? String(payload.orderId) : null;
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
   const suppliedBrokerSymbol = payload?.brokerSymbol ? String(payload.brokerSymbol) : null;
-  if (!orderId) return json({ success: false, version: VERSION, error: "orderId is required" }, 400);
+  if (!orderId) {
+    await auditBlock({ orderId: null, symbol, status: "cancel_blocked_bad_request", outcome: "blocked", reason: "orderId required" });
+    return json({ success: false, version: VERSION, error: "orderId is required" }, 400);
+  }
   if (!suppliedBrokerSymbol && !symbol) {
+    await auditBlock({ orderId, symbol: null, status: "cancel_blocked_broker_symbol_required", outcome: "blocked", reason: "BROKER_SYMBOL_REQUIRED_FOR_CANCEL" });
     return json({
-      success: false,
-      version: VERSION,
+      success: false, version: VERSION,
       error: "BROKER_SYMBOL_REQUIRED_FOR_CANCEL",
       message: "Broker execution symbol is missing for this legacy order. Refresh from MT5 before cancellation.",
     }, 400);
   }
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  if (mapping.status === "missing") return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
+  if (mapping.status === "missing") {
+    await auditBlock({ orderId, symbol, status: "cancel_blocked_no_mapping", outcome: "blocked", reason: "no_connected_mt5" });
+    return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
+  }
   if (mapping.status === "stale" || !mapping.traderId) {
+    await auditBlock({ orderId, symbol, status: "cancel_blocked_stale_mapping", outcome: "blocked", reason: STALE_MAPPING_ERROR_CODE });
     return json({
       success: false, version: VERSION,
       error: STALE_MAPPING_ERROR_CODE, message: STALE_MAPPING_USER_MESSAGE,
@@ -89,6 +118,7 @@ Deno.serve(async (req) => {
 
   const gate = await assertLiveExecutionAllowed(supabase, user.id, { traderId: mapping.traderId, login: mapping.login });
   if (!gate.allowed) {
+    await auditBlock({ orderId, symbol, status: "cancel_blocked_exec_mode", outcome: "blocked", reason: gate.reason || LIVE_EXEC_DISABLED_CODE, extra: { executionMode: gate.mode } });
     return json({
       success: false, version: VERSION,
       error: gate.code || LIVE_EXEC_DISABLED_CODE,
@@ -98,29 +128,28 @@ Deno.serve(async (req) => {
 
   try {
     const s = await loadRiskSettings(supabase, user.id);
-    if (s.kill_switch_enabled) return json({ success: false, version: VERSION, error: "Trading disabled by kill switch.", rule: "kill_switch" }, 403);
+    if (s.kill_switch_enabled) {
+      await auditBlock({ orderId, symbol, status: "cancel_blocked_kill_switch", outcome: "blocked", reason: "kill_switch" });
+      return json({ success: false, version: VERSION, error: "Trading disabled by kill switch.", rule: "kill_switch" }, 403);
+    }
   } catch { /* ignore */ }
 
-  // Broker-symbol gate — use stored brokerSymbol if provided, else look up via canonical symbol.
   const eligible = await resolveBrokerSymbolWithSelfHeal(supabase, {
-    userId: user.id,
-    traderId: accountId,
-    accountId: mapping.tradingLayerAccountId,
-    requestedDisplaySymbol: symbol,
-    suppliedBrokerSymbol,
-    operationType: "cancel_pending",
+    userId: user.id, traderId: accountId, accountId: mapping.tradingLayerAccountId,
+    requestedDisplaySymbol: symbol, suppliedBrokerSymbol, operationType: "cancel_pending",
   }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
+    await auditBlock({ orderId, symbol, status: "cancel_blocked_broker_symbol_gate", outcome: "blocked", reason: (eligible as any).reason || "broker_symbol_ineligible" });
     return json(brokerSymbolGateResponse(VERSION, eligible, { orderId }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
 
-  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate, cancel).
   const fresh = await refreshTradeModeFromTradingLayer(supabase, {
     traderId: accountId, accountId: mapping.tradingLayerAccountId, brokerSymbol, login: mapping.login, server: mapping.server,
     operation: "cancel_pending",
   });
   if (!fresh.ok) {
+    await auditBlock({ orderId, symbol, status: "cancel_blocked_fresh_trade_mode", outcome: "blocked", reason: (fresh as any).reason || "fresh_trade_mode_failed" });
     return json(freshTradeModeGateResponse(VERSION, fresh, { orderId }), 200);
   }
 
