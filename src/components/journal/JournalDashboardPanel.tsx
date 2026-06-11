@@ -242,22 +242,34 @@ const JournalDashboardPanel = () => {
 
 
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {kpis.map((k) => {
-          const Icon = k.Icon;
-          return (
-            <div key={k.label} className="rounded-xl border border-border/40 bg-background/40 p-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</span>
-                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      {inconsistent.length > 0 && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          {inconsistent.length} {inconsistent.length === 1 ? "posición" : "posiciones"} con datos inconsistentes (precio de apertura = cierre con P&amp;L ≠ 0) — excluidas de métricas. Origen: fidelidad de precios del bróker.
+        </div>
+      )}
+
+      {suppressKpis ? (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
+          Métricas no disponibles — inconsistencia de datos detectada (incoherencia de signo en promedios). Sincroniza de nuevo o contacta soporte.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {kpis.map((k) => {
+            const Icon = k.Icon;
+            return (
+              <div key={k.label} className="rounded-xl border border-border/40 bg-background/40 p-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</span>
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <div className={`font-display text-xl font-semibold tabular-nums ${k.cls}`}>
+                  {loading ? <span className="inline-block h-6 w-16 rounded skeleton-shimmer" /> : k.value}
+                </div>
               </div>
-              <div className={`font-display text-xl font-semibold tabular-nums ${k.cls}`}>
-                {loading ? <span className="inline-block h-6 w-16 rounded skeleton-shimmer" /> : k.value}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="rounded-xl border border-border/40 overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground bg-secondary/30">
