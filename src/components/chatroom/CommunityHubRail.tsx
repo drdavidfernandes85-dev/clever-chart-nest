@@ -13,6 +13,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import { useHotMentions, HotMention } from "@/hooks/useHotMentions";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
+
 
 const HOT_FALLBACK: HotMention[] = [
   { symbol: "EUR/USD", mentions: 0, price: null, changePct: null, up: true },
