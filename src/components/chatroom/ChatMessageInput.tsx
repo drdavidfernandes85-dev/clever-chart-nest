@@ -33,6 +33,33 @@ const ChatMessageInput = ({ channelName, channelId, userId, selfDisplayName, rep
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const typingChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastTypingBroadcastRef = useRef(0);
+
+  useEffect(() => {
+    if (!channelName) return;
+    const ch = supabase.channel(`chat-typing:${channelName}`, {
+      config: { broadcast: { self: false } },
+    });
+    ch.subscribe();
+    typingChRef.current = ch;
+    return () => {
+      supabase.removeChannel(ch);
+      typingChRef.current = null;
+    };
+  }, [channelName]);
+
+  const broadcastTyping = () => {
+    const ch = typingChRef.current;
+    const name = selfDisplayName || userId;
+    if (!ch || !name) return;
+    const now = Date.now();
+    if (now - lastTypingBroadcastRef.current < 1500) return;
+    lastTypingBroadcastRef.current = now;
+    void ch.send({ type: "broadcast", event: "typing", payload: { name } });
+  };
+
+
 
   const filteredMembers = useMemo(() => {
     if (mentionQuery === null) return [];
