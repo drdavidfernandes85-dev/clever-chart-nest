@@ -27,6 +27,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decodePositionSide, decodeOrderType, decodeOrderTypeTime } from "../_shared/mt5Decode.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
