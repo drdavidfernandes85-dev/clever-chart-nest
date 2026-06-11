@@ -536,8 +536,12 @@ function HistoryTab() {
   const [symbol, setSymbol] = useState<string>("");
   const [offset, setOffset] = useState<number>(0);
   const limit = 50;
-  const dateFromIso = new Date(`${fromDate}T00:00:00Z`).toISOString();
-  const dateToIso = new Date(`${toDate}T23:59:59Z`).toISOString();
+  const safeFrom = /^\d{4}-\d{2}-\d{2}$/.test(fromDate) ? fromDate : isoDateOnly(new Date(Date.now() - 7 * 86_400_000));
+  const safeTo = /^\d{4}-\d{2}-\d{2}$/.test(toDate) ? toDate : isoDateOnly(new Date());
+  const dFrom = new Date(`${safeFrom}T00:00:00Z`);
+  const dTo = new Date(`${safeTo}T23:59:59Z`);
+  const dateFromIso = Number.isFinite(dFrom.getTime()) ? dFrom.toISOString() : new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const dateToIso = Number.isFinite(dTo.getTime()) ? dTo.toISOString() : new Date().toISOString();
   const hist = useHistory(subTab, dateFromIso, dateToIso, symbol.toUpperCase(), offset, limit);
 
   useEffect(() => { setOffset(0); }, [subTab, fromDate, toDate, symbol]);
