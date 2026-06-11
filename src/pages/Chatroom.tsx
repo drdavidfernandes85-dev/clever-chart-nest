@@ -560,14 +560,12 @@ const Chatroom = () => {
             {/* Auto welcome message — appears at the top of every channel, localized. */}
             <WelcomeBanner locale={locale} channelName={activeChannelName} />
 
-            {messages.length === 0 && activeChannelName === "general" && (
-              <SampleMessages />
-            )}
-            {messages.length === 0 && activeChannelName !== "general" && (
+            {messages.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-12">
                 {t("chat.empty")}{activeChannelName.replace(/_/g, " ")} {t("chat.emptySuffix")}
               </p>
             )}
+
             {messages.length > 0 && searchQuery.trim() && messageItems.length === 0 && (
               <p className="text-center text-sm text-muted-foreground py-12">
                 No messages match "{searchQuery.trim()}"
