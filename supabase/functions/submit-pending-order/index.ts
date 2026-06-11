@@ -81,12 +81,23 @@ Deno.serve(async (req) => {
   // Limited Canary policy: pending orders require the policy capability switch.
   const canaryGuard = await assertCanaryCapabilityDisabled(supabase, "pending_order");
   if (!canaryGuard.allowed) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "canary",
+      reason: "Limited Canary policy disallows pending_order capability.",
+      version: VERSION,
+    });
     return json(canaryGuardResponseBody(canaryGuard, VERSION), 403);
   }
 
 
   let payload: any;
-  try { payload = await req.json(); } catch { return json({ success: false, version: VERSION, error: "Invalid JSON body" }, 400); }
+  try { payload = await req.json(); } catch {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "bad_request",
+      reason: "Invalid JSON body.", version: VERSION,
+    });
+    return json({ success: false, version: VERSION, error: "Invalid JSON body" }, 400);
+  }
 
   const symbol = payload?.symbol ? String(payload.symbol).toUpperCase() : null;
   const pendingType = String(payload?.pendingType || "").toLowerCase() as PendingType;
@@ -100,15 +111,38 @@ Deno.serve(async (req) => {
   const side: "buy" | "sell" = pendingType.startsWith("buy") ? "buy" : "sell";
 
   if (!symbol || !PENDING_TYPES.includes(pendingType) || !Number.isFinite(volume) || volume <= 0 || !Number.isFinite(entryPrice)) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "bad_request",
+      reason: "Missing/invalid symbol/pendingType/volume/entryPrice.",
+      symbol, side, volume: Number.isFinite(volume) ? volume : null,
+      version: VERSION, extra: { tradeId, pendingType, entryPrice },
+    });
     return json({ success: false, version: VERSION, error: "symbol, pendingType (buy_limit|sell_limit|buy_stop|sell_stop), volume and entryPrice are required" }, 400);
   }
   if (volume > MAX_TEST_VOLUME) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "volume_cap",
+      reason: `Volume ${volume} exceeds test cap ${MAX_TEST_VOLUME}.`,
+      symbol, side, volume, version: VERSION, extra: { tradeId, pendingType },
+    });
     return json({ success: false, version: VERSION, error: `Pending blocked: volume ${volume} exceeds test cap ${MAX_TEST_VOLUME}` }, 400);
   }
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
-  if (mapping.status === "missing") return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
+  if (mapping.status === "missing") {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "no_mapping",
+      reason: "No connected MT5 account.", symbol, side, volume,
+      version: VERSION, extra: { tradeId, pendingType },
+    });
+    return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
+  }
   if (mapping.status === "stale" || !mapping.traderId) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "stale_mapping",
+      reason: STALE_MAPPING_USER_MESSAGE, symbol, side, volume,
+      version: VERSION, extra: { tradeId, pendingType, mappingStatus: mapping.status, localRowId: mapping.localRowId },
+    });
     return json({
       success: false, version: VERSION,
       error: STALE_MAPPING_ERROR_CODE, message: STALE_MAPPING_USER_MESSAGE,
@@ -120,6 +154,12 @@ Deno.serve(async (req) => {
   // Execution-mode gate (admin allowlist).
   const gate = await assertLiveExecutionAllowed(supabase, user.id, { traderId: mapping.traderId, login: mapping.login });
   if (!gate.allowed) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "exec_mode",
+      reason: gate.reason ?? "Live execution not allowed for caller.",
+      symbol, side, volume, version: VERSION,
+      extra: { tradeId, pendingType, executionMode: gate.mode, code: gate.code },
+    });
     return json({
       success: false, version: VERSION,
       error: gate.code || LIVE_EXEC_DISABLED_CODE,
@@ -132,6 +172,12 @@ Deno.serve(async (req) => {
     const { data: blk } = await supabase.from("site_settings").select("value").eq("key","final_activation_blocker").maybeSingle();
     const v: any = blk?.value;
     if (v?.active === true) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "submit_pending", gate: "final_activation_blocker",
+        reason: v.block_reason_code ?? "FINAL_ACTIVATION_BLOCKER_ACTIVE",
+        symbol, side, volume, version: VERSION,
+        extra: { tradeId, pendingType, displayCopy: v.display_copy ?? null },
+      });
       return json({
         success: false, version: VERSION, step: "final_activation_blocker",
         error: "FINAL_ACTIVATION_BLOCKER_ACTIVE",
@@ -146,6 +192,11 @@ Deno.serve(async (req) => {
   try {
     const { data: limits } = await supabase.from("admin_live_test_limits").select("pending_orders_enabled,max_order_volume").limit(1).maybeSingle();
     if (limits && limits.pending_orders_enabled === false) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "submit_pending", gate: "admin_limits_pending_disabled",
+        reason: "Pending orders disabled until market verified.",
+        symbol, side, volume, version: VERSION, extra: { tradeId, pendingType },
+      });
       return json({
         success: false, version: VERSION,
         error: "PENDING_ORDERS_DISABLED_UNTIL_MARKET_VERIFIED",
@@ -153,6 +204,11 @@ Deno.serve(async (req) => {
       }, 403);
     }
     if (limits && Number.isFinite(Number(limits.max_order_volume)) && volume > Number(limits.max_order_volume)) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "submit_pending", gate: "admin_limits_volume_cap",
+        reason: `Volume ${volume} exceeds admin cap ${limits.max_order_volume}.`,
+        symbol, side, volume, version: VERSION, extra: { tradeId, pendingType, cap: limits.max_order_volume },
+      });
       return json({ success: false, version: VERSION, error: `Volume ${volume} exceeds current admin test cap ${limits.max_order_volume}.` }, 400);
     }
   } catch { /* ignore — fall through */ }
@@ -183,6 +239,12 @@ Deno.serve(async (req) => {
     operationType: "pending_order",
   }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "broker_symbol_gate",
+      reason: (eligible as any).reason ?? (eligible as any).errorCode ?? "Broker symbol unresolved/blocked.",
+      symbol, side, volume, version: VERSION,
+      extra: { tradeId, pendingType, resolution: eligible },
+    });
     return json(brokerSymbolGateResponse(VERSION, eligible, { tradeId, pendingType, volume, entryPrice }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
@@ -197,6 +259,12 @@ Deno.serve(async (req) => {
     displaySymbol: symbol,
   });
   if (!freshTick.fresh) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "fresh_tick",
+      reason: freshTick.message ?? freshTick.code ?? "Fresh server tick unavailable.",
+      symbol, side, volume, version: VERSION,
+      extra: { tradeId, pendingType, brokerSymbol, code: freshTick.code, ageMs: freshTick.ageMs, thresholdMs: freshTick.thresholdMs },
+    });
     return json({
       success: false,
       version: VERSION,
@@ -224,6 +292,11 @@ Deno.serve(async (req) => {
     if (pendingType === "buy_stop" && !(entryPrice > serverAsk)) reasons.push("Buy Stop entry must be above current ask.");
     if (pendingType === "sell_stop" && !(entryPrice < serverBid)) reasons.push("Sell Stop entry must be below current bid.");
     if (reasons.length) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "submit_pending", gate: "side_of_market",
+        reason: reasons[0], symbol, side, volume, version: VERSION,
+        extra: { tradeId, pendingType, entryPrice, bid: serverBid, ask: serverAsk, reasons },
+      });
       return json({
         success: false, version: VERSION,
         step: "side_of_market_validation",
@@ -245,6 +318,11 @@ Deno.serve(async (req) => {
       if (side === "sell" && !(takeProfit < entryPrice)) slReasons.push("Take Profit must be below entry for a Sell order.");
     }
     if (slReasons.length) {
+      await auditGateBlock(supabase, {
+        userId: user.id, action: "submit_pending", gate: "sl_tp_validation",
+        reason: slReasons[0], symbol, side, volume, version: VERSION,
+        extra: { tradeId, pendingType, entryPrice, stopLoss, takeProfit, reasons: slReasons },
+      });
       return json({ success: false, version: VERSION, step: "sl_tp_side_validation", error: slReasons[0], reasons: slReasons }, 400);
     }
   }
@@ -258,6 +336,12 @@ Deno.serve(async (req) => {
     operation: pendingOperation,
   });
   if (!fresh.ok) {
+    await auditGateBlock(supabase, {
+      userId: user.id, action: "submit_pending", gate: "fresh_trade_mode",
+      reason: (fresh as any).reason ?? (fresh as any).code ?? "Fresh trade_mode refresh failed.",
+      symbol, side, volume, version: VERSION,
+      extra: { tradeId, pendingType, brokerSymbol, operation: pendingOperation, resolution: fresh },
+    });
     return json(freshTradeModeGateResponse(VERSION, fresh, { tradeId, pendingType, volume, entryPrice }), 200);
   }
 
