@@ -43,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import TerminalWatchlist from "@/components/terminal/TerminalWatchlist";
 import OrderTicket from "@/components/terminal/OrderTicket";
 import OrderTicketModal from "@/components/terminal/OrderTicketModal";
+import PositionsOrdersHistoryPanel from "@/components/terminal/PositionsOrdersHistoryPanel";
 
 /* ─────────── Display currency ─────────── */
 
@@ -355,10 +356,7 @@ function Shell() {
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel defaultSize={38} minSize={20}>
-                <Panel
-                  title="Posiciones · Órdenes · Historial"
-                  hint="Fase 5: tablas con datos reales del bróker."
-                />
+                <PositionsOrdersHistoryPanel />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
