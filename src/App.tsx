@@ -52,6 +52,7 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 
 const Signup = lazy(() => import("./pages/Signup"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
 const TradingDashboard = lazy(() => import("./pages/TradingDashboard"));
