@@ -105,6 +105,10 @@ const JournalDashboardPanel = () => {
   const [specCache, setSpecCache] = useState<Map<string, LiveSpec | null>>(new Map());
   const [accountCurrency, setAccountCurrency] = useState<string>("USD");
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [resumeCursor, setResumeCursor] = useState<string | null>(null);
+  const [dealsTotal, setDealsTotal] = useState<number | null>(null);
+
 
 
   const load = useCallback(async () => {
