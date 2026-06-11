@@ -151,8 +151,27 @@ const JournalDashboardPanel = () => {
     }
     setPositionOrders(map);
     setLastSync(stateRes.data?.last_synced_at ?? null);
+    setSyncStatus(stateRes.data?.last_status ?? null);
+    setDealsTotal(stateRes.data?.deals_total ?? null);
+    // Resume cursor: if last sync stopped partial/error mid-window, resume from
+    // 1ms before the OLDEST deal in DB (so we continue paging backward into the
+    // unsynced past). last_deal_time on sync_state is the NEWEST seen so it's
+    // not the right cursor; derive minimum from journal_deals directly.
+    const { data: oldest } = await supabase
+      .from("journal_deals")
+      .select("deal_time")
+      .eq("user_id", user.id)
+      .order("deal_time", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const status = stateRes.data?.last_status;
+    const resumable = status === "partial" || (status === "error" && !!oldest?.deal_time);
+    setResumeCursor(resumable && oldest?.deal_time
+      ? new Date(new Date(oldest.deal_time).getTime() - 1).toISOString()
+      : null);
     setLoading(false);
   }, [user]);
+
 
   useEffect(() => { load(); }, [load]);
 
