@@ -98,6 +98,7 @@ interface SnapshotState {
   positions: Position[];
   pendingOrders: PendingOrder[];
   accountProfit: number | null;
+  balance: number | null;
   currency: string;
   asOf: number;
   connected: boolean;
@@ -108,7 +109,7 @@ interface SnapshotState {
 
 function usePositionsAndOrdersSnapshot(): SnapshotState & { refresh: () => void } {
   const [s, setS] = useState<SnapshotState>({
-    positions: [], pendingOrders: [], accountProfit: null, currency: "USD",
+    positions: [], pendingOrders: [], accountProfit: null, balance: null, currency: "USD",
     asOf: 0, connected: false, loading: true, staleCount: 0, lastError: null,
   });
 
@@ -127,6 +128,7 @@ function usePositionsAndOrdersSnapshot(): SnapshotState & { refresh: () => void 
         positions: Array.isArray(data.positions) ? data.positions : [],
         pendingOrders: Array.isArray(data.pendingOrders) ? data.pendingOrders : [],
         accountProfit: data.account?.profit ?? null,
+        balance: data.account?.balance ?? null,
         currency: data.account?.currency ?? "USD",
         asOf: Date.now(),
         connected: true,
