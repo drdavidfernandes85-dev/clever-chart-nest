@@ -40,6 +40,43 @@ const fmtTime = (iso: string | null) => {
   try { return new Date(iso).toLocaleString("es-419", { dateStyle: "short", timeStyle: "short" }); } catch { return "—"; }
 };
 
+// Price-reconstruction metadata. Only symbols whose profit currency matches the
+// account currency may be reconstructed exactly. Others fall back to a dash so
+// we never invent a number across an FX conversion.
+const ACCOUNT_CURRENCY = "USD";
+const SYMBOL_META: Record<string, { contractSize: number; profitCcy: string; pipSize: number; digits: number }> = {
+  XAUUSD: { contractSize: 100,   profitCcy: "USD", pipSize: 0.1,    digits: 2 },
+  XAGUSD: { contractSize: 5000,  profitCcy: "USD", pipSize: 0.01,   digits: 3 },
+  EURUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
+  GBPUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
+  AUDUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
+  NZDUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
+  USDJPY: { contractSize: 100000, profitCcy: "JPY", pipSize: 0.01,   digits: 3 },
+};
+
+type Reconstruction =
+  | { kind: "ok"; close: number; pips: number }
+  | { kind: "no_meta" }
+  | { kind: "ccy_mismatch" }
+  | { kind: "tripwire" };
+
+function reconstruct(p: Position): Reconstruction {
+  const sym = (p.symbol ?? "").toUpperCase();
+  const meta = SYMBOL_META[sym];
+  if (!meta) return { kind: "no_meta" };
+  if (meta.profitCcy !== ACCOUNT_CURRENCY) return { kind: "ccy_mismatch" };
+  const vol = p.volume_out ?? p.volume_in ?? 0;
+  const profit = p.gross_profit ?? p.net_pnl ?? 0;
+  const open = p.vwap_open;
+  if (!vol || open == null || !profit) return { kind: "tripwire" };
+  const sign = p.side === "buy" ? 1 : p.side === "sell" ? -1 : 0;
+  if (!sign) return { kind: "tripwire" };
+  const close = open + sign * (profit / (vol * meta.contractSize));
+  if (Math.abs(close - open) < 1e-9) return { kind: "tripwire" };
+  const pips = (close - open) / meta.pipSize;
+  return { kind: "ok", close: Number(close.toFixed(meta.digits + 2)), pips };
+}
+
 const JournalDashboardPanel = () => {
   const { user } = useAuth();
   const [positions, setPositions] = useState<Position[]>([]);
@@ -80,10 +117,6 @@ const JournalDashboardPanel = () => {
     ]);
     setPositions((posRes.data ?? []) as Position[]);
     setAuditTickets(new Set(((auditRes.data ?? []) as AuditTicketRow[]).map((r) => String(r.ticket)).filter(Boolean)));
-    // Origen=Terminal iff ANY of a position's deals.order_id matches an
-    // execution_audit_events.ticket row for this user (audit tickets are ORDER
-    // tickets, not position ids — matching on position_id would only catch the
-    // opening market order, missing TP/SL/manual closes from the Terminal).
     const map = new Map<string, Set<string>>();
     for (const d of (dealsRes.data ?? []) as DealKeyRow[]) {
       if (d.position_id == null || d.order_id == null) continue;
@@ -139,31 +172,31 @@ const JournalDashboardPanel = () => {
 
   const closed = useMemo(() => positions.filter((p) => p.is_closed), [positions]);
 
-  // KPI INTEGRITY GUARD
-  // (i) any closed position where vwap_open == vwap_close AND net_pnl ≠ 0 is
-  //     flagged: the upstream price-fidelity bug stamps the same price on both
-  //     in/out legs, so per-position math is untrustworthy. Surfaced count,
-  //     excluded from KPI aggregation.
-  // (ii) sign coherence: avg-win must be > 0, avg-loss (abs) must be ≥ 0.
-  //     A breach proves the pipeline is producing impossible values; we
-  //     suppress the KPI grid rather than render confident nonsense.
+  // PRICE RECONSTRUCTION (replaces dash-only render)
+  // For positions whose TL out-deal price is provably stamped with the open
+  // price (vwap_open == vwap_close with non-zero P&L), derive the real close
+  // from profit when the symbol's profit currency matches the account currency:
+  //   close = open ± profit / (volume × contractSize),  sign + for buy, − for sell.
+  // Raw TL values in journal_deals are NEVER overwritten — derivation is render-
+  // only. The integrity guard still trips on sign-impossible KPI outputs.
   const PRICE_EPS = 1e-9;
-  const inconsistent = useMemo(
-    () => closed.filter(
-      (p) =>
-        p.vwap_open != null && p.vwap_close != null &&
-        Math.abs((p.vwap_open ?? 0) - (p.vwap_close ?? 0)) < PRICE_EPS &&
-        Math.abs(p.net_pnl ?? 0) > 0.0001,
-    ),
-    [closed],
-  );
-  const inconsistentIds = useMemo(
-    () => new Set(inconsistent.map((p) => `${p.mt_login}-${p.position_id}`)),
-    [inconsistent],
-  );
+  type Aug = Position & { _recon?: Reconstruction; _needsRecon: boolean };
+  const augmented: Aug[] = useMemo(() => closed.map((p) => {
+    const needs =
+      p.vwap_open != null && p.vwap_close != null &&
+      Math.abs((p.vwap_open ?? 0) - (p.vwap_close ?? 0)) < PRICE_EPS &&
+      Math.abs(p.net_pnl ?? 0) > 0.0001;
+    return { ...p, _needsRecon: needs, _recon: needs ? reconstruct(p) : undefined };
+  }), [closed]);
+
+  const reconstructed = augmented.filter((p) => p._recon?.kind === "ok");
+  const unrecoverable = augmented.filter((p) => p._needsRecon && p._recon?.kind !== "ok");
+
+  // Trusted set for KPIs: clean rows + rows reconstructed exactly.
+  // Unrecoverable rows (ccy mismatch / tripwire) stay excluded — same posture as before.
   const trusted = useMemo(
-    () => closed.filter((p) => !inconsistentIds.has(`${p.mt_login}-${p.position_id}`)),
-    [closed, inconsistentIds],
+    () => augmented.filter((p) => !p._needsRecon || p._recon?.kind === "ok"),
+    [augmented],
   );
 
   const stats = useMemo(() => {
@@ -209,6 +242,9 @@ const JournalDashboardPanel = () => {
     { label: "Promedio Pérdida", value: fmtMoney(-stats.avgLoss), Icon: TrendingDown, cls: "text-red-400" },
   ];
 
+  // Row list: map closed positions back through augmented for derived prices.
+  const augById = new Map(augmented.map((p) => [`${p.mt_login}-${p.position_id}`, p]));
+
   return (
     <Card className="card-glass p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -239,12 +275,15 @@ const JournalDashboardPanel = () => {
         </div>
       </div>
 
-
-
-
-      {inconsistent.length > 0 && (
+      {reconstructed.length > 0 && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-          {inconsistent.length} {inconsistent.length === 1 ? "posición" : "posiciones"} con datos inconsistentes (precio de apertura = cierre con P&amp;L ≠ 0) — excluidas de métricas. Origen: fidelidad de precios del bróker.
+          {reconstructed.length} {reconstructed.length === 1 ? "posición con precio reconstruido" : "posiciones con precios reconstruidos"} desde P&amp;L — el bróker no entregó el precio de cierre real.
+        </div>
+      )}
+
+      {unrecoverable.length > 0 && (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          {unrecoverable.length} {unrecoverable.length === 1 ? "posición" : "posiciones"} sin precio recuperable (moneda no coincide o dato insuficiente) — excluidas de métricas.
         </div>
       )}
 
@@ -298,6 +337,15 @@ const JournalDashboardPanel = () => {
               if (orders) {
                 for (const ord of orders) { if (auditTickets.has(ord)) { origen = "Terminal"; break; } }
               }
+              const aug = augById.get(`${p.mt_login}-${p.position_id}`);
+              const recon = aug?._recon;
+              const derivedOk = recon?.kind === "ok";
+              const showDash = aug?._needsRecon && !derivedOk;
+              const closeDisplay = derivedOk
+                ? recon!.close.toFixed(SYMBOL_META[(p.symbol ?? "").toUpperCase()]?.digits ?? 5)
+                : showDash
+                  ? "—"
+                  : p.vwap_close?.toFixed(5) ?? "—";
               return (
                 <div key={`${p.mt_login}-${p.position_id}`} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2.5 text-sm items-center hover:bg-secondary/20">
                   <div className="min-w-0">
@@ -315,7 +363,17 @@ const JournalDashboardPanel = () => {
                   </span>
                   <span className="text-xs font-mono text-muted-foreground tabular-nums">{(p.volume_in ?? 0).toFixed(2)}</span>
                   <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
-                    {p.vwap_open?.toFixed(5) ?? "—"} → {p.vwap_close?.toFixed(5) ?? "—"}
+                    {p.vwap_open?.toFixed(5) ?? "—"} →{" "}
+                    {derivedOk ? (
+                      <span
+                        className="text-amber-300 underline decoration-dotted decoration-amber-400/60 cursor-help"
+                        title={`Precio derivado del P&L · ${recon!.pips.toFixed(1)} pips · bróker no entregó el precio real`}
+                      >
+                        {closeDisplay}*
+                      </span>
+                    ) : (
+                      <span>{closeDisplay}</span>
+                    )}
                   </span>
                   <Badge variant="outline" className={`text-[10px] rounded-full ${origen === "Terminal" ? "border-primary/40 text-primary" : "border-border/40 text-muted-foreground"}`}>
                     {origen}
