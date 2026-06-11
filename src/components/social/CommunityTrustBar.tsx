@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Users, Sparkles, Radio } from "lucide-react";
+import { Users, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 
 interface Props {
   /** Compact = single-row variant for embedding above widgets. */
@@ -10,37 +11,25 @@ interface Props {
 
 /**
  * Community Trust Bar — regulation-compliant social proof strip.
- * Shows: live online count + total community size + tagline.
- * No performance claims, no PnL, no "signals" language.
+ * Online count is live Supabase Realtime presence; member count is the
+ * real profiles row count.
  */
 const CommunityTrustBar = ({ compact = false, className = "" }: Props) => {
-  const [onlineNow, setOnlineNow] = useState(184);
-  const [memberCount, setMemberCount] = useState(1200);
+  const onlineNow = useOnlineCount();
+  const [memberCount, setMemberCount] = useState<number | null>(null);
 
-  // Soft-jitter the live counter every few seconds so it feels alive.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { count } = await supabase
         .from("profiles")
         .select("user_id", { count: "exact", head: true });
-      if (!cancelled && count != null) {
-        // Always show at least 1,200+ to reflect total community claim.
-        setMemberCount(Math.max(1200, count));
-      }
+      if (!cancelled && count != null) setMemberCount(count);
     })();
-
-    const tick = window.setInterval(() => {
-      setOnlineNow((n) =>
-        Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))),
-      );
-    }, 5000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(tick);
-    };
+    return () => { cancelled = true; };
   }, []);
+
+
 
   return (
     <div
