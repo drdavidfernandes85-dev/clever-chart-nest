@@ -107,14 +107,8 @@ const CommunityNest = () => {
 
   }, []);
 
-  const traderList =
-    traders.length > 0
-      ? traders
-      : (["IX_Mentor", "df23fx", "EUR_King", "desk-trader", "pip_hunter", "alpha-rat"].map((name, i) => ({
-          user_id: `placeholder-${i}`,
-          display_name: name,
-          avatar_url: null,
-        })) as Trader[]);
+  const traderList = traders;
+
 
   return (
     <aside className="space-y-3">
