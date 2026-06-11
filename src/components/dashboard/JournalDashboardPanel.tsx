@@ -47,6 +47,8 @@ const JournalDashboardPanel = () => {
   const [positionOrders, setPositionOrders] = useState<Map<string, Set<string>>>(new Map());
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{ chunk: number; deals: number } | null>(null);
+  const [cancelRef] = useState<{ current: boolean }>({ current: false });
   const [lastSync, setLastSync] = useState<string | null>(null);
 
   const load = useCallback(async () => {
