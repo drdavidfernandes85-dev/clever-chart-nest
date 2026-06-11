@@ -323,8 +323,10 @@ const TradingDashboard = () => {
             </Link>
             <div className="min-w-0">
               <h1 className="font-heading text-base sm:text-lg font-bold text-foreground leading-tight truncate">
-                Trading Room <span className="text-primary">Dashboard</span>
+                <span className="sm:hidden">Trading Room</span>
+                <span className="hidden sm:inline">Trading Room <span className="text-primary">Dashboard</span></span>
               </h1>
+
               {connected && (
                 <p className="text-[11px] font-mono text-muted-foreground truncate">
                   <Hash className="inline h-3 w-3 -mt-0.5" />
