@@ -70,6 +70,9 @@ const ChatMessageInput = ({ channelName, channelId, userId, selfDisplayName, rep
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setMessage(val);
+    if (val.trim().length > 0) broadcastTyping();
+
+
 
     const cursor = e.target.selectionStart ?? val.length;
     const textBefore = val.slice(0, cursor);
