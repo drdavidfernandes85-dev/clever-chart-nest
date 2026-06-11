@@ -187,7 +187,7 @@ const DashboardSidebar = () => {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-70" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[hsl(145_65%_50%)]" />
             </span>
-            <span className="font-mono text-[9px] leading-none tabular-nums text-muted-foreground">12K</span>
+            <span className="font-mono text-[9px] leading-none tabular-nums text-muted-foreground">{onlineCount == null ? "·" : onlineCount}</span>
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-lg bg-card/60 px-2.5 py-1.5">
@@ -198,7 +198,7 @@ const DashboardSidebar = () => {
             <Users className="h-3 w-3 text-muted-foreground" />
             <div className="flex items-baseline gap-1 min-w-0">
               <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground">
-                12,487
+                {onlineCount == null ? "…" : onlineCount.toLocaleString()}
               </span>
               <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
                 {t("sidebar.online")}
