@@ -105,29 +105,46 @@ serve(async (req) => {
     if (Date.now() - started > BUDGET_MS) { budgetExhausted = true; break; }
 
     let parsed: any = null;
-    try {
-      const r = await fetch(`${SUPABASE_URL}/functions/v1/get-mt5-history`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader,
-          apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        },
-        body: JSON.stringify({ kind: "deals", dateFrom, dateTo, limit: PAGE, offset }),
-      });
-      upstreamStatus = r.status;
-      const text = await r.text();
-      try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
-      if (!r.ok || parsed?.success === false) {
-        lastError = parsed?.error
-          ? String(parsed.error)
-          : `HISTORY_HTTP_${r.status}: ${text.slice(0, 300)}`;
+    // Single transient retry on upstream 5xx — TL has been returning intermittent
+    // 502s mid-backfill. One retry after 2s; if it still fails we bail with the
+    // cursor (minDealTime) so the client can resume past the bad point.
+    let attempt = 0;
+    let pageFailed = false;
+    while (true) {
+      try {
+        const r = await fetch(`${SUPABASE_URL}/functions/v1/get-mt5-history`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: authHeader,
+            apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          },
+          body: JSON.stringify({ kind: "deals", dateFrom, dateTo, limit: PAGE, offset }),
+        });
+        upstreamStatus = r.status;
+        const text = await r.text();
+        try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
+        if (!r.ok || parsed?.success === false) {
+          const transient = r.status >= 500 && r.status < 600;
+          if (transient && attempt === 0) {
+            attempt++;
+            await sleep(2000);
+            continue;
+          }
+          lastError = parsed?.error
+            ? String(parsed.error)
+            : `HISTORY_HTTP_${r.status}: ${text.slice(0, 300)}`;
+          pageFailed = true;
+        }
+        break;
+      } catch (e) {
+        if (attempt === 0) { attempt++; await sleep(2000); continue; }
+        lastError = e instanceof Error ? e.message : String(e);
+        pageFailed = true;
         break;
       }
-    } catch (e) {
-      lastError = e instanceof Error ? e.message : String(e);
-      break;
     }
+    if (pageFailed) break;
 
     const rows: any[] = Array.isArray(parsed?.data) ? parsed.data : [];
     if (rows.length === 0) break;
@@ -198,11 +215,20 @@ serve(async (req) => {
     .eq("user_id", user.id)
     .eq("mt_login", mtLoginNum);
 
-  // Tell the client to auto-continue when we got cut by the wall budget.
-  const hasMore = budgetExhausted && totalFetched > 0;
+  // Resume cursor is preserved on BOTH partial outcomes:
+  //   - budgetExhausted (clean stop, more to fetch)
+  //   - lastError after at least one page (transient 5xx mid-backfill)
+  // The client uses nextDateTo to skip past the failing page.
+  const hasMore = (budgetExhausted || (!!lastError && totalFetched > 0)) && !!minDealTime;
   const nextDateTo = hasMore && minDealTime
     ? new Date(new Date(minDealTime).getTime() - 1).toISOString()
     : null;
+  const resolvedStatus = lastError
+    ? (hasMore ? "partial" : "error")
+    : budgetExhausted
+      ? "partial"
+      : "ok";
+
 
   await supabase.from("journal_sync_state").upsert({
     user_id: user.id,
