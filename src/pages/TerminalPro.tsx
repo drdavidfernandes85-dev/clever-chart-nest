@@ -156,12 +156,19 @@ function StatusDot() {
   );
 }
 
-function Stat({ label, value, valueClass }: { label: string; value: ReactNode; valueClass?: string }) {
-  return (
+function Stat({ label, value, valueClass, tooltip }: { label: string; value: ReactNode; valueClass?: string; tooltip?: string }) {
+  const body = (
     <div className="flex flex-col leading-tight px-3 py-1 min-w-[88px]">
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
       <span className={cn("font-mono text-sm font-semibold", valueClass)}>{value}</span>
     </div>
+  );
+  if (!tooltip) return body;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{body}</TooltipTrigger>
+      <TooltipContent className="max-w-[260px] text-xs">{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 
