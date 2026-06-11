@@ -1,7 +1,11 @@
 // Close Position (Controlled) — developer-only safe close path.
+// HISTORICAL AUDIT GAP: pre-2026-06-11 gate rejections are unrecorded. From
+// 2026-06-11 onward, every pre-TL gate block writes a *_blocked_* row to
+// execution_audit_events via the shared auditGateBlock() helper.
 // Only allows volume <= 0.01 during testing. Does NOT use execute-trade.
 // Calls Trading Layer directly with POSITION_CLOSE_ID and logs to
 // execution_audit_events with classification = close_position.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   loadRiskSettings,
