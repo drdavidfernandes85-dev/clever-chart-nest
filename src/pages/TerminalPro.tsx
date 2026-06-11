@@ -40,6 +40,7 @@ import { useTerminalProAccountSnapshot } from "@/hooks/useTerminalProAccountSnap
 import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
 import { useMarketStatus } from "@/hooks/useLiveMarketData";
 import { supabase } from "@/integrations/supabase/client";
+import TerminalWatchlist from "@/components/terminal/TerminalWatchlist";
 
 /* ─────────── Display currency ─────────── */
 
@@ -336,7 +337,7 @@ function Shell() {
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={18} minSize={12} collapsible>
-            <Panel title="Watchlist" hint="Fase 2: lista de instrumentos del bróker en vivo." />
+            <TerminalWatchlist />
           </ResizablePanel>
           <ResizableHandle withHandle />
 
