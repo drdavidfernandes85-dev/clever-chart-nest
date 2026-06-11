@@ -27,6 +27,7 @@ import {
   assertCanaryCapabilityDisabled,
   canaryGuardResponseBody,
 } from "../_shared/canaryPolicy.ts";
+import { auditGateBlock } from "../_shared/auditGateBlock.ts";
 
 
 const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V4_2026_06_11";
