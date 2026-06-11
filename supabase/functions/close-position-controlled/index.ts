@@ -254,14 +254,14 @@ Deno.serve(async (req) => {
 
 
   // Broker-symbol gate — close must use exact MT5 broker symbol from the position.
-  const eligible = await resolveEligibleBrokerSymbol(supabase, {
+  const eligible = await resolveBrokerSymbolWithSelfHeal(supabase, {
     userId: user.id,
     traderId: accountId,
     accountId: mapping.tradingLayerAccountId,
     requestedDisplaySymbol: symbol,
     suppliedBrokerSymbol,
     operationType: "close_position",
-  });
+  }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
     return json(brokerSymbolGateResponse(VERSION, eligible, { ticket, closeId, volume }), 200);
   }
