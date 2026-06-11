@@ -97,8 +97,10 @@ const TradingRoomDisclaimerModal = () => {
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
+
 
 export default TradingRoomDisclaimerModal;
