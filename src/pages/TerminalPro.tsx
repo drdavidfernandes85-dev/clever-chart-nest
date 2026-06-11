@@ -15,7 +15,7 @@
  *  - One-click trading toggle (state only; consumed by later phases).
  *  - Resizable DXtrade-style region shell with empty-state placeholders.
  */
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { Activity, ChevronDown, Loader2, Zap, ZapOff } from "lucide-react";
 
@@ -156,12 +156,19 @@ function StatusDot() {
   );
 }
 
-function Stat({ label, value, valueClass }: { label: string; value: ReactNode; valueClass?: string }) {
-  return (
+function Stat({ label, value, valueClass, tooltip }: { label: string; value: ReactNode; valueClass?: string; tooltip?: string }) {
+  const body = (
     <div className="flex flex-col leading-tight px-3 py-1 min-w-[88px]">
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
       <span className={cn("font-mono text-sm font-semibold", valueClass)}>{value}</span>
     </div>
+  );
+  if (!tooltip) return body;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{body}</TooltipTrigger>
+      <TooltipContent className="max-w-[260px] text-xs">{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -195,15 +202,18 @@ function TopAccountBar({
     return fmtMoney(n, accountCcy);
   };
 
-  const profit = snapshot?.profit ?? 0;
-  const profitClass = profit > 0 ? "text-[#17C784]" : profit < 0 ? "text-[#F04E4E]" : "";
+  const profit = snapshot?.profit ?? null;
+  const profitClass =
+    profit != null && profit > 0 ? "text-[#17C784]" : profit != null && profit < 0 ? "text-[#F04E4E]" : "";
 
-  const marginLevel = useMemo(() => {
-    const eq = snapshot?.equity;
-    const m = snapshot?.margin;
-    if (eq == null || m == null || m === 0) return null;
-    return (eq / m) * 100;
-  }, [snapshot?.equity, snapshot?.margin]);
+  // Margen usado / libre / Nivel de margen: the live execution feed
+  // (Trading Layer /traders/{id}) does NOT expose margin, free_margin or
+  // margin_level. We intentionally render "—" with a tooltip rather than
+  // synthesise a value or fall back to a different broker source — mixing
+  // sources would silently disagree with the INFINOX portal. Pending
+  // Trading Layer adding these fields to the trader snapshot.
+  const marginUnavailableTip =
+    "No incluido en el feed de ejecución (Trading Layer). Pendiente de habilitar en el broker.";
 
   return (
     <div className="flex items-center gap-1 border-b border-border bg-[#0A0A0B] px-2 py-1.5 overflow-x-auto">
@@ -220,12 +230,9 @@ function TopAccountBar({
           <Stat label="Balance" value={fmt(snapshot.balance)} />
           <Stat label="Equidad" value={fmt(snapshot.equity)} />
           <Stat label="P&L abierto" value={fmt(profit)} valueClass={profitClass} />
-          <Stat label="Margen usado" value={fmt(snapshot.margin)} />
-          <Stat label="Margen libre" value={fmt(snapshot.marginFree)} />
-          <Stat
-            label="Nivel de margen"
-            value={marginLevel != null ? `${marginLevel.toFixed(2)}%` : "—"}
-          />
+          <Stat label="Margen usado" value="—" tooltip={marginUnavailableTip} />
+          <Stat label="Margen libre" value="—" tooltip={marginUnavailableTip} />
+          <Stat label="Nivel de margen" value="—" tooltip={marginUnavailableTip} />
         </>
       )}
 
