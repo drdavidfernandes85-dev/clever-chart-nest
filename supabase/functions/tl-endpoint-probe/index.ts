@@ -22,12 +22,8 @@ Deno.serve(async (req) => {
   const ratesResults: any[] = [];
   for (const q of attempts) {
     let r: Response | null = null, txt = "";
-    for (let i = 0; i < 3; i++) {
-      r = await fetch(`${BASE}/api/v1/accounts/${ACC}/${q}`, { headers: { Authorization: `Bearer ${KEY}` } });
-      txt = await r.text();
-      if (r.status !== 502 && r.status !== 503 && r.status !== 504) break;
-      await new Promise((res) => setTimeout(res, 800 * (i + 1)));
-    }
+    r = await fetch(`${BASE}/api/v1/accounts/${ACC}/${q}`, { headers: { Authorization: `Bearer ${KEY}` } });
+    txt = await r.text();
     ratesResults.push({ q, status: r?.status, body: txt.slice(0, 1500) });
   }
 
