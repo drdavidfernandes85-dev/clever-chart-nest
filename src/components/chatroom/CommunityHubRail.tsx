@@ -46,7 +46,7 @@ const initialsOf = (n: string) =>
  * Regulation-compliant: no signals language, no performance claims.
  */
 const CommunityHubRail = () => {
-  const [onlineCount, setOnlineCount] = useState(184);
+  const onlineCount = useOnlineCount();
   const [activeIdeas, setActiveIdeas] = useState<number>(0);
   const [ideasShared24h, setIdeasShared24h] = useState<number>(0);
   const { hot } = useHotMentions(8);
