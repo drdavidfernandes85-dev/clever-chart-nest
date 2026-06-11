@@ -35,9 +35,10 @@ import {
   upsertMirrorFromLive,
 } from "../_shared/livePositions.ts";
 
-const VERSION = "CLOSE_POSITION_ROUTE_FIX_V5_2026_06_11";
+const VERSION = "CLOSE_POSITION_VOLUME_CAP_V6_2026_06_11";
 const BASE_URL = "https://api.trading-layer.com";
-const MAX_TEST_VOLUME = 0.01;
+// MAX_TEST_VOLUME removed in V6 — replaced by live-volume + volumeStep/volumeMin
+// validation against the authoritative live position and broker symbol spec.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
