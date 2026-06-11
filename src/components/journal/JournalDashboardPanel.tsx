@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { RefreshCw, TrendingUp, TrendingDown, Target, Activity, BarChart3, Hash, ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
 
-interface Position {
+export interface Position {
   user_id: string | null;
   mt_login: number | null;
   position_id: number | null;
@@ -40,42 +40,58 @@ const fmtTime = (iso: string | null) => {
   try { return new Date(iso).toLocaleString("es-419", { dateStyle: "short", timeStyle: "short" }); } catch { return "—"; }
 };
 
-// Price-reconstruction metadata. Only symbols whose profit currency matches the
-// account currency may be reconstructed exactly. Others fall back to a dash so
-// we never invent a number across an FX conversion.
-const ACCOUNT_CURRENCY = "USD";
-const SYMBOL_META: Record<string, { contractSize: number; profitCcy: string; pipSize: number; digits: number }> = {
-  XAUUSD: { contractSize: 100,   profitCcy: "USD", pipSize: 0.1,    digits: 2 },
-  XAGUSD: { contractSize: 5000,  profitCcy: "USD", pipSize: 0.01,   digits: 3 },
-  EURUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  GBPUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  AUDUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  NZDUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  USDJPY: { contractSize: 100000, profitCcy: "JPY", pipSize: 0.01,   digits: 3 },
-};
+// Price-reconstruction uses the live broker spec (contract size + profit
+// currency) fetched per-symbol from get-mt5-terminal-data and cached for the
+// session. We never fall back to a hardcoded table — if the spec is missing,
+// the row stays as a dash. Eligibility is purely:
+//   spec.currencyProfit === accountCurrency  (no FX conversion in derivation).
+export interface LiveSpec {
+  contractSize: number;
+  profitCcy: string;
+  digits: number;
+  /** point = 10^-digits when broker omits it; only used for the pips tooltip. */
+  point: number;
+}
 
 type Reconstruction =
-  | { kind: "ok"; close: number; pips: number }
-  | { kind: "no_meta" }
-  | { kind: "ccy_mismatch" }
+  | { kind: "ok"; close: number; pips: number; digits: number }
+  | { kind: "no_spec" }
+  | { kind: "ccy_mismatch"; profitCcy: string }
   | { kind: "tripwire" };
 
-function reconstruct(p: Position): Reconstruction {
-  const sym = (p.symbol ?? "").toUpperCase();
-  const meta = SYMBOL_META[sym];
-  if (!meta) return { kind: "no_meta" };
-  if (meta.profitCcy !== ACCOUNT_CURRENCY) return { kind: "ccy_mismatch" };
+/**
+ * Derive the real close from price P&L alone.
+ *   numerator = position.gross_profit  ← view sum(deal.profit), NEVER includes
+ *   swap/commission/fee (those live in swap_total / commission_total / fee_total
+ *   on the position and in net_pnl as the post-fees figure).
+ *   close = vwap_open ± gross_profit / (volume_out × spec.contractSize)
+ *           sign +buy / −sell.
+ * Exported for unit testing against synthetic fee-bearing deals.
+ */
+export function reconstructClose(
+  p: Position,
+  spec: LiveSpec | null,
+  accountCcy: string,
+): Reconstruction {
+  if (!spec) return { kind: "no_spec" };
+  if (spec.profitCcy !== accountCcy) return { kind: "ccy_mismatch", profitCcy: spec.profitCcy };
   const vol = p.volume_out ?? p.volume_in ?? 0;
-  const profit = p.gross_profit ?? p.net_pnl ?? 0;
+  // Numerator is price-P&L only. Do NOT add swap_total/commission_total/fee_total.
+  const profit = p.gross_profit;
   const open = p.vwap_open;
-  if (!vol || open == null || !profit) return { kind: "tripwire" };
+  if (!vol || open == null || profit == null || profit === 0) return { kind: "tripwire" };
   const sign = p.side === "buy" ? 1 : p.side === "sell" ? -1 : 0;
   if (!sign) return { kind: "tripwire" };
-  const close = open + sign * (profit / (vol * meta.contractSize));
+  const close = open + sign * (profit / (vol * spec.contractSize));
   if (Math.abs(close - open) < 1e-9) return { kind: "tripwire" };
-  const pips = (close - open) / meta.pipSize;
-  return { kind: "ok", close: Number(close.toFixed(meta.digits + 2)), pips };
+  return {
+    kind: "ok",
+    close: Number(close.toFixed(spec.digits + 2)),
+    pips: (close - open) / Math.max(spec.point, 1e-12),
+    digits: spec.digits,
+  };
 }
+
 
 const JournalDashboardPanel = () => {
   const { user } = useAuth();
@@ -86,7 +102,10 @@ const JournalDashboardPanel = () => {
   const [syncing, setSyncing] = useState(false);
   const [syncProgress, setSyncProgress] = useState<{ chunk: number; deals: number } | null>(null);
   const [cancelRef] = useState<{ current: boolean }>({ current: false });
+  const [specCache, setSpecCache] = useState<Map<string, LiveSpec | null>>(new Map());
+  const [accountCurrency, setAccountCurrency] = useState<string>("USD");
   const [lastSync, setLastSync] = useState<string | null>(null);
+
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -131,6 +150,67 @@ const JournalDashboardPanel = () => {
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Resolve account currency (drives reconstruction eligibility).
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("user_mt_accounts")
+        .select("currency")
+        .eq("user_id", user.id)
+        .not("currency", "is", null)
+        .limit(1)
+        .maybeSingle();
+      if (data?.currency) setAccountCurrency(String(data.currency).toUpperCase());
+    })();
+  }, [user]);
+
+  // Fetch live broker spec for each distinct symbol that needs reconstruction.
+  // Cached for the session; never re-fetched, never replaced by a hardcoded map.
+  useEffect(() => {
+    const symbols = Array.from(new Set(
+      positions
+        .filter((p) =>
+          p.is_closed && p.symbol &&
+          p.vwap_open != null && p.vwap_close != null &&
+          Math.abs((p.vwap_open ?? 0) - (p.vwap_close ?? 0)) < 1e-9 &&
+          Math.abs(p.net_pnl ?? 0) > 0.0001,
+        )
+        .map((p) => p.symbol!.toUpperCase()),
+    ));
+    const missing = symbols.filter((s) => !specCache.has(s));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(missing.map(async (sym) => {
+        try {
+          const { data, error } = await supabase.functions.invoke(
+            "get-mt5-terminal-data", { body: { selectedSymbol: sym } },
+          );
+          if (error || !data?.success) return [sym, null] as const;
+          const s = data.specs;
+          if (!s || s.contractSize == null || !s.currencyProfit) return [sym, null] as const;
+          const digits = s.digits ?? 5;
+          const spec: LiveSpec = {
+            contractSize: Number(s.contractSize),
+            profitCcy: String(s.currencyProfit).toUpperCase(),
+            digits,
+            point: s.point ?? Math.pow(10, -digits),
+          };
+          return [sym, spec] as const;
+        } catch { return [sym, null] as const; }
+      }));
+      if (cancelled) return;
+      setSpecCache((prev) => {
+        const next = new Map(prev);
+        for (const [sym, spec] of results) next.set(sym, spec);
+        return next;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [positions, specCache]);
+
 
   const sync = async () => {
     setSyncing(true);
@@ -186,8 +266,10 @@ const JournalDashboardPanel = () => {
       p.vwap_open != null && p.vwap_close != null &&
       Math.abs((p.vwap_open ?? 0) - (p.vwap_close ?? 0)) < PRICE_EPS &&
       Math.abs(p.net_pnl ?? 0) > 0.0001;
-    return { ...p, _needsRecon: needs, _recon: needs ? reconstruct(p) : undefined };
-  }), [closed]);
+    const spec = needs && p.symbol ? specCache.get(p.symbol.toUpperCase()) ?? null : null;
+    return { ...p, _needsRecon: needs, _recon: needs ? reconstructClose(p, spec, accountCurrency) : undefined };
+  }), [closed, specCache, accountCurrency]);
+
 
   const reconstructed = augmented.filter((p) => p._recon?.kind === "ok");
   const unrecoverable = augmented.filter((p) => p._needsRecon && p._recon?.kind !== "ok");
@@ -342,10 +424,11 @@ const JournalDashboardPanel = () => {
               const derivedOk = recon?.kind === "ok";
               const showDash = aug?._needsRecon && !derivedOk;
               const closeDisplay = derivedOk
-                ? recon!.close.toFixed(SYMBOL_META[(p.symbol ?? "").toUpperCase()]?.digits ?? 5)
+                ? recon.close.toFixed(recon.digits)
                 : showDash
                   ? "—"
                   : p.vwap_close?.toFixed(5) ?? "—";
+
               return (
                 <div key={`${p.mt_login}-${p.position_id}`} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2.5 text-sm items-center hover:bg-secondary/20">
                   <div className="min-w-0">
