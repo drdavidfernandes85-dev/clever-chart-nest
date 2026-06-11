@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
   try {
     payload = await req.json();
   } catch {
+    // Pre-auth gate: cannot audit (execution_audit_events.user_id NOT NULL).
     return json({ success: false, error: "Invalid JSON body" }, 400);
   }
 
@@ -134,37 +135,72 @@ Deno.serve(async (req) => {
     devMode = false,
   } = payload || {};
 
+  // Move auth resolution BEFORE validation so withTimings() can audit
+  // gate rejections that carry user_id. Sites that fire before this point
+  // (non-POST method, invalid JSON) remain unauditable by table NOT NULL
+  // constraint on user_id — documented in the audit completion certificate.
+  const supabase = createClient(SUPABASE_URL, ANON, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData?.user?.id ?? null;
+  timings.authValidatedAt = Date.now();
+
+  // AUDIT-ON-BLOCK CHOKEPOINT
+  //
+  // Every withTimings() invocation that ships a failure body (success===false)
+  // fire-and-forgets an execution_audit_events row using the body's own
+  // classification/step/errorCode as the gate discriminator — so all 22
+  // enriched-return failure sites in this function are audited mechanically
+  // without per-site instrumentation. Pre-auth/pre-fields rejections that
+  // fire before `uid`/`symbol`/`side`/`volume` are resolvable cannot audit
+  // (NOT NULL constraints on execution_audit_events). The Method-Not-Allowed
+  // and Invalid-JSON returns above are the only such cases in this function.
   const withTimings = (body: Record<string, unknown>, status = 200) => {
     timings.finalUiStatusAt = Date.now();
     const enriched = devMode
       ? { ...body, timings, executionPolicyVersion: EXECUTION_POLICY_VERSION }
       : body;
+    try {
+      if (
+        uid &&
+        (body as any)?.success === false &&
+        symbol && side && Number.isFinite(Number(volume))
+      ) {
+        const b = body as any;
+        const gate = String(
+          b.classification || b.errorCode || b.step || b.error || "submit_best_exec_block",
+        ).toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 80);
+        fireAndForget(
+          supabase.from("execution_audit_events").insert({
+            user_id: uid,
+            trade_id: tradeId ?? null,
+            symbol: String(symbol),
+            side: String(side),
+            volume: Number(volume),
+            status: `submit_best_exec_blocked_${gate}`,
+            outcome: "blocked",
+            stop_loss_price: stopLoss == null ? null : Number(stopLoss),
+            take_profit_price: takeProfit == null ? null : Number(takeProfit),
+            reason: String(b.error || b.message || b.classification || gate).slice(0, 500),
+            rule_violated: b.errorCode || b.classification || b.step || null,
+            broker_message: b.message ?? null,
+            raw: {
+              classification: b.classification ?? null,
+              step: b.step ?? null,
+              errorCode: b.errorCode ?? null,
+              version: VERSION,
+              gateBlock: true,
+              httpStatus: status,
+              bodySummary: { ...b, raw: undefined, verifiedInstrument: undefined },
+            },
+          }),
+        );
+      }
+    } catch { /* audit must never mask response */ }
     return json(enriched, status);
   };
 
-  if (!symbol || !side || !volume) {
-    return withTimings({
-      success: false,
-      error: "Missing required fields",
-      reasons: ["symbol, side and volume are required"],
-    }, 400);
-  }
-  if (orderType && String(orderType).toLowerCase() !== "market") {
-    return withTimings({
-      success: false,
-      error: "Only market orders are supported by this router",
-      reasons: [`orderType=${orderType} not supported`],
-    }, 400);
-  }
-
-  const supabase = createClient(SUPABASE_URL, ANON, {
-    global: { headers: { Authorization: authHeader } },
-  });
-
-  // Cache the auth lookup once.
-  const { data: userData } = await supabase.auth.getUser();
-  const uid = userData?.user?.id ?? null;
-  timings.authValidatedAt = Date.now();
 
   // ---------------------------------------------------------------------------
   // Shared verified execution-instrument resolution.
