@@ -35,9 +35,10 @@ import {
   upsertMirrorFromLive,
 } from "../_shared/livePositions.ts";
 
-const VERSION = "CLOSE_POSITION_ROUTE_FIX_V5_2026_06_11";
+const VERSION = "CLOSE_POSITION_VOLUME_CAP_V6_2026_06_11";
 const BASE_URL = "https://api.trading-layer.com";
-const MAX_TEST_VOLUME = 0.01;
+// MAX_TEST_VOLUME removed in V6 — replaced by live-volume + volumeStep/volumeMin
+// validation against the authoritative live position and broker symbol spec.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,12 +110,9 @@ Deno.serve(async (req) => {
       error: "liveCloseConfirmed=true is required for live closes",
     }, 400);
   }
-  if (volume > MAX_TEST_VOLUME) {
-    return json({
-      success: false, version: VERSION,
-      error: `Close blocked: volume ${volume} exceeds test cap ${MAX_TEST_VOLUME}`,
-    }, 400);
-  }
+  // Volume cap moved to post-authority block — needs the authoritative live
+  // volume from evaluateCloseAuthority and the broker symbol spec (volumeStep,
+  // volumeMin). See "VOLUME CAP" section below.
 
   // 3. Load connected MT5 account via shared mapping resolver so we always
   //    pick the freshest, validated trading-layer mapping instead of a stale
@@ -339,6 +337,79 @@ Deno.serve(async (req) => {
     } catch { /* swallow */ }
     return json(blockBody, 200);
   }
+
+  // ─────────────── VOLUME CAP (replaces former MAX_TEST_VOLUME=0.01) ───────────────
+  // Real invariant: requested close volume must be > 0, ≤ the position's live
+  // volume, snapped to the symbol's volumeStep, and ≥ volumeMin (when the
+  // remainder after a partial close would also be ≥ volumeMin; a full close
+  // always permitted regardless of step alignment, since MT5 closes the whole
+  // remaining lot when volume == liveVolume).
+  const livePos: any = authority.livePosition ?? {};
+  const liveVolume = Number(livePos.volume ?? livePos.lotSize ?? 0);
+  let volumeStep: number | null = null;
+  let volumeMin: number | null = null;
+  try {
+    const specRes = await fetch(
+      `${BASE_URL}/api/v1/accounts/${accountId}/symbols/${encodeURIComponent(brokerSymbol)}`,
+      { headers: { Authorization: `Bearer ${TRADING_LAYER_KEY}` } },
+    );
+    if (specRes.ok) {
+      const sj: any = await specRes.json();
+      const s = sj?.data ?? sj;
+      const vs = s?.volume_step ?? s?.volumeStep ?? s?.volumestep;
+      const vm = s?.volume_min ?? s?.volumeMin ?? s?.volumemin;
+      if (Number.isFinite(Number(vs))) volumeStep = Number(vs);
+      if (Number.isFinite(Number(vm))) volumeMin = Number(vm);
+    }
+  } catch { /* spec unavailable — fall back to coarse checks below */ }
+
+  const EPS = 1e-8;
+  const isFullClose = Math.abs(volume - liveVolume) <= Math.max(EPS, (volumeStep ?? 0.01) / 2);
+  if (!(liveVolume > 0)) {
+    return json({ success: false, version: VERSION, error: "CLOSE_LIVE_VOLUME_UNKNOWN", liveVolume, brokerCloseMutationDispatched: false }, 200);
+  }
+  if (volume > liveVolume + EPS) {
+    return json({
+      success: false, version: VERSION,
+      error: "CLOSE_VOLUME_EXCEEDS_LIVE",
+      requestedVolume: volume, liveVolume,
+      brokerCloseMutationDispatched: false,
+    }, 200);
+  }
+  if (!isFullClose) {
+    // Partial close: enforce step and min on both the close volume and the remainder.
+    if (volumeMin != null && volume + EPS < volumeMin) {
+      return json({
+        success: false, version: VERSION,
+        error: "CLOSE_VOLUME_BELOW_MIN",
+        requestedVolume: volume, volumeMin,
+        brokerCloseMutationDispatched: false,
+      }, 200);
+    }
+    if (volumeStep != null && volumeStep > 0) {
+      const k = Math.round(volume / volumeStep);
+      const snapped = Number((k * volumeStep).toFixed(8));
+      if (Math.abs(snapped - volume) > EPS) {
+        return json({
+          success: false, version: VERSION,
+          error: "CLOSE_VOLUME_NOT_STEP_ALIGNED",
+          requestedVolume: volume, volumeStep, suggestedVolume: snapped,
+          brokerCloseMutationDispatched: false,
+        }, 200);
+      }
+    }
+    const remainder = Number((liveVolume - volume).toFixed(8));
+    if (volumeMin != null && remainder + EPS < volumeMin) {
+      return json({
+        success: false, version: VERSION,
+        error: "CLOSE_REMAINDER_BELOW_MIN",
+        requestedVolume: volume, liveVolume, remainder, volumeMin,
+        brokerCloseMutationDispatched: false,
+      }, 200);
+    }
+  }
+  // ─────────────── END VOLUME CAP ───────────────
+
 
   const idempotencyKey = closeId;
 
