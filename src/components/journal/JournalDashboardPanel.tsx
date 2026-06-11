@@ -40,42 +40,58 @@ const fmtTime = (iso: string | null) => {
   try { return new Date(iso).toLocaleString("es-419", { dateStyle: "short", timeStyle: "short" }); } catch { return "—"; }
 };
 
-// Price-reconstruction metadata. Only symbols whose profit currency matches the
-// account currency may be reconstructed exactly. Others fall back to a dash so
-// we never invent a number across an FX conversion.
-const ACCOUNT_CURRENCY = "USD";
-const SYMBOL_META: Record<string, { contractSize: number; profitCcy: string; pipSize: number; digits: number }> = {
-  XAUUSD: { contractSize: 100,   profitCcy: "USD", pipSize: 0.1,    digits: 2 },
-  XAGUSD: { contractSize: 5000,  profitCcy: "USD", pipSize: 0.01,   digits: 3 },
-  EURUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  GBPUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  AUDUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  NZDUSD: { contractSize: 100000, profitCcy: "USD", pipSize: 0.0001, digits: 5 },
-  USDJPY: { contractSize: 100000, profitCcy: "JPY", pipSize: 0.01,   digits: 3 },
-};
+// Price-reconstruction uses the live broker spec (contract size + profit
+// currency) fetched per-symbol from get-mt5-terminal-data and cached for the
+// session. We never fall back to a hardcoded table — if the spec is missing,
+// the row stays as a dash. Eligibility is purely:
+//   spec.currencyProfit === accountCurrency  (no FX conversion in derivation).
+export interface LiveSpec {
+  contractSize: number;
+  profitCcy: string;
+  digits: number;
+  /** point = 10^-digits when broker omits it; only used for the pips tooltip. */
+  point: number;
+}
 
 type Reconstruction =
-  | { kind: "ok"; close: number; pips: number }
-  | { kind: "no_meta" }
-  | { kind: "ccy_mismatch" }
+  | { kind: "ok"; close: number; pips: number; digits: number }
+  | { kind: "no_spec" }
+  | { kind: "ccy_mismatch"; profitCcy: string }
   | { kind: "tripwire" };
 
-function reconstruct(p: Position): Reconstruction {
-  const sym = (p.symbol ?? "").toUpperCase();
-  const meta = SYMBOL_META[sym];
-  if (!meta) return { kind: "no_meta" };
-  if (meta.profitCcy !== ACCOUNT_CURRENCY) return { kind: "ccy_mismatch" };
+/**
+ * Derive the real close from price P&L alone.
+ *   numerator = position.gross_profit  ← view sum(deal.profit), NEVER includes
+ *   swap/commission/fee (those live in swap_total / commission_total / fee_total
+ *   on the position and in net_pnl as the post-fees figure).
+ *   close = vwap_open ± gross_profit / (volume_out × spec.contractSize)
+ *           sign +buy / −sell.
+ * Exported for unit testing against synthetic fee-bearing deals.
+ */
+export function reconstructClose(
+  p: Position,
+  spec: LiveSpec | null,
+  accountCcy: string,
+): Reconstruction {
+  if (!spec) return { kind: "no_spec" };
+  if (spec.profitCcy !== accountCcy) return { kind: "ccy_mismatch", profitCcy: spec.profitCcy };
   const vol = p.volume_out ?? p.volume_in ?? 0;
-  const profit = p.gross_profit ?? p.net_pnl ?? 0;
+  // Numerator is price-P&L only. Do NOT add swap_total/commission_total/fee_total.
+  const profit = p.gross_profit;
   const open = p.vwap_open;
-  if (!vol || open == null || !profit) return { kind: "tripwire" };
+  if (!vol || open == null || profit == null || profit === 0) return { kind: "tripwire" };
   const sign = p.side === "buy" ? 1 : p.side === "sell" ? -1 : 0;
   if (!sign) return { kind: "tripwire" };
-  const close = open + sign * (profit / (vol * meta.contractSize));
+  const close = open + sign * (profit / (vol * spec.contractSize));
   if (Math.abs(close - open) < 1e-9) return { kind: "tripwire" };
-  const pips = (close - open) / meta.pipSize;
-  return { kind: "ok", close: Number(close.toFixed(meta.digits + 2)), pips };
+  return {
+    kind: "ok",
+    close: Number(close.toFixed(spec.digits + 2)),
+    pips: (close - open) / Math.max(spec.point, 1e-12),
+    digits: spec.digits,
+  };
 }
+
 
 const JournalDashboardPanel = () => {
   const { user } = useAuth();
