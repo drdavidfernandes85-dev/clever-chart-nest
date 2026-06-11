@@ -89,7 +89,7 @@ const CommunityHubRail = () => {
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
           <div className="rounded-lg border border-border/40 bg-background/40 px-2 py-2 text-center">
             <p className="font-mono text-base font-bold tabular-nums text-primary leading-none">
-              {onlineCount}
+              {onlineCount == null ? "…" : onlineCount}
             </p>
             <p className="mt-1 font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">
               Online
