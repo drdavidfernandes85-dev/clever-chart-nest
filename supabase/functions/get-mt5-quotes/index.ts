@@ -180,14 +180,15 @@ serve(async (req) => {
 
     const limited = targetUpper.slice(0, 40);
 
+    const deadlineAt = Date.now() + WALL_BUDGET_MS;
     const CONC = 4;
     const quotes: any[] = [];
     let cursor = 0;
     async function worker() {
-      while (cursor < limited.length) {
+      while (cursor < limited.length && Date.now() < deadlineAt) {
         const idx = cursor++;
         const sym = limited[idx];
-        const tickRes = await tlGet(`${accountPath}/${encodeURIComponent(sym)}/tick`);
+        const tickRes = await tlGet(`${accountPath}/${encodeURIComponent(sym)}/tick`, deadlineAt);
         const tick = tickRes.ok ? tickRes.data?.data : null;
         const bid = tick?.bid != null ? Number(tick.bid) : null;
         const ask = tick?.ask != null ? Number(tick.ask) : null;
@@ -211,12 +212,35 @@ serve(async (req) => {
 
     // Build selectedQuote: tick + symbol specification.
     let selectedQuote: any = null;
-    if (selectedSymbol) {
+    if (selectedSymbol && Date.now() < deadlineAt) {
       const baseQuote = quotes.find(
         (q) => String(q.symbol).toUpperCase() === selectedSymbol,
       ) || null;
-      const specRes = await tlGet(`${accountPath}/${encodeURIComponent(selectedSymbol)}`);
+      const specRes = await tlGet(`${accountPath}/${encodeURIComponent(selectedSymbol)}`, deadlineAt);
       const spec = specRes.ok ? specRes.data?.data : null;
+      if (baseQuote || spec) {
+        selectedQuote = {
+          symbol: selectedSymbol,
+          bid: baseQuote?.bid ?? null,
+          ask: baseQuote?.ask ?? null,
+          last: baseQuote?.last ?? null,
+          spread: baseQuote?.spread ?? null,
+          digits: spec?.digits ?? baseQuote?.digits ?? null,
+          point: spec?.point ?? null,
+          description: spec?.description ?? null,
+          contractSize: spec?.trade_contract_size ?? null,
+          tickValue: spec?.trade_tick_value ?? null,
+          tickSize: spec?.trade_tick_size ?? null,
+          volumeMin: spec?.volume_min ?? null,
+          volumeMax: spec?.volume_max ?? null,
+          volumeStep: spec?.volume_step ?? null,
+          currencyBase: spec?.currency_base ?? null,
+          currencyProfit: spec?.currency_profit ?? null,
+          currencyMargin: spec?.currency_margin ?? null,
+          valid: !!baseQuote || !!spec,
+        };
+      }
+    }
       if (baseQuote || spec) {
         selectedQuote = {
           symbol: selectedSymbol,
