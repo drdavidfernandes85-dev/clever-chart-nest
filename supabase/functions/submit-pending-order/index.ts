@@ -4,6 +4,12 @@
 // the client's quote), risk + execution-mode gates, and writes an
 // execution_audit_events row with stop_loss_price / take_profit_price /
 // mt_login populated on every broker-call path (fills AND rejections).
+//
+// HISTORICAL AUDIT GAP: pre-TL gate rejections (canary, mapping, exec_mode,
+// final_activation_blocker, admin_limits, broker_symbol_gate, fresh_tick,
+// fresh_trade_mode, bad_request, volume_cap) were NOT recorded in
+// execution_audit_events prior to 2026-06-11. Any zero-count for a
+// submit_pending_blocked_* path before this deploy is unknowable, not zero.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   loadRiskSettings,
