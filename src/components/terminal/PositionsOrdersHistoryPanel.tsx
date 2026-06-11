@@ -15,7 +15,7 @@
  * every poll boundary (bar = account.profit, sum(rows.net_profit) ≈ same).
  */
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
+import { Loader2, RefreshCw, AlertTriangle, Pencil, X as XIcon, Slice } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,11 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
 import { fmtMoney } from "@/contexts/LiveAccountContext";
+import {
+  ModifyProtectionDialog, CloseConfirmDialog, PartialCloseDialog,
+  CancelOrderConfirmDialog, BulkCloseDialog,
+  type LivePosition, type PendingOrderLite, type BulkScope,
+} from "@/components/terminal/PositionActionDialogs";
 
 /* ─────────── shared ─────────── */
 
