@@ -46,9 +46,9 @@ export async function auditGateBlock(
     await supabase.from("execution_audit_events").insert({
       user_id: args.userId,
       trade_id: id,
-      symbol: args.symbol ?? null,
+      symbol: args.symbol ?? "UNKNOWN",
       side: args.side ?? "buy",
-      volume: args.volume ?? 0,
+      volume: typeof args.volume === "number" && Number.isFinite(args.volume) ? args.volume : 0,
       status: `${args.action}_blocked_${args.gate}`,
       outcome: "blocked",
       reason: args.reason,
