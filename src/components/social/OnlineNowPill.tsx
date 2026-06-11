@@ -1,24 +1,15 @@
-import { useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 
 interface Props {
   className?: string;
 }
 
 const OnlineNowPill = ({ className }: Props) => {
-  const [count, setCount] = useState(187);
   const { t } = useLanguage();
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCount((n) =>
-        Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))),
-      );
-    }, 5000);
-    return () => clearInterval(id);
-  }, []);
+  const count = useOnlineCount();
 
   return (
     <div
@@ -33,7 +24,7 @@ const OnlineNowPill = ({ className }: Props) => {
       </span>
       <Users className="h-4 w-4 text-primary" />
       <span className="text-sm font-bold tabular-nums text-foreground">
-        {count.toLocaleString()}
+        {count == null ? "…" : count.toLocaleString()}
       </span>
       <span className="text-xs text-foreground/70">{t("hero.onlineNow")}</span>
     </div>
