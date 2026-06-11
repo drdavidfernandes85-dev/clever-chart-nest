@@ -4,6 +4,8 @@ import { MessageSquare, Radio, TrendingUp, TrendingDown, Users, Zap, Flame, Chec
 import { supabase } from "@/integrations/supabase/client";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import CommunityTrustBar from "@/components/social/CommunityTrustBar";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
+
 
 /**
  * Community Nest — right-sidebar showing online traders, live shared signals,
