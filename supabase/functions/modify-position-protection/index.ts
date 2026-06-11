@@ -1,6 +1,10 @@
 // Modify Position Protection — update SL / TP on an open MT5 position.
+// HISTORICAL AUDIT GAP: pre-2026-06-11 gate rejections are unrecorded. From
+// 2026-06-11 onward, every pre-TL gate block writes a *_blocked_* row to
+// execution_audit_events via the shared auditGateBlock() helper.
 // Does NOT call execute-trade or place-order. Sends only SL/TP changes to
 // Trading Layer and logs the result to execution_audit_events.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { loadRiskSettings, buildRiskBlock, auditRiskBlock } from "../_shared/risk.ts";
 import {
@@ -23,6 +27,7 @@ import {
   assertCanaryCapabilityDisabled,
   canaryGuardResponseBody,
 } from "../_shared/canaryPolicy.ts";
+import { auditGateBlock } from "../_shared/auditGateBlock.ts";
 
 
 const VERSION = "MODIFY_POSITION_PROTECTION_RISK_V4_2026_06_11";
@@ -65,13 +70,19 @@ Deno.serve(async (req) => {
 
   // Limited Canary policy: SL/TP modification requires the policy capability switch.
   const canaryGuardModify = await assertCanaryCapabilityDisabled(supabase, "modify_protection");
+  // Limited Canary policy: SL/TP modification requires the policy capability switch.
+  const canaryGuardModify = await assertCanaryCapabilityDisabled(supabase, "modify_protection");
   if (!canaryGuardModify.allowed) {
+    await auditGateBlock(supabase, { userId: user.id, action: "modify_protection", gate: "canary",
+      reason: canaryGuardModify.reason || "canary_disabled", version: VERSION });
     return json(canaryGuardResponseBody(canaryGuardModify, VERSION), 403);
   }
 
 
   let payload: any;
   try { payload = await req.json(); } catch {
+    await auditGateBlock(supabase, { userId: user.id, action: "modify_protection", gate: "bad_request",
+      reason: "invalid_json_body", version: VERSION });
     return json({ success: false, version: VERSION, error: "Invalid JSON body" }, 400);
   }
   const ticket = payload?.ticket != null ? String(payload.ticket) : null;
@@ -91,79 +102,72 @@ Deno.serve(async (req) => {
       ? null
       : Number(takeProfitRaw);
 
+  const safeSide: "buy" | "sell" | null = side === "buy" || side === "sell" ? side : null;
+  const ab = (gate: string, reason: string, extra?: Record<string, unknown>) =>
+    auditGateBlock(supabase, { userId: user.id, action: "modify_protection", gate, reason,
+      ticket, symbol, side: safeSide, volume: Number.isFinite(volume) ? volume : 0,
+      version: VERSION, extra });
+
   if (!ticket || !symbol || (side !== "buy" && side !== "sell")) {
-    return json({
-      success: false, version: VERSION,
-      error: "ticket, symbol and side (buy|sell) are required",
-    }, 400);
+    await ab("bad_request", "ticket_symbol_side_required");
+    return json({ success: false, version: VERSION,
+      error: "ticket, symbol and side (buy|sell) are required" }, 400);
   }
   if (stopLoss === null && takeProfit === null) {
-    return json({
-      success: false, version: VERSION,
-      error: "Provide at least one of stopLoss or takeProfit",
-    }, 400);
+    await ab("bad_request", "sl_or_tp_required");
+    return json({ success: false, version: VERSION,
+      error: "Provide at least one of stopLoss or takeProfit" }, 400);
   }
   if (stopLoss !== null && !Number.isFinite(stopLoss)) {
+    await ab("bad_request", "sl_not_number");
     return json({ success: false, version: VERSION, error: "stopLoss must be a number" }, 400);
   }
   if (takeProfit !== null && !Number.isFinite(takeProfit)) {
+    await ab("bad_request", "tp_not_number");
     return json({ success: false, version: VERSION, error: "takeProfit must be a number" }, 400);
   }
   if (Number.isFinite(currentPrice) && currentPrice > 0) {
+    const sideError = (msg: string) => {
+      return ab("bad_request", msg).then(() =>
+        json({ success: false, version: VERSION, error: msg }, 400));
+    };
     if (side === "buy") {
-      if (stopLoss !== null && stopLoss >= currentPrice) {
-        return json({ success: false, version: VERSION, error: "For buy, SL must be below current price" }, 400);
-      }
-      if (takeProfit !== null && takeProfit <= currentPrice) {
-        return json({ success: false, version: VERSION, error: "For buy, TP must be above current price" }, 400);
-      }
+      if (stopLoss !== null && stopLoss >= currentPrice) return await sideError("For buy, SL must be below current price");
+      if (takeProfit !== null && takeProfit <= currentPrice) return await sideError("For buy, TP must be above current price");
     } else {
-      if (stopLoss !== null && stopLoss <= currentPrice) {
-        return json({ success: false, version: VERSION, error: "For sell, SL must be above current price" }, 400);
-      }
-      if (takeProfit !== null && takeProfit >= currentPrice) {
-        return json({ success: false, version: VERSION, error: "For sell, TP must be below current price" }, 400);
-      }
+      if (stopLoss !== null && stopLoss <= currentPrice) return await sideError("For sell, SL must be above current price");
+      if (takeProfit !== null && takeProfit >= currentPrice) return await sideError("For sell, TP must be below current price");
     }
   }
 
   const mapping = await resolveActiveMtMapping(supabase, user.id);
   if (mapping.status === "missing") {
-    return json({
-      success: false, version: VERSION,
-      error: "No connected MT5 account found",
-    }, 404);
+    await ab("no_mapping", "no_connected_mt5");
+    return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
   }
   if (mapping.status === "stale" || !mapping.traderId) {
-    return json({
-      success: false, version: VERSION,
-      error: STALE_MAPPING_ERROR_CODE,
-      message: STALE_MAPPING_USER_MESSAGE,
-      mappingStatus: mapping.status,
-      localRowId: mapping.localRowId,
-    }, 409);
+    await ab("stale_mapping", STALE_MAPPING_ERROR_CODE);
+    return json({ success: false, version: VERSION,
+      error: STALE_MAPPING_ERROR_CODE, message: STALE_MAPPING_USER_MESSAGE,
+      mappingStatus: mapping.status, localRowId: mapping.localRowId }, 409);
   }
   const accountId = mapping.traderId;
 
   // ---------- Execution-mode allowlist (admin live testing gate) ----------
   {
     const gate = await assertLiveExecutionAllowed(supabase, user.id, {
-      traderId: mapping.traderId,
-      login: mapping.login,
+      traderId: mapping.traderId, login: mapping.login,
     });
     if (!gate.allowed) {
-      return json({
-        success: false,
-        version: VERSION,
+      await ab("exec_mode", gate.reason || LIVE_EXEC_DISABLED_CODE, { executionMode: gate.mode });
+      return json({ success: false, version: VERSION,
         error: gate.code || LIVE_EXEC_DISABLED_CODE,
-        reason: gate.reason,
-        executionMode: gate.mode,
-      }, 403);
+        reason: gate.reason, executionMode: gate.mode }, 403);
     }
   }
 
 
-  // ---------- Backend risk enforcement (kill switch + live trading flag) ----------
+  // Backend risk enforcement — already audited via auditRiskBlock; keep as-is.
   try {
     const settings = await loadRiskSettings(supabase, user.id);
     let breach: { reason: string; rule: string } | null = null;
@@ -185,14 +189,11 @@ Deno.serve(async (req) => {
 
   // Broker-symbol gate — SL/TP modification must use the exact MT5 position broker symbol.
   const eligible = await resolveBrokerSymbolWithSelfHeal(supabase, {
-    userId: user.id,
-    traderId: accountId,
-    accountId: mapping.tradingLayerAccountId,
-    requestedDisplaySymbol: symbol,
-    suppliedBrokerSymbol,
-    operationType: "modify_protection",
+    userId: user.id, traderId: accountId, accountId: mapping.tradingLayerAccountId,
+    requestedDisplaySymbol: symbol, suppliedBrokerSymbol, operationType: "modify_protection",
   }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
+    await ab("broker_symbol_gate", (eligible as any).reason || "broker_symbol_ineligible");
     return json(brokerSymbolGateResponse(VERSION, eligible, { ticket }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
@@ -203,6 +204,7 @@ Deno.serve(async (req) => {
     operation: "modify_protection",
   });
   if (!fresh.ok) {
+    await ab("fresh_trade_mode", (fresh as any).reason || "fresh_trade_mode_failed");
     return json(freshTradeModeGateResponse(VERSION, fresh, { ticket }), 200);
   }
 
@@ -210,9 +212,7 @@ Deno.serve(async (req) => {
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
   // Trading Layer requires symbol + position id + side + volume + sl/tp on
   // every /trades/send (even modify). Omitting side/volume causes TL to
-  // return HTTP 400 invalid_request with fieldErrors.side/volume = "Required",
-  // which the client used to surface as `[object Object]` because the JSON
-  // error object propagated through error → toast.
+  // return HTTP 400 invalid_request with fieldErrors.side/volume = "Required".
   const modifyPayload: Record<string, unknown> = {
     symbol: brokerSymbol,
     position: Number(ticket),
@@ -221,6 +221,7 @@ Deno.serve(async (req) => {
   };
   if (stopLoss !== null) modifyPayload.stopLoss = stopLoss;
   if (takeProfit !== null) modifyPayload.takeProfit = takeProfit;
+
 
   const startedAt = Date.now();
   let httpStatus = 0;
