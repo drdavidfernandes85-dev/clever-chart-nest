@@ -40,15 +40,25 @@ export function useCanaryEnforcement(): CanaryEnforcement {
   const active = policy?.capability_state === "active_limited_canary"
     && !policy?.operational_use_lock?.locked;
 
+  // Full live trading mode: when admin has enabled buys and all symbols,
+  // the narrow EURUSD-SELL-0.01 UI lockdown is lifted entirely. Backend
+  // policy (_shared/canaryPolicy.ts) remains the authoritative gate.
+  const fullMode = !!active
+    && (policy as any)?.buy_open_long === "enabled"
+    && (policy as any)?.other_symbols === "enabled";
+
+  const narrowActive = !!active && !fullMode;
+
   return {
     policy,
-    active: !!active,
-    lockedSymbol: active ? (policy?.allowed_broker_symbol ?? "EURUSD") : null,
-    lockedSide: active ? (policy?.allowed_entry_operation === "market_sell" ? "sell" : "sell") : null,
-    lockedVolume: active ? (Number(policy?.allowed_entry_volume) || 0.01) : null,
-    buyDisabled: !!active,
-    pendingDisabled: !!active,
-    otherSymbolsDisabled: !!active,
+    active: narrowActive,
+    lockedSymbol: narrowActive ? (policy?.allowed_broker_symbol ?? "EURUSD") : null,
+    lockedSide: narrowActive ? "sell" : null,
+    lockedVolume: narrowActive ? (Number(policy?.allowed_entry_volume) || 0.01) : null,
+    buyDisabled: narrowActive,
+    pendingDisabled: narrowActive,
+    otherSymbolsDisabled: narrowActive,
     lockCode: policy?.operational_use_lock?.code ?? null,
   };
 }
+
