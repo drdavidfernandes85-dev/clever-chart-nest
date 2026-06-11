@@ -208,9 +208,16 @@ Deno.serve(async (req) => {
 
 
   const idempotencyKey = `modify-${ticket}-${Date.now()}-${user.id}`;
+  // Trading Layer requires symbol + position id + side + volume + sl/tp on
+  // every /trades/send (even modify). Omitting side/volume causes TL to
+  // return HTTP 400 invalid_request with fieldErrors.side/volume = "Required",
+  // which the client used to surface as `[object Object]` because the JSON
+  // error object propagated through error → toast.
   const modifyPayload: Record<string, unknown> = {
     symbol: brokerSymbol,
     position: Number(ticket),
+    side,
+    volume: Number.isFinite(volume) ? volume : 0,
   };
   if (stopLoss !== null) modifyPayload.stopLoss = stopLoss;
   if (takeProfit !== null) modifyPayload.takeProfit = takeProfit;
@@ -238,8 +245,27 @@ Deno.serve(async (req) => {
   const latencyMs = Date.now() - startedAt;
 
   const retcode = res?.retcode != null ? Number(res.retcode) : null;
-  const brokerMessage =
-    res?.brokerMessage ?? res?.message ?? res?.error ?? res?.retcodeDescription ?? null;
+  // brokerMessage must always be a primitive string by the time it reaches
+  // the client — otherwise React renders "[object Object]" in the toast.
+  const stringifyErr = (v: unknown): string | null => {
+    if (v == null) return null;
+    if (typeof v === "string") return v;
+    if (typeof v === "object") {
+      const obj = v as any;
+      if (obj.code || obj.message) {
+        return obj.code && obj.message ? `${obj.code}: ${obj.message}` : (obj.code || obj.message);
+      }
+      try { return JSON.stringify(v); } catch { return String(v); }
+    }
+    return String(v);
+  };
+  const brokerMessage = stringifyErr(
+    res?.brokerMessage ?? res?.message ?? res?.error ?? res?.retcodeDescription,
+  );
+  const brokerErrorCode: string | null =
+    (res?.error && typeof res.error === "object" && res.error.code) ? String(res.error.code) :
+    (res?.code ? String(res.code) : null);
+
   const httpOk = httpStatus >= 200 && httpStatus < 300;
   const explicitSuccess = res?.success === true || retcode === 10009 || retcode === 10008;
   const explicitRejection =
@@ -311,8 +337,13 @@ Deno.serve(async (req) => {
     takeProfit,
     retcode,
     brokerMessage,
+    brokerErrorCode,
     latencyMs,
     tradingLayerStatus: httpStatus,
-    error: outcome === "success" ? null : (networkError || brokerMessage || "Modify failed"),
+    // `error` MUST be a string. Never propagate the upstream object here —
+    // toasts render it raw as `[object Object]`.
+    error: outcome === "success"
+      ? null
+      : (brokerErrorCode || stringifyErr(networkError || brokerMessage) || "MODIFY_FAILED"),
   });
 });

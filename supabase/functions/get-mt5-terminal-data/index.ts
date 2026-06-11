@@ -329,28 +329,35 @@ async function handleTerminalData(req: Request) {
     };
 
     // ---- Reconciliation capture (admin-only diagnostic sink) ----
-    // Same-snapshot |account.profit − Σ positions.net_profit| must be ~0 (modulo
-    // broker rounding ≈ $0.50). If it diverges (recurring $12.65 symptom), write
-    // paired raw payloads so vendor-cache vs. our-cache can be proven. Fire-and-
-    // forget; capture failures never block the response.
+    // Capture when (a) divergence > tolerance with positions present, OR
+    // (b) positions came back empty AND |account.profit| > tolerance — the
+    // recurring "frozen P&L" symptom (TL /positions returning 502/empty while
+    // /traders/{id} still returns a stale profit value).
     try {
       const sumNet = positions.reduce((s: number, p: any) => s + Number(p.net_profit ?? 0), 0);
       const accProfit = Number(profit ?? 0);
       const delta = Math.abs(accProfit - sumNet);
       const TOL = 0.50;
-      if (positions.length > 0 && delta > TOL) {
+      const divergencePresent = positions.length > 0 && delta > TOL;
+      const ghostProfit = positions.length === 0 && Math.abs(accProfit) > TOL;
+      if (divergencePresent || ghostProfit) {
         await supabase.from("reconciliation_captures").insert({
           user_id: user.id,
           mt_login: account.login != null ? Number(account.login) : null,
           trader_id: accountId,
-          source: "get-mt5-terminal-data",
+          source: ghostProfit ? "get-mt5-terminal-data:empty_positions_nonzero_profit" : "get-mt5-terminal-data",
           account_profit: accProfit,
           positions_profit_sum: sumNet,
           delta,
           tolerance: TOL,
           account_payload: traderData?.data ?? null,
           positions_payload: positionsRaw,
-          context: { openPositions: positions.length, equity, balance, credit },
+          context: {
+            openPositions: positions.length,
+            equity, balance, credit,
+            positionsHttpStatus: posRes.status ?? null,
+            ghostProfit,
+          },
         });
       }
     } catch (_) { /* never block on capture */ }
