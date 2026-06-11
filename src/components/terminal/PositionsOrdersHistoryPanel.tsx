@@ -151,56 +151,72 @@ function usePositionsAndOrdersSnapshot(): SnapshotState & { refresh: () => void 
 
 /* ─────────── tab: positions ─────────── */
 
-function PositionsTab({ snap }: { snap: SnapshotState }) {
-  // Subscribe to live ticks for every distinct symbol so each row can bridge
-  // the 5s broker poll. On each broker snapshot we snap to broker values;
-  // between polls we recompute price * direction * contractSize using ticks.
+function PositionsTab({ snap, refresh, balance }: { snap: SnapshotState; refresh: () => void; balance: number | null }) {
   const symbols = useMemo(
     () => Array.from(new Set(snap.positions.map((p) => p.symbol))),
     [snap.positions],
   );
   const ticks = useMultiSymbolTicks(symbols);
 
-  const rows = useMemo(() => {
-    return snap.positions.map((p) => {
-      const t = ticks[p.symbol];
-      // Use side-correct mid → broker reports current_price; this is just for
-      // intra-poll P&L drift, broker snapshot remains authoritative on each poll.
-      const livePrice = p.side === "buy" ? (t?.bid ?? p.current_price) : (t?.ask ?? p.current_price);
-      // We do NOT have contractSize / tickValue here without a per-symbol spec
-      // fetch (which would be N requests). Use the broker's last reported P&L
-      // as the baseline and only re-color if the live price has moved enough.
-      // Net P&L drift between polls is small; we render broker values verbatim
-      // and only refresh the live "current_price" column.
-      return {
-        ...p,
-        live_price: Number.isFinite(livePrice) && livePrice > 0 ? livePrice : p.current_price,
-      };
-    });
-  }, [snap.positions, ticks]);
+  const rows = useMemo(() => snap.positions.map((p) => {
+    const t = ticks[p.symbol];
+    const livePrice = p.side === "buy" ? (t?.bid ?? p.current_price) : (t?.ask ?? p.current_price);
+    return { ...p, live_price: Number.isFinite(livePrice) && livePrice > 0 ? livePrice : p.current_price };
+  }), [snap.positions, ticks]);
 
   const totalNet = rows.reduce((s, r) => s + (Number(r.net_profit) || 0), 0);
-  // Reconciliation against the bar's P&L abierto. Bar = account.profit
-  // (excludes swap+commission). Rows = sum(profit + swap + commission).
-  // Convention: bar reflects floating P&L only; this footer shows full net.
   const totalGross = rows.reduce((s, r) => s + (Number(r.profit) || 0), 0);
   const reconcilesWithBar =
-    snap.accountProfit == null
-      ? true
+    snap.accountProfit == null ? true
       : Math.abs(totalGross - snap.accountProfit) <= Math.max(0.05, Math.abs(snap.accountProfit) * 0.005);
 
+  // In-flight row state — drives "Cerrando…" / "Modificando…" without mutating values.
+  const [pending, setPending] = useState<Record<string, "closing" | "modifying">>({});
+  const setRowPending = (ticket: string, mode: "closing" | "modifying" | null) =>
+    setPending((p) => {
+      const next = { ...p };
+      if (mode == null) delete next[ticket]; else next[ticket] = mode;
+      return next;
+    });
+
+  const [modifyTarget, setModifyTarget] = useState<LivePosition | null>(null);
+  const [closeTarget, setCloseTarget] = useState<LivePosition | null>(null);
+  const [partialTarget, setPartialTarget] = useState<LivePosition | null>(null);
+  const [bulkScope, setBulkScope] = useState<BulkScope | null>(null);
+
+  const livePositions: LivePosition[] = rows.map((r) => ({
+    ticket: r.ticket, symbol: r.symbol, side: r.side, volume: r.volume,
+    entry_price: r.entry_price, current_price: r.live_price,
+    stop_loss: r.stop_loss, take_profit: r.take_profit,
+    net_profit: r.net_profit, profit: r.profit,
+  }));
+
+  const winners = livePositions.filter((p) => p.net_profit > 0).length;
+  const losers = livePositions.filter((p) => p.net_profit < 0).length;
+
   if (rows.length === 0) {
-    return (
-      <div className="px-3 py-10 text-center text-xs text-muted-foreground">
-        Sin posiciones abiertas
-      </div>
-    );
+    return <div className="px-3 py-10 text-center text-xs text-muted-foreground">Sin posiciones abiertas</div>;
   }
 
   return (
     <div className="flex flex-col h-full">
+      <div className="shrink-0 flex items-center justify-end gap-1 border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1">
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] uppercase tracking-wider"
+          onClick={() => setBulkScope("winners")} disabled={winners === 0}>
+          Cerrar ganadoras <span className="ml-1 text-emerald-400">{winners}</span>
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] uppercase tracking-wider"
+          onClick={() => setBulkScope("losers")} disabled={losers === 0}>
+          Cerrar perdedoras <span className="ml-1 text-red-400">{losers}</span>
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] uppercase tracking-wider text-red-300 hover:text-red-200"
+          onClick={() => setBulkScope("all")} disabled={livePositions.length === 0}>
+          Cerrar todo <span className="ml-1">{livePositions.length}</span>
+        </Button>
+      </div>
+
       <div className="flex-1 overflow-auto">
-        <table className="w-full min-w-[1100px] text-[11px] font-mono">
+        <table className="w-full min-w-[1200px] text-[11px] font-mono">
           <thead className="sticky top-0 z-10 bg-[#0a0a0a]">
             <tr className="text-left text-[9px] uppercase tracking-[0.18em] text-neutral-500">
               <th className="px-3 py-2 font-normal">Símbolo</th>
@@ -211,18 +227,24 @@ function PositionsTab({ snap }: { snap: SnapshotState }) {
               <th className="px-3 py-2 font-normal text-right">SL</th>
               <th className="px-3 py-2 font-normal text-right">TP</th>
               <th className="px-3 py-2 font-normal text-right">P&L</th>
-              <th className="px-3 py-2 font-normal text-right">Swap</th>
-              <th className="px-3 py-2 font-normal text-right">Comisión</th>
               <th className="px-3 py-2 font-normal text-right">Neto</th>
               <th className="px-3 py-2 font-normal text-right">Apertura</th>
+              <th className="px-3 py-2 font-normal text-center">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-900/70">
             {rows.map((r) => {
               const pnl = Number(r.profit) || 0;
               const net = Number(r.net_profit) || 0;
+              const lp: LivePosition = {
+                ticket: r.ticket, symbol: r.symbol, side: r.side, volume: r.volume,
+                entry_price: r.entry_price, current_price: r.live_price,
+                stop_loss: r.stop_loss, take_profit: r.take_profit,
+                net_profit: r.net_profit, profit: r.profit,
+              };
+              const rowPending = pending[String(r.ticket)];
               return (
-                <tr key={String(r.ticket)} className="tabular-nums hover:bg-neutral-900/40">
+                <tr key={String(r.ticket)} className={cn("tabular-nums hover:bg-neutral-900/40", rowPending && "opacity-60")}>
                   <td className="px-3 py-1.5 font-bold text-neutral-100">{r.symbol}</td>
                   <td className="px-3 py-1.5">
                     <span className={cn(
@@ -233,35 +255,62 @@ function PositionsTab({ snap }: { snap: SnapshotState }) {
                   <td className="px-3 py-1.5 text-right text-neutral-200">{r.volume.toFixed(2)}</td>
                   <td className="px-3 py-1.5 text-right text-neutral-400">{fmtPrice(r.symbol, r.entry_price)}</td>
                   <td className="px-3 py-1.5 text-right text-neutral-100">{fmtPrice(r.symbol, r.live_price)}</td>
-                  <td className={cn("px-3 py-1.5 text-right", r.stop_loss ? "text-red-400/80" : "text-neutral-600")}>
-                    {fmtPrice(r.symbol, r.stop_loss)}
-                  </td>
-                  <td className={cn("px-3 py-1.5 text-right", r.take_profit ? "text-emerald-400/80" : "text-neutral-600")}>
-                    {fmtPrice(r.symbol, r.take_profit)}
-                  </td>
+                  <td className={cn("px-3 py-1.5 text-right", r.stop_loss ? "text-red-400/80" : "text-neutral-600")}>{fmtPrice(r.symbol, r.stop_loss)}</td>
+                  <td className={cn("px-3 py-1.5 text-right", r.take_profit ? "text-emerald-400/80" : "text-neutral-600")}>{fmtPrice(r.symbol, r.take_profit)}</td>
                   <td className={cn("px-3 py-1.5 text-right font-bold",
                     pnl > 0 ? "text-emerald-400" : pnl < 0 ? "text-red-400" : "text-neutral-500")}>
                     {pnl === 0 ? "—" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`}
-                  </td>
-                  <td className={cn("px-3 py-1.5 text-right",
-                    r.swap > 0 ? "text-emerald-400/70" : r.swap < 0 ? "text-red-400/70" : "text-neutral-500")}>
-                    {r.swap === 0 ? "—" : r.swap.toFixed(2)}
-                  </td>
-                  <td className={cn("px-3 py-1.5 text-right",
-                    r.commission < 0 ? "text-red-400/70" : "text-neutral-500")}>
-                    {r.commission === 0 ? "—" : r.commission.toFixed(2)}
                   </td>
                   <td className={cn("px-3 py-1.5 text-right font-bold",
                     net > 0 ? "text-emerald-400" : net < 0 ? "text-red-400" : "text-neutral-500")}>
                     {net === 0 ? "—" : `${net >= 0 ? "+" : ""}${net.toFixed(2)}`}
                   </td>
                   <td className="px-3 py-1.5 text-right text-neutral-500">{fmtDateTime(r.time_open)}</td>
+                  <td className="px-3 py-1.5">
+                    {rowPending ? (
+                      <span className="flex items-center justify-center gap-1 text-[10px] text-yellow-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        {rowPending === "closing" ? "Cerrando…" : "Modificando…"}
+                      </span>
+                    ) : (
+                      <div className="flex items-center justify-center gap-0.5">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setModifyTarget(lp)}
+                              className="p-1 rounded hover:bg-[#FFCD05]/15 hover:text-[#FFCD05] text-neutral-400">
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Modificar SL/TP</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setPartialTarget(lp)}
+                              className="p-1 rounded hover:bg-orange-500/15 hover:text-orange-400 text-neutral-400">
+                              <Slice className="h-3 w-3" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Cierre parcial</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={() => setCloseTarget(lp)}
+                              className="p-1 rounded hover:bg-red-500/15 hover:text-red-400 text-neutral-400">
+                              <XIcon className="h-3 w-3" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="text-xs">Cerrar posición</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    )}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
       <div className="shrink-0 border-t border-neutral-800 bg-[#0a0a0a] px-3 py-1.5 flex items-center justify-between text-[11px] font-mono">
         <div className="flex items-center gap-3 text-neutral-500">
           <span>Total: {rows.length} posición{rows.length !== 1 ? "es" : ""}</span>
@@ -280,8 +329,7 @@ function PositionsTab({ snap }: { snap: SnapshotState }) {
           )}
         </div>
         <div className="text-right leading-tight">
-          <div className={cn("text-[12px] font-bold tabular-nums",
-            totalNet >= 0 ? "text-emerald-400" : "text-red-400")}>
+          <div className={cn("text-[12px] font-bold tabular-nums", totalNet >= 0 ? "text-emerald-400" : "text-red-400")}>
             Neto {totalNet >= 0 ? "+" : ""}{totalNet.toFixed(2)} {snap.currency}
           </div>
           <div className="text-[8px] uppercase tracking-[0.22em] text-neutral-500">
@@ -289,6 +337,28 @@ function PositionsTab({ snap }: { snap: SnapshotState }) {
           </div>
         </div>
       </div>
+
+      <ModifyProtectionDialog
+        open={modifyTarget != null} onOpenChange={(v) => !v && setModifyTarget(null)}
+        position={modifyTarget} accountBalance={balance}
+        onDone={() => { setRowPending(String(modifyTarget?.ticket ?? ""), null); refresh(); }}
+      />
+      <CloseConfirmDialog
+        open={closeTarget != null} onOpenChange={(v) => !v && setCloseTarget(null)}
+        position={closeTarget}
+        onDone={() => { setRowPending(String(closeTarget?.ticket ?? ""), null); refresh(); }}
+      />
+      <PartialCloseDialog
+        open={partialTarget != null} onOpenChange={(v) => !v && setPartialTarget(null)}
+        position={partialTarget}
+        onDone={() => { setRowPending(String(partialTarget?.ticket ?? ""), null); refresh(); }}
+      />
+      <BulkCloseDialog
+        open={bulkScope != null} onOpenChange={(v) => !v && setBulkScope(null)}
+        scope={bulkScope ?? "all"} positions={livePositions}
+        onPerPositionPending={(ticket, isPending) => setRowPending(ticket, isPending ? "closing" : null)}
+        onDone={refresh}
+      />
     </div>
   );
 }
