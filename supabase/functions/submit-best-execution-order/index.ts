@@ -201,6 +201,25 @@ Deno.serve(async (req) => {
     return json(enriched, status);
   };
 
+  if (!symbol || !side || !volume) {
+    return withTimings({
+      success: false,
+      error: "Missing required fields",
+      classification: "bad_request_missing_fields",
+      reasons: ["symbol, side and volume are required"],
+    }, 400);
+  }
+  if (orderType && String(orderType).toLowerCase() !== "market") {
+    return withTimings({
+      success: false,
+      error: "Only market orders are supported by this router",
+      classification: "bad_request_order_type",
+      reasons: [`orderType=${orderType} not supported`],
+    }, 400);
+  }
+
+
+
 
   // ---------------------------------------------------------------------------
   // Shared verified execution-instrument resolution.
