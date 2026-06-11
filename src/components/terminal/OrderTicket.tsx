@@ -1,46 +1,52 @@
 /**
- * Docked Order Ticket — Phase 3 (b).
+ * Docked / Modal Order Ticket — Phase 3 (c).
  *
- * - Order types: Mercado / Límite / Stop
- * - Side toggle (Sell red / Buy green) with live Bid/Ask
- * - Volume in Lotes OR USD/punto (interconverted via spec)
- * - For pending orders: entry price + duration (GTC / Hoy), side-aware client
- *   validation (server re-validates with a fresh tick — see submit-pending-order)
- * - 4-mode SL/TP block — Precio | Pips | Proyectado | % balance (interconvertible)
- * - Live Riesgo + R:R below the submit button
- * - "Impacto en margen: no disponible" tooltip — TL has no pre-trade margin endpoint
- * - Confirmation dialog with everything spelled out (market + pending)
- * - tradeId prefixes: tp-mkt-* / tp-lim-* / tp-stp-*
- * - Routes market → submit-best-execution-order; pending → submit-pending-order
- * - Spanish broker-rejection mapping
+ * Single source of truth used by both the docked panel and OrderTicketModal.
+ * Supports market / limit / stop, 4-mode SL/TP, USD/punto volume, GTD
+ * datetime expiration, per-user presets (auto-fill from user_trade_presets),
+ * Spanish broker-rejection mapping, and the existing fresh-tick / canary /
+ * execution-mode gates already enforced by the Edge Functions.
+ *
+ * One-click rules:
+ *   - market quick-entry (event-driven): one-click ON skips dialog
+ *   - docked / modal submit button: always its own confirmation
+ *   - LIMIT / STOP orders ALWAYS confirm regardless of one-click
  */
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, AlertTriangle, Info } from "lucide-react";
+import {
+  Loader2, AlertTriangle, Info, Settings, X, CalendarIcon,
+} from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBrokerSymbols } from "@/contexts/BrokerSymbolsContext";
 import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
 import { useSymbolSpec, type SymbolSpec } from "@/hooks/useSymbolSpec";
 import { useTerminalProAccountSnapshot } from "@/hooks/useTerminalProAccountSnapshot";
+import { usePresets, type TradePreset } from "@/hooks/usePresets";
 import { translateBrokerRejection } from "@/lib/brokerRejectionEs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
+import TicketPresetsPanel from "@/components/terminal/TicketPresetsPanel";
 import { cn } from "@/lib/utils";
 
-interface Props { oneClick: boolean }
+interface Props {
+  oneClick: boolean;
+  /** Force this symbol regardless of the global watchlist selection (modal). */
+  overrideSymbol?: string;
+  /** Callback after a successful order — used by the modal to auto-close. */
+  onOrderPlaced?: () => void;
+}
 
 type Side = "buy" | "sell";
 type OrderKind = "market" | "limit" | "stop";
-type Duration = "GTC" | "TODAY";
+type Duration = "GTC" | "TODAY" | "GTD";
 type SLMode = "price" | "pips" | "amount" | "pct";
 type VolMode = "lots" | "usd_per_point";
 
@@ -69,30 +75,19 @@ function pipValuePerLotFor(spec: SymbolSpec | null, fallbackDigits: number): num
 
 interface SLState { mode: SLMode; input: string }
 
-/** Resolve an SL/TP block to a price + the broker-distance in pips. */
 function resolveProtection(opts: {
-  state: SLState;
-  side: Side;
-  isStopLoss: boolean;
-  entry: number | null;
-  volume: number;
-  pipSize: number;
-  pipValuePerLot: number | null;
-  balance: number | null;
-}): { price: number | null; pips: number | null; amount: number | null; pct: number | null } {
+  state: SLState; side: Side; isStopLoss: boolean;
+  entry: number | null; volume: number;
+  pipSize: number; pipValuePerLot: number | null; balance: number | null;
+}) {
   const { state, side, isStopLoss, entry, volume, pipSize, pipValuePerLot, balance } = opts;
   const raw = state.input.trim();
   if (!raw) return { price: null, pips: null, amount: null, pct: null };
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) return { price: null, pips: null, amount: null, pct: null };
-
-  // direction: SL is on opposite side of trade direction; TP is on same side
-  // BUY SL below entry; BUY TP above entry; SELL flipped.
   const sign = isStopLoss ? (side === "buy" ? -1 : +1) : (side === "buy" ? +1 : -1);
-
   let pips: number | null = null;
   let price: number | null = null;
-
   if (state.mode === "price") {
     if (entry == null) return { price: null, pips: null, amount: null, pct: null };
     price = n;
@@ -118,20 +113,21 @@ function resolveProtection(opts: {
 }
 
 const SL_MODE_LABEL: Record<SLMode, string> = {
-  price: "Precio",
-  pips: "Pips",
-  amount: "Proyectado",
-  pct: "% balance",
+  price: "Precio", pips: "Pips", amount: "Proyectado", pct: "% balance",
 };
 
-export default function OrderTicket({ oneClick }: Props) {
+export default function OrderTicket({ oneClick, overrideSymbol, onOrderPlaced }: Props) {
   const { selectedBrokerSymbol } = useBrokerSymbols();
-  const symbol = (selectedBrokerSymbol || "EURUSD").toUpperCase();
+  const symbol = (overrideSymbol || selectedBrokerSymbol || "EURUSD").toUpperCase();
   const ticks = useMultiSymbolTicks([symbol]);
   const tick = ticks[symbol];
   const { spec, loading: specLoading, error: specError, missing } = useSymbolSpec(symbol);
   const account = useTerminalProAccountSnapshot();
+  // Balance comes from the atomic 5s-poll snapshot — % del balance re-derives
+  // every poll, so risk sizing tracks intra-session equity drift.
   const balance = account.snapshot?.balance ?? null;
+
+  const { resolveFor: resolvePreset } = usePresets();
 
   const [orderKind, setOrderKind] = useState<OrderKind>("market");
   const [side, setSide] = useState<Side>("buy");
@@ -139,10 +135,14 @@ export default function OrderTicket({ oneClick }: Props) {
   const [volumeStr, setVolumeStr] = useState<string>("0.01");
   const [entryStr, setEntryStr] = useState<string>("");
   const [duration, setDuration] = useState<Duration>("GTC");
+  const [gtdDate, setGtdDate] = useState<Date | undefined>(undefined);
+  const [gtdTime, setGtdTime] = useState<string>("23:59");
   const [sl, setSl] = useState<SLState>({ mode: "pips", input: "" });
   const [tp, setTp] = useState<SLState>({ mode: "pips", input: "" });
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  const [appliedPreset, setAppliedPreset] = useState<TradePreset | null>(null);
 
   const bid = tick?.bid ?? null;
   const ask = tick?.ask ?? null;
@@ -151,25 +151,36 @@ export default function OrderTicket({ oneClick }: Props) {
   const pipValuePerLot = pipValuePerLotFor(spec, digits);
   const marketPrice = side === "buy" ? ask : bid;
 
-  // Reset volume + entry when symbol changes
+  // Apply preset on symbol change. Symbol-specific wins over global.
   useEffect(() => {
-    if (spec?.volumeMin != null) setVolumeStr(String(spec.volumeMin));
+    const preset = resolvePreset(symbol);
+    if (preset) {
+      setSl({ mode: preset.sl_mode, input: preset.sl_value != null ? String(preset.sl_value) : "" });
+      setTp({ mode: preset.tp_mode, input: preset.tp_value != null ? String(preset.tp_value) : "" });
+      if (preset.default_volume != null) setVolumeStr(String(preset.default_volume));
+      else if (spec?.volumeMin != null) setVolumeStr(String(spec.volumeMin));
+      setVolMode(preset.volume_mode === "usd_pt" ? "usd_per_point" : "lots");
+      setAppliedPreset(preset);
+    } else {
+      if (spec?.volumeMin != null) setVolumeStr(String(spec.volumeMin));
+      setSl({ mode: "pips", input: "" });
+      setTp({ mode: "pips", input: "" });
+      setAppliedPreset(null);
+    }
     setEntryStr("");
-    setSl({ mode: "pips", input: "" });
-    setTp({ mode: "pips", input: "" });
-  }, [spec?.symbol, spec?.volumeMin]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol, spec?.volumeMin, resolvePreset]);
 
-  // Volume (lots) — interpret volMode
+  // Mark preset cleared when user edits SL/TP/volume manually
+  const clearAppliedHint = () => setAppliedPreset(null);
+
   const volumeLots = useMemo<number>(() => {
     const raw = Number(volumeStr);
     if (!Number.isFinite(raw) || raw <= 0) return 0;
     if (volMode === "lots") return raw;
-    // USD/punto → lots
-    if (!pipValuePerLot || pipValuePerLot <= 0) return 0;
-    // 1 "punto" in MT5 = 1 tick. Use tickValue per 1 lot.
     if (!spec?.tickValue) return 0;
     return raw / spec.tickValue;
-  }, [volumeStr, volMode, pipValuePerLot, spec?.tickValue]);
+  }, [volumeStr, volMode, spec?.tickValue]);
 
   const volumeIssue = useMemo<string | null>(() => {
     if (!Number.isFinite(volumeLots) || volumeLots <= 0) return "Ingresa un volumen válido.";
@@ -188,7 +199,6 @@ export default function OrderTicket({ oneClick }: Props) {
     return Number.isFinite(n) && n > 0 ? n : null;
   }, [orderKind, entryStr, marketPrice]);
 
-  // Side-of-market validation (client side, server re-validates with fresh tick)
   const entryIssue = useMemo<string | null>(() => {
     if (orderKind === "market") return null;
     if (entryPrice == null) return "Ingresa el precio de entrada.";
@@ -245,7 +255,21 @@ export default function OrderTicket({ oneClick }: Props) {
     return entryPrice * spec.contractSize * volumeLots;
   }, [entryPrice, spec?.contractSize, volumeLots]);
 
+  // GTD datetime → ISO string at submit
+  const gtdIso = useMemo<string | null>(() => {
+    if (duration !== "GTD" || !gtdDate) return null;
+    const [hh, mm] = (gtdTime || "00:00").split(":").map(Number);
+    const d = new Date(gtdDate);
+    d.setHours(hh ?? 0, mm ?? 0, 0, 0);
+    return d.toISOString();
+  }, [duration, gtdDate, gtdTime]);
+
+  const gtdIssue = duration === "GTD" && (!gtdDate || (gtdIso != null && new Date(gtdIso).getTime() <= Date.now()))
+    ? "Selecciona una fecha/hora futura."
+    : null;
+
   const stepLots = (delta: number) => {
+    clearAppliedHint();
     const step = spec?.volumeStep ?? 0.01;
     const min = spec?.volumeMin ?? step;
     const max = spec?.volumeMax ?? Number.POSITIVE_INFINITY;
@@ -256,14 +280,9 @@ export default function OrderTicket({ oneClick }: Props) {
   };
 
   const canSubmit =
-    !submitting &&
-    spec != null &&
-    !volumeIssue &&
-    !entryIssue &&
-    !slPriceIssue &&
-    !tpPriceIssue &&
-    entryPrice != null &&
-    entryPrice > 0;
+    !submitting && spec != null &&
+    !volumeIssue && !entryIssue && !slPriceIssue && !tpPriceIssue && !gtdIssue &&
+    entryPrice != null && entryPrice > 0;
 
   const tradeIdPrefix = orderKind === "market" ? "tp-mkt" : orderKind === "limit" ? "tp-lim" : "tp-stp";
 
@@ -290,13 +309,15 @@ export default function OrderTicket({ oneClick }: Props) {
           orderKind === "limit"
             ? side === "buy" ? "buy_limit" : "sell_limit"
             : side === "buy" ? "buy_stop" : "sell_stop";
+        const expirationType = duration === "GTC" ? "GTC" : duration === "TODAY" ? "TODAY" : "SPECIFIED";
         const { data, error } = await supabase.functions.invoke("submit-pending-order", {
           body: {
             tradeId, symbol, pendingType,
             volume: volumeRounded,
             entryPrice: Number((entryPrice as number).toFixed(digits)),
             stopLoss: slRounded, takeProfit: tpRounded,
-            expirationType: duration === "GTC" ? "GTC" : "TODAY",
+            expirationType,
+            expirationTime: duration === "GTD" ? gtdIso : null,
           },
         });
         if (error) throw error;
@@ -307,6 +328,7 @@ export default function OrderTicket({ oneClick }: Props) {
         const ticket = res?.ticket || res?.orderId || res?.order_id || null;
         toast.success(ticket ? `${orderKind === "market" ? "Orden ejecutada" : "Orden pendiente colocada"} — ticket ${ticket}` : "Orden enviada correctamente");
         window.dispatchEvent(new Event("mt:refresh-positions"));
+        onOrderPlaced?.();
       } else {
         toast.error(
           translateBrokerRejection({
@@ -314,9 +336,7 @@ export default function OrderTicket({ oneClick }: Props) {
             retcodeName: res?.retcodeName ?? res?.retcode_name,
             retcodeDescription: res?.retcodeDescription ?? res?.retcode_description,
             brokerMessage: res?.brokerMessage ?? res?.message,
-            error: res?.error,
-            status: res?.status,
-            reason: res?.reason,
+            error: res?.error, status: res?.status, reason: res?.reason,
           }),
           { duration: 8000 },
         );
@@ -331,7 +351,8 @@ export default function OrderTicket({ oneClick }: Props) {
 
   const handleSubmitClick = () => {
     if (!canSubmit) return;
-    if (oneClick) doSubmit();
+    // One-click ONLY skips dialog for MARKET orders. Pending always confirms.
+    if (oneClick && orderKind === "market") doSubmit();
     else setConfirmOpen(true);
   };
 
@@ -346,8 +367,39 @@ export default function OrderTicket({ oneClick }: Props) {
     <div className="flex h-full flex-col bg-[#111214]">
       <div className="border-b border-neutral-800 px-3 py-2 flex items-center justify-between shrink-0">
         <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-200">Nueva orden</span>
-        <span className="font-mono text-[11px] font-semibold text-[#FFCD05]">{symbol}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[11px] font-semibold text-[#FFCD05]">{symbol}</span>
+          <button
+            type="button"
+            onClick={() => setPresetsOpen(true)}
+            className="p-1 rounded text-neutral-500 hover:text-[#FFCD05] hover:bg-[#FFCD05]/10"
+            title="Presets"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
+
+      {appliedPreset && (
+        <div className="border-b border-neutral-800 bg-[#FFCD05]/5 px-3 py-1 flex items-center justify-between text-[10px]">
+          <span className="text-[#FFCD05] font-mono">
+            Preset aplicado · {appliedPreset.symbol ?? "Global"}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setAppliedPreset(null);
+              setSl({ mode: "pips", input: "" });
+              setTp({ mode: "pips", input: "" });
+              if (spec?.volumeMin != null) setVolumeStr(String(spec.volumeMin));
+            }}
+            className="p-0.5 rounded text-neutral-500 hover:text-neutral-200"
+            title="Limpiar preset"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
 
       {/* Order type tabs */}
       <div className="grid grid-cols-3 border-b border-neutral-800 shrink-0 text-[10px] uppercase tracking-wider">
@@ -368,19 +420,17 @@ export default function OrderTicket({ oneClick }: Props) {
         ))}
       </div>
 
-      {/* Side toggle with live prices */}
+      {/* Side toggle */}
       <div className="grid grid-cols-2 gap-px bg-neutral-800 shrink-0">
         <button
-          type="button"
-          onClick={() => setSide("sell")}
+          type="button" onClick={() => setSide("sell")}
           className={cn("px-2 py-2 text-left transition", side === "sell" ? "bg-red-500/20 ring-1 ring-red-500/60" : "bg-[#16171a] hover:bg-neutral-900")}
         >
           <div className="text-[9px] uppercase tracking-wider text-red-400 font-bold">Vender · Bid</div>
           <div className="font-mono text-base font-semibold text-red-400 tabular-nums">{fmt(bid, digits)}</div>
         </button>
         <button
-          type="button"
-          onClick={() => setSide("buy")}
+          type="button" onClick={() => setSide("buy")}
           className={cn("px-2 py-2 text-right transition", side === "buy" ? "bg-emerald-500/20 ring-1 ring-emerald-500/60" : "bg-[#16171a] hover:bg-neutral-900")}
         >
           <div className="text-[9px] uppercase tracking-wider text-emerald-400 font-bold">Comprar · Ask</div>
@@ -388,7 +438,6 @@ export default function OrderTicket({ oneClick }: Props) {
         </button>
       </div>
 
-      {/* Body */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {specLoading && !spec ? (
           <div className="flex items-center gap-2 text-xs text-neutral-500">
@@ -405,15 +454,13 @@ export default function OrderTicket({ oneClick }: Props) {
               </div>
             )}
 
-            {/* Entry price (pending only) */}
             {orderKind !== "market" && (
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-neutral-500">Precio de entrada</label>
                 <input
-                  type="number"
-                  inputMode="decimal"
+                  type="number" inputMode="decimal"
                   value={entryStr}
-                  onChange={(e) => setEntryStr(e.target.value)}
+                  onChange={(e) => { clearAppliedHint(); setEntryStr(e.target.value); }}
                   step={pipSize}
                   placeholder={fmt(marketPrice, digits)}
                   className="w-full bg-[#16171a] text-center text-sm font-mono font-semibold text-neutral-100 outline-none focus:bg-neutral-900 tabular-nums rounded px-2 py-1.5 border border-neutral-800"
@@ -431,16 +478,11 @@ export default function OrderTicket({ oneClick }: Props) {
                 <div className="flex bg-neutral-900 rounded overflow-hidden text-[9px]">
                   {(["lots", "usd_per_point"] as VolMode[]).map((m) => (
                     <button
-                      key={m}
-                      type="button"
+                      key={m} type="button"
                       onClick={() => {
                         if (m === volMode) return;
-                        // convert displayed value
-                        if (m === "usd_per_point" && spec?.tickValue) {
-                          setVolumeStr((volumeLots * spec.tickValue).toFixed(2));
-                        } else if (m === "lots") {
-                          setVolumeStr(volumeLots.toFixed(2));
-                        }
+                        if (m === "usd_per_point" && spec?.tickValue) setVolumeStr((volumeLots * spec.tickValue).toFixed(2));
+                        else if (m === "lots") setVolumeStr(volumeLots.toFixed(2));
                         setVolMode(m);
                       }}
                       className={cn("px-1.5 py-0.5 uppercase tracking-wider", volMode === m ? "bg-[#FFCD05] text-black font-bold" : "text-neutral-500 hover:text-neutral-200")}
@@ -453,10 +495,10 @@ export default function OrderTicket({ oneClick }: Props) {
               <div className="flex items-stretch gap-px bg-neutral-800 rounded overflow-hidden">
                 <button type="button" onClick={() => stepLots(-(spec?.volumeStep ?? 0.01))} className="px-2 bg-[#16171a] hover:bg-neutral-900 text-neutral-300 text-sm">−</button>
                 <input
-                  type="number"
-                  inputMode="decimal"
+                  type="number" inputMode="decimal"
                   value={volumeStr}
-                  onChange={(e) => setVolumeStr(e.target.value)}
+                  onChange={(e) => { clearAppliedHint(); setVolumeStr(e.target.value); }}
+                  placeholder="0.0"
                   className="flex-1 bg-[#16171a] text-center text-sm font-mono font-semibold text-neutral-100 outline-none focus:bg-neutral-900 tabular-nums"
                 />
                 <button type="button" onClick={() => stepLots(spec?.volumeStep ?? 0.01)} className="px-2 bg-[#16171a] hover:bg-neutral-900 text-neutral-300 text-sm">+</button>
@@ -471,76 +513,86 @@ export default function OrderTicket({ oneClick }: Props) {
               )}
             </div>
 
-            {/* Duration (pending only) */}
+            {/* Duration */}
             {orderKind !== "market" && (
               <div className="space-y-1">
                 <label className="text-[10px] uppercase tracking-wider text-neutral-500">Vigencia</label>
-                <div className="grid grid-cols-2 gap-px bg-neutral-800 rounded overflow-hidden">
-                  {(["GTC", "TODAY"] as Duration[]).map((d) => (
+                <div className="grid grid-cols-3 gap-px bg-neutral-800 rounded overflow-hidden">
+                  {(["GTC", "TODAY", "GTD"] as Duration[]).map((d) => (
                     <button
-                      key={d}
-                      type="button"
-                      onClick={() => setDuration(d)}
+                      key={d} type="button" onClick={() => setDuration(d)}
                       className={cn("py-1 text-[10px] uppercase tracking-wider", duration === d ? "bg-[#FFCD05] text-black font-bold" : "bg-[#16171a] text-neutral-400 hover:text-neutral-200")}
                     >
-                      {d === "GTC" ? "Hasta cancelar" : "Hoy"}
+                      {d === "GTC" ? "Hasta cancelar" : d === "TODAY" ? "Hoy" : "GTD"}
                     </button>
                   ))}
                 </div>
+                {duration === "GTD" && (
+                  <div className="flex gap-1 mt-1">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline" size="sm"
+                          className={cn("flex-1 h-7 justify-start text-left font-normal bg-[#16171a] border-neutral-800 text-neutral-200 text-[11px]",
+                            !gtdDate && "text-neutral-500")}
+                        >
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          {gtdDate ? format(gtdDate, "dd MMM yyyy") : "Fecha…"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single" selected={gtdDate} onSelect={setGtdDate}
+                          disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                          initialFocus className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <input
+                      type="time" value={gtdTime} onChange={(e) => setGtdTime(e.target.value)}
+                      className="w-[88px] bg-[#16171a] border border-neutral-800 rounded text-[11px] font-mono text-neutral-200 px-1.5 outline-none"
+                    />
+                  </div>
+                )}
+                {gtdIssue && <div className="text-[10px] text-red-400">{gtdIssue}</div>}
+                {duration === "GTD" && gtdIso && !gtdIssue && (
+                  <div className="text-[9px] text-neutral-600 font-mono">Expira en UTC: {new Date(gtdIso).toISOString()}</div>
+                )}
               </div>
             )}
 
-            {/* SL & TP blocks */}
-            <ProtectionBlock
-              label="Stop Loss"
-              accent="red"
-              state={sl}
-              setState={setSl}
-              resolved={slResolved}
-              digits={digits}
-              currency={spec?.currencyProfit ?? null}
-              issue={slPriceIssue}
-            />
-            <ProtectionBlock
-              label="Take Profit"
-              accent="emerald"
-              state={tp}
-              setState={setTp}
-              resolved={tpResolved}
-              digits={digits}
-              currency={spec?.currencyProfit ?? null}
-              issue={tpPriceIssue}
-            />
+            {/* SL & TP */}
+            <ProtectionBlock label="Stop Loss" accent="red"
+              state={sl} setState={(s) => { clearAppliedHint(); setSl(s); }}
+              resolved={slResolved} digits={digits}
+              currency={spec?.currencyProfit ?? null} issue={slPriceIssue} />
+            <ProtectionBlock label="Take Profit" accent="emerald"
+              state={tp} setState={(s) => { clearAppliedHint(); setTp(s); }}
+              resolved={tpResolved} digits={digits}
+              currency={spec?.currencyProfit ?? null} issue={tpPriceIssue} />
 
-            {/* Live calculated fields */}
             <div className="space-y-1.5 rounded border border-neutral-800 bg-[#0e0e10] p-2">
               <Row label="Precio de referencia" value={fmt(orderKind === "market" ? marketPrice : entryPrice, digits)} mono />
               <Row label="Valor de la orden" value={orderValue != null && spec?.currencyProfit ? `${orderValue.toFixed(2)} ${spec.currencyProfit}` : "—"} mono />
               <Row label="Valor del pip / lote" value={pipValuePerLot != null && spec?.currencyProfit ? `${pipValuePerLot.toFixed(4)} ${spec.currencyProfit}` : "—"} mono />
-              <Row
-                label="Impacto en margen"
-                value={
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-1 text-neutral-500">no disponible <Info className="h-3 w-3" /></span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[240px] text-xs">
-                      Pendiente de habilitar en el broker. El feed de ejecución (Trading Layer) no expone el requerimiento de margen pre-trade.
-                    </TooltipContent>
-                  </Tooltip>
-                }
-              />
+              <Row label="Impacto en margen" value={
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center gap-1 text-neutral-500">no disponible <Info className="h-3 w-3" /></span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[240px] text-xs">
+                    Pendiente de habilitar en el broker. El feed de ejecución (Trading Layer) no expone el requerimiento de margen pre-trade.
+                  </TooltipContent>
+                </Tooltip>
+              } />
             </div>
           </>
         )}
       </div>
 
-      {/* Footer / submit */}
       <div className="border-t border-neutral-800 p-2 shrink-0">
         <button
-          type="button"
-          onClick={handleSubmitClick}
-          disabled={!canSubmit}
+          type="button" onClick={handleSubmitClick} disabled={!canSubmit}
           className={cn(
             "w-full rounded py-2 text-xs font-bold uppercase tracking-wider transition",
             side === "buy"
@@ -551,11 +603,8 @@ export default function OrderTicket({ oneClick }: Props) {
         >
           {submitting ? (
             <span className="inline-flex items-center gap-2 justify-center"><Loader2 className="h-3 w-3 animate-spin" /> Enviando…</span>
-          ) : (
-            actionLabel
-          )}
+          ) : actionLabel}
         </button>
-        {/* Live risk / R:R */}
         <div className="mt-1 grid grid-cols-2 gap-2 text-[10px] font-mono">
           <div className="rounded bg-[#0e0e10] border border-neutral-800 px-2 py-1">
             <div className="text-[9px] uppercase tracking-wider text-neutral-500">Riesgo</div>
@@ -570,11 +619,12 @@ export default function OrderTicket({ oneClick }: Props) {
           </div>
         </div>
         <div className="mt-1 text-center text-[9px] uppercase tracking-[0.18em] text-neutral-600">
-          {oneClick ? "1-click activo · sin confirmación" : "Confirmación habilitada"}
+          {oneClick
+            ? (orderKind === "market" ? "1-clic activo · sin confirmación" : "1-clic activo · pendiente igual pide confirmación")
+            : "Confirmación habilitada"}
         </div>
       </div>
 
-      {/* Confirmation dialog */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -596,7 +646,9 @@ export default function OrderTicket({ oneClick }: Props) {
                   {orderKind !== "market" && (
                     <>
                       <div className="text-muted-foreground">Vigencia</div>
-                      <div className="text-right">{duration === "GTC" ? "Hasta cancelar" : "Hoy"}</div>
+                      <div className="text-right">
+                        {duration === "GTC" ? "Hasta cancelar" : duration === "TODAY" ? "Hoy" : `GTD · ${gtdIso ? new Date(gtdIso).toLocaleString() : "—"}`}
+                      </div>
                     </>
                   )}
                 </div>
@@ -610,16 +662,15 @@ export default function OrderTicket({ oneClick }: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={doSubmit}
-              disabled={submitting}
-              className={cn(side === "buy" ? "bg-emerald-500 hover:bg-emerald-400 text-black" : "bg-red-500 hover:bg-red-400 text-black")}
-            >
+            <AlertDialogAction onClick={doSubmit} disabled={submitting}
+              className={cn(side === "buy" ? "bg-emerald-500 hover:bg-emerald-400 text-black" : "bg-red-500 hover:bg-red-400 text-black")}>
               {submitting ? "Enviando…" : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <TicketPresetsPanel open={presetsOpen} onOpenChange={setPresetsOpen} />
     </div>
   );
 }
@@ -627,14 +678,10 @@ export default function OrderTicket({ oneClick }: Props) {
 function ProtectionBlock({
   label, accent, state, setState, resolved, digits, currency, issue,
 }: {
-  label: string;
-  accent: "red" | "emerald";
-  state: SLState;
-  setState: (s: SLState) => void;
+  label: string; accent: "red" | "emerald";
+  state: SLState; setState: (s: SLState) => void;
   resolved: { price: number | null; pips: number | null; amount: number | null; pct: number | null };
-  digits: number;
-  currency: string | null;
-  issue: string | null;
+  digits: number; currency: string | null; issue: string | null;
 }) {
   const accentText = accent === "red" ? "text-red-400" : "text-emerald-400";
   return (
@@ -644,8 +691,7 @@ function ProtectionBlock({
         <div className="flex bg-neutral-900 rounded overflow-hidden text-[9px]">
           {(Object.keys(SL_MODE_LABEL) as SLMode[]).map((m) => (
             <button
-              key={m}
-              type="button"
+              key={m} type="button"
               onClick={() => setState({ ...state, mode: m })}
               className={cn("px-1.5 py-0.5 uppercase tracking-wider", state.mode === m ? "bg-[#FFCD05] text-black font-bold" : "text-neutral-500 hover:text-neutral-200")}
             >
@@ -655,27 +701,26 @@ function ProtectionBlock({
         </div>
       </div>
       <input
-        type="number"
-        inputMode="decimal"
+        type="number" inputMode="decimal"
         value={state.input}
         onChange={(e) => setState({ ...state, input: e.target.value })}
-        placeholder={state.mode === "price" ? "0.00000" : state.mode === "pips" ? "pips" : state.mode === "amount" ? "monto" : "% balance"}
+        placeholder="0.0"
         className="w-full bg-[#16171a] text-center text-sm font-mono font-semibold text-neutral-100 outline-none focus:bg-neutral-900 tabular-nums rounded px-2 py-1 border border-neutral-800"
       />
       <div className="grid grid-cols-4 gap-1 text-[9px] font-mono text-neutral-500">
-        <Cell label="Precio" value={resolved.price != null ? fmt(resolved.price, digits) : "—"} active={state.mode === "price"} />
-        <Cell label="Pips" value={resolved.pips != null ? Math.abs(resolved.pips).toFixed(1) : "—"} active={state.mode === "pips"} />
-        <Cell label="Monto" value={resolved.amount != null ? fmtMoney(Math.abs(resolved.amount), currency) : "—"} active={state.mode === "amount"} />
-        <Cell label="%" value={resolved.pct != null ? `${Math.abs(resolved.pct).toFixed(2)}%` : "—"} active={state.mode === "pct"} />
+        <Cell label="Precio" value={resolved.price != null ? fmt(resolved.price, digits) : "—"} active={state.mode === "price"} muted={state.input.trim() === ""} />
+        <Cell label="Pips" value={resolved.pips != null ? Math.abs(resolved.pips).toFixed(1) : "—"} active={state.mode === "pips"} muted={state.input.trim() === ""} />
+        <Cell label="Monto" value={resolved.amount != null ? fmtMoney(Math.abs(resolved.amount), currency) : "—"} active={state.mode === "amount"} muted={state.input.trim() === ""} />
+        <Cell label="%" value={resolved.pct != null ? `${Math.abs(resolved.pct).toFixed(2)}%` : "—"} active={state.mode === "pct"} muted={state.input.trim() === ""} />
       </div>
       {issue && <div className="text-[10px] text-red-400">{issue}</div>}
     </div>
   );
 }
 
-function Cell({ label, value, active }: { label: string; value: string; active: boolean }) {
+function Cell({ label, value, active, muted }: { label: string; value: string; active: boolean; muted?: boolean }) {
   return (
-    <div className={cn("rounded px-1 py-0.5 text-center", active ? "bg-[#1a1a1d] text-neutral-200" : "")}>
+    <div className={cn("rounded px-1 py-0.5 text-center", active ? "bg-[#1a1a1d] text-neutral-200" : "", muted && "opacity-50")}>
       <div className="text-[8px] uppercase tracking-wider text-neutral-600">{label}</div>
       <div className="tabular-nums">{value}</div>
     </div>
