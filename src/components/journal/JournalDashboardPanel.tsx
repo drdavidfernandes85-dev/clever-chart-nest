@@ -387,18 +387,20 @@ const JournalDashboardPanel = () => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => sync({ resumeFrom: resumeCursor })}
+              onClick={() => sync()}
               className="rounded-full gap-2 border-amber-500/40 text-amber-200 hover:bg-amber-500/10"
+              title={`Sincronización previa quedó parcial. Reanudar paginará desde ahora hacia atrás y deduplicará lo ya guardado.`}
             >
               <RefreshCw className="h-4 w-4" />
               Continuar sincronización
-              {dealsTotal != null && <span className="text-[10px] opacity-70">({dealsTotal} deals hasta {fmtTime(resumeCursor)})</span>}
+              {dealsTotal != null && <span className="text-[10px] opacity-70">({dealsTotal} deals)</span>}
             </Button>
           )}
           <Button size="sm" onClick={() => sync()} disabled={syncing} className="rounded-full gap-2">
             {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Sincronizar
           </Button>
+
 
         </div>
       </div>
