@@ -126,6 +126,8 @@ serve(async (req) => {
         lastError = `TL_HTTP_${r.status}: ${text.slice(0, 400)}`;
         break;
       }
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
       break;
     }
 
