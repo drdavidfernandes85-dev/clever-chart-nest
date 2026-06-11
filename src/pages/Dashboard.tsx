@@ -35,7 +35,7 @@ import RiskControlsPanel from "@/components/dashboard/RiskControlsPanel";
 import { useDevMode } from "@/hooks/useDevMode";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import TradeJournal from "@/components/dashboard/TradeJournal";
-import JournalDashboardPanel from "@/components/dashboard/JournalDashboardPanel";
+import JournalDashboardPanel from "@/components/journal/JournalDashboardPanel";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
   LiveAccountProvider,

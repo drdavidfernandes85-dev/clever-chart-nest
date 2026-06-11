@@ -44,6 +44,11 @@ import TerminalWatchlist from "@/components/terminal/TerminalWatchlist";
 import OrderTicket from "@/components/terminal/OrderTicket";
 import OrderTicketModal from "@/components/terminal/OrderTicketModal";
 import PositionsOrdersHistoryPanel from "@/components/terminal/PositionsOrdersHistoryPanel";
+// NOTE: Phase 7 surface. Journal panel lives under components/journal/ so this
+// page does NOT import from components/dashboard/* (legacy /dashboard surface
+// is decommission-pending). DashboardLayout is a shared layout shell, not a
+// /dashboard surface component.
+import JournalDashboardPanel from "@/components/journal/JournalDashboardPanel";
 
 /* ─────────── Display currency ─────────── */
 
@@ -330,6 +335,54 @@ function Panel({ title, hint }: { title: string; hint: string }) {
 
 /* ─────────── Shell ─────────── */
 
+/* ─────────── Surface switcher (Terminal | Diario | Dashboard) ─────────── */
+
+type Surface = "terminal" | "diario" | "dashboard";
+const SURFACE_KEY = "ltr.terminalPro.surface";
+
+function SurfaceSwitcher({ value, onChange }: { value: Surface; onChange: (s: Surface) => void }) {
+  const items: { id: Surface; label: string }[] = [
+    { id: "terminal", label: "Terminal" },
+    { id: "diario", label: "Diario" },
+    { id: "dashboard", label: "Dashboard" },
+  ];
+  return (
+    <div className="flex items-center gap-0.5 border-b border-border bg-[#0A0A0B] px-2 py-1">
+      {items.map((it) => (
+        <button
+          key={it.id}
+          type="button"
+          onClick={() => onChange(it.id)}
+          className={cn(
+            "rounded px-3 py-1 text-[11px] uppercase tracking-wider transition",
+            value === it.id
+              ? "bg-[#FFCD05]/15 text-[#FFCD05] font-semibold"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {it.label}
+        </button>
+      ))}
+      <span className="ml-2 text-[9px] uppercase tracking-[0.2em] text-neutral-600">
+        Phase 7
+      </span>
+    </div>
+  );
+}
+
+function DashboardSurfacePlaceholder() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
+      <Activity className="h-6 w-6 opacity-40" />
+      <div className="text-sm">Dashboard de rendimiento — KPIs por cuenta</div>
+      <div className="max-w-md text-xs">
+        Próximamente: equity curve, drawdown, expectancy y exposición agregada.
+        Mientras tanto, abre la pestaña Diario para revisar operaciones cerradas.
+      </div>
+    </div>
+  );
+}
+
 function Shell() {
   const [oneClick, setOneClick] = useState<boolean>(() => {
     try { return localStorage.getItem(ONE_CLICK_KEY) === "1"; } catch { return false; }
@@ -338,35 +391,57 @@ function Shell() {
     try { localStorage.setItem(ONE_CLICK_KEY, oneClick ? "1" : "0"); } catch { /* ignore */ }
   }, [oneClick]);
 
+  const [surface, setSurface] = useState<Surface>(() => {
+    try {
+      const v = localStorage.getItem(SURFACE_KEY);
+      if (v === "diario" || v === "dashboard" || v === "terminal") return v;
+    } catch { /* ignore */ }
+    return "terminal";
+  });
+  useEffect(() => {
+    try { localStorage.setItem(SURFACE_KEY, surface); } catch { /* ignore */ }
+  }, [surface]);
+
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col bg-[#050505] text-foreground">
+      <SurfaceSwitcher value={surface} onChange={setSurface} />
       <TopAccountBar oneClick={oneClick} setOneClick={setOneClick} />
 
-      <div className="flex-1 min-h-0">
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={18} minSize={12} collapsible>
-            <TerminalWatchlist />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
+      {surface === "terminal" ? (
+        <div className="flex-1 min-h-0">
+          <ResizablePanelGroup direction="horizontal">
+            <ResizablePanel defaultSize={18} minSize={12} collapsible>
+              <TerminalWatchlist />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize={56} minSize={30}>
-            <ResizablePanelGroup direction="vertical">
-              <ResizablePanel defaultSize={62} minSize={25}>
-                <Panel title="Gráfico" hint="Fase 4: gráfico con ejecución integrada." />
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel defaultSize={38} minSize={20}>
-                <PositionsOrdersHistoryPanel />
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={56} minSize={30}>
+              <ResizablePanelGroup direction="vertical">
+                <ResizablePanel defaultSize={62} minSize={25}>
+                  <Panel title="Gráfico" hint="Fase 4: gráfico con ejecución integrada." />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={38} minSize={20}>
+                  <PositionsOrdersHistoryPanel />
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize={26} minSize={18} collapsible>
-            <OrderTicket oneClick={oneClick} />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </div>
+            <ResizablePanel defaultSize={26} minSize={18} collapsible>
+              <OrderTicket oneClick={oneClick} />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
+      ) : surface === "diario" ? (
+        <div className="flex-1 min-h-0 overflow-auto p-3">
+          <JournalDashboardPanel />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-auto">
+          <DashboardSurfacePlaceholder />
+        </div>
+      )}
     </div>
   );
 }
