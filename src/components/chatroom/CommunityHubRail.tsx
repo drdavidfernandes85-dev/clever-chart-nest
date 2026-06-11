@@ -224,8 +224,13 @@ const CommunityHubRail = () => {
           </Link>
         </div>
         <ul className="divide-y divide-border/30">
-          {CONTRIBUTOR_FALLBACK.map((m, i) => (
-            <li key={m.name} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
+          {contributors.length === 0 && (
+            <li className="px-3 py-3 text-center text-[10.5px] text-muted-foreground">
+              No contributors yet.
+            </li>
+          )}
+          {contributors.map((m, i) => (
+            <li key={m.user_id} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
               <span className="w-4 text-center font-mono text-[10px] font-bold text-primary">
                 {i + 1}
               </span>
@@ -242,11 +247,12 @@ const CommunityHubRail = () => {
                 </p>
               </div>
               <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-right font-mono text-[10px] font-bold tabular-nums text-primary">
-                {m.ideas} ideas
+                {m.xp.toLocaleString()} XP
               </span>
             </li>
           ))}
         </ul>
+
         <Link
           to="/leaderboard"
           className="block border-t border-border/40 bg-primary/5 px-2.5 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10 sm:px-3"
