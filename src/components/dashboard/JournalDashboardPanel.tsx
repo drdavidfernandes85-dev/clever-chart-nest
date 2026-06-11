@@ -30,6 +30,7 @@ interface Position {
 }
 
 interface AuditTicketRow { ticket: string | null }
+interface DealKeyRow { position_id: number | null; order_id: number | null }
 
 const fmtMoney = (v: number) =>
   `${v >= 0 ? "+" : ""}${v.toFixed(2)}`;
@@ -43,6 +44,7 @@ const JournalDashboardPanel = () => {
   const { user } = useAuth();
   const [positions, setPositions] = useState<Position[]>([]);
   const [auditTickets, setAuditTickets] = useState<Set<string>>(new Set());
+  const [positionOrders, setPositionOrders] = useState<Map<string, Set<string>>>(new Map());
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
@@ -50,7 +52,7 @@ const JournalDashboardPanel = () => {
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [posRes, auditRes, stateRes] = await Promise.all([
+    const [posRes, auditRes, stateRes, dealsRes] = await Promise.all([
       supabase
         .from("journal_positions")
         .select("*")
@@ -68,9 +70,27 @@ const JournalDashboardPanel = () => {
         .order("last_synced_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from("journal_deals")
+        .select("position_id, order_id")
+        .eq("user_id", user.id)
+        .not("position_id", "is", null),
     ]);
     setPositions((posRes.data ?? []) as Position[]);
     setAuditTickets(new Set(((auditRes.data ?? []) as AuditTicketRow[]).map((r) => String(r.ticket)).filter(Boolean)));
+    // Origen=Terminal iff ANY of a position's deals.order_id matches an
+    // execution_audit_events.ticket row for this user (audit tickets are ORDER
+    // tickets, not position ids — matching on position_id would only catch the
+    // opening market order, missing TP/SL/manual closes from the Terminal).
+    const map = new Map<string, Set<string>>();
+    for (const d of (dealsRes.data ?? []) as DealKeyRow[]) {
+      if (d.position_id == null || d.order_id == null) continue;
+      const key = String(d.position_id);
+      let s = map.get(key);
+      if (!s) { s = new Set(); map.set(key, s); }
+      s.add(String(d.order_id));
+    }
+    setPositionOrders(map);
     setLastSync(stateRes.data?.last_synced_at ?? null);
     setLoading(false);
   }, [user]);
@@ -194,7 +214,11 @@ const JournalDashboardPanel = () => {
             {positions.slice(0, 50).map((p) => {
               const win = (p.net_pnl ?? 0) > 0;
               const isClosed = p.is_closed;
-              const origen = auditTickets.has(String(p.position_id)) ? "Terminal" : "Externa";
+              const orders = p.position_id != null ? positionOrders.get(String(p.position_id)) : undefined;
+              let origen: "Terminal" | "Externa" = "Externa";
+              if (orders) {
+                for (const ord of orders) { if (auditTickets.has(ord)) { origen = "Terminal"; break; } }
+              }
               return (
                 <div key={`${p.mt_login}-${p.position_id}`} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2.5 text-sm items-center hover:bg-secondary/20">
                   <div className="min-w-0">

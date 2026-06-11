@@ -1614,6 +1614,54 @@ export type Database = {
         }
         Relationships: []
       }
+      reconciliation_captures: {
+        Row: {
+          account_payload: Json | null
+          account_profit: number | null
+          captured_at: string
+          context: Json | null
+          delta: number | null
+          id: string
+          mt_login: number | null
+          positions_payload: Json | null
+          positions_profit_sum: number | null
+          source: string
+          tolerance: number | null
+          trader_id: string | null
+          user_id: string
+        }
+        Insert: {
+          account_payload?: Json | null
+          account_profit?: number | null
+          captured_at?: string
+          context?: Json | null
+          delta?: number | null
+          id?: string
+          mt_login?: number | null
+          positions_payload?: Json | null
+          positions_profit_sum?: number | null
+          source?: string
+          tolerance?: number | null
+          trader_id?: string | null
+          user_id: string
+        }
+        Update: {
+          account_payload?: Json | null
+          account_profit?: number | null
+          captured_at?: string
+          context?: Json | null
+          delta?: number | null
+          id?: string
+          mt_login?: number | null
+          positions_payload?: Json | null
+          positions_profit_sum?: number | null
+          source?: string
+          tolerance?: number | null
+          trader_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       risk_setting_audit_logs: {
         Row: {
           changed_by: string | null
