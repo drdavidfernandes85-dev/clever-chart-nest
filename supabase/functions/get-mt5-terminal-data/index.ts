@@ -384,24 +384,27 @@ async function handleTerminalData(req: Request) {
       const accountPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols`;
       let rawList: any[] = [];
 
-      // Try big-pull variants first
+      // Keep this display endpoint bounded. A full 200-page crawl can exceed
+      // the platform idle limit when Trading Layer is degraded; deeper catalogue
+      // discovery belongs in the dedicated symbol/catalogue functions.
       for (const p of [
-        `${accountPath}?limit=10000`,
-        `${accountPath}?limit=5000`,
+        `${accountPath}?limit=1000`,
+        `${accountPath}?limit=500`,
         accountPath,
       ]) {
-        const r = await tlGet(p);
+        const r = await tlGet(p, TL_SYMBOLS_TIMEOUT_MS);
         const list = r.ok ? extractList(r.data) : [];
         if (list.length > rawList.length) rawList = list;
         if (rawList.length >= 200) break;
       }
 
-      // Plus offset pagination as a safety net
+      // Plus a small offset safety net only; never let this endpoint crawl for
+      // minutes and blank the terminal.
       const PAGE = 500;
-      const MAX_PAGES = 200;
+      const MAX_PAGES = 3;
       const paged: any[] = [];
       for (let i = 0; i < MAX_PAGES; i++) {
-        const r = await tlGet(`${accountPath}?limit=${PAGE}&offset=${i * PAGE}`);
+        const r = await tlGet(`${accountPath}?limit=${PAGE}&offset=${i * PAGE}`, TL_SYMBOLS_TIMEOUT_MS);
         const list = r.ok ? extractList(r.data) : [];
         if (!r.ok || list.length === 0) break;
         paged.push(...list);
@@ -438,4 +441,10 @@ async function handleTerminalData(req: Request) {
       error: err instanceof Error ? err.message : String(err),
     }, 500);
   }
+}
+
+serve((req) => Promise.race([
+  handleTerminalData(req),
+  timeoutJsonAfter(FUNCTION_DEADLINE_MS),
+]));
 });
