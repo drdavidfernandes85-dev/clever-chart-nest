@@ -47,6 +47,8 @@ const JournalDashboardPanel = () => {
   const [positionOrders, setPositionOrders] = useState<Map<string, Set<string>>>(new Map());
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{ chunk: number; deals: number } | null>(null);
+  const [cancelRef] = useState<{ current: boolean }>({ current: false });
   const [lastSync, setLastSync] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -99,21 +101,41 @@ const JournalDashboardPanel = () => {
 
   const sync = async () => {
     setSyncing(true);
+    cancelRef.current = false;
+    setSyncProgress({ chunk: 0, deals: 0 });
+    const MAX_CHUNKS = 30;
+    const t0 = performance.now();
+    let totalDeals = 0;
+    let dateTo: string | undefined;
+    let lastErr: string | null = null;
     try {
-      const { data, error } = await supabase.functions.invoke("journal-sync", { body: { full: false } });
-      if (error) throw error;
-      if (data?.success) {
-        toast.success(`Sincronizado: ${data.dealsFetched ?? 0} operaciones (${data.dealsUpserted ?? 0} actualizadas)`);
-      } else {
-        toast.error(data?.error ? `Error: ${data.error}` : "Sincronización falló");
+      for (let i = 0; i < MAX_CHUNKS; i++) {
+        if (cancelRef.current) break;
+        const { data, error } = await supabase.functions.invoke("journal-sync", {
+          body: { full: true, ...(dateTo ? { dateTo } : {}) },
+        });
+        if (error) { lastErr = error.message; break; }
+        if (data?.error) { lastErr = data.error; break; }
+        totalDeals += Number(data?.dealsFetched ?? 0);
+        setSyncProgress({ chunk: i + 1, deals: totalDeals });
+        if (!data?.hasMore || !data?.nextDateTo) break;
+        dateTo = data.nextDateTo;
       }
+      const wallSec = ((performance.now() - t0) / 1000).toFixed(1);
+      if (lastErr) toast.error(`Sincronización: ${lastErr}`);
+      else if (cancelRef.current) toast.info(`Cancelada · ${totalDeals} deals · ${wallSec}s`);
+      else toast.success(`Sincronización completa · ${totalDeals} deals · ${wallSec}s`);
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Error de sincronización");
     } finally {
       setSyncing(false);
+      setSyncProgress(null);
+      cancelRef.current = false;
     }
   };
+  const cancelSync = () => { cancelRef.current = true; };
+
 
   const closed = useMemo(() => positions.filter((p) => p.is_closed), [positions]);
 
@@ -169,11 +191,26 @@ const JournalDashboardPanel = () => {
             {lastSync && <> · Última sync: {fmtTime(lastSync)}</>}
           </p>
         </div>
-        <Button size="sm" onClick={sync} disabled={syncing} className="rounded-full gap-2">
-          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Sincronizar
-        </Button>
+        <div className="flex items-center gap-2">
+          {syncing && syncProgress && (
+            <>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Sincronizando… chunk {syncProgress.chunk} · {syncProgress.deals} deals
+              </span>
+              <Button size="sm" variant="ghost" onClick={cancelSync} className="rounded-full text-xs">
+                Cancelar
+              </Button>
+            </>
+          )}
+          <Button size="sm" onClick={sync} disabled={syncing} className="rounded-full gap-2">
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Sincronizar
+          </Button>
+        </div>
       </div>
+
+
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {kpis.map((k) => {
