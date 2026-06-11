@@ -749,6 +749,45 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_deal_tags: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          tag_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          tag_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          tag_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_deal_tags_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "journal_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_deal_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "journal_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journal_deals: {
         Row: {
           comment: string | null
@@ -848,6 +887,45 @@ export type Database = {
           },
         ]
       }
+      journal_notes: {
+        Row: {
+          created_at: string
+          emotion: string | null
+          id: string
+          mt_login: string
+          note: string
+          position_id: string
+          rating: number | null
+          setup: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emotion?: string | null
+          id?: string
+          mt_login: string
+          note?: string
+          position_id: string
+          rating?: number | null
+          setup?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emotion?: string | null
+          id?: string
+          mt_login?: string
+          note?: string
+          position_id?: string
+          rating?: number | null
+          setup?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journal_sync_state: {
         Row: {
           created_at: string
@@ -907,6 +985,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      journal_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       lifecycle_validation_authorisations: {
         Row: {

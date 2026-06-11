@@ -35,6 +35,7 @@ import RiskControlsPanel from "@/components/dashboard/RiskControlsPanel";
 import { useDevMode } from "@/hooks/useDevMode";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import TradeJournal from "@/components/dashboard/TradeJournal";
+import JournalDashboardPanel from "@/components/dashboard/JournalDashboardPanel";
 import BestExecutionTab from "@/components/dashboard/BestExecutionTab";
 import {
   LiveAccountProvider,
@@ -868,7 +869,8 @@ const BottomTabs = () => {
 
 
 
-        <TabsContent value="journal" className="m-0 p-3">
+        <TabsContent value="journal" className="m-0 p-3 space-y-4">
+          <JournalDashboardPanel />
           <TradeJournal />
         </TabsContent>
       </Tabs>
