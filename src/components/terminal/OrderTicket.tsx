@@ -68,9 +68,23 @@ function pipSizeFor(spec: SymbolSpec | null, fallbackDigits: number): number {
   if (d >= 3) return 0.01;
   return spec?.point ?? 1;
 }
-function pipValuePerLotFor(spec: SymbolSpec | null, fallbackDigits: number): number | null {
-  if (!spec || spec.tickValue == null || spec.tickSize == null || spec.tickSize === 0) return null;
-  return (spec.tickValue / spec.tickSize) * pipSizeFor(spec, fallbackDigits);
+function pipValuePerLotFor(
+  spec: SymbolSpec | null,
+  fallbackDigits: number,
+  side: "profit" | "loss" | "generic" = "generic",
+): number | null {
+  if (!spec || spec.tickSize == null || spec.tickSize === 0) return null;
+  // Side-correct selection. Profit-side drives TP projection,
+  // loss-side drives SL projection; falls back to generic tickValue when the
+  // broker doesn't expose the asymmetric values for this symbol.
+  const tv =
+    side === "profit"
+      ? spec.tickValueProfit ?? spec.tickValue
+      : side === "loss"
+        ? spec.tickValueLoss ?? spec.tickValue
+        : spec.tickValue;
+  if (tv == null) return null;
+  return (tv / spec.tickSize) * pipSizeFor(spec, fallbackDigits);
 }
 
 interface SLState { mode: SLMode; input: string }
@@ -148,7 +162,9 @@ export default function OrderTicket({ oneClick, overrideSymbol, onOrderPlaced }:
   const ask = tick?.ask ?? null;
   const digits = spec?.digits ?? tick?.digits ?? 5;
   const pipSize = pipSizeFor(spec, digits);
-  const pipValuePerLot = pipValuePerLotFor(spec, digits);
+  const pipValuePerLot = pipValuePerLotFor(spec, digits, "generic");
+  const pipValueLossPerLot = pipValuePerLotFor(spec, digits, "loss");
+  const pipValueProfitPerLot = pipValuePerLotFor(spec, digits, "profit");
   const marketPrice = side === "buy" ? ask : bid;
 
   // Apply preset on symbol change. Symbol-specific wins over global.
@@ -214,12 +230,12 @@ export default function OrderTicket({ oneClick, overrideSymbol, onOrderPlaced }:
   }, [orderKind, entryPrice, side, bid, ask]);
 
   const slResolved = useMemo(
-    () => resolveProtection({ state: sl, side, isStopLoss: true, entry: entryPrice, volume: volumeLots, pipSize, pipValuePerLot, balance }),
-    [sl, side, entryPrice, volumeLots, pipSize, pipValuePerLot, balance],
+    () => resolveProtection({ state: sl, side, isStopLoss: true, entry: entryPrice, volume: volumeLots, pipSize, pipValuePerLot: pipValueLossPerLot, balance }),
+    [sl, side, entryPrice, volumeLots, pipSize, pipValueLossPerLot, balance],
   );
   const tpResolved = useMemo(
-    () => resolveProtection({ state: tp, side, isStopLoss: false, entry: entryPrice, volume: volumeLots, pipSize, pipValuePerLot, balance }),
-    [tp, side, entryPrice, volumeLots, pipSize, pipValuePerLot, balance],
+    () => resolveProtection({ state: tp, side, isStopLoss: false, entry: entryPrice, volume: volumeLots, pipSize, pipValuePerLot: pipValueProfitPerLot, balance }),
+    [tp, side, entryPrice, volumeLots, pipSize, pipValueProfitPerLot, balance],
   );
 
   const slPriceIssue = useMemo<string | null>(() => {

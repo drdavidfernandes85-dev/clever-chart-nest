@@ -23,7 +23,12 @@ export interface SymbolSpec {
   digits: number | null;
   point: number | null;
   contractSize: number | null;
+  /** Generic per-tick value (legacy). Kept for backwards compat. */
   tickValue: number | null;
+  /** Per-tick value for the profit side. Drives TP projection. */
+  tickValueProfit: number | null;
+  /** Per-tick value for the loss side. Drives SL projection. */
+  tickValueLoss: number | null;
   tickSize: number | null;
   volumeMin: number | null;
   volumeMax: number | null;
@@ -31,6 +36,8 @@ export interface SymbolSpec {
   currencyBase: string | null;
   currencyProfit: string | null;
   currencyMargin: string | null;
+  /** Diagnostics only — NOT a license to synthesise margin client-side. */
+  tradeCalcMode: number | null;
 }
 
 /** Required-for-trading spec fields. If any are null we expose them via `missing`. */
@@ -106,6 +113,8 @@ export function useSymbolSpec(symbol: string | null | undefined): State {
           point: s.point ?? null,
           contractSize: s.contractSize ?? null,
           tickValue: s.tickValue ?? null,
+          tickValueProfit: s.tickValueProfit ?? null,
+          tickValueLoss: s.tickValueLoss ?? null,
           tickSize: s.tickSize ?? null,
           volumeMin: s.volumeMin ?? null,
           volumeMax: s.volumeMax ?? null,
@@ -113,6 +122,7 @@ export function useSymbolSpec(symbol: string | null | undefined): State {
           currencyBase: s.currencyBase ?? null,
           currencyProfit: s.currencyProfit ?? null,
           currencyMargin: s.currencyMargin ?? null,
+          tradeCalcMode: s.tradeCalcMode ?? null,
         };
         const missing = REQUIRED_FIELDS.filter((f) => spec[f] == null) as string[];
         setState({ spec, loading: false, error: null, missing });
