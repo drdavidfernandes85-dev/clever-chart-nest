@@ -206,10 +206,6 @@ function TopAccountBar({
   const profitClass =
     profit != null && profit > 0 ? "text-[#17C784]" : profit != null && profit < 0 ? "text-[#F04E4E]" : "";
 
-  const profit = snapshot?.profit ?? null;
-  const profitClass =
-    profit != null && profit > 0 ? "text-[#17C784]" : profit != null && profit < 0 ? "text-[#F04E4E]" : "";
-
   return (
     <div className="flex items-center gap-1 border-b border-border bg-[#0A0A0B] px-2 py-1.5 overflow-x-auto">
       {loading && !snapshot ? (
