@@ -614,7 +614,7 @@ const Chatroom = () => {
         </div>
 
         <div className="px-4 pt-1">
-          <TypingIndicator />
+          <TypingIndicator channelName={activeChannelName} selfDisplayName={profile?.display_name ?? null} />
         </div>
 
         <ChatMessageInput
