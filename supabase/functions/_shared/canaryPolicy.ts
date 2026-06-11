@@ -309,18 +309,19 @@ export async function assertCanaryCloseAllowed(
     return { allowed: false, code: "CANARY_SCOPE_POSITION_NOT_PLATFORM_OWNED", policy, policyVersion: CANARY_POLICY_VERSION,
       reason: "Exact platform-owned position ticket is required." };
   }
-  if (input.login && String(input.login) !== policy.allowed_mt5_login) {
-    return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION };
-  }
-  if (input.routeAccountId && String(input.routeAccountId) !== policy.allowed_route_account_id) {
-    return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION };
-  }
   const fullMode =
     (policy as any).buy_open_long === "enabled" &&
     (policy as any).other_symbols === "enabled";
+  if (!fullMode && input.login && String(input.login) !== policy.allowed_mt5_login) {
+    return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION };
+  }
+  if (!fullMode && input.routeAccountId && String(input.routeAccountId) !== policy.allowed_route_account_id) {
+    return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION };
+  }
   if (!fullMode && String(input.brokerSymbol ?? "").toUpperCase() !== policy.allowed_broker_symbol) {
     return { allowed: false, code: "CANARY_SCOPE_SYMBOL_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION };
   }
+
   // Reject partial close — close volume must equal the live remaining volume.
   if (!fullMode && input.requestedVolume != null && input.positionVolume != null &&
       Math.abs(Number(input.requestedVolume) - Number(input.positionVolume)) > 1e-8) {
