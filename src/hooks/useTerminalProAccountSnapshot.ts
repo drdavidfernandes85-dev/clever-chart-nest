@@ -90,6 +90,7 @@ export function useTerminalProAccountSnapshot(): State & { refresh: () => void }
         margin: num(a.margin),
         marginFree: num(a.marginFree),
         profit: num(a.profit),
+        credit: num(a.credit),
         openPositionsCount: Number(a.openPositionsCount ?? 0),
         asOf: Date.now(),
       };
