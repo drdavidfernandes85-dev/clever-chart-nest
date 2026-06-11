@@ -447,4 +447,3 @@ serve((req) => Promise.race([
   handleTerminalData(req),
   timeoutJsonAfter(FUNCTION_DEADLINE_MS),
 ]));
-});
