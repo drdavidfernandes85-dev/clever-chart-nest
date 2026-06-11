@@ -37,6 +37,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const FUNCTION_DEADLINE_MS = 14_000;
+const TL_FAST_TIMEOUT_MS = 4_000;
+const TL_SYMBOLS_TIMEOUT_MS = 2_000;
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -73,6 +77,21 @@ async function tlGet(path: string, timeoutMs = 8000) {
   } finally {
     clearTimeout(t);
   }
+}
+
+function timeoutJsonAfter(ms: number) {
+  return new Promise<Response>((resolve) => {
+    setTimeout(() => {
+      resolve(json({
+        success: false,
+        accountConnected: true,
+        step: "terminal_timeout_guard",
+        timeout: true,
+        error: "La terminal no respondió a tiempo. Reintenta en unos segundos.",
+        timestamp: new Date().toISOString(),
+      }, 200));
+    }, ms);
+  });
 }
 
 function mapSymbolInfo(item: any) {
@@ -137,7 +156,7 @@ function dedupeSymbols(list: any[]) {
   return Array.from(seen.values());
 }
 
-serve(async (req) => {
+async function handleTerminalData(req: Request) {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -191,10 +210,10 @@ serve(async (req) => {
     // Parallel: trader summary, positions, exact symbol info, pending orders
     const symbolPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols/${encodeURIComponent(selectedSymbol)}`;
     const [traderRes, posRes, symRes, ordRes] = await Promise.all([
-      tlGet(`/api/v1/traders/${encodeURIComponent(accountId)}`),
-      tlGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/positions`),
-      tlGet(symbolPath),
-      tlGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/orders?limit=200`),
+      tlGet(`/api/v1/traders/${encodeURIComponent(accountId)}`, TL_FAST_TIMEOUT_MS),
+      tlGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/positions`, TL_FAST_TIMEOUT_MS),
+      tlGet(symbolPath, TL_FAST_TIMEOUT_MS),
+      tlGet(`/api/v1/accounts/${encodeURIComponent(accountId)}/orders?limit=200`, TL_FAST_TIMEOUT_MS),
     ]);
 
     // ---- Account + positions ----
@@ -328,7 +347,7 @@ serve(async (req) => {
       selectedSymbolValid = !!selectedSymbolInfo;
     }
     if (selectedSymbolValid) {
-      const tickRes = await tlGet(`${symbolPath}/tick`);
+      const tickRes = await tlGet(`${symbolPath}/tick`, TL_FAST_TIMEOUT_MS);
       if (tickRes.ok && tickRes.data?.data) tick = tickRes.data.data;
     }
 
@@ -365,24 +384,27 @@ serve(async (req) => {
       const accountPath = `/api/v1/accounts/${encodeURIComponent(accountId)}/symbols`;
       let rawList: any[] = [];
 
-      // Try big-pull variants first
+      // Keep this display endpoint bounded. A full 200-page crawl can exceed
+      // the platform idle limit when Trading Layer is degraded; deeper catalogue
+      // discovery belongs in the dedicated symbol/catalogue functions.
       for (const p of [
-        `${accountPath}?limit=10000`,
-        `${accountPath}?limit=5000`,
+        `${accountPath}?limit=1000`,
+        `${accountPath}?limit=500`,
         accountPath,
       ]) {
-        const r = await tlGet(p);
+        const r = await tlGet(p, TL_SYMBOLS_TIMEOUT_MS);
         const list = r.ok ? extractList(r.data) : [];
         if (list.length > rawList.length) rawList = list;
         if (rawList.length >= 200) break;
       }
 
-      // Plus offset pagination as a safety net
+      // Plus a small offset safety net only; never let this endpoint crawl for
+      // minutes and blank the terminal.
       const PAGE = 500;
-      const MAX_PAGES = 200;
+      const MAX_PAGES = 3;
       const paged: any[] = [];
       for (let i = 0; i < MAX_PAGES; i++) {
-        const r = await tlGet(`${accountPath}?limit=${PAGE}&offset=${i * PAGE}`);
+        const r = await tlGet(`${accountPath}?limit=${PAGE}&offset=${i * PAGE}`, TL_SYMBOLS_TIMEOUT_MS);
         const list = r.ok ? extractList(r.data) : [];
         if (!r.ok || list.length === 0) break;
         paged.push(...list);
@@ -419,4 +441,9 @@ serve(async (req) => {
       error: err instanceof Error ? err.message : String(err),
     }, 500);
   }
-});
+}
+
+serve((req) => Promise.race([
+  handleTerminalData(req),
+  timeoutJsonAfter(FUNCTION_DEADLINE_MS),
+]));
