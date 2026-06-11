@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
     .from("user_mt_accounts")
     .select("id")
     .eq("user_id", userId)
-    .eq("metaapi_account_id", accountId)
+    .eq("trading_layer_trader_id", accountId)
     .maybeSingle();
   if (ownErr || !ownRow) {
     logEvent("auth", "FORBIDDEN", { accountId: maskAccountId(accountId) });

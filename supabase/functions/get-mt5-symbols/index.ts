@@ -107,14 +107,14 @@ serve(async (req) => {
 
     const { data: linkedAccount } = await supabase
       .from("user_mt_accounts")
-      .select("metaapi_account_id, status")
+      .select("trading_layer_trader_id, status")
       .eq("user_id", user.id)
       .eq("status", "connected")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    let accountId = linkedAccount?.metaapi_account_id || null;
+    let accountId = linkedAccount?.trading_layer_trader_id || null;
     let accountSource = "database";
 
     if (!accountId) {
