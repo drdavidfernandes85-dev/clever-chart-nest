@@ -28,6 +28,7 @@ import {
   refreshTradeModeFromTradingLayer,
   freshTradeModeGateResponse,
 } from "../_shared/brokerSymbol.ts";
+import { resolveBrokerSymbolWithSelfHeal } from "../_shared/brokerSymbolSelfHeal.ts";
 import { EXECUTION_POLICY_VERSION } from "../_shared/tradingLayerTradeMode.ts";
 import {
   fetchTradingLayerLivePositions,
