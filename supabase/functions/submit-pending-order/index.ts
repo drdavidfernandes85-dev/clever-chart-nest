@@ -28,7 +28,7 @@ import {
 } from "../_shared/canaryPolicy.ts";
 
 
-const VERSION = "SUBMIT_PENDING_ORDER_V2_2026_06_10";
+const VERSION = "SUBMIT_PENDING_ORDER_V3_2026_06_11";
 const BASE_URL = "https://api.trading-layer.com";
 const MAX_TEST_VOLUME = 0.01;
 
