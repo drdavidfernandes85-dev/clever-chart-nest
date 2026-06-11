@@ -169,7 +169,7 @@ const App = () => (
 
                     <Route path="/admin" element={<AdminRoute><DashboardLayout><ErrorBoundary scope="admin"><Admin /></ErrorBoundary></DashboardLayout></AdminRoute>} />
                     <Route path="/u/:userId" element={<DashboardShell scope="public-profile"><PublicProfile /></DashboardShell>} />
-                    <Route path="/__qa/hero" element={<HeroQA />} />
+                    <Route path="/__qa/hero" element={<AdminRoute><HeroQA /></AdminRoute>} />
                     <Route path="/terms" element={<ErrorBoundary scope="terms"><Terms /></ErrorBoundary>} />
                     <Route path="/risk-disclosure" element={<ErrorBoundary scope="risk-disclosure"><RiskDisclosure /></ErrorBoundary>} />
                     <Route path="/compliance-review" element={<DashboardShell scope="compliance-review"><ComplianceReview /></DashboardShell>} />
