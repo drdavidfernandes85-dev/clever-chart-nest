@@ -319,15 +319,19 @@ export async function assertCanaryCloseAllowed(
   if (input.routeAccountId && String(input.routeAccountId) !== policy.allowed_route_account_id) {
     return { allowed: false, code: "CANARY_SCOPE_ACCOUNT_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION };
   }
-  if (String(input.brokerSymbol ?? "").toUpperCase() !== policy.allowed_broker_symbol) {
+  const fullMode =
+    (policy as any).buy_open_long === "enabled" &&
+    (policy as any).other_symbols === "enabled";
+  if (!fullMode && String(input.brokerSymbol ?? "").toUpperCase() !== policy.allowed_broker_symbol) {
     return { allowed: false, code: "CANARY_SCOPE_SYMBOL_NOT_ALLOWED", policy, policyVersion: CANARY_POLICY_VERSION };
   }
   // Reject partial close — close volume must equal the live remaining volume.
-  if (input.requestedVolume != null && input.positionVolume != null &&
+  if (!fullMode && input.requestedVolume != null && input.positionVolume != null &&
       Math.abs(Number(input.requestedVolume) - Number(input.positionVolume)) > 1e-8) {
     return { allowed: false, code: "CANARY_SCOPE_PARTIAL_CLOSE_DISABLED", policy, policyVersion: CANARY_POLICY_VERSION,
       reason: "Partial close disabled by limited canary." };
   }
+
   return {
     allowed: true,
     code: "CANARY_SCOPE_OK",
