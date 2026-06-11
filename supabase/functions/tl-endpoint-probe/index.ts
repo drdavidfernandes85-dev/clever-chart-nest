@@ -1,4 +1,4 @@
-// Probe the discovered /rates endpoint live to confirm it returns data.
+// Probe /rates with a clean param set so we can read the real body shape.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 Deno.serve(async (req) => {
@@ -12,14 +12,19 @@ Deno.serve(async (req) => {
   const KEY = Deno.env.get("TRADING_LAYER_API_KEY")!;
   const ACC = "29008868-d583-4ab5-a6c1-57586fe92007";
   const BASE = "https://api.trading-layer.com";
-  const dateFrom = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-  const tfs = ["M1", "1", "M5", "M15", "H1", "D1", 1, 5];
-  const out: any[] = [];
-  for (const tf of tfs) {
-    const url = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=${tf}&dateFrom=${encodeURIComponent(dateFrom)}&count=3`;
-    const r = await fetch(url, { headers: { Authorization: `Bearer ${KEY}` } });
-    const txt = await r.text();
-    out.push({ tf, status: r.status, body: txt.slice(0, 500) });
-  }
-  return new Response(JSON.stringify(out, null, 2), { headers: { ...cors, "Content-Type": "application/json" } });
+
+  const ratesUrl = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=M1&count=5`;
+  const rRates = await fetch(ratesUrl, { headers: { Authorization: `Bearer ${KEY}` } });
+  const ratesBody = await rRates.text();
+
+  const tickUrl = `${BASE}/api/v1/accounts/${ACC}/symbols/EURUSD/tick`;
+  const rTick = await fetch(tickUrl, { headers: { Authorization: `Bearer ${KEY}` } });
+  const tickBody = await rTick.text();
+
+  return new Response(JSON.stringify({
+    serverNow: new Date().toISOString(),
+    serverNowMs: Date.now(),
+    rates: { status: rRates.status, body: ratesBody },
+    tick: { status: rTick.status, body: tickBody },
+  }, null, 2), { headers: { ...cors, "Content-Type": "application/json" } });
 });
