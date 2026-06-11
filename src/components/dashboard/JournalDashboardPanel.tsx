@@ -1,0 +1,233 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { RefreshCw, TrendingUp, TrendingDown, Target, Activity, BarChart3, Hash, ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
+
+interface Position {
+  user_id: string | null;
+  mt_login: number | null;
+  position_id: number | null;
+  symbol: string | null;
+  side: string | null;
+  open_time: string | null;
+  close_time: string | null;
+  volume_in: number | null;
+  volume_out: number | null;
+  vwap_open: number | null;
+  vwap_close: number | null;
+  net_pnl: number | null;
+  gross_profit: number | null;
+  swap_total: number | null;
+  commission_total: number | null;
+  fee_total: number | null;
+  deal_count: number | null;
+  is_closed: boolean | null;
+  has_complex_entry: boolean | null;
+}
+
+interface AuditTicketRow { ticket: string | null }
+
+const fmtMoney = (v: number) =>
+  `${v >= 0 ? "+" : ""}${v.toFixed(2)}`;
+
+const fmtTime = (iso: string | null) => {
+  if (!iso) return "—";
+  try { return new Date(iso).toLocaleString("es-419", { dateStyle: "short", timeStyle: "short" }); } catch { return "—"; }
+};
+
+const JournalDashboardPanel = () => {
+  const { user } = useAuth();
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [auditTickets, setAuditTickets] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    const [posRes, auditRes, stateRes] = await Promise.all([
+      supabase
+        .from("journal_positions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("open_time", { ascending: false })
+        .limit(500),
+      supabase
+        .from("execution_audit_events")
+        .select("ticket")
+        .eq("user_id", user.id),
+      supabase
+        .from("journal_sync_state")
+        .select("last_synced_at, last_status, deals_total")
+        .eq("user_id", user.id)
+        .order("last_synced_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    setPositions((posRes.data ?? []) as Position[]);
+    setAuditTickets(new Set(((auditRes.data ?? []) as AuditTicketRow[]).map((r) => String(r.ticket)).filter(Boolean)));
+    setLastSync(stateRes.data?.last_synced_at ?? null);
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const sync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("journal-sync", { body: { full: false } });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Sincronizado: ${data.dealsFetched ?? 0} operaciones (${data.dealsUpserted ?? 0} actualizadas)`);
+      } else {
+        toast.error(data?.error ? `Error: ${data.error}` : "Sincronización falló");
+      }
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || "Error de sincronización");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const closed = useMemo(() => positions.filter((p) => p.is_closed), [positions]);
+
+  const stats = useMemo(() => {
+    if (closed.length === 0) {
+      return { totalPnl: 0, winRate: 0, profitFactor: 0, count: 0, best: 0, worst: 0, avgWin: 0, avgLoss: 0, volume: 0 };
+    }
+    const wins = closed.filter((p) => (p.net_pnl ?? 0) > 0);
+    const losses = closed.filter((p) => (p.net_pnl ?? 0) < 0);
+    const totalPnl = closed.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
+    const grossWin = wins.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
+    const grossLoss = Math.abs(losses.reduce((s, p) => s + (p.net_pnl ?? 0), 0));
+    const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0;
+    const best = closed.reduce((m, p) => Math.max(m, p.net_pnl ?? 0), -Infinity);
+    const worst = closed.reduce((m, p) => Math.min(m, p.net_pnl ?? 0), Infinity);
+    return {
+      totalPnl,
+      winRate: (wins.length / closed.length) * 100,
+      profitFactor: pf,
+      count: closed.length,
+      best,
+      worst,
+      avgWin: wins.length ? grossWin / wins.length : 0,
+      avgLoss: losses.length ? grossLoss / losses.length : 0,
+      volume: closed.reduce((s, p) => s + (p.volume_in ?? 0), 0),
+    };
+  }, [closed]);
+
+  const fmtPF = (v: number) => (v === Infinity ? "∞" : v.toFixed(2));
+
+  const kpis = [
+    { label: "P&L Neto Total", value: fmtMoney(stats.totalPnl), Icon: stats.totalPnl >= 0 ? TrendingUp : TrendingDown,
+      cls: stats.totalPnl >= 0 ? "text-emerald-400" : "text-red-400" },
+    { label: "Tasa de Aciertos", value: `${stats.winRate.toFixed(1)}%`, Icon: Target, cls: "text-primary" },
+    { label: "Profit Factor", value: fmtPF(stats.profitFactor), Icon: BarChart3,
+      cls: stats.profitFactor >= 1.5 ? "text-emerald-400" : stats.profitFactor >= 1 ? "text-primary" : "text-red-400" },
+    { label: "Operaciones", value: String(stats.count), Icon: Hash, cls: "text-foreground" },
+    { label: "Mejor", value: fmtMoney(stats.best === -Infinity ? 0 : stats.best), Icon: ArrowUpRight, cls: "text-emerald-400" },
+    { label: "Peor", value: fmtMoney(stats.worst === Infinity ? 0 : stats.worst), Icon: ArrowDownRight, cls: "text-red-400" },
+    { label: "Promedio Ganancia", value: fmtMoney(stats.avgWin), Icon: TrendingUp, cls: "text-emerald-400" },
+    { label: "Promedio Pérdida", value: fmtMoney(-stats.avgLoss), Icon: TrendingDown, cls: "text-red-400" },
+  ];
+
+  return (
+    <Card className="card-glass p-6 space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 className="font-heading text-lg font-semibold text-foreground flex items-center gap-2">
+            <Activity className="h-5 w-5 text-primary" /> Diario · Métricas Reales
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Calculado desde operaciones cerradas sincronizadas (no manuales).
+            {lastSync && <> · Última sync: {fmtTime(lastSync)}</>}
+          </p>
+        </div>
+        <Button size="sm" onClick={sync} disabled={syncing} className="rounded-full gap-2">
+          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Sincronizar
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {kpis.map((k) => {
+          const Icon = k.Icon;
+          return (
+            <div key={k.label} className="rounded-xl border border-border/40 bg-background/40 p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</span>
+                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div className={`font-display text-xl font-semibold tabular-nums ${k.cls}`}>
+                {loading ? <span className="inline-block h-6 w-16 rounded skeleton-shimmer" /> : k.value}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="rounded-xl border border-border/40 overflow-hidden">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-muted-foreground bg-secondary/30">
+          <span>Símbolo · Cerrada</span>
+          <span className="text-right">Lado</span>
+          <span className="text-right">Vol</span>
+          <span className="text-right">Apertura → Cierre</span>
+          <span className="text-right">Origen</span>
+          <span className="text-right">P&L Neto</span>
+        </div>
+        {loading ? (
+          <div className="p-6 space-y-2">
+            {[1,2,3,4].map((i) => <div key={i} className="h-8 rounded skeleton-shimmer" />)}
+          </div>
+        ) : positions.length === 0 ? (
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            Sin operaciones sincronizadas. Pulsa <span className="text-primary font-semibold">Sincronizar</span> para importar desde tu cuenta MT5.
+          </div>
+        ) : (
+          <div className="divide-y divide-border/40 max-h-[480px] overflow-y-auto">
+            {positions.slice(0, 50).map((p) => {
+              const win = (p.net_pnl ?? 0) > 0;
+              const isClosed = p.is_closed;
+              const origen = auditTickets.has(String(p.position_id)) ? "Terminal" : "Externa";
+              return (
+                <div key={`${p.mt_login}-${p.position_id}`} className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-3 py-2.5 text-sm items-center hover:bg-secondary/20">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-semibold text-foreground">{p.symbol ?? "—"}</span>
+                      {!isClosed && <Badge variant="secondary" className="text-[9px] rounded-full">Abierta</Badge>}
+                      {p.has_complex_entry && <Badge variant="outline" className="text-[9px] rounded-full">Compleja</Badge>}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono">
+                      #{p.position_id} · {fmtTime(p.close_time ?? p.open_time)}
+                    </div>
+                  </div>
+                  <span className={`text-xs font-mono uppercase ${p.side === "buy" ? "text-emerald-400" : "text-red-400"}`}>
+                    {p.side === "buy" ? "Compra" : p.side === "sell" ? "Venta" : "—"}
+                  </span>
+                  <span className="text-xs font-mono text-muted-foreground tabular-nums">{(p.volume_in ?? 0).toFixed(2)}</span>
+                  <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+                    {p.vwap_open?.toFixed(5) ?? "—"} → {p.vwap_close?.toFixed(5) ?? "—"}
+                  </span>
+                  <Badge variant="outline" className={`text-[10px] rounded-full ${origen === "Terminal" ? "border-primary/40 text-primary" : "border-border/40 text-muted-foreground"}`}>
+                    {origen}
+                  </Badge>
+                  <span className={`font-display font-semibold tabular-nums ${isClosed ? (win ? "text-emerald-400" : "text-red-400") : "text-muted-foreground"}`}>
+                    {isClosed ? fmtMoney(p.net_pnl ?? 0) : "—"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+};
+
+export default JournalDashboardPanel;
