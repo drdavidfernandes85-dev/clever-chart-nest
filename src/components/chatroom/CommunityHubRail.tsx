@@ -23,13 +23,9 @@ const HOT_FALLBACK: HotMention[] = [
   { symbol: "BTC/USDT", mentions: 0, price: null, changePct: null, up: true },
 ];
 
-// Activity-based community contributors — NO performance claims (regulation compliant).
-type Contributor = { name: string; ideas: number; role: string };
-const CONTRIBUTOR_FALLBACK: Contributor[] = [
-  { name: "IX_Educator",  ideas: 42, role: "Lead Educator" },
-  { name: "EUR_King",   ideas: 31, role: "Senior Trader" },
-  { name: "alpha-rat",  ideas: 24, role: "Active Member" },
-];
+// Top contributors are fetched live from user_xp + profiles.
+type Contributor = { user_id: string; name: string; xp: number; role: string };
+
 
 const initialsOf = (n: string) =>
   n
