@@ -47,18 +47,32 @@ function json(body: unknown, status = 200) {
 const normalizeSymbol = (v: string) =>
   String(v || "").trim().replace("/", "").replace("-", "").replace(" ", "").toUpperCase();
 
-async function tlGet(path: string) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${TRADING_LAYER_KEY}`,
-      Accept: "application/json",
-    },
-  });
-  const text = await res.text();
-  let data: any;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  return { ok: res.ok, status: res.status, data };
+async function tlGet(path: string, timeoutMs = 8000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${TRADING_LAYER_KEY}`,
+        Accept: "application/json",
+      },
+      signal: ctrl.signal,
+    });
+    const text = await res.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    return { ok: res.ok, status: res.status, data };
+  } catch (e) {
+    const aborted = (e as any)?.name === "AbortError";
+    return {
+      ok: false,
+      status: aborted ? 504 : 0,
+      data: { error: aborted ? `Trading Layer timeout after ${timeoutMs}ms on ${path}` : String(e) },
+    };
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 function mapSymbolInfo(item: any) {
