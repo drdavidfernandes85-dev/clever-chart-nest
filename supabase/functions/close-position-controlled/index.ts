@@ -35,7 +35,7 @@ import {
   upsertMirrorFromLive,
 } from "../_shared/livePositions.ts";
 
-const VERSION = "CLOSE_POSITION_ROUTE_FIX_V4_2026_05_28";
+const VERSION = "CLOSE_POSITION_ROUTE_FIX_V5_2026_06_11";
 const BASE_URL = "https://api.trading-layer.com";
 const MAX_TEST_VOLUME = 0.01;
 

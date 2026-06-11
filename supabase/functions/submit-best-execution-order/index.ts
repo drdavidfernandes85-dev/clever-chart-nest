@@ -49,7 +49,7 @@ import {
   VERIFIED_EXECUTION_INSTRUMENT_VERSION,
 } from "../_shared/executionInstrument.ts";
 
-const VERSION = "BEST_EXEC_FAST_V3_2026_05_21";
+const VERSION = "BEST_EXEC_FAST_V4_2026_06_11";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
