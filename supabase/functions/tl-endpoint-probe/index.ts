@@ -1,4 +1,3 @@
-// Probe /rates with a clean param set so we can read the real body shape.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 Deno.serve(async (req) => {
@@ -13,10 +12,24 @@ Deno.serve(async (req) => {
   const ACC = "29008868-d583-4ab5-a6c1-57586fe92007";
   const BASE = "https://api.trading-layer.com";
 
-  const dateFrom = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const ratesUrl = `${BASE}/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=M1&dateFrom=${encodeURIComponent(dateFrom)}&count=8`;
-  const rRates = await fetch(ratesUrl, { headers: { Authorization: `Bearer ${KEY}` } });
-  const ratesBody = await rRates.text();
+  const dateFrom = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const attempts = [
+    `rates?symbol=EURUSD&timeframe=M1&dateFrom=${encodeURIComponent(dateFrom)}&count=8`,
+    `rates?symbol=EURUSD&timeframe=1&dateFrom=${encodeURIComponent(dateFrom)}&count=8`,
+    `rates?symbol=EURUSD&timeframe=M1&startPos=0&count=8`,
+    `rates?symbol=EURUSD&timeframe=M5&dateFrom=${encodeURIComponent(dateFrom)}&count=6`,
+  ];
+  const ratesResults: any[] = [];
+  for (const q of attempts) {
+    let r: Response | null = null, txt = "";
+    for (let i = 0; i < 3; i++) {
+      r = await fetch(`${BASE}/api/v1/accounts/${ACC}/${q}`, { headers: { Authorization: `Bearer ${KEY}` } });
+      txt = await r.text();
+      if (r.status !== 502 && r.status !== 503 && r.status !== 504) break;
+      await new Promise((res) => setTimeout(res, 800 * (i + 1)));
+    }
+    ratesResults.push({ q, status: r?.status, body: txt.slice(0, 1500) });
+  }
 
   const tickUrl = `${BASE}/api/v1/accounts/${ACC}/symbols/EURUSD/tick`;
   const rTick = await fetch(tickUrl, { headers: { Authorization: `Bearer ${KEY}` } });
@@ -25,7 +38,7 @@ Deno.serve(async (req) => {
   return new Response(JSON.stringify({
     serverNow: new Date().toISOString(),
     serverNowMs: Date.now(),
-    rates: { status: rRates.status, body: ratesBody },
+    rates: ratesResults,
     tick: { status: rTick.status, body: tickBody },
   }, null, 2), { headers: { ...cors, "Content-Type": "application/json" } });
 });
