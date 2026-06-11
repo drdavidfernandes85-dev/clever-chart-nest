@@ -206,14 +206,9 @@ function TopAccountBar({
   const profitClass =
     profit != null && profit > 0 ? "text-[#17C784]" : profit != null && profit < 0 ? "text-[#F04E4E]" : "";
 
-  // Margen usado / libre / Nivel de margen: the live execution feed
-  // (Trading Layer /traders/{id}) does NOT expose margin, free_margin or
-  // margin_level. We intentionally render "—" with a tooltip rather than
-  // synthesise a value or fall back to a different broker source — mixing
-  // sources would silently disagree with the INFINOX portal. Pending
-  // Trading Layer adding these fields to the trader snapshot.
-  const marginUnavailableTip =
-    "No incluido en el feed de ejecución (Trading Layer). Pendiente de habilitar en el broker.";
+  const profit = snapshot?.profit ?? null;
+  const profitClass =
+    profit != null && profit > 0 ? "text-[#17C784]" : profit != null && profit < 0 ? "text-[#F04E4E]" : "";
 
   return (
     <div className="flex items-center gap-1 border-b border-border bg-[#0A0A0B] px-2 py-1.5 overflow-x-auto">
@@ -230,9 +225,6 @@ function TopAccountBar({
           <Stat label="Balance" value={fmt(snapshot.balance)} />
           <Stat label="Equidad" value={fmt(snapshot.equity)} />
           <Stat label="P&L abierto" value={fmt(profit)} valueClass={profitClass} />
-          <Stat label="Margen usado" value="—" tooltip={marginUnavailableTip} />
-          <Stat label="Margen libre" value="—" tooltip={marginUnavailableTip} />
-          <Stat label="Nivel de margen" value="—" tooltip={marginUnavailableTip} />
         </>
       )}
 
