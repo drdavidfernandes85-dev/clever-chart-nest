@@ -333,7 +333,7 @@ serve(async (req) => {
       symbolsLoaded,
       count: symbols.length,
       timestamp: new Date().toISOString(),
-      ...(body.debug ? { _debug: { traderRaw: traderData, positionsRaw } } : {}),
+      
     });
   } catch (err) {
     return json({
