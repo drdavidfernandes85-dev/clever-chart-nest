@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { RefreshCw, TrendingUp, TrendingDown, Target, Activity, BarChart3, Hash, ArrowUpRight, ArrowDownRight, Loader2 } from "lucide-react";
 
-interface Position {
+export interface Position {
   user_id: string | null;
   mt_login: number | null;
   position_id: number | null;
