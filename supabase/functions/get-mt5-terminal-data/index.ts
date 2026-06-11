@@ -251,17 +251,7 @@ async function handleTerminalData(req: Request) {
     // 4=BUY_STOP, 5=SELL_STOP, 6=BUY_STOP_LIMIT, 7=SELL_STOP_LIMIT
     // type_time ints: 0=GTC, 1=DAY, 2=SPECIFIED (GTD), 3=SPECIFIED_DAY
     const ordersRaw = Array.isArray(ordRes.data?.data) ? ordRes.data.data : [];
-    const orderTypeMap: Record<number, { kind: string; side: "buy" | "sell" }> = {
-      0: { kind: "market", side: "buy" },
-      1: { kind: "market", side: "sell" },
-      2: { kind: "limit",  side: "buy" },
-      3: { kind: "limit",  side: "sell" },
-      4: { kind: "stop",   side: "buy" },
-      5: { kind: "stop",   side: "sell" },
-      6: { kind: "stop_limit", side: "buy" },
-      7: { kind: "stop_limit", side: "sell" },
-    };
-    const durationMap: Record<number, string> = { 0: "GTC", 1: "DAY", 2: "GTD", 3: "SPECIFIED_DAY" };
+    // Order-type + duration decodes live in _shared/mt5Decode.ts.
     const pendingOrders = ordersRaw
       .filter((o: any) => {
         // state 1=PLACED is the live pending state; others (filled/cancelled/expired) are history.
