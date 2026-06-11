@@ -42,13 +42,14 @@ const TradingRoomDisclaimerModal = () => {
     setOpen(false);
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="trading-room-risk-notice-title"
       className="fixed inset-0 z-[200] flex items-end justify-center bg-background/80 p-4 backdrop-blur-md sm:items-center"
     >
+
       <div className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-primary/30 bg-card shadow-2xl">
         <div className="flex items-center gap-2 border-b border-border/50 bg-primary/10 px-5 py-3">
           <AlertTriangle className="h-5 w-5 text-primary" />
