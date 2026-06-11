@@ -42,6 +42,7 @@ import { useMarketStatus } from "@/hooks/useLiveMarketData";
 import { supabase } from "@/integrations/supabase/client";
 import TerminalWatchlist from "@/components/terminal/TerminalWatchlist";
 import OrderTicket from "@/components/terminal/OrderTicket";
+import OrderTicketModal from "@/components/terminal/OrderTicketModal";
 
 /* ─────────── Display currency ─────────── */
 
@@ -277,6 +278,11 @@ function TopAccountBar({
               {oneClick ? <Zap className="h-3 w-3" /> : <ZapOff className="h-3 w-3" />}
               <span className="hidden md:inline">1-click</span>
               <Switch checked={oneClick} className="pointer-events-none scale-75" />
+              {oneClick && (
+                <span className="ml-1 rounded bg-[#FFCD05]/20 px-1 text-[9px] uppercase font-bold text-[#FFCD05] animate-pulse">
+                  activo
+                </span>
+              )}
             </button>
           </TooltipTrigger>
           <TooltipContent className="max-w-[240px] text-xs">

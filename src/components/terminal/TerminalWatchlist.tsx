@@ -11,7 +11,9 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronRight,
+  Zap,
 } from "lucide-react";
+import { QUICK_ORDER_EVENT } from "@/components/terminal/OrderTicketModal";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useBrokerSymbols, type BrokerSymbol } from "@/contexts/BrokerSymbolsContext";
 import { useMultiSymbolTicks } from "@/hooks/useMultiSymbolTicks";
@@ -385,6 +387,18 @@ export default function TerminalWatchlist({ onSelectSymbol }: Props) {
                               "—"
                             )}
                           </span>
+                        </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.dispatchEvent(new CustomEvent(QUICK_ORDER_EVENT, { detail: { symbol: sym } }));
+                            }}
+                            title="Orden rápida"
+                            className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded text-[#FFCD05]/60 hover:text-[#FFCD05] hover:bg-[#FFCD05]/10 opacity-0 group-hover:opacity-100 sm:opacity-0 [@media(hover:none)]:opacity-100 transition-opacity shrink-0"
+                          >
+                            <Zap className="h-3 w-3" />
+                          </button>
                         </div>
                       </div>
                     );
