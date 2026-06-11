@@ -367,24 +367,26 @@ function PositionsTab({ snap, refresh, balance }: { snap: SnapshotState; refresh
 
 /* ─────────── tab: pending orders ─────────── */
 
-function OrdersTab({ snap }: { snap: SnapshotState }) {
+function OrdersTab({ snap, refresh }: { snap: SnapshotState; refresh: () => void }) {
   const symbols = useMemo(
     () => Array.from(new Set(snap.pendingOrders.map((o) => o.symbol))),
     [snap.pendingOrders],
   );
   const ticks = useMultiSymbolTicks(symbols);
 
+  // Cancel re-poll state: tickets in "Cancelando…" until snapshot confirms
+  // their removal or the re-poll budget expires.
+  const [cancelling, setCancelling] = useState<Set<string>>(new Set());
+  const [unconfirmed, setUnconfirmed] = useState<Set<string>>(new Set());
+  const [cancelTarget, setCancelTarget] = useState<PendingOrderLite | null>(null);
+
   if (snap.pendingOrders.length === 0) {
-    return (
-      <div className="px-3 py-10 text-center text-xs text-muted-foreground">
-        Sin órdenes pendientes
-      </div>
-    );
+    return <div className="px-3 py-10 text-center text-xs text-muted-foreground">Sin órdenes pendientes</div>;
   }
 
   return (
     <div className="overflow-auto">
-      <table className="w-full min-w-[1000px] text-[11px] font-mono">
+      <table className="w-full min-w-[1100px] text-[11px] font-mono">
         <thead className="sticky top-0 z-10 bg-[#0a0a0a]">
           <tr className="text-left text-[9px] uppercase tracking-[0.18em] text-neutral-500">
             <th className="px-3 py-2 font-normal">Símbolo</th>
@@ -397,8 +399,8 @@ function OrdersTab({ snap }: { snap: SnapshotState }) {
             <th className="px-3 py-2 font-normal text-right">SL</th>
             <th className="px-3 py-2 font-normal text-right">TP</th>
             <th className="px-3 py-2 font-normal">Duración</th>
-            <th className="px-3 py-2 font-normal text-right">Expira</th>
             <th className="px-3 py-2 font-normal text-right">Colocada</th>
+            <th className="px-3 py-2 font-normal text-center">Acciones</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-neutral-900/70">
@@ -408,8 +410,11 @@ function OrdersTab({ snap }: { snap: SnapshotState }) {
             const ps = pipSizeFor(t?.digits ?? null);
             const distPips = ref && o.price_open && ps > 0 ? (o.price_open - ref) / ps : null;
             const typeEs = o.orderType === "limit" ? "Límite" : o.orderType === "stop" ? "Stop" : o.orderType === "stop_limit" ? "Stop-Lím." : o.orderType;
+            const tStr = String(o.ticket);
+            const isCancelling = cancelling.has(tStr);
+            const isUnconfirmed = unconfirmed.has(tStr);
             return (
-              <tr key={String(o.ticket)} className="tabular-nums hover:bg-neutral-900/40">
+              <tr key={tStr} className={cn("tabular-nums hover:bg-neutral-900/40", isCancelling && "opacity-60")}>
                 <td className="px-3 py-1.5 font-bold text-neutral-100">{o.symbol}</td>
                 <td className="px-3 py-1.5 text-neutral-300">{typeEs}</td>
                 <td className="px-3 py-1.5">
@@ -425,22 +430,63 @@ function OrdersTab({ snap }: { snap: SnapshotState }) {
                   distPips == null ? "text-neutral-600" : distPips > 0 ? "text-emerald-400/80" : "text-red-400/80")}>
                   {distPips == null ? "—" : `${distPips > 0 ? "+" : ""}${distPips.toFixed(1)}`}
                 </td>
-                <td className={cn("px-3 py-1.5 text-right", o.stop_loss ? "text-red-400/80" : "text-neutral-600")}>
-                  {fmtPrice(o.symbol, o.stop_loss)}
-                </td>
-                <td className={cn("px-3 py-1.5 text-right", o.take_profit ? "text-emerald-400/80" : "text-neutral-600")}>
-                  {fmtPrice(o.symbol, o.take_profit)}
-                </td>
+                <td className={cn("px-3 py-1.5 text-right", o.stop_loss ? "text-red-400/80" : "text-neutral-600")}>{fmtPrice(o.symbol, o.stop_loss)}</td>
+                <td className={cn("px-3 py-1.5 text-right", o.take_profit ? "text-emerald-400/80" : "text-neutral-600")}>{fmtPrice(o.symbol, o.take_profit)}</td>
                 <td className="px-3 py-1.5 text-neutral-300">{o.duration}</td>
-                <td className="px-3 py-1.5 text-right text-neutral-500">
-                  {o.duration === "GTC" || !o.time_expiration ? "—" : fmtDateTime(o.time_expiration)}
-                </td>
                 <td className="px-3 py-1.5 text-right text-neutral-500">{fmtDateTime(o.time_setup)}</td>
+                <td className="px-3 py-1.5 text-center">
+                  {isCancelling ? (
+                    <span className="flex items-center justify-center gap-1 text-[10px] text-yellow-400">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Cancelando…
+                    </span>
+                  ) : isUnconfirmed ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center justify-center gap-1 text-[10px] text-red-400">
+                          <AlertTriangle className="h-3 w-3" /> No confirmado
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[260px] text-xs">
+                        La cancelación no se confirmó en las últimas consultas. Verifica el estado en MT5 o reintenta.
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button onClick={() => setCancelTarget({
+                          ticket: o.ticket, symbol: o.symbol, orderType: typeEs,
+                          side: o.side, volume: o.volume, price_open: o.price_open,
+                        })}
+                          className="p-1 rounded hover:bg-red-500/15 hover:text-red-400 text-neutral-400">
+                          <XIcon className="h-3 w-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="text-xs">Cancelar orden</TooltipContent>
+                    </Tooltip>
+                  )}
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      <CancelOrderConfirmDialog
+        open={cancelTarget != null}
+        onOpenChange={(v) => !v && setCancelTarget(null)}
+        order={cancelTarget}
+        onCancelling={(ticket) => setCancelling((s) => new Set(s).add(ticket))}
+        onConfirmed={(ticket) => {
+          setCancelling((s) => { const n = new Set(s); n.delete(ticket); return n; });
+          setUnconfirmed((s) => { const n = new Set(s); n.delete(ticket); return n; });
+          refresh();
+        }}
+        onUnconfirmed={(ticket) => {
+          setCancelling((s) => { const n = new Set(s); n.delete(ticket); return n; });
+          setUnconfirmed((s) => new Set(s).add(ticket));
+          refresh();
+        }}
+      />
     </div>
   );
 }
