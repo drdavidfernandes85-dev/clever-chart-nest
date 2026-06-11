@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
   // 2. Parse & validate payload — accepts spec payload {closeId, ticket, symbol, openSide, volume, liveCloseConfirmed, clientClickAt} or legacy {ticket, symbol, volume, side}.
   let payload: any;
   try { payload = await req.json(); } catch {
+    await auditGateBlock(supabase, { userId: user.id, action: "close_position", gate: "bad_request", reason: "invalid_json_body", version: VERSION });
     return json({ success: false, version: VERSION, error: "Invalid JSON body" }, 400);
   }
   const ticket = payload?.ticket != null ? String(payload.ticket) : null;
@@ -94,7 +95,6 @@ Deno.serve(async (req) => {
   const openVolume = Number(payload?.openVolume);
   const openSideRaw = payload?.openSide ? String(payload.openSide).toLowerCase() : null;
   const sideRaw = payload?.side ? String(payload.side).toLowerCase() : null;
-  // Prefer derived closeSide from openSide; fall back to legacy 'side'.
   const closeSide = openSideRaw === "buy" ? "sell"
                   : openSideRaw === "sell" ? "buy"
                   : (sideRaw === "buy" || sideRaw === "sell") ? sideRaw
@@ -104,138 +104,96 @@ Deno.serve(async (req) => {
     : `close-${ticket}-${Date.now()}`;
   const devMode = payload?.devMode === true;
 
+  const safeCloseSide: "buy" | "sell" | null = closeSide === "buy" || closeSide === "sell" ? closeSide : null;
+  const ab = (gate: string, reason: string, extra?: Record<string, unknown>) =>
+    auditGateBlock(supabase, { userId: user.id, action: "close_position", gate, reason,
+      ticket, symbol, side: safeCloseSide, volume: Number.isFinite(volume) ? volume : 0,
+      version: VERSION, extra: { closeId, ...(extra ?? {}) } });
+
   if (!ticket || !symbol || !Number.isFinite(volume) || volume <= 0 || (closeSide !== "buy" && closeSide !== "sell")) {
-    return json({
-      success: false, version: VERSION,
-      error: "ticket, symbol, volume and openSide|side (buy|sell) are required",
-    }, 400);
+    await ab("bad_request", "ticket_symbol_volume_side_required");
+    return json({ success: false, version: VERSION,
+      error: "ticket, symbol, volume and openSide|side (buy|sell) are required" }, 400);
   }
   if (openSideRaw && payload?.liveCloseConfirmed !== true) {
-    return json({
-      success: false, version: VERSION,
-      error: "liveCloseConfirmed=true is required for live closes",
-    }, 400);
+    await ab("bad_request", "liveCloseConfirmed_required");
+    return json({ success: false, version: VERSION,
+      error: "liveCloseConfirmed=true is required for live closes" }, 400);
   }
-  // Volume cap moved to post-authority block — needs the authoritative live
-  // volume from evaluateCloseAuthority and the broker symbol spec (volumeStep,
-  // volumeMin). See "VOLUME CAP" section below.
 
-  // 3. Load connected MT5 account via shared mapping resolver so we always
-  //    pick the freshest, validated trading-layer mapping instead of a stale
-  //    ownerAccountId row.
   const mapping = await resolveActiveMtMapping(supabase, user.id);
   if (mapping.status === "missing") {
-    return json({
-      success: false, version: VERSION,
-      error: "No connected MT5 account found",
-    }, 404);
+    await ab("no_mapping", "no_connected_mt5");
+    return json({ success: false, version: VERSION, error: "No connected MT5 account found" }, 404);
   }
   if (mapping.status === "stale" || !mapping.traderId) {
-    return json({
-      success: false, version: VERSION,
-      error: STALE_MAPPING_ERROR_CODE,
-      message: STALE_MAPPING_USER_MESSAGE,
-      mappingStatus: mapping.status,
-      localRowId: mapping.localRowId,
-    }, 409);
+    await ab("stale_mapping", STALE_MAPPING_ERROR_CODE);
+    return json({ success: false, version: VERSION,
+      error: STALE_MAPPING_ERROR_CODE, message: STALE_MAPPING_USER_MESSAGE,
+      mappingStatus: mapping.status, localRowId: mapping.localRowId }, 409);
   }
   const accountId = mapping.traderId;
-  // CRITICAL ROUTE INVARIANT — close mutations MUST use the verified Trading
-  // Layer execution route accountId (same value used by the proven entry
-  // path), not the traderId. The traderId is for positions/account lookups
-  // only; using it for /trades/send yields TRADE_RETCODE_TRADE_DISABLED.
   const routeAccountId = mapping.tradingLayerAccountId;
   if (!routeAccountId) {
-    return json({
-      success: false, version: VERSION,
+    await ab("route_unresolved", "CLOSE_EXECUTION_ROUTE_UNRESOLVED");
+    return json({ success: false, version: VERSION,
       error: "CLOSE_EXECUTION_ROUTE_UNRESOLVED",
       message: "Verified Trading Layer execution route accountId is missing on the MT5 mapping.",
-      brokerCloseMutationDispatched: false,
-    }, 409);
+      brokerCloseMutationDispatched: false }, 409);
   }
   const callerRouteAccountId = typeof payload?.routeAccountId === "string" ? payload.routeAccountId : null;
   if (callerRouteAccountId && callerRouteAccountId !== routeAccountId) {
-    return json({
-      success: false, version: VERSION,
+    await ab("route_mismatch", "caller_route_mismatch", { expectedRouteAccountId: routeAccountId, attemptedRouteAccountId: callerRouteAccountId });
+    return json({ success: false, version: VERSION,
       error: "CLOSE_EXECUTION_ROUTE_MISMATCH",
       expectedRouteAccountId: routeAccountId,
       attemptedRouteAccountId: callerRouteAccountId,
-      brokerCloseMutationDispatched: false,
-    }, 409);
+      brokerCloseMutationDispatched: false }, 409);
   }
-  // Hard guard: never let traderId be used as the URL accountId.
   if (routeAccountId === mapping.traderId && mapping.tradingLayerAccountId !== mapping.traderId) {
-    return json({
-      success: false, version: VERSION,
+    await ab("route_mismatch", "trader_id_used_as_route");
+    return json({ success: false, version: VERSION,
       error: "CLOSE_EXECUTION_ROUTE_MISMATCH",
       detail: "trader_id_used_as_route",
-      brokerCloseMutationDispatched: false,
-    }, 409);
+      brokerCloseMutationDispatched: false }, 409);
   }
 
-  // Preview / no-mutation diagnostic — returns the exact endpoint and DTO
-  // the corrected close path would dispatch, without sending any request.
   if (payload?.previewOnly === true || payload?.validateOnly === true) {
     return json({
-      success: true,
-      version: VERSION,
-      validationOnly: true,
-      mutationSuppressed: true,
+      success: true, version: VERSION, validationOnly: true, mutationSuppressed: true,
       closeAuthoritySource: "trading_layer_live_forced",
-      verifiedRouteAccountId: routeAccountId,
-      wrongPriorRouteAccountId: mapping.traderId,
+      verifiedRouteAccountId: routeAccountId, wrongPriorRouteAccountId: mapping.traderId,
       routeMismatchFixed: true,
       expectedEndpoint: `/api/v1/accounts/${routeAccountId}/trades/send`,
-      brokerSymbol: suppliedBrokerSymbol ?? symbol,
-      closeSide,
-      volume,
-      positionTicket: ticket,
-      outboundCloseDTO: {
-        side: closeSide, symbol: suppliedBrokerSymbol ?? symbol, volume,
-        position: Number(ticket), deviation: 20,
-      },
+      brokerSymbol: suppliedBrokerSymbol ?? symbol, closeSide, volume, positionTicket: ticket,
+      outboundCloseDTO: { side: closeSide, symbol: suppliedBrokerSymbol ?? symbol, volume, position: Number(ticket), deviation: 20 },
       brokerCloseMutationDispatched: false,
     });
   }
 
-  // ---------- Execution-mode allowlist (admin live testing gate) ----------
   {
-    const gate = await assertLiveExecutionAllowed(supabase, user.id, {
-      traderId: mapping.traderId,
-      login: mapping.login,
-    });
+    const gate = await assertLiveExecutionAllowed(supabase, user.id, { traderId: mapping.traderId, login: mapping.login });
     if (!gate.allowed) {
-      return json({
-        success: false,
-        version: VERSION,
+      await ab("exec_mode", gate.reason || LIVE_EXEC_DISABLED_CODE, { executionMode: gate.mode });
+      return json({ success: false, version: VERSION,
         error: gate.code || LIVE_EXEC_DISABLED_CODE,
-        reason: gate.reason,
-        executionMode: gate.mode,
-      }, 403);
+        reason: gate.reason, executionMode: gate.mode }, 403);
     }
   }
 
-  // ---------- Limited Canary policy guard (close) ----------
   {
     const canaryClose = await assertCanaryCloseAllowed(supabase, {
-      userId: user.id,
-      login: mapping.login,
-      routeAccountId: mapping.traderId,
-      brokerSymbol: suppliedBrokerSymbol ?? symbol,
-      ticket,
-      requestedVolume: volume,
+      userId: user.id, login: mapping.login, routeAccountId: mapping.traderId,
+      brokerSymbol: suppliedBrokerSymbol ?? symbol, ticket, requestedVolume: volume,
     });
     if (!canaryClose.allowed) {
+      await ab("canary", (canaryClose as any).reason || "canary_disabled");
       return json(canaryGuardResponseBody(canaryClose, VERSION), 403);
     }
   }
 
 
-
-  // ---------- Backend risk-limit enforcement (LIMITS ONLY — ticket existence
-  // is authoritatively verified later via forced live Trading Layer lookup).
-  // The old mt_positions-mirror "ticket_not_live" rule has been removed: a stale
-  // local mirror MUST NOT block a risk-reducing close on a live-confirmed ticket.
+  // Backend risk-limit enforcement (kill_switch + live_trading_enabled).
   let settings: any = null;
   try {
     settings = await loadRiskSettings(supabase, user.id);
@@ -253,34 +211,31 @@ Deno.serve(async (req) => {
       const blockBody = buildRiskBlock(VERSION, {
         reason: "Live trading is disabled.", rule: "live_trading_disabled", settings,
       }, { ticket, symbol, side: closeSide, volume, closeId });
+      await ab("live_trading_disabled", "live_trading_disabled");
       return json(blockBody, 200);
     }
   } catch { /* fall through */ }
 
 
-
-  // Broker-symbol gate — close must use exact MT5 broker symbol from the position.
   const eligible = await resolveBrokerSymbolWithSelfHeal(supabase, {
-    userId: user.id,
-    traderId: accountId,
-    accountId: mapping.tradingLayerAccountId,
-    requestedDisplaySymbol: symbol,
-    suppliedBrokerSymbol,
-    operationType: "close_position",
+    userId: user.id, traderId: accountId, accountId: mapping.tradingLayerAccountId,
+    requestedDisplaySymbol: symbol, suppliedBrokerSymbol, operationType: "close_position",
   }, { targetUserId: user.id, canonicalForRefresh: symbol });
   if (!eligible.ok) {
+    await ab("broker_symbol_gate", (eligible as any).reason || "broker_symbol_ineligible");
     return json(brokerSymbolGateResponse(VERSION, eligible, { ticket, closeId, volume }), 200);
   }
   const brokerSymbol = eligible.brokerSymbol as string;
 
-  // PART 1 — Fresh trade_mode refresh (≤30s execution-permission gate, close).
   const fresh = await refreshTradeModeFromTradingLayer(supabase, {
     traderId: accountId, accountId: mapping.tradingLayerAccountId, brokerSymbol, login: mapping.login, server: mapping.server,
     operation: "close_position",
   });
   if (!fresh.ok) {
+    await ab("fresh_trade_mode", (fresh as any).reason || "fresh_trade_mode_failed");
     return json(freshTradeModeGateResponse(VERSION, fresh, { ticket, closeId, volume }), 200);
   }
+
 
 
   // ---------- AUTHORITATIVE LIVE TICKET VERIFICATION ----------
