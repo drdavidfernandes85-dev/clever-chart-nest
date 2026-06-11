@@ -26,8 +26,9 @@ export interface AtomicAccountSnapshot {
   margin: number | null;
   marginFree: number | null;
   profit: number | null;
+  credit: number | null;
   openPositionsCount: number;
-  /** Server-side timestamp of the response (ms epoch). All 6 values were
+  /** Server-side timestamp of the response (ms epoch). All values were
    *  consistent at this instant per the broker. */
   asOf: number;
 }
