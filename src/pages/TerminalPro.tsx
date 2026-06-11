@@ -337,7 +337,7 @@ function Shell() {
       <div className="flex-1 min-h-0">
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel defaultSize={18} minSize={12} collapsible>
-            <Panel title="Watchlist" hint="Fase 2: lista de instrumentos del bróker en vivo." />
+            <TerminalWatchlist />
           </ResizablePanel>
           <ResizableHandle withHandle />
 
