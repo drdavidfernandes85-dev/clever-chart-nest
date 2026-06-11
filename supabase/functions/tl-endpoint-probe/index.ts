@@ -24,6 +24,8 @@ Deno.serve(async (req) => {
   const paths = [
     // A3 retry
     `/api/v1/accounts/${ACC}/rates?symbol=EURUSD&timeframe=M1&dateFrom=${encodeURIComponent(dateFrom)}&count=4`,
+    // open positions (raw, unfiltered) — for Part A divergence trace
+    `/api/v1/accounts/${ACC}/positions`,
     // pending orders
     `/api/v1/accounts/${ACC}/orders`,
     `/api/v1/accounts/${ACC}/orders?limit=10`,

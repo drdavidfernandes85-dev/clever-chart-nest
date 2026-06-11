@@ -197,6 +197,29 @@ function PositionsTab({ snap, refresh, balance }: { snap: SnapshotState; refresh
   const losers = livePositions.filter((p) => p.net_profit < 0).length;
 
   if (rows.length === 0) {
+    const profit = snap.accountProfit;
+    const tol = profit == null ? 0 : Math.max(0.05, Math.abs(profit) * 0.005);
+    const divergent = profit != null && Math.abs(profit) > tol;
+    if (divergent) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+          <span className="inline-flex items-center gap-1.5 rounded border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[#FFCD05]">
+            Reconciliación
+          </span>
+          <div className="text-sm text-neutral-200">
+            El bróker reporta P&amp;L abierto {profit >= 0 ? "+" : ""}
+            {profit.toFixed(2)} {snap.currency} pero no se recibieron posiciones.
+          </div>
+          <div className="max-w-md text-xs text-neutral-500">
+            Diferencia con la barra de cuenta detectada. Puede ser una posición no entregada en este ciclo
+            o una inconsistencia en el feed del bróker. Reintentando cada 5 s.
+          </div>
+          <button onClick={refresh} className="mt-1 rounded border border-neutral-700 px-2 py-1 text-[11px] text-neutral-300 hover:bg-neutral-900">
+            Reintentar ahora
+          </button>
+        </div>
+      );
+    }
     return <div className="px-3 py-10 text-center text-xs text-muted-foreground">Sin posiciones abiertas</div>;
   }
 
