@@ -2090,6 +2090,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_trade_presets: {
+        Row: {
+          created_at: string
+          default_volume: number | null
+          id: string
+          sl_mode: string
+          sl_value: number | null
+          symbol: string | null
+          tp_mode: string
+          tp_value: number | null
+          updated_at: string
+          user_id: string
+          volume_mode: string
+        }
+        Insert: {
+          created_at?: string
+          default_volume?: number | null
+          id?: string
+          sl_mode?: string
+          sl_value?: number | null
+          symbol?: string | null
+          tp_mode?: string
+          tp_value?: number | null
+          updated_at?: string
+          user_id: string
+          volume_mode?: string
+        }
+        Update: {
+          created_at?: string
+          default_volume?: number | null
+          id?: string
+          sl_mode?: string
+          sl_value?: number | null
+          symbol?: string | null
+          tp_mode?: string
+          tp_value?: number | null
+          updated_at?: string
+          user_id?: string
+          volume_mode?: string
+        }
+        Relationships: []
+      }
       user_xp: {
         Row: {
           created_at: string
