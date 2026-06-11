@@ -25,6 +25,7 @@ import {
   assertCanaryCloseAllowed,
   canaryGuardResponseBody,
 } from "../_shared/canaryPolicy.ts";
+import { auditGateBlock } from "../_shared/auditGateBlock.ts";
 
 import {
   resolveEligibleBrokerSymbol,
