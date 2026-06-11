@@ -15,7 +15,7 @@
  *  - One-click trading toggle (state only; consumed by later phases).
  *  - Resizable DXtrade-style region shell with empty-state placeholders.
  */
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { Activity, ChevronDown, Loader2, Zap, ZapOff } from "lucide-react";
 
