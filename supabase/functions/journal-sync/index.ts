@@ -88,7 +88,7 @@ serve(async (req) => {
     : new Date(now - defaultWindowDays * 86400_000).toISOString();
   const dateTo = body?.dateTo ? new Date(body.dateTo).toISOString() : new Date(now).toISOString();
 
-  const PAGE = 200;
+  const PAGE = 10;
   const MAX_PAGES = 50;
   const BUDGET_MS = 25_000;
   const started = Date.now();
@@ -116,13 +116,18 @@ serve(async (req) => {
       dateFrom, dateTo, limit: String(PAGE), offset: String(offset),
     });
     const url = `${TL_BASE}/api/v1/accounts/${encodeURIComponent(traderId)}/history/deals?${qs}`;
+    console.log("journal-sync TL request:", url);
     let parsed: any = null;
     try {
       const r = await fetch(url, { headers: { Authorization: `Bearer ${TL_KEY}`, Accept: "application/json" } });
       upstreamStatus = r.status;
       const text = await r.text();
+      console.log("journal-sync TL response:", r.status, text.slice(0, 500));
       try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
-      if (!r.ok) { lastError = `TL_HTTP_${r.status}`; break; }
+      if (!r.ok) {
+        lastError = `TL_HTTP_${r.status}: ${text.slice(0, 400)}`;
+        break;
+      }
     } catch (e) {
       lastError = e instanceof Error ? e.message : String(e);
       break;
