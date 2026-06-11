@@ -88,7 +88,7 @@ serve(async (req) => {
     : new Date(now - defaultWindowDays * 86400_000).toISOString();
   const dateTo = body?.dateTo ? new Date(body.dateTo).toISOString() : new Date(now).toISOString();
 
-  const PAGE = 50;
+  const PAGE = 10;
   const MAX_PAGES = 50;
   const BUDGET_MS = 25_000;
   const started = Date.now();
