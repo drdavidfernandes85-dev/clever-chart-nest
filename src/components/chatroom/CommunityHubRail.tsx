@@ -13,6 +13,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import LiveSharedSignals from "@/components/dashboard/LiveSharedSignals";
 import { useHotMentions, HotMention } from "@/hooks/useHotMentions";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
+
 
 const HOT_FALLBACK: HotMention[] = [
   { symbol: "EUR/USD", mentions: 0, price: null, changePct: null, up: true },
@@ -21,13 +23,9 @@ const HOT_FALLBACK: HotMention[] = [
   { symbol: "BTC/USDT", mentions: 0, price: null, changePct: null, up: true },
 ];
 
-// Activity-based community contributors — NO performance claims (regulation compliant).
-type Contributor = { name: string; ideas: number; role: string };
-const CONTRIBUTOR_FALLBACK: Contributor[] = [
-  { name: "IX_Educator",  ideas: 42, role: "Lead Educator" },
-  { name: "EUR_King",   ideas: 31, role: "Senior Trader" },
-  { name: "alpha-rat",  ideas: 24, role: "Active Member" },
-];
+// Top contributors are fetched live from user_xp + profiles.
+type Contributor = { user_id: string; name: string; xp: number; role: string };
+
 
 const initialsOf = (n: string) =>
   n
@@ -44,16 +42,17 @@ const initialsOf = (n: string) =>
  * Regulation-compliant: no signals language, no performance claims.
  */
 const CommunityHubRail = () => {
-  const [onlineCount, setOnlineCount] = useState(184);
+  const onlineCount = useOnlineCount();
   const [activeIdeas, setActiveIdeas] = useState<number>(0);
   const [ideasShared24h, setIdeasShared24h] = useState<number>(0);
+  const [contributors, setContributors] = useState<Contributor[]>([]);
   const { hot } = useHotMentions(8);
   const hotRows = hot.length ? hot : HOT_FALLBACK;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ count: ideas }, { count: recent }] = await Promise.all([
+      const [{ count: ideas }, { count: recent }, { data: tops }] = await Promise.all([
         supabase
           .from("trading_signals")
           .select("id", { count: "exact", head: true })
@@ -62,23 +61,41 @@ const CommunityHubRail = () => {
           .from("trading_signals")
           .select("id", { count: "exact", head: true })
           .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase
+          .from("user_xp")
+          .select("user_id, total_xp, level")
+          .order("total_xp", { ascending: false })
+          .limit(3),
       ]);
       if (cancelled) return;
       setActiveIdeas(ideas ?? 0);
       setIdeasShared24h(recent ?? 0);
+      const ids = (tops ?? []).map((t: any) => t.user_id);
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, display_name")
+          .in("user_id", ids);
+        const nameMap = new Map((profs ?? []).map((p: any) => [p.user_id, p.display_name]));
+        if (!cancelled) {
+          setContributors(
+            (tops ?? []).map((t: any) => ({
+              user_id: t.user_id,
+              name: nameMap.get(t.user_id) || "Trader",
+              xp: t.total_xp ?? 0,
+              role: `Level ${t.level ?? 1}`,
+            })),
+          );
+        }
+      }
     })();
-
-    const tick = setInterval(() => {
-      setOnlineCount((n) =>
-        Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))),
-      );
-    }, 5000);
 
     return () => {
       cancelled = true;
-      clearInterval(tick);
     };
   }, []);
+
+
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-2 pb-3 sm:gap-2.5 sm:px-2.5 sm:py-2.5 lg:gap-3 lg:p-3">
@@ -93,7 +110,7 @@ const CommunityHubRail = () => {
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
           <div className="rounded-lg border border-border/40 bg-background/40 px-2 py-2 text-center">
             <p className="font-mono text-base font-bold tabular-nums text-primary leading-none">
-              {onlineCount}
+              {onlineCount == null ? "…" : onlineCount}
             </p>
             <p className="mt-1 font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">
               Online
@@ -207,8 +224,13 @@ const CommunityHubRail = () => {
           </Link>
         </div>
         <ul className="divide-y divide-border/30">
-          {CONTRIBUTOR_FALLBACK.map((m, i) => (
-            <li key={m.name} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
+          {contributors.length === 0 && (
+            <li className="px-3 py-3 text-center text-[10.5px] text-muted-foreground">
+              No contributors yet.
+            </li>
+          )}
+          {contributors.map((m, i) => (
+            <li key={m.user_id} className="grid grid-cols-[1rem_1.75rem_minmax(0,1fr)_auto] items-center gap-2 px-2.5 py-1.5 sm:gap-2.5 sm:px-3">
               <span className="w-4 text-center font-mono text-[10px] font-bold text-primary">
                 {i + 1}
               </span>
@@ -225,11 +247,12 @@ const CommunityHubRail = () => {
                 </p>
               </div>
               <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-right font-mono text-[10px] font-bold tabular-nums text-primary">
-                {m.ideas} ideas
+                {m.xp.toLocaleString()} XP
               </span>
             </li>
           ))}
         </ul>
+
         <Link
           to="/leaderboard"
           className="block border-t border-border/40 bg-primary/5 px-2.5 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-primary transition-colors hover:bg-primary/10 sm:px-3"

@@ -4,6 +4,8 @@ import { MessageSquare, Radio, TrendingUp, TrendingDown, Users, Zap, Flame, Chec
 import { supabase } from "@/integrations/supabase/client";
 import { useQuickTrade } from "@/contexts/QuickTradeContext";
 import CommunityTrustBar from "@/components/social/CommunityTrustBar";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
+
 
 /**
  * Community Nest — right-sidebar showing online traders, live shared signals,
@@ -56,7 +58,7 @@ const CommunityNest = () => {
   const [traders, setTraders] = useState<Trader[]>([]);
   const [signals, setSignals] = useState<SharedSignal[]>([]);
   const [messages, setMessages] = useState<ChatPreview[]>([]);
-  const [onlineCount, setOnlineCount] = useState(184);
+  const onlineCount = useOnlineCount() ?? 0;
   const { openTrade } = useQuickTrade();
 
   useEffect(() => {
@@ -99,24 +101,14 @@ const CommunityNest = () => {
       }
     })();
 
-    const tick = setInterval(() => {
-      setOnlineCount((n) => Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))));
-    }, 5000);
-
     return () => {
       cancelled = true;
-      clearInterval(tick);
     };
+
   }, []);
 
-  const traderList =
-    traders.length > 0
-      ? traders
-      : (["IX_Mentor", "df23fx", "EUR_King", "desk-trader", "pip_hunter", "alpha-rat"].map((name, i) => ({
-          user_id: `placeholder-${i}`,
-          display_name: name,
-          avatar_url: null,
-        })) as Trader[]);
+  const traderList = traders;
+
 
   return (
     <aside className="space-y-3">

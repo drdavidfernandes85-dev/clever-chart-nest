@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Users, Sparkles, Radio } from "lucide-react";
+import { Users, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOnlineCount } from "@/hooks/useOnlineCount";
 
 interface Props {
   /** Compact = single-row variant for embedding above widgets. */
@@ -10,37 +11,25 @@ interface Props {
 
 /**
  * Community Trust Bar — regulation-compliant social proof strip.
- * Shows: live online count + total community size + tagline.
- * No performance claims, no PnL, no "signals" language.
+ * Online count is live Supabase Realtime presence; member count is the
+ * real profiles row count.
  */
 const CommunityTrustBar = ({ compact = false, className = "" }: Props) => {
-  const [onlineNow, setOnlineNow] = useState(184);
-  const [memberCount, setMemberCount] = useState(1200);
+  const onlineNow = useOnlineCount();
+  const [memberCount, setMemberCount] = useState<number | null>(null);
 
-  // Soft-jitter the live counter every few seconds so it feels alive.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { count } = await supabase
         .from("profiles")
         .select("user_id", { count: "exact", head: true });
-      if (!cancelled && count != null) {
-        // Always show at least 1,200+ to reflect total community claim.
-        setMemberCount(Math.max(1200, count));
-      }
+      if (!cancelled && count != null) setMemberCount(count);
     })();
-
-    const tick = window.setInterval(() => {
-      setOnlineNow((n) =>
-        Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))),
-      );
-    }, 5000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(tick);
-    };
+    return () => { cancelled = true; };
   }, []);
+
+
 
   return (
     <div
@@ -86,7 +75,7 @@ const CommunityTrustBar = ({ compact = false, className = "" }: Props) => {
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </span>
             <span className="font-mono text-[10px] font-bold tabular-nums text-emerald-400 sm:text-[11px]">
-              {onlineNow}
+              {onlineNow == null ? "…" : onlineNow}
             </span>
             <span className="font-mono text-[9px] uppercase tracking-wider text-emerald-400/80 sm:text-[10px]">
               online now
@@ -95,7 +84,7 @@ const CommunityTrustBar = ({ compact = false, className = "" }: Props) => {
           <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1">
             <Users className="h-3 w-3 text-primary" />
             <span className="font-mono text-[10px] font-bold tabular-nums text-primary sm:text-[11px]">
-              {memberCount.toLocaleString()}+
+              {memberCount == null ? "…" : memberCount.toLocaleString()}
             </span>
             <span className="font-mono text-[9px] uppercase tracking-wider text-primary/80 sm:text-[10px]">
               traders & mentors

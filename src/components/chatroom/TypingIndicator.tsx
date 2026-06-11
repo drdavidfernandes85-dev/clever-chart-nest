@@ -1,33 +1,54 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const NAMES_POOL = ["df23fx", "IX_Mentor", "desk-trader", "pip_hunter", "EUR_King", "scalper.lab", "alpha-rat"];
+interface Props {
+  channelName?: string;
+  selfDisplayName?: string | null;
+}
 
 /**
- * Lightweight presence-style typing indicator that occasionally rotates a
- * random subset of names to give the chat an "alive" feel.
+ * Real typing indicator backed by Supabase Realtime presence on a per-channel
+ * `chat-typing:<channel>` broadcast channel. Renders empty space until a
+ * remote user actually broadcasts a typing event.
  */
-const TypingIndicator = () => {
-  const [typers, setTypers] = useState<string[]>([]);
+const TypingIndicator = ({ channelName, selfDisplayName }: Props) => {
+  const [typers, setTypers] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const tick = () => {
-      const count = Math.random() < 0.35 ? 0 : Math.floor(Math.random() * 3) + 1;
-      const shuffled = [...NAMES_POOL].sort(() => Math.random() - 0.5);
-      setTypers(shuffled.slice(0, count));
-    };
-    tick();
-    const id = setInterval(tick, 6000);
-    return () => clearInterval(id);
-  }, []);
+    if (!channelName) return;
+    const ch = supabase.channel(`chat-typing:${channelName}`, {
+      config: { broadcast: { self: false } },
+    });
+    ch.on("broadcast", { event: "typing" }, (payload: any) => {
+      const name = String(payload?.payload?.name ?? "").trim();
+      if (!name || name === selfDisplayName) return;
+      setTypers((prev) => ({ ...prev, [name]: Date.now() }));
+    }).subscribe();
 
-  if (typers.length === 0) return <div className="h-5" />;
+    const sweep = window.setInterval(() => {
+      setTypers((prev) => {
+        const cutoff = Date.now() - 4_000;
+        const next: Record<string, number> = {};
+        for (const [k, v] of Object.entries(prev)) if (v > cutoff) next[k] = v;
+        return next;
+      });
+    }, 1_500);
+
+    return () => {
+      window.clearInterval(sweep);
+      supabase.removeChannel(ch);
+    };
+  }, [channelName, selfDisplayName]);
+
+  const names = Object.keys(typers);
+  if (names.length === 0) return <div className="h-5" />;
 
   const text =
-    typers.length === 1
-      ? `${typers[0]} is typing`
-      : typers.length === 2
-        ? `${typers[0]} and ${typers[1]} are typing`
-        : `${typers.length} traders are typing`;
+    names.length === 1
+      ? `${names[0]} is typing`
+      : names.length === 2
+        ? `${names[0]} and ${names[1]} are typing`
+        : `${names.length} traders are typing`;
 
   return (
     <div className="flex h-5 items-center gap-2 text-[11px] text-muted-foreground">

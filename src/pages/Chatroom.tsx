@@ -614,13 +614,15 @@ const Chatroom = () => {
         </div>
 
         <div className="px-4 pt-1">
-          <TypingIndicator />
+          <TypingIndicator channelName={formatChannelName(activeChannelName)} selfDisplayName={profile?.display_name ?? null} />
         </div>
 
         <ChatMessageInput
           channelName={formatChannelName(activeChannelName)}
           channelId={activeChannelId}
           userId={user?.id}
+          selfDisplayName={profile?.display_name ?? null}
+
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           onSent={() => setReplyTo(null)}
