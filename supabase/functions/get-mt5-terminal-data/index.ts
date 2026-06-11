@@ -331,6 +331,8 @@ serve(async (req) => {
           point: selectedSymbolInfo.point,
           contractSize: selectedSymbolInfo.contractSize,
           tickValue: selectedSymbolInfo.tickValue,
+          tickValueProfit: selectedSymbolInfo.tickValueProfit,
+          tickValueLoss: selectedSymbolInfo.tickValueLoss,
           tickSize: selectedSymbolInfo.tickSize,
           volumeMin: selectedSymbolInfo.volumeMin,
           volumeMax: selectedSymbolInfo.volumeMax,
@@ -338,6 +340,7 @@ serve(async (req) => {
           currencyBase: selectedSymbolInfo.currencyBase,
           currencyProfit: selectedSymbolInfo.currencyProfit,
           currencyMargin: selectedSymbolInfo.currencyMargin,
+          tradeCalcMode: selectedSymbolInfo.tradeCalcMode,
         }
       : null;
 
@@ -383,6 +386,7 @@ serve(async (req) => {
       accountConnected: true,
       account: accountOut,
       positions,
+      pendingOrders,
       selectedSymbol,
       selectedSymbolValid,
       selectedSymbolInfo,
@@ -393,7 +397,6 @@ serve(async (req) => {
       symbolsLoaded,
       count: symbols.length,
       timestamp: new Date().toISOString(),
-      
     });
   } catch (err) {
     return json({
