@@ -40,6 +40,7 @@ import { useTerminalProAccountSnapshot } from "@/hooks/useTerminalProAccountSnap
 import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
 import { useMarketStatus } from "@/hooks/useLiveMarketData";
 import { supabase } from "@/integrations/supabase/client";
+import TerminalWatchlist from "@/components/terminal/TerminalWatchlist";
 
 /* ─────────── Display currency ─────────── */
 
