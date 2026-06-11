@@ -44,6 +44,11 @@ import TerminalWatchlist from "@/components/terminal/TerminalWatchlist";
 import OrderTicket from "@/components/terminal/OrderTicket";
 import OrderTicketModal from "@/components/terminal/OrderTicketModal";
 import PositionsOrdersHistoryPanel from "@/components/terminal/PositionsOrdersHistoryPanel";
+// NOTE: Phase 7 surface. Journal panel lives under components/journal/ so this
+// page does NOT import from components/dashboard/* (legacy /dashboard surface
+// is decommission-pending). DashboardLayout is a shared layout shell, not a
+// /dashboard surface component.
+import JournalDashboardPanel from "@/components/journal/JournalDashboardPanel";
 
 /* ─────────── Display currency ─────────── */
 
