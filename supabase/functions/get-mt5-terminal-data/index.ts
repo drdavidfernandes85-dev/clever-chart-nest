@@ -229,7 +229,7 @@ async function handleTerminalData(req: Request) {
       return {
         ticket: p?.ticket ?? p?.id ?? null,
         symbol: p?.symbol ?? "",
-        side: (p?.side ?? p?.action ?? p?.type ?? "").toString().toLowerCase().includes("sell") ? "sell" : "buy",
+        side: decodePositionSide(p?.side ?? p?.action ?? p?.type) ?? "buy",
         volume: Number(p?.volume ?? p?.lots ?? 0),
         entry_price: Number(p?.open_price ?? p?.openPrice ?? p?.entry_price ?? p?.price_open ?? 0),
         current_price: Number(p?.current_price ?? p?.currentPrice ?? p?.price_current ?? 0),
