@@ -116,11 +116,13 @@ serve(async (req) => {
       dateFrom, dateTo, limit: String(PAGE), offset: String(offset),
     });
     const url = `${TL_BASE}/api/v1/accounts/${encodeURIComponent(traderId)}/history/deals?${qs}`;
+    console.log("journal-sync TL request:", url);
     let parsed: any = null;
     try {
       const r = await fetch(url, { headers: { Authorization: `Bearer ${TL_KEY}`, Accept: "application/json" } });
       upstreamStatus = r.status;
       const text = await r.text();
+      console.log("journal-sync TL response:", r.status, text.slice(0, 500));
       try { parsed = JSON.parse(text); } catch { parsed = { raw: text }; }
       if (!r.ok) {
         lastError = `TL_HTTP_${r.status}: ${text.slice(0, 400)}`;
