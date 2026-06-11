@@ -56,6 +56,7 @@ const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const TradingSignals = lazy(() => import("./pages/TradingSignals"));
 const TradingDashboard = lazy(() => import("./pages/TradingDashboard"));
+const TerminalPro = lazy(() => import("./pages/TerminalPro"));
 const VideoLibrary = lazy(() => import("./pages/VideoLibrary"));
 const Webinars = lazy(() => import("./pages/Webinars"));
 const WebinarLanding = lazy(() => import("./pages/WebinarLanding"));
@@ -170,6 +171,8 @@ const App = () => (
                     <Route path="/admin" element={<AdminRoute><DashboardLayout><ErrorBoundary scope="admin"><Admin /></ErrorBoundary></DashboardLayout></AdminRoute>} />
                     <Route path="/u/:userId" element={<DashboardShell scope="public-profile"><PublicProfile /></DashboardShell>} />
                     <Route path="/__qa/hero" element={<AdminRoute><HeroQA /></AdminRoute>} />
+                    {/* Phase 1 of Terminal Pro rebuild — admin-only until verified. */}
+                    <Route path="/terminal-pro" element={<TerminalPro />} />
                     <Route path="/terms" element={<ErrorBoundary scope="terms"><Terms /></ErrorBoundary>} />
                     <Route path="/risk-disclosure" element={<ErrorBoundary scope="risk-disclosure"><RiskDisclosure /></ErrorBoundary>} />
                     <Route path="/compliance-review" element={<DashboardShell scope="compliance-review"><ComplianceReview /></DashboardShell>} />
