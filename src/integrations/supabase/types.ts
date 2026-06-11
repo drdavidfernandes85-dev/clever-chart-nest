@@ -749,6 +749,165 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_deals: {
+        Row: {
+          comment: string | null
+          commission: number
+          created_at: string
+          deal_time: string
+          entry: string | null
+          entry_raw: number | null
+          fee: number
+          id: string
+          is_trade: boolean
+          mt_account_id: string
+          mt_login: number
+          order_id: number | null
+          position_id: number | null
+          price: number | null
+          profit: number
+          raw: Json
+          reason_raw: number | null
+          side: string | null
+          swap: number
+          symbol: string | null
+          ticket: number
+          type_raw: number
+          updated_at: string
+          user_id: string
+          volume: number | null
+        }
+        Insert: {
+          comment?: string | null
+          commission?: number
+          created_at?: string
+          deal_time: string
+          entry?: string | null
+          entry_raw?: number | null
+          fee?: number
+          id?: string
+          is_trade: boolean
+          mt_account_id: string
+          mt_login: number
+          order_id?: number | null
+          position_id?: number | null
+          price?: number | null
+          profit?: number
+          raw?: Json
+          reason_raw?: number | null
+          side?: string | null
+          swap?: number
+          symbol?: string | null
+          ticket: number
+          type_raw: number
+          updated_at?: string
+          user_id: string
+          volume?: number | null
+        }
+        Update: {
+          comment?: string | null
+          commission?: number
+          created_at?: string
+          deal_time?: string
+          entry?: string | null
+          entry_raw?: number | null
+          fee?: number
+          id?: string
+          is_trade?: boolean
+          mt_account_id?: string
+          mt_login?: number
+          order_id?: number | null
+          position_id?: number | null
+          price?: number | null
+          profit?: number
+          raw?: Json
+          reason_raw?: number | null
+          side?: string | null
+          swap?: number
+          symbol?: string | null
+          ticket?: number
+          type_raw?: number
+          updated_at?: string
+          user_id?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_deals_mt_account_id_fkey"
+            columns: ["mt_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_deals_mt_account_id_fkey"
+            columns: ["mt_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_sync_state: {
+        Row: {
+          created_at: string
+          deals_total: number
+          id: string
+          last_deal_ticket: number | null
+          last_deal_time: string | null
+          last_error: string | null
+          last_status: string | null
+          last_synced_at: string | null
+          mt_account_id: string
+          mt_login: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deals_total?: number
+          id?: string
+          last_deal_ticket?: number | null
+          last_deal_time?: string | null
+          last_error?: string | null
+          last_status?: string | null
+          last_synced_at?: string | null
+          mt_account_id: string
+          mt_login: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deals_total?: number
+          id?: string
+          last_deal_ticket?: number | null
+          last_deal_time?: string | null
+          last_error?: string | null
+          last_status?: string | null
+          last_synced_at?: string | null
+          mt_account_id?: string
+          mt_login?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_sync_state_mt_account_id_fkey"
+            columns: ["mt_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_sync_state_mt_account_id_fkey"
+            columns: ["mt_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lifecycle_validation_authorisations: {
         Row: {
           acknowledgements: Json
@@ -2380,6 +2539,46 @@ export type Database = {
       }
     }
     Views: {
+      journal_positions: {
+        Row: {
+          close_time: string | null
+          commission_total: number | null
+          deal_count: number | null
+          fee_total: number | null
+          gross_profit: number | null
+          has_complex_entry: boolean | null
+          is_closed: boolean | null
+          mt_account_id: string | null
+          mt_login: number | null
+          net_pnl: number | null
+          open_time: string | null
+          position_id: number | null
+          side: string | null
+          swap_total: number | null
+          symbol: string | null
+          user_id: string | null
+          volume_in: number | null
+          volume_out: number | null
+          vwap_close: number | null
+          vwap_open: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_deals_mt_account_id_fkey"
+            columns: ["mt_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_deals_mt_account_id_fkey"
+            columns: ["mt_account_id"]
+            isOneToOne: false
+            referencedRelation: "user_mt_accounts_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaderboard_stats: {
         Row: {
           avatar_url: string | null
