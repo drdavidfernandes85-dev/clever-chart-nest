@@ -20,6 +20,7 @@
 // Module-scope is used only as a tiny per-isolate hot-cache to absorb
 // burst polling. Execution / order / risk paths are NOT touched.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { decodePositionSide } from "../_shared/mt5Decode.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
