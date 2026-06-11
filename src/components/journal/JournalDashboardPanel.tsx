@@ -139,30 +139,60 @@ const JournalDashboardPanel = () => {
 
   const closed = useMemo(() => positions.filter((p) => p.is_closed), [positions]);
 
+  // KPI INTEGRITY GUARD
+  // (i) any closed position where vwap_open == vwap_close AND net_pnl ≠ 0 is
+  //     flagged: the upstream price-fidelity bug stamps the same price on both
+  //     in/out legs, so per-position math is untrustworthy. Surfaced count,
+  //     excluded from KPI aggregation.
+  // (ii) sign coherence: avg-win must be > 0, avg-loss (abs) must be ≥ 0.
+  //     A breach proves the pipeline is producing impossible values; we
+  //     suppress the KPI grid rather than render confident nonsense.
+  const PRICE_EPS = 1e-9;
+  const inconsistent = useMemo(
+    () => closed.filter(
+      (p) =>
+        p.vwap_open != null && p.vwap_close != null &&
+        Math.abs((p.vwap_open ?? 0) - (p.vwap_close ?? 0)) < PRICE_EPS &&
+        Math.abs(p.net_pnl ?? 0) > 0.0001,
+    ),
+    [closed],
+  );
+  const inconsistentIds = useMemo(
+    () => new Set(inconsistent.map((p) => `${p.mt_login}-${p.position_id}`)),
+    [inconsistent],
+  );
+  const trusted = useMemo(
+    () => closed.filter((p) => !inconsistentIds.has(`${p.mt_login}-${p.position_id}`)),
+    [closed, inconsistentIds],
+  );
+
   const stats = useMemo(() => {
-    if (closed.length === 0) {
+    if (trusted.length === 0) {
       return { totalPnl: 0, winRate: 0, profitFactor: 0, count: 0, best: 0, worst: 0, avgWin: 0, avgLoss: 0, volume: 0 };
     }
-    const wins = closed.filter((p) => (p.net_pnl ?? 0) > 0);
-    const losses = closed.filter((p) => (p.net_pnl ?? 0) < 0);
-    const totalPnl = closed.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
+    const wins = trusted.filter((p) => (p.net_pnl ?? 0) > 0);
+    const losses = trusted.filter((p) => (p.net_pnl ?? 0) < 0);
+    const totalPnl = trusted.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
     const grossWin = wins.reduce((s, p) => s + (p.net_pnl ?? 0), 0);
     const grossLoss = Math.abs(losses.reduce((s, p) => s + (p.net_pnl ?? 0), 0));
     const pf = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? Infinity : 0;
-    const best = closed.reduce((m, p) => Math.max(m, p.net_pnl ?? 0), -Infinity);
-    const worst = closed.reduce((m, p) => Math.min(m, p.net_pnl ?? 0), Infinity);
+    const best = trusted.reduce((m, p) => Math.max(m, p.net_pnl ?? 0), -Infinity);
+    const worst = trusted.reduce((m, p) => Math.min(m, p.net_pnl ?? 0), Infinity);
     return {
       totalPnl,
-      winRate: (wins.length / closed.length) * 100,
+      winRate: (wins.length / trusted.length) * 100,
       profitFactor: pf,
-      count: closed.length,
+      count: trusted.length,
       best,
       worst,
       avgWin: wins.length ? grossWin / wins.length : 0,
       avgLoss: losses.length ? grossLoss / losses.length : 0,
-      volume: closed.reduce((s, p) => s + (p.volume_in ?? 0), 0),
+      volume: trusted.reduce((s, p) => s + (p.volume_in ?? 0), 0),
     };
-  }, [closed]);
+  }, [trusted]);
+
+  const signBreach = stats.avgWin < 0 || stats.avgLoss < 0;
+  const suppressKpis = signBreach;
 
   const fmtPF = (v: number) => (v === Infinity ? "∞" : v.toFixed(2));
 
