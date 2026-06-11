@@ -36,6 +36,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 
 import { LiveAccountProvider, useLiveAccount, fmtMoney } from "@/contexts/LiveAccountContext";
+import { useTerminalProAccountSnapshot } from "@/hooks/useTerminalProAccountSnapshot";
 import { BrokerSymbolsProvider } from "@/contexts/BrokerSymbolsContext";
 import { useMarketStatus } from "@/hooks/useLiveMarketData";
 import { supabase } from "@/integrations/supabase/client";
