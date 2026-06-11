@@ -101,21 +101,41 @@ const JournalDashboardPanel = () => {
 
   const sync = async () => {
     setSyncing(true);
+    cancelRef.current = false;
+    setSyncProgress({ chunk: 0, deals: 0 });
+    const MAX_CHUNKS = 30;
+    const t0 = performance.now();
+    let totalDeals = 0;
+    let dateTo: string | undefined;
+    let lastErr: string | null = null;
     try {
-      const { data, error } = await supabase.functions.invoke("journal-sync", { body: { full: false } });
-      if (error) throw error;
-      if (data?.success) {
-        toast.success(`Sincronizado: ${data.dealsFetched ?? 0} operaciones (${data.dealsUpserted ?? 0} actualizadas)`);
-      } else {
-        toast.error(data?.error ? `Error: ${data.error}` : "Sincronización falló");
+      for (let i = 0; i < MAX_CHUNKS; i++) {
+        if (cancelRef.current) break;
+        const { data, error } = await supabase.functions.invoke("journal-sync", {
+          body: { full: true, ...(dateTo ? { dateTo } : {}) },
+        });
+        if (error) { lastErr = error.message; break; }
+        if (data?.error) { lastErr = data.error; break; }
+        totalDeals += Number(data?.dealsFetched ?? 0);
+        setSyncProgress({ chunk: i + 1, deals: totalDeals });
+        if (!data?.hasMore || !data?.nextDateTo) break;
+        dateTo = data.nextDateTo;
       }
+      const wallSec = ((performance.now() - t0) / 1000).toFixed(1);
+      if (lastErr) toast.error(`Sincronización: ${lastErr}`);
+      else if (cancelRef.current) toast.info(`Cancelada · ${totalDeals} deals · ${wallSec}s`);
+      else toast.success(`Sincronización completa · ${totalDeals} deals · ${wallSec}s`);
       await load();
     } catch (e: any) {
       toast.error(e?.message || "Error de sincronización");
     } finally {
       setSyncing(false);
+      setSyncProgress(null);
+      cancelRef.current = false;
     }
   };
+  const cancelSync = () => { cancelRef.current = true; };
+
 
   const closed = useMemo(() => positions.filter((p) => p.is_closed), [positions]);
 
