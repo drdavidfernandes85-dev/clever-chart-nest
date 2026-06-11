@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import ChatMessage from "@/components/chatroom/ChatMessage";
 import ChatMessageInput from "@/components/chatroom/ChatMessageInput";
 
-import SampleMessages from "@/components/chatroom/SampleMessages";
+
 import TypingIndicator from "@/components/chatroom/TypingIndicator";
 import CommunityHubRail from "@/components/chatroom/CommunityHubRail";
 import WelcomeBanner from "@/components/chatroom/WelcomeBanner";
