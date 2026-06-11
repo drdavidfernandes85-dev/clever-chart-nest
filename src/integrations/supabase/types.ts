@@ -653,6 +653,7 @@ export type Database = {
           executed_price: number | null
           id: string
           latency_ms: number | null
+          mt_login: number | null
           outcome: string
           raw: Json | null
           reason: string | null
@@ -663,7 +664,9 @@ export type Database = {
           slippage: number | null
           spread: number | null
           status: string
+          stop_loss_price: number | null
           symbol: string
+          take_profit_price: number | null
           ticket: string | null
           trade_id: string | null
           user_id: string
@@ -677,6 +680,7 @@ export type Database = {
           executed_price?: number | null
           id?: string
           latency_ms?: number | null
+          mt_login?: number | null
           outcome: string
           raw?: Json | null
           reason?: string | null
@@ -687,7 +691,9 @@ export type Database = {
           slippage?: number | null
           spread?: number | null
           status: string
+          stop_loss_price?: number | null
           symbol: string
+          take_profit_price?: number | null
           ticket?: string | null
           trade_id?: string | null
           user_id: string
@@ -701,6 +707,7 @@ export type Database = {
           executed_price?: number | null
           id?: string
           latency_ms?: number | null
+          mt_login?: number | null
           outcome?: string
           raw?: Json | null
           reason?: string | null
@@ -711,7 +718,9 @@ export type Database = {
           slippage?: number | null
           spread?: number | null
           status?: string
+          stop_loss_price?: number | null
           symbol?: string
+          take_profit_price?: number | null
           ticket?: string | null
           trade_id?: string | null
           user_id?: string
