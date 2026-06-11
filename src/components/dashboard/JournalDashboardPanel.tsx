@@ -191,11 +191,23 @@ const JournalDashboardPanel = () => {
             {lastSync && <> · Última sync: {fmtTime(lastSync)}</>}
           </p>
         </div>
-        <Button size="sm" onClick={sync} disabled={syncing} className="rounded-full gap-2">
-          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Sincronizar
-        </Button>
-      </div>
+        <div className="flex items-center gap-2">
+          {syncing && syncProgress && (
+            <>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                Sincronizando… chunk {syncProgress.chunk} · {syncProgress.deals} deals
+              </span>
+              <Button size="sm" variant="ghost" onClick={cancelSync} className="rounded-full text-xs">
+                Cancelar
+              </Button>
+            </>
+          )}
+          <Button size="sm" onClick={sync} disabled={syncing} className="rounded-full gap-2">
+            {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Sincronizar
+          </Button>
+        </div>
+
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {kpis.map((k) => {
