@@ -16,6 +16,12 @@ const fmtPrice = (sym: string, v: number | null | undefined) => {
   return Number(v).toFixed(d);
 };
 
+// Module-level last-non-empty cache. Persists across re-renders so a stale read
+// (broker returned empty while account.profit ≠ 0) can render the previous
+// positions greyed instead of a deceptive "no positions" empty state.
+let lastNonEmptyPositions: any[] = [];
+let lastNonEmptyAt: number | null = null;
+
 const OpenPositionsPanel = () => {
   useHeavyComponent("OpenPositionsPanel");
   const { liveAccount, positions, connected, loading, refreshing, refresh, error } =
@@ -27,22 +33,26 @@ const OpenPositionsPanel = () => {
     return () => window.clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    if (positions.length > 0) {
+      lastNonEmptyPositions = positions;
+      lastNonEmptyAt = Date.now();
+    }
+  }, [positions]);
+
   const totalPnl = positions.reduce((s, p) => s + (Number(p.profit) || 0), 0);
   const currency = liveAccount?.currency ?? "USD";
   const accountProfit = Number(liveAccount?.profit ?? 0);
 
-  // Stale / divergent read: the broker reports non-zero floating P&L but the
-  // positions endpoint returned empty. This is the documented "frozen P&L"
-  // vendor-side failure mode — render last-known state honestly instead of
-  // implying everything closed, and disable destructive actions.
   const stale = connected && positions.length === 0 && Math.abs(accountProfit) > 0.5;
   const cooling = cooldownMs > 0 || stale;
   const cooldownSec = Math.ceil(cooldownMs / 1000);
-
-
+  const showCached = stale && lastNonEmptyPositions.length > 0;
+  const cachedAt = lastNonEmptyAt ? new Date(lastNonEmptyAt).toLocaleTimeString("es-419") : null;
 
   return (
     <div className="flex flex-col rounded-sm border border-neutral-800 bg-[#0c0c0c] overflow-hidden text-neutral-100">
+
       {/* Header strip — matches Market Watch / Bid-Ask Board */}
       <div className="flex items-center justify-between border-b border-neutral-800 bg-[#0a0a0a] px-2 py-1.5 shrink-0">
         <div className="flex items-center gap-1.5">
