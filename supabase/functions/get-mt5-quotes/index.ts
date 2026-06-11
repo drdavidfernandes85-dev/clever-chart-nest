@@ -53,9 +53,18 @@ function json(body: unknown, status = 200) {
 const normalize = (v: string) =>
   String(v || "").trim().replace("/", "").replace("-", "").replace(" ", "").toUpperCase();
 
-async function tlGet(path: string, retries = 2) {
+const PER_REQUEST_TIMEOUT_MS = 3500;   // hard cap per upstream call
+const WALL_BUDGET_MS = 20_000;          // total time budget for the whole function
+
+async function tlGet(path: string, deadlineAt: number, retries = 1) {
   let lastErr: unknown = null;
   for (let attempt = 0; attempt <= retries; attempt++) {
+    if (Date.now() >= deadlineAt) {
+      return { ok: false, status: 0, data: { error: "wall_budget_exceeded" } };
+    }
+    const ctrl = new AbortController();
+    const remaining = Math.max(250, Math.min(PER_REQUEST_TIMEOUT_MS, deadlineAt - Date.now()));
+    const timer = setTimeout(() => ctrl.abort(), remaining);
     try {
       const res = await fetch(`${BASE_URL}${path}`, {
         method: "GET",
@@ -63,27 +72,27 @@ async function tlGet(path: string, retries = 2) {
           Authorization: `Bearer ${TRADING_LAYER_KEY}`,
           Accept: "application/json",
         },
+        signal: ctrl.signal,
       });
       const text = await res.text();
       let data: any;
       try { data = JSON.parse(text); } catch { data = { raw: text }; }
-      // Retry on transient upstream failures
-      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt < retries) {
-        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt < retries && Date.now() < deadlineAt) {
         continue;
       }
       return { ok: res.ok, status: res.status, data };
     } catch (err) {
       lastErr = err;
-      if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
-        continue;
-      }
-      return { ok: false, status: 0, data: { error: err instanceof Error ? err.message : String(err) } };
+      if (attempt < retries && Date.now() < deadlineAt) continue;
+      const aborted = (err as any)?.name === "AbortError";
+      return { ok: false, status: 0, data: { error: aborted ? "upstream_timeout" : (err instanceof Error ? err.message : String(err)) } };
+    } finally {
+      clearTimeout(timer);
     }
   }
   return { ok: false, status: 0, data: { error: String(lastErr) } };
 }
+
 
 const DEFAULT_BATCH = [
   "XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD",
@@ -171,14 +180,15 @@ serve(async (req) => {
 
     const limited = targetUpper.slice(0, 40);
 
+    const deadlineAt = Date.now() + WALL_BUDGET_MS;
     const CONC = 4;
     const quotes: any[] = [];
     let cursor = 0;
     async function worker() {
-      while (cursor < limited.length) {
+      while (cursor < limited.length && Date.now() < deadlineAt) {
         const idx = cursor++;
         const sym = limited[idx];
-        const tickRes = await tlGet(`${accountPath}/${encodeURIComponent(sym)}/tick`);
+        const tickRes = await tlGet(`${accountPath}/${encodeURIComponent(sym)}/tick`, deadlineAt);
         const tick = tickRes.ok ? tickRes.data?.data : null;
         const bid = tick?.bid != null ? Number(tick.bid) : null;
         const ask = tick?.ask != null ? Number(tick.ask) : null;
@@ -202,11 +212,11 @@ serve(async (req) => {
 
     // Build selectedQuote: tick + symbol specification.
     let selectedQuote: any = null;
-    if (selectedSymbol) {
+    if (selectedSymbol && Date.now() < deadlineAt) {
       const baseQuote = quotes.find(
         (q) => String(q.symbol).toUpperCase() === selectedSymbol,
       ) || null;
-      const specRes = await tlGet(`${accountPath}/${encodeURIComponent(selectedSymbol)}`);
+      const specRes = await tlGet(`${accountPath}/${encodeURIComponent(selectedSymbol)}`, deadlineAt);
       const spec = specRes.ok ? specRes.data?.data : null;
       if (baseQuote || spec) {
         selectedQuote = {
