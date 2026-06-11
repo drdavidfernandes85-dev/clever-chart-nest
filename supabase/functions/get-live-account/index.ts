@@ -20,6 +20,7 @@
 // Module-scope is used only as a tiny per-isolate hot-cache to absorb
 // burst polling. Execution / order / risk paths are NOT touched.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { decodePositionSide } from "../_shared/mt5Decode.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -438,8 +439,7 @@ function buildSuccess(opts: {
   const mappedPositions = (positions || []).map((p: any) => ({
     ticket: p?.ticket ?? p?.id ?? null,
     symbol: p?.symbol ?? "",
-    side: (p?.side ?? p?.action ?? p?.type ?? "").toString().toLowerCase().includes("sell")
-      ? "sell" : "buy",
+    side: decodePositionSide(p?.side ?? p?.action ?? p?.type) ?? "buy",
     volume: Number(p?.volume ?? p?.lots ?? 0),
     entry_price: Number(p?.open_price ?? p?.openPrice ?? p?.entry_price ?? p?.price ?? 0),
     current_price: Number(p?.current_price ?? p?.currentPrice ?? p?.price ?? 0),

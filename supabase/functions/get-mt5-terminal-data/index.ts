@@ -27,6 +27,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decodePositionSide, decodeOrderType, decodeOrderTypeTime } from "../_shared/mt5Decode.ts";
 
 const TRADING_LAYER_KEY = Deno.env.get("TRADING_LAYER_API_KEY");
 const BASE_URL = "https://api.trading-layer.com";
@@ -228,7 +229,7 @@ async function handleTerminalData(req: Request) {
       return {
         ticket: p?.ticket ?? p?.id ?? null,
         symbol: p?.symbol ?? "",
-        side: (p?.side ?? p?.action ?? p?.type ?? "").toString().toLowerCase().includes("sell") ? "sell" : "buy",
+        side: decodePositionSide(p?.side ?? p?.action ?? p?.type) ?? "buy",
         volume: Number(p?.volume ?? p?.lots ?? 0),
         entry_price: Number(p?.open_price ?? p?.openPrice ?? p?.entry_price ?? p?.price_open ?? 0),
         current_price: Number(p?.current_price ?? p?.currentPrice ?? p?.price_current ?? 0),
@@ -250,17 +251,7 @@ async function handleTerminalData(req: Request) {
     // 4=BUY_STOP, 5=SELL_STOP, 6=BUY_STOP_LIMIT, 7=SELL_STOP_LIMIT
     // type_time ints: 0=GTC, 1=DAY, 2=SPECIFIED (GTD), 3=SPECIFIED_DAY
     const ordersRaw = Array.isArray(ordRes.data?.data) ? ordRes.data.data : [];
-    const orderTypeMap: Record<number, { kind: string; side: "buy" | "sell" }> = {
-      0: { kind: "market", side: "buy" },
-      1: { kind: "market", side: "sell" },
-      2: { kind: "limit",  side: "buy" },
-      3: { kind: "limit",  side: "sell" },
-      4: { kind: "stop",   side: "buy" },
-      5: { kind: "stop",   side: "sell" },
-      6: { kind: "stop_limit", side: "buy" },
-      7: { kind: "stop_limit", side: "sell" },
-    };
-    const durationMap: Record<number, string> = { 0: "GTC", 1: "DAY", 2: "GTD", 3: "SPECIFIED_DAY" };
+    // Order-type + duration decodes live in _shared/mt5Decode.ts.
     const pendingOrders = ordersRaw
       .filter((o: any) => {
         // state 1=PLACED is the live pending state; others (filled/cancelled/expired) are history.
@@ -269,13 +260,13 @@ async function handleTerminalData(req: Request) {
       })
       .map((o: any) => {
         const typeInt = Number(o?.type ?? -1);
-        const map = orderTypeMap[typeInt] || { kind: "unknown", side: "buy" as const };
+        const decoded = decodeOrderType(typeInt) ?? { kind: "unknown" as const, side: "buy" as const };
         const ttime = Number(o?.type_time ?? 0);
         return {
           ticket: o?.ticket ?? null,
           symbol: o?.symbol ?? "",
-          orderType: map.kind,
-          side: map.side,
+          orderType: decoded.kind,
+          side: decoded.side,
           volume: Number(o?.volume_current ?? o?.volume_initial ?? 0),
           volume_initial: Number(o?.volume_initial ?? 0),
           price_open: Number(o?.price_open ?? 0),
@@ -283,7 +274,7 @@ async function handleTerminalData(req: Request) {
           price_current: Number(o?.price_current ?? 0),
           stop_loss: o?.sl ?? null,
           take_profit: o?.tp ?? null,
-          duration: durationMap[ttime] ?? "GTC",
+          duration: decodeOrderTypeTime(ttime),
           time_setup: o?.time_setup ?? null,
           time_setup_msc: o?.time_setup_msc ?? null,
           time_expiration: o?.time_expiration ?? null,
