@@ -3,7 +3,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
-const ACC = "29008868-d583-4ab5-a6c1-57586fe92007";
+const ACC = "077d6ed8-f601-47f8-badc-67b7d38dd40e";
 const REGION = "new-york";
 
 async function call(url: string) {
