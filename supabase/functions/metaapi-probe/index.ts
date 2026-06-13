@@ -1,10 +1,9 @@
-// One-shot admin probe for MetaAPI provider verification (Item 0).
-// GET ?step=all → runs provisioning state, account info, current price, candles.
+// One-shot admin probe for MetaAPI provider verification + A3 conventions capture.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const TOKEN = Deno.env.get("METAAPI_TOKEN") ?? "";
-const ACC = "29008868-d583-4ab5-a6c1-57586fe92007";
-const REGION = "new-york";
+const ACC = "077d6ed8-f601-47f8-badc-67b7d38dd40e";
+const REGION = "london"; // confirmed by provisioning probe
 
 async function call(url: string) {
   const t0 = Date.now();
@@ -27,14 +26,25 @@ Deno.serve(async (req) => {
     });
   }
 
-  const provisioning = `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts/${ACC}`;
+  const prov = `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts/${ACC}`;
   const list = `https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai/users/current/accounts`;
 
+  // Historical market data — regional endpoint.
+  const mdBase = `https://mt-market-data-client-api-v1.${REGION}.agiliumtrade.ai/users/current/accounts/${ACC}`;
+  const candlesXAU = `${mdBase}/historical-market-data/symbols/XAUUSD/timeframes/1m/candles?limit=10`;
+  // Live spec / current price via client-api regional endpoint.
+  const clientBase = `https://mt-client-api-v1.${REGION}.agiliumtrade.ai/users/current/accounts/${ACC}`;
+  const xauPrice = `${clientBase}/symbols/XAUUSD/current-price`;
+  const xauSpec  = `${clientBase}/symbols/XAUUSD/specification`;
+
   const results = {
-    token_meta: { length: TOKEN.length, prefix: TOKEN.slice(0, 8) + "…" },
     wall_clock_utc: new Date().toISOString(),
-    target_account_lookup: await call(provisioning),
+    token_meta: { length: TOKEN.length, prefix: TOKEN.slice(0, 8) + "…" },
+    target_account_lookup: await call(prov),
     accounts_under_token: await call(list),
+    xauusd_current_price: await call(xauPrice),
+    xauusd_specification: await call(xauSpec),
+    xauusd_m1_last10:    await call(candlesXAU),
   };
 
   return new Response(JSON.stringify(results, null, 2), {
