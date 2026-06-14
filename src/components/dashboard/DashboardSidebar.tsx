@@ -199,37 +199,35 @@ const DashboardSidebar = () => {
 
       </nav>
 
-      {/* Online traders counter */}
-      <div className={cn("border-t border-primary/10", collapsed ? "px-0 py-0" : "px-3 py-2.5")}>
-        {collapsed ? (
-          <div
-            className="flex h-10 w-full flex-col items-center justify-center gap-0.5"
-            title="Traders online"
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-70" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[hsl(145_65%_50%)]" />
-            </span>
-            <span className="font-mono text-[9px] leading-none tabular-nums text-muted-foreground">12K</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 rounded-lg bg-card/60 px-2.5 py-1.5">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[hsl(145_65%_50%)] opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[hsl(145_65%_50%)]" />
-            </span>
-            <Users className="h-3 w-3 text-muted-foreground" />
-            <div className="flex items-baseline gap-1 min-w-0">
-              <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground">
-                12,487
-              </span>
-              <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
-                {t("sidebar.online")}
+      {/* Members counter (real total from profiles) */}
+      {memberCount !== null && memberCount > 0 && (
+        <div className={cn("border-t border-primary/10", collapsed ? "px-0 py-0" : "px-3 py-2.5")}>
+          {collapsed ? (
+            <div
+              className="flex h-10 w-full flex-col items-center justify-center gap-0.5"
+              title={`${memberCountLabel} miembros`}
+            >
+              <Users className="h-3 w-3 text-muted-foreground" />
+              <span className="font-mono text-[9px] leading-none tabular-nums text-muted-foreground">
+                {memberCountShort}
               </span>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-lg bg-card/60 px-2.5 py-1.5">
+              <Users className="h-3 w-3 text-muted-foreground" />
+              <div className="flex items-baseline gap-1 min-w-0">
+                <span className="font-mono text-[11px] font-semibold tabular-nums text-foreground">
+                  {memberCountLabel}
+                </span>
+                <span className="font-proxima text-[9px] uppercase tracking-wider text-muted-foreground truncate">
+                  miembros
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* Language switcher */}
       <div className={cn("border-t border-primary/10", collapsed ? "px-0 py-0" : "px-3 py-2")}>
