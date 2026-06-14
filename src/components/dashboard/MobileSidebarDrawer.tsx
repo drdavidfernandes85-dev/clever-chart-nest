@@ -15,7 +15,8 @@ import {
 import LtrLogo from "@/components/branding/LtrLogo";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useWebinars } from "@/hooks/useWebinars";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { LOCALE_FLAGS, LOCALE_LABELS, type Locale, type TranslationKey } from "@/i18n/translations";
