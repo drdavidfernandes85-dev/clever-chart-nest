@@ -73,6 +73,29 @@ const DashboardSidebar = () => {
     new Date(upcoming.scheduled_at).getTime() - Date.now() < 30 * 60 * 1000;
   const showLiveBadge = !!liveNow || startingSoon;
 
+  const [memberCount, setMemberCount] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("user_id", { count: "exact", head: true })
+      .then(({ count }) => {
+        if (!cancelled) setMemberCount(typeof count === "number" ? count : null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const memberCountLabel =
+    memberCount !== null ? new Intl.NumberFormat("en-US").format(memberCount) : "—";
+  const memberCountShort =
+    memberCount !== null
+      ? memberCount >= 1000
+        ? `${(memberCount / 1000).toFixed(memberCount >= 10000 ? 0 : 1)}K`
+        : String(memberCount)
+      : "—";
+
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
