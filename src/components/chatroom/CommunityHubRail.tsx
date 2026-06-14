@@ -44,7 +44,6 @@ const initialsOf = (n: string) =>
  * Regulation-compliant: no signals language, no performance claims.
  */
 const CommunityHubRail = () => {
-  const [onlineCount, setOnlineCount] = useState(184);
   const [activeIdeas, setActiveIdeas] = useState<number>(0);
   const [ideasShared24h, setIdeasShared24h] = useState<number>(0);
   const { hot } = useHotMentions(8);
@@ -67,22 +66,14 @@ const CommunityHubRail = () => {
       setActiveIdeas(ideas ?? 0);
       setIdeasShared24h(recent ?? 0);
     })();
-
-    const tick = setInterval(() => {
-      setOnlineCount((n) =>
-        Math.max(120, Math.min(420, n + Math.floor((Math.random() - 0.5) * 6))),
-      );
-    }, 5000);
-
     return () => {
       cancelled = true;
-      clearInterval(tick);
     };
   }, []);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-2 py-2 pb-3 sm:gap-2.5 sm:px-2.5 sm:py-2.5 lg:gap-3 lg:p-3">
-      {/* Community Pulse — stats strip */}
+      {/* Community Pulse — stats strip (real data only) */}
       <div className="rounded-2xl border border-primary/25 bg-card/80 backdrop-blur-md p-2.5 shadow-[0_8px_30px_-12px_hsl(48_100%_51%/0.25)] sm:p-3">
         <div className="flex items-center gap-2 mb-2">
           <Activity className="h-3.5 w-3.5 text-primary" />
@@ -90,15 +81,7 @@ const CommunityHubRail = () => {
             Community Pulse
           </h3>
         </div>
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-          <div className="rounded-lg border border-border/40 bg-background/40 px-2 py-2 text-center">
-            <p className="font-mono text-base font-bold tabular-nums text-primary leading-none">
-              {onlineCount}
-            </p>
-            <p className="mt-1 font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">
-              Online
-            </p>
-          </div>
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
           <div className="rounded-lg border border-border/40 bg-background/40 px-2 py-2 text-center">
             <p className="font-mono text-base font-bold tabular-nums text-foreground leading-none">
               {activeIdeas}
@@ -117,6 +100,7 @@ const CommunityHubRail = () => {
           </div>
         </div>
       </div>
+
 
       {/* Shared Market Ideas — community trade ideas (educational, no execution language). */}
       <div className="rounded-2xl border border-primary/40 bg-card/80 backdrop-blur-md overflow-hidden shadow-[0_10px_40px_-12px_hsl(48_100%_51%/0.4)]">
