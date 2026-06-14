@@ -120,7 +120,7 @@ const COMPLIANCE_SKIP_PATTERNS = [
   /\/social\//,
   /\/chatroom\//,
   /\/home\//,
-  /\/pages\/(Dashboard|LiveChart|TradingDashboard|TradingSignals|CopyTrading|CommandDeck|ComplianceReview|Community|CommunityGuidelines|Education|Ideas|Index)\.tsx$/,
+  /\/pages\/(Dashboard|LiveChart|TradingDashboard|TradingSignals|CopyTrading|ComplianceReview|Community|CommunityGuidelines|Education|Ideas|Index)\.tsx$/,
   /(Footer|MentoringSection|NotificationsBell|ComplianceBlock|PlatformPillars)\.tsx$/,
 ];
 

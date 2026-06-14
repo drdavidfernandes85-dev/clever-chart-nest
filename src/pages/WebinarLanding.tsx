@@ -67,7 +67,7 @@ const useFullCountdown = (target: Date | null) => {
 const FAQ_KEYS = [1, 2, 3, 4, 5] as const;
 const BENEFITS = [1, 2, 3, 4] as const;
 const LEARN = [1, 2, 3, 4] as const;
-const TESTI = [1, 2, 3] as const;
+
 
 const WebinarLanding = () => {
   const { t, locale } = useLanguage();
@@ -474,37 +474,6 @@ const WebinarLanding = () => {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
-      <section className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6">
-        <h2 className="mb-8 text-center font-heading text-3xl font-bold text-foreground sm:text-4xl">
-          {t("webinarLp.testimonials.title")}
-        </h2>
-        <div className="grid gap-5 md:grid-cols-3">
-          {TESTI.map((n) => (
-            <figure
-              key={n}
-              className="rounded-2xl border border-white/8 bg-card/40 p-6 backdrop-blur-2xl transition-all hover:border-primary/40 hover:shadow-[0_0_30px_hsl(45_100%_50%/0.15)]"
-            >
-              <div className="mb-3 flex gap-0.5 text-primary">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i}>★</span>
-                ))}
-              </div>
-              <blockquote className="text-sm leading-relaxed text-foreground/85">
-                “{t(`webinarLp.testimonials.${n}.quote` as any)}”
-              </blockquote>
-              <figcaption className="mt-4 border-t border-white/5 pt-3">
-                <div className="text-sm font-semibold text-foreground">
-                  {t(`webinarLp.testimonials.${n}.name` as any)}
-                </div>
-                <div className="text-xs text-foreground/55">
-                  {t(`webinarLp.testimonials.${n}.role` as any)}
-                </div>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
 
       {/* FAQ */}
       <section className="relative z-10 mx-auto max-w-3xl px-4 py-16 sm:px-6">

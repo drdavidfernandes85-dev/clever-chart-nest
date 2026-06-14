@@ -2,7 +2,6 @@ User-agent: Googlebot
 Allow: /
 Disallow: /dashboard
 Disallow: /trading-room
-Disallow: /command
 Disallow: /profile
 Disallow: /chatroom
 Disallow: /live-chart
@@ -20,7 +19,6 @@ User-agent: Bingbot
 Allow: /
 Disallow: /dashboard
 Disallow: /trading-room
-Disallow: /command
 Disallow: /profile
 Disallow: /chatroom
 Disallow: /live-chart
@@ -44,7 +42,6 @@ User-agent: *
 Allow: /
 Disallow: /dashboard
 Disallow: /trading-room
-Disallow: /command
 Disallow: /profile
 Disallow: /chatroom
 Disallow: /live-chart
