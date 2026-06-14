@@ -31,7 +31,7 @@ import PreviewRouteLoader from "@/components/PreviewRouteLoader";
 const Admin = lazy(() => import("./pages/Admin"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Chatroom = lazy(() => import("./pages/Chatroom"));
-const CommandDeck = lazy(() => import("./pages/CommandDeck"));
+
 const ConnectMT = lazy(() => import("./pages/ConnectMT"));
 const ConnectMyMT5 = lazy(() => import("./pages/ConnectMyMT5"));
 const Community = lazy(() => import("./pages/Community"));
@@ -135,7 +135,7 @@ const App = () => (
                     {/* Open to all logged-in users (no eligibility required) */}
                     <Route path="/dashboard" element={<DashboardShell scope="dashboard"><Dashboard /></DashboardShell>} />
                     <Route path="/trading-room" element={<DashboardShell scope="trading-room"><TradingDashboard /></DashboardShell>} />
-                    <Route path="/command" element={<DashboardShell scope="command"><CommandDeck /></DashboardShell>} />
+                    
                     <Route path="/profile" element={<DashboardShell scope="profile"><Profile /></DashboardShell>} />
                     {/* /videos: hidden from launch nav (Video Library) */}
                     <Route path="/videos" element={<InternalPreviewShell scope="videos" label="Video Library"><VideoLibrary /></InternalPreviewShell>} />
