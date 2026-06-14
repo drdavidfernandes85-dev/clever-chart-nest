@@ -113,17 +113,6 @@ interface LiveResponse {
   upstreamCallsAvoided?: number;
 }
 
-interface TradeIdea {
-  id: string;
-  symbol: string;
-  direction: "buy" | "sell";
-  entryFrom: number;
-  entryTo: number;
-  stopLoss: number;
-  takeProfit: number;
-  suggestedRisk: string;
-}
-
 interface ExecutionLog {
   id: string;
   created_at: string;
@@ -136,39 +125,6 @@ interface ExecutionLog {
   ticket: string | null;
   error_message: string | null;
 }
-
-const DEMO_TRADE_IDEAS: TradeIdea[] = [
-  {
-    id: "s1",
-    symbol: "EURUSD",
-    direction: "buy",
-    entryFrom: 1.0845,
-    entryTo: 1.0855,
-    stopLoss: 1.082,
-    takeProfit: 1.092,
-    suggestedRisk: "1%",
-  },
-  {
-    id: "s2",
-    symbol: "XAUUSD",
-    direction: "sell",
-    entryFrom: 2348,
-    entryTo: 2352,
-    stopLoss: 2362,
-    takeProfit: 2320,
-    suggestedRisk: "0.5%",
-  },
-  {
-    id: "s3",
-    symbol: "GBPJPY",
-    direction: "buy",
-    entryFrom: 198.4,
-    entryTo: 198.6,
-    stopLoss: 197.8,
-    takeProfit: 200.2,
-    suggestedRisk: "1%",
-  },
-];
 
 // ---------- Helpers ----------
 const fmtMoney = (v: number, currency = "USD") =>
