@@ -1172,6 +1172,13 @@ const translations = {
     "auth.callback.titleError": "Invalid link",
     "auth.callback.working": "Confirming your session...",
     "auth.callback.error": "We couldn't validate the link. It may have expired.",
+    // Entitlements / top-up notification
+    "notif.topup.title": "Your balance is below the $100 minimum",
+    "notif.topup.body": "Your connected MT5 account has a balance below $100 USD. You keep full access to member tools until {lock_date}. To preserve access, top your balance back up to $100 or more before that date. Trading carries risk of loss; only top up capital you can afford to risk.",
+    "account_state.active": "Active",
+    "account_state.grace": "Grace period",
+    "account_state.locked": "Locked",
+    "account_state.balance_unknown": "Balance unavailable",
   },
   es: {
     "nav.home": "Inicio",
