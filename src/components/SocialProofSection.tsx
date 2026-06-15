@@ -67,81 +67,85 @@ const SocialProofSection = () => {
         )}
 
         {/* Testimonial cards */}
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {CONTENT.testimonials.map((t) => (
-            <div
-              key={t.name}
-              className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6"
-            >
-              {/* Stars */}
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className="h-4 w-4 fill-[#FFCD05] text-[#FFCD05]"
-                  />
-                ))}
-              </div>
+        {CONTENT.testimonials.length > 0 && (
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {CONTENT.testimonials.map((t) => (
+              <div
+                key={t.name}
+                className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6"
+              >
+                {/* Stars */}
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className="h-4 w-4 fill-[#FFCD05] text-[#FFCD05]"
+                    />
+                  ))}
+                </div>
 
-              {/* Quote */}
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-white/85">
-                “{t.quote}”
-              </p>
+                {/* Quote */}
+                <p className="mt-3 flex-1 text-sm leading-relaxed text-white/85">
+                  &ldquo;{t.quote}&rdquo;
+                </p>
 
-              {/* Author */}
-              <div className="mt-4 flex items-center gap-3 border-t border-white/10 pt-4">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FFCD05]/15 text-[11px] font-bold text-[#FFCD05]">
-                  {t.initials}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-white/40">{t.city}</p>
+                {/* Author */}
+                <div className="mt-4 flex items-center gap-3 border-t border-white/10 pt-4">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FFCD05]/15 text-[11px] font-bold text-[#FFCD05]">
+                    {t.initials}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{t.name}</p>
+                    <p className="text-xs text-white/40">{t.city}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* MotoGP reward card */}
-        <div className="mt-10">
-          <div className="relative overflow-hidden rounded-2xl border border-[#FFCD05]/25 bg-gradient-to-br from-[#FFCD05]/[0.07] to-transparent p-6 sm:p-8 lg:p-10">
-            {/* Decorative trophy */}
-            <div className="pointer-events-none absolute -right-6 -top-6 opacity-[0.07]">
-              <Trophy className="h-40 w-40 text-[#FFCD05]" />
-            </div>
+        {CONTENT.motogp.heading && (
+          <div className="mt-10">
+            <div className="relative overflow-hidden rounded-2xl border border-[#FFCD05]/25 bg-gradient-to-br from-[#FFCD05]/[0.07] to-transparent p-6 sm:p-8 lg:p-10">
+              {/* Decorative trophy */}
+              <div className="pointer-events-none absolute -right-6 -top-6 opacity-[0.07]">
+                <Trophy className="h-40 w-40 text-[#FFCD05]" />
+              </div>
 
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFCD05]">
-              {CONTENT.motogp.badge}
-            </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#FFCD05]/40 bg-[#FFCD05]/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#FFCD05]">
+                {CONTENT.motogp.badge}
+              </span>
 
-            <h3 className="mt-4 font-heading text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
-              {CONTENT.motogp.heading}
-            </h3>
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 sm:text-base">
-              {CONTENT.motogp.description}
-            </p>
+              <h3 className="mt-4 font-heading text-2xl font-bold text-white sm:text-3xl lg:text-4xl">
+                {CONTENT.motogp.heading}
+              </h3>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70 sm:text-base">
+                {CONTENT.motogp.description}
+              </p>
 
-            <Button
-              asChild
-              className="mt-6 h-10 gap-2 rounded-full bg-[#FFCD05] px-6 text-sm font-bold text-black hover:bg-[#FFE066]"
-            >
-              <Link
-                to={CONTENT.motogp.ctaHref}
-                onClick={() =>
-                  track("cta_click", {
-                    section: "social_proof",
-                    cta_name: "motogp_qualify",
-                    label: CONTENT.motogp.ctaLabel,
-                    href: CONTENT.motogp.ctaHref,
-                  })
-                }
+              <Button
+                asChild
+                className="mt-6 h-10 gap-2 rounded-full bg-[#FFCD05] px-6 text-sm font-bold text-black hover:bg-[#FFE066]"
               >
-                {CONTENT.motogp.ctaLabel}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+                <Link
+                  to={CONTENT.motogp.ctaHref}
+                  onClick={() =>
+                    track("cta_click", {
+                      section: "social_proof",
+                      cta_name: "motogp_qualify",
+                      label: CONTENT.motogp.ctaLabel,
+                      href: CONTENT.motogp.ctaHref,
+                    })
+                  }
+                >
+                  {CONTENT.motogp.ctaLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
