@@ -121,6 +121,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <QuickTradeProvider>
+            <LocalizedHead />
             <CyberpunkBackground />
             <PageTransition>
               <ErrorBoundary scope="route-root">
