@@ -2313,6 +2313,13 @@ const translations = {
     "auth.callback.titleError": "Enlace inválido",
     "auth.callback.working": "Confirmando tu sesión...",
     "auth.callback.error": "No pudimos validar el enlace. Puede haber caducado.",
+    // Entitlements / top-up notification (Español - default; pendiente sign-off compliance)
+    "notif.topup.title": "Tu saldo está por debajo del mínimo de $100",
+    "notif.topup.body": "Tu cuenta MT5 conectada tiene un saldo inferior a $100 USD. Mantienes el acceso completo a las herramientas para miembros hasta el {lock_date}. Para conservarlo, repón tu saldo a $100 o más antes de esa fecha. Operar conlleva riesgo de pérdida; repón solo capital que puedas permitirte arriesgar.",
+    "account_state.active": "Activa",
+    "account_state.grace": "Periodo de gracia",
+    "account_state.locked": "Bloqueada",
+    "account_state.balance_unknown": "Saldo no disponible",
   },
   pt: {
     "nav.home": "Início",
