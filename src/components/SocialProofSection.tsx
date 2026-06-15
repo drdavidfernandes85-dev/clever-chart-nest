@@ -7,47 +7,21 @@ import { track } from "@/lib/analytics";
 // EDITABLE STATS / COPY — adjust freely without touching JSX
 // ─────────────────────────────────────────────────────────────
 const CONTENT = {
-  title: "1.200 traders ya eligieron la verdad.",
-  subhead: "Traders reales, resultados reales. Sin filtros, sin promesas.",
-  stats: [
-    { icon: Users, value: "1.200+", label: "traders activos" },
-    { icon: Calendar, value: "5×", label: "webinars por semana" },
-    { icon: BadgeCheck, value: "4.8★", label: "valoración media" },
-    { icon: Wallet, value: "$0", label: "mensualidad" },
-  ],
-  testimonials: [
-    // ─── PLACEHOLDER TESTIMONIALS — REPLACE WITH REAL, CONSENTED TESTIMONIALS BEFORE LAUNCH ───
-    {
-      quote:
-        "Antes pagaba tres suscripciones distintas. Ahora opero con la terminal de IX LTR y recuperé mi capital en la primera semana.",
-      name: "Carlos M.",
-      city: "Ciudad de México",
-      initials: "CM",
-    },
-    {
-      quote:
-        "Los webinars en vivo me cambiaron la perspectiva. Ver cómo operan traders reales en tiempo real no se compara con ningún curso grabado.",
-      name: "Valentina R.",
-      city: "Bogotá, Colombia",
-      initials: "VR",
-    },
-    {
-      quote:
-        "Empecé con los $100 del depósito mínimo. Hoy ya opero con confianza y mi cuenta sigue creciendo. La comunidad es lo mejor.",
-      name: "Martín A.",
-      city: "Buenos Aires, Argentina",
-      initials: "MA",
-    },
-    // ─── END PLACEHOLDER TESTIMONIALS ───
-  ],
+  title: "",
+  subhead: "",
+  stats: [] as { icon: typeof Users; value: string; label: string }[],
+  testimonials: [] as {
+    quote: string;
+    name: string;
+    city: string;
+    initials: string;
+  }[],
   motogp: {
-    badge: "EXCLUSIVO PARA MIEMBROS",
-    // ─── EDITABLE SPONSORSHIP CLAIM — CONFIRM WITH INFINOX BEFORE PUBLISHING ───
-    heading: "Los mejores traders de IX LTR van a MotoGP.",
-    description:
-      "Cada temporada, los traders con mejor rendimiento y consistencia obtienen un viaje VIP al Gran Premio de su región. Una experiencia única para quienes operan con disciplina.",
-    ctaLabel: "Quiero calificar",
-    ctaHref: "/register",
+    badge: "",
+    heading: "",
+    description: "",
+    ctaLabel: "",
+    ctaHref: "",
   },
 };
 
