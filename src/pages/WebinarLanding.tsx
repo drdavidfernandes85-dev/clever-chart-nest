@@ -67,7 +67,6 @@ const useFullCountdown = (target: Date | null) => {
 const FAQ_KEYS = [1, 2, 3, 4, 5] as const;
 const BENEFITS = [1, 2, 3, 4] as const;
 const LEARN = [1, 2, 3, 4] as const;
-const TESTI = [1, 2, 3] as const;
 
 const WebinarLanding = () => {
   const { t, locale } = useLanguage();
