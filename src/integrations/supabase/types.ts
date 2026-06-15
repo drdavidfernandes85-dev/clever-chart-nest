@@ -644,6 +644,45 @@ export type Database = {
         }
         Relationships: []
       }
+      entitlements_audit: {
+        Row: {
+          balance_known: boolean
+          created_at: string
+          id: string
+          new_balance: number | null
+          new_state: string
+          prev_balance: number | null
+          prev_state: string | null
+          reason: string | null
+          source: string | null
+          user_id: string
+        }
+        Insert: {
+          balance_known: boolean
+          created_at?: string
+          id?: string
+          new_balance?: number | null
+          new_state: string
+          prev_balance?: number | null
+          prev_state?: string | null
+          reason?: string | null
+          source?: string | null
+          user_id: string
+        }
+        Update: {
+          balance_known?: boolean
+          created_at?: string
+          id?: string
+          new_balance?: number | null
+          new_state?: string
+          prev_balance?: number | null
+          prev_state?: string | null
+          reason?: string | null
+          source?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       execution_audit_events: {
         Row: {
           ask: number | null
@@ -725,6 +764,30 @@ export type Database = {
           trade_id?: string | null
           user_id?: string
           volume?: number
+        }
+        Relationships: []
+      }
+      feature_flags_by_country: {
+        Row: {
+          country_code: string
+          enabled: boolean
+          feature: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          enabled?: boolean
+          feature: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          enabled?: boolean
+          feature?: string
+          note?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1545,6 +1608,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_outbox: {
+        Row: {
+          attempts: number
+          channel: string
+          created_at: string
+          dedup_key: string | null
+          event_key: string
+          id: string
+          last_error: string | null
+          payload: Json
+          sent_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          channel: string
+          created_at?: string
+          dedup_key?: string | null
+          event_key: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          dedup_key?: string | null
+          event_key?: string
+          id?: string
+          last_error?: string | null
+          payload?: Json
+          sent_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1583,31 +1688,55 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_state: string
           avatar_url: string | null
+          country_of_residence: string | null
           created_at: string
           display_name: string
+          grace_started_at: string | null
           id: string
+          last_balance_check_at: string | null
+          last_balance_source: string | null
+          last_known_balance_usd: number | null
           leaderboard_opt_out: boolean
+          manual_review_flag: boolean
+          manual_review_reason: string | null
           preferred_language: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          account_state?: string
           avatar_url?: string | null
+          country_of_residence?: string | null
           created_at?: string
           display_name: string
+          grace_started_at?: string | null
           id?: string
+          last_balance_check_at?: string | null
+          last_balance_source?: string | null
+          last_known_balance_usd?: number | null
           leaderboard_opt_out?: boolean
+          manual_review_flag?: boolean
+          manual_review_reason?: string | null
           preferred_language?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          account_state?: string
           avatar_url?: string | null
+          country_of_residence?: string | null
           created_at?: string
           display_name?: string
+          grace_started_at?: string | null
           id?: string
+          last_balance_check_at?: string | null
+          last_balance_source?: string | null
+          last_known_balance_usd?: number | null
           leaderboard_opt_out?: boolean
+          manual_review_flag?: boolean
+          manual_review_reason?: string | null
           preferred_language?: string
           updated_at?: string
           user_id?: string
@@ -2876,12 +3005,26 @@ export type Database = {
         Args: { p_live_exposure_snapshot: Json; p_reason: string }
         Returns: Json
       }
+      has_entitlement: {
+        Args: { _feature: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      resolve_account_state: {
+        Args: {
+          _balance: number
+          _balance_known: boolean
+          _max_age_minutes?: number
+          _source?: string
+          _user_id: string
+        }
+        Returns: Json
       }
       uncomplete_education_module: {
         Args: { _module_slug: string }

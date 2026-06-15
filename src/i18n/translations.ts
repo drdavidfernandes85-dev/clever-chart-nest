@@ -1172,6 +1172,13 @@ const translations = {
     "auth.callback.titleError": "Invalid link",
     "auth.callback.working": "Confirming your session...",
     "auth.callback.error": "We couldn't validate the link. It may have expired.",
+    // Entitlements / top-up notification
+    "notif.topup.title": "Your balance is below the $100 minimum",
+    "notif.topup.body": "Your connected MT5 account has a balance below $100 USD. You keep full access to member tools until {lock_date}. To preserve access, top your balance back up to $100 or more before that date. Trading carries risk of loss; only top up capital you can afford to risk.",
+    "account_state.active": "Active",
+    "account_state.grace": "Grace period",
+    "account_state.locked": "Locked",
+    "account_state.balance_unknown": "Balance unavailable",
   },
   es: {
     "nav.home": "Inicio",
@@ -2306,6 +2313,13 @@ const translations = {
     "auth.callback.titleError": "Enlace inválido",
     "auth.callback.working": "Confirmando tu sesión...",
     "auth.callback.error": "No pudimos validar el enlace. Puede haber caducado.",
+    // Entitlements / top-up notification (Español - default; pendiente sign-off compliance)
+    "notif.topup.title": "Tu saldo está por debajo del mínimo de $100",
+    "notif.topup.body": "Tu cuenta MT5 conectada tiene un saldo inferior a $100 USD. Mantienes el acceso completo a las herramientas para miembros hasta el {lock_date}. Para conservarlo, repón tu saldo a $100 o más antes de esa fecha. Operar conlleva riesgo de pérdida; repón solo capital que puedas permitirte arriesgar.",
+    "account_state.active": "Activa",
+    "account_state.grace": "Periodo de gracia",
+    "account_state.locked": "Bloqueada",
+    "account_state.balance_unknown": "Saldo no disponible",
   },
   pt: {
     "nav.home": "Início",
@@ -3438,6 +3452,13 @@ const translations = {
     "auth.callback.titleError": "Link inválido",
     "auth.callback.working": "Confirmando sua sessão...",
     "auth.callback.error": "Não foi possível validar o link. Pode ter expirado.",
+    // Entitlements / top-up notification (pt-BR)
+    "notif.topup.title": "Seu saldo está abaixo do mínimo de US$ 100",
+    "notif.topup.body": "Sua conta MT5 conectada tem saldo inferior a US$ 100. Você mantém acesso completo às ferramentas dos membros até {lock_date}. Para preservar o acesso, recomponha seu saldo para US$ 100 ou mais antes dessa data. Operar envolve risco de perda; recomponha apenas capital que você possa se permitir arriscar.",
+    "account_state.active": "Ativa",
+    "account_state.grace": "Período de carência",
+    "account_state.locked": "Bloqueada",
+    "account_state.balance_unknown": "Saldo indisponível",
   },
 } as const;
 
