@@ -33,14 +33,16 @@ const SocialProofSection = () => {
     >
       <div className="container px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-            {CONTENT.title}
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-white/70 sm:text-lg">
-            {CONTENT.subhead}
-          </p>
-        </div>
+        {CONTENT.title && (
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+              {CONTENT.title}
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-white/70 sm:text-lg">
+              {CONTENT.subhead}
+            </p>
+          </div>
+        )}
 
         {/* Stat tiles */}
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
