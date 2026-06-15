@@ -3452,6 +3452,13 @@ const translations = {
     "auth.callback.titleError": "Link inválido",
     "auth.callback.working": "Confirmando sua sessão...",
     "auth.callback.error": "Não foi possível validar o link. Pode ter expirado.",
+    // Entitlements / top-up notification (pt-BR)
+    "notif.topup.title": "Seu saldo está abaixo do mínimo de US$ 100",
+    "notif.topup.body": "Sua conta MT5 conectada tem saldo inferior a US$ 100. Você mantém acesso completo às ferramentas dos membros até {lock_date}. Para preservar o acesso, recomponha seu saldo para US$ 100 ou mais antes dessa data. Operar envolve risco de perda; recomponha apenas capital que você possa se permitir arriscar.",
+    "account_state.active": "Ativa",
+    "account_state.grace": "Período de carência",
+    "account_state.locked": "Bloqueada",
+    "account_state.balance_unknown": "Saldo indisponível",
   },
 } as const;
 
