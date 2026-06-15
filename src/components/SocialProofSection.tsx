@@ -45,24 +45,26 @@ const SocialProofSection = () => {
         )}
 
         {/* Stat tiles */}
-        <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          {CONTENT.stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="flex flex-col items-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-5 text-center sm:px-4"
-            >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#FFCD05]/10 text-[#FFCD05]">
-                <stat.icon className="h-4 w-4" />
-              </span>
-              <span className="mt-2 font-heading text-xl font-bold text-[#FFCD05] sm:text-2xl">
-                {stat.value}
-              </span>
-              <span className="mt-1 text-[11px] font-medium uppercase tracking-wider text-white/50 sm:text-xs">
-                {stat.label}
-              </span>
-            </div>
-          ))}
-        </div>
+        {CONTENT.stats.length > 0 && (
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            {CONTENT.stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="flex flex-col items-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-5 text-center sm:px-4"
+              >
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#FFCD05]/10 text-[#FFCD05]">
+                  <stat.icon className="h-4 w-4" />
+                </span>
+                <span className="mt-2 font-heading text-xl font-bold text-[#FFCD05] sm:text-2xl">
+                  {stat.value}
+                </span>
+                <span className="mt-1 text-[11px] font-medium uppercase tracking-wider text-white/50 sm:text-xs">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Testimonial cards */}
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
