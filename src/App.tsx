@@ -19,6 +19,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import OnboardingTour from "@/components/onboarding/OnboardingTour";
 import CyberpunkBackground from "@/components/CyberpunkBackground";
 import Index from "./pages/Index.tsx";
+import LocalizedHead from "@/components/seo/LocalizedHead";
 
 const FloatingJoinLive = lazy(() => import("@/components/webinars/FloatingJoinLive"));
 const FloatingMobileCTA = lazy(() => import("@/components/lead/FloatingMobileCTA"));
